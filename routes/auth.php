@@ -68,6 +68,7 @@ Route::middleware('auth')->group(function () {
         request()->session()->invalidate();
         request()->session()->regenerateToken();
 
-        return redirect($isAdmin ? route('admin.login') : '/');
+        // Redirect admins to admin login, others to public login
+        return redirect($isAdmin ? route('admin.login') : route('login'));
     })->name('logout');
 });

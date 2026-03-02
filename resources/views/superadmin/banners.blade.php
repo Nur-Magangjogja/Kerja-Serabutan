@@ -236,6 +236,57 @@
         </div>
     </div>
 
+    <!-- Home Banner Section -->
+    <div class="px-8 py-6">
+        <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
+            <h2 class="text-lg font-semibold mb-3">Banner Beranda</h2>
+
+            <div class="mb-4">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    @forelse($homeBanners as $i => $b)
+                        <div class="relative rounded-lg overflow-hidden border border-gray-100">
+                            <img src="{{ asset('storage/' . $b) }}" alt="banner-home-{{ $i }}" class="w-full h-32 object-cover">
+                            <button wire:click="removeHome({{ $i }})" type="button" class="absolute top-2 right-2 bg-white/90 rounded-full p-1 hover:bg-red-50" title="Hapus">
+                                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    @empty
+                        <div class="col-span-full text-sm text-gray-500">Belum ada banner untuk beranda.</div>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <label class="block text-sm font-medium text-gray-700">Upload banner Beranda (bisa pilih beberapa)</label>
+
+                <div id="home-dropzone" class="relative border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary-400 transition-colors bg-gray-50 hover:bg-gray-100 cursor-pointer">
+                    <input type="file" id="home-file-input" wire:model="homeUploads" accept="image/*" multiple class="hidden" />
+                    <div class="space-y-2">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <div class="text-sm text-gray-600">
+                            <span class="font-semibold text-primary-600 hover:text-primary-700">Klik untuk upload</span>
+                            <span> atau drag & drop</span>
+                        </div>
+                        <p class="text-xs text-gray-500">PNG, JPG, JPEG hingga 10MB</p>
+                    </div>
+                </div>
+
+                @error('homeUploads.*') <div class="text-sm text-red-600">{{ $message }}</div> @enderror
+
+                <div wire:ignore id="home-preview-uploads" class="hidden grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-4"></div>
+
+                <div class="flex items-center gap-2">
+                    <button id="home-save-btn" wire:click.prevent="save" class="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors shadow-sm">Unggah & Simpan</button>
+                    <button wire:ignore id="home-clear-preview" class="hidden px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">Batal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Preview Section -->
     <div class="px-8 py-8 bg-gradient-to-b from-gray-50 to-white border-t border-gray-200 mt-6">
         <div class="mb-6">
@@ -504,6 +555,7 @@
 
             setupDragDrop('customer-dropzone', 'customer-file-input', 'customer-preview-uploads', 'customer-clear-preview');
             setupDragDrop('mitra-dropzone', 'mitra-file-input', 'mitra-preview-uploads', 'mitra-clear-preview');
+            setupDragDrop('home-dropzone', 'home-file-input', 'home-preview-uploads', 'home-clear-preview');
 
             // Slider functionality with dots
             function initSimpleSlider(prefix, items) {
@@ -796,6 +848,26 @@
                                 if (mi) mi.value = '';
                                 if (mclear) mclear.classList.remove('hidden');
                             }
+                            if (payload && payload.home) {
+                                const hp = document.getElementById('home-preview-uploads');
+                                const hi = document.getElementById('home-file-input');
+                                const hclear = document.getElementById('home-clear-preview');
+                                if (hp) {
+                                    hp.innerHTML = '';
+                                    hp.classList.remove('hidden');
+                                    payload.home.forEach(function (p) {
+                                        const div = document.createElement('div');
+                                        div.className = 'relative rounded-lg overflow-hidden border-2 border-primary-200 shadow-sm';
+                                        const img = document.createElement('img');
+                                        img.src = '/storage/' + p;
+                                        img.className = 'w-full h-32 object-cover';
+                                        div.appendChild(img);
+                                        hp.appendChild(div);
+                                    });
+                                }
+                                if (hi) hi.value = '';
+                                if (hclear) hclear.classList.remove('hidden');
+                            }
                         } catch (e) { console.warn('bannersSaved handler error', e); }
                     });
                 } catch (e) { console.warn('Livewire bannersSaved attach error', e); }
@@ -806,20 +878,24 @@
                 try {
                     const cp = document.getElementById('customer-preview-uploads');
                     const mp = document.getElementById('mitra-preview-uploads');
+                    const hp = document.getElementById('home-preview-uploads');
                     // do NOT reset file input values here; Livewire needs them until upload completes
                     const cclear = document.getElementById('customer-clear-preview');
                     const mclear = document.getElementById('mitra-clear-preview');
+                    const hclear = document.getElementById('home-clear-preview');
 
                     if (cp) { cp.innerHTML = ''; cp.classList.add('hidden'); }
                     if (mp) { mp.innerHTML = ''; mp.classList.add('hidden'); }
+                    if (hp) { hp.innerHTML = ''; hp.classList.add('hidden'); }
                     if (cclear) cclear.classList.add('hidden');
                     if (mclear) mclear.classList.add('hidden');
+                    if (hclear) hclear.classList.add('hidden');
                 } catch (err) {
                     console.warn('clearUploadPreviews error', err);
                 }
             }
 
-            ['customer-save-btn', 'mitra-save-btn'].forEach(function (id) {
+            ['customer-save-btn', 'mitra-save-btn', 'home-save-btn'].forEach(function (id) {
                 const btn = document.getElementById(id);
                 if (btn) {
                     btn.addEventListener('click', function () {

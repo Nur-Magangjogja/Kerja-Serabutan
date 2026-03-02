@@ -16,16 +16,19 @@ class Banners extends Component
     // store arrays of stored paths
     public $customerBanners = [];
     public $mitraBanners = [];
+    public $homeBanners = [];
 
     // temporary uploaded files (multiple)
     public $customerUploads = [];
     public $mitraUploads = [];
+    public $homeUploads = [];
 
     protected function rules()
     {
         return [
             'customerUploads.*' => 'image|max:5120',
             'mitraUploads.*' => 'image|max:5120',
+            'homeUploads.*' => 'image|max:5120',
         ];
     }
 
@@ -33,6 +36,7 @@ class Banners extends Component
     {
         $this->customerBanners = json_decode((string) AppSetting::get('banner_customer', '[]'), true) ?: [];
         $this->mitraBanners = json_decode((string) AppSetting::get('banner_mitra', '[]'), true) ?: [];
+        $this->homeBanners = json_decode((string) AppSetting::get('banner_home', '[]'), true) ?: [];
     }
 
     public function save()
@@ -86,6 +90,28 @@ class Banners extends Component
             }
         }
 
+        // process home uploads
+        if (!empty($this->homeUploads)) {
+            try {
+                foreach ($this->homeUploads as $f) {
+                    $path = $f->store('banners', 'public');
+                    $this->homeBanners[] = $path;
+                }
+                $this->homeUploads = [];
+            } catch (\Exception $e) {
+                \Log::error('Error storing home upload files: ' . $e->getMessage());
+                $errors[] = 'Gagal menyimpan file banner home.';
+            }
+
+            try {
+                AppSetting::set('banner_home', json_encode(array_values($this->homeBanners)));
+                $successCount++;
+            } catch (\Exception $e) {
+                \Log::error('Error setting banner_home: ' . $e->getMessage());
+                $errors[] = 'Gagal menyimpan konfigurasi banner home.';
+            }
+        }
+
         if ($successCount > 0) {
             session()->flash('message', 'Banner berhasil disimpan.');
             // Kirim payload berisi path banner yang tersimpan supaya frontend
@@ -93,6 +119,7 @@ class Banners extends Component
             $this->dispatch('bannersSaved', [
                 'customer' => array_values($this->customerBanners),
                 'mitra' => array_values($this->mitraBanners),
+                'home' => array_values($this->homeBanners),
             ]);
             if (!empty($errors)) {
                 // partial success — log and show non-blocking warning
@@ -141,6 +168,19 @@ class Banners extends Component
         array_splice($this->mitraBanners, $index, 1);
         AppSetting::set('banner_mitra', json_encode(array_values($this->mitraBanners)));
         session()->flash('message', 'Banner mitra dihapus.');
+    }
+
+    public function removeHome($index)
+    {
+        if (!isset($this->homeBanners[$index]))
+            return;
+        $path = $this->homeBanners[$index];
+        if ($path && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
+        array_splice($this->homeBanners, $index, 1);
+        AppSetting::set('banner_home', json_encode(array_values($this->homeBanners)));
+        session()->flash('message', 'Banner home dihapus.');
     }
 
     public function render()

@@ -21,9 +21,7 @@ new #[Layout('layouts.guest')] class extends Component {
     public string $city = '';
     public ?int $city_id = null;
     public string $province = '';
-    public string $religion = '';
-    public string $marital_status = '';
-    public string $occupation = '';
+    
     public $cities = [];
     // realtime city search (for nicer UX)
     public string $cityQuery = '';
@@ -68,9 +66,6 @@ new #[Layout('layouts.guest')] class extends Component {
         $this->city = $registration->city ?? $this->city;
         $this->city_id = $registration->city_id ?? null;
         $this->province = $registration->province ?? $this->province;
-        $this->religion = $registration->religion ?? $this->religion;
-        $this->marital_status = $registration->marital_status ?? $this->marital_status;
-        $this->occupation = $registration->occupation ?? $this->occupation;
         // load available cities so registrants pick canonical city names
         $this->cities = City::orderBy('name')->get();
     }
@@ -91,9 +86,6 @@ new #[Layout('layouts.guest')] class extends Component {
             'city_id' => ['nullable', 'exists:cities,id'],
             'city' => ['nullable', 'string', 'max:100'],
             'province' => ['required', 'string', 'max:100'],
-            'religion' => ['required', 'string', 'max:50'],
-            'marital_status' => ['required', 'in:Belum Kawin,Kawin,Cerai Hidup,Cerai Mati'],
-            'occupation' => ['required', 'string', 'max:100'],
         ]);
 
         // Simpan atau update record registration di database
@@ -370,7 +362,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 <script>
                     (function () {
                         const prefix = 'registration_step1_';
-                        const fields = ['nik', 'full_name', 'place_of_birth', 'date_of_birth', 'gender', 'address', 'rt', 'rw', 'kelurahan', 'kecamatan', 'city_id', 'city', 'province', 'religion', 'marital_status', 'occupation'];
+                        const fields = ['nik', 'full_name', 'place_of_birth', 'date_of_birth', 'gender', 'address', 'rt', 'rw', 'kelurahan', 'kecamatan', 'city_id', 'city', 'province'];
 
                         // Load saved draft from localStorage into inputs
                         window.addEventListener('DOMContentLoaded', () => {
@@ -485,44 +477,7 @@ new #[Layout('layouts.guest')] class extends Component {
                     <x-input-error :messages="$errors->get('province')" class="mt-2" />
                 </div>
 
-                <!-- Agama -->
-                <div>
-                    <label for="religion" class="block text-xs font-semibold text-gray-700 mb-2">Agama *</label>
-                    <select wire:model="religion" id="religion"
-                        class="w-full px-4 py-3 bg-white border-0 rounded-xl text-gray-700 text-sm focus:ring-2 focus:ring-primary-400 transition shadow-sm">
-                        <option value="">Pilih Agama</option>
-                        <option value="Islam">Islam</option>
-                        <option value="Kristen">Kristen</option>
-                        <option value="Katolik">Katolik</option>
-                        <option value="Hindu">Hindu</option>
-                        <option value="Buddha">Buddha</option>
-                        <option value="Konghucu">Konghucu</option>
-                    </select>
-                    <x-input-error :messages="$errors->get('religion')" class="mt-2" />
-                </div>
-
-                <!-- Status Perkawinan -->
-                <div>
-                    <label for="marital_status" class="block text-xs font-semibold text-gray-700 mb-2">Status Perkawinan
-                        *</label>
-                    <select wire:model="marital_status" id="marital_status"
-                        class="w-full px-4 py-3 bg-white border-0 rounded-xl text-gray-700 text-sm focus:ring-2 focus:ring-primary-400 transition shadow-sm">
-                        <option value="">Pilih Status</option>
-                        <option value="Belum Kawin">Belum Kawin</option>
-                        <option value="Kawin">Kawin</option>
-                        <option value="Cerai Hidup">Cerai Hidup</option>
-                        <option value="Cerai Mati">Cerai Mati</option>
-                    </select>
-                    <x-input-error :messages="$errors->get('marital_status')" class="mt-2" />
-                </div>
-
-                <!-- Pekerjaan -->
-                <div>
-                    <label for="occupation" class="block text-xs font-semibold text-gray-700 mb-2">Pekerjaan *</label>
-                    <input wire:model="occupation" id="occupation" type="text" placeholder="Contoh: Karyawan Swasta"
-                        class="w-full px-4 py-3 bg-white border-0 rounded-xl text-gray-700 text-sm placeholder-gray-400 focus:ring-2 focus:ring-primary-400 transition shadow-sm">
-                    <x-input-error :messages="$errors->get('occupation')" class="mt-2" />
-                </div>
+                <!-- Agama, Status Perkawinan, dan Pekerjaan dihapus sesuai permintaan -->
 
             </div>
 
