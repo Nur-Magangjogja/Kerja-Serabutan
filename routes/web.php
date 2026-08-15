@@ -67,7 +67,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/chat/{help?}', \App\Livewire\Customer\Chat::class)->name('chat');
 
         // Ratings (customer receives ratings from mitra)
-        Route::get('/ratings', \App\Http\Livewire\Customer\Ratings\Index::class)->name('ratings');
+        Route::get('/ratings', \App\Livewire\Customer\Ratings\Index::class)->name('ratings');
 
         // Help & Support
         Route::view('/help-support', 'customer.help-support')->name('help-support');

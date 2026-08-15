@@ -393,4 +393,20 @@ class TopupController extends Controller
 
         return view('topup.success', ['transaction' => $transaction, 'order_id' => $orderId]);
     }
+
+    /**
+     * Handle unfinish/canceled payment from Midtrans
+     */
+    public function unfinish(Request $request)
+    {
+        return redirect()->route('customer.topup')->with('status', 'Pembayaran belum diselesaikan. Anda dapat mencobanya kembali.');
+    }
+
+    /**
+     * Handle payment error from Midtrans
+     */
+    public function error(Request $request)
+    {
+        return redirect()->route('customer.topup')->with('error', 'Terjadi kesalahan saat memproses pembayaran. Silakan coba kembali.');
+    }
 }
