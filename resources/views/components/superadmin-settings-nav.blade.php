@@ -7,6 +7,15 @@
 
     <!-- Sub-navigation Tabs -->
     <div class="flex flex-wrap items-center gap-2 p-1.5 bg-gray-200/70 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 max-w-fit shadow-sm">
+        <!-- Tab: Identitas Aplikasi -->
+        <a href="{{ route('superadmin.settings.identity') }}"
+            class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 {{ request()->routeIs('superadmin.settings.identity*') ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-300/50 dark:hover:bg-gray-700/50' }}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <span>Identitas Aplikasi</span>
+        </a>
+
         <!-- Tab: Tema Tampilan -->
         <a href="{{ route('superadmin.settings.appearance') }}"
             class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 {{ request()->routeIs('superadmin.settings.appearance') ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-300/50 dark:hover:bg-gray-700/50' }}">

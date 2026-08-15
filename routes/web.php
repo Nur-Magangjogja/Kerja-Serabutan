@@ -216,6 +216,8 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
     // Moderasi Bantuan page removed for SuperAdmin
     Route::get('/helps/approved', \App\Livewire\SuperAdmin\HelpsApproved::class)->name('helps.approved');
     // Verifikasi KTP page removed for SuperAdmin
+    // Identity settings (app name & logo) - SuperAdmin only
+    Route::get('/settings/identity', \App\Livewire\SuperAdmin\Settings\IdentitySettings::class)->name('settings.identity');
     // Help settings (minimum nominal and admin fee)
     Route::get('/settings/help', \App\Livewire\SuperAdmin\Settings\HelpSettings::class)->name('settings.help');
     // Banners management for dashboards

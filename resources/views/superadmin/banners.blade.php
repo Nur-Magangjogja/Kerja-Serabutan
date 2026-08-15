@@ -9,9 +9,9 @@
         <x-superadmin-settings-nav />
     </div>
 
-    <div class="bg-white shadow-sm border-b border-gray-200 mb-6">
+    <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 mb-6">
         <div class="px-6 py-4">
-            <p class="text-sm text-gray-600">Kelola banner yang tampil di dashboard Customer dan Mitra. Anda
+            <p class="text-sm text-gray-600 dark:text-gray-400">Kelola banner yang tampil di dashboard Customer dan Mitra. Anda
                 dapat menambah lebih dari satu banner untuk setiap tipe.</p>
         </div>
     </div>
@@ -19,19 +19,19 @@
     <div class="py-4">
         <!-- Modal Notifikasi Success -->
         @if (session('message'))
-            <div id="success-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
+            <div id="success-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 border border-gray-200 dark:border-gray-700 transform transition-all">
                     <div class="p-6">
                         <div class="flex items-center gap-4">
-                            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M5 13l4 4L19 7" />
                                 </svg>
                             </div>
                             <div class="flex-1">
-                                <h3 class="text-lg font-semibold text-gray-900">Berhasil!</h3>
-                                <p class="text-sm text-gray-600 mt-1">{{ session('message') }}</p>
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Berhasil!</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ session('message') }}</p>
                             </div>
                         </div>
                         <div class="mt-6 flex justify-end">
@@ -47,19 +47,19 @@
 
         <!-- Modal Notifikasi Info -->
         @if (session('info'))
-            <div id="info-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
+            <div id="info-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 border border-gray-200 dark:border-gray-700 transform transition-all">
                     <div class="p-6">
                         <div class="flex items-center gap-4">
-                            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
-                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M13 16h-1v-4h-1m1-4h.01" />
                                 </svg>
                             </div>
                             <div class="flex-1">
-                                <h3 class="text-lg font-semibold text-gray-900">Info</h3>
-                                <p class="text-sm text-gray-600 mt-1">{{ session('info') }}</p>
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Info</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ session('info') }}</p>
                             </div>
                         </div>
                         <div class="mt-6 flex justify-end">
@@ -75,19 +75,19 @@
 
         <!-- Modal Notifikasi Error -->
         @if (session('error'))
-            <div id="error-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
+            <div id="error-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 border border-gray-200 dark:border-gray-700 transform transition-all">
                     <div class="p-6">
                         <div class="flex items-center gap-4">
-                            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </div>
                             <div class="flex-1">
-                                <h3 class="text-lg font-semibold text-gray-900">Terjadi Kesalahan</h3>
-                                <p class="text-sm text-gray-600 mt-1">{{ session('error') }}</p>
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Terjadi Kesalahan</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ session('error') }}</p>
                             </div>
                         </div>
                         <div class="mt-6 flex justify-end">
@@ -103,55 +103,55 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Customer Banner Section -->
-            <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-                <h2 class="text-lg font-semibold mb-3">Banner Customer</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Banner Customer</h2>
 
                 <div class="mb-4">
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                         @forelse($customerBanners as $i => $b)
-                            <div class="relative rounded-lg overflow-hidden border border-gray-100">
+                            <div class="relative rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700">
                                 <img src="{{ asset('storage/' . $b) }}" alt="banner-{{ $i }}"
                                     class="w-full h-32 object-cover">
                                 <button wire:click="removeCustomer({{ $i }})" type="button"
-                                    class="absolute top-2 right-2 bg-white/90 rounded-full p-1 hover:bg-red-50"
+                                    class="absolute top-2 right-2 bg-white/90 dark:bg-gray-800/90 rounded-full p-1 hover:bg-red-50 dark:hover:bg-red-950/50"
                                     title="Hapus">
-                                    <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </button>
                             </div>
                         @empty
-                            <div class="col-span-full text-sm text-gray-500">Belum ada banner untuk customer.</div>
+                            <div class="col-span-full text-sm text-gray-500 dark:text-gray-400">Belum ada banner untuk customer.</div>
                         @endforelse
                     </div>
                 </div>
 
                 <div class="space-y-4">
-                    <label class="block text-sm font-medium text-gray-700">Upload banner (bisa pilih beberapa)</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Upload banner (bisa pilih beberapa)</label>
 
                     <!-- Drag & Drop Zone -->
                     <div id="customer-dropzone"
-                        class="relative border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary-400 transition-colors bg-gray-50 hover:bg-gray-100 cursor-pointer">
+                        class="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-primary-400 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
                         <input type="file" id="customer-file-input" wire:model="customerUploads" accept="image/*"
                             multiple class="hidden" />
                         <div class="space-y-2">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none"
+                            <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" stroke="currentColor" fill="none"
                                 viewBox="0 0 48 48">
                                 <path
                                     d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
-                            <div class="text-sm text-gray-600">
-                                <span class="font-semibold text-primary-600 hover:text-primary-700">Klik untuk
+                            <div class="text-sm text-gray-600 dark:text-gray-300">
+                                <span class="font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700">Klik untuk
                                     upload</span>
                                 <span> atau drag & drop</span>
                             </div>
-                            <p class="text-xs text-gray-500">PNG, JPG, JPEG hingga 10MB</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, JPEG hingga 10MB</p>
                         </div>
                     </div>
 
-                    @error('customerUploads.*') <div class="text-sm text-red-600">{{ $message }}</div> @enderror
+                    @error('customerUploads.*') <div class="text-sm text-red-600 dark:text-red-400">{{ $message }}</div> @enderror
 
                     <!-- Preview Upload -->
                     <div wire:ignore id="customer-preview-uploads"
@@ -163,7 +163,7 @@
                             Unggah & Simpan
                         </button>
                         <button wire:ignore id="customer-clear-preview"
-                            class="hidden px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">
+                            class="hidden px-6 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors">
                             Batal
                         </button>
                     </div>
@@ -171,55 +171,55 @@
             </div>
 
             <!-- Mitra Banner Section -->
-            <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-                <h2 class="text-lg font-semibold mb-3">Banner Mitra</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Banner Mitra</h2>
 
                 <div class="mb-4">
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                         @forelse($mitraBanners as $i => $b)
-                            <div class="relative rounded-lg overflow-hidden border border-gray-100">
+                            <div class="relative rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700">
                                 <img src="{{ asset('storage/' . $b) }}" alt="banner-mitra-{{ $i }}"
                                     class="w-full h-32 object-cover">
                                 <button wire:click="removeMitra({{ $i }})" type="button"
-                                    class="absolute top-2 right-2 bg-white/90 rounded-full p-1 hover:bg-red-50"
+                                    class="absolute top-2 right-2 bg-white/90 dark:bg-gray-800/90 rounded-full p-1 hover:bg-red-50 dark:hover:bg-red-950/50"
                                     title="Hapus">
-                                    <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </button>
                             </div>
                         @empty
-                            <div class="col-span-full text-sm text-gray-500">Belum ada banner untuk mitra.</div>
+                            <div class="col-span-full text-sm text-gray-500 dark:text-gray-400">Belum ada banner untuk mitra.</div>
                         @endforelse
                     </div>
                 </div>
 
                 <div class="space-y-4">
-                    <label class="block text-sm font-medium text-gray-700">Upload banner (bisa pilih beberapa)</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Upload banner (bisa pilih beberapa)</label>
 
                     <!-- Drag & Drop Zone -->
                     <div id="mitra-dropzone"
-                        class="relative border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary-400 transition-colors bg-gray-50 hover:bg-gray-100 cursor-pointer">
+                        class="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-primary-400 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
                         <input type="file" id="mitra-file-input" wire:model="mitraUploads" accept="image/*" multiple
                             class="hidden" />
                         <div class="space-y-2">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none"
+                            <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" stroke="currentColor" fill="none"
                                 viewBox="0 0 48 48">
                                 <path
                                     d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
-                            <div class="text-sm text-gray-600">
-                                <span class="font-semibold text-primary-600 hover:text-primary-700">Klik untuk
+                            <div class="text-sm text-gray-600 dark:text-gray-300">
+                                <span class="font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700">Klik untuk
                                     upload</span>
                                 <span> atau drag & drop</span>
                             </div>
-                            <p class="text-xs text-gray-500">PNG, JPG, JPEG hingga 10MB</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, JPEG hingga 10MB</p>
                         </div>
                     </div>
 
-                    @error('mitraUploads.*') <div class="text-sm text-red-600">{{ $message }}</div> @enderror
+                    @error('mitraUploads.*') <div class="text-sm text-red-600 dark:text-red-400">{{ $message }}</div> @enderror
 
                     <!-- Preview Upload -->
                     <div wire:ignore id="mitra-preview-uploads"
@@ -231,7 +231,7 @@
                             Unggah & Simpan
                         </button>
                         <button wire:ignore id="mitra-clear-preview"
-                            class="hidden px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">
+                            class="hidden px-6 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors">
                             Batal
                         </button>
                     </div>
@@ -242,66 +242,66 @@
 
     <!-- Home Banner Section -->
     <div class="px-8 py-6">
-        <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-            <h2 class="text-lg font-semibold mb-3">Banner Beranda</h2>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Banner Beranda</h2>
 
             <div class="mb-4">
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                     @forelse($homeBanners as $i => $b)
-                        <div class="relative rounded-lg overflow-hidden border border-gray-100">
+                        <div class="relative rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700">
                             <img src="{{ asset('storage/' . $b) }}" alt="banner-home-{{ $i }}" class="w-full h-32 object-cover">
-                            <button wire:click="removeHome({{ $i }})" type="button" class="absolute top-2 right-2 bg-white/90 rounded-full p-1 hover:bg-red-50" title="Hapus">
-                                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button wire:click="removeHome({{ $i }})" type="button" class="absolute top-2 right-2 bg-white/90 dark:bg-gray-800/90 rounded-full p-1 hover:bg-red-50 dark:hover:bg-red-950/50" title="Hapus">
+                                <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
                     @empty
-                        <div class="col-span-full text-sm text-gray-500">Belum ada banner untuk beranda.</div>
+                        <div class="col-span-full text-sm text-gray-500 dark:text-gray-400">Belum ada banner untuk beranda.</div>
                     @endforelse
                 </div>
             </div>
 
             <div class="space-y-4">
-                <label class="block text-sm font-medium text-gray-700">Upload banner Beranda (bisa pilih beberapa)</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Upload banner Beranda (bisa pilih beberapa)</label>
 
-                <div id="home-dropzone" class="relative border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary-400 transition-colors bg-gray-50 hover:bg-gray-100 cursor-pointer">
+                <div id="home-dropzone" class="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-primary-400 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
                     <input type="file" id="home-file-input" wire:model="homeUploads" accept="image/*" multiple class="hidden" />
                     <div class="space-y-2">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                        <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                             <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
-                        <div class="text-sm text-gray-600">
-                            <span class="font-semibold text-primary-600 hover:text-primary-700">Klik untuk upload</span>
+                        <div class="text-sm text-gray-600 dark:text-gray-300">
+                            <span class="font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700">Klik untuk upload</span>
                             <span> atau drag & drop</span>
                         </div>
-                        <p class="text-xs text-gray-500">PNG, JPG, JPEG hingga 10MB</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, JPEG hingga 10MB</p>
                     </div>
                 </div>
 
-                @error('homeUploads.*') <div class="text-sm text-red-600">{{ $message }}</div> @enderror
+                @error('homeUploads.*') <div class="text-sm text-red-600 dark:text-red-400">{{ $message }}</div> @enderror
 
                 <div wire:ignore id="home-preview-uploads" class="hidden grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-4"></div>
 
                 <div class="flex items-center gap-2">
                     <button id="home-save-btn" wire:click.prevent="save" class="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors shadow-sm">Unggah & Simpan</button>
-                    <button wire:ignore id="home-clear-preview" class="hidden px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">Batal</button>
+                    <button wire:ignore id="home-clear-preview" class="hidden px-6 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors">Batal</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Preview Section -->
-    <div class="px-8 py-8 bg-gradient-to-b from-gray-50 to-white border-t border-gray-200 mt-6">
+    <div class="px-8 py-8 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 mt-6">
         <div class="mb-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">Preview Tampilan Dashboard</h2>
-            <p class="text-sm text-gray-600">Lihat bagaimana banner akan tampil di dashboard Customer dan Mitra secara
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Preview Tampilan Dashboard</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Lihat bagaimana banner akan tampil di dashboard Customer dan Mitra secara
                 real-time</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Preview Customer -->
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-5 py-4">
                     <h3 class="text-base font-semibold text-white flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -313,7 +313,7 @@
                 </div>
                 <div class="p-5">
                     <div id="customer-preview"
-                        class="h-52 bg-gradient-to-br from-gray-100 to-gray-50 rounded-xl overflow-hidden shadow-inner border border-gray-200 relative group">
+                        class="h-52 bg-gray-100 dark:bg-gray-900/90 rounded-xl overflow-hidden shadow-inner border border-gray-200 dark:border-gray-700 relative group">
                         @if(!empty($customerBanners) && count($customerBanners))
                             <div id="customerSlider" class="w-full h-full overflow-hidden">
                                 <div class="customer-slides flex h-full will-change-transform"
@@ -326,16 +326,16 @@
                                     @endforeach
                                 </div>
                                 <button type="button" data-role="prev" data-target="customer"
-                                    class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/95 backdrop-blur-sm rounded-full p-2.5 shadow-lg hover:bg-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 pointer-events-auto z-50">
-                                    <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor"
+                                    class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-full p-2.5 shadow-lg hover:bg-white dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 pointer-events-auto z-50">
+                                    <svg class="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M15 19l-7-7 7-7" />
                                     </svg>
                                 </button>
                                 <button type="button" data-role="next" data-target="customer"
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/95 backdrop-blur-sm rounded-full p-2.5 shadow-lg hover:bg-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 pointer-events-auto z-50">
-                                    <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-full p-2.5 shadow-lg hover:bg-white dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 pointer-events-auto z-50">
+                                    <svg class="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M9 5l7 7-7 7" />
@@ -357,30 +357,30 @@
                             </div>
                         @else
                             <div class="h-full flex flex-col items-center justify-center text-center px-6">
-                                <svg class="w-16 h-16 text-gray-300 mb-3" fill="none" stroke="currentColor"
+                                <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                         d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
-                                <p class="text-sm text-gray-500 font-medium">Tidak ada banner untuk Customer</p>
-                                <p class="text-xs text-gray-400 mt-1">Sistem akan menampilkan carousel default</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-300 font-medium">Tidak ada banner untuk Customer</p>
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Sistem akan menampilkan carousel default</p>
                             </div>
                         @endif
                     </div>
-                    <div class="mt-4 flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg p-3">
-                        <svg class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor"
+                    <div class="mt-4 flex items-start gap-2 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50 rounded-lg p-3">
+                        <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <p class="text-xs text-blue-700 leading-relaxed">Banner akan berganti otomatis setiap 3.5 detik.
+                        <p class="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">Banner akan berganti otomatis setiap 3.5 detik.
                             Hover untuk jeda, klik panah untuk navigasi manual.</p>
                     </div>
                 </div>
             </div>
 
             <!-- Preview Mitra -->
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div class="bg-gradient-to-r from-green-500 to-green-600 px-5 py-4">
                     <h3 class="text-base font-semibold text-white flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -392,7 +392,7 @@
                 </div>
                 <div class="p-5">
                     <div id="mitra-preview"
-                        class="h-52 bg-gradient-to-br from-gray-100 to-gray-50 rounded-xl overflow-hidden shadow-inner border border-gray-200 relative group">
+                        class="h-52 bg-gray-100 dark:bg-gray-900/90 rounded-xl overflow-hidden shadow-inner border border-gray-200 dark:border-gray-700 relative group">
                         @if(!empty($mitraBanners) && count($mitraBanners))
                             <div id="mitraSlider" class="w-full h-full overflow-hidden">
                                 <div class="mitra-slides flex h-full will-change-transform"
@@ -405,16 +405,16 @@
                                     @endforeach
                                 </div>
                                 <button type="button" data-role="prev" data-target="mitra"
-                                    class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/95 backdrop-blur-sm rounded-full p-2.5 shadow-lg hover:bg-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 pointer-events-auto z-50">
-                                    <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor"
+                                    class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-full p-2.5 shadow-lg hover:bg-white dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 pointer-events-auto z-50">
+                                    <svg class="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M15 19l-7-7 7-7" />
                                     </svg>
                                 </button>
                                 <button type="button" data-role="next" data-target="mitra"
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/95 backdrop-blur-sm rounded-full p-2.5 shadow-lg hover:bg-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 pointer-events-auto z-50">
-                                    <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-full p-2.5 shadow-lg hover:bg-white dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 pointer-events-auto z-50">
+                                    <svg class="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M9 5l7 7-7 7" />
@@ -436,23 +436,23 @@
                             </div>
                         @else
                             <div class="h-full flex flex-col items-center justify-center text-center px-6">
-                                <svg class="w-16 h-16 text-gray-300 mb-3" fill="none" stroke="currentColor"
+                                <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                         d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
-                                <p class="text-sm text-gray-500 font-medium">Tidak ada banner untuk Mitra</p>
-                                <p class="text-xs text-gray-400 mt-1">Sistem akan menampilkan carousel default</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-300 font-medium">Tidak ada banner untuk Mitra</p>
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Sistem akan menampilkan carousel default</p>
                             </div>
                         @endif
                     </div>
-                    <div class="mt-4 flex items-start gap-2 bg-green-50 border border-green-100 rounded-lg p-3">
-                        <svg class="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor"
+                    <div class="mt-4 flex items-start gap-2 bg-green-50 dark:bg-emerald-950/40 border border-green-100 dark:border-emerald-900/50 rounded-lg p-3">
+                        <svg class="w-4 h-4 text-green-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <p class="text-xs text-green-700 leading-relaxed">Banner akan berganti otomatis setiap 3.5
+                        <p class="text-xs text-green-700 dark:text-emerald-300 leading-relaxed">Banner akan berganti otomatis setiap 3.5
                             detik. Hover untuk jeda, klik panah untuk navigasi manual.</p>
                     </div>
                 </div>
