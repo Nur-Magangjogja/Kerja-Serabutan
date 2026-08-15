@@ -1,4 +1,4 @@
-<div wire:poll.7s="loadData" class="mb-6">
+<div wire:poll.15s.visible="loadData" class="mb-6">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
             <p class="text-xs text-gray-500">Mitra Aktif</p>

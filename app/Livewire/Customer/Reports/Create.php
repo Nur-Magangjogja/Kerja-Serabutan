@@ -129,8 +129,8 @@ class Create extends Component
 
     public function render()
     {
-        $helps = auth()->user()->helps()->whereIn('status', ['active', 'completed'])->get();
-        $mitras = User::where('role', 'mitra')->get();
+        $helps = auth()->user()->helps()->whereIn('status', ['active', 'completed'])->select('id', 'title', 'status', 'mitra_id')->latest()->limit(50)->get();
+        $mitras = User::where('role', 'mitra')->select('id', 'name', 'email')->limit(100)->get();
 
         return view('livewire.customer.reports.create', [
             'helps' => $helps,

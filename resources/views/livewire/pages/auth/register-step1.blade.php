@@ -265,7 +265,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 <!-- NIK -->
                 <div>
                     <label for="nik" class="block text-xs font-semibold text-gray-700 mb-2">NIK *</label>
-                    <input wire:model.live="nik" id="nik" type="text" maxlength="16" placeholder="16 digit NIK"
+                    <input wire:model.live.debounce.500ms="nik" id="nik" type="text" maxlength="16" placeholder="16 digit NIK"
                         oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                         class="w-full px-4 py-3 bg-white border-0 rounded-xl text-gray-700 text-sm placeholder-gray-400 focus:ring-2 focus:ring-primary-400 transition shadow-sm">
                     <p class="text-xs text-gray-500 mt-1">{{ strlen($nik) }}/16 digit</p>

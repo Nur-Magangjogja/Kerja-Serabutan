@@ -4,7 +4,7 @@
 @endphp
 
 <div x-data="approvalModal()" @confirm-approve.window="openFromEvent($event)">
-    <div wire:poll.10s>
+    <div wire:poll.15s.visible>
         <!-- Header Section -->
         <div class="mb-6">
             <div class="flex items-center justify-between">

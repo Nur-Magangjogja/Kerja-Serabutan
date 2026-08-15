@@ -1,4 +1,4 @@
-<div wire:poll.3s="poll"></div>
+<div wire:poll.15s.visible="poll"></div>
 
 <script>
 	document.addEventListener('livewire:init', () => {

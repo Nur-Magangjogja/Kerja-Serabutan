@@ -1,5 +1,5 @@
     <div class="min-h-screen bg-gray-50" 
-    wire:poll.5s="loadHelp"
+    wire:poll.10s.visible="loadHelp"
     x-data="{ 
         showNotification: false, 
         notificationMessage: '',

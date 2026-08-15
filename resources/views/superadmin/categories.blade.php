@@ -28,7 +28,7 @@
                     </svg>
                     Cari Kategori
                 </label>
-                <input type="text" wire:model.live="search" placeholder="Cari nama atau deskripsi kategori..."
+                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama atau deskripsi kategori..."
                     class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
             </div>
 

@@ -64,7 +64,7 @@
                     $colorClass = 'text-green-600';
                 }
             @endphp
-            <p class="text-sm font-bold {{ $colorClass }}" wire:poll.2s>{{ $distanceText }}</p>
+            <p class="text-sm font-bold {{ $colorClass }}" wire:poll.5s.visible>{{ $distanceText }}</p>
         </div>
     </div>
 
