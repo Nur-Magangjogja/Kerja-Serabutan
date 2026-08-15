@@ -113,7 +113,7 @@ class AttendanceLogs extends Component
             })->count(),
         ];
 
-        return view('livewire.super-admin.attendance-logs', [
+        return view('livewire.superadmin.attendance-logs', [
             'logs' => $logs,
             'stats' => $stats,
         ]);

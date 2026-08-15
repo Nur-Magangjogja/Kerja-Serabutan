@@ -109,7 +109,7 @@ class ActivityLogs extends Component
             'mitra_logs' => PartnerActivity::whereHas('user', function ($q) { $q->where('role', 'mitra'); })->count(),
         ];
 
-        return view('livewire.super-admin.activity-logs', [
+        return view('livewire.superadmin.activity-logs', [
             'logs' => $logs,
             'actions' => $actions,
             'stats' => $stats,

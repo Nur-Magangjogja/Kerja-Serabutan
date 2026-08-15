@@ -54,6 +54,6 @@ class NotificationDropdown extends Component
 
     public function render()
     {
-        return view('livewire.super-admin.notification-dropdown');
+        return view('livewire.superadmin.notification-dropdown');
     }
 }

@@ -196,7 +196,7 @@
 
                     <div class="flex items-center gap-3">
                         <!-- Notifications Dropdown -->
-                        <livewire:super-admin.notification-dropdown />
+                        <livewire:superadmin.notification-dropdown />
 
                         <!-- User Profile -->
                         <div class="flex items-center gap-3">

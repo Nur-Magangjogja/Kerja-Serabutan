@@ -13,7 +13,7 @@
     <div class="px-6 py-6">
         <div class="w-full">
             <div class="bg-white rounded-2xl shadow-md p-4 border border-gray-200 w-full">
-                <livewire:super-admin.transactions-log />
+                <livewire:superadmin.transactions-log />
             </div>
         </div>
     </div>

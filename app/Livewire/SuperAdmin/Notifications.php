@@ -65,7 +65,7 @@ class Notifications extends Component
         $notifications = $query->paginate($this->perPage);
         $unreadCount = Auth::user()->unreadNotifications()->count();
 
-        return view('livewire.super-admin.notifications', [
+        return view('livewire.superadmin.notifications', [
             'notifications' => $notifications,
             'unreadCount' => $unreadCount,
         ]);
