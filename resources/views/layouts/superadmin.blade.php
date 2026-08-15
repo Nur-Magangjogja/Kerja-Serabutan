@@ -7,10 +7,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Super Admin Panel' }} - sayabantu</title>
 
-    <!-- Theme Initialization Script (Anti-FOUC & Global Theme Controller) -->
+    <!-- Flowbite & Global Theme Initialization Script (Anti-FOUC) -->
     <script>
         window.getTheme = function() {
-            return localStorage.getItem('theme') || 'system';
+            return localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
         };
 
         window.applyTheme = function(mode) {
@@ -29,17 +29,18 @@
 
         window.setTheme = function(mode) {
             localStorage.setItem('theme', mode);
+            localStorage.setItem('color-theme', mode);
             window.applyTheme(mode);
         };
 
-        // Execute immediately to set dark class before render
+        // Execute immediately to set dark class before DOM render (Flowbite compatible)
         window.applyTheme();
 
         window.updateChartDefaults = function() {
             if (window.Chart) {
                 const isDark = document.documentElement.classList.contains('dark');
-                Chart.defaults.color = isDark ? '#94a3b8' : '#64748b';
-                Chart.defaults.borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.06)';
+                Chart.defaults.color = isDark ? '#9ca3af' : '#64748b';
+                Chart.defaults.borderColor = isDark ? '#374151' : 'rgba(15, 23, 42, 0.06)';
             }
         };
 
@@ -52,7 +53,7 @@
         });
 
         if (window.matchMedia) {
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
                 if (window.getTheme() === 'system') {
                     window.applyTheme('system');
                 }
@@ -302,6 +303,15 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof initFlowbite === 'function') initFlowbite();
+        });
+        document.addEventListener('livewire:navigated', () => {
+            if (typeof initFlowbite === 'function') initFlowbite();
+        });
+    </script>
     @livewireScripts
     @stack('scripts')
 </body>

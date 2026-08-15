@@ -61,46 +61,46 @@
     }
 
     html.dark .custom-scrollbar {
-        scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+        scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
     }
 
     html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(148, 163, 184, 0.3);
+        background: rgba(156, 163, 175, 0.3);
     }
 
     html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(148, 163, 184, 0.6);
+        background: rgba(156, 163, 175, 0.6);
     }
 }
 
 /* ==========================================================================
-   Comprehensive Dark Mode Styles for Admin & SuperAdmin Panels
+   Flowbite Standard Dark Mode Styles for SuperAdmin & Admin Panels
    ========================================================================== */
 html.dark {
     color-scheme: dark;
 }
 
 html.dark body {
-    background-color: #0f172a; /* slate-900 */
-    color: #f1f5f9; /* slate-100 */
+    background-color: #111827; /* Flowbite gray-900 */
+    color: #f9fafb; /* Flowbite gray-50 */
 }
 
 /* Admin / Superadmin Main Background */
 html.dark main {
-    background-color: #0f172a;
-    color: #f1f5f9;
+    background-color: #111827; /* Flowbite gray-900 */
+    color: #f9fafb;
 }
 
 /* Cards & Containers in Dark Mode */
 html.dark main .bg-white,
 html.dark aside.bg-white,
 html.dark nav.bg-white {
-    background-color: #1e293b; /* slate-800 */
+    background-color: #1f2937; /* Flowbite gray-800 */
 }
 
 html.dark main .bg-gray-50,
 html.dark main .bg-gray-100 {
-    background-color: #0f172a; /* slate-900 */
+    background-color: #111827; /* Flowbite gray-900 */
 }
 
 /* Borders & Dividers in Dark Mode */
@@ -108,38 +108,40 @@ html.dark main .border-gray-100,
 html.dark main .border-gray-200,
 html.dark main .border-gray-300,
 html.dark aside .border-gray-200,
+html.dark aside .border-gray-700,
 html.dark nav .border-gray-200 {
-    border-color: #334155; /* slate-700 */
+    border-color: #374151; /* Flowbite gray-700 */
 }
 
 html.dark main .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
 html.dark main .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
 html.dark main .divide-y > :not([hidden]) ~ :not([hidden]) {
-    border-color: #334155;
+    border-color: #374151;
 }
 
 /* Typography in Dark Mode */
 html.dark main .text-gray-900,
 html.dark main .text-gray-800,
 html.dark aside .text-gray-900,
+html.dark aside .text-gray-800,
 html.dark nav .text-gray-900,
 html.dark nav .text-gray-800 {
-    color: #f8fafc; /* slate-50 */
+    color: #ffffff; /* Flowbite text-white */
 }
 
 html.dark main .text-gray-700,
 html.dark main .text-gray-600,
 html.dark aside .text-gray-700 {
-    color: #cbd5e1; /* slate-300 */
+    color: #d1d5db; /* Flowbite gray-300 */
 }
 
 html.dark main .text-gray-500,
 html.dark main .text-gray-400,
 html.dark aside .text-gray-500 {
-    color: #94a3b8; /* slate-400 */
+    color: #9ca3af; /* Flowbite gray-400 */
 }
 
-/* Form Inputs & Selects in Dark Mode */
+/* Form Inputs & Selects in Flowbite Dark Mode */
 html.dark main input[type="text"],
 html.dark main input[type="email"],
 html.dark main input[type="password"],
@@ -147,50 +149,54 @@ html.dark main input[type="number"],
 html.dark main input[type="date"],
 html.dark main input[type="search"],
 html.dark main select,
-html.dark main textarea {
-    background-color: #0f172a;
-    border-color: #334155;
-    color: #f8fafc;
+html.dark main textarea,
+html.dark input.bg-gray-50,
+html.dark select.bg-gray-50,
+html.dark textarea.bg-gray-50 {
+    background-color: #374151 !important; /* Flowbite gray-700 */
+    border-color: #4b5563 !important; /* Flowbite gray-600 */
+    color: #ffffff !important;
 }
 
 html.dark main input::placeholder,
 html.dark main textarea::placeholder {
-    color: #64748b;
+    color: #9ca3af !important; /* Flowbite gray-400 */
 }
 
-/* Tables in Dark Mode */
+/* Flowbite Tables in Dark Mode */
 html.dark main table {
-    color: #f1f5f9;
+    color: #d1d5db;
 }
 
 html.dark main table thead,
 html.dark main table thead tr,
 html.dark main table thead th {
-    background-color: #0f172a;
-    color: #94a3b8;
-    border-color: #334155;
+    background-color: #374151; /* Flowbite gray-700 */
+    color: #9ca3af; /* Flowbite gray-400 */
+    border-color: #4b5563;
 }
 
 html.dark main table tbody,
 html.dark main table tbody tr {
-    background-color: #1e293b;
-    color: #f1f5f9;
-    border-color: #334155;
+    background-color: #1f2937; /* Flowbite gray-800 */
+    color: #d1d5db;
+    border-color: #374151;
 }
 
 html.dark main table tbody tr:hover,
 html.dark main tr.hover\:bg-gray-50:hover,
 html.dark main tr:hover {
-    background-color: #334155 !important;
+    background-color: #374151 !important; /* Flowbite gray-700 */
 }
 
 html.dark main table td {
-    color: #cbd5e1;
-    border-color: #334155;
+    color: #d1d5db;
+    border-color: #374151;
 }
 
-html.dark main table td .text-gray-900 {
-    color: #f8fafc;
+html.dark main table td .text-gray-900,
+html.dark main table td strong {
+    color: #ffffff;
 }
 
 /* ==========================================================================
@@ -207,83 +213,83 @@ html.dark .group:hover.hover\:bg-gray-50,
 html.dark .group:hover .group-hover\:bg-gray-50,
 html.dark .group:hover .group-hover\:bg-gray-100,
 html.dark .group:hover .group-hover\:bg-white {
-    background-color: #334155 !important;
-    border-color: #475569 !important;
+    background-color: #374151 !important; /* Flowbite gray-700 */
+    border-color: #4b5563 !important;
 }
 
 html.dark .hover\:bg-gray-50:hover *,
 html.dark .hover\:bg-gray-100:hover *,
 html.dark .hover\:bg-white:hover * {
-    color: #f8fafc !important;
+    color: #ffffff !important;
 }
 
 /* ==========================================================================
-   Dark Mode Gradient & Colored Cards Overrides
+   Dark Mode Flowbite Colored Cards, Badges, Modals & Dropdowns
    ========================================================================== */
 html.dark .from-blue-50,
 html.dark .from-blue-100,
 html.dark .from-primary-50,
 html.dark .from-primary-100 {
-    --tw-gradient-from: #172554 !important; /* blue-950 */
+    --tw-gradient-from: #1e3a8a !important; /* blue-900 */
 }
 html.dark .to-blue-100,
 html.dark .to-blue-200,
 html.dark .to-primary-100,
 html.dark .to-primary-200 {
-    --tw-gradient-to: #1e293b !important; /* slate-800 */
+    --tw-gradient-to: #1f2937 !important; /* gray-800 */
 }
 
 html.dark .from-green-50,
 html.dark .from-green-100,
 html.dark .from-emerald-50,
 html.dark .from-emerald-100 {
-    --tw-gradient-from: #052e16 !important; /* green-950 */
+    --tw-gradient-from: #064e3b !important; /* emerald-900 */
 }
 html.dark .to-green-100,
 html.dark .to-green-200,
 html.dark .to-emerald-100,
 html.dark .to-emerald-200 {
-    --tw-gradient-to: #1e293b !important; /* slate-800 */
+    --tw-gradient-to: #1f2937 !important;
 }
 
 html.dark .from-amber-50,
 html.dark .from-amber-100,
 html.dark .from-yellow-50,
 html.dark .from-yellow-100 {
-    --tw-gradient-from: #451a03 !important; /* amber-950 */
+    --tw-gradient-from: #78350f !important; /* amber-900 */
 }
 html.dark .to-amber-100,
 html.dark .to-amber-200,
 html.dark .to-yellow-100,
 html.dark .to-yellow-200 {
-    --tw-gradient-to: #1e293b !important;
+    --tw-gradient-to: #1f2937 !important;
 }
 
 html.dark .from-indigo-50,
 html.dark .from-indigo-100 {
-    --tw-gradient-from: #1e1b4b !important;
+    --tw-gradient-from: #312e81 !important;
 }
 html.dark .to-indigo-100,
 html.dark .to-indigo-200 {
-    --tw-gradient-to: #1e293b !important;
+    --tw-gradient-to: #1f2937 !important;
 }
 
 /* Card Borders in Dark Mode */
 html.dark .border-blue-100,
 html.dark .border-blue-200,
 html.dark .border-blue-300 {
-    border-color: #1e3a8a !important; /* blue-900 */
+    border-color: #1e3a8a !important;
 }
 html.dark .border-green-100,
 html.dark .border-green-200,
 html.dark .border-emerald-200 {
-    border-color: #14532d !important; /* green-900 */
+    border-color: #064e3b !important;
 }
 html.dark .border-amber-100,
 html.dark .border-amber-200,
 html.dark .border-yellow-100,
 html.dark .border-yellow-200 {
-    border-color: #78350f !important; /* amber-900 */
+    border-color: #78350f !important;
 }
 
 /* Text Colors in Colored Elements */
@@ -294,7 +300,7 @@ html.dark .text-blue-600 {
 html.dark .text-green-700,
 html.dark .text-emerald-700,
 html.dark .text-green-600 {
-    color: #4ade80 !important;
+    color: #34d399 !important;
 }
 html.dark .text-amber-700,
 html.dark .text-amber-600,
@@ -311,13 +317,13 @@ html.dark .bg-emerald-50,
 html.dark .bg-emerald-100,
 html.dark .bg-green-50,
 html.dark .bg-green-100 {
-    background-color: rgba(16, 185, 129, 0.18);
+    background-color: rgba(16, 185, 129, 0.2);
     color: #34d399;
 }
 
 html.dark .bg-red-50,
 html.dark .bg-red-100 {
-    background-color: rgba(239, 68, 68, 0.18);
+    background-color: rgba(239, 68, 68, 0.2);
     color: #f87171;
 }
 
@@ -325,7 +331,7 @@ html.dark .bg-amber-50,
 html.dark .bg-amber-100,
 html.dark .bg-yellow-50,
 html.dark .bg-yellow-100 {
-    background-color: rgba(245, 158, 11, 0.18);
+    background-color: rgba(245, 158, 11, 0.2);
     color: #fbbf24;
 }
 
@@ -333,16 +339,16 @@ html.dark .bg-blue-50,
 html.dark .bg-blue-100,
 html.dark .bg-primary-50,
 html.dark .bg-primary-100 {
-    background-color: rgba(14, 165, 233, 0.18);
+    background-color: rgba(14, 165, 233, 0.2);
     color: #38bdf8;
 }
 
-/* Pagination */
+/* Flowbite Pagination in Dark Mode */
 html.dark nav[role="navigation"] a,
 html.dark nav[role="navigation"] span {
-    background-color: #1e293b;
-    border-color: #334155;
-    color: #cbd5e1;
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #d1d5db;
 }
 
 html.dark nav[role="navigation"] span[aria-current="page"] span,
@@ -351,10 +357,22 @@ html.dark nav[role="navigation"] span[aria-current="page"] {
     color: #ffffff;
 }
 
-/* Modals */
+/* Flowbite Modals in Dark Mode */
 html.dark [role="dialog"] .bg-white,
-html.dark .modal-content {
-    background-color: #1e293b;
-    color: #f8fafc;
-    border-color: #334155;
+html.dark .modal-content,
+html.dark [data-modal-target],
+html.dark [id*="modal"] .bg-white,
+html.dark [id*="Modal"] .bg-white {
+    background-color: #1f2937 !important; /* Flowbite gray-800 */
+    color: #ffffff;
+    border-color: #374151;
+}
+
+/* Flowbite Dropdown Menus in Dark Mode */
+html.dark [id*="dropdown"] .bg-white,
+html.dark [id*="Dropdown"] .bg-white,
+html.dark .dropdown-menu {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+    color: #d1d5db;
 }

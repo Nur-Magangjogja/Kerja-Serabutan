@@ -7,10 +7,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Admin Panel' }} - sayabantu</title>
 
-    <!-- Theme Initialization Script (Anti-FOUC & Global Theme Controller) -->
+    <!-- Flowbite & Global Theme Initialization Script (Anti-FOUC) -->
     <script>
         window.getTheme = function() {
-            return localStorage.getItem('theme') || 'system';
+            return localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
         };
 
         window.applyTheme = function(mode) {
@@ -29,17 +29,18 @@
 
         window.setTheme = function(mode) {
             localStorage.setItem('theme', mode);
+            localStorage.setItem('color-theme', mode);
             window.applyTheme(mode);
         };
 
-        // Execute immediately to set dark class before render
+        // Execute immediately to set dark class before DOM render (Flowbite compatible)
         window.applyTheme();
 
         window.updateChartDefaults = function() {
             if (window.Chart) {
                 const isDark = document.documentElement.classList.contains('dark');
-                Chart.defaults.color = isDark ? '#94a3b8' : '#64748b';
-                Chart.defaults.borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.06)';
+                Chart.defaults.color = isDark ? '#9ca3af' : '#64748b';
+                Chart.defaults.borderColor = isDark ? '#374151' : 'rgba(15, 23, 42, 0.06)';
             }
         };
 
@@ -52,7 +53,7 @@
         });
 
         if (window.matchMedia) {
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
                 if (window.getTheme() === 'system') {
                     window.applyTheme('system');
                 }
@@ -64,8 +65,8 @@
     @livewireStyles
 </head>
 
-<body class="antialiased bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-200" x-data="{ showLogoutModal: false }" @open-logout-modal.window="showLogoutModal = true">
-    <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex transition-colors duration-200">
+<body class="antialiased bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-200 overflow-x-hidden" x-data="{ showLogoutModal: false }" @open-logout-modal.window="showLogoutModal = true">
+    <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex transition-colors duration-200 overflow-x-hidden">
         <!-- Sidebar -->
         <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg fixed inset-y-0 left-0 flex flex-col z-30 transition-colors duration-200">
             <!-- Brand / Logo (Pinned Top) -->
@@ -181,7 +182,7 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 ml-64 min-h-screen">
+        <main class="flex-1 ml-64 min-h-screen min-w-0 overflow-x-hidden">
             <!-- Topbar -->
             <div class="sticky top-0 z-20 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 transition-colors duration-200">
                 <div class="px-6 py-3 flex items-center justify-between">
@@ -371,6 +372,15 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof initFlowbite === 'function') initFlowbite();
+        });
+        document.addEventListener('livewire:navigated', () => {
+            if (typeof initFlowbite === 'function') initFlowbite();
+        });
+    </script>
     @livewireScripts
     @stack('scripts')
 </body>

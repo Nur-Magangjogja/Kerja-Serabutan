@@ -5,13 +5,13 @@
         // Get current admin's city_id for filtering
         $adminCityId = (auth()->user() && auth()->user()->role === 'admin') ? auth()->user()->city_id : null;
 
-        // Collect stats server-side. Adjust model/column names if your app differs.
+        // Collect stats server-side
         $totalHelps = class_exists(\App\Models\Help::class) ? \App\Models\Help::count() : 0;
         $pendingHelps = class_exists(\App\Models\Help::class) ? \App\Models\Help::where('status', 'pending')->count() : 0;
         $activeHelps = class_exists(\App\Models\Help::class) ? \App\Models\Help::where('status', 'active')->count() : 0;
         $completedHelps = class_exists(\App\Models\Help::class) ? \App\Models\Help::where('status', 'completed')->count() : 0;
 
-        // KTP verification fields may vary; this is a best-effort guess.
+        // KTP verification fields
         if (class_exists(\App\Models\User::class)) {
             try {
                 $pendingVerifications = \App\Models\User::whereNull('ktp_verified_at')->count();
@@ -38,7 +38,7 @@
             $latestHelps = collect();
         }
 
-        // prepare chart data for last 7 days - filter by admin's city
+        // Prepare chart data for last 7 days - filter by admin's city
         $chartLabels = [];
         $chartData = [];
         for ($i = 6; $i >= 0; $i--) {
@@ -58,301 +58,284 @@
         }
     @endphp
 
-    <div class="min-h-screen bg-gray-50">
-        <div class="px-6 py-8">
-            <!-- Top Stat Cards (compact) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-                <div class="bg-white rounded-lg shadow p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-lg flex items-center justify-center shadow-sm"
-                        style="background: linear-gradient(135deg,#eef2ff,#e0f2fe);">
-                        <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" stroke-width="1.6"
-                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                            <path d="M21 16V8a2 2 0 0 0-2-2h-3l-2-2H10L8 6H5a2 2 0 0 0-2 2v8" />
-                            <rect x="3" y="8" width="18" height="10" rx="2" ry="2" fill="none" />
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="text-xs text-gray-500">Total Bantuan</div>
-                        <div class="text-lg font-bold text-gray-900">{{ number_format($totalHelps) }}</div>
-                    </div>
-                </div>
+    <div class="space-y-6">
+        {{-- ===== Page Header ===== --}}
+        <div class="flex items-center justify-between flex-wrap gap-3">
+            <div>
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white">Dashboard Admin</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Ringkasan aktivitas dan operasional moderasi</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="location.reload()"
+                    class="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm transition">
+                    <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 20v-6h-6"/></svg>
+                    Refresh
+                </button>
+            </div>
+        </div>
 
-                <div class="bg-white rounded-lg shadow p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-lg flex items-center justify-center shadow-sm"
-                        style="background: linear-gradient(135deg,#fff7ed,#ffedd5);">
-                        <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" stroke-width="1.6"
-                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                            <path d="M12 8v4l3 3" />
-                            <circle cx="12" cy="12" r="9" fill="none" />
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="text-xs text-gray-500">Pending</div>
-                        <div class="text-lg font-bold text-yellow-600">{{ number_format($pendingHelps) }}</div>
-                    </div>
+        {{-- ===== Top Stat Cards Grid ===== --}}
+        <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+            {{-- Total Bantuan --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3 transition-colors">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 16V8a2 2 0 00-2-2h-3l-2-2H10L8 6H5a2 2 0 00-2 2v8"/><rect x="3" y="8" width="18" height="10" rx="2" ry="2" fill="none"/></svg>
                 </div>
-
-                <div class="bg-white rounded-lg shadow p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-lg flex items-center justify-center shadow-sm"
-                        style="background: linear-gradient(135deg,#ecfdf5,#bbf7d0);">
-                        <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" stroke-width="1.6"
-                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                            <path d="M20 6L9 17l-5-5" />
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="text-xs text-gray-500">Aktif</div>
-                        <div class="text-lg font-bold text-green-600">{{ number_format($activeHelps) }}</div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-lg flex items-center justify-center shadow-sm"
-                        style="background: linear-gradient(135deg,#eff6ff,#dbeafe);">
-                        <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" stroke-width="1.6"
-                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                            <path d="M20 6L9 17l-5-5" />
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="text-xs text-gray-500">Selesai</div>
-                        <div class="text-lg font-bold text-gray-900">{{ number_format($completedHelps) }}</div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-lg flex items-center justify-center shadow-sm"
-                        style="background: linear-gradient(135deg,#fff7ed,#ffedd5);">
-                        <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" stroke-width="1.6"
-                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                            <path d="M12 8v4l3 3" />
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" fill="none" />
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="text-xs text-gray-500">KTP Pending</div>
-                        <div class="text-lg font-bold text-orange-600">{{ number_format($pendingVerifications) }}</div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-lg flex items-center justify-center shadow-sm"
-                        style="background: linear-gradient(135deg,#ecfeff,#bbf7d0);">
-                        <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" stroke-width="1.6"
-                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                            <path d="M20 6L9 17l-5-5" />
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="text-xs text-gray-500">Mitra Terverifikasi</div>
-                        <div class="text-lg font-bold text-teal-600">{{ number_format($verifiedMitras) }}</div>
-                    </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Bantuan</p>
+                    <p class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ number_format($totalHelps) }}</p>
                 </div>
             </div>
 
-            <!-- Pending Topup Approval Alert (if any) -->
-            @if(isset($pendingTopups) && $pendingTopups > 0)
-                <div class="mb-6">
-                    <a href="{{ route('admin.topup.approvals') }}" class="block">
-                        <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-500 rounded-xl p-5 shadow-sm hover:shadow-md transition">
-                            <div class="flex items-center gap-4">
-                                <div class="w-14 h-14 bg-yellow-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                    <svg class="w-7 h-7 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" />
-                                    </svg>
-                                </div>
-                                <div class="flex-1">
-                                    <h3 class="text-lg font-bold text-gray-900 mb-1">
-                                        {{ $pendingTopups }} Request Top-Up Menunggu Approval
-                                    </h3>
-                                    <p class="text-sm text-gray-600">
-                                        Ada request top-up saldo dari customer yang perlu diverifikasi. Klik untuk review dan approve.
-                                    </p>
-                                </div>
-                                <div class="flex-shrink-0">
-                                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
+            {{-- Pending --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3 transition-colors">
+                <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-            @endif
-
-            <!-- Stats + Chart -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <div class="lg:col-span-2 bg-white rounded-2xl shadow p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-semibold text-gray-800">Aktivitas Terakhir</h2>
-                        <div class="text-xs text-gray-500">Update otomatis</div>
-                    </div>
-
-                    <div class="h-56 bg-gray-50 rounded-md border border-dashed border-gray-100 p-4">
-                        <canvas id="activityChart" class="w-full h-full"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-2xl shadow p-6">
-                    <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Ringkasan</h3>
-                    <div class="mt-4 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <div class="text-sm text-gray-600">Total Bantuan</div>
-                            <div class="text-xl font-bold text-gray-900">{{ number_format($totalHelps) }}</div>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div class="text-sm text-gray-600">Pending</div>
-                            <div class="text-xl font-bold text-yellow-600">{{ number_format($pendingHelps) }}</div>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div class="text-sm text-gray-600">Aktif</div>
-                            <div class="text-xl font-bold text-green-600">{{ number_format($activeHelps) }}</div>
-                        </div>
-                        <hr class="my-2" />
-                        <div class="flex items-center justify-between text-sm text-gray-600">
-                            <span>Verifikasi KTP Pending</span>
-                            <span class="font-medium">{{ number_format($pendingVerifications) }}</span>
-                        </div>
-                        <div class="flex items-center justify-between text-sm text-gray-600">
-                            <span>Mitra Terverifikasi</span>
-                            <span class="font-medium">{{ number_format($verifiedMitras) }}</span>
-                        </div>
-                    </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Pending</p>
+                    <p class="text-lg font-bold text-amber-600 dark:text-amber-400 truncate">{{ number_format($pendingHelps) }}</p>
                 </div>
             </div>
 
-            <!-- Real-time cards (Livewire) -->
-            {{-- <div class="mb-6">
-                <livewire:admin.dashboard-cards />
-            </div> --}}
+            {{-- Aktif --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3 transition-colors">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Aktif</p>
+                    <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400 truncate">{{ number_format($activeHelps) }}</p>
+                </div>
+            </div>
 
-            <!-- Recent Helps + Health -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6 mb-6">
-                <div class="lg:col-span-3 bg-white rounded-2xl shadow p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-gray-800">Permintaan Bantuan Terbaru</h3>
-                        <a href="{{ route('admin.helps') }}" class="text-sm text-primary-600">Lihat semua</a>
-                    </div>
+            {{-- Selesai --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3 transition-colors">
+                <div class="w-10 h-10 rounded-xl bg-cyan-50 dark:bg-cyan-900/40 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Selesai</p>
+                    <p class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ number_format($completedHelps) }}</p>
+                </div>
+            </div>
 
-                    @if(isset($latestHelps) && $latestHelps->count())
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm">
-                                <thead class="text-xs text-gray-500 uppercase">
-                                    <tr>
-                                        <th class="pb-3">Order ID</th>
-                                        <th class="pb-3">User</th>
-                                        <th class="pb-3">Status</th>
-                                        <th class="pb-3">Jumlah</th>
-                                        <th class="pb-3">Waktu</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y">
-                                    @foreach($latestHelps as $help)
-                                        <tr class="align-top">
-                                            <td class="py-3 text-gray-800">{{ $help->order_id ?? $help->id }}</td>
-                                            <td class="py-3 text-gray-600">{{ optional($help->user)->name ?? '-' }}</td>
-                                            <td class="py-3"><span
-                                                    class="px-2 py-1 text-xs rounded {{ $help->status === 'pending' ? 'bg-yellow-100 text-yellow-700' : ($help->status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700') }}">{{ ucfirst($help->status) }}</span>
-                                            </td>
-                                            <td class="py-3 text-gray-800">Rp {{ number_format($help->amount ?? 0, 0, ',', '.') }}
-                                            </td>
-                                            <td class="py-3 text-gray-500">{{ $help->created_at->diffForHumans() }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @else
-                        <div class="text-center py-8 text-gray-500">Belum ada permintaan bantuan terbaru.</div>
-                    @endif
+            {{-- KTP Pending --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3 transition-colors">
+                <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">KTP Pending</p>
+                    <p class="text-lg font-bold text-orange-600 dark:text-orange-400 truncate">{{ number_format($pendingVerifications) }}</p>
+                </div>
+            </div>
+
+            {{-- Mitra Terverifikasi --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3 transition-colors">
+                <div class="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-900/40 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Mitra Terverifikasi</p>
+                    <p class="text-lg font-bold text-teal-600 dark:text-teal-400 truncate">{{ number_format($verifiedMitras) }}</p>
                 </div>
             </div>
         </div>
 
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script>
-            (function () {
-                const ctx = document.getElementById('activityChart');
-                if (!ctx) return;
+        {{-- Pending Topup Approval Alert --}}
+        @if(isset($pendingTopups) && $pendingTopups > 0)
+        <a href="{{ route('admin.topup.approvals') }}" class="block group">
+            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex items-center justify-between gap-4 group-hover:bg-amber-100/70 dark:group-hover:bg-amber-900/30 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-800/50 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-amber-700 dark:text-amber-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-amber-900 dark:text-amber-200">{{ $pendingTopups }} Request Top-Up Menunggu Approval</h3>
+                        <p class="text-xs text-amber-700 dark:text-amber-300 mt-0.5">Ada request top-up saldo dari customer yang perlu diverifikasi bukti transfernya.</p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center gap-1 text-xs font-semibold text-amber-800 dark:text-amber-200 group-hover:translate-x-1 transition-transform">
+                    Proses <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </span>
+            </div>
+        </a>
+        @endif
 
-                const data = {
-                    labels: @json($chartLabels),
-                    datasets: [{
-                        label: 'Permintaan Bantuan',
-                        backgroundColor: 'rgba(59,130,246,0.08)',
-                        borderColor: 'rgba(59,130,246,1)',
-                        pointBackgroundColor: 'rgba(59,130,246,1)',
-                        data: @json($chartData),
-                        fill: true,
-                        tension: 0.3,
-                    }]
-                };
+        {{-- ===== Chart + Summary Cards ===== --}}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {{-- Activity Chart --}}
+            <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-sm font-semibold text-gray-800 dark:text-white">Aktivitas Permintaan Bantuan</h2>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">7 hari terakhir</p>
+                    </div>
+                    <span class="text-xs text-primary-600 dark:text-primary-400 font-medium bg-primary-50 dark:bg-primary-900/30 px-2.5 py-1 rounded-md">Live Data</span>
+                </div>
+                <div class="h-64">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
 
-                new Chart(ctx.getContext('2d'), {
-                    type: 'line',
-                    data: data,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
+            {{-- Ringkasan Operasional --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-4">Ringkasan Operasional</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                            <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Total Bantuan</span>
+                            <span class="text-sm font-bold text-gray-900 dark:text-white">{{ number_format($totalHelps) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-amber-50/50 dark:bg-amber-900/20">
+                            <span class="text-xs font-medium text-amber-700 dark:text-amber-400">Pending Moderasi</span>
+                            <span class="text-sm font-bold text-amber-700 dark:text-amber-400">{{ number_format($pendingHelps) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-emerald-50/50 dark:bg-emerald-900/20">
+                            <span class="text-xs font-medium text-emerald-700 dark:text-emerald-400">Sedang Aktif</span>
+                            <span class="text-sm font-bold text-emerald-700 dark:text-emerald-400">{{ number_format($activeHelps) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-orange-50/50 dark:bg-orange-900/20">
+                            <span class="text-xs font-medium text-orange-700 dark:text-orange-400">KTP Menunggu Verifikasi</span>
+                            <span class="text-sm font-bold text-orange-700 dark:text-orange-400">{{ number_format($pendingVerifications) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 mt-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                    <span class="text-xs text-gray-400 dark:text-gray-500">Mitra Terverifikasi</span>
+                    <span class="text-xs font-semibold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/30 px-2.5 py-1 rounded-md">{{ number_format($verifiedMitras) }} Mitra</span>
+                </div>
+            </div>
+        </div>
+
+        {{-- ===== Permintaan Bantuan Terbaru ===== --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-800 dark:text-white">Permintaan Bantuan Terbaru</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Daftar bantuan terbaru di wilayah Anda</p>
+                </div>
+                <a href="{{ route('admin.helps') }}" class="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1">
+                    Lihat semua <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+
+            @if(isset($latestHelps) && $latestHelps->count())
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Order ID</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Jumlah</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Waktu</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">
+                            @foreach($latestHelps as $help)
+                            @php
+                            $stClass = match($help->status ?? '') {
+                                'pending'   => 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400',
+                                'active'    => 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+                                'completed' => 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400',
+                                'cancelled' => 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400',
+                                default     => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                            };
+                            @endphp
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-150">
+                                <td class="px-4 py-3.5 font-mono text-xs font-semibold text-gray-800 dark:text-gray-200">#{{ $help->order_id ?? $help->id }}</td>
+                                <td class="px-4 py-3.5">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                                            {{ strtoupper(substr(optional($help->user)->name ?? (optional($help->customer)->name ?? 'U'), 0, 1)) }}
+                                        </div>
+                                        <span class="font-medium text-gray-800 dark:text-gray-100">{{ optional($help->user)->name ?? (optional($help->customer)->name ?? '—') }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3.5">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $stClass }}">
+                                        {{ ucfirst($help->status) }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3.5 text-right font-bold text-gray-800 dark:text-gray-100">
+                                    Rp {{ number_format($help->amount ?? 0, 0, ',', '.') }}
+                                </td>
+                                <td class="px-4 py-3.5 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                                    {{ $help->created_at->diffForHumans() }}
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="px-4 py-12 text-center">
+                    <div class="flex flex-col items-center">
+                        <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3">
+                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        </div>
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Belum ada permintaan bantuan terbaru</p>
+                    </div>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    {{-- Chart.js Script with Dark Mode Awareness --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        (function () {
+            const ctx = document.getElementById('activityChart');
+            if (!ctx) return;
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const data = {
+                labels: @json($chartLabels),
+                datasets: [{
+                    label: 'Permintaan Bantuan',
+                    backgroundColor: 'rgba(14,165,233,0.1)',
+                    borderColor: '#0ea5e9',
+                    pointBackgroundColor: '#0ea5e9',
+                    data: @json($chartData),
+                    fill: true,
+                    tension: 0.35,
+                    borderWidth: 2.5
+                }]
+            };
+
+            const chart = new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: isDark ? '#9ca3af' : '#6b7280', font: { size: 11 } }
                         },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { color: '#6B7280' } },
-                            y: { grid: { color: 'rgba(203,213,225,0.3)' }, ticks: { color: '#6B7280' } }
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
+                            ticks: { color: isDark ? '#9ca3af' : '#6b7280', precision: 0, font: { size: 11 } }
                         }
                     }
-                });
-            })();
-
-            // Carousel for banner
-            (function () {
-                const carousel = document.getElementById('dashboardCarousel');
-                if (!carousel) return;
-
-                const track = carousel.querySelector('div.flex.transition-transform');
-                const slides = Array.from(track.children).filter(el => el.classList);
-                const indicators = Array.from(carousel.querySelectorAll('.carousel-indicator'));
-                const prevBtn = carousel.querySelector('#carouselPrev');
-                const nextBtn = carousel.querySelector('#carouselNext');
-                let current = 0;
-                const total = slides.length;
-                let interval = null;
-
-                function updateIndicators() {
-                    indicators.forEach((b, idx) => {
-                        if (idx === current) {
-                            b.classList.remove('bg-white/40');
-                            b.classList.add('bg-white/80');
-                        } else {
-                            b.classList.remove('bg-white/80');
-                            b.classList.add('bg-white/40');
-                        }
-                    });
                 }
+            });
 
-                function go(index) {
-                    current = (index + total) % total;
-                    track.style.transform = `translateX(${-100 * current}%)`;
-                    updateIndicators();
+            window.addEventListener('theme-changed', function(e) {
+                const dark = e.detail?.isDark ?? document.documentElement.classList.contains('dark');
+                if (chart && chart.options && chart.options.scales) {
+                    chart.options.scales.x.ticks.color = dark ? '#9ca3af' : '#6b7280';
+                    chart.options.scales.y.ticks.color = dark ? '#9ca3af' : '#6b7280';
+                    chart.options.scales.y.grid.color = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+                    chart.update();
                 }
-
-                function resetInterval() {
-                    if (interval) clearInterval(interval);
-                    interval = setInterval(() => go(current + 1), 4200);
-                }
-
-                prevBtn.addEventListener('click', () => { go(current - 1); resetInterval(); });
-                nextBtn.addEventListener('click', () => { go(current + 1); resetInterval(); });
-
-                indicators.forEach(btn => {
-                    btn.addEventListener('click', () => { go(parseInt(btn.dataset.index)); resetInterval(); });
-                });
-
-                go(0);
-                resetInterval();
-            })();
-        </script>
-    </div>
+            });
+        })();
+    </script>
 @endsection

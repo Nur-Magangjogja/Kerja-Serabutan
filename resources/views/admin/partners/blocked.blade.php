@@ -1,192 +1,236 @@
 @extends('layouts.admin')
 
 @section('content')
+<div class="space-y-5">
+    {{-- ===== Page Header ===== --}}
+    <div class="flex items-center justify-between flex-wrap gap-3">
+        <div>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Blokir & Akses Mitra</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola status pemblokiran dan hak akses pengguna</p>
+        </div>
+    </div>
 
-    <div class="p-8">
-        <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-            <div class="px-6 py-6 border-b border-gray-100">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-900">Daftar Pengguna</h2>
-                        <p class="text-xs text-gray-500 mt-1">Kelola pengguna dengan role Mitra dan Customer.</p>
-                    </div>
-                    <div class="flex items-center w-full">
-                        <form method="GET" action="{{ route('admin.partners.blocked') }}" class="w-full">
-                            <div class="bg-white border border-gray-100 rounded-lg shadow-sm p-3">
-                                <div class="flex flex-col md:flex-row md:items-center gap-3 flex-wrap">
-                                    <div class="flex-1 relative">
-                                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
-                                        <input id="partner-search" type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama, email, atau telepon" class="w-full pl-10 pr-10 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
-                                        <button type="button" id="clear-search" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                        </button>
-                                    </div>
+    {{-- ===== Summary Cards ===== --}}
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
+                <p class="text-lg font-bold text-gray-900 dark:text-white">{{ $counts['total'] ?? ($blocked->total ?? $blocked->count()) }}</p>
+            </div>
+        </div>
 
-                                    <div class="flex gap-2 flex-shrink-0">
-                                        <select name="role" class="w-36 md:w-44 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none">
-                                            <option value="">Semua Role</option>
-                                            <option value="mitra" {{ request('role')=='mitra' ? 'selected' : '' }}>Mitra</option>
-                                            <option value="customer" {{ request('role')=='customer' ? 'selected' : '' }}>Customer</option>
-                                        </select>
-                                        <select name="status" class="w-36 md:w-44 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none">
-                                            <option value="">Semua Status</option>
-                                            <option value="active" {{ request('status')=='active' ? 'selected' : '' }}>Aktif</option>
-                                            <option value="inactive" {{ request('status')=='inactive' ? 'selected' : '' }}>Inactive</option>
-                                            <option value="blocked" {{ request('status')=='blocked' ? 'selected' : '' }}>Diblokir</option>
-                                        </select>
-                                    </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-900/40 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Diblokir</p>
+                <p class="text-lg font-bold text-rose-600 dark:text-rose-400">{{ $counts['blocked'] ?? 0 }}</p>
+            </div>
+        </div>
 
-                                    <div class="flex items-center ml-auto gap-2 flex-shrink-0">
-                                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg text-sm shadow-sm hover:bg-primary-700">
-                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h4l3 8 4-16 3 8h4"/></svg>
-                                            Filter
-                                        </button>
-                                        <a href="{{ route('admin.partners.blocked') }}" class="inline-flex items-center px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50">
-                                            Reset
-                                        </a>
-                                    </div>
-                                </div>
-                                <div class="mt-2 text-xs text-gray-400">Gunakan filter untuk mencari pengguna berdasarkan nama, email, role atau status.</div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Aktif</p>
+                <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400">{{ $counts['active'] ?? 0 }}</p>
+            </div>
+        </div>
 
-                {{-- Top cards --}}
-                <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                    <div class="bg-gray-50 p-4 rounded-lg border">
-                        <div class="text-xs text-gray-500">Total Pengguna</div>
-                        <div class="mt-1 text-xl font-semibold text-gray-900">{{ $counts['total'] ?? ($blocked->total ?? $blocked->count()) }}</div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Mitra</p>
+                <p class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ $counts['mitra'] ?? 0 }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-900/40 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Customer</p>
+                <p class="text-lg font-bold text-violet-600 dark:text-violet-400">{{ $counts['customer'] ?? 0 }}</p>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== Filter Toolbar ===== --}}
+    <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-4 py-3.5 shadow-sm">
+        <form method="GET" action="{{ route('admin.partners.blocked') }}" class="flex flex-wrap items-end gap-3">
+            <div class="relative flex-1 min-w-[200px]">
+                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Cari Pengguna</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
-                    <div class="bg-red-50 p-4 rounded-lg border">
-                        <div class="text-xs text-red-600">Diblokir</div>
-                        <div class="mt-1 text-xl font-semibold text-red-700">{{ $counts['blocked'] ?? 0 }}</div>
-                    </div>
-                    <div class="bg-green-50 p-4 rounded-lg border">
-                        <div class="text-xs text-green-600">Aktif</div>
-                        <div class="mt-1 text-xl font-semibold text-green-700">{{ $counts['active'] ?? 0 }}</div>
-                    </div>
-                    <div class="bg-blue-50 p-4 rounded-lg border">
-                        <div class="text-xs text-blue-600">Mitra</div>
-                        <div class="mt-1 text-xl font-semibold text-blue-700">{{ $counts['mitra'] ?? 0 }}</div>
-                    </div>
-                    <div class="bg-indigo-50 p-4 rounded-lg border">
-                        <div class="text-xs text-indigo-600">Customer</div>
-                        <div class="mt-1 text-xl font-semibold text-indigo-700">{{ $counts['customer'] ?? 0 }}</div>
-                    </div>
+                    <input id="partner-search" type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama, email, atau telepon..."
+                        class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
             </div>
 
-            @if ($blocked->isEmpty())
-                <div class="px-6 py-12 flex flex-col items-center justify-center text-center">
-                    <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10 9V5a4 4 0 118 0v4m-1 4H9m10 0a2 2 0 01-2 2H9a2 2 0 01-2-2m12 0V9a2 2 0 00-2-2h-1M7 13v-2a2 2 0 012-2h1" />
-                    </svg>
-                    <p class="text-gray-500 text-sm font-medium">Belum ada pengguna dengan role Mitra atau Customer.</p>
-                    <p class="text-gray-400 text-xs mt-1">Pengguna dapat diblokir atau diaktifkan dari halaman ini.</p>
+            <div>
+                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Role</label>
+                <select name="role"
+                    class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="">Semua Role</option>
+                    <option value="mitra" {{ request('role')=='mitra' ? 'selected' : '' }}>Mitra</option>
+                    <option value="customer" {{ request('role')=='customer' ? 'selected' : '' }}>Customer</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Status</label>
+                <select name="status"
+                    class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="">Semua Status</option>
+                    <option value="active" {{ request('status')=='active' ? 'selected' : '' }}>Aktif</option>
+                    <option value="inactive" {{ request('status')=='inactive' ? 'selected' : '' }}>Nonaktif</option>
+                    <option value="blocked" {{ request('status')=='blocked' ? 'selected' : '' }}>Diblokir</option>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button type="submit" class="px-4 py-2 text-sm font-semibold bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                    Filter
+                </button>
+                @if (request()->hasAny(['search', 'role', 'status']))
+                <a href="{{ route('admin.partners.blocked') }}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    Reset
+                </a>
+                @endif
+            </div>
+        </form>
+    </div>
+
+    {{-- ===== Table Card ===== --}}
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+        @if ($blocked->isEmpty())
+            <div class="px-4 py-16 text-center">
+                <div class="flex flex-col items-center">
+                    <div class="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3">
+                        <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9V5a4 4 0 118 0v4m-1 4H9m10 0a2 2 0 01-2 2H9a2 2 0 01-2-2m12 0V9a2 2 0 00-2-2h-1M7 13v-2a2 2 0 012-2h1" /></svg>
+                    </div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Belum ada pengguna yang ditemukan</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Pengguna dapat diblokir atau diaktifkan kembali dari halaman ini</p>
                 </div>
-            @else
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    Nama</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    Role</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    Email</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    Kota</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    Status Akun</th>
-                                <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-100">
-                            @foreach ($blocked as $user)
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-3 text-sm text-gray-900 whitespace-nowrap">
-                                        <a href="{{ route('admin.users.show', $user) }}"
-                                            class="text-primary-600 hover:text-primary-700 hover:underline">
+            </div>
+        @else
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nama</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Kota</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status Akun</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">
+                        @foreach ($blocked as $user)
+                        @php
+                        $roleClass = match($user->role) {
+                            'mitra'    => 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400',
+                            'admin'    => 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+                            default    => 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-400',
+                        };
+                        $statusClass = match($user->status) {
+                            'blocked'  => 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400',
+                            'inactive' => 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400',
+                            default    => 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400',
+                        };
+                        $cityRelation = $user->getRelation('city');
+                        @endphp
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-150">
+                            <td class="px-4 py-3.5">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                                        {{ strtoupper(substr($user->name, 0, 1)) }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <a href="{{ route('admin.users.show', $user) }}" class="font-semibold text-gray-800 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 truncate block">
                                             {{ $user->name }}
                                         </a>
-                                    </td>
-                                    <td class="px-6 py-3 text-sm text-gray-700 whitespace-nowrap">
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">{{ ucfirst($user->role) }}</span>
-                                    </td>
-                                    <td class="px-6 py-3 text-sm text-gray-500 whitespace-nowrap">{{ $user->email }}</td>
-                                    <td class="px-6 py-3 text-sm text-gray-500 whitespace-nowrap">
-                                        @php
-                                            // Avoid accessing ->name on a string attribute named 'city'.
-                                            // Prefer the eager-loaded relation when present.
-                                            $cityRelation = $user->getRelation('city');
-                                        @endphp
-                                        @if($cityRelation && is_object($cityRelation))
-                                            {{ $cityRelation->name }}
-                                        @else
-                                            - <span class="text-xs text-gray-400"></span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-3 text-sm">
-                                        @if($user->status === 'blocked')
-                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">Diblokir</span>
-                                        @else
-                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Aktif</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-3 text-sm text-right whitespace-nowrap space-x-2">
-                                        <a href="{{ route('admin.partners.activity', ['search' => $user->email]) }}"
-                                            class="inline-flex items-center px-3 py-1 border border-gray-300 rounded-full text-xs text-gray-700 hover:bg-gray-50">
-                                            Lihat Aktivitas
-                                        </a>
+                                        <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ $user->email }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3.5">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $roleClass }}">
+                                    {{ ucfirst($user->role) }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3.5 text-gray-600 dark:text-gray-300 hidden md:table-cell">
+                                @if($cityRelation && is_object($cityRelation))
+                                    {{ $cityRelation->name }}
+                                @else
+                                    —
+                                @endif
+                            </td>
+                            <td class="px-4 py-3.5">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $statusClass }}">
+                                    {{ $user->status === 'blocked' ? 'Diblokir' : ($user->status === 'inactive' ? 'Nonaktif' : 'Aktif') }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <a href="{{ route('admin.partners.activity', ['search' => $user->email]) }}"
+                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                        Aktivitas
+                                    </a>
 
-                                        <form method="POST" action="{{ route('admin.partners.toggle', $user->id) }}" class="inline confirm-action-form" data-action-type="{{ $user->status === 'blocked' ? 'unblock' : 'block' }}" data-user-name="{{ $user->name }}">
-                                            @csrf
-                                            @if($user->status === 'blocked')
-                                                <button type="submit" class="px-3 py-1 rounded-full text-xs bg-green-600 text-white hover:bg-green-700">Buka Blokir</button>
-                                            @else
-                                                <button type="submit" class="px-3 py-1 rounded-full text-xs bg-red-600 text-white hover:bg-red-700">Blokir</button>
-                                            @endif
-                                        </form>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+                                    <form method="POST" action="{{ route('admin.partners.toggle', $user->id) }}" class="inline confirm-action-form" data-action-type="{{ $user->status === 'blocked' ? 'unblock' : 'block' }}" data-user-name="{{ $user->name }}">
+                                        @csrf
+                                        <button type="submit"
+                                            class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold {{ $user->status === 'blocked' ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-rose-600 text-white hover:bg-rose-700' }} transition-colors">
+                                            {{ $user->status === 'blocked' ? 'Buka Blokir' : 'Blokir' }}
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
 
-                <div class="px-6 py-4">
-                    <div class="flex items-center justify-between">
-                        <div class="text-xs text-gray-500">Menampilkan {{ $blocked->firstItem() ?? 0 }} - {{ $blocked->lastItem() ?? 0 }} dari {{ $blocked->total() ?? $blocked->count() }} hasil</div>
-                        <div>
-                            {{ $blocked->appends(request()->query())->links() }}
-                        </div>
-                    </div>
+            <div class="px-5 py-3.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 flex items-center justify-between">
+                <span class="text-xs text-gray-500 dark:text-gray-400">Total {{ $blocked->total() ?? $blocked->count() }} pengguna</span>
+                <div>
+                    {{ $blocked->appends(request()->query())->links() }}
                 </div>
-            @endif
-        </div>
+            </div>
+        @endif
     </div>
-@endsection
+</div>
 
 {{-- Confirmation modal for block/unblock actions --}}
-<div id="confirmActionModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-        <div class="px-6 py-4 border-b">
-            <h3 id="confirmActionTitle" class="text-lg font-semibold text-gray-900">Konfirmasi</h3>
+<div id="confirmActionModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div id="modalBackdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md z-10 border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+            <h3 id="confirmActionTitle" class="text-base font-bold text-gray-900 dark:text-white">Konfirmasi Tindakan</h3>
         </div>
-        <div class="px-6 py-4">
-            <p id="confirmActionMessage" class="text-sm text-gray-700"></p>
+        <div class="p-6">
+            <p id="confirmActionMessage" class="text-sm text-gray-600 dark:text-gray-300"></p>
         </div>
-        <div class="px-6 py-4 flex justify-end space-x-2 border-t">
-            <button id="confirmCancel" class="px-4 py-2 rounded bg-gray-100 text-gray-700">Batal</button>
-            <button id="confirmProceed" class="px-4 py-2 rounded bg-red-600 text-white">Lanjutkan</button>
+        <div class="px-6 py-3.5 bg-gray-50 dark:bg-gray-700/30 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
+            <button id="confirmCancel" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Batal</button>
+            <button id="confirmProceed" class="px-4 py-2 text-sm font-semibold rounded-lg text-white transition-colors">Lanjutkan</button>
         </div>
     </div>
 </div>
 
+@push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const modal = document.getElementById('confirmActionModal');
@@ -194,38 +238,37 @@
         const title = document.getElementById('confirmActionTitle');
         const btnCancel = document.getElementById('confirmCancel');
         const btnProceed = document.getElementById('confirmProceed');
+        const backdrop = document.getElementById('modalBackdrop');
 
         let pendingForm = null;
 
         function openModal(actionType, userName) {
             title.textContent = 'Konfirmasi ' + (actionType === 'block' ? 'Blokir' : 'Buka Blokir');
-            message.textContent = (actionType === 'block') ? `Anda yakin ingin memblokir pengguna "${userName}"? Tindakan ini akan mencegah pengguna masuk.` : `Anda yakin ingin membuka blokir pengguna "${userName}"? Pengguna akan dapat masuk kembali.`;
+            message.textContent = (actionType === 'block') ? `Anda yakin ingin memblokir pengguna "${userName}"? Pengguna tidak akan dapat mengakses aplikasi.` : `Anda yakin ingin membuka blokir pengguna "${userName}"? Pengguna akan dapat masuk kembali.`;
             btnProceed.textContent = (actionType === 'block') ? 'Blokir' : 'Buka Blokir';
             if (actionType === 'block') {
-                btnProceed.classList.remove('bg-green-600');
-                btnProceed.classList.add('bg-red-600');
+                btnProceed.className = 'px-4 py-2 text-sm font-semibold rounded-lg text-white bg-rose-600 hover:bg-rose-700 transition-colors';
             } else {
-                btnProceed.classList.remove('bg-red-600');
-                btnProceed.classList.add('bg-green-600');
+                btnProceed.className = 'px-4 py-2 text-sm font-semibold rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-colors';
             }
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
         }
 
         function closeModal() {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+            document.body.style.overflow = '';
             pendingForm = null;
         }
 
-        // Delegate clicks: intercept button clicks inside forms with .confirm-action-form
         document.addEventListener('click', function (e) {
             const btn = e.target.closest && e.target.closest('button');
             if (!btn) return;
             const form = btn.closest && btn.closest('form.confirm-action-form');
             if (!form) return;
 
-            // Only intercept when button would submit the form
             const type = (btn.getAttribute('type') || 'submit').toLowerCase();
             if (type !== 'submit') return;
 
@@ -236,40 +279,17 @@
             openModal(actionType, userName);
         }, true);
 
-        btnCancel.addEventListener('click', function () {
-            closeModal();
-        });
+        if (btnCancel) btnCancel.addEventListener('click', closeModal);
+        if (backdrop) backdrop.addEventListener('click', closeModal);
 
-        btnProceed.addEventListener('click', function () {
-            if (!pendingForm) return closeModal();
-            // Submit the stored form
-            pendingForm.submit();
-            closeModal();
-        });
-    });
-</script>
-
-<script>
-    // Clear search button behavior
-    document.addEventListener('DOMContentLoaded', function () {
-        var search = document.getElementById('partner-search');
-        var clearBtn = document.getElementById('clear-search');
-        function updateClearVisibility() {
-            if (!search) return;
-            if (search.value && search.value.length > 0) {
-                clearBtn.classList.remove('hidden');
-            } else {
-                clearBtn.classList.add('hidden');
-            }
-        }
-        if (search && clearBtn) {
-            updateClearVisibility();
-            search.addEventListener('input', updateClearVisibility);
-            clearBtn.addEventListener('click', function () {
-                search.value = '';
-                updateClearVisibility();
-                // optionally submit to reset results client-side
+        if (btnProceed) {
+            btnProceed.addEventListener('click', function () {
+                if (!pendingForm) return closeModal();
+                pendingForm.submit();
+                closeModal();
             });
         }
     });
 </script>
+@endpush
+@endsection
