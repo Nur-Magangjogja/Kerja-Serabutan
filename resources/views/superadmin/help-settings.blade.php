@@ -141,47 +141,47 @@
 
                     <!-- Breakdown by Source -->
                     <div class="mt-6">
-                        <h3 class="text-base font-bold text-gray-900 mb-4">Breakdown Sumber Biaya Admin</h3>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white mb-4">Breakdown Sumber Biaya Admin</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- Help (Bantuan) Breakdown -->
-                            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border border-blue-200">
+                            <div class="bg-blue-50/80 dark:bg-blue-950/40 rounded-xl p-5 border border-blue-200 dark:border-blue-800/60 transition-colors duration-200">
                                 <div class="flex items-start justify-between mb-3">
                                     <div class="flex items-center gap-2">
-                                        <div class="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
+                                        <div class="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0">
                                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                                     d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                             </svg>
                                         </div>
                                         <div>
-                                            <h4 class="font-bold text-gray-900">Bantuan</h4>
-                                            <p class="text-xs text-gray-600">Fee dari pembuatan bantuan</p>
+                                            <h4 class="font-bold text-gray-900 dark:text-white">Bantuan</h4>
+                                            <p class="text-xs text-gray-600 dark:text-gray-400">Fee dari pembuatan bantuan</p>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="space-y-2">
                                     <div class="flex justify-between items-center">
-                                        <span class="text-sm text-gray-700">Total Fee:</span>
-                                        <span class="text-lg font-bold text-blue-700">
+                                        <span class="text-sm text-gray-700 dark:text-gray-300">Total Fee:</span>
+                                        <span class="text-lg font-bold text-blue-700 dark:text-blue-400">
                                             Rp {{ number_format($breakdown['help']['total'] ?? 0, 0, ',', '.') }}
                                         </span>
                                     </div>
                                     <div class="flex justify-between items-center">
-                                        <span class="text-sm text-gray-700">Jumlah Transaksi:</span>
-                                        <span class="font-semibold text-gray-900">
+                                        <span class="text-sm text-gray-700 dark:text-gray-300">Jumlah Transaksi:</span>
+                                        <span class="font-semibold text-gray-900 dark:text-white">
                                             {{ number_format($breakdown['help']['count'] ?? 0, 0, ',', '.') }} bantuan
                                         </span>
                                     </div>
-                                    <div class="flex justify-between items-center pt-2 border-t border-blue-200">
-                                        <span class="text-sm text-gray-700">Rata-rata Fee:</span>
-                                        <span class="font-semibold text-gray-900">
+                                    <div class="flex justify-between items-center pt-2 border-t border-blue-200 dark:border-blue-800/60">
+                                        <span class="text-sm text-gray-700 dark:text-gray-300">Rata-rata Fee:</span>
+                                        <span class="font-semibold text-gray-900 dark:text-white">
                                             Rp {{ number_format($breakdown['help']['avg'] ?? 0, 0, ',', '.') }}
                                         </span>
                                     </div>
-                                    <div class="mt-3 pt-3 border-t border-blue-200">
-                                        <div class="flex items-center justify-between text-xs text-gray-600">
+                                    <div class="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800/60">
+                                        <div class="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
                                             <span>Kontribusi terhadap total:</span>
-                                            <span class="font-bold text-blue-700">
+                                            <span class="font-bold text-blue-700 dark:text-blue-400">
                                                 {{ $totalAll > 0 ? number_format(($breakdown['help']['total'] / $totalAll) * 100, 1) : 0 }}%
                                             </span>
                                         </div>
@@ -190,44 +190,44 @@
                             </div>
 
                             <!-- Top-up Breakdown -->
-                            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border border-green-200">
+                            <div class="bg-emerald-50/80 dark:bg-emerald-950/40 rounded-xl p-5 border border-emerald-200 dark:border-emerald-800/60 transition-colors duration-200">
                                 <div class="flex items-start justify-between mb-3">
                                     <div class="flex items-center gap-2">
-                                        <div class="w-10 h-10 rounded-lg bg-green-500 flex items-center justify-center">
+                                        <div class="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center flex-shrink-0">
                                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                                     d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                                             </svg>
                                         </div>
                                         <div>
-                                            <h4 class="font-bold text-gray-900">Top-up Saldo</h4>
-                                            <p class="text-xs text-gray-600">Fee dari pengisian saldo</p>
+                                            <h4 class="font-bold text-gray-900 dark:text-white">Top-up Saldo</h4>
+                                            <p class="text-xs text-gray-600 dark:text-gray-400">Fee dari pengisian saldo</p>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="space-y-2">
                                     <div class="flex justify-between items-center">
-                                        <span class="text-sm text-gray-700">Total Fee:</span>
-                                        <span class="text-lg font-bold text-green-700">
+                                        <span class="text-sm text-gray-700 dark:text-gray-300">Total Fee:</span>
+                                        <span class="text-lg font-bold text-emerald-700 dark:text-emerald-400">
                                             Rp {{ number_format($breakdown['topup']['total'] ?? 0, 0, ',', '.') }}
                                         </span>
                                     </div>
                                     <div class="flex justify-between items-center">
-                                        <span class="text-sm text-gray-700">Jumlah Transaksi:</span>
-                                        <span class="font-semibold text-gray-900">
+                                        <span class="text-sm text-gray-700 dark:text-gray-300">Jumlah Transaksi:</span>
+                                        <span class="font-semibold text-gray-900 dark:text-white">
                                             {{ number_format($breakdown['topup']['count'] ?? 0, 0, ',', '.') }} top-up
                                         </span>
                                     </div>
-                                    <div class="flex justify-between items-center pt-2 border-t border-green-200">
-                                        <span class="text-sm text-gray-700">Rata-rata Fee:</span>
-                                        <span class="font-semibold text-gray-900">
+                                    <div class="flex justify-between items-center pt-2 border-t border-emerald-200 dark:border-emerald-800/60">
+                                        <span class="text-sm text-gray-700 dark:text-gray-300">Rata-rata Fee:</span>
+                                        <span class="font-semibold text-gray-900 dark:text-white">
                                             Rp {{ number_format($breakdown['topup']['avg'] ?? 0, 0, ',', '.') }}
                                         </span>
                                     </div>
-                                    <div class="mt-3 pt-3 border-t border-green-200">
-                                        <div class="flex items-center justify-between text-xs text-gray-600">
+                                    <div class="mt-3 pt-3 border-t border-emerald-200 dark:border-emerald-800/60">
+                                        <div class="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
                                             <span>Kontribusi terhadap total:</span>
-                                            <span class="font-bold text-green-700">
+                                            <span class="font-bold text-emerald-700 dark:text-emerald-400">
                                                 {{ $totalAll > 0 ? number_format(($breakdown['topup']['total'] / $totalAll) * 100, 1) : 0 }}%
                                             </span>
                                         </div>

@@ -1,186 +1,192 @@
 @php
     $title = 'Financial Report';
-    $breadcrumb = 'Super Admin / Pengaturan / Financial Report';
 @endphp
 
-<div class="min-h-screen bg-gray-50">
-    <div class="px-6 py-8">
-    <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <!-- Total Revenue Card -->
-        <div class="bg-white rounded-2xl shadow p-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Total Top Up</p>
-                    <h3 class="text-2xl font-bold text-gray-900">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</h3>
-                </div>
-                <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center">
-                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
+<div>
+    {{-- ===== Page Header ===== --}}
+    <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <div>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Financial Report</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Laporan keuangan dan transaksi sistem</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button wire:click="exportExcel"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Excel
+            </button>
+            <button wire:click="exportPdf"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white text-sm font-semibold rounded-lg hover:bg-rose-700 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                PDF
+            </button>
+        </div>
+    </div>
+
+    {{-- ===== Summary Cards ===== --}}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
+            <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Top Up</p>
+                <p class="text-lg font-bold text-gray-900 dark:text-white truncate">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</p>
             </div>
         </div>
 
-        <!-- Total Withdraw Card -->
-        <div class="bg-white rounded-2xl shadow p-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Total Withdraw</p>
-                    <h3 class="text-2xl font-bold text-gray-900">Rp {{ number_format($totalWithdraw, 0, ',', '.') }}</h3>
-                </div>
-                <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center">
-                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                    </svg>
-                </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
+            <div class="w-11 h-11 rounded-xl bg-rose-50 dark:bg-rose-900/40 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Withdraw</p>
+                <p class="text-lg font-bold text-gray-900 dark:text-white truncate">Rp {{ number_format($totalWithdraw, 0, ',', '.') }}</p>
             </div>
         </div>
 
-        <!-- Total Transactions Card -->
-        <div class="bg-white rounded-2xl shadow p-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Total Transaksi</p>
-                    <h3 class="text-2xl font-bold text-gray-900">{{ number_format($totalTransactions) }}</h3>
-                </div>
-                <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                    </svg>
-                </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
+            <div class="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Transaksi</p>
+                <p class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ number_format($totalTransactions) }}</p>
             </div>
         </div>
 
-        <!-- Average Transaction Card -->
-        <div class="bg-white rounded-2xl shadow p-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Rata-rata</p>
-                    <h3 class="text-2xl font-bold text-gray-900">Rp {{ number_format($avgTransaction, 0, ',', '.') }}</h3>
-                </div>
-                <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
-                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
+            <div class="w-11 h-11 rounded-xl bg-violet-50 dark:bg-violet-900/40 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Rata-rata</p>
+                <p class="text-lg font-bold text-gray-900 dark:text-white truncate">Rp {{ number_format($avgTransaction, 0, ',', '.') }}</p>
             </div>
         </div>
     </div>
 
-    <!-- Main Table Section -->
-    <div class="bg-white rounded-2xl shadow">
-        <!-- Filter Section -->
-        <div class="p-6 border-b border-gray-100">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold text-gray-800">Daftar Transaksi</h2>
-                <div class="flex items-center gap-2">
-                    <button wire:click="exportExcel" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        Excel
-                    </button>
-                    <button wire:click="exportPdf" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                        </svg>
-                        PDF
-                    </button>
-                </div>
-            </div>
+    {{-- ===== Filter + Table Card ===== --}}
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+        {{-- Filter bar --}}
+        <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
             <div class="flex flex-wrap items-center gap-3">
-                <div class="flex-1 min-w-[280px]">
-                    <input wire:model.debounce.500ms="search" type="text" placeholder="Cari user, email atau ref"
-                        class="border border-gray-300 rounded-lg px-4 py-2.5 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" />
+                <div class="relative flex-1 min-w-[200px]">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <input wire:model.debounce.400ms="search" type="text" placeholder="Cari user, email, atau ref..."
+                        class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
-
-                <select wire:model="type" wire:change="$refresh" class="border border-gray-300 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                <select wire:model="type" wire:change="$refresh"
+                    class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     <option value="all">Semua Tipe</option>
                     <option value="topup">Topup</option>
                     <option value="withdraw">Withdraw</option>
                     <option value="other">Lainnya</option>
                 </select>
-
-                <input wire:model="from" type="date" class="border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" />
-                <input wire:model="to" type="date" class="border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" />
-
-                <button wire:click="$refresh" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+                <input wire:model="from" type="date"
+                    class="py-2 px-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <input wire:model="to" type="date"
+                    class="py-2 px-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <button wire:click="$refresh"
+                    class="px-4 py-2 text-sm font-semibold bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                     Filter
                 </button>
-
-                <select wire:model="perPage" wire:change="$refresh" class="border border-gray-300 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                    <option value="10">10 / halaman</option>
-                    <option value="15">15 / halaman</option>
-                    <option value="30">30 / halaman</option>
-                    <option value="50">50 / halaman</option>
+                <select wire:model="perPage" wire:change="$refresh"
+                    class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="10">10 / hal</option>
+                    <option value="15">15 / hal</option>
+                    <option value="30">30 / hal</option>
+                    <option value="50">50 / hal</option>
                 </select>
+                <div wire:loading class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                    <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                    Memuat...
+                </div>
             </div>
         </div>
 
-        <!-- Table Section -->
+        {{-- Table --}}
         <div class="overflow-x-auto">
-            <table class="min-w-full w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Waktu</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">User</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Tipe</th>
-                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Jumlah</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Ref</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Waktu</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pengguna</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipe</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Jumlah</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Referensi</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-100">
+                <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">
                     @forelse($transactions as $t)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{{ $t->created_at }}</td>
-                            <td class="px-6 py-4 text-sm">
-                                @if($t->user)
-                                    <div class="font-medium text-gray-900">{{ $t->user->name }}</div>
-                                    <div class="text-xs text-gray-500 mt-0.5">{{ $t->user->email }}</div>
-                                @else
-                                    <div class="text-sm text-gray-400">-</div>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-sm">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700">
-                                    {{ ucfirst($t->type) }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-right font-medium text-gray-900 whitespace-nowrap">
-                                Rp {{ number_format($t->amount, 0, ',', '.') }}
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">
-                                <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{ $t->reference ?? '-' }}</code>
-                            </td>
-                            <td class="px-6 py-4 text-sm">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                                    {{ $t->status ?? 'ok' }}
-                                </span>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
-                                <div class="flex flex-col items-center justify-center">
-                                    <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                    </svg>
-                                    <p class="text-sm text-gray-500 font-medium">Tidak ada transaksi</p>
-                                    <p class="text-xs text-gray-400 mt-1">Data transaksi akan muncul di sini</p>
+                    @php
+                    $typeColor = match($t->type ?? '') {
+                        'topup'    => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+                        'withdraw' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
+                        default    => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+                    };
+                    $statusColor = match($t->status ?? 'ok') {
+                        'approved', 'success', 'ok' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+                        'pending'  => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
+                        'rejected', 'failed' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
+                        default    => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
+                    };
+                    @endphp
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-150">
+                        <td class="px-4 py-3.5 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ $t->created_at }}</td>
+                        <td class="px-4 py-3.5">
+                            @if($t->user)
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                                    {{ strtoupper(substr($t->user->name, 0, 1)) }}
                                 </div>
-                            </td>
-                        </tr>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ $t->user->name }}</p>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ $t->user->email }}</p>
+                                </div>
+                            </div>
+                            @else
+                            <span class="text-gray-400 dark:text-gray-500">—</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3.5">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $typeColor }}">{{ ucfirst($t->type) }}</span>
+                        </td>
+                        <td class="px-4 py-3.5 text-right">
+                            <span class="font-bold {{ ($t->type ?? '') === 'topup' ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-100' }}">
+                                Rp {{ number_format($t->amount, 0, ',', '.') }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3.5 hidden lg:table-cell">
+                            <code class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">{{ $t->reference ?? '—' }}</code>
+                        </td>
+                        <td class="px-4 py-3.5">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $statusColor }}">{{ ucfirst($t->status ?? 'ok') }}</span>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="px-4 py-16 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3">
+                                    <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                </div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tidak ada transaksi</p>
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Data transaksi akan muncul di sini</p>
+                            </div>
+                        </td>
+                    </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        <!-- Pagination Section -->
-        <div class="px-6 py-4 border-t border-gray-100 bg-gray-50">
+        {{-- Pagination --}}
+        <div class="px-5 py-3.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
             {{ $transactions->links('vendor.pagination.superadmin') }}
         </div>
-    </div>
     </div>
 </div>
