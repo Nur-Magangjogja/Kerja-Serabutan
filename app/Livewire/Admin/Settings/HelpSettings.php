@@ -6,7 +6,7 @@ use Livewire\Component;
 use Livewire\Attributes\Layout;
 use App\Models\AppSetting;
 
-#[Layout('layouts.blank')]
+#[Layout('layouts.admin')]
 class HelpSettings extends Component
 {
     public $min_help_nominal;

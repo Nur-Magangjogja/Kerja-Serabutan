@@ -1,10 +1,14 @@
 @php
-    // $customerBanners and $mitraBanners disuplai oleh Livewire component
-    $title = 'Pengaturan Banner';
-    $breadcrumb = 'Super Admin / Pengaturan / Banner';
+    $title = 'Pengaturan';
+    $breadcrumb = 'Super Admin / Pengaturan';
 @endphp
 
 <div>
+    <div class="px-8 pt-8 max-w-7xl mx-auto">
+        <!-- Sub-navigation tabs -->
+        <x-superadmin-settings-nav />
+    </div>
+
     <div class="bg-white shadow-sm border-b border-gray-200 mb-6">
         <div class="px-8 py-4">
             <p class="text-sm text-gray-600">Kelola banner yang tampil di dashboard Customer dan Mitra. Anda

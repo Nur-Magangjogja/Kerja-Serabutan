@@ -67,13 +67,15 @@
 <body class="antialiased bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-200" x-data="{ showLogoutModal: false }" @open-logout-modal.window="showLogoutModal = true">
     <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex transition-colors duration-200">
         <!-- Sidebar -->
-        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg fixed h-full overflow-y-auto transition-colors duration-200">
-            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg fixed inset-y-0 left-0 flex flex-col z-30 transition-colors duration-200">
+            <!-- Brand / Logo (Pinned Top) -->
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                 <h1 class="text-2xl font-bold text-primary-600 dark:text-primary-400">sayabantu</h1>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Admin Panel</p>
             </div>
 
-            <nav class="p-4 pb-28">
+            <!-- Scrollable Navigation -->
+            <nav class="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-1 custom-scrollbar min-h-0">
                 <a href="{{ route('admin.dashboard') }}"
                     class="flex items-center px-4 py-3 mb-2 {{ request()->routeIs('admin.dashboard') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-lg transition">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -173,7 +175,8 @@
                 </button>
             </nav>
 
-            <div class="absolute bottom-0 w-64 p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-colors duration-200">
+            <!-- User Profile (Pinned Bottom) -->
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0 transition-colors duration-200">
                 <div class="flex items-center min-w-0">
                     <div class="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
                         {{ substr(auth()->user()->name, 0, 1) }}
@@ -187,7 +190,7 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 ml-64 overflow-y-auto min-h-screen">
+        <main class="flex-1 ml-64 min-h-screen">
             <!-- Topbar -->
             <div class="sticky top-0 z-20 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 transition-colors duration-200">
                 <div class="px-6 py-3 flex items-center justify-between">

@@ -1,14 +1,12 @@
 @php
-    $title = 'Pengaturan Bantuan';
+    $title = 'Pengaturan';
     $breadcrumb = 'Super Admin / Pengaturan / Bantuan';
 @endphp
 
-<div class="min-h-screen bg-gray-50">
-    <div class="px-4 sm:px-6 py-8 sm:py-12 w-full">
-        <!-- Description -->
-        <div class="mb-6">
-            <p class="text-sm text-gray-600">Kelola nominal minimal dan biaya admin untuk sistem bantuan</p>
-        </div>
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <div class="px-4 sm:px-6 py-8 w-full max-w-7xl mx-auto">
+        <!-- Sub-navigation tabs -->
+        <x-superadmin-settings-nav />
 
         <!-- Admin Fee Revenue Chart Section -->
         <div class="mb-8">
