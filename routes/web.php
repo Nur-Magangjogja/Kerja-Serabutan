@@ -234,11 +234,15 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
     Route::post('/withdraws/{withdraw}/reject', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'reject'])->name('withdraws.reject');
     
     
+    // Appearance / Theme settings
+    Route::view('/settings/appearance', 'superadmin.settings.appearance')->name('settings.appearance');
 });
 
 // Admin routes - require admin role only (for moderasi)
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+    // Appearance / Theme settings
+    Route::view('/settings/appearance', 'admin.settings.appearance')->name('settings.appearance');
     Route::get('/helps', \App\Livewire\Admin\Helps\Index::class)->name('helps');
     Route::get('/helps/approved', \App\Livewire\Admin\Helps\Approved::class)->name('helps.approved');
     // Restore original verifications Livewire component

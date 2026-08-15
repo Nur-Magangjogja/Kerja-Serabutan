@@ -36,3 +36,174 @@
         animation: slideUp 0.3s ease-out;
     }
 }
+
+/* ==========================================================================
+   Comprehensive Dark Mode Styles for Admin & SuperAdmin Panels
+   ========================================================================== */
+html.dark {
+    color-scheme: dark;
+}
+
+html.dark body {
+    background-color: #0f172a; /* slate-900 */
+    color: #f1f5f9; /* slate-100 */
+}
+
+/* Admin / Superadmin Main Background */
+html.dark main {
+    background-color: #0f172a;
+    color: #f1f5f9;
+}
+
+/* Cards & Containers in Dark Mode */
+html.dark main .bg-white,
+html.dark aside.bg-white,
+html.dark nav.bg-white {
+    background-color: #1e293b; /* slate-800 */
+}
+
+html.dark main .bg-gray-50,
+html.dark main .bg-gray-100 {
+    background-color: #0f172a; /* slate-900 */
+}
+
+/* Borders & Dividers in Dark Mode */
+html.dark main .border-gray-100,
+html.dark main .border-gray-200,
+html.dark main .border-gray-300,
+html.dark aside .border-gray-200,
+html.dark nav .border-gray-200 {
+    border-color: #334155; /* slate-700 */
+}
+
+html.dark main .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+html.dark main .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+html.dark main .divide-y > :not([hidden]) ~ :not([hidden]) {
+    border-color: #334155;
+}
+
+/* Typography in Dark Mode */
+html.dark main .text-gray-900,
+html.dark main .text-gray-800,
+html.dark aside .text-gray-900,
+html.dark nav .text-gray-900,
+html.dark nav .text-gray-800 {
+    color: #f8fafc; /* slate-50 */
+}
+
+html.dark main .text-gray-700,
+html.dark main .text-gray-600,
+html.dark aside .text-gray-700 {
+    color: #cbd5e1; /* slate-300 */
+}
+
+html.dark main .text-gray-500,
+html.dark main .text-gray-400,
+html.dark aside .text-gray-500 {
+    color: #94a3b8; /* slate-400 */
+}
+
+/* Form Inputs & Selects in Dark Mode */
+html.dark main input[type="text"],
+html.dark main input[type="email"],
+html.dark main input[type="password"],
+html.dark main input[type="number"],
+html.dark main input[type="date"],
+html.dark main input[type="search"],
+html.dark main select,
+html.dark main textarea {
+    background-color: #0f172a;
+    border-color: #334155;
+    color: #f8fafc;
+}
+
+html.dark main input::placeholder,
+html.dark main textarea::placeholder {
+    color: #64748b;
+}
+
+/* Tables in Dark Mode */
+html.dark main table {
+    color: #f1f5f9;
+}
+
+html.dark main table thead,
+html.dark main table thead tr,
+html.dark main table thead th {
+    background-color: #0f172a;
+    color: #94a3b8;
+    border-color: #334155;
+}
+
+html.dark main table tbody,
+html.dark main table tbody tr {
+    background-color: #1e293b;
+    color: #f1f5f9;
+    border-color: #334155;
+}
+
+html.dark main table tbody tr:hover {
+    background-color: #283548;
+}
+
+html.dark main table td {
+    color: #cbd5e1;
+    border-color: #334155;
+}
+
+html.dark main table td .text-gray-900 {
+    color: #f8fafc;
+}
+
+/* Status Badges */
+html.dark .bg-emerald-50,
+html.dark .bg-emerald-100,
+html.dark .bg-green-50,
+html.dark .bg-green-100 {
+    background-color: rgba(16, 185, 129, 0.18);
+    color: #34d399;
+}
+
+html.dark .bg-red-50,
+html.dark .bg-red-100 {
+    background-color: rgba(239, 68, 68, 0.18);
+    color: #f87171;
+}
+
+html.dark .bg-amber-50,
+html.dark .bg-amber-100,
+html.dark .bg-yellow-50,
+html.dark .bg-yellow-100 {
+    background-color: rgba(245, 158, 11, 0.18);
+    color: #fbbf24;
+}
+
+html.dark .bg-blue-50,
+html.dark .bg-blue-100,
+html.dark .bg-primary-50,
+html.dark .bg-primary-100 {
+    background-color: rgba(14, 165, 233, 0.18);
+    color: #38bdf8;
+}
+
+/* Pagination */
+html.dark nav[role="navigation"] a,
+html.dark nav[role="navigation"] span {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #cbd5e1;
+}
+
+html.dark nav[role="navigation"] span[aria-current="page"] span,
+html.dark nav[role="navigation"] span[aria-current="page"] {
+    background-color: #0284c7;
+    color: #ffffff;
+}
+
+/* Modals */
+html.dark [role="dialog"] .bg-white,
+html.dark .modal-content {
+    background-color: #1e293b;
+    color: #f8fafc;
+    border-color: #334155;
+}

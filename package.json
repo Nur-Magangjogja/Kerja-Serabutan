@@ -4,6 +4,7 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
+        "build:css": "node scripts/build-css.js",
         "dev": "vite"
     },
     "devDependencies": {

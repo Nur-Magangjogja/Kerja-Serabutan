@@ -12,6 +12,22 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 
+    <!-- Theme Initialization Script (Anti-FOUC) -->
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'system';
+            const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (localStorage.getItem('theme') === 'system' || !localStorage.getItem('theme')) {
+                    if (e.matches) document.documentElement.classList.add('dark');
+                    else document.documentElement.classList.remove('dark');
+                }
+            });
+        })();
+    </script>
+
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
