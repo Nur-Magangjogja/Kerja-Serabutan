@@ -19,7 +19,7 @@
         </div>
     </div>
 
-    <div class="p-12">
+    <div class="py-2">
         <!-- Filter Cards -->
         <div class="grid grid-cols-3 gap-6 mb-8">
             <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-200">

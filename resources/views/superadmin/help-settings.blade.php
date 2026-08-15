@@ -3,13 +3,12 @@
     $breadcrumb = 'Super Admin / Pengaturan / Bantuan';
 @endphp
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-    <div class="px-4 sm:px-6 py-8 w-full max-w-7xl mx-auto">
-        <!-- Sub-navigation tabs -->
-        <x-superadmin-settings-nav />
+<div>
+    <!-- Sub-navigation tabs -->
+    <x-superadmin-settings-nav />
 
-        <!-- Admin Fee Revenue Chart Section -->
-        <div class="mb-8">
+    <!-- Admin Fee Revenue Chart Section -->
+    <div class="mb-8">
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <!-- Chart Header -->
                 <div class="border-b border-gray-200 px-4 sm:px-8 py-6 bg-gray-50">

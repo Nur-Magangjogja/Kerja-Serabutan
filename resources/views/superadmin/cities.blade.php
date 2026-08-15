@@ -21,7 +21,7 @@
         </div>
     </div>
 
-    <div class="p-12">
+    <div class="py-2">
         <!-- Provinces management card -->
         <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-200 mb-6">
             <div class="flex items-center justify-between mb-4">

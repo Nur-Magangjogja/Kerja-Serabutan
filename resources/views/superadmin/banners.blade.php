@@ -4,19 +4,19 @@
 @endphp
 
 <div>
-    <div class="px-8 pt-8 max-w-7xl mx-auto">
+    <div class="py-2">
         <!-- Sub-navigation tabs -->
         <x-superadmin-settings-nav />
     </div>
 
     <div class="bg-white shadow-sm border-b border-gray-200 mb-6">
-        <div class="px-8 py-4">
+        <div class="px-6 py-4">
             <p class="text-sm text-gray-600">Kelola banner yang tampil di dashboard Customer dan Mitra. Anda
                 dapat menambah lebih dari satu banner untuk setiap tipe.</p>
         </div>
     </div>
 
-    <div class="px-8 py-8">
+    <div class="py-4">
         <!-- Modal Notifikasi Success -->
         @if (session('message'))
             <div id="success-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">

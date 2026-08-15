@@ -1,7 +1,7 @@
 @extends('layouts.superadmin')
 
 @section('content')
-<div class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+<div class="max-w-5xl mx-auto py-2">
     <!-- Sub-navigation tabs -->
     <x-superadmin-settings-nav />
 

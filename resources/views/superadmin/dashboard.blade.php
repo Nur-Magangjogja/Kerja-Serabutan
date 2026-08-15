@@ -11,8 +11,7 @@
     ];
 @endphp
 
-<div class="min-h-screen bg-gray-50">
-    <div class="px-6 py-8">
+<div>
         <!-- Header -->
         <div class="flex items-start justify-between mb-6">
             <div>
@@ -37,59 +36,59 @@
         </div>
 
         <!-- Top Stat Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
-            <div class="bg-white rounded-lg shadow p-4 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg flex items-center justify-center shadow-sm" style="background: linear-gradient(135deg,#eef2ff,#e0f2fe);">
-                    <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-2-2h-3l-2-2H10L8 6H5a2 2 0 0 0-2 2v8"/></svg>
+        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 flex items-center gap-3 border border-gray-100 dark:border-gray-700 min-w-0">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0 bg-blue-50 dark:bg-blue-900/40">
+                    <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-2-2h-3l-2-2H10L8 6H5a2 2 0 0 0-2 2v8"/></svg>
                 </div>
-                <div>
-                    <div class="text-xs text-gray-500">Total Pengguna</div>
-                    <div class="text-lg font-bold text-gray-900">{{ number_format($stats['total_users'] ?? 0) }}</div>
-                    <div class="text-sm text-gray-500">Semua pengguna</div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow p-4 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg flex items-center justify-center shadow-sm" style="background: linear-gradient(135deg,#fff7ed,#ffedd5);">
-                    <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
-                </div>
-                <div>
-                    <div class="text-xs text-gray-500">Customer</div>
-                    <div class="text-lg font-bold text-gray-900">{{ number_format($stats['total_customers'] ?? 0) }}</div>
-                    <div class="text-sm text-gray-500">Pengguna customer</div>
+                <div class="min-w-0 flex-1">
+                    <div class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Pengguna</div>
+                    <div class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_users'] ?? 0) }}</div>
+                    <div class="text-[11px] text-gray-400 dark:text-gray-500 truncate">Semua pengguna</div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow p-4 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg flex items-center justify-center shadow-sm" style="background: linear-gradient(135deg,#ecfdf5,#bbf7d0);">
-                    <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 flex items-center gap-3 border border-gray-100 dark:border-gray-700 min-w-0">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0 bg-amber-50 dark:bg-amber-900/40">
+                    <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
                 </div>
-                <div>
-                    <div class="text-xs text-gray-500">Total Kota</div>
-                    <div class="text-lg font-bold text-gray-900">{{ number_format($stats['total_cities'] ?? 0) }}</div>
-                    <div class="text-sm text-gray-500">Kota terdaftar</div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow p-4 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg flex items-center justify-center shadow-sm" style="background: linear-gradient(135deg,#eff6ff,#dbeafe);">
-                    <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
-                </div>
-                <div>
-                    <div class="text-xs text-gray-500">Mitra</div>
-                    <div class="text-lg font-bold text-gray-900">{{ number_format($stats['total_mitras'] ?? 0) }}</div>
-                    <div class="text-sm text-gray-500">Pengguna mitra</div>
+                <div class="min-w-0 flex-1">
+                    <div class="text-xs text-gray-500 dark:text-gray-400 truncate">Customer</div>
+                    <div class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_customers'] ?? 0) }}</div>
+                    <div class="text-[11px] text-gray-400 dark:text-gray-500 truncate">Pengguna customer</div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow p-4 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg flex items-center justify-center shadow-sm" style="background: linear-gradient(135deg,#ecfeff,#bbf7d0);">
-                    <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 flex items-center gap-3 border border-gray-100 dark:border-gray-700 min-w-0">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0 bg-emerald-50 dark:bg-emerald-900/40">
+                    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
                 </div>
-                <div>
-                    <div class="text-xs text-gray-500">Admin</div>
-                    <div class="text-lg font-bold text-gray-900">{{ number_format($stats['total_admins'] ?? 0) }}</div>
-                    <div class="text-sm text-gray-500">Admin & Super Admin</div>
+                <div class="min-w-0 flex-1">
+                    <div class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Kota</div>
+                    <div class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_cities'] ?? 0) }}</div>
+                    <div class="text-[11px] text-gray-400 dark:text-gray-500 truncate">Kota terdaftar</div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 flex items-center gap-3 border border-gray-100 dark:border-gray-700 min-w-0">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0 bg-indigo-50 dark:bg-indigo-900/40">
+                    <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <div class="text-xs text-gray-500 dark:text-gray-400 truncate">Mitra</div>
+                    <div class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_mitras'] ?? 0) }}</div>
+                    <div class="text-[11px] text-gray-400 dark:text-gray-500 truncate">Pengguna mitra</div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 flex items-center gap-3 border border-gray-100 dark:border-gray-700 min-w-0 col-span-2 sm:col-span-1">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0 bg-teal-50 dark:bg-teal-900/40">
+                    <svg class="w-5 h-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <div class="text-xs text-gray-500 dark:text-gray-400 truncate">Admin</div>
+                    <div class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_admins'] ?? 0) }}</div>
+                    <div class="text-[11px] text-gray-400 dark:text-gray-500 truncate">Admin & Super Admin</div>
                 </div>
             </div>
         </div>
