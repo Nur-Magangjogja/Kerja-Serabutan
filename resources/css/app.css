@@ -124,19 +124,25 @@ html.dark main {
     color: #f9fafb;
 }
 
-/* Cards & Containers in Dark Mode */
+/* Cards & Containers in Dark Mode (Global for All Roles: Admin, SuperAdmin, Mitra, Customer) */
+html.dark .bg-white,
 html.dark main .bg-white,
 html.dark aside.bg-white,
 html.dark nav.bg-white {
     background-color: #1f2937; /* Flowbite gray-800 */
 }
 
+html.dark .bg-gray-50,
+html.dark .bg-gray-100,
 html.dark main .bg-gray-50,
 html.dark main .bg-gray-100 {
     background-color: #111827; /* Flowbite gray-900 */
 }
 
 /* Borders & Dividers in Dark Mode */
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-gray-300,
 html.dark main .border-gray-100,
 html.dark main .border-gray-200,
 html.dark main .border-gray-300,
@@ -148,11 +154,15 @@ html.dark nav .border-gray-200 {
 
 html.dark main .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
 html.dark main .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
-html.dark main .divide-y > :not([hidden]) ~ :not([hidden]) {
+html.dark main .divide-y > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
     border-color: #374151;
 }
 
 /* Typography in Dark Mode */
+html.dark .text-gray-900,
+html.dark .text-gray-800,
 html.dark main .text-gray-900,
 html.dark main .text-gray-800,
 html.dark aside .text-gray-900,
@@ -162,12 +172,16 @@ html.dark nav .text-gray-800 {
     color: #ffffff; /* Flowbite text-white */
 }
 
+html.dark .text-gray-700,
+html.dark .text-gray-600,
 html.dark main .text-gray-700,
 html.dark main .text-gray-600,
 html.dark aside .text-gray-700 {
     color: #d1d5db; /* Flowbite gray-300 */
 }
 
+html.dark .text-gray-500,
+html.dark .text-gray-400,
 html.dark main .text-gray-500,
 html.dark main .text-gray-400,
 html.dark aside .text-gray-500 {
@@ -175,6 +189,14 @@ html.dark aside .text-gray-500 {
 }
 
 /* Form Inputs & Selects in Flowbite Dark Mode */
+html.dark input[type="text"],
+html.dark input[type="email"],
+html.dark input[type="password"],
+html.dark input[type="number"],
+html.dark input[type="date"],
+html.dark input[type="search"],
+html.dark select,
+html.dark textarea,
 html.dark main input[type="text"],
 html.dark main input[type="email"],
 html.dark main input[type="password"],
@@ -183,6 +205,13 @@ html.dark main input[type="date"],
 html.dark main input[type="search"],
 html.dark main select,
 html.dark main textarea,
+html.dark input.bg-gray-50,
+html.dark select.bg-gray-50,
+html.dark textarea.bg-gray-50 {
+    background-color: #374151 !important; /* Flowbite gray-700 */
+    border-color: #4b5563 !important; /* Flowbite gray-600 */
+    color: #ffffff !important;
+}
 html.dark input.bg-gray-50,
 html.dark select.bg-gray-50,
 html.dark textarea.bg-gray-50 {

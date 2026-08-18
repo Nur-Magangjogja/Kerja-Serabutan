@@ -19,20 +19,42 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
 
-    <!-- Theme Initialization Script (Anti-FOUC) -->
+    <!-- Flowbite & Global Theme Initialization Script (Anti-FOUC) -->
     <script>
-        (function() {
-            const theme = localStorage.getItem('theme') || 'system';
-            const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-            if (isDark) document.documentElement.classList.add('dark');
-            else document.documentElement.classList.remove('dark');
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-                if (localStorage.getItem('theme') === 'system' || !localStorage.getItem('theme')) {
-                    if (e.matches) document.documentElement.classList.add('dark');
-                    else document.documentElement.classList.remove('dark');
+        window.getTheme = function() {
+            return localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
+        };
+
+        window.applyTheme = function(mode) {
+            mode = mode || window.getTheme();
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isDark = mode === 'dark' || (mode === 'system' && prefersDark);
+            
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            
+            window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: mode, isDark: isDark } }));
+        };
+
+        window.setTheme = function(mode) {
+            localStorage.setItem('theme', mode);
+            localStorage.setItem('color-theme', mode);
+            window.applyTheme(mode);
+        };
+
+        // Execute immediately before DOM render
+        window.applyTheme();
+
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+                if (window.getTheme() === 'system') {
+                    window.applyTheme('system');
                 }
             });
-        })();
+        }
     </script>
 
     <!-- Scripts -->
@@ -211,11 +233,11 @@
     </style>
 </head>
 
-<body class="font-sans antialiased bg-gray-50">
+<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
     <!-- Centered Container -->
-    <div class="min-h-screen flex items-start justify-center bg-gray-100">
+    <div class="min-h-screen flex items-start justify-center bg-gray-100 dark:bg-gray-950 transition-colors duration-200">
         <!-- Mobile Width Container -->
-        <div class="w-full max-w-md bg-gray-50 relative shadow-2xl">
+        <div class="w-full max-w-md bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative shadow-2xl transition-colors duration-200">
             <!-- Global notification (toast) for customer actions -->
             <div id="customer-global-notification" class="fixed top-4 left-1/2 transform -translate-x-1/2 pointer-events-none" style="max-width:448px; width:100vw; z-index:99999;">
                 <div id="customer-global-notification-inner" class="mx-auto max-w-md"></div>
@@ -231,7 +253,7 @@
 
             <!-- Bottom Navigation (styled like mitra layout) -->
             @auth
-                <nav id="bottom-nav" class="fixed bottom-0 left-1/2 transform -translate-x-1/2 bg-white border-t border-gray-200 shadow-2xl z-50"
+                <nav id="bottom-nav" class="fixed bottom-0 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-2xl z-50 transition-colors duration-200"
                     style="max-width: 448px; width: 100vw;">
                     <div class="max-w-md mx-auto flex items-center justify-around px-4 py-2.5">
                         <a href="{{ route('customer.dashboard') }}"

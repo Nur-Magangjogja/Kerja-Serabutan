@@ -39,18 +39,36 @@
         <!-- Settings Content -->
         <div class="max-w-md mx-auto px-6 -mt-16 relative z-10">
             <div class="space-y-3">
+                <!-- Theme / Appearance Settings -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 transition">
+                    <div class="flex items-center gap-4 mb-3.5">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex-shrink-0 shadow-xs">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-900 dark:text-white text-sm">Tema Tampilan</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Pilih tema terang, gelap, atau otomatis sistem</p>
+                        </div>
+                    </div>
+                    <div class="pt-1 flex justify-center">
+                        <x-theme-switcher />
+                    </div>
+                </div>
+
                 <!-- Notification Settings -->
                 <a href="{{ route('mitra.settings.notifications') }}"
-                    class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-4 hover:shadow-md hover:border-[#0098e7]/30 transition">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background: linear-gradient(135deg, #0098e7 0%, #0060b0 100%);">
+                    class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-4 hover:shadow-md hover:border-[#0098e7]/30 transition">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, #0098e7 0%, #0060b0 100%);">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h3 class="font-bold text-gray-900 text-sm">Pengaturan Notifikasi</h3>
-                        <p class="text-xs text-gray-500 mt-0.5">Kelola preferensi notifikasi</p>
+                        <h3 class="font-bold text-gray-900 dark:text-white text-sm">Pengaturan Notifikasi</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Kelola preferensi notifikasi</p>
                     </div>
                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -59,16 +77,16 @@
 
                 <!-- Password Settings -->
                 <a href="{{ route('mitra.settings.password') }}"
-                    class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-4 hover:shadow-md hover:border-[#0098e7]/30 transition">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background: linear-gradient(135deg, #0098e7 0%, #0060b0 100%);">
+                    class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-4 hover:shadow-md hover:border-[#0098e7]/30 transition">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, #0098e7 0%, #0060b0 100%);">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h3 class="font-bold text-gray-900 text-sm">Ubah Kata Sandi</h3>
-                        <p class="text-xs text-gray-500 mt-0.5">Perbarui keamanan akun Anda</p>
+                        <h3 class="font-bold text-gray-900 dark:text-white text-sm">Ubah Kata Sandi</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Perbarui keamanan akun Anda</p>
                     </div>
                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -77,16 +95,16 @@
 
                 <!-- Delete Account -->
                 <button onclick="confirmDelete()"
-                    class="w-full bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-4 hover:shadow-md hover:border-red-200 transition">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-red-500 to-red-600">
+                    class="w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-4 hover:shadow-md hover:border-red-200 dark:hover:border-red-800/60 transition cursor-pointer">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-red-500 to-red-600 flex-shrink-0 shadow-xs">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                     </div>
                     <div class="flex-1 text-left">
-                        <h3 class="font-bold text-gray-900 text-sm">Hapus Akun</h3>
-                        <p class="text-xs text-gray-500 mt-0.5">Hapus akun secara permanen</p>
+                        <h3 class="font-bold text-gray-900 dark:text-white text-sm">Hapus Akun</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Hapus akun secara permanen</p>
                     </div>
                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
