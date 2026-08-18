@@ -61,6 +61,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Notifications
         Route::get('/notifications', \App\Livewire\Customer\Notifications\Index::class)->name('notifications.index');
+        Route::post('/notifications/cleanup-on-exit', function () {
+            if (auth()->check()) {
+                auth()->user()->notifications()->whereNotNull('read_at')->delete();
+            }
+            return response()->json(['success' => true]);
+        })->name('notifications.cleanup-on-exit');
 
         // Balance & Transactions
         // Route untuk balance management bisa ditambahkan di sini
@@ -140,6 +146,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Notifications (Mitra)
         Route::get('/notifications', \App\Livewire\Mitra\Notifications\Index::class)->name('notifications.index');
+        Route::post('/notifications/cleanup-on-exit', function () {
+            if (auth()->check()) {
+                auth()->user()->notifications()->whereNotNull('read_at')->delete();
+            }
+            return response()->json(['success' => true]);
+        })->name('notifications.cleanup-on-exit');
 
         // Reports
         Route::get('/reports/create', \App\Livewire\Mitra\Reports\Create::class)->name('reports.create');

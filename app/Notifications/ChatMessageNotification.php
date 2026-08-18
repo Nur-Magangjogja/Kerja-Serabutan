@@ -28,15 +28,22 @@ class ChatMessageNotification extends Notification
         return ['database'];
     }
 
-    public function toDatabase($notifiable)
+    public function toArray($notifiable)
     {
         return [
             'type' => 'chat_message',
+            'title' => 'Pesan dari ' . ($this->fromName ?? 'Mitra'),
             'help_id' => $this->helpId,
             'message' => $this->message,
+            'body' => $this->message,
             'from_id' => $this->fromId,
             'from_name' => $this->fromName,
-            'url' => route('chat.show', ['help' => $this->helpId]) ?? route('customer.chat', ['help' => $this->helpId]),
+            'url' => route('chat.show', ['help' => $this->helpId]),
         ];
+    }
+
+    public function toDatabase($notifiable)
+    {
+        return $this->toArray($notifiable);
     }
 }

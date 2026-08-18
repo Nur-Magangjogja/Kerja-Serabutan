@@ -4,13 +4,17 @@ namespace App\Livewire\Mitra\Helps;
 
 use App\Models\Help;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\Attributes\Layout;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 #[Layout('layouts.mitra')]
 class HelpDetail extends Component
 {
+    use WithFileUploads;
+
     protected $listeners = [
         'closePartnerCancelStatusModal' => 'closePartnerCancelStatusModal',
     ];
@@ -22,9 +26,13 @@ class HelpDetail extends Component
     public $review = '';
     public $showPartnerCancelModal = false;
     public $partnerCancelReason = '';
-    // UI for showing the live status modal after partner cancel request
     public $showPartnerCancelStatusModal = false;
     public $partnerCancelStatus = null; // 'pending' | 'accepted' | 'rejected'
+
+    // Proof photo and completion
+    public $proof_photo;
+    public $completion_notes = '';
+    public $showCompletionModal = false;
 
     public function mount($id)
     {
@@ -246,7 +254,16 @@ class HelpDetail extends Component
 
     public function markServiceCompleted()
     {
-        $this->updateStatus('sedang_diproses', 'service_completed_at');
+        $data = ['status' => 'waiting_customer_confirmation'];
+        if (!$this->help->service_completed_at) {
+            $data['service_completed_at'] = now();
+        }
+        $this->help->update($data);
+        $this->currentStatus = 'waiting_customer_confirmation';
+        $this->help->refresh();
+
+        $this->dispatch('show-status-notification', message: 'Menunggu konfirmasi dari customer!');
+        session()->flash('message', 'Menunggu konfirmasi dari customer!');
     }
 
     public function startService()
@@ -266,24 +283,82 @@ class HelpDetail extends Component
         session()->flash('message', 'Pekerjaan telah dimulai!');
     }
 
-    public function markCompleted()
+    public function openCompletionModal()
     {
-        $this->help->update([
-            'status' => 'waiting_customer_confirmation',
+        $this->reset(['proof_photo', 'completion_notes']);
+        $this->showCompletionModal = true;
+    }
+
+    public function closeCompletionModal()
+    {
+        $this->showCompletionModal = false;
+        $this->reset(['proof_photo', 'completion_notes']);
+    }
+
+    public function submitCompletionProof()
+    {
+        $this->validate([
+            'proof_photo' => 'required|image|max:5120',
+            'completion_notes' => 'nullable|string|max:1000',
+        ], [
+            'proof_photo.required' => 'Foto bukti pengerjaan wajib diunggah.',
+            'proof_photo.image' => 'File bukti harus berupa gambar (JPG, PNG, WEBP).',
+            'proof_photo.max' => 'Ukuran foto bukti maksimal 5MB.',
         ]);
 
-        // If service_completed_at is not set, set it now
+        $path = $this->proof_photo->store('helps/proofs', 'public');
+
+        $data = [
+            'status' => 'waiting_customer_confirmation',
+            'proof_photo' => $path,
+            'completion_notes' => $this->completion_notes,
+        ];
         if (!$this->help->service_completed_at) {
-            $this->help->update(['service_completed_at' => now()]);
+            $data['service_completed_at'] = now();
         }
+        $this->help->update($data);
 
         $this->currentStatus = 'waiting_customer_confirmation';
+        $this->showCompletionModal = false;
         $this->help->refresh();
 
-        // Dispatch notifikasi ke Alpine.js
-        $this->dispatch('show-status-notification', message: 'Menunggu konfirmasi dari customer!');
+        // Send automatic chat message with attached proof photo to Customer
+        try {
+            $customer = $this->help->user;
+            $mitra = auth()->user();
+            if ($customer && $mitra) {
+                $caption = "Halo Kak {$customer->name}, pekerjaan '{$this->help->title}' telah selesai saya kerjakan. " . 
+                    ($this->completion_notes ? "Catatan: \"{$this->completion_notes}\". " : "") .
+                    "Berikut terlampir bukti foto hasil pengerjaan. Mohon periksa dan konfirmasi penyelesaian ya. Terima kasih!";
 
-        session()->flash('message', 'Menunggu konfirmasi dari customer!');
+                \App\Models\Chat::create([
+                    'help_id' => $this->help->id,
+                    'mitra_id' => $mitra->id,
+                    'customer_id' => $customer->id,
+                    'message' => $caption,
+                    'photo' => $path,
+                    'sender_type' => 'mitra',
+                    'read_at' => null,
+                ]);
+
+                $customer->notify(new \App\Notifications\ChatMessageNotification(
+                    $this->help->id,
+                    $caption,
+                    $mitra->id,
+                    $mitra->name
+                ));
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('Failed to send completion proof chat: ' . $e->getMessage());
+        }
+
+        $this->dispatch('show-status-notification', message: 'Bukti pengerjaan berhasil dikirim! Menunggu konfirmasi customer.');
+        session()->flash('message', 'Bukti pengerjaan berhasil dikirim! Menunggu konfirmasi customer.');
+    }
+
+    public function markCompleted()
+    {
+        $this->openCompletionModal();
     }
 
     public function submitCustomerRating()

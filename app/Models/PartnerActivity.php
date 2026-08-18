@@ -11,8 +11,10 @@ class PartnerActivity extends Model
 
     protected $fillable = [
         'user_id',
+        'help_id',
         'activity_type',
         'description',
+        'photo',
         'ip_address',
         'user_agent',
     ];
@@ -20,6 +22,11 @@ class PartnerActivity extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function help()
+    {
+        return $this->belongsTo(Help::class);
     }
 
     /**

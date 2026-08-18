@@ -182,4 +182,151 @@
             </div>
         @endif
     </div>
+
+    {{-- ===== Help Detail & Activity History Modal for Admin ===== --}}
+    @if($showDetailModal && $selectedHelp)
+        <div class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 max-h-[90vh] flex flex-col animate-scale-in"
+                 @click.stop>
+                
+                {{-- Header --}}
+                <div class="bg-gradient-to-r from-primary-600 to-blue-700 px-6 py-5 text-white flex items-center justify-between flex-shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-bold text-sm">
+                            #{{ $selectedHelp->id }}
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-base leading-tight">{{ $selectedHelp->title }}</h3>
+                            <p class="text-xs text-blue-100 mt-0.5">Riwayat Aktivitas & Bukti Pengerjaan Lengkap</p>
+                        </div>
+                    </div>
+                    <button wire:click="closeDetailModal" class="p-1.5 rounded-lg hover:bg-white/20 transition">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Scrollable Body --}}
+                <div class="p-6 overflow-y-auto space-y-6 text-sm">
+                    {{-- Summary Grid --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="p-3.5 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-700">
+                            <span class="text-[11px] font-semibold text-gray-400 dark:text-gray-400 block uppercase">Customer</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-100 mt-0.5 block">{{ $selectedHelp->customer->name ?? $selectedHelp->user->name ?? '-' }}</span>
+                            <span class="text-xs text-gray-500">{{ $selectedHelp->customer->phone ?? $selectedHelp->user->phone ?? '-' }}</span>
+                        </div>
+                        <div class="p-3.5 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-700">
+                            <span class="text-[11px] font-semibold text-gray-400 dark:text-gray-400 block uppercase">Mitra Pelaksana</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">{{ $selectedHelp->mitra->name ?? 'Belum Diambil' }}</span>
+                            <span class="text-xs text-gray-500">{{ $selectedHelp->mitra->phone ?? '-' }}</span>
+                        </div>
+                        <div class="p-3.5 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-700">
+                            <span class="text-[11px] font-semibold text-gray-400 dark:text-gray-400 block uppercase">Nominal & Status</span>
+                            <span class="font-bold text-gray-900 dark:text-white mt-0.5 block">Rp {{ number_format($selectedHelp->amount ?? 0, 0, ',', '.') }}</span>
+                            <span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400">
+                                {{ $selectedHelp->status }}
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Description & Address --}}
+                    <div class="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-2xl border border-gray-100 dark:border-gray-700">
+                        <span class="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">Deskripsi Permohonan:</span>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{{ $selectedHelp->description }}</p>
+                        @if($selectedHelp->full_address || $selectedHelp->location)
+                            <div class="mt-2.5 pt-2 border-t border-gray-200/60 dark:border-gray-700/60 text-xs text-gray-500 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-rose-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span>{{ $selectedHelp->full_address ?? $selectedHelp->location }}</span>
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- Photos Comparison (Initial vs Proof) --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {{-- Initial Photo --}}
+                        <div class="p-3.5 bg-gray-50 dark:bg-gray-700/30 rounded-2xl border border-gray-100 dark:border-gray-700">
+                            <span class="text-xs font-bold text-gray-700 dark:text-gray-200 block mb-2">📷 Foto Awal dari Customer:</span>
+                            @if($selectedHelp->photo)
+                                <a href="{{ asset('storage/' . $selectedHelp->photo) }}" target="_blank" rel="noopener">
+                                    <img src="{{ asset('storage/' . $selectedHelp->photo) }}" alt="Foto Awal" class="w-full h-44 object-cover rounded-xl border border-gray-200 dark:border-gray-600 hover:opacity-95 transition">
+                                </a>
+                            @else
+                                <div class="w-full h-44 rounded-xl bg-gray-100 dark:bg-gray-700 flex flex-col items-center justify-center text-gray-400 text-xs">
+                                    <svg class="w-8 h-8 mb-1 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    Tidak ada foto awal
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- Proof Photo from Mitra --}}
+                        <div class="p-3.5 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl border border-emerald-200 dark:border-emerald-800/40">
+                            <span class="text-xs font-bold text-emerald-800 dark:text-emerald-300 block mb-2">📸 Foto Bukti Pengerjaan dari Mitra:</span>
+                            @if($selectedHelp->proof_photo)
+                                <a href="{{ asset('storage/' . $selectedHelp->proof_photo) }}" target="_blank" rel="noopener">
+                                    <img src="{{ asset('storage/' . $selectedHelp->proof_photo) }}" alt="Bukti Pengerjaan" class="w-full h-44 object-cover rounded-xl border border-emerald-200 dark:border-emerald-700 hover:opacity-95 transition shadow-xs">
+                                </a>
+                                @if($selectedHelp->completion_notes)
+                                    <p class="text-xs text-gray-600 dark:text-gray-300 mt-2 italic">"{{ $selectedHelp->completion_notes }}"</p>
+                                @endif
+                            @else
+                                <div class="w-full h-44 rounded-xl bg-emerald-100/40 dark:bg-emerald-900/20 flex flex-col items-center justify-center text-emerald-600/70 text-xs">
+                                    <svg class="w-8 h-8 mb-1 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    Menunggu pengerjaan / upload bukti dari mitra
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- Activity Journey Timeline (Dari Awal sampai Akhir) --}}
+                    <div>
+                        <h4 class="font-bold text-xs text-gray-900 dark:text-white uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Kronologi & Jejak Aktivitas (Activity Timeline)
+                        </h4>
+
+                        @if($helpActivities && $helpActivities->count() > 0)
+                            <div class="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-200 dark:before:bg-gray-700">
+                                @foreach($helpActivities as $act)
+                                    <div class="relative flex items-start gap-3">
+                                        <div class="absolute -left-6 top-1 w-5 h-5 rounded-full bg-primary-600 text-white flex items-center justify-center ring-4 ring-white dark:ring-gray-800">
+                                            <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                                        </div>
+                                        <div class="flex-1 bg-gray-50 dark:bg-gray-700/40 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                                            <div class="flex items-center justify-between gap-2 mb-1">
+                                                <span class="font-bold text-xs text-gray-800 dark:text-gray-200">
+                                                    {{ $act->user->name ?? 'Sistem' }} ({{ ucfirst($act->user->role ?? 'user') }})
+                                                </span>
+                                                <span class="text-[10px] text-gray-400">{{ $act->created_at->format('d M Y, H:i') }}</span>
+                                            </div>
+                                            <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{{ $act->description }}</p>
+                                            @if($act->photo)
+                                                <div class="mt-2">
+                                                    <a href="{{ asset('storage/' . $act->photo) }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-semibold text-primary-600 hover:text-primary-700">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                        Lihat Foto Bukti Terlampir
+                                                    </a>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl text-center text-xs text-gray-500">
+                                Belum ada rekaman audit aktivitas khusus untuk bantuan ini.
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Footer --}}
+                <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-100 dark:border-gray-700 flex justify-end">
+                    <button wire:click="closeDetailModal" class="px-4 py-2 text-xs font-semibold bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-500 transition">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

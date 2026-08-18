@@ -79,7 +79,7 @@ class CompletedHelps extends Component
         $helpId = (int) $helpId;
         $this->selectedHelp = Help::with(['user', 'city', 'rating'])->find($helpId);
         if (! $this->selectedHelp) {
-            $this->dispatchBrowserEvent('notification', ['type' => 'error', 'message' => 'Data bantuan tidak ditemukan.']);
+            $this->dispatch('notification', ['type' => 'error', 'message' => 'Data bantuan tidak ditemukan.']);
             return;
         }
         $this->selectedHelpId = $helpId;

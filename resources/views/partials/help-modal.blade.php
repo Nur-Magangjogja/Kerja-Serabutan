@@ -70,10 +70,6 @@
                         class="block w-full text-center bg-primary-500 text-white px-4 py-2 rounded-lg">Lihat Halaman
                         Bantuan</a>
                 </div>
-                <!-- Inline rating component mount point (for mitra to rate customer inside this modal) -->
-                <div id="help-modal-rate-wrap" class="mt-3 px-0">
-                    @livewire('mitra.rate-customer', ['helpId' => null, 'inline' => true], key('help-modal-rate'))
-                </div>
             </div>
         </div>
     </div>

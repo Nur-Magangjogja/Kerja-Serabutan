@@ -112,9 +112,20 @@
                                 @if($messages && $messages->count() > 0)
                                     @foreach($messages as $msg)
                                         <div class="flex {{ $msg->sender_type === 'mitra' ? 'justify-end' : 'justify-start' }}">
-                                            <div class="rounded-lg p-3 max-w-[80%] {{ $msg->sender_type === 'mitra' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900' }}">
-                                                <p class="text-sm leading-snug break-words">{{ $msg->message }}</p>
-                                                <div class="text-xs mt-1 text-gray-300 text-right {{ $msg->sender_type === 'mitra' ? 'text-white/70' : 'text-gray-400' }}">{{ $msg->created_at->format('H:i') }}</div>
+                                            <div class="rounded-2xl p-3.5 max-w-[85%] shadow-sm {{ $msg->sender_type === 'mitra' ? 'bg-blue-600 text-white rounded-br-xs' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-xs' }}">
+                                                @if($msg->photo)
+                                                    <div class="mb-2 rounded-xl overflow-hidden border border-black/10">
+                                                        <a href="{{ asset('storage/' . $msg->photo) }}" target="_blank" rel="noopener">
+                                                            <img src="{{ asset('storage/' . $msg->photo) }}" alt="Foto Lampiran / Bukti" class="w-full max-h-56 object-cover hover:opacity-95 transition cursor-pointer">
+                                                        </a>
+                                                        <div class="px-2 py-1 bg-black/40 text-[10px] text-white flex items-center gap-1">
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                            Foto Bukti Pengerjaan
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                                <p class="text-sm leading-relaxed break-words">{{ $msg->message }}</p>
+                                                <div class="text-[10px] mt-1.5 text-right {{ $msg->sender_type === 'mitra' ? 'text-white/80' : 'text-gray-400' }}">{{ $msg->created_at->format('H:i') }}</div>
                                             </div>
                                         </div>
                                     @endforeach

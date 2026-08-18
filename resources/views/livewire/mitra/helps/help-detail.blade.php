@@ -401,35 +401,52 @@
         @endif
 
         @if ($help->status === 'in_progress' || $help->status === 'sedang_diproses')
-            <div class="bg-white px-4 py-4 rounded-xl shadow-sm border border-gray-100 mb-3">
-                <button wire:click="markCompleted"
-                    class="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition flex items-center justify-center gap-2">
+            <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-3">
+                <button wire:click="openCompletionModal"
+                    class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    Selesai
+                    Selesaikan & Upload Bukti Pekerjaan
                 </button>
-                <p class="text-xs text-gray-500 text-center mt-2">Klik tombol ini setelah pekerjaan selesai dikerjakan
-                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">Upload foto hasil pengerjaan sebagai bukti penyelesaian kepada customer</p>
             </div>
         @endif
 
         @if ($help->status === 'waiting_customer_confirmation')
-            <div class="bg-orange-50 px-4 py-3 rounded-xl border border-orange-100 mb-3">
+            <div class="bg-amber-50 dark:bg-amber-950/40 px-4 py-4 rounded-2xl border border-amber-200 dark:border-amber-800 mb-3">
                 <div class="flex items-start gap-3">
-                    <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                    <div class="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-white flex-shrink-0">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h4 class="font-semibold text-sm text-gray-900">Menunggu konfirmasi customer</h4>
-                        <p class="text-xs text-gray-600 mt-1">Anda telah menandai pekerjaan selesai. Tunggu konfirmasi
-                            dari customer sebelum pesanan dianggap final.</p>
+                        <h4 class="font-bold text-sm text-gray-900 dark:text-white">Menunggu Konfirmasi Customer</h4>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">Anda telah mengunggah bukti penyelesaian. Menunggu customer memeriksa dan mengonfirmasi penyelesaian tugas.</p>
+                        
+                        @if($help->proof_photo)
+                            <div class="mt-3 pt-3 border-t border-amber-200/60 dark:border-amber-800/40">
+                                <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 block mb-1.5">Foto Bukti yang Terkirim:</span>
+                                <img src="{{ asset('storage/' . $help->proof_photo) }}" alt="Bukti Pekerjaan" class="w-full max-h-48 object-cover rounded-xl border border-amber-200 shadow-sm">
+                            </div>
+                        @endif
                     </div>
                 </div>
+            </div>
+        @endif
+
+        @if (in_array($help->status, ['completed', 'selesai']) && $help->proof_photo)
+            <div class="bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3.5 rounded-2xl border border-emerald-200 dark:border-emerald-800 mb-3">
+                <span class="text-xs font-bold text-emerald-800 dark:text-emerald-300 block mb-2">📸 Foto Bukti Penyelesaian Pekerjaan:</span>
+                <img src="{{ asset('storage/' . $help->proof_photo) }}" alt="Bukti Selesai" class="w-full max-h-48 object-cover rounded-xl border border-emerald-200 shadow-sm">
+                @if($help->completion_notes)
+                    <p class="text-xs text-gray-600 dark:text-gray-300 mt-2 italic">"{{ $help->completion_notes }}"</p>
+                @endif
             </div>
         @endif
 
@@ -964,6 +981,102 @@
                             </svg>
                             Hubungi Customer
                         </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Completion Proof Upload Modal --}}
+    @if($showCompletionModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in"
+                 @click.stop>
+                
+                {{-- Header --}}
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5 text-white flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-base leading-tight">Bukti Selesai Pekerjaan</h3>
+                            <p class="text-xs text-blue-100">Kirim foto hasil kerja ke customer</p>
+                        </div>
+                    </div>
+                    <button wire:click="closeCompletionModal" class="p-1.5 rounded-lg hover:bg-white/20 transition">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Form Body --}}
+                <div class="p-6 space-y-4">
+                    {{-- Upload Area --}}
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
+                            Upload Foto Bukti Jasa <span class="text-rose-500">*</span>
+                        </label>
+
+                        @if ($proof_photo)
+                            <div class="relative rounded-2xl overflow-hidden border-2 border-primary-500 bg-gray-50 mb-2">
+                                <img src="{{ $proof_photo->temporaryUrl() }}" alt="Preview Bukti" class="w-full h-48 object-cover">
+                                <button type="button" wire:click="$set('proof_photo', null)" class="absolute top-2 right-2 p-1.5 bg-rose-600 text-white rounded-full shadow-lg hover:bg-rose-700 transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        @else
+                            <label class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl cursor-pointer bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50/50 dark:hover:bg-gray-700 transition">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
+                                    <svg class="w-10 h-10 text-primary-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Klik untuk ambil foto / upload</p>
+                                    <p class="text-[11px] text-gray-400 mt-0.5">PNG, JPG, JPEG atau WEBP (Maks. 5MB)</p>
+                                </div>
+                                <input type="file" wire:model="proof_photo" accept="image/*" class="hidden" capture="environment">
+                            </label>
+                        @endif
+
+                        <div wire:loading wire:target="proof_photo" class="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1.5">
+                            <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                            Mengunggah foto bukti...
+                        </div>
+
+                        @error('proof_photo')
+                            <p class="text-xs text-rose-500 font-medium mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Completion Notes --}}
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
+                            Catatan Pengerjaan (Opsional)
+                        </label>
+                        <textarea wire:model="completion_notes" rows="3" placeholder="Contoh: Pekerjaan perbaikan pipa wastafel sudah tuntas dan tidak ada kebocoran lagi..."
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 text-xs focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                    </div>
+
+                    {{-- Action Buttons --}}
+                    <div class="flex gap-2.5 pt-2">
+                        <button type="button" wire:click="closeCompletionModal"
+                            class="flex-1 py-3 px-4 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold text-xs hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                            Batal
+                        </button>
+                        <button type="button" wire:click="submitCompletionProof" wire:loading.attr="disabled"
+                            class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs shadow-md hover:from-blue-700 hover:to-indigo-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50">
+                            <span wire:loading.remove wire:target="submitCompletionProof">Kirim Bukti & Selesai</span>
+                            <span wire:loading wire:target="submitCompletionProof" class="inline-flex items-center gap-1">
+                                <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                Memproses...
+                            </span>
+                        </button>
                     </div>
                 </div>
             </div>

@@ -22,6 +22,11 @@ class RateMitra extends Component
     {
         $this->help = Help::with('mitra')->findOrFail($helpId);
 
+        if (!auth()->check() || !auth()->user()->isCustomer()) {
+            $this->alreadyRated = true;
+            return;
+        }
+
         $this->alreadyRated = Rating::hasRated(
             $this->help->id,
             auth()->id(),
@@ -36,20 +41,29 @@ class RateMitra extends Component
 
     public function submitRating()
     {
+        if (!auth()->check() || !auth()->user()->isCustomer()) {
+            session()->flash('error', 'Hanya akun Customer yang dapat memberikan rating.');
+            $this->dispatch('notify', ['type' => 'error', 'message' => 'Hanya akun Customer yang dapat memberikan rating.']);
+            return;
+        }
+
         $this->validate();
 
         if (!in_array($this->help->status, ['completed', 'selesai'])) {
-            $this->dispatchBrowserEvent('notify', ['type' => 'error', 'message' => 'Hanya bisa memberi rating untuk bantuan yang sudah selesai.']);
+            session()->flash('error', 'Hanya bisa memberi rating untuk bantuan yang sudah selesai.');
+            $this->dispatch('notify', ['type' => 'error', 'message' => 'Hanya bisa memberi rating untuk bantuan yang sudah selesai.']);
             return;
         }
 
         if ($this->alreadyRated) {
-            $this->dispatchBrowserEvent('notify', ['type' => 'error', 'message' => 'Anda sudah memberikan rating untuk mitra ini.']);
+            session()->flash('error', 'Anda sudah memberikan rating untuk mitra ini.');
+            $this->dispatch('notify', ['type' => 'error', 'message' => 'Anda sudah memberikan rating untuk mitra ini.']);
             return;
         }
 
         if ($this->help->user_id !== auth()->id()) {
-            $this->dispatchBrowserEvent('notify', ['type' => 'error', 'message' => 'Anda tidak berhak memberikan rating untuk bantuan ini.']);
+            session()->flash('error', 'Anda tidak berhak memberikan rating untuk bantuan ini.');
+            $this->dispatch('notify', ['type' => 'error', 'message' => 'Anda tidak berhak memberikan rating untuk bantuan ini.']);
             return;
         }
 
@@ -66,13 +80,10 @@ class RateMitra extends Component
         ]);
 
         $this->alreadyRated = true;
-        $this->dispatchBrowserEvent('notify', ['type' => 'success', 'message' => 'Terima kasih, rating berhasil dikirim']);
-
-        // notify browser so parent can close modal
-        $this->dispatchBrowserEvent('rating-submitted', ['helpId' => $this->help->id]);
-        
-        // notify parent components if needed
-        $this->emitUp('ratingSubmitted');
+        session()->flash('message', 'Terima kasih! Rating & ulasan Anda berhasil dikirim.');
+        $this->dispatch('notify', ['type' => 'success', 'message' => 'Terima kasih, rating berhasil dikirim']);
+        $this->dispatch('rating-submitted', ['helpId' => $this->help->id]);
+        $this->dispatch('ratingSubmitted');
     }
 
     public function resetForm()

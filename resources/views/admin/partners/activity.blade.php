@@ -21,11 +21,14 @@
             'login' => ['label' => 'Login Berhasil', 'badge' => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'],
             'login_failed' => ['label' => 'Login Gagal', 'badge' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400'],
             'logout' => ['label' => 'Logout', 'badge' => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'],
-            'take_help' => ['label' => 'Ambil Bantuan', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'],
-            'help_started' => ['label' => 'Mulai Bantuan', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'],
-            'help_completed' => ['label' => 'Selesaikan Bantuan', 'badge' => 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300'],
-            'help_cancelled' => ['label' => 'Batalkan Bantuan', 'badge' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400'],
             'help_created' => ['label' => 'Customer Buat Bantuan', 'badge' => 'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400'],
+            'take_help' => ['label' => 'Ambil Bantuan', 'badge' => 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400'],
+            'partner_on_the_way' => ['label' => 'Mitra Menuju Lokasi', 'badge' => 'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400'],
+            'partner_arrived' => ['label' => 'Mitra Tiba di Lokasi', 'badge' => 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400'],
+            'help_started' => ['label' => 'Mulai Pekerjaan', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'],
+            'help_completed' => ['label' => 'Pekerjaan Selesai (Bukti Terkirim)', 'badge' => 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300'],
+            'help_confirmed' => ['label' => 'Customer Konfirmasi Selesai', 'badge' => 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300'],
+            'help_cancelled' => ['label' => 'Batalkan Bantuan', 'badge' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400'],
             'help_reviewed' => ['label' => 'Customer Beri Ulasan', 'badge' => 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400'],
             'profile_updated' => ['label' => 'Update Profil', 'badge' => 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'],
             'ktp_reuploaded' => ['label' => 'Upload Ulang KTP', 'badge' => 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'],
@@ -225,7 +228,14 @@
                                     </span>
                                 </td>
                                 <td class="px-4 py-3.5 text-gray-600 dark:text-gray-300 hidden md:table-cell">
-                                    <p class="max-w-xs truncate text-xs" title="{{ $a->description }}">{{ $a->description ?? '—' }}</p>
+                                    <div class="flex items-center gap-2">
+                                        @if($a->photo)
+                                            <a href="{{ asset('storage/' . $a->photo) }}" target="_blank" class="w-8 h-8 rounded-lg overflow-hidden border border-emerald-300 flex-shrink-0 hover:opacity-80 transition shadow-xs" title="Lihat Foto Bukti">
+                                                <img src="{{ asset('storage/' . $a->photo) }}" alt="Foto" class="w-full h-full object-cover">
+                                            </a>
+                                        @endif
+                                        <p class="max-w-xs truncate text-xs" title="{{ $a->description }}">{{ $a->description ?? '—' }}</p>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3.5 hidden lg:table-cell">
                                     <p class="font-mono text-xs text-gray-600 dark:text-gray-300">{{ $a->ip_address ?? '-' }}</p>
@@ -274,11 +284,28 @@
             <div class="p-6 overflow-y-auto space-y-4 text-xs">
                 <div class="bg-gray-50 dark:bg-gray-750 p-4 rounded-xl space-y-2 border border-gray-100 dark:border-gray-700">
                     <div class="flex justify-between"><span class="text-gray-400">User:</span> <span class="font-semibold text-gray-800 dark:text-gray-200">{{ optional($selectedActivity->user)->name ?? '—' }} ({{ optional($selectedActivity->user)->email ?? '—' }})</span></div>
+                    <div class="flex justify-between"><span class="text-gray-400">Role:</span> <span class="font-semibold text-gray-800 dark:text-gray-200">{{ ucfirst(optional($selectedActivity->user)->role ?? '—') }}</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">Tipe:</span> <span class="font-semibold text-primary-600 dark:text-primary-400">{{ $formatActivity($selectedActivity->activity_type) }}</span></div>
+                    @if($selectedActivity->help_id)
+                        <div class="flex justify-between"><span class="text-gray-400">Terkait Bantuan:</span> <span class="font-bold text-indigo-600 dark:text-indigo-400">#{{ $selectedActivity->help_id }}</span></div>
+                    @endif
                     <div class="flex justify-between"><span class="text-gray-400">Deskripsi:</span> <span class="font-medium text-gray-700 dark:text-gray-300 text-right">{{ $selectedActivity->description ?? '—' }}</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">IP:</span> <span class="font-mono text-gray-700 dark:text-gray-300">{{ $selectedActivity->ip_address ?? '—' }}</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">User Agent:</span> <span class="text-gray-700 dark:text-gray-300 text-right max-w-xs truncate">{{ $selectedActivity->user_agent ?? '—' }}</span></div>
                 </div>
+
+                @if($selectedActivity->photo)
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block mb-2 flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            Foto Bukti Aktivitas / Pengerjaan:
+                        </span>
+                        <a href="{{ asset('storage/' . $selectedActivity->photo) }}" target="_blank" rel="noopener">
+                            <img src="{{ asset('storage/' . $selectedActivity->photo) }}" alt="Foto Bukti" class="w-full max-h-64 object-contain rounded-lg bg-black/5 dark:bg-black/30 border border-gray-200 dark:border-gray-600 hover:opacity-95 transition cursor-pointer">
+                        </a>
+                    </div>
+                @endif
+            </div>
 
                 @if(isset($recentActivities) && !$recentActivities->isEmpty())
                 <div class="space-y-2">

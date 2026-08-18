@@ -62,6 +62,9 @@ Route::middleware('auth')->group(function () {
         ->name('admin.verification');
 
     Route::post('logout', function () {
+        if (Auth::check()) {
+            Auth::user()->notifications()->whereNotNull('read_at')->delete();
+        }
         Auth::logout();
         request()->session()->invalidate();
         request()->session()->regenerateToken();

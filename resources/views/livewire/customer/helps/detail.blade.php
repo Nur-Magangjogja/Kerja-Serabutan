@@ -438,28 +438,44 @@
             </div>
         </div>
 
-        {{-- Confirmation Button --}}
+        {{-- Confirmation Button with Proof Photo --}}
         @if($help->status === 'waiting_customer_confirmation')
-            <div class="bg-gradient-to-r from-orange-50 to-yellow-50 mt-2 px-4 py-4 border border-orange-200 rounded-lg">
+            <div class="bg-gradient-to-r from-amber-50 to-orange-50 mt-2 px-5 py-5 border border-amber-200 rounded-2xl shadow-sm">
                 <div class="flex items-start gap-3 mb-4">
-                    <div class="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-11 h-11 rounded-xl bg-amber-500 flex items-center justify-center flex-shrink-0 text-white shadow-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
                     <div class="flex-1">
                         <h3 class="font-bold text-sm text-gray-900 mb-1">Konfirmasi Penyelesaian Pesanan</h3>
-                        <p class="text-xs text-gray-700 leading-relaxed">Rekan jasa telah menyelesaikan pekerjaan. Silakan konfirmasi bahwa pesanan telah selesai dengan baik.</p>
+                        <p class="text-xs text-gray-700 leading-relaxed">Mitra telah menyelesaikan pekerjaan dan mengirimkan bukti hasil jasa. Silakan periksa bukti foto dan lakukan konfirmasi.</p>
                     </div>
                 </div>
+
+                @if($help->proof_photo)
+                    <div class="mb-4 p-3 bg-white rounded-xl border border-amber-200">
+                        <span class="text-xs font-bold text-gray-800 block mb-1.5 flex items-center gap-1">
+                            <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            Foto Bukti Hasil Pengerjaan:
+                        </span>
+                        <a href="{{ asset('storage/' . $help->proof_photo) }}" target="_blank" rel="noopener">
+                            <img src="{{ asset('storage/' . $help->proof_photo) }}" alt="Bukti Pengerjaan" class="w-full max-h-52 object-cover rounded-lg border border-gray-100 hover:opacity-95 transition cursor-pointer shadow-xs">
+                        </a>
+                        @if($help->completion_notes)
+                            <p class="text-xs text-gray-600 mt-2 italic bg-amber-50/50 p-2 rounded-md">"{{ $help->completion_notes }}"</p>
+                        @endif
+                    </div>
+                @endif
+
                 <button wire:click="confirmCompletion" 
-                        class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md flex items-center justify-center gap-2">
+                        class="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3.5 px-4 rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all duration-200 shadow-md flex items-center justify-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                     </svg>
                     Konfirmasi Pesanan Selesai
                 </button>
-                <p class="text-xs text-center text-gray-600 mt-2">Dengan mengkonfirmasi, Anda menyatakan bahwa layanan telah selesai</p>
+                <p class="text-[11px] text-center text-gray-500 mt-2">Dengan mengonfirmasi, pesanan dinyatakan tuntas dan dana diteruskan ke mitra</p>
             </div>
         @endif
 

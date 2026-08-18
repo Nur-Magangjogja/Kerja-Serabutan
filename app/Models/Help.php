@@ -30,6 +30,8 @@ class Help extends Model
         'description',
         'equipment_provided',
         'photo',
+        'proof_photo',
+        'completion_notes',
         'location',
         'full_address',
         'latitude',

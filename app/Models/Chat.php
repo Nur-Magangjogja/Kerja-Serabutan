@@ -12,6 +12,7 @@ class Chat extends Model
         'mitra_id',
         'customer_id',
         'message',
+        'photo',
         'sender_type',
         'read_at',
     ];

@@ -15,6 +15,8 @@ class Index extends Component
     public $search = '';
     public $statusFilter = '';
     public $perPage = 10;
+    public $selectedHelpId = null;
+    public $showDetailModal = false;
 
     public function updatedSearch()
     {
@@ -33,7 +35,14 @@ class Index extends Component
 
     public function viewHelp($id)
     {
-        session()->flash('message', 'View help #' . $id);
+        $this->selectedHelpId = $id;
+        $this->showDetailModal = true;
+    }
+
+    public function closeDetailModal()
+    {
+        $this->showDetailModal = false;
+        $this->selectedHelpId = null;
     }
 
     public function approveHelp($id)
@@ -85,6 +94,9 @@ class Index extends Component
         $pendingHelps = (clone $statsQuery)->whereIn('status', ['pending', 'menunggu_mitra'])->count();
         $completedHelps = (clone $statsQuery)->whereIn('status', ['completed', 'selesai'])->count();
 
-        return view('admin.helps', compact('helps', 'totalHelps', 'pendingHelps', 'completedHelps'));
+        $selectedHelp = $this->selectedHelpId ? Help::with(['customer', 'mitra', 'category', 'city', 'rating'])->find($this->selectedHelpId) : null;
+        $helpActivities = $this->selectedHelpId ? \App\Models\PartnerActivity::with('user')->where('help_id', $this->selectedHelpId)->orderBy('created_at', 'asc')->get() : collect();
+
+        return view('admin.helps', compact('helps', 'totalHelps', 'pendingHelps', 'completedHelps', 'selectedHelp', 'helpActivities'));
     }
 }
