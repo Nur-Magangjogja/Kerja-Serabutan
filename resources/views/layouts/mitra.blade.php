@@ -62,182 +62,53 @@
     <style>
         [x-cloak] { display: none !important; }
         
-        /* Bottom Navigation Animations */
-        @keyframes slideUp {
-            from {
-                transform: translate(-50%, 100%);
-                opacity: 0;
-            }
-            to {
-                transform: translate(-50%, 0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes ripple {
-            0% {
-                transform: scale(0);
-                opacity: 0.6;
-            }
-            100% {
-                transform: scale(4);
-                opacity: 0;
-            }
-        }
-
-        @keyframes bounce-in {
-            0% {
-                transform: scale(0.3);
-                opacity: 0;
-            }
-            50% {
-                transform: scale(1.05);
-            }
-            70% {
-                transform: scale(0.9);
-            }
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-
-        #bottom-nav {
-            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
+        /* Bottom Navigation Styles */
         .nav-item {
             position: relative;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .nav-item::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(0, 152, 231, 0.15);
-            transform: translate(-50%, -50%);
-            transition: width 0.4s, height 0.4s;
-        }
-
-        .nav-item:active::before {
-            width: 60px;
-            height: 60px;
-        }
-
-        .nav-item:hover {
-            transform: translateY(-3px);
+            overflow: hidden;
+            border-radius: 0.75rem;
+            transition: color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
         }
 
         .nav-item:active {
-            transform: translateY(-1px) scale(0.95);
+            transform: scale(0.95);
         }
 
         .nav-item svg {
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .nav-item:hover svg {
-            transform: scale(1.15);
+            transition: transform 0.2s ease, color 0.2s ease;
         }
 
         .nav-item:active svg {
             transform: scale(0.9);
         }
 
-        .nav-item.active svg {
-            animation: bounce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
         .nav-item .nav-label {
-            transition: all 0.2s ease;
-        }
-
-        .nav-item:hover .nav-label {
-            transform: scale(1.05);
-        }
-
-        .nav-fab {
-            position: relative;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .nav-fab::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #0098e7 0%, #0077cc 100%);
-            transform: translate(-50%, -50%);
-            z-index: -1;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .nav-fab:hover {
-            transform: translateY(-4px) rotate(90deg);
-        }
-
-        .nav-fab:hover::after {
-            transform: translate(-50%, -50%) scale(1.2);
-            box-shadow: 0 8px 20px rgba(0, 152, 231, 0.4);
-        }
-
-        .nav-fab:active {
-            transform: translateY(-2px) rotate(90deg) scale(0.9);
-        }
-
-        .nav-fab svg {
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .nav-fab:hover svg {
-            transform: rotate(-90deg);
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-2px);
-            }
-        }
-
-        .nav-item.active {
-            animation: float 2s ease-in-out infinite;
+            transition: color 0.2s ease;
         }
 
         /* Indicator dot for active state */
         .nav-item.active::after {
             content: '';
             position: absolute;
-            bottom: -2px;
+            bottom: 0px;
             left: 50%;
             transform: translateX(-50%);
             width: 4px;
             height: 4px;
             border-radius: 50%;
             background: currentColor;
-            animation: bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
     </style>
 </head>
 
-<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 overflow-x-hidden">
     <!-- Centered Container -->
     <div class="min-h-screen flex items-start justify-center bg-gray-100 dark:bg-gray-950 transition-colors duration-200">
         <!-- Mobile Width Container -->
         <div class="w-full max-w-md bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative shadow-2xl transition-colors duration-200">
             <!-- Global notification (toast) for mitra actions -->
-            <div id="mitra-global-notification" class="fixed top-4 left-1/2 transform -translate-x-1/2 pointer-events-none" style="max-width:448px; width:100vw; z-index:99999;">
+            <div id="mitra-global-notification" class="fixed top-4 inset-x-0 mx-auto w-full max-w-md px-4 pointer-events-none z-[99999]">
                 <div id="mitra-global-notification-inner" class="mx-auto max-w-md"></div>
             </div>
             <!-- Content -->
@@ -252,9 +123,8 @@
                 </div>
 
                 <!-- Bottom Navigation Bar -->
-                <div class="fixed bottom-0 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-2xl z-50 transition-colors duration-200"
-                    style="max-width: 448px; width: 100vw;">
-                    <div class="max-w-md mx-auto flex items-center justify-around px-4 py-2.5">
+                <div class="fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-2xl z-50 transition-colors duration-200">
+                    <div class="flex items-center justify-around px-2 py-2">
                         <a href="{{ route('mitra.dashboard') }}"
                             class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.dashboard') && !request()->has('tab') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }} transition">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

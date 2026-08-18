@@ -61,13 +61,13 @@
     @livewireStyles
 </head>
 
-<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 overflow-x-hidden">
     <!-- Centered Container -->
     <div class="min-h-screen flex items-start justify-center bg-gray-100 dark:bg-gray-950 transition-colors duration-200">
         <!-- Mobile Width Container -->
         <div class="w-full max-w-md bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative shadow-2xl transition-colors duration-200">
             <!-- Global notification (toast) for mitra actions -->
-            <div id="mitra-global-notification" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-60 pointer-events-none" style="max-width:448px; width:100vw;">
+            <div id="mitra-global-notification" class="fixed top-4 inset-x-0 mx-auto w-full max-w-md px-4 pointer-events-none z-[99999]">
                 <div id="mitra-global-notification-inner" class="mx-auto max-w-md"></div>
             </div>
             <!-- Content -->
@@ -78,9 +78,8 @@
                 </div>
 
                 <!-- Bottom Navigation Bar -->
-                <div class="fixed bottom-0 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-2xl z-50 transition-colors duration-200"
-                    style="max-width: 448px; width: 100vw;">
-                    <div class="max-w-md mx-auto flex items-center justify-around px-4 py-2.5">
+                <div class="fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-2xl z-50 transition-colors duration-200">
+                    <div class="flex items-center justify-around px-2 py-2">
                         <a href="{{ route('mitra.dashboard') }}"
                             class="flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.dashboard') && !request()->has('tab') ? 'text-primary-600' : 'text-gray-400 hover:text-primary-600' }} transition">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
