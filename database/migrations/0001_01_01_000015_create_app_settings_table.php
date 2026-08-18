@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('helps', function (Blueprint $table) {
-            $table->text('equipment_provided')->nullable()->after('description');
+        Schema::create('app_settings', function (Blueprint $table) {
+            $table->id();
+            $table->string('key')->unique();
+            $table->longText('value')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -21,8 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('helps', function (Blueprint $table) {
-            $table->dropColumn('equipment_provided');
-        });
+        Schema::dropIfExists('app_settings');
     }
 };

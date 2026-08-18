@@ -11,13 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('partner_activities', function (Blueprint $table) {
+        Schema::create('categories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('activity_type');
-            $table->string('description')->nullable();
-            $table->ipAddress('ip_address')->nullable();
-            $table->string('user_agent')->nullable();
+            $table->string('name');
+            $table->string('slug')->nullable()->unique();
+            $table->string('icon')->nullable();
+            $table->string('color')->nullable();
+            $table->text('description')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
@@ -27,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('partner_activities');
+        Schema::dropIfExists('categories');
     }
 };
