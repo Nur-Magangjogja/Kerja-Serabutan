@@ -15,10 +15,10 @@ use App\Models\Registration;
 
 class LoginForm extends Form
 {
-    #[Validate('required|string|email')]
+    #[Validate('required|string|min:3|max:100')]
     public string $email = '';
 
-    #[Validate('required|string')]
+    #[Validate('required|string|min:6')]
     public string $password = '';
 
     #[Validate('boolean')]
@@ -33,26 +33,35 @@ class LoginForm extends Form
     {
         $this->ensureIsNotRateLimited();
 
-        if (!Auth::attempt($this->only(['email', 'password']), $this->remember)) {
-            RateLimiter::hit($this->throttleKey());
+        $loginInput = trim($this->email);
+        $fieldType = filter_var($loginInput, FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
+        
+        $credentials = [
+            $fieldType => $loginInput,
+            'password' => $this->password,
+        ];
+
+        if (!Auth::attempt($credentials, $this->remember)) {
+            RateLimiter::hit($this->throttleKey(), 60);
 
             // Log failed login attempt for partner reporting (if user exists)
             try {
-                $found = User::where('email', $this->email)->first();
-                PartnerActivity::create([
-                    'user_id' => $found?->id,
-                    'activity_type' => 'login_failed',
-                    'description' => 'Gagal login',
-                    'ip_address' => request()->ip(),
-                    'user_agent' => request()->header('User-Agent'),
-                ]);
+                $found = User::where('email', $loginInput)->orWhere('name', $loginInput)->first();
+                if ($found) {
+                    PartnerActivity::create([
+                        'user_id' => $found->id,
+                        'activity_type' => 'login_failed',
+                        'description' => 'Gagal login (kredensial salah)',
+                        'ip_address' => request()->ip(),
+                        'user_agent' => request()->header('User-Agent'),
+                    ]);
+                }
             } catch (\Throwable $e) {
-                // Don't let logging failures affect authentication flow
                 \Log::warning('Failed to record login_failed PartnerActivity: ' . $e->getMessage());
             }
 
             throw ValidationException::withMessages([
-                'form.email' => trans('auth.failed'),
+                'form.email' => 'Email/Username atau password yang Anda masukkan tidak sesuai.',
             ]);
         }
 

@@ -15,9 +15,9 @@ class EnsureAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // If not authenticated, redirect to admin login
+        // If not authenticated, redirect to login
         if (!auth()->check()) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login');
         }
 
         // Only for admin role (not super_admin)

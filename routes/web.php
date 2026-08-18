@@ -2,14 +2,24 @@
 
 use Illuminate\Support\Facades\Route;
 
-// Landing/Welcome page (for guest)
-Route::view('/welcome', 'welcome')->name('welcome');
+// Landing / Login route - Unified entrance
+Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
+    return redirect()->route('login');
+})->name('home');
+
+// Alias welcome page
+Route::get('/welcome', function () {
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
+    return redirect()->route('login');
+})->name('welcome');
 
 // Rejected registration page (public)
 Route::get('/rejected/{registration}', [\App\Http\Controllers\Auth\RejectedController::class, 'show'])->name('auth.rejected');
-
-// Public routes - Home page with helps listing
-Route::view('/', 'home')->name('home');
 
 // Authenticated routes
 Route::middleware(['auth', 'verified'])->group(function () {

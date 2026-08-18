@@ -34,9 +34,10 @@ Route::middleware('guest')->group(function () {
     Volt::route('login', 'pages.auth.login')
         ->name('login');
 
-    // Admin Login - separate route using Livewire component
-    Route::get('admin/login', AdminLogin::class)
-        ->name('admin.login');
+    // Admin Login - aliases directly to unified login
+    Route::get('admin/login', function () {
+        return redirect()->route('login');
+    })->name('admin.login');
 
     Volt::route('forgot-password', 'pages.auth.forgot-password')
         ->name('password.request');
@@ -61,14 +62,11 @@ Route::middleware('auth')->group(function () {
         ->name('admin.verification');
 
     Route::post('logout', function () {
-        $userRole = auth()->user()->role ?? '';
-        $isAdmin = in_array($userRole, ['admin', 'super_admin']);
-
         Auth::logout();
         request()->session()->invalidate();
         request()->session()->regenerateToken();
 
-        // Redirect admins to admin login, others to public login
-        return redirect($isAdmin ? route('admin.login') : route('login'));
+        // Redirect all users cleanly to unified login
+        return redirect()->route('login');
     })->name('logout');
 });

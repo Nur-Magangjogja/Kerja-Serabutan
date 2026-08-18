@@ -58,6 +58,17 @@
         animation: slideUp 0.3s ease-out;
     }
 
+    @keyframes progressIndeterminate {
+        0% { transform: translateX(-100%) scaleX(0.2); }
+        50% { transform: translateX(0%) scaleX(0.7); }
+        100% { transform: translateX(100%) scaleX(0.2); }
+    }
+
+    .animate-progress-indeterminate {
+        animation: progressIndeterminate 1.2s infinite linear;
+        transform-origin: 0% 50%;
+    }
+
     /* Custom slim scrollbar for sidebar & tables */
     .custom-scrollbar {
         scrollbar-width: thin;

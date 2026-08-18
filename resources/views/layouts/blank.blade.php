@@ -1,15 +1,47 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="min-h-full">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ?? 'sayabantu' }}</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <title>{{ $title ?? (\App\Models\AppSetting::get('app_name', 'SayaBantu') . ' - ' . \App\Models\AppSetting::get('app_tagline', 'Platform Bantuan Sosial')) }}</title>
+    <meta name="description" content="{{ \App\Models\AppSetting::get('app_description', 'Solusi bantuan cepat, aman, dan terpercaya.') }}">
+
+    @php
+        $fav = \App\Models\AppSetting::get('app_favicon') ?: \App\Models\AppSetting::get('app_logo');
+    @endphp
+    @if($fav && \Illuminate\Support\Facades\Storage::disk('public')->exists($fav))
+        <link rel="icon" href="{{ asset('storage/' . $fav) }}">
+    @endif
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
+
+    <!-- Theme Initialization Script (Anti-FOUC) -->
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'system';
+            const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (localStorage.getItem('theme') === 'system' || !localStorage.getItem('theme')) {
+                    if (e.matches) document.documentElement.classList.add('dark');
+                    else document.documentElement.classList.remove('dark');
+                }
+            });
+        })();
+    </script>
+
+    <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
 
-<body class="antialiased">
+<body class="antialiased font-sans bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 min-h-screen">
     {{ $slot }}
     @livewireScripts
 </body>
