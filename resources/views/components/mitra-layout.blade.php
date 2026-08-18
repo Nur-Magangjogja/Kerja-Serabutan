@@ -59,6 +59,47 @@
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+    <style>
+        [x-cloak] { display: none !important; }
+        
+        /* Bottom Navigation Styles */
+        .nav-item {
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            border-radius: 0.75rem;
+            transition: color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
+        }
+
+        .nav-item:active {
+            transform: scale(0.95);
+        }
+
+        .nav-item svg {
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-item:active svg {
+            transform: scale(0.9);
+        }
+
+        .nav-item .nav-label {
+            transition: color 0.2s ease;
+        }
+
+        /* Indicator dot for active state */
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+    </style>
 </head>
 
 <body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 overflow-x-hidden">
@@ -73,54 +114,54 @@
             <!-- Content -->
             <div class="flex flex-col min-h-screen">
                 <!-- Main Content -->
-                <div class="flex-1">
+                <div class="flex-1 pb-20">
                     {{ $slot }}
                 </div>
 
                 <!-- Bottom Navigation Bar -->
-                <div class="fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-2xl z-50 transition-colors duration-200">
+                <nav id="bottom-nav" class="fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-2xl z-50 transition-colors duration-200">
                     <div class="flex items-center justify-around px-2 py-2">
                         <a href="{{ route('mitra.dashboard') }}"
-                            class="flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.dashboard') && !request()->has('tab') ? 'text-primary-600' : 'text-gray-400 hover:text-primary-600' }} transition">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.dashboard') && !request()->has('tab') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
                             </svg>
-                            <span class="text-xs font-bold mt-0.5">Beranda</span>
+                            <span class="nav-label text-xs font-bold mt-0.5">Beranda</span>
                         </a>
+
                         <a href="{{ route('mitra.helps.all') }}"
-                            class="flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.helps.all') ? 'text-primary-600' : 'text-gray-400 hover:text-primary-600' }} transition">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.helps.all') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
                             </svg>
-                            <span class="text-xs font-bold mt-0.5">Bantuan</span>
+                            <span class="nav-label text-xs font-bold mt-0.5">Bantuan</span>
                         </a>
+
                         <a href="{{ route('mitra.helps.processing') }}"
-                            class="flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.helps.processing') ? 'text-primary-600' : 'text-gray-400 hover:text-primary-600' }} transition">
+                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.helps.processing') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M3 5h18v2H3V5zm0 6h12v2H3v-2zm0 6h8v2H3v-2z" />
+                                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z" />
                             </svg>
-                            <span class="text-xs font-bold mt-0.5">Diproses</span>
+                            <span class="nav-label text-xs font-bold mt-0.5">Diproses</span>
                         </a>
+
                         <a href="{{ route('mitra.helps.completed') }}"
-                            class="flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.helps.completed') ? 'text-primary-600' : 'text-gray-400 hover:text-primary-600' }} transition">
+                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.helps.completed') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                <path d="M3 3h18v2H3V3zm0 4h18v14H3V7zm5 3v8h2v-8H8zm4 0v8h2v-8h-2z" />
                             </svg>
-                            <span class="text-xs font-bold mt-0.5">Riwayat</span>
+                            <span class="nav-label text-xs font-bold mt-0.5">Riwayat</span>
                         </a>
+
                         <a href="{{ route('mitra.profile') }}"
-                            class="flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.profile') ? 'text-primary-600' : 'text-gray-400 hover:text-primary-600' }} transition">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.profile*') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
                             </svg>
-                            <span class="text-xs font-bold mt-0.5">Profil</span>
+                            <span class="nav-label text-xs font-bold mt-0.5">Profil</span>
                         </a>
                     </div>
-                </div>
+                </nav>
             </div>
         </div>
     </div>

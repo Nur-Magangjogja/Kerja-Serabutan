@@ -91,12 +91,12 @@
             </div>
 
             <!-- Content -->
-            <div class="bg-white rounded-t-3xl -mt-6 px-5 pt-6 pb-8">
-                <form wire:submit.prevent="prepareConfirm" enctype="multipart/form-data" class="space-y-4"
+            <div class="bg-white rounded-t-3xl -mt-6 px-5 pt-8 pb-8">
+                <form wire:submit.prevent="prepareConfirm" enctype="multipart/form-data" class="space-y-5"
                       onsubmit="console.log('📤 Form submitted with coordinates:', { lat: @this.get('latitude'), lng: @this.get('longitude') })">
                     <!-- Title -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                    <div class="pt-1 pb-1">
+                        <label class="block text-xs font-bold text-gray-700 mb-2">
                             <span class="flex items-center">
                                 <svg class="w-3.5 h-3.5 mr-1.5 text-primary-500" fill="currentColor"
                                     viewBox="0 0 20 20">

@@ -1,4 +1,40 @@
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+    <style>
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .stats-card {
+            animation: scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+        }
+
+        .avatar-container {
+            animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+        }
+
+        .logout-modal-content {
+            animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+    </style>
+
     @php
         // Mitra stats
         $totalHelped = \App\Models\Help::where('mitra_id', $user->id)->count();
@@ -27,7 +63,7 @@
                 </div>
 
                 <!-- Profile Avatar & Info -->
-                <div class="text-center">
+                <div class="text-center avatar-container">
                     <div class="relative inline-block">
                         @if($user->selfie_photo)
                             <img src="{{ asset('storage/' . $user->selfie_photo) }}" alt="Avatar" class="w-20 h-20 rounded-full object-cover mx-auto ring-4 ring-white/30 shadow-xl">
@@ -130,7 +166,7 @@
 
         <!-- Logout Modal -->
         <div id="logout-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-5" onclick="if(event.target === this) this.classList.add('hidden')">
-            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-sm w-full p-6 transform transition-all border border-gray-100 dark:border-gray-700">
+            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-sm w-full p-6 transform transition-all border border-gray-100 dark:border-gray-700 logout-modal-content">
                 <div class="text-center mb-6">
                     <div class="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
                         <svg class="w-7 h-7 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
