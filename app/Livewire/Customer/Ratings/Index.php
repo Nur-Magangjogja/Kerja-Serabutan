@@ -7,7 +7,7 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use App\Models\Rating;
 
-#[Layout('layouts.customer')]
+#[Layout('layouts.app')]
 class Index extends Component
 {
     use WithPagination;
@@ -20,8 +20,16 @@ class Index extends Component
     {
         $userId = auth()->id();
 
-        $baseQuery = Rating::with(['rater', 'help'])
-            ->forCustomer($userId);
+        // Customer's given ratings to mitras
+        $baseQuery = Rating::with(['mitra', 'ratee', 'help'])
+            ->where(function ($q) use ($userId) {
+                $q->where('rater_id', $userId)
+                    ->orWhere('user_id', $userId);
+            })
+            ->where(function ($q) {
+                $q->where('type', 'customer_to_mitra')
+                    ->orWhereNull('type');
+            });
 
         $ratings = (clone $baseQuery)->latest()->paginate($this->perPage);
 

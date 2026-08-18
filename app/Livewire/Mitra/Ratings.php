@@ -11,19 +11,25 @@ use Livewire\Attributes\Layout;
 class Ratings extends Component
 {
     use WithPagination;
-    // Do not store paginator or complex objects as public properties in Livewire.
-    // We'll fetch paginated ratings in render() and pass them to the view.
+
+    protected $paginationTheme = 'tailwind';
+
+    public $perPage = 10;
 
     public function render()
     {
-        $ratings = Rating::where('mitra_id', auth()->id())
-            ->with('help.user')
-            ->latest()
-            ->paginate(10);
+        $mitraId = auth()->id();
 
-        $allRatings = Rating::where('mitra_id', auth()->id())->get();
-        $totalRatings = $allRatings->count();
-        $averageRating = $totalRatings > 0 ? round($allRatings->avg('rating'), 1) : 0;
+        $baseQuery = Rating::with(['rater', 'user', 'help'])
+            ->where(function ($q) use ($mitraId) {
+                $q->where('ratee_id', $mitraId)
+                    ->orWhere('mitra_id', $mitraId);
+            });
+
+        $ratings = (clone $baseQuery)->latest()->paginate($this->perPage);
+        $totalRatings = (clone $baseQuery)->count();
+        $averageRating = (clone $baseQuery)->avg('rating') ?: 0;
+        $averageRating = round($averageRating, 1);
 
         return view('livewire.mitra.ratings.index', compact('ratings', 'totalRatings', 'averageRating'));
     }
