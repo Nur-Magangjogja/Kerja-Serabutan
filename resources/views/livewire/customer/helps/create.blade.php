@@ -372,43 +372,47 @@
 
                     <!-- Tandai Lokasi di Peta -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1.5">
-                            <span class="flex items-center">
-                                <svg class="w-3.5 h-3.5 mr-1.5 text-primary-500" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                Tandai Lokasi di Peta
-                            </span>
-                        </label>
+                        <div class="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+                            <label class="block text-xs font-bold text-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-3.5 h-3.5 mr-1.5 text-primary-500" fill="currentColor"
+                                        viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd"
+                                            d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    Titik Lokasi Bantuan (Peta Realtime)
+                                </span>
+                            </label>
+                            <button type="button" onclick="locateUserGPS()" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition shadow-sm active:scale-95">
+                                <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.071-7.071l-1.414 1.414M8.343 15.657l-1.414 1.414m12.728 0l-1.414-1.414M8.343 8.343L6.929 6.929M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                                Gunakan Lokasi GPS Saya
+                            </button>
+                        </div>
 
-                        <!-- Map Container -->
-                        <div wire:ignore id="map" style="height: 280px; min-height: 280px;"
-                            class="w-full rounded-lg border border-gray-300 mb-2 bg-gray-100"></div>
+                        <!-- Map Container with relative button & overlay -->
+                        <div class="relative rounded-xl overflow-hidden border border-gray-300 shadow-inner bg-gray-100 mb-2">
+                            <div wire:ignore id="map" style="height: 280px; min-height: 280px;" class="w-full"></div>
+                        </div>
 
-                        <!-- Koordinat Display -->
+                        <!-- Koordinat Display & Address helper -->
                         <div id="coordinates-display"
-                            class="bg-green-50 border border-green-200 rounded-lg p-3 mb-2 hidden">
-                            <p class="text-xs font-semibold text-green-800 mb-1">✓ Lokasi Ditandai:</p>
-                            <p class="text-xs text-green-900 font-mono">
-                                Lat: <span id="lat-display" class="font-semibold">-</span>, 
-                                Lng: <span id="lng-display" class="font-semibold">-</span>
-                            </p>
+                            class="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 mb-2 hidden flex items-center justify-between flex-wrap gap-2 text-xs">
+                            <div class="flex items-center gap-1.5 text-emerald-800 font-medium">
+                                <svg class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                <span>Titik GPS: <span id="lat-display" class="font-mono font-semibold">-</span>, <span id="lng-display" class="font-mono font-semibold">-</span></span>
+                            </div>
+                            <span id="gps-status-pill" class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-semibold">Tersimpan</span>
                         </div>
 
                         <!-- Hidden inputs for Livewire -->
                         <input type="hidden" wire:model="latitude" id="latitude-input">
                         <input type="hidden" wire:model="longitude" id="longitude-input">
 
-                        <p class="text-xs text-gray-500 mt-1.5 flex items-center">
-                            <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            Klik pada peta untuk menandai titik lokasi bantuan
+                        <p class="text-xs text-gray-500 mt-1 flex items-center">
+                            <svg class="w-3.5 h-3.5 mr-1 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Klik pada peta atau geser pin merah untuk menyesuaikan titik lokasi bantuan.
                         </p>
 
                         @error('latitude')
@@ -1089,116 +1093,148 @@
             }, 100);
         });
         
+        let customerMap = null;
+        let customerMarker = null;
+
+        function locateUserGPS() {
+            if (!navigator.geolocation) {
+                alert('Browser Anda tidak mendukung deteksi lokasi GPS.');
+                return;
+            }
+
+            const pill = document.getElementById('gps-status-pill');
+            if (pill) {
+                pill.textContent = 'Mencari GPS...';
+                pill.className = 'px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-semibold animate-pulse';
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    if (customerMap) {
+                        customerMap.setView([lat, lng], 16);
+                        
+                        if (customerMarker) {
+                            customerMarker.setLatLng([lat, lng]);
+                        } else {
+                            customerMarker = L.marker([lat, lng], { draggable: true }).addTo(customerMap);
+                            customerMarker.on('dragend', function(e) {
+                                const pos = e.target.getLatLng();
+                                updateCoordinates(pos.lat, pos.lng, true);
+                            });
+                        }
+                    }
+
+                    updateCoordinates(lat, lng, true);
+                },
+                (error) => {
+                    console.warn('GPS location error:', error.message);
+                    if (pill) {
+                        pill.textContent = 'Gagal Deteksi';
+                        pill.className = 'px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-semibold';
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+            );
+        }
+
+        function updateCoordinates(lat, lng, isGPS = false) {
+            const displayEl = document.getElementById('coordinates-display');
+            if (displayEl) displayEl.classList.remove('hidden');
+
+            const latEl = document.getElementById('lat-display');
+            if (latEl) latEl.textContent = parseFloat(lat).toFixed(6);
+
+            const lngEl = document.getElementById('lng-display');
+            if (lngEl) lngEl.textContent = parseFloat(lng).toFixed(6);
+
+            const pill = document.getElementById('gps-status-pill');
+            if (pill) {
+                pill.textContent = isGPS ? 'GPS Realtime' : 'Manual Peta';
+                pill.className = isGPS 
+                    ? 'px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-semibold'
+                    : 'px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-semibold';
+            }
+
+            // Sync to Livewire
+            @this.set('latitude', lat);
+            @this.set('longitude', lng);
+
+            // Optional reverse geocode to assist user with address detail
+            try {
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, { headers: { 'Accept-Language': 'id' } })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data && data.display_name) {
+                            const locationInput = document.querySelector('input[wire\\:model="location"]');
+                            if (locationInput && !locationInput.value) {
+                                @this.set('location', data.display_name.split(',').slice(0, 3).join(',').trim());
+                            }
+                        }
+                    }).catch(() => {});
+            } catch (e) {}
+        }
+
         function initializeMap() {
-            // Check if map already initialized
-            if (document.getElementById('map')._leaflet_id) {
+            const mapContainer = document.getElementById('map');
+            if (!mapContainer) return;
+
+            if (mapContainer._leaflet_id) {
                 console.log('Map already initialized');
                 return;
             }
             
-            // Default location (Ponorogo, Jawa Timur)
+            // Default center
             const defaultLocation = [-7.8664, 111.4620];
-            
-            // Check if there's existing coordinates from Livewire
             const existingLat = @this.get('latitude');
             const existingLng = @this.get('longitude');
 
-            // Initialize map
-            const map = L.map('map', {
-                center: defaultLocation,
-                zoom: 13,
+            customerMap = L.map('map', {
+                center: (existingLat && existingLng) ? [existingLat, existingLng] : defaultLocation,
+                zoom: (existingLat && existingLng) ? 15 : 13,
                 scrollWheelZoom: true,
                 zoomControl: true
             });
-            
-            console.log('🗺️ Map initialized');
 
-            // Add OpenStreetMap tiles
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                attribution: '© OpenStreetMap contributors',
                 maxZoom: 19,
-            }).addTo(map);
+            }).addTo(customerMap);
             
-            // Force map to re-render after tiles loaded
-            setTimeout(function() {
-                map.invalidateSize();
-                console.log('🗺️ Map size invalidated');
-            }, 200);
+            setTimeout(() => { customerMap.invalidateSize(); }, 250);
 
-            // Initialize marker variable
-            let marker = null;
-            
-            // If there are existing coordinates, add marker
+            // Existing coordinates marker
             if (existingLat && existingLng) {
-                console.log('📍 Loading existing coordinates:', { lat: existingLat, lng: existingLng });
-                marker = L.marker([existingLat, existingLng], {
-                    draggable: true
-                }).addTo(map);
-                
-                map.setView([existingLat, existingLng], 15);
-                
-                // Update display
-                document.getElementById('coordinates-display').classList.remove('hidden');
-                document.getElementById('lat-display').textContent = parseFloat(existingLat).toFixed(6);
-                document.getElementById('lng-display').textContent = parseFloat(existingLng).toFixed(6);
-                
-                // Setup drag event for existing marker
-                marker.on('dragend', function(event) {
-                    const position = event.target.getLatLng();
-                    updateCoordinates(position.lat, position.lng);
+                customerMarker = L.marker([existingLat, existingLng], { draggable: true }).addTo(customerMap);
+                updateCoordinates(existingLat, existingLng, false);
+                customerMarker.on('dragend', function(e) {
+                    const pos = e.target.getLatLng();
+                    updateCoordinates(pos.lat, pos.lng, false);
                 });
+            } else {
+                // Auto detect user GPS on initial creation if no coordinates saved
+                locateUserGPS();
             }
 
-            // Click event on map to place marker
-            map.on('click', function(e) {
+            // Click to pin
+            customerMap.on('click', function(e) {
                 const lat = e.latlng.lat;
                 const lng = e.latlng.lng;
 
-                // Remove old marker if exists
-                if (marker) {
-                    map.removeLayer(marker);
+                if (customerMarker) {
+                    customerMarker.setLatLng([lat, lng]);
+                } else {
+                    customerMarker = L.marker([lat, lng], { draggable: true }).addTo(customerMap);
+                    customerMarker.on('dragend', function(evt) {
+                        const pos = evt.target.getLatLng();
+                        updateCoordinates(pos.lat, pos.lng, false);
+                    });
                 }
 
-                // Add new marker
-                marker = L.marker([lat, lng], {
-                    draggable: true
-                }).addTo(map);
-
-                // Update coordinates
-                updateCoordinates(lat, lng);
-
-                // Marker drag event
-                marker.on('dragend', function(event) {
-                    const position = event.target.getLatLng();
-                    updateCoordinates(position.lat, position.lng);
-                });
+                updateCoordinates(lat, lng, false);
             });
-
-            // Try to get user's current location
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const pos = [position.coords.latitude, position.coords.longitude];
-                        map.setView(pos, 13);
-                    },
-                    () => {
-                        console.log('Geolocation not available, using default location');
-                    }
-                );
-            }
-
-            function updateCoordinates(lat, lng) {
-                // Update display
-                document.getElementById('coordinates-display').classList.remove('hidden');
-                document.getElementById('lat-display').textContent = lat.toFixed(6);
-                document.getElementById('lng-display').textContent = lng.toFixed(6);
-
-                // Update Livewire properties - menggunakan @this untuk set langsung ke Livewire component
-                @this.set('latitude', lat);
-                @this.set('longitude', lng);
-                
-                console.log('📍 Koordinat disimpan:', { lat: lat, lng: lng });
-            }
-        } // End of initializeMap function
+        }
     </script>
 </div>

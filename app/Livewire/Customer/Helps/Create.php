@@ -56,6 +56,14 @@ class Create extends Component
 
     public function mount()
     {
+        if (!auth()->check()) {
+            return redirect()->route('login');
+        }
+
+        if (!auth()->user()->isCustomer()) {
+            abort(403, 'Akses ditolak. Hanya akun Customer yang dapat membuat permintaan bantuan. Admin, Super Admin, dan Mitra bertugas sebagai pengelola/penolong.');
+        }
+
         // Guard against missing req_* tables (some installs may not have these import tables)
         if (Schema::hasTable('req_provinces')) {
             $this->req_provinces = \Illuminate\Support\Facades\DB::table('req_provinces')->orderBy('province')->get()->toArray();
@@ -523,6 +531,10 @@ class Create extends Component
 
     public function prepareConfirm()
     {
+        if (!auth()->check() || !auth()->user()->isCustomer()) {
+            abort(403, 'Akses ditolak. Hanya akun Customer yang dapat membuat permintaan bantuan.');
+        }
+
         // Load settings
         $minNominal = (float) AppSetting::get('min_help_nominal', 10000);
         $adminFee = (float) AppSetting::get('admin_fee', 0);

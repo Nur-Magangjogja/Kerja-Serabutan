@@ -194,11 +194,6 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
-    public function isKustomer()
-    {
-        return $this->isCustomer();
-    }
-
     public function isMitra()
     {
         return $this->role === 'mitra';
@@ -206,8 +201,12 @@ class User extends Authenticatable
 
     public function isCustomer()
     {
-        // Accept both 'customer' (new) and 'kustomer' (legacy) values
-        return in_array($this->role, ['customer', 'kustomer']);
+        return $this->role === 'customer';
+    }
+
+    public function isKustomer()
+    {
+        return $this->isCustomer();
     }
 
     public function isVerified()

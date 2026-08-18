@@ -242,21 +242,7 @@
                 <a href="{{ route('mitra.helps.all') }}" class="text-xs font-semibold" style="color: #0098e7;">Lihat Semua →</a>
             </div>
 
-            <div class="space-y-3">
-                <div wire:loading class="space-y-3">
-                    @for($i=0;$i<3;$i++)
-                        <div class="bg-white rounded-xl p-3 shadow-sm animate-pulse">
-                            <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 bg-gray-200 rounded-lg"></div>
-                                <div class="flex-1">
-                                    <div class="h-3 bg-gray-200 rounded w-3/5 mb-2"></div>
-                                    <div class="h-2.5 bg-gray-200 rounded w-4/5"></div>
-                                </div>
-                            </div>
-                        </div>
-                    @endfor
-                </div>
-
+            <div class="space-y-3 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none">
                 @forelse($recommendedHelps as $help)
                     @php $schedLabel = $help->scheduled_at ? \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') : '' ; @endphp
                     <button type="button" onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ addslashes($schedLabel) }}')"

@@ -15,6 +15,7 @@ class CitySeeder extends Seeder
     {
         $cities = [
             ['name' => 'Jakarta', 'province' => 'DKI Jakarta'],
+            ['name' => 'Ponorogo', 'province' => 'Jawa Timur'],
             ['name' => 'Surabaya', 'province' => 'Jawa Timur'],
             ['name' => 'Bandung', 'province' => 'Jawa Barat'],
             ['name' => 'Medan', 'province' => 'Sumatera Utara'],
@@ -27,7 +28,7 @@ class CitySeeder extends Seeder
         ];
 
         foreach ($cities as $city) {
-            City::create($city);
+            City::firstOrCreate(['name' => $city['name']], $city);
         }
     }
 }

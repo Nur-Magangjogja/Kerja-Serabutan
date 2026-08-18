@@ -15,7 +15,7 @@ class NotificationSeeder extends Seeder
     public function run(): void
     {
         // Get a customer user and a mitra
-        $customer = User::where('role', 'kustomer')->first();
+        $customer = User::where('role', 'customer')->first();
         $mitra = User::where('role', 'mitra')->first();
 
         if ($customer && $mitra) {

@@ -7,7 +7,7 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use App\Models\Help;
 
-#[Layout('layouts.blank')]
+#[Layout('layouts.admin')]
 class Approved extends Component
 {
     use WithPagination;
@@ -30,7 +30,7 @@ class Approved extends Component
     public function render()
     {
         $query = Help::query()->with(['customer', 'category', 'city'])
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'menunggu_mitra', 'taken', 'memperoleh_mitra', 'sedang_diproses', 'in_progress', 'waiting_customer_confirmation', 'selesai', 'completed'])
             ->when($this->search, function ($q) {
                 $q->where(function ($qq) {
                     $qq->where('title', 'like', '%' . $this->search . '%')

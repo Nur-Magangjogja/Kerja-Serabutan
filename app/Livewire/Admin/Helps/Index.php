@@ -7,7 +7,7 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use App\Models\Help;
 
-#[Layout('layouts.blank')]
+#[Layout('layouts.admin')]
 class Index extends Component
 {
     use WithPagination;
@@ -82,8 +82,8 @@ class Index extends Component
         }
 
         $totalHelps = $statsQuery->count();
-        $pendingHelps = (clone $statsQuery)->where('status', 'pending')->count();
-        $completedHelps = (clone $statsQuery)->where('status', 'completed')->count();
+        $pendingHelps = (clone $statsQuery)->whereIn('status', ['pending', 'menunggu_mitra'])->count();
+        $completedHelps = (clone $statsQuery)->whereIn('status', ['completed', 'selesai'])->count();
 
         return view('admin.helps', compact('helps', 'totalHelps', 'pendingHelps', 'completedHelps'));
     }

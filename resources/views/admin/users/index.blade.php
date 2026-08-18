@@ -6,7 +6,7 @@
     <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
             <h1 class="text-xl font-bold text-gray-900 dark:text-white">Kelola Pengguna</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Pantau dan kelola akun mitra & kustomer di kota Anda</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Pantau dan kelola akun mitra & customer di kota Anda</p>
         </div>
         @if ($users->total() > 0)
         <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 px-3 py-1.5 rounded-lg">
@@ -35,7 +35,7 @@
                     class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     <option value="all" {{ request('role') === 'all' ? 'selected' : '' }}>Semua Role</option>
                     <option value="mitra" {{ request('role') === 'mitra' ? 'selected' : '' }}>Mitra</option>
-                    <option value="kustomer" {{ request('role') === 'kustomer' ? 'selected' : '' }}>Kustomer</option>
+                    <option value="customer" {{ request('role') === 'customer' ? 'selected' : '' }}>Customer</option>
                     <option value="admin" {{ request('role') === 'admin' ? 'selected' : '' }}>Admin</option>
                 </select>
             </div>

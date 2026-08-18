@@ -40,14 +40,14 @@ class AdminUserController extends Controller
         }
 
         // Filter by role
-        if ($request->has('role')) {
+        if ($request->filled('role')) {
             $role = $request->get('role');
             if ($role !== 'all') {
                 $query->where('role', $role);
             }
         } else {
-            // By default, show mitra and customer/kustomer roles to focus admin listing
-            $query->whereIn('role', ['mitra', 'kustomer', 'customer']);
+            // By default, show mitra and customer roles to focus admin listing
+            $query->whereIn('role', ['mitra', 'customer']);
         }
 
         // Filter by account status

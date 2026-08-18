@@ -86,7 +86,7 @@
                             <td class="px-6 py-4">
                                 @if($user->role === 'mitra')
                                     <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Mitra</span>
-                                @elseif($user->role === 'customer' || $user->role === 'kustomer')
+                                @elseif($user->role === 'customer')
                                     <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-200">Customer</span>
                                 @elseif($user->role === 'admin')
                                     <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-purple-50 text-purple-700 border border-purple-200">Admin</span>

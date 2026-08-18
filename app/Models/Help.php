@@ -6,6 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class Help extends Model
 {
+    protected static function booted()
+    {
+        static::saving(function ($help) {
+            if ($help->user_id) {
+                $user = User::find($help->user_id);
+                if ($user && !$user->isCustomer()) {
+                    throw new \InvalidArgumentException(
+                        "Hanya pengguna dengan peran Customer yang dapat membuat atau memiliki permintaan bantuan. Pengguna '{$user->name}' memiliki peran '{$user->role}'."
+                    );
+                }
+            }
+        });
+    }
+
     protected $fillable = [
         'user_id',
         'city_id',

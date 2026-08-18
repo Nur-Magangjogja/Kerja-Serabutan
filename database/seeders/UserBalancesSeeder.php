@@ -32,6 +32,15 @@ class UserBalancesSeeder extends Seeder
 
                 $balance = $topups - $deductions;
 
+                // Provide a default starting balance for test accounts if no transactions exist
+                if ($balance <= 0) {
+                    if ($user->isCustomer()) {
+                        $balance = 500000; // Rp 500.000 for testing help creation
+                    } elseif ($user->isMitra()) {
+                        $balance = 200000; // Rp 200.000 for testing wallet & transactions
+                    }
+                }
+
                 // Create or update user balance
                 UserBalance::updateOrCreate(
                     ['user_id' => $user->id],

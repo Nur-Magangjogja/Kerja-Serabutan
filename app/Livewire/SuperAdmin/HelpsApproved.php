@@ -43,7 +43,7 @@ class HelpsApproved extends Component
     {
         $helps = Help::query()
             ->with(['customer', 'city'])
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'menunggu_mitra', 'taken', 'memperoleh_mitra', 'sedang_diproses', 'in_progress', 'waiting_customer_confirmation', 'selesai', 'completed'])
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('title', 'like', '%' . $this->search . '%')

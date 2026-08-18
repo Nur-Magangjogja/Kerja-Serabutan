@@ -18,145 +18,147 @@ class AllHelps extends Component
 
     protected $queryString = [
         'search' => ['except' => ''],
-        'filterStatus' => ['except' => 'all'],
-        'sortBy' => ['except' => 'latest'],
+        'distanceRadius' => ['except' => 'all'],
+        'sortBy' => ['except' => 'nearby'],
+        'viewMode' => ['except' => 'list'],
     ];
 
     public $search = '';
-    public $filterStatus = 'all'; // all, menunggu_mitra
-    public $sortBy = 'latest'; // latest, oldest, price_high, price_low
+    public $filterStatus = 'all'; // all, my_city
+    public $distanceRadius = 'all'; // all, 5, 15, 25, city
+    public $sortBy = 'nearby'; // nearby, latest, oldest, price_high, price_low
+    public $viewMode = 'list'; // list, map
+    public $mitraLat = null;
+    public $mitraLng = null;
 
     public function updatingSearch()
     {
         $this->resetPage();
     }
 
+    public function updatingDistanceRadius()
+    {
+        $this->resetPage();
+    }
+
+    public function setMitraLocation($lat, $lng)
+    {
+        $this->mitraLat = (float) $lat;
+        $this->mitraLng = (float) $lng;
+    }
 
     public function render()
     {
         $user = auth()->user();
+        $locationService = app(LocationTrackingService::class);
 
-        $query = Help::query();
+        $query = Help::where('status', 'menunggu_mitra')->whereNull('mitra_id');
 
-        // Default behavior: show helps from the same city as the authenticated mitra
-        // if the mitra has a city set. If mitra belum menetapkan kota, don't show any helps
-        // and instruct them to set their city in profile.
-        $needsCity = false;
-        if ($user) {
-            if (! empty($user->city_id)) {
-                // Match helps where city_id equals mitra city, or where the help's
-                // city is a district whose parent regency equals mitra's city.
-                $userCity = \App\Models\City::find($user->city_id);
-                $userCityCode = $userCity->code ?? null;
-
-                $query->where(function($q) use ($user, $userCityCode) {
-                    $q->where('city_id', $user->city_id);
-
-                    if (! $userCityCode) {
-                        return;
-                    }
-
-                    // direct code match (handles canonical city rows that store external ids or codes)
-                    $q->orWhereHas('city', function($cityQ) use ($userCityCode) {
-                        $cityQ->where('code', $userCityCode);
-                    });
-
-                    // Try to extract a numeric regency id from known prefixes or plain numeric codes.
-                    // Supported patterns: "reqr-123", "reqd-123", "regd-123", "reg-123", or just "123".
-                    $regencyId = null;
-                    if (preg_match('/(\d+)/', (string) $userCityCode, $m)) {
-                        $regencyId = (int) $m[1];
-                    }
-
-                    if (! $regencyId) {
-                        return;
-                    }
-
-                    // If we have a regency id, include helps whose city is a district belonging to that regency.
-                    // Use whichever district table exists in the environment (req_districts, reg_districts, req_districts legacy names).
-                    if (Schema::hasTable('req_districts')) {
-                        $q->orWhereRaw(
-                            "EXISTS (select 1 from cities c2 join req_districts rd on rd.id = CAST(SUBSTRING_INDEX(c2.code, '-', -1) as unsigned) where c2.id = helps.city_id and rd.regency_id = ?)",
-                            [$regencyId]
-                        );
-                    }
-
-                    if (Schema::hasTable('reg_districts')) {
-                        $q->orWhereRaw(
-                            "EXISTS (select 1 from cities c2 join reg_districts rd on rd.id = CAST(SUBSTRING_INDEX(c2.code, '-', -1) as unsigned) where c2.id = helps.city_id and rd.regency_id = ?)",
-                            [$regencyId]
-                        );
-                    }
-
-                    // Fallback: if there's a reg_regencies table, include helps where the help's city.code equals the regency numeric id
-                    // (some imports store regency rows directly as cities with code = '<id>').
-                    $q->orWhereHas('city', function($cityQ) use ($regencyId) {
-                        $cityQ->where('code', (string) $regencyId);
-                    });
-                });
-            } else {
-                // Mitra belum memilih kota — return empty result set and notify view
-                $needsCity = true;
-            }
+        // Filter Kota Saya
+        if ($this->distanceRadius === 'city' && $user && !empty($user->city_id)) {
+            $query->where('city_id', $user->city_id);
         }
 
-        // Filter berdasarkan status
-        if ($this->filterStatus === 'menunggu_mitra') {
-            $query->where('status', 'menunggu_mitra')->whereNull('mitra_id');
-        } else {
-            // Tampilkan semua bantuan dari semua customer
-            $query->where('status', 'menunggu_mitra')->whereNull('mitra_id');
-        }
-
-        // Search berdasarkan nama, deskripsi, atau lokasi
+        // Search berdasarkan judul, deskripsi, user, atau kota
         if ($this->search) {
             $query->where(function ($q) {
-                $q->whereHas('user', function ($userQuery) {
-                    $userQuery->where('name', 'like', '%' . $this->search . '%');
-                })
+                $q->where('title', 'like', '%' . $this->search . '%')
                     ->orWhere('description', 'like', '%' . $this->search . '%')
+                    ->orWhereHas('user', function ($userQuery) {
+                        $userQuery->where('name', 'like', '%' . $this->search . '%');
+                    })
                     ->orWhereHas('city', function ($cityQuery) {
                         $cityQuery->where('name', 'like', '%' . $this->search . '%');
                     });
             });
         }
 
-        // Sort
-        if ($this->sortBy === 'nearby') {
-            // Try to prioritize helps from the same city as the authenticated user.
-            $userCityId = optional($user)->city_id;
-            if ($userCityId) {
-                // Order by a boolean match first, then by latest
-                $query->orderByRaw("(city_id = ?) DESC", [$userCityId])->latest();
+        // Get all items for distance calculation and sorting
+        $allHelps = $query->with(['user', 'city'])->get();
+
+        // Attach distance if coordinates available
+        $allHelps->transform(function ($help) use ($locationService) {
+            if ($this->mitraLat && $this->mitraLng && $help->latitude && $help->longitude) {
+                $distanceMeters = $locationService->calculateDistance(
+                    $this->mitraLat,
+                    $this->mitraLng,
+                    (float) $help->latitude,
+                    (float) $help->longitude
+                );
+                $help->distance_km = round($distanceMeters / 1000, 1);
             } else {
-                // fallback to latest if we don't have user's city
-                $query->latest();
+                $help->distance_km = null;
             }
+            return $help;
+        });
+
+        // Filter by Radius (5 km, 15 km, 25 km)
+        if (in_array($this->distanceRadius, ['5', '15', '25'])) {
+            $maxKm = (float) $this->distanceRadius;
+            $allHelps = $allHelps->filter(function ($help) use ($maxKm) {
+                return $help->distance_km !== null ? $help->distance_km <= $maxKm : true;
+            });
+        }
+
+        // Sorting
+        if ($this->sortBy === 'nearby') {
+            $allHelps = $allHelps->sortBy(function ($help) use ($user) {
+                // If has distance, sort by distance; else sort by city match then latest
+                if ($help->distance_km !== null) {
+                    return $help->distance_km;
+                }
+                return ($user && $help->city_id == $user->city_id) ? 9999 : 99999;
+            });
         } elseif ($this->sortBy === 'latest') {
-            $query->latest();
+            $allHelps = $allHelps->sortByDesc('created_at');
         } elseif ($this->sortBy === 'oldest') {
-            $query->oldest();
+            $allHelps = $allHelps->sortBy('created_at');
         } elseif ($this->sortBy === 'price_high') {
-            $query->orderByDesc('estimated_price');
+            $allHelps = $allHelps->sortByDesc('amount');
         } elseif ($this->sortBy === 'price_low') {
-            $query->orderBy('estimated_price');
+            $allHelps = $allHelps->sortBy('amount');
         }
 
-        if ($needsCity) {
-            // empty paginator
-            $helps = Help::whereRaw('0 = 1')->paginate(15);
-            return view('livewire.mitra.helps.all-helps', [
-                'helps' => $helps,
-                'needsCity' => true,
-            ]);
-        }
+        // Paginate manually from collection
+        $currentPage = \Livewire\WithPagination::class ? $this->getPage() : 1;
+        $perPage = 15;
+        $currentPageItems = $allHelps->slice(($currentPage - 1) * $perPage, $perPage)->values();
+        $helps = new \Illuminate\Pagination\LengthAwarePaginator(
+            $currentPageItems,
+            $allHelps->count(),
+            $perPage,
+            $currentPage,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+        );
 
-        $helps = $query->with(['user', 'city'])
-            ->paginate(15);
+        // Prepare data for map view
+        $mapHelps = $allHelps->filter(fn($h) => !empty($h->latitude) && !empty($h->longitude))->values()->map(function($h) {
+            return [
+                'id' => $h->id,
+                'title' => $h->title,
+                'amount' => $h->amount,
+                'formatted_amount' => 'Rp ' . number_format($h->amount, 0, ',', '.'),
+                'lat' => (float) $h->latitude,
+                'lng' => (float) $h->longitude,
+                'city' => $h->city?->name ?? '',
+                'location' => $h->location ?? '',
+                'distance_km' => $h->distance_km,
+                'creator' => $h->user?->name ?? 'Pengguna',
+                'scheduled' => $h->scheduled_at ? \Carbon\Carbon::parse($h->scheduled_at)->translatedFormat('d M Y, H:i') : null,
+            ];
+        });
 
         return view('livewire.mitra.helps.all-helps', [
             'helps' => $helps,
+            'mapHelps' => $mapHelps,
             'needsCity' => false,
+            'userCity' => $user && $user->city_id ? \App\Models\City::find($user->city_id) : null,
+            'viewMode' => $this->viewMode,
+            'distanceRadius' => $this->distanceRadius,
+            'sortBy' => $this->sortBy,
+            'search' => $this->search,
+            'mitraLat' => $this->mitraLat,
+            'mitraLng' => $this->mitraLng,
         ]);
     }
 

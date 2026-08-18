@@ -50,7 +50,7 @@ new #[Layout('layouts.blank')] class extends Component {
             $redirect = route('admin.dashboard', absolute: false);
         } elseif ($user->role === 'mitra') {
             $redirect = route('mitra.dashboard', absolute: false);
-        } elseif ($user->role === 'kustomer' || $user->role === 'customer') {
+        } elseif ($user->role === 'customer') {
             $redirect = route('customer.dashboard', absolute: false);
         } else {
             $redirect = route('dashboard', absolute: false);

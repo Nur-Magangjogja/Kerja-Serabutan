@@ -99,8 +99,9 @@ class Dashboard extends Component
             'total_admins' => User::whereIn('role', ['admin', 'super_admin'])->count(),
             'total_cities' => City::count(),
             'total_categories' => Category::count(),
-            'pending_helps' => Help::where('status', 'pending')->count(),
-            'active_helps' => Help::where('status', 'active')->count(),
+            'pending_helps' => Help::whereIn('status', ['pending', 'menunggu_mitra'])->count(),
+            'active_helps' => Help::whereIn('status', ['active', 'memperoleh_mitra', 'sedang_diproses', 'taken', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'waiting_customer_confirmation'])->count(),
+            'completed_helps' => Help::whereIn('status', ['selesai', 'completed'])->count(),
         ];
 
         // Recent items for quick view

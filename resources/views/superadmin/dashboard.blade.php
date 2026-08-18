@@ -260,10 +260,20 @@
                     @php
                     $s = $help->status;
                     $badge = match($s) {
-                        'pending'   => 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400',
-                        'active'    => 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
-                        'completed' => 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400',
-                        default     => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
+                        'pending', 'menunggu_mitra' => 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400',
+                        'active', 'sedang_diproses', 'taken', 'memperoleh_mitra', 'in_progress', 'waiting_customer_confirmation' => 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+                        'completed', 'selesai' => 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400',
+                        'dibatalkan', 'cancelled', 'rejected' => 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
+                        default => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
+                    };
+                    $statusLabel = match($s) {
+                        'menunggu_mitra' => 'Menunggu Mitra',
+                        'taken', 'memperoleh_mitra' => 'Diambil Mitra',
+                        'sedang_diproses', 'in_progress' => 'Diproses',
+                        'waiting_customer_confirmation' => 'Konfirmasi Selesai',
+                        'selesai', 'completed' => 'Selesai',
+                        'dibatalkan', 'cancelled' => 'Dibatalkan',
+                        default => ucfirst(str_replace('_', ' ', $s)),
                     };
                     @endphp
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-150">
@@ -274,7 +284,7 @@
                             <p class="font-medium text-gray-800 dark:text-gray-100 line-clamp-1">{{ $help->title }}</p>
                         </td>
                         <td class="px-5 py-3.5">
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {{ $badge }}">{{ ucfirst($s) }}</span>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {{ $badge }}">{{ $statusLabel }}</span>
                         </td>
                         <td class="px-5 py-3.5">
                             <div class="flex items-center gap-2">

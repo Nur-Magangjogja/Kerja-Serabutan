@@ -105,23 +105,7 @@
 
         <!-- Content -->
         <div class="bg-white rounded-t-3xl -mt-6 px-5 pt-6 pb-6 min-h-[60vh]"> 
-            <div class="space-y-4">
-                {{-- Loading skeleton --}}
-                <div wire:loading class="space-y-3">
-                    @for($i=0;$i<4;$i++)
-                        <div class="bg-gray-50 rounded-2xl p-4 card-shadow animate-pulse">
-                            <div class="flex items-center gap-3">
-                                <div class="w-16 h-16 bg-gray-200 rounded-lg"></div>
-                                <div class="flex-1">
-                                    <div class="h-4 bg-gray-200 rounded w-3/5 mb-2"></div>
-                                    <div class="h-3 bg-gray-200 rounded w-4/5"></div>
-                                </div>
-                                <div class="w-16 h-4 bg-gray-200 rounded"></div>
-                            </div>
-                        </div>
-                    @endfor
-                </div>
-
+            <div class="space-y-4 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="statusFilter">
                 {{-- List based on filter --}}
                 @forelse($helps as $help)
                     @if($statusFilter === 'menunggu_mitra')

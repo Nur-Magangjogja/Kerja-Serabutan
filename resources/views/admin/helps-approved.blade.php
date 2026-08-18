@@ -1,8 +1,3 @@
-@extends('layouts.admin')
-
-@section('page-title', 'Manajemen Bantuan - Disetujui')
-
-@section('content')
 <div class="space-y-5">
     {{-- ===== Page Header ===== --}}
     <div class="flex items-center justify-between flex-wrap gap-3">
@@ -88,4 +83,3 @@
         @endif
     </div>
 </div>
-@endsection
