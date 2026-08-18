@@ -4,8 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\City;
 use App\Models\District;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class IndonesiaRegionsSeeder extends Seeder
 {
@@ -19,8 +20,6 @@ class IndonesiaRegionsSeeder extends Seeder
 
         if (! file_exists($citiesPath)) {
             $this->command->error("Missing file: {$citiesPath}");
-            $this->command->line('Please download a JSON list of Indonesian cities/kabupaten and save it to that path.');
-            $this->command->line('Expected format: [ { "id": 1, "name": "Ponorogo", "type": "Kabupaten", "province": "Jawa Timur", "code": "351" , "latitude": null, "longitude": null }, ... ]');
             return;
         }
 
@@ -30,19 +29,69 @@ class IndonesiaRegionsSeeder extends Seeder
             return;
         }
 
-        $this->command->info('Importing cities...');
+        $this->command->info('Importing cities (' . count($citiesJson) . ' cities/kabupaten)...');
+
+        $now = now();
+        $citiesBatch = [];
+        $regProvinces = [];
+        $regRegencies = [];
+
         foreach ($citiesJson as $c) {
-            City::updateOrCreate([
+            $code = (string)($c['code'] ?? $c['id']);
+            $provId = substr($code, 0, 2);
+            $provName = $c['province'] ?? 'Indonesia';
+
+            $regProvinces[$provId] = [
+                'id' => $provId,
+                'name' => $provName,
+            ];
+
+            $regRegencies[$code] = [
+                'id' => $code,
+                'province_id' => $provId,
                 'name' => $c['name'],
-                'province' => $c['province'] ?? null,
-            ], [
-                'code' => $c['code'] ?? null,
-                'type' => $c['type'] ?? null,
+            ];
+
+            $citiesBatch[] = [
+                'name' => $c['name'],
+                'province' => $provName,
+                'code' => $code,
+                'type' => $c['type'] ?? (substr($code, 2, 1) === '7' ? 'Kota' : 'Kabupaten'),
                 'postal_code' => $c['postal_code'] ?? null,
                 'latitude' => $c['latitude'] ?? null,
                 'longitude' => $c['longitude'] ?? null,
                 'is_active' => isset($c['is_active']) ? (bool)$c['is_active'] : true,
-            ]);
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        // 1. Upsert into `cities` table
+        DB::transaction(function () use ($citiesBatch) {
+            foreach (array_chunk($citiesBatch, 100) as $chunk) {
+                City::upsert(
+                    $chunk,
+                    ['name', 'province'],
+                    ['code', 'type', 'postal_code', 'latitude', 'longitude', 'is_active', 'updated_at']
+                );
+            }
+        });
+
+        // 2. Upsert into `reg_provinces` and `reg_regencies` if present
+        if (Schema::hasTable('reg_provinces')) {
+            DB::table('reg_provinces')->upsert(
+                array_values($regProvinces),
+                ['id'],
+                ['name']
+            );
+        }
+
+        if (Schema::hasTable('reg_regencies')) {
+            DB::table('reg_regencies')->upsert(
+                array_values($regRegencies),
+                ['id'],
+                ['province_id', 'name']
+            );
         }
 
         if (! file_exists($districtsPath)) {
@@ -56,31 +105,91 @@ class IndonesiaRegionsSeeder extends Seeder
             return;
         }
 
-        $this->command->info('Importing districts...');
+        // Build City map by code and by name for fast O(1) in-memory lookup
+        $cityIdByCode = City::pluck('id', 'code')->toArray();
+        $cityIdByName = City::pluck('id', 'name')->toArray();
+
+        $this->command->info('Importing districts and subdistricts into database...');
+
+        $districtsBatch = [];
+        $regDistrictsBatch = [];
+        $regVillagesBatch = [];
+
         foreach ($districtsJson as $d) {
-            // Try to find city by code or name/province
-            $city = null;
-            if (! empty($d['city_code'])) {
-                $city = City::where('code', $d['city_code'])->first();
-            }
-            if (! $city && ! empty($d['city_name'])) {
-                $city = City::where('name', $d['city_name'])->where('province', $d['province'] ?? null)->first();
-            }
-            if (! $city && ! empty($d['city_id'])) {
-                $city = City::find($d['city_id']);
-            }
+            $code = (string)($d['code'] ?? '');
+            
+            // 6-digit: Kecamatan
+            if (strlen($code) === 6) {
+                $cityCode = (string)($d['city_code'] ?? substr($code, 0, 4));
+                $cityId = $cityIdByCode[$cityCode] ?? ($cityIdByName[$d['name'] ?? ''] ?? null);
 
-            if (! $city) continue;
+                if ($cityId) {
+                    $districtsBatch[] = [
+                        'city_id' => $cityId,
+                        'name' => $d['name'],
+                        'code' => $code,
+                        'is_active' => true,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
 
-            District::updateOrCreate([
-                'city_id' => $city->id,
-                'name' => $d['name'],
-            ], [
-                'code' => $d['code'] ?? ($d['district_code'] ?? null),
-                'is_active' => isset($d['is_active']) ? (bool)$d['is_active'] : true,
-            ]);
+                $regDistrictsBatch[] = [
+                    'id' => $code,
+                    'regency_id' => $cityCode,
+                    'name' => $d['name'],
+                ];
+            } elseif (strlen($code) === 10) {
+                // 10-digit: Desa / Kelurahan
+                $districtCode = (string)($d['district_code'] ?? substr($code, 0, 6));
+                $regVillagesBatch[] = [
+                    'id' => $code,
+                    'district_id' => $districtCode,
+                    'name' => $d['name'],
+                ];
+            }
         }
 
-        $this->command->info('Indonesia regions import completed.');
+        // 3. Fast bulk insert into `districts`
+        $hasDistrictsTable = Schema::hasTable('districts');
+        if ($hasDistrictsTable && !empty($districtsBatch)) {
+            $this->command->info('Inserting ' . count($districtsBatch) . ' kecamatan into `districts` table...');
+            DB::transaction(function () use ($districtsBatch) {
+                foreach (array_chunk($districtsBatch, 500) as $chunk) {
+                    District::upsert(
+                        $chunk,
+                        ['city_id', 'name'],
+                        ['code', 'is_active', 'updated_at']
+                    );
+                }
+            });
+        }
+
+        // 4. Fast bulk insert into `reg_districts`
+        if (Schema::hasTable('reg_districts') && !empty($regDistrictsBatch)) {
+            $this->command->info('Inserting ' . count($regDistrictsBatch) . ' kecamatan into `reg_districts` table...');
+            foreach (array_chunk($regDistrictsBatch, 500) as $chunk) {
+                DB::table('reg_districts')->upsert(
+                    $chunk,
+                    ['id'],
+                    ['regency_id', 'name']
+                );
+            }
+        }
+
+        // 5. Fast bulk insert into `reg_villages` if table exists
+        if (Schema::hasTable('reg_villages') && !empty($regVillagesBatch)) {
+            $this->command->info('Inserting ' . count($regVillagesBatch) . ' desa/kelurahan into `reg_villages` table...');
+            foreach (array_chunk($regVillagesBatch, 1000) as $chunk) {
+                DB::table('reg_villages')->upsert(
+                    $chunk,
+                    ['id'],
+                    ['district_id', 'name']
+                );
+            }
+        }
+
+        $this->command->info('Indonesia regions import completed successfully!');
     }
 }
+

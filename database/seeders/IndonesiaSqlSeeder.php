@@ -14,13 +14,28 @@ class IndonesiaSqlSeeder extends Seeder
      */
     public function run()
     {
-        $sqlPath = __DIR__ . '/sql/indonesia.sql';
-        if (! file_exists($sqlPath)) {
-            $this->command->error("Missing file: {$sqlPath}");
-            return;
+        $indonesiaPath = __DIR__ . '/sql/indonesia.sql';
+        $kecamatanPath = __DIR__ . '/sql/kecamatan.sql';
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
+        if (file_exists($indonesiaPath)) {
+            $this->command->info('Importing ' . $indonesiaPath . '...');
+            DB::unprepared(file_get_contents($indonesiaPath));
+            $this->command->info('Successfully imported indonesia.sql');
+        } else {
+            $this->command->warn("Missing file: {$indonesiaPath}");
         }
 
-        DB::unprepared(file_get_contents($sqlPath));
-        $this->command->info('Imported: ' . $sqlPath);
+        if (file_exists($kecamatanPath)) {
+            $this->command->info('Importing ' . $kecamatanPath . '...');
+            DB::unprepared(file_get_contents($kecamatanPath));
+            $this->command->info('Successfully imported kecamatan.sql');
+        } else {
+            $this->command->warn("Missing file: {$kecamatanPath}");
+        }
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
 }
+

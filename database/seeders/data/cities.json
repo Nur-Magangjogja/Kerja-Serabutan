@@ -1,4619 +1,6230 @@
 [
     {
         "id": 1101,
+        "code": "1101",
         "name": "Simeulue",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1101",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1102,
+        "code": "1102",
         "name": "Aceh Singkil",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1102",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1103,
+        "code": "1103",
         "name": "Aceh Selatan",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1103",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1104,
+        "code": "1104",
         "name": "Aceh Tenggara",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1104",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1105,
+        "code": "1105",
         "name": "Aceh Timur",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1105",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1106,
+        "code": "1106",
         "name": "Aceh Tengah",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1106",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1107,
+        "code": "1107",
         "name": "Aceh Barat",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1107",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1108,
+        "code": "1108",
         "name": "Aceh Besar",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1108",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1109,
+        "code": "1109",
         "name": "Pidie",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1109",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1110,
+        "code": "1110",
         "name": "Bireuen",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1110",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1111,
+        "code": "1111",
         "name": "Aceh Utara",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1111",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1112,
+        "code": "1112",
         "name": "Aceh Barat Daya",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1112",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1113,
+        "code": "1113",
         "name": "Gayo Lues",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1113",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1114,
+        "code": "1114",
         "name": "Aceh Tamiang",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1114",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1115,
+        "code": "1115",
         "name": "Nagan Raya",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1115",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1116,
+        "code": "1116",
         "name": "Aceh Jaya",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1116",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1117,
+        "code": "1117",
         "name": "Bener Meriah",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1117",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1118,
+        "code": "1118",
         "name": "Pidie Jaya",
         "type": "Kabupaten",
         "province": "Aceh (NAD)",
-        "code": "1118",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1171,
+        "code": "1171",
         "name": "Banda Aceh",
         "type": "Kota",
         "province": "Aceh (NAD)",
-        "code": "1171",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1172,
+        "code": "1172",
         "name": "Sabang",
         "type": "Kota",
         "province": "Aceh (NAD)",
-        "code": "1172",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1173,
+        "code": "1173",
         "name": "Lhokseumawe",
         "type": "Kota",
         "province": "Aceh (NAD)",
-        "code": "1173",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1174,
+        "code": "1174",
         "name": "Langsa",
         "type": "Kota",
         "province": "Aceh (NAD)",
-        "code": "1174",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1175,
+        "code": "1175",
         "name": "Subulussalam",
         "type": "Kota",
         "province": "Aceh (NAD)",
-        "code": "1175",
+        "province_id": "11",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1201,
+        "code": "1201",
         "name": "Nias",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1201",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1202,
+        "code": "1202",
         "name": "Mandailing Natal",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1202",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1203,
+        "code": "1203",
         "name": "Tapanuli Selatan",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1203",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1204,
+        "code": "1204",
         "name": "Tapanuli Tengah",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1204",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1205,
+        "code": "1205",
         "name": "Tapanuli Utara",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1205",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1206,
+        "code": "1206",
         "name": "Toba Samosir",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1206",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1207,
+        "code": "1207",
         "name": "Labuhan Batu",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1207",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1208,
+        "code": "1208",
         "name": "Asahan",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1208",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1209,
+        "code": "1209",
         "name": "Simalungun",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1209",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1210,
+        "code": "1210",
         "name": "Dairi",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1210",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1211,
+        "code": "1211",
         "name": "Karo",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1211",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1212,
+        "code": "1212",
         "name": "Deliserdang",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1212",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1213,
+        "code": "1213",
         "name": "Langkat",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1213",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1214,
+        "code": "1214",
         "name": "Nias Selatan",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1214",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1215,
+        "code": "1215",
         "name": "Humbang Hasundutan",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1215",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1216,
+        "code": "1216",
         "name": "Pakpak Bharat",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1216",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1217,
+        "code": "1217",
         "name": "Samosir",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1217",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1218,
+        "code": "1218",
         "name": "Serdang Bedagai",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1218",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1219,
+        "code": "1219",
         "name": "Batu Bara",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1219",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1220,
+        "code": "1220",
         "name": "Padang Lawas Utara",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1220",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1221,
+        "code": "1221",
         "name": "Padang Lawas",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1221",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1222,
+        "code": "1222",
         "name": "Labuhan Batu Selatan",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1222",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1223,
+        "code": "1223",
         "name": "Labuhan Batu Utara",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1223",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1224,
+        "code": "1224",
         "name": "Nias Utara",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1224",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1225,
+        "code": "1225",
         "name": "Nias Barat",
         "type": "Kabupaten",
         "province": "Sumatera Utara",
-        "code": "1225",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1271,
+        "code": "1271",
         "name": "Sibolga",
         "type": "Kota",
         "province": "Sumatera Utara",
-        "code": "1271",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1272,
+        "code": "1272",
         "name": "Tanjung Balai",
         "type": "Kota",
         "province": "Sumatera Utara",
-        "code": "1272",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1273,
+        "code": "1273",
         "name": "Pematang Siantar",
         "type": "Kota",
         "province": "Sumatera Utara",
-        "code": "1273",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1274,
+        "code": "1274",
         "name": "Tebing Tinggi",
         "type": "Kota",
         "province": "Sumatera Utara",
-        "code": "1274",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1275,
+        "code": "1275",
         "name": "Medan",
         "type": "Kota",
         "province": "Sumatera Utara",
-        "code": "1275",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1276,
+        "code": "1276",
         "name": "Binjai",
         "type": "Kota",
         "province": "Sumatera Utara",
-        "code": "1276",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1277,
+        "code": "1277",
         "name": "Padangsidimpuan",
         "type": "Kota",
         "province": "Sumatera Utara",
-        "code": "1277",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1278,
+        "code": "1278",
         "name": "Gunungsitoli",
         "type": "Kota",
         "province": "Sumatera Utara",
-        "code": "1278",
+        "province_id": "12",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1301,
+        "code": "1301",
         "name": "Kepulauan Mentawai",
         "type": "Kabupaten",
         "province": "Sumatera Barat",
-        "code": "1301",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1302,
+        "code": "1302",
         "name": "Pesisir Selatan",
         "type": "Kabupaten",
         "province": "Sumatera Barat",
-        "code": "1302",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1303,
+        "code": "1303",
         "name": "Solok",
         "type": "Kabupaten",
         "province": "Sumatera Barat",
-        "code": "1303",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1304,
+        "code": "1304",
         "name": "Sijunjung",
         "type": "Kabupaten",
         "province": "Sumatera Barat",
-        "code": "1304",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1305,
+        "code": "1305",
         "name": "Tanah Datar",
         "type": "Kabupaten",
         "province": "Sumatera Barat",
-        "code": "1305",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1306,
+        "code": "1306",
         "name": "Padang Pariaman",
         "type": "Kabupaten",
         "province": "Sumatera Barat",
-        "code": "1306",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1307,
+        "code": "1307",
         "name": "Agam",
         "type": "Kabupaten",
         "province": "Sumatera Barat",
-        "code": "1307",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1308,
+        "code": "1308",
         "name": "Lima Puluh Kota",
         "type": "Kabupaten",
         "province": "Sumatera Barat",
-        "code": "1308",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1309,
+        "code": "1309",
         "name": "Pasaman",
         "type": "Kabupaten",
         "province": "Sumatera Barat",
-        "code": "1309",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1310,
+        "code": "1310",
         "name": "Solok Selatan",
         "type": "Kabupaten",
         "province": "Sumatera Barat",
-        "code": "1310",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1311,
+        "code": "1311",
         "name": "Dharmasraya",
         "type": "Kabupaten",
         "province": "Sumatera Barat",
-        "code": "1311",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1312,
+        "code": "1312",
         "name": "Pasaman Barat",
         "type": "Kabupaten",
         "province": "Sumatera Barat",
-        "code": "1312",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1371,
+        "code": "1371",
         "name": "Padang",
         "type": "Kota",
         "province": "Sumatera Barat",
-        "code": "1371",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1372,
+        "code": "1372",
         "name": "Solok",
         "type": "Kota",
         "province": "Sumatera Barat",
-        "code": "1372",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1373,
+        "code": "1373",
         "name": "Sawah Lunto",
         "type": "Kota",
         "province": "Sumatera Barat",
-        "code": "1373",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1374,
+        "code": "1374",
         "name": "Padang Panjang",
         "type": "Kota",
         "province": "Sumatera Barat",
-        "code": "1374",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1375,
+        "code": "1375",
         "name": "Bukittinggi",
         "type": "Kota",
         "province": "Sumatera Barat",
-        "code": "1375",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1376,
+        "code": "1376",
         "name": "Payakumbuh",
         "type": "Kota",
         "province": "Sumatera Barat",
-        "code": "1376",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1377,
+        "code": "1377",
         "name": "Pariaman",
         "type": "Kota",
         "province": "Sumatera Barat",
-        "code": "1377",
+        "province_id": "13",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1401,
+        "code": "1401",
         "name": "Kuantan Singingi",
         "type": "Kabupaten",
         "province": "Riau",
-        "code": "1401",
+        "province_id": "14",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1402,
+        "code": "1402",
         "name": "Indragiri Hulu",
         "type": "Kabupaten",
         "province": "Riau",
-        "code": "1402",
+        "province_id": "14",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1403,
+        "code": "1403",
         "name": "Indragiri Hilir",
         "type": "Kabupaten",
         "province": "Riau",
-        "code": "1403",
+        "province_id": "14",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1404,
+        "code": "1404",
         "name": "Pelalawan",
         "type": "Kabupaten",
         "province": "Riau",
-        "code": "1404",
+        "province_id": "14",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1405,
+        "code": "1405",
         "name": "S I A K",
         "type": "Kabupaten",
         "province": "Riau",
-        "code": "1405",
+        "province_id": "14",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1406,
+        "code": "1406",
         "name": "Kampar",
         "type": "Kabupaten",
         "province": "Riau",
-        "code": "1406",
+        "province_id": "14",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1407,
+        "code": "1407",
         "name": "Rokan Hulu",
         "type": "Kabupaten",
         "province": "Riau",
-        "code": "1407",
+        "province_id": "14",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1408,
+        "code": "1408",
         "name": "Bengkalis",
         "type": "Kabupaten",
         "province": "Riau",
-        "code": "1408",
+        "province_id": "14",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1409,
+        "code": "1409",
         "name": "Rokan Hilir",
         "type": "Kabupaten",
         "province": "Riau",
-        "code": "1409",
+        "province_id": "14",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1410,
+        "code": "1410",
         "name": "Kepulauan Meranti",
         "type": "Kabupaten",
         "province": "Riau",
-        "code": "1410",
+        "province_id": "14",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1471,
+        "code": "1471",
         "name": "Pekanbaru",
         "type": "Kota",
         "province": "Riau",
-        "code": "1471",
+        "province_id": "14",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
-        "id": 1473,
+        "id": 1472,
+        "code": "1472",
         "name": "Dumai",
         "type": "Kota",
         "province": "Riau",
-        "code": "1473",
+        "province_id": "14",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1501,
+        "code": "1501",
         "name": "Kerinci",
         "type": "Kabupaten",
         "province": "Jambi",
-        "code": "1501",
+        "province_id": "15",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1502,
+        "code": "1502",
         "name": "Merangin",
         "type": "Kabupaten",
         "province": "Jambi",
-        "code": "1502",
+        "province_id": "15",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1503,
+        "code": "1503",
         "name": "Sarolangun",
         "type": "Kabupaten",
         "province": "Jambi",
-        "code": "1503",
+        "province_id": "15",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1504,
+        "code": "1504",
         "name": "Batang Hari",
         "type": "Kabupaten",
         "province": "Jambi",
-        "code": "1504",
+        "province_id": "15",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1505,
+        "code": "1505",
         "name": "Muaro Jambi",
         "type": "Kabupaten",
         "province": "Jambi",
-        "code": "1505",
+        "province_id": "15",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1506,
+        "code": "1506",
         "name": "Tanjung Jabung Timur",
         "type": "Kabupaten",
         "province": "Jambi",
-        "code": "1506",
+        "province_id": "15",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1507,
+        "code": "1507",
         "name": "Tanjung Jabung Barat",
         "type": "Kabupaten",
         "province": "Jambi",
-        "code": "1507",
+        "province_id": "15",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1508,
+        "code": "1508",
         "name": "Tebo",
         "type": "Kabupaten",
         "province": "Jambi",
-        "code": "1508",
+        "province_id": "15",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1509,
+        "code": "1509",
         "name": "Bungo",
         "type": "Kabupaten",
         "province": "Jambi",
-        "code": "1509",
+        "province_id": "15",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1571,
+        "code": "1571",
         "name": "Jambi",
         "type": "Kota",
         "province": "Jambi",
-        "code": "1571",
+        "province_id": "15",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1572,
+        "code": "1572",
         "name": "Sungai Penuh",
         "type": "Kota",
         "province": "Jambi",
-        "code": "1572",
+        "province_id": "15",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1601,
+        "code": "1601",
         "name": "Ogan Komering Ulu",
         "type": "Kabupaten",
         "province": "Sumatera Selatan",
-        "code": "1601",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1602,
+        "code": "1602",
         "name": "Ogan Komering Ilir",
         "type": "Kabupaten",
         "province": "Sumatera Selatan",
-        "code": "1602",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1603,
+        "code": "1603",
         "name": "Muara Enim",
         "type": "Kabupaten",
         "province": "Sumatera Selatan",
-        "code": "1603",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1604,
+        "code": "1604",
         "name": "Lahat",
         "type": "Kabupaten",
         "province": "Sumatera Selatan",
-        "code": "1604",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1605,
+        "code": "1605",
         "name": "Musi Rawas",
         "type": "Kabupaten",
         "province": "Sumatera Selatan",
-        "code": "1605",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1606,
+        "code": "1606",
         "name": "Musi Banyuasin",
         "type": "Kabupaten",
         "province": "Sumatera Selatan",
-        "code": "1606",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1607,
+        "code": "1607",
         "name": "Banyuasin",
         "type": "Kabupaten",
         "province": "Sumatera Selatan",
-        "code": "1607",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1608,
+        "code": "1608",
         "name": "Ogan Komering Ulu Selatan",
         "type": "Kabupaten",
         "province": "Sumatera Selatan",
-        "code": "1608",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1609,
+        "code": "1609",
         "name": "Ogan Komering Ulu Timur",
         "type": "Kabupaten",
         "province": "Sumatera Selatan",
-        "code": "1609",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1610,
+        "code": "1610",
         "name": "Ogan Ilir",
         "type": "Kabupaten",
         "province": "Sumatera Selatan",
-        "code": "1610",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1611,
+        "code": "1611",
         "name": "Empat Lawang",
         "type": "Kabupaten",
         "province": "Sumatera Selatan",
-        "code": "1611",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1612,
+        "code": "1612",
         "name": "Penukal Abab Lematang Ilir",
         "type": "Kabupaten",
         "province": "Sumatera Selatan",
-        "code": "1612",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1613,
+        "code": "1613",
         "name": "Musi Rawas Utara",
         "type": "Kabupaten",
         "province": "Sumatera Selatan",
-        "code": "1613",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1671,
+        "code": "1671",
         "name": "Palembang",
         "type": "Kota",
         "province": "Sumatera Selatan",
-        "code": "1671",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1672,
+        "code": "1672",
         "name": "Prabumulih",
         "type": "Kota",
         "province": "Sumatera Selatan",
-        "code": "1672",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1673,
+        "code": "1673",
         "name": "Pagar Alam",
         "type": "Kota",
         "province": "Sumatera Selatan",
-        "code": "1673",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1674,
+        "code": "1674",
         "name": "Lubuklinggau",
         "type": "Kota",
         "province": "Sumatera Selatan",
-        "code": "1674",
+        "province_id": "16",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1701,
+        "code": "1701",
         "name": "Bengkulu Selatan",
         "type": "Kabupaten",
         "province": "Bengkulu",
-        "code": "1701",
+        "province_id": "17",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1702,
+        "code": "1702",
         "name": "Rejang Lebong",
         "type": "Kabupaten",
         "province": "Bengkulu",
-        "code": "1702",
+        "province_id": "17",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1703,
+        "code": "1703",
         "name": "Bengkulu Utara",
         "type": "Kabupaten",
         "province": "Bengkulu",
-        "code": "1703",
+        "province_id": "17",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1704,
+        "code": "1704",
         "name": "Kaur",
         "type": "Kabupaten",
         "province": "Bengkulu",
-        "code": "1704",
+        "province_id": "17",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1705,
+        "code": "1705",
         "name": "Seluma",
         "type": "Kabupaten",
         "province": "Bengkulu",
-        "code": "1705",
+        "province_id": "17",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1706,
+        "code": "1706",
         "name": "Mukomuko",
         "type": "Kabupaten",
         "province": "Bengkulu",
-        "code": "1706",
+        "province_id": "17",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1707,
+        "code": "1707",
         "name": "Lebong",
         "type": "Kabupaten",
         "province": "Bengkulu",
-        "code": "1707",
+        "province_id": "17",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1708,
+        "code": "1708",
         "name": "Kepahiang",
         "type": "Kabupaten",
         "province": "Bengkulu",
-        "code": "1708",
+        "province_id": "17",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1709,
+        "code": "1709",
         "name": "Bengkulu Tengah",
         "type": "Kabupaten",
         "province": "Bengkulu",
-        "code": "1709",
+        "province_id": "17",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1771,
+        "code": "1771",
         "name": "Bengkulu",
         "type": "Kota",
         "province": "Bengkulu",
-        "code": "1771",
+        "province_id": "17",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1801,
+        "code": "1801",
         "name": "Lampung Barat",
         "type": "Kabupaten",
         "province": "Lampung",
-        "code": "1801",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1802,
+        "code": "1802",
         "name": "Tanggamus",
         "type": "Kabupaten",
         "province": "Lampung",
-        "code": "1802",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1803,
+        "code": "1803",
         "name": "Lampung Selatan",
         "type": "Kabupaten",
         "province": "Lampung",
-        "code": "1803",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1804,
+        "code": "1804",
         "name": "Lampung Timur",
         "type": "Kabupaten",
         "province": "Lampung",
-        "code": "1804",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1805,
+        "code": "1805",
         "name": "Lampung Tengah",
         "type": "Kabupaten",
         "province": "Lampung",
-        "code": "1805",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1806,
+        "code": "1806",
         "name": "Lampung Utara",
         "type": "Kabupaten",
         "province": "Lampung",
-        "code": "1806",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1807,
+        "code": "1807",
         "name": "Way Kanan",
         "type": "Kabupaten",
         "province": "Lampung",
-        "code": "1807",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1808,
+        "code": "1808",
         "name": "Tulangbawang",
         "type": "Kabupaten",
         "province": "Lampung",
-        "code": "1808",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1809,
+        "code": "1809",
         "name": "Pesawaran",
         "type": "Kabupaten",
         "province": "Lampung",
-        "code": "1809",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1810,
+        "code": "1810",
         "name": "Pringsewu",
         "type": "Kabupaten",
         "province": "Lampung",
-        "code": "1810",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1811,
+        "code": "1811",
         "name": "Mesuji",
         "type": "Kabupaten",
         "province": "Lampung",
-        "code": "1811",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1812,
+        "code": "1812",
         "name": "Tulang Bawang Barat",
         "type": "Kabupaten",
         "province": "Lampung",
-        "code": "1812",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1813,
+        "code": "1813",
         "name": "Pesisir Barat",
         "type": "Kabupaten",
         "province": "Lampung",
-        "code": "1813",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1871,
+        "code": "1871",
         "name": "Bandar Lampung",
         "type": "Kota",
         "province": "Lampung",
-        "code": "1871",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1872,
+        "code": "1872",
         "name": "Metro",
         "type": "Kota",
         "province": "Lampung",
-        "code": "1872",
+        "province_id": "18",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1901,
+        "code": "1901",
         "name": "Bangka",
         "type": "Kabupaten",
         "province": "Kepulauan Bangka Belitung",
-        "code": "1901",
+        "province_id": "19",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1902,
+        "code": "1902",
         "name": "Belitung",
         "type": "Kabupaten",
         "province": "Kepulauan Bangka Belitung",
-        "code": "1902",
+        "province_id": "19",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1903,
+        "code": "1903",
         "name": "Bangka Barat",
         "type": "Kabupaten",
         "province": "Kepulauan Bangka Belitung",
-        "code": "1903",
+        "province_id": "19",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1904,
+        "code": "1904",
         "name": "Bangka Tengah",
         "type": "Kabupaten",
         "province": "Kepulauan Bangka Belitung",
-        "code": "1904",
+        "province_id": "19",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1905,
+        "code": "1905",
         "name": "Bangka Selatan",
         "type": "Kabupaten",
         "province": "Kepulauan Bangka Belitung",
-        "code": "1905",
+        "province_id": "19",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1906,
+        "code": "1906",
         "name": "Belitung Timur",
         "type": "Kabupaten",
         "province": "Kepulauan Bangka Belitung",
-        "code": "1906",
+        "province_id": "19",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 1971,
+        "code": "1971",
         "name": "Pangkal Pinang",
         "type": "Kota",
         "province": "Kepulauan Bangka Belitung",
-        "code": "1971",
+        "province_id": "19",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 2101,
+        "code": "2101",
         "name": "Karimun",
         "type": "Kabupaten",
         "province": "Kepulauan Riau",
-        "code": "2101",
+        "province_id": "21",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 2102,
+        "code": "2102",
         "name": "Bintan",
         "type": "Kabupaten",
         "province": "Kepulauan Riau",
-        "code": "2102",
+        "province_id": "21",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 2103,
+        "code": "2103",
         "name": "Natuna",
         "type": "Kabupaten",
         "province": "Kepulauan Riau",
-        "code": "2103",
+        "province_id": "21",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 2104,
+        "code": "2104",
         "name": "Lingga",
         "type": "Kabupaten",
         "province": "Kepulauan Riau",
-        "code": "2104",
+        "province_id": "21",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 2105,
+        "code": "2105",
         "name": "Kepulauan Anambas",
         "type": "Kabupaten",
         "province": "Kepulauan Riau",
-        "code": "2105",
+        "province_id": "21",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 2171,
+        "code": "2171",
         "name": "Batam",
         "type": "Kota",
         "province": "Kepulauan Riau",
-        "code": "2171",
+        "province_id": "21",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 2172,
+        "code": "2172",
         "name": "Tanjung Pinang",
         "type": "Kota",
         "province": "Kepulauan Riau",
-        "code": "2172",
+        "province_id": "21",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3101,
+        "code": "3101",
         "name": "Kepulauan Seribu",
         "type": "Kabupaten",
-        "province": "Dki Jakarta",
-        "code": "3101",
+        "province": "DKI Jakarta",
+        "province_id": "31",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3171,
+        "code": "3171",
         "name": "Jakarta Selatan",
         "type": "Kota",
-        "province": "Dki Jakarta",
-        "code": "3171",
+        "province": "DKI Jakarta",
+        "province_id": "31",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3172,
+        "code": "3172",
         "name": "Jakarta Timur",
         "type": "Kota",
-        "province": "Dki Jakarta",
-        "code": "3172",
+        "province": "DKI Jakarta",
+        "province_id": "31",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3173,
+        "code": "3173",
         "name": "Jakarta Pusat",
         "type": "Kota",
-        "province": "Dki Jakarta",
-        "code": "3173",
+        "province": "DKI Jakarta",
+        "province_id": "31",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3174,
+        "code": "3174",
         "name": "Jakarta Barat",
         "type": "Kota",
-        "province": "Dki Jakarta",
-        "code": "3174",
+        "province": "DKI Jakarta",
+        "province_id": "31",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3175,
+        "code": "3175",
         "name": "Jakarta Utara",
         "type": "Kota",
-        "province": "Dki Jakarta",
-        "code": "3175",
+        "province": "DKI Jakarta",
+        "province_id": "31",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3201,
+        "code": "3201",
         "name": "Bogor",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3201",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3202,
+        "code": "3202",
         "name": "Sukabumi",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3202",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3203,
+        "code": "3203",
         "name": "Cianjur",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3203",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3204,
+        "code": "3204",
         "name": "Bandung",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3204",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3205,
+        "code": "3205",
         "name": "Garut",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3205",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3206,
+        "code": "3206",
         "name": "Tasikmalaya",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3206",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3207,
+        "code": "3207",
         "name": "Ciamis",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3207",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3208,
+        "code": "3208",
         "name": "Kuningan",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3208",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3209,
+        "code": "3209",
         "name": "Cirebon",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3209",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3210,
+        "code": "3210",
         "name": "Majalengka",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3210",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3211,
+        "code": "3211",
         "name": "Sumedang",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3211",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3212,
+        "code": "3212",
         "name": "Indramayu",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3212",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3213,
+        "code": "3213",
         "name": "Subang",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3213",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3214,
+        "code": "3214",
         "name": "Purwakarta",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3214",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3215,
+        "code": "3215",
         "name": "Karawang",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3215",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3216,
+        "code": "3216",
         "name": "Bekasi",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3216",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3217,
+        "code": "3217",
         "name": "Bandung Barat",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3217",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3218,
+        "code": "3218",
         "name": "Pangandaran",
         "type": "Kabupaten",
         "province": "Jawa Barat",
-        "code": "3218",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3271,
+        "code": "3271",
         "name": "Bogor",
         "type": "Kota",
         "province": "Jawa Barat",
-        "code": "3271",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3272,
+        "code": "3272",
         "name": "Sukabumi",
         "type": "Kota",
         "province": "Jawa Barat",
-        "code": "3272",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3273,
+        "code": "3273",
         "name": "Bandung",
         "type": "Kota",
         "province": "Jawa Barat",
-        "code": "3273",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3274,
+        "code": "3274",
         "name": "Cirebon",
         "type": "Kota",
         "province": "Jawa Barat",
-        "code": "3274",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3275,
+        "code": "3275",
         "name": "Bekasi",
         "type": "Kota",
         "province": "Jawa Barat",
-        "code": "3275",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3276,
+        "code": "3276",
         "name": "Depok",
         "type": "Kota",
         "province": "Jawa Barat",
-        "code": "3276",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3277,
+        "code": "3277",
         "name": "Cimahi",
         "type": "Kota",
         "province": "Jawa Barat",
-        "code": "3277",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3278,
+        "code": "3278",
         "name": "Tasikmalaya",
         "type": "Kota",
         "province": "Jawa Barat",
-        "code": "3278",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3279,
+        "code": "3279",
         "name": "Banjar",
         "type": "Kota",
         "province": "Jawa Barat",
-        "code": "3279",
+        "province_id": "32",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3301,
+        "code": "3301",
         "name": "Cilacap",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3301",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3302,
+        "code": "3302",
         "name": "Banyumas",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3302",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3303,
+        "code": "3303",
         "name": "Purbalingga",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3303",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3304,
+        "code": "3304",
         "name": "Banjarnegara",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3304",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3305,
+        "code": "3305",
         "name": "Kebumen",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3305",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3306,
+        "code": "3306",
         "name": "Purworejo",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3306",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3307,
+        "code": "3307",
         "name": "Wonosobo",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3307",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3308,
+        "code": "3308",
         "name": "Magelang",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3308",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3309,
+        "code": "3309",
         "name": "Boyolali",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3309",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3310,
+        "code": "3310",
         "name": "Klaten",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3310",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3311,
+        "code": "3311",
         "name": "Sukoharjo",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3311",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3312,
+        "code": "3312",
         "name": "Wonogiri",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3312",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3313,
+        "code": "3313",
         "name": "Karanganyar",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3313",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3314,
+        "code": "3314",
         "name": "Sragen",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3314",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3315,
+        "code": "3315",
         "name": "Grobogan",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3315",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3316,
+        "code": "3316",
         "name": "Blora",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3316",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3317,
+        "code": "3317",
         "name": "Rembang",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3317",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3318,
+        "code": "3318",
         "name": "Pati",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3318",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3319,
+        "code": "3319",
         "name": "Kudus",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3319",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3320,
+        "code": "3320",
         "name": "Jepara",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3320",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3321,
+        "code": "3321",
         "name": "Demak",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3321",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3322,
+        "code": "3322",
         "name": "Semarang",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3322",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3323,
+        "code": "3323",
         "name": "Temanggung",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3323",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3324,
+        "code": "3324",
         "name": "Kendal",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3324",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3325,
+        "code": "3325",
         "name": "Batang",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3325",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3326,
+        "code": "3326",
         "name": "Pekalongan",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3326",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3327,
+        "code": "3327",
         "name": "Pemalang",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3327",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3328,
+        "code": "3328",
         "name": "Tegal",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3328",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3329,
+        "code": "3329",
         "name": "Brebes",
         "type": "Kabupaten",
         "province": "Jawa Tengah",
-        "code": "3329",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3371,
+        "code": "3371",
         "name": "Magelang",
         "type": "Kota",
         "province": "Jawa Tengah",
-        "code": "3371",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3372,
+        "code": "3372",
         "name": "Surakarta",
         "type": "Kota",
         "province": "Jawa Tengah",
-        "code": "3372",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3373,
+        "code": "3373",
         "name": "Salatiga",
         "type": "Kota",
         "province": "Jawa Tengah",
-        "code": "3373",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3374,
+        "code": "3374",
         "name": "Semarang",
         "type": "Kota",
         "province": "Jawa Tengah",
-        "code": "3374",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3375,
+        "code": "3375",
         "name": "Pekalongan",
         "type": "Kota",
         "province": "Jawa Tengah",
-        "code": "3375",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3376,
+        "code": "3376",
         "name": "Tegal",
         "type": "Kota",
         "province": "Jawa Tengah",
-        "code": "3376",
+        "province_id": "33",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3401,
+        "code": "3401",
         "name": "Kulon Progo",
         "type": "Kabupaten",
-        "province": "Daerah Istimewa Yogyakarta",
-        "code": "3401",
+        "province": "DI Yogyakarta",
+        "province_id": "34",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3402,
+        "code": "3402",
         "name": "Bantul",
         "type": "Kabupaten",
-        "province": "Daerah Istimewa Yogyakarta",
-        "code": "3402",
+        "province": "DI Yogyakarta",
+        "province_id": "34",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3403,
+        "code": "3403",
         "name": "Gunung Kidul",
         "type": "Kabupaten",
-        "province": "Daerah Istimewa Yogyakarta",
-        "code": "3403",
+        "province": "DI Yogyakarta",
+        "province_id": "34",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3404,
+        "code": "3404",
         "name": "Sleman",
         "type": "Kabupaten",
-        "province": "Daerah Istimewa Yogyakarta",
-        "code": "3404",
+        "province": "DI Yogyakarta",
+        "province_id": "34",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3471,
+        "code": "3471",
         "name": "Yogyakarta",
         "type": "Kota",
-        "province": "Daerah Istimewa Yogyakarta",
-        "code": "3471",
+        "province": "DI Yogyakarta",
+        "province_id": "34",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3501,
+        "code": "3501",
         "name": "Pacitan",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3501",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3502,
+        "code": "3502",
         "name": "Ponorogo",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3502",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3503,
+        "code": "3503",
         "name": "Trenggalek",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3503",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3504,
+        "code": "3504",
         "name": "Tulungagung",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3504",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3505,
+        "code": "3505",
         "name": "Blitar",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3505",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3506,
+        "code": "3506",
         "name": "Kediri",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3506",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3507,
+        "code": "3507",
         "name": "Malang",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3507",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3508,
+        "code": "3508",
         "name": "Lumajang",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3508",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3509,
+        "code": "3509",
         "name": "Jember",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3509",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3510,
+        "code": "3510",
         "name": "Banyuwangi",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3510",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3511,
+        "code": "3511",
         "name": "Bondowoso",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3511",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3512,
+        "code": "3512",
         "name": "Situbondo",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3512",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3513,
+        "code": "3513",
         "name": "Probolinggo",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3513",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3514,
+        "code": "3514",
         "name": "Pasuruan",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3514",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3515,
+        "code": "3515",
         "name": "Sidoarjo",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3515",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3516,
+        "code": "3516",
         "name": "Mojokerto",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3516",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3517,
+        "code": "3517",
         "name": "Jombang",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3517",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3518,
+        "code": "3518",
         "name": "Nganjuk",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3518",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3519,
+        "code": "3519",
         "name": "Madiun",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3519",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3520,
+        "code": "3520",
         "name": "Magetan",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3520",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3521,
+        "code": "3521",
         "name": "Ngawi",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3521",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3522,
+        "code": "3522",
         "name": "Bojonegoro",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3522",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3523,
+        "code": "3523",
         "name": "Tuban",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3523",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3524,
+        "code": "3524",
         "name": "Lamongan",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3524",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3525,
+        "code": "3525",
         "name": "Gresik",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3525",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3526,
+        "code": "3526",
         "name": "Bangkalan",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3526",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3527,
+        "code": "3527",
         "name": "Sampang",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3527",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3528,
+        "code": "3528",
         "name": "Pamekasan",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3528",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3529,
+        "code": "3529",
         "name": "Sumenep",
         "type": "Kabupaten",
         "province": "Jawa Timur",
-        "code": "3529",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3571,
+        "code": "3571",
         "name": "Kediri",
         "type": "Kota",
         "province": "Jawa Timur",
-        "code": "3571",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3572,
+        "code": "3572",
         "name": "Blitar",
         "type": "Kota",
         "province": "Jawa Timur",
-        "code": "3572",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3573,
+        "code": "3573",
         "name": "Malang",
         "type": "Kota",
         "province": "Jawa Timur",
-        "code": "3573",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3574,
+        "code": "3574",
         "name": "Probolinggo",
         "type": "Kota",
         "province": "Jawa Timur",
-        "code": "3574",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3575,
+        "code": "3575",
         "name": "Pasuruan",
         "type": "Kota",
         "province": "Jawa Timur",
-        "code": "3575",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3576,
+        "code": "3576",
         "name": "Mojokerto",
         "type": "Kota",
         "province": "Jawa Timur",
-        "code": "3576",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3577,
+        "code": "3577",
         "name": "Madiun",
         "type": "Kota",
         "province": "Jawa Timur",
-        "code": "3577",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3578,
+        "code": "3578",
         "name": "Surabaya",
         "type": "Kota",
         "province": "Jawa Timur",
-        "code": "3578",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3579,
+        "code": "3579",
         "name": "Batu",
         "type": "Kota",
         "province": "Jawa Timur",
-        "code": "3579",
+        "province_id": "35",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3601,
+        "code": "3601",
         "name": "Pandeglang",
         "type": "Kabupaten",
         "province": "Banten",
-        "code": "3601",
+        "province_id": "36",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3602,
+        "code": "3602",
         "name": "Lebak",
         "type": "Kabupaten",
         "province": "Banten",
-        "code": "3602",
+        "province_id": "36",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3603,
+        "code": "3603",
         "name": "Tangerang",
         "type": "Kabupaten",
         "province": "Banten",
-        "code": "3603",
+        "province_id": "36",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3604,
+        "code": "3604",
         "name": "Serang",
         "type": "Kabupaten",
         "province": "Banten",
-        "code": "3604",
+        "province_id": "36",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3671,
+        "code": "3671",
         "name": "Tangerang",
         "type": "Kota",
         "province": "Banten",
-        "code": "3671",
+        "province_id": "36",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3672,
+        "code": "3672",
         "name": "Cilegon",
         "type": "Kota",
         "province": "Banten",
-        "code": "3672",
+        "province_id": "36",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3673,
+        "code": "3673",
         "name": "Serang",
         "type": "Kota",
         "province": "Banten",
-        "code": "3673",
+        "province_id": "36",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 3674,
+        "code": "3674",
         "name": "Tangerang Selatan",
         "type": "Kota",
         "province": "Banten",
-        "code": "3674",
+        "province_id": "36",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5101,
+        "code": "5101",
         "name": "Jembrana",
         "type": "Kabupaten",
         "province": "Bali",
-        "code": "5101",
+        "province_id": "51",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5102,
+        "code": "5102",
         "name": "Tabanan",
         "type": "Kabupaten",
         "province": "Bali",
-        "code": "5102",
+        "province_id": "51",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5103,
+        "code": "5103",
         "name": "Badung",
         "type": "Kabupaten",
         "province": "Bali",
-        "code": "5103",
+        "province_id": "51",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5104,
+        "code": "5104",
         "name": "Gianyar",
         "type": "Kabupaten",
         "province": "Bali",
-        "code": "5104",
+        "province_id": "51",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5105,
+        "code": "5105",
         "name": "Klungkung",
         "type": "Kabupaten",
         "province": "Bali",
-        "code": "5105",
+        "province_id": "51",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5106,
+        "code": "5106",
         "name": "Bangli",
         "type": "Kabupaten",
         "province": "Bali",
-        "code": "5106",
+        "province_id": "51",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5107,
+        "code": "5107",
         "name": "Karang Asem",
         "type": "Kabupaten",
         "province": "Bali",
-        "code": "5107",
+        "province_id": "51",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5108,
+        "code": "5108",
         "name": "Buleleng",
         "type": "Kabupaten",
         "province": "Bali",
-        "code": "5108",
+        "province_id": "51",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5171,
+        "code": "5171",
         "name": "Denpasar",
         "type": "Kota",
         "province": "Bali",
-        "code": "5171",
+        "province_id": "51",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5201,
+        "code": "5201",
         "name": "Lombok Barat",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Barat",
-        "code": "5201",
+        "province_id": "52",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5202,
+        "code": "5202",
         "name": "Lombok Tengah",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Barat",
-        "code": "5202",
+        "province_id": "52",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5203,
+        "code": "5203",
         "name": "Lombok Timur",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Barat",
-        "code": "5203",
+        "province_id": "52",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5204,
+        "code": "5204",
         "name": "Sumbawa",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Barat",
-        "code": "5204",
+        "province_id": "52",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5205,
+        "code": "5205",
         "name": "Dompu",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Barat",
-        "code": "5205",
+        "province_id": "52",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5206,
+        "code": "5206",
         "name": "Bima",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Barat",
-        "code": "5206",
+        "province_id": "52",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5207,
+        "code": "5207",
         "name": "Sumbawa Barat",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Barat",
-        "code": "5207",
+        "province_id": "52",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5208,
+        "code": "5208",
         "name": "Lombok Utara",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Barat",
-        "code": "5208",
+        "province_id": "52",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5271,
+        "code": "5271",
         "name": "Mataram",
         "type": "Kota",
         "province": "Nusa Tenggara Barat",
-        "code": "5271",
+        "province_id": "52",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5272,
+        "code": "5272",
         "name": "Bima",
         "type": "Kota",
         "province": "Nusa Tenggara Barat",
-        "code": "5272",
+        "province_id": "52",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5301,
+        "code": "5301",
         "name": "Sumba Barat",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5301",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5302,
+        "code": "5302",
         "name": "Sumba Timur",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5302",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5303,
+        "code": "5303",
         "name": "Kupang",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5303",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5304,
+        "code": "5304",
         "name": "Timor Tengah Selatan",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5304",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5305,
+        "code": "5305",
         "name": "Timor Tengah Utara",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5305",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5306,
+        "code": "5306",
         "name": "Belu",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5306",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5307,
+        "code": "5307",
         "name": "Alor",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5307",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5308,
+        "code": "5308",
         "name": "Flores Timur",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5308",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5309,
+        "code": "5309",
         "name": "Sikka",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5309",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5310,
+        "code": "5310",
         "name": "Ende",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5310",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5311,
+        "code": "5311",
         "name": "Ngada",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5311",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5312,
+        "code": "5312",
         "name": "Manggarai",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5312",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5313,
+        "code": "5313",
         "name": "Rote Ndao",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5313",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5314,
+        "code": "5314",
         "name": "Manggarai Barat",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5314",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5315,
+        "code": "5315",
         "name": "Sumba Tengah",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5315",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5316,
+        "code": "5316",
         "name": "Sumba Barat Daya",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5316",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5317,
+        "code": "5317",
         "name": "Nagekeo",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5317",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5318,
+        "code": "5318",
         "name": "Manggarai Timur",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5318",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5319,
+        "code": "5319",
         "name": "Sabu Raijua",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5319",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
-        "id": 5320,
+        "id": 5321,
+        "code": "5321",
         "name": "Malaka",
         "type": "Kabupaten",
         "province": "Nusa Tenggara Timur",
-        "code": "5320",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 5371,
+        "code": "5371",
         "name": "Kupang",
         "type": "Kota",
         "province": "Nusa Tenggara Timur",
-        "code": "5371",
+        "province_id": "53",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6101,
+        "code": "6101",
         "name": "Sambas",
         "type": "Kabupaten",
         "province": "Kalimantan Barat",
-        "code": "6101",
+        "province_id": "61",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6102,
+        "code": "6102",
         "name": "Mempawah",
         "type": "Kabupaten",
         "province": "Kalimantan Barat",
-        "code": "6102",
+        "province_id": "61",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6103,
+        "code": "6103",
         "name": "Sanggau",
         "type": "Kabupaten",
         "province": "Kalimantan Barat",
-        "code": "6103",
+        "province_id": "61",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6104,
+        "code": "6104",
         "name": "Ketapang",
         "type": "Kabupaten",
         "province": "Kalimantan Barat",
-        "code": "6104",
+        "province_id": "61",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6105,
+        "code": "6105",
         "name": "Sintang",
         "type": "Kabupaten",
         "province": "Kalimantan Barat",
-        "code": "6105",
+        "province_id": "61",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6106,
+        "code": "6106",
         "name": "Kapuas Hulu",
         "type": "Kabupaten",
         "province": "Kalimantan Barat",
-        "code": "6106",
+        "province_id": "61",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6107,
+        "code": "6107",
         "name": "Bengkayang",
         "type": "Kabupaten",
         "province": "Kalimantan Barat",
-        "code": "6107",
+        "province_id": "61",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6108,
+        "code": "6108",
         "name": "Landak",
         "type": "Kabupaten",
         "province": "Kalimantan Barat",
-        "code": "6108",
+        "province_id": "61",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6109,
+        "code": "6109",
         "name": "Sekadau",
         "type": "Kabupaten",
         "province": "Kalimantan Barat",
-        "code": "6109",
+        "province_id": "61",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6110,
+        "code": "6110",
         "name": "Melawi",
         "type": "Kabupaten",
         "province": "Kalimantan Barat",
-        "code": "6110",
+        "province_id": "61",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6111,
+        "code": "6111",
         "name": "Kayong Utara",
         "type": "Kabupaten",
         "province": "Kalimantan Barat",
-        "code": "6111",
+        "province_id": "61",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6112,
+        "code": "6112",
         "name": "Kubu Raya",
         "type": "Kabupaten",
         "province": "Kalimantan Barat",
-        "code": "6112",
+        "province_id": "61",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6171,
+        "code": "6171",
         "name": "Pontianak",
         "type": "Kota",
         "province": "Kalimantan Barat",
-        "code": "6171",
+        "province_id": "61",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6172,
+        "code": "6172",
         "name": "Singkawang",
         "type": "Kota",
         "province": "Kalimantan Barat",
-        "code": "6172",
+        "province_id": "61",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6201,
+        "code": "6201",
         "name": "Kotawaringin Barat",
         "type": "Kabupaten",
         "province": "Kalimantan Tengah",
-        "code": "6201",
+        "province_id": "62",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6202,
+        "code": "6202",
         "name": "Kotawaringin Timur",
         "type": "Kabupaten",
         "province": "Kalimantan Tengah",
-        "code": "6202",
+        "province_id": "62",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6203,
+        "code": "6203",
         "name": "Kapuas",
         "type": "Kabupaten",
         "province": "Kalimantan Tengah",
-        "code": "6203",
+        "province_id": "62",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6204,
+        "code": "6204",
         "name": "Barito Selatan",
         "type": "Kabupaten",
         "province": "Kalimantan Tengah",
-        "code": "6204",
+        "province_id": "62",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6205,
+        "code": "6205",
         "name": "Barito Utara",
         "type": "Kabupaten",
         "province": "Kalimantan Tengah",
-        "code": "6205",
+        "province_id": "62",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6206,
+        "code": "6206",
         "name": "Sukamara",
         "type": "Kabupaten",
         "province": "Kalimantan Tengah",
-        "code": "6206",
+        "province_id": "62",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6207,
+        "code": "6207",
         "name": "Lamandau",
         "type": "Kabupaten",
         "province": "Kalimantan Tengah",
-        "code": "6207",
+        "province_id": "62",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6208,
+        "code": "6208",
         "name": "Seruyan",
         "type": "Kabupaten",
         "province": "Kalimantan Tengah",
-        "code": "6208",
+        "province_id": "62",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6209,
+        "code": "6209",
         "name": "Katingan",
         "type": "Kabupaten",
         "province": "Kalimantan Tengah",
-        "code": "6209",
+        "province_id": "62",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6210,
+        "code": "6210",
         "name": "Pulang Pisau",
         "type": "Kabupaten",
         "province": "Kalimantan Tengah",
-        "code": "6210",
+        "province_id": "62",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6211,
+        "code": "6211",
         "name": "Gunung Mas",
         "type": "Kabupaten",
         "province": "Kalimantan Tengah",
-        "code": "6211",
+        "province_id": "62",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6212,
+        "code": "6212",
         "name": "Barito Timur",
         "type": "Kabupaten",
         "province": "Kalimantan Tengah",
-        "code": "6212",
+        "province_id": "62",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6213,
+        "code": "6213",
         "name": "Murung Raya",
         "type": "Kabupaten",
         "province": "Kalimantan Tengah",
-        "code": "6213",
+        "province_id": "62",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6271,
+        "code": "6271",
         "name": "Palangka Raya",
         "type": "Kota",
         "province": "Kalimantan Tengah",
-        "code": "6271",
+        "province_id": "62",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6301,
+        "code": "6301",
         "name": "Tanah Laut",
         "type": "Kabupaten",
         "province": "Kalimantan Selatan",
-        "code": "6301",
+        "province_id": "63",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6302,
+        "code": "6302",
         "name": "Kota Baru",
         "type": "Kabupaten",
         "province": "Kalimantan Selatan",
-        "code": "6302",
+        "province_id": "63",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6303,
+        "code": "6303",
         "name": "Banjar",
         "type": "Kabupaten",
         "province": "Kalimantan Selatan",
-        "code": "6303",
+        "province_id": "63",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6304,
+        "code": "6304",
         "name": "Barito Kuala",
         "type": "Kabupaten",
         "province": "Kalimantan Selatan",
-        "code": "6304",
+        "province_id": "63",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6305,
+        "code": "6305",
         "name": "Tapin",
         "type": "Kabupaten",
         "province": "Kalimantan Selatan",
-        "code": "6305",
+        "province_id": "63",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6306,
+        "code": "6306",
         "name": "Hulu Sungai Selatan",
         "type": "Kabupaten",
         "province": "Kalimantan Selatan",
-        "code": "6306",
+        "province_id": "63",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6307,
+        "code": "6307",
         "name": "Hulu Sungai Tengah",
         "type": "Kabupaten",
         "province": "Kalimantan Selatan",
-        "code": "6307",
+        "province_id": "63",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6308,
+        "code": "6308",
         "name": "Hulu Sungai Utara",
         "type": "Kabupaten",
         "province": "Kalimantan Selatan",
-        "code": "6308",
+        "province_id": "63",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6309,
+        "code": "6309",
         "name": "Tabalong",
         "type": "Kabupaten",
         "province": "Kalimantan Selatan",
-        "code": "6309",
+        "province_id": "63",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6310,
+        "code": "6310",
         "name": "Tanah Bumbu",
         "type": "Kabupaten",
         "province": "Kalimantan Selatan",
-        "code": "6310",
+        "province_id": "63",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6311,
+        "code": "6311",
         "name": "Balangan",
         "type": "Kabupaten",
         "province": "Kalimantan Selatan",
-        "code": "6311",
+        "province_id": "63",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6371,
+        "code": "6371",
         "name": "Banjarmasin",
         "type": "Kota",
         "province": "Kalimantan Selatan",
-        "code": "6371",
+        "province_id": "63",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6372,
+        "code": "6372",
         "name": "Banjarbaru",
         "type": "Kota",
         "province": "Kalimantan Selatan",
-        "code": "6372",
+        "province_id": "63",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6401,
+        "code": "6401",
         "name": "Paser",
         "type": "Kabupaten",
         "province": "Kalimantan Timur",
-        "code": "6401",
+        "province_id": "64",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
-    },
-    {
-        "id": 6402,
-        "name": "Kutai Barat",
-        "type": "Kabupaten",
-        "province": "Kalimantan Timur",
-        "code": "6402",
-        "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6403,
+        "code": "6403",
         "name": "Kutai Kartanegara",
         "type": "Kabupaten",
         "province": "Kalimantan Timur",
-        "code": "6403",
+        "province_id": "64",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
-    },
-    {
-        "id": 6404,
-        "name": "Kutai Timur",
-        "type": "Kabupaten",
-        "province": "Kalimantan Timur",
-        "code": "6404",
-        "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6405,
+        "code": "6405",
         "name": "Berau",
         "type": "Kabupaten",
         "province": "Kalimantan Timur",
-        "code": "6405",
+        "province_id": "64",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
+    },
+    {
+        "id": 6407,
+        "code": "6407",
+        "name": "Kutai Barat",
+        "type": "Kabupaten",
+        "province": "Kalimantan Timur",
+        "province_id": "64",
+        "postal_code": null,
+        "latitude": null,
+        "longitude": null,
+        "is_active": true
+    },
+    {
+        "id": 6408,
+        "code": "6408",
+        "name": "Kutai Timur",
+        "type": "Kabupaten",
+        "province": "Kalimantan Timur",
+        "province_id": "64",
+        "postal_code": null,
+        "latitude": null,
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6409,
+        "code": "6409",
         "name": "Penajam Paser Utara",
         "type": "Kabupaten",
         "province": "Kalimantan Timur",
-        "code": "6409",
+        "province_id": "64",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
+    },
+    {
+        "id": 6411,
+        "code": 6411,
+        "name": "Mahakam Ulu",
+        "type": "Kabupaten",
+        "province": "Kalimantan Timur",
+        "province_id": "64",
+        "postal_code": null,
+        "latitude": null,
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6471,
+        "code": "6471",
         "name": "Balikpapan",
         "type": "Kota",
         "province": "Kalimantan Timur",
-        "code": "6471",
+        "province_id": "64",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6472,
+        "code": "6472",
         "name": "Samarinda",
         "type": "Kota",
         "province": "Kalimantan Timur",
-        "code": "6472",
+        "province_id": "64",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6474,
+        "code": "6474",
         "name": "Bontang",
         "type": "Kota",
         "province": "Kalimantan Timur",
-        "code": "6474",
+        "province_id": "64",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6501,
+        "code": "6501",
         "name": "Malinau",
         "type": "Kabupaten",
         "province": "Kalimantan Utara",
-        "code": "6501",
+        "province_id": "65",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6502,
+        "code": "6502",
         "name": "Bulungan",
         "type": "Kabupaten",
         "province": "Kalimantan Utara",
-        "code": "6502",
+        "province_id": "65",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6503,
+        "code": "6503",
         "name": "Tana Tidung",
         "type": "Kabupaten",
         "province": "Kalimantan Utara",
-        "code": "6503",
+        "province_id": "65",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6504,
+        "code": "6504",
         "name": "Nunukan",
         "type": "Kabupaten",
         "province": "Kalimantan Utara",
-        "code": "6504",
+        "province_id": "65",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 6571,
+        "code": "6571",
         "name": "Tarakan",
         "type": "Kota",
         "province": "Kalimantan Utara",
-        "code": "6571",
+        "province_id": "65",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7101,
+        "code": "7101",
         "name": "Bolaang Mongondow",
         "type": "Kabupaten",
         "province": "Sulawesi Utara",
-        "code": "7101",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7102,
+        "code": "7102",
         "name": "Minahasa",
         "type": "Kabupaten",
         "province": "Sulawesi Utara",
-        "code": "7102",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7103,
+        "code": "7103",
         "name": "Kepulauan Sangihe",
         "type": "Kabupaten",
         "province": "Sulawesi Utara",
-        "code": "7103",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7104,
+        "code": "7104",
         "name": "Kepulauan Talaud",
         "type": "Kabupaten",
         "province": "Sulawesi Utara",
-        "code": "7104",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7105,
+        "code": "7105",
         "name": "Minahasa Selatan",
         "type": "Kabupaten",
         "province": "Sulawesi Utara",
-        "code": "7105",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7106,
+        "code": "7106",
         "name": "Minahasa Utara",
         "type": "Kabupaten",
         "province": "Sulawesi Utara",
-        "code": "7106",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7107,
+        "code": "7107",
         "name": "Bolaang Mongondow Utara",
         "type": "Kabupaten",
         "province": "Sulawesi Utara",
-        "code": "7107",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7108,
+        "code": "7108",
         "name": "Siau Tagulandang Biaro (Sitaro)",
         "type": "Kabupaten",
         "province": "Sulawesi Utara",
-        "code": "7108",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7109,
+        "code": "7109",
         "name": "Minahasa Tenggara",
         "type": "Kabupaten",
         "province": "Sulawesi Utara",
-        "code": "7109",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7110,
+        "code": "7110",
         "name": "Bolaang Mongondow Selatan",
         "type": "Kabupaten",
         "province": "Sulawesi Utara",
-        "code": "7110",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7111,
+        "code": "7111",
         "name": "Bolaang Mongondow Timur",
         "type": "Kabupaten",
         "province": "Sulawesi Utara",
-        "code": "7111",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7171,
+        "code": "7171",
         "name": "Manado",
         "type": "Kota",
         "province": "Sulawesi Utara",
-        "code": "7171",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7172,
+        "code": "7172",
         "name": "Bitung",
         "type": "Kota",
         "province": "Sulawesi Utara",
-        "code": "7172",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7173,
+        "code": "7173",
         "name": "Tomohon",
         "type": "Kota",
         "province": "Sulawesi Utara",
-        "code": "7173",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7174,
+        "code": "7174",
         "name": "Kotamobagu",
         "type": "Kota",
         "province": "Sulawesi Utara",
-        "code": "7174",
+        "province_id": "71",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7201,
+        "code": "7201",
         "name": "Banggai",
         "type": "Kabupaten",
         "province": "Sulawesi Tengah",
-        "code": "7201",
+        "province_id": "72",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7202,
+        "code": "7202",
         "name": "Poso",
         "type": "Kabupaten",
         "province": "Sulawesi Tengah",
-        "code": "7202",
+        "province_id": "72",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7203,
+        "code": "7203",
         "name": "Donggala",
         "type": "Kabupaten",
         "province": "Sulawesi Tengah",
-        "code": "7203",
+        "province_id": "72",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7204,
+        "code": "7204",
         "name": "Toli-Toli",
         "type": "Kabupaten",
         "province": "Sulawesi Tengah",
-        "code": "7204",
+        "province_id": "72",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7205,
+        "code": "7205",
         "name": "Buol",
         "type": "Kabupaten",
         "province": "Sulawesi Tengah",
-        "code": "7205",
+        "province_id": "72",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7206,
+        "code": "7206",
         "name": "Morowali",
         "type": "Kabupaten",
         "province": "Sulawesi Tengah",
-        "code": "7206",
+        "province_id": "72",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7207,
+        "code": "7207",
         "name": "Banggai Kepulauan",
         "type": "Kabupaten",
         "province": "Sulawesi Tengah",
-        "code": "7207",
+        "province_id": "72",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7208,
+        "code": "7208",
         "name": "Parigi Moutong",
         "type": "Kabupaten",
         "province": "Sulawesi Tengah",
-        "code": "7208",
+        "province_id": "72",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7209,
+        "code": "7209",
         "name": "Tojo Una-Una",
         "type": "Kabupaten",
         "province": "Sulawesi Tengah",
-        "code": "7209",
+        "province_id": "72",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7210,
+        "code": "7210",
         "name": "Sigi",
         "type": "Kabupaten",
         "province": "Sulawesi Tengah",
-        "code": "7210",
+        "province_id": "72",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
+    },
+    {
+        "id": 7211,
+        "code": 7211,
+        "name": "Banggai Laut",
+        "type": "Kabupaten",
+        "province": "Sulawesi Tengah",
+        "province_id": "72",
+        "postal_code": null,
+        "latitude": null,
+        "longitude": null,
+        "is_active": true
+    },
+    {
+        "id": 7212,
+        "code": 7212,
+        "name": "Morowali Utara",
+        "type": "Kabupaten",
+        "province": "Sulawesi Tengah",
+        "province_id": "72",
+        "postal_code": null,
+        "latitude": null,
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7271,
+        "code": "7271",
         "name": "Palu",
         "type": "Kota",
         "province": "Sulawesi Tengah",
-        "code": "7271",
+        "province_id": "72",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7301,
+        "code": "7301",
         "name": "Kepulauan Selayar",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7301",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7302,
+        "code": "7302",
         "name": "Bulukumba",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7302",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7303,
+        "code": "7303",
         "name": "Bantaeng",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7303",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7304,
+        "code": "7304",
         "name": "Jeneponto",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7304",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7305,
+        "code": "7305",
         "name": "Takalar",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7305",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7306,
+        "code": "7306",
         "name": "Gowa",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7306",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7307,
+        "code": "7307",
         "name": "Sinjai",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7307",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7308,
+        "code": "7308",
         "name": "Bone",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7308",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7309,
+        "code": "7309",
         "name": "Maros",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7309",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7310,
+        "code": "7310",
         "name": "Pangkajene Dan Kepulauan",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7310",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7311,
+        "code": "7311",
         "name": "Barru",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7311",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7312,
+        "code": "7312",
         "name": "Soppeng",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7312",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7313,
+        "code": "7313",
         "name": "Wajo",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7313",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7314,
+        "code": "7314",
         "name": "Sidenreng Rappang",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7314",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7315,
+        "code": "7315",
         "name": "Pinrang",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7315",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7316,
+        "code": "7316",
         "name": "Enrekang",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7316",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7317,
+        "code": "7317",
         "name": "Luwu",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7317",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7318,
+        "code": "7318",
         "name": "Tana Toraja",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7318",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7322,
+        "code": "7322",
         "name": "Luwu Utara",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7322",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
-        "id": 7325,
+        "id": 7324,
+        "code": "7324",
         "name": "Luwu Timur",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7325",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7326,
+        "code": "7326",
         "name": "Toraja Utara",
         "type": "Kabupaten",
         "province": "Sulawesi Selatan",
-        "code": "7326",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7371,
+        "code": "7371",
         "name": "Makassar",
         "type": "Kota",
         "province": "Sulawesi Selatan",
-        "code": "7371",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7372,
+        "code": "7372",
         "name": "Parepare",
         "type": "Kota",
         "province": "Sulawesi Selatan",
-        "code": "7372",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7373,
+        "code": "7373",
         "name": "Palu",
         "type": "Kota",
         "province": "Sulawesi Selatan",
-        "code": "7373",
+        "province_id": "73",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7401,
+        "code": "7401",
         "name": "Buton",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7401",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7402,
+        "code": "7402",
         "name": "Muna",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7402",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7403,
+        "code": "7403",
         "name": "Konawe",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7403",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7404,
+        "code": "7404",
         "name": "Kolaka",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7404",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7405,
+        "code": "7405",
         "name": "Konawe Selatan",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7405",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7406,
+        "code": "7406",
         "name": "Bombana",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7406",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7407,
+        "code": "7407",
         "name": "Wakatobi",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7407",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7408,
+        "code": "7408",
         "name": "Kolaka Utara",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7408",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7409,
+        "code": "7409",
         "name": "Buton Utara",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7409",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7410,
+        "code": "7410",
         "name": "Konawe Utara",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7410",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7411,
+        "code": "7411",
         "name": "Kolaka Timur",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7411",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7412,
+        "code": "7412",
         "name": "Konawe Kepulauan",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7412",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7413,
+        "code": "7413",
         "name": "Muna Barat",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7413",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7414,
+        "code": "7414",
         "name": "Buton Tengah",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7414",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7415,
+        "code": "7415",
         "name": "Buton Selatan",
         "type": "Kabupaten",
         "province": "Sulawesi Tenggara",
-        "code": "7415",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7471,
+        "code": "7471",
         "name": "Kendari",
         "type": "Kota",
         "province": "Sulawesi Tenggara",
-        "code": "7471",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7472,
+        "code": "7472",
         "name": "Baubau",
         "type": "Kota",
         "province": "Sulawesi Tenggara",
-        "code": "7472",
+        "province_id": "74",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7501,
+        "code": "7501",
         "name": "Boalemo",
         "type": "Kabupaten",
         "province": "Gorontalo",
-        "code": "7501",
+        "province_id": "75",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7502,
+        "code": "7502",
         "name": "Gorontalo",
         "type": "Kabupaten",
         "province": "Gorontalo",
-        "code": "7502",
+        "province_id": "75",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7503,
+        "code": "7503",
         "name": "Pohuwato",
         "type": "Kabupaten",
         "province": "Gorontalo",
-        "code": "7503",
+        "province_id": "75",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7504,
+        "code": "7504",
         "name": "Bone Bolango",
         "type": "Kabupaten",
         "province": "Gorontalo",
-        "code": "7504",
+        "province_id": "75",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7505,
+        "code": "7505",
         "name": "Gorontalo Utara",
         "type": "Kabupaten",
         "province": "Gorontalo",
-        "code": "7505",
+        "province_id": "75",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7571,
+        "code": "7571",
         "name": "Gorontalo",
         "type": "Kota",
         "province": "Gorontalo",
-        "code": "7571",
+        "province_id": "75",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7601,
+        "code": "7601",
         "name": "Majene",
         "type": "Kabupaten",
         "province": "Sulawesi Barat",
-        "code": "7601",
+        "province_id": "76",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7602,
+        "code": "7602",
         "name": "Polewali Mandar",
         "type": "Kabupaten",
         "province": "Sulawesi Barat",
-        "code": "7602",
+        "province_id": "76",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7603,
+        "code": "7603",
         "name": "Mamasa",
         "type": "Kabupaten",
         "province": "Sulawesi Barat",
-        "code": "7603",
+        "province_id": "76",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7604,
+        "code": "7604",
         "name": "Mamuju",
         "type": "Kabupaten",
         "province": "Sulawesi Barat",
-        "code": "7604",
+        "province_id": "76",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7605,
+        "code": "7605",
         "name": "Mamuju Utara",
         "type": "Kabupaten",
         "province": "Sulawesi Barat",
-        "code": "7605",
+        "province_id": "76",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 7606,
+        "code": "7606",
         "name": "Mamuju Tengah",
         "type": "Kabupaten",
         "province": "Sulawesi Barat",
-        "code": "7606",
+        "province_id": "76",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8101,
+        "code": "8101",
         "name": "Maluku Tenggara Barat",
         "type": "Kabupaten",
         "province": "Maluku",
-        "code": "8101",
+        "province_id": "81",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8102,
+        "code": "8102",
         "name": "Maluku Tenggara",
         "type": "Kabupaten",
         "province": "Maluku",
-        "code": "8102",
+        "province_id": "81",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8103,
+        "code": "8103",
         "name": "Maluku Tengah",
         "type": "Kabupaten",
         "province": "Maluku",
-        "code": "8103",
+        "province_id": "81",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8104,
+        "code": "8104",
         "name": "Buru",
         "type": "Kabupaten",
         "province": "Maluku",
-        "code": "8104",
+        "province_id": "81",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8105,
+        "code": "8105",
         "name": "Kepulauan Aru",
         "type": "Kabupaten",
         "province": "Maluku",
-        "code": "8105",
+        "province_id": "81",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8106,
+        "code": "8106",
         "name": "Seram Bagian Barat",
         "type": "Kabupaten",
         "province": "Maluku",
-        "code": "8106",
+        "province_id": "81",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8107,
+        "code": "8107",
         "name": "Seram Bagian Timur",
         "type": "Kabupaten",
         "province": "Maluku",
-        "code": "8107",
+        "province_id": "81",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8108,
+        "code": "8108",
         "name": "Maluku Barat Daya",
         "type": "Kabupaten",
         "province": "Maluku",
-        "code": "8108",
+        "province_id": "81",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8109,
+        "code": "8109",
         "name": "Buru Selatan",
         "type": "Kabupaten",
         "province": "Maluku",
-        "code": "8109",
+        "province_id": "81",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8171,
+        "code": "8171",
         "name": "Ambon",
         "type": "Kota",
         "province": "Maluku",
-        "code": "8171",
+        "province_id": "81",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8172,
+        "code": "8172",
         "name": "Tual",
         "type": "Kota",
         "province": "Maluku",
-        "code": "8172",
+        "province_id": "81",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8201,
+        "code": "8201",
         "name": "Halmahera Barat",
         "type": "Kabupaten",
         "province": "Maluku Utara",
-        "code": "8201",
+        "province_id": "82",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8202,
+        "code": "8202",
         "name": "Halmahera Tengah",
         "type": "Kabupaten",
         "province": "Maluku Utara",
-        "code": "8202",
+        "province_id": "82",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8203,
+        "code": "8203",
         "name": "Kepulauan Sula",
         "type": "Kabupaten",
         "province": "Maluku Utara",
-        "code": "8203",
+        "province_id": "82",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8204,
+        "code": "8204",
         "name": "Halmahera Selatan",
         "type": "Kabupaten",
         "province": "Maluku Utara",
-        "code": "8204",
+        "province_id": "82",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8205,
+        "code": "8205",
         "name": "Halmahera Utara",
         "type": "Kabupaten",
         "province": "Maluku Utara",
-        "code": "8205",
+        "province_id": "82",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8206,
+        "code": "8206",
         "name": "Halmahera Timur",
         "type": "Kabupaten",
         "province": "Maluku Utara",
-        "code": "8206",
+        "province_id": "82",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8207,
+        "code": "8207",
         "name": "Pulau Morotai",
         "type": "Kabupaten",
         "province": "Maluku Utara",
-        "code": "8207",
+        "province_id": "82",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8208,
+        "code": "8208",
         "name": "Pulau Taliabu",
         "type": "Kabupaten",
         "province": "Maluku Utara",
-        "code": "8208",
+        "province_id": "82",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8271,
+        "code": "8271",
         "name": "Ternate",
         "type": "Kota",
         "province": "Maluku Utara",
-        "code": "8271",
+        "province_id": "82",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 8272,
+        "code": "8272",
         "name": "Tidore Kepulauan",
         "type": "Kota",
         "province": "Maluku Utara",
-        "code": "8272",
+        "province_id": "82",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
-        "id": 9116,
+        "id": 9103,
+        "code": 9103,
+        "name": "Jayapura",
+        "type": "Kabupaten",
+        "province": "Papua",
+        "province_id": "91",
+        "postal_code": null,
+        "latitude": null,
+        "longitude": null,
+        "is_active": true
+    },
+    {
+        "id": 9105,
+        "code": 9105,
+        "name": "Kepulauan Yapen",
+        "type": "Kabupaten",
+        "province": "Papua",
+        "province_id": "91",
+        "postal_code": null,
+        "latitude": null,
+        "longitude": null,
+        "is_active": true
+    },
+    {
+        "id": 9106,
+        "code": 9106,
+        "name": "Biak Numfor",
+        "type": "Kabupaten",
+        "province": "Papua",
+        "province_id": "91",
+        "postal_code": null,
+        "latitude": null,
+        "longitude": null,
+        "is_active": true
+    },
+    {
+        "id": 9110,
+        "code": "9110",
         "name": "Sarmi",
         "type": "Kabupaten",
         "province": "Papua",
-        "code": "9116",
+        "province_id": "91",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
-        "id": 9117,
+        "id": 9111,
+        "code": "9111",
         "name": "Keerom",
         "type": "Kabupaten",
         "province": "Papua",
-        "code": "9117",
+        "province_id": "91",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
-        "id": 9118,
+        "id": 9115,
+        "code": "9115",
         "name": "Waropen",
         "type": "Kabupaten",
         "province": "Papua",
-        "code": "9118",
+        "province_id": "91",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9119,
+        "code": "9119",
         "name": "Supiori",
         "type": "Kabupaten",
         "province": "Papua",
-        "code": "9119",
+        "province_id": "91",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9120,
+        "code": "9120",
         "name": "Mamberamo Raya",
         "type": "Kabupaten",
         "province": "Papua",
-        "code": "9120",
+        "province_id": "91",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9171,
+        "code": "9171",
         "name": "Jayapura",
         "type": "Kota",
         "province": "Papua",
-        "code": "9171",
+        "province_id": "91",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9201,
+        "code": "9201",
         "name": "Fakfak",
         "type": "Kabupaten",
         "province": "Papua Barat",
-        "code": "9201",
+        "province_id": "92",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9202,
+        "code": "9202",
         "name": "Kaimana",
         "type": "Kabupaten",
         "province": "Papua Barat",
-        "code": "9202",
+        "province_id": "92",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9203,
+        "code": "9203",
         "name": "Teluk Wondama",
         "type": "Kabupaten",
         "province": "Papua Barat",
-        "code": "9203",
+        "province_id": "92",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9204,
+        "code": "9204",
         "name": "Teluk Bintuni",
         "type": "Kabupaten",
         "province": "Papua Barat",
-        "code": "9204",
+        "province_id": "92",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9205,
+        "code": "9205",
         "name": "Manokwari",
         "type": "Kabupaten",
         "province": "Papua Barat",
-        "code": "9205",
+        "province_id": "92",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9206,
+        "code": "9206",
         "name": "Sorong Selatan",
         "type": "Kabupaten",
         "province": "Papua Barat",
-        "code": "9206",
+        "province_id": "92",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9207,
+        "code": "9207",
         "name": "Sorong",
         "type": "Kabupaten",
         "province": "Papua Barat",
-        "code": "9207",
+        "province_id": "92",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9208,
+        "code": "9208",
         "name": "Raja Ampat",
         "type": "Kabupaten",
         "province": "Papua Barat",
-        "code": "9208",
+        "province_id": "92",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9209,
+        "code": "9209",
         "name": "Tambrauw",
         "type": "Kabupaten",
         "province": "Papua Barat",
-        "code": "9209",
+        "province_id": "92",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9210,
+        "code": "9210",
         "name": "Maybrat",
         "type": "Kabupaten",
         "province": "Papua Barat",
-        "code": "9210",
+        "province_id": "92",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9211,
+        "code": "9211",
         "name": "Manokwari Selatan",
         "type": "Kabupaten",
         "province": "Papua Barat",
-        "code": "9211",
+        "province_id": "92",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9212,
+        "code": "9212",
         "name": "Pegunungan Arfak",
         "type": "Kabupaten",
         "province": "Papua Barat",
-        "code": "9212",
+        "province_id": "92",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9271,
+        "code": "9271",
         "name": "Sorong",
         "type": "Kota",
         "province": "Papua Barat",
-        "code": "9271",
+        "province_id": "92",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9301,
+        "code": "9301",
         "name": "Asmat",
         "type": "Kabupaten",
         "province": "Papua Selatan",
-        "code": "9301",
+        "province_id": "93",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9302,
+        "code": "9302",
         "name": "Boven Digoel",
         "type": "Kabupaten",
         "province": "Papua Selatan",
-        "code": "9302",
+        "province_id": "93",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9303,
+        "code": "9303",
         "name": "Mappi",
         "type": "Kabupaten",
         "province": "Papua Selatan",
-        "code": "9303",
+        "province_id": "93",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9304,
+        "code": "9304",
         "name": "Merauke",
         "type": "Kabupaten",
         "province": "Papua Selatan",
-        "code": "9304",
+        "province_id": "93",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9401,
+        "code": "9401",
         "name": "Deiyai (Deliyai)",
         "type": "Kabupaten",
         "province": "Papua Tengah",
-        "code": "9401",
+        "province_id": "94",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
-    },
-    {
-        "id": 9402,
-        "name": "Dogiyai",
-        "type": "Kabupaten",
-        "province": "Papua Tengah",
-        "code": "9402",
-        "latitude": null,
-        "longitude": null
-    },
-    {
-        "id": 9403,
-        "name": "Intan Jaya",
-        "type": "Kabupaten",
-        "province": "Papua Tengah",
-        "code": "9403",
-        "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9404,
+        "code": "9404",
         "name": "Mimika",
         "type": "Kabupaten",
         "province": "Papua Tengah",
-        "code": "9404",
+        "province_id": "94",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
-        "id": 9408,
-        "name": "Nabire",
-        "type": "Kabupaten",
-        "province": "Papua Tengah",
-        "code": "9408",
-        "latitude": null,
-        "longitude": null
-    },
-    {
-        "id": 9409,
-        "name": "Paniai",
-        "type": "Kabupaten",
-        "province": "Papua Tengah",
-        "code": "9409",
-        "latitude": null,
-        "longitude": null
-    },
-    {
-        "id": 9410,
+        "id": 9405,
+        "code": "9405",
         "name": "Puncak",
         "type": "Kabupaten",
         "province": "Papua Tengah",
-        "code": "9410",
+        "province_id": "94",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
+    },
+    {
+        "id": 9406,
+        "code": "9406",
+        "name": "Dogiyai",
+        "type": "Kabupaten",
+        "province": "Papua Tengah",
+        "province_id": "94",
+        "postal_code": null,
+        "latitude": null,
+        "longitude": null,
+        "is_active": true
+    },
+    {
+        "id": 9407,
+        "code": "9407",
+        "name": "Intan Jaya",
+        "type": "Kabupaten",
+        "province": "Papua Tengah",
+        "province_id": "94",
+        "postal_code": null,
+        "latitude": null,
+        "longitude": null,
+        "is_active": true
+    },
+    {
+        "id": 9408,
+        "code": "9408",
+        "name": "Nabire",
+        "type": "Kabupaten",
+        "province": "Papua Tengah",
+        "province_id": "94",
+        "postal_code": null,
+        "latitude": null,
+        "longitude": null,
+        "is_active": true
+    },
+    {
+        "id": 9409,
+        "code": "9409",
+        "name": "Paniai",
+        "type": "Kabupaten",
+        "province": "Papua Tengah",
+        "province_id": "94",
+        "postal_code": null,
+        "latitude": null,
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9411,
+        "code": "9411",
         "name": "Puncak Jaya",
         "type": "Kabupaten",
         "province": "Papua Tengah",
-        "code": "9411",
+        "province_id": "94",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9501,
+        "code": "9501",
         "name": "Jayawijaya",
         "type": "Kabupaten",
         "province": "Papua Pegunungan",
-        "code": "9501",
+        "province_id": "95",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9502,
+        "code": "9502",
         "name": "Lanny Jaya",
         "type": "Kabupaten",
         "province": "Papua Pegunungan",
-        "code": "9502",
+        "province_id": "95",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9503,
+        "code": "9503",
         "name": "Mamberamo Tengah",
         "type": "Kabupaten",
         "province": "Papua Pegunungan",
-        "code": "9503",
+        "province_id": "95",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9504,
+        "code": "9504",
         "name": "Nduga",
         "type": "Kabupaten",
         "province": "Papua Pegunungan",
-        "code": "9504",
+        "province_id": "95",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9505,
+        "code": "9505",
         "name": "Pegunungan Bintang",
         "type": "Kabupaten",
         "province": "Papua Pegunungan",
-        "code": "9505",
+        "province_id": "95",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9506,
+        "code": "9506",
         "name": "Tolikara",
         "type": "Kabupaten",
         "province": "Papua Pegunungan",
-        "code": "9506",
+        "province_id": "95",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9507,
+        "code": "9507",
         "name": "Yahukimo",
         "type": "Kabupaten",
         "province": "Papua Pegunungan",
-        "code": "9507",
+        "province_id": "95",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9508,
+        "code": "9508",
         "name": "Yalimo",
         "type": "Kabupaten",
         "province": "Papua Pegunungan",
-        "code": "9508",
+        "province_id": "95",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9601,
+        "code": "9601",
         "name": "Maybrat",
         "type": "Kabupaten",
         "province": "Papua Barat Daya",
-        "code": "9601",
+        "province_id": "96",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9602,
+        "code": "9602",
         "name": "Raja Ampat",
         "type": "Kabupaten",
         "province": "Papua Barat Daya",
-        "code": "9602",
+        "province_id": "96",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9603,
+        "code": "9603",
         "name": "Sorong",
         "type": "Kabupaten",
         "province": "Papua Barat Daya",
-        "code": "9603",
+        "province_id": "96",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9604,
+        "code": "9604",
         "name": "Sorong Selatan",
         "type": "Kabupaten",
         "province": "Papua Barat Daya",
-        "code": "9604",
+        "province_id": "96",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9605,
+        "code": "9605",
         "name": "Tambrauw",
         "type": "Kabupaten",
         "province": "Papua Barat Daya",
-        "code": "9605",
+        "province_id": "96",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     },
     {
         "id": 9606,
+        "code": "9606",
         "name": "Sorong",
         "type": "Kota",
         "province": "Papua Barat Daya",
-        "code": "9606",
+        "province_id": "96",
+        "postal_code": null,
         "latitude": null,
-        "longitude": null
+        "longitude": null,
+        "is_active": true
     }
 ]

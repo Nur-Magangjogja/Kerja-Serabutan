@@ -14,6 +14,12 @@ class DistrictSeeder extends Seeder
      */
     public function run(): void
     {
+        $districtsPath = database_path('seeders/data/districts.json');
+        if (file_exists($districtsPath)) {
+            $this->call(IndonesiaRegionsSeeder::class);
+            return;
+        }
+
         // Minimal sample districts mapped to existing sample cities
         $map = [
             'Jakarta' => ['Jakarta Pusat','Jakarta Selatan','Jakarta Barat'],
@@ -21,6 +27,7 @@ class DistrictSeeder extends Seeder
             'Bandung' => ['Coblong','Sukasari','Cicendo'],
             'Medan' => ['Medan Kota','Medan Polonia','Medan Petisah'],
             'Semarang' => ['Semarang Tengah','Semarang Utara','Semarang Selatan'],
+            'Ponorogo' => ['Babadan','Balong','Jenangan','Kauman','Siman','Ponorogo'],
         ];
 
         foreach ($map as $cityName => $districts) {
