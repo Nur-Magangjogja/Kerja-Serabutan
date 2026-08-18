@@ -1,14 +1,21 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="min-h-full scroll-smooth">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Admin Panel' }} - {{ \App\Models\AppSetting::get('app_name', 'SayaBantu') }}</title>
-    @if($siteFavicon = \App\Models\AppSetting::get('app_favicon'))
-        <link rel="icon" href="{{ asset('storage/' . $siteFavicon) }}">
+    @php
+        $fav = \App\Models\AppSetting::get('app_favicon') ?: \App\Models\AppSetting::get('app_logo');
+    @endphp
+    @if($fav && \Illuminate\Support\Facades\Storage::disk('public')->exists($fav))
+        <link rel="icon" href="{{ asset('storage/' . $fav) }}">
     @endif
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
 
     <!-- Flowbite & Global Theme Initialization Script (Anti-FOUC) -->
     <script>
@@ -68,8 +75,8 @@
     @livewireStyles
 </head>
 
-<body class="antialiased bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-200 overflow-x-hidden" x-data="{ showLogoutModal: false }" @open-logout-modal.window="showLogoutModal = true">
-    <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex transition-colors duration-200 overflow-x-hidden">
+<body class="antialiased bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-200" x-data="{ showLogoutModal: false }" @open-logout-modal.window="showLogoutModal = true">
+    <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex transition-colors duration-200">
         <!-- Sidebar -->
         <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg fixed inset-y-0 left-0 flex flex-col z-30 transition-colors duration-200">
             @php
@@ -92,9 +99,7 @@
                     @endif
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-1">
-                            <span class="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-tight truncate">
-                                {{ $siteName }}
-                            </span>
+                            <x-brand-title :name="$siteName" size="lg" theme="admin" withDot="true" class="leading-tight truncate" />
                         </div>
                         <div class="flex items-center gap-1.5 mt-0.5">
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800/60 uppercase tracking-wider">
@@ -205,9 +210,19 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 ml-64 min-h-screen min-w-0 overflow-x-hidden">
+        <main class="flex-1 ml-64 min-h-screen min-w-0">
             <!-- Topbar -->
-            <div class="sticky top-0 z-20 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 transition-colors duration-200">
+            <div x-data="{ 
+                     isScrolled: false,
+                     checkScroll() { this.isScrolled = (window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0) > 10; }
+                 }" 
+                 x-init="checkScroll()"
+                 @scroll.window="checkScroll()"
+                 class="sticky top-0 z-30 transition-all duration-300 border-b"
+                 :class="isScrolled 
+                     ? 'bg-white/20 dark:bg-gray-900/20 backdrop-blur-md border-gray-200/40 dark:border-gray-700/40 shadow-sm' 
+                     : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'"
+                 style="position: -webkit-sticky; position: sticky; top: 0;">
                 <div class="px-6 py-3 flex items-center justify-between">
                     <div class="flex items-center gap-4 min-w-0">
                         <div class="hidden sm:flex items-center text-xs text-gray-400 dark:text-gray-400 gap-2">

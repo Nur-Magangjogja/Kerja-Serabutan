@@ -80,6 +80,7 @@
                         @error('app_tagline')
                             <p class="text-xs text-red-500 mt-1 font-medium">{{ $message }}</p>
                         @enderror
+                        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Tampil di sub-judul header mobile (Customer & Guest), judul tab browser, dan footer halaman.</p>
                     </div>
 
                     <!-- Deskripsi Singkat -->
@@ -97,6 +98,76 @@
                         @error('app_description')
                             <p class="text-xs text-red-500 mt-1 font-medium">{{ $message }}</p>
                         @enderror
+                        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Tampil di teks perkenalan Halaman Depan (Welcome Screen & Home), serta digunakan untuk meta deskripsi SEO Google.</p>
+                    </div>
+
+                    <!-- Pengaturan Tipografi & Font Judul -->
+                    <div class="pt-4 border-t border-gray-100 dark:border-gray-700 space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label for="app_brand_font" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                    Jenis Font Judul Brand
+                                </label>
+                                <span class="text-[11px] font-medium text-primary-600 dark:text-sky-400">Pilihan Terpilih: {{ $app_brand_font ?: 'Plus Jakarta Sans' }}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Pilih bentuk tipografi font untuk judul aplikasi di seluruh halaman.</p>
+                            
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                @php
+                                    $fonts = [
+                                        'Plus Jakarta Sans' => ['name' => 'Plus Jakarta Sans', 'desc' => 'Modern & Tech Indonesia', 'sample' => 'SayaBantu'],
+                                        'Outfit' => ['name' => 'Outfit', 'desc' => 'Rounded Geometric', 'sample' => 'SayaBantu'],
+                                        'Poppins' => ['name' => 'Poppins', 'desc' => 'Semi-Rounded & Bold', 'sample' => 'SayaBantu'],
+                                        'Lexend' => ['name' => 'Lexend', 'desc' => 'Minimalis & Futuristik', 'sample' => 'SayaBantu'],
+                                        'Montserrat' => ['name' => 'Montserrat', 'desc' => 'Elegan & Tegas', 'sample' => 'SayaBantu'],
+                                        'Inter' => ['name' => 'Inter', 'desc' => 'Clean & Neutral UI', 'sample' => 'SayaBantu'],
+                                    ];
+                                @endphp
+
+                                @foreach($fonts as $key => $f)
+                                    <label class="relative flex flex-col p-3 rounded-xl border cursor-pointer transition-all duration-200 {{ ($app_brand_font === $key || (!$app_brand_font && $key === 'Plus Jakarta Sans')) ? 'border-primary-500 bg-primary-50/40 dark:bg-primary-900/30 ring-2 ring-primary-500/20' : 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
+                                        <input type="radio" wire:model.live="app_brand_font" value="{{ $key }}" class="sr-only" />
+                                        <span class="text-xs font-bold text-gray-900 dark:text-white" style="font-family: '{{ $key }}', sans-serif;">{{ $f['name'] }}</span>
+                                        <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{{ $f['desc'] }}</span>
+                                        <span class="text-sm font-black text-primary-600 dark:text-sky-400 mt-2 block" style="font-family: '{{ $key }}', sans-serif;">{{ $app_name ?: $f['sample'] }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <!-- Pengaturan Gaya Warna Judul -->
+                        <div class="pt-3">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                    Gaya & Kombinasi Warna Judul
+                                </label>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Pilih tema aksen warna untuk kata kedua judul (contoh: "Bantu").</p>
+
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                @php
+                                    $styles = [
+                                        'two_tone' => ['name' => 'Two-Tone Sky / Cyan', 'badge' => 'from-sky-400 to-cyan-500', 'desc' => 'Segar & Bersinar (Default)'],
+                                        'gradient_cyan' => ['name' => 'Ocean Blue Gradient', 'badge' => 'from-blue-500 to-sky-400', 'desc' => 'Biru Samudera'],
+                                        'gradient_emerald' => ['name' => 'Fresh Emerald / Mint', 'badge' => 'from-emerald-500 to-teal-400', 'desc' => 'Hijau Segar Ramah'],
+                                        'gradient_sunset' => ['name' => 'Sunset Amber / Rose', 'badge' => 'from-amber-500 to-rose-500', 'desc' => 'Hangat & Enerjik'],
+                                        'gradient_indigo' => ['name' => 'Royal Indigo / Purple', 'badge' => 'from-indigo-500 to-purple-500', 'desc' => 'Elegan & Mewah'],
+                                        'solid_primary' => ['name' => 'Solid Primary Blue', 'badge' => 'from-primary-600 to-primary-600', 'desc' => 'Satu Warna Klasik'],
+                                    ];
+                                @endphp
+
+                                @foreach($styles as $sKey => $s)
+                                    <label class="relative flex flex-col p-3 rounded-xl border cursor-pointer transition-all duration-200 {{ ($app_brand_style === $sKey || (!$app_brand_style && $sKey === 'two_tone')) ? 'border-primary-500 bg-primary-50/40 dark:bg-primary-900/30 ring-2 ring-primary-500/20' : 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
+                                        <input type="radio" wire:model.live="app_brand_style" value="{{ $sKey }}" class="sr-only" />
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="w-3.5 h-3.5 rounded-full bg-gradient-to-r {{ $s['badge'] }} shadow-xs inline-block"></span>
+                                            <span class="text-xs font-bold text-gray-900 dark:text-white truncate">{{ $s['name'] }}</span>
+                                        </div>
+                                        <span class="text-[10px] text-gray-500 dark:text-gray-400">{{ $s['desc'] }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Upload Logo Aplikasi -->
@@ -245,8 +316,8 @@
                                 </div>
                             @endif
                             <div class="min-w-0 flex-1">
-                                <div class="text-base font-black text-gray-900 tracking-tight leading-tight truncate">
-                                    {{ $app_name ?: 'Nama Aplikasi' }}
+                                <div class="truncate">
+                                    <x-brand-title :name="$app_name ?: 'SayaBantu'" :font="$app_brand_font" :style="$app_brand_style" size="base" theme="dark" withDot="true" />
                                 </div>
                                 <div class="mt-0.5">
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase tracking-wider">
@@ -273,8 +344,8 @@
                                 </div>
                             @endif
                             <div class="min-w-0 flex-1">
-                                <div class="text-base font-black text-white tracking-tight leading-tight truncate">
-                                    {{ $app_name ?: 'Nama Aplikasi' }}
+                                <div class="truncate">
+                                    <x-brand-title :name="$app_name ?: 'SayaBantu'" :font="$app_brand_font" :style="$app_brand_style" size="base" theme="light" withDot="true" />
                                 </div>
                                 <div class="mt-0.5">
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-900/50 text-indigo-300 border border-indigo-800/60 uppercase tracking-wider">
@@ -285,7 +356,18 @@
                         </div>
                     </div>
 
-                    <!-- Simulation 3: Browser Tab Mockup -->
+                    <!-- Simulation 3: Header Aplikasi Mobile / Customer -->
+                    <div>
+                        <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Tampilan Header Customer (Latar Biru)</span>
+                        <div class="p-4 rounded-xl relative overflow-hidden text-center text-white shadow-sm" style="background: linear-gradient(to bottom right, #0098e7, #0077cc, #0060b0);">
+                            <div class="relative z-10 py-1">
+                                <x-brand-title :name="$app_name ?: 'SayaBantu'" :font="$app_brand_font" :style="$app_brand_style" size="lg" theme="light" withDot="true" />
+                                <p class="text-[11px] text-white/90 mt-0.5">{{ $app_tagline ?: 'Platform Bantuan Sosial' }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Simulation 4: Browser Tab Mockup -->
                     <div>
                         <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Simulasi Tab Browser</span>
                         <div class="rounded-xl bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-2.5 flex items-center gap-2">

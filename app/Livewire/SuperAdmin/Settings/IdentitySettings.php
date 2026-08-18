@@ -16,6 +16,8 @@ class IdentitySettings extends Component
     public $app_name;
     public $app_tagline;
     public $app_description;
+    public $app_brand_font;
+    public $app_brand_style;
 
     public $current_logo;
     public $logo;
@@ -29,6 +31,8 @@ class IdentitySettings extends Component
             'app_name' => 'required|string|min:2|max:50',
             'app_tagline' => 'nullable|string|max:100',
             'app_description' => 'nullable|string|max:255',
+            'app_brand_font' => 'nullable|string',
+            'app_brand_style' => 'nullable|string',
             'logo' => 'nullable|image|max:2048|mimes:png,jpg,jpeg,svg,webp',
             'favicon' => 'nullable|image|max:1024|mimes:png,ico,svg,jpg',
         ];
@@ -53,6 +57,8 @@ class IdentitySettings extends Component
         $this->app_name = AppSetting::get('app_name', 'SayaBantu');
         $this->app_tagline = AppSetting::get('app_tagline', 'Platform Layanan & Bantuan Serabutan');
         $this->app_description = AppSetting::get('app_description', 'Solusi bantuan cepat, aman, dan terpercaya.');
+        $this->app_brand_font = AppSetting::get('app_brand_font', 'Plus Jakarta Sans');
+        $this->app_brand_style = AppSetting::get('app_brand_style', 'two_tone');
         $this->current_logo = AppSetting::get('app_logo');
         $this->current_favicon = AppSetting::get('app_favicon');
     }
@@ -87,12 +93,14 @@ class IdentitySettings extends Component
             $this->favicon = null;
         }
 
-        // Save text settings
+        // Save text & typography settings
         AppSetting::set('app_name', trim($this->app_name));
         AppSetting::set('app_tagline', trim((string) $this->app_tagline));
         AppSetting::set('app_description', trim((string) $this->app_description));
+        AppSetting::set('app_brand_font', $this->app_brand_font ?: 'Plus Jakarta Sans');
+        AppSetting::set('app_brand_style', $this->app_brand_style ?: 'two_tone');
 
-        session()->flash('message', 'Identitas aplikasi (nama dan logo) berhasil diperbarui!');
+        session()->flash('message', 'Identitas dan tipografi aplikasi berhasil diperbarui!');
     }
 
     public function removeLogo()

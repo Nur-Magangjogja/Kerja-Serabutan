@@ -51,7 +51,9 @@ new #[Layout('layouts.guest')] class extends Component {
             </div>
 
             <!-- App Name -->
-            <h1 class="text-3xl font-bold text-primary-500 mb-6">sayabantu</h1>
+            <div class="mb-6">
+                <x-brand-title as="h1" size="3xl" theme="dark" withDot="true" />
+            </div>
 
             <!-- Header with Gradient -->
             <div

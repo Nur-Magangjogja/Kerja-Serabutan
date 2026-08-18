@@ -3,7 +3,7 @@
     <div
         class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 items-center justify-center p-12">
         <div class="max-w-md text-white">
-            <h1 class="text-5xl font-bold mb-6">sayabantu</h1>
+            <x-brand-title as="h1" size="5xl" theme="light" withDot="true" class="mb-6 block" />
             <p class="text-xl mb-8 text-primary-100">Admin Panel</p>
             <div class="space-y-4">
                 <div class="flex items-start space-x-3">
@@ -38,12 +38,12 @@
     </div>
 
     <!-- Right Side - Login Form -->
-    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50 font-sans">
         <div class="w-full max-w-md">
             <!-- Logo for Mobile -->
             <div class="lg:hidden text-center mb-8">
-                <h1 class="text-3xl font-bold text-primary-600">sayabantu</h1>
-                <p class="text-gray-600 mt-2">Admin Panel</p>
+                <x-brand-title as="h1" size="3xl" theme="dark" withDot="true" />
+                <p class="text-gray-600 mt-2 font-medium">Admin Panel</p>
             </div>
 
             <div class="bg-white rounded-2xl shadow-xl p-8">

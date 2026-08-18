@@ -21,9 +21,7 @@
                 @endif
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-1">
-                        <span class="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-tight truncate">
-                            {{ $siteName }}
-                        </span>
+                        <x-brand-title :name="$siteName" size="lg" theme="admin" withDot="true" class="leading-tight truncate" />
                     </div>
                     <div class="flex items-center gap-1.5 mt-0.5">
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800/60 uppercase tracking-wider">
@@ -135,7 +133,12 @@
     <!-- Main Content -->
     <main class="flex-1 ml-64 min-h-screen">
         <!-- Header -->
-        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 transition-colors duration-200">
+        <header x-data="{ isScrolled: false }"
+                @scroll.window="isScrolled = (window.pageYOffset > 10)"
+                class="shadow-sm border-b sticky top-0 z-10 transition-all duration-300"
+                :class="isScrolled 
+                    ? 'bg-white/20 dark:bg-gray-800/20 backdrop-blur-md border-gray-200/30 dark:border-gray-700/30 shadow-xs' 
+                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'">
             <div class="px-8 py-5">
                 <div class="flex items-center justify-between">
                     <div>

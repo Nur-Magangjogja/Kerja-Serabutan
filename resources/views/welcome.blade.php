@@ -4,9 +4,18 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>sayabantu - Platform Bantuan Sosial</title>
+    <title>{{ \App\Models\AppSetting::get('app_name', 'SayaBantu') }} - {{ \App\Models\AppSetting::get('app_tagline', 'Platform Bantuan Sosial') }}</title>
+    <meta name="description" content="{{ \App\Models\AppSetting::get('app_description', 'Platform berbagi bantuan sosial untuk mereka yang membutuhkan') }}">
+    @php
+        $fav = \App\Models\AppSetting::get('app_favicon') ?: \App\Models\AppSetting::get('app_logo');
+    @endphp
+    @if($fav && \Illuminate\Support\Facades\Storage::disk('public')->exists($fav))
+        <link rel="icon" href="{{ asset('storage/' . $fav) }}">
+    @endif
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         @keyframes fadeInUp {
@@ -23,23 +32,25 @@
             animation: fadeInUp 0.8s ease-out forwards;
         }
         .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0098e7 0%, #0077cc 50%, #6366f1 100%);
         }
     </style>
 </head>
 
-<body class="font-sans antialiased bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+<body class="font-sans antialiased bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50">
     <div class="max-w-sm mx-auto min-h-screen flex flex-col">
 
         <!-- Header Navigation -->
         <header class="px-6 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-2">
-                <svg class="w-8 h-8 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                </svg>
-                <span class="text-xl font-bold text-gray-800">sayabantu</span>
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-400 to-primary-600 flex items-center justify-center text-white shadow-md shadow-primary-500/20">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                </div>
+                <x-brand-title size="xl" theme="dark" withDot="true" />
             </div>
-            <a href="{{ route('login') }}" class="text-sm font-semibold text-purple-600 hover:text-purple-700">
+            <a href="{{ route('login') }}" class="text-sm font-bold text-primary-600 hover:text-primary-700 transition">
                 Masuk
             </a>
         </header>
@@ -57,14 +68,14 @@
                 </div>
 
                 <!-- Headline -->
-                    <h1 class="text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                <h1 class="text-4xl font-bold text-gray-900 mb-4 leading-tight">
                     Berbagi <span class="text-transparent bg-clip-text gradient-bg">Kebaikan</span><br/>
                     Saling Membantu
                 </h1>
 
-                <!-- Subheadline -->
+                <!-- Subheadline / Description -->
                 <p class="text-gray-600 text-base leading-relaxed max-w-xs mx-auto">
-                    Platform yang menghubungkan mereka yang membutuhkan dengan mereka yang ingin membantu
+                    {{ \App\Models\AppSetting::get('app_description', 'Platform yang menghubungkan mereka yang membutuhkan dengan mereka yang ingin membantu') }}
                 </p>
             </div>
 
@@ -121,7 +132,7 @@
         <!-- Footer -->
         <footer class="px-6 py-6 text-center">
             <p class="text-xs text-gray-500">
-                © {{ date('Y') }} sayabantu. Platform Bantuan Sosial Indonesia.
+                © {{ date('Y') }} {{ \App\Models\AppSetting::get('app_name', 'SayaBantu') }}. {{ \App\Models\AppSetting::get('app_tagline', 'Platform Bantuan Sosial Indonesia') }}.
             </p>
             @if (Route::has('password.request'))
                 <a href="{{ route('password.request') }}"

@@ -6,20 +6,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ $title ?? config('app.name', 'sayabantu') }} - Mitra</title>
+    <title>{{ $title ?? \App\Models\AppSetting::get('app_name', 'SayaBantu') }} - Mitra</title>
+    @php
+        $fav = \App\Models\AppSetting::get('app_favicon') ?: \App\Models\AppSetting::get('app_logo');
+    @endphp
+    @if($fav && \Illuminate\Support\Facades\Storage::disk('public')->exists($fav))
+        <link rel="icon" href="{{ asset('storage/' . $fav) }}">
+    @endif
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
-        rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
+
+    <!-- Theme Initialization Script (Anti-FOUC) -->
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'system';
+            const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (localStorage.getItem('theme') === 'system' || !localStorage.getItem('theme')) {
+                    if (e.matches) document.documentElement.classList.add('dark');
+                    else document.documentElement.classList.remove('dark');
+                }
+            });
+        })();
+    </script>
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
 
-<body class="font-sans antialiased bg-gray-50">
+<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
     <!-- Centered Container -->
     <div class="min-h-screen flex items-start justify-center bg-gray-100">
         <!-- Mobile Width Container -->

@@ -4,9 +4,16 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>sayabantu - Platform Bantuan Sosial</title>
+    <title>{{ \App\Models\AppSetting::get('app_name', 'SayaBantu') }} - {{ \App\Models\AppSetting::get('app_tagline', 'Platform Bantuan Sosial') }}</title>
+    <meta name="description" content="{{ \App\Models\AppSetting::get('app_description', 'Platform berbagi bantuan sosial untuk mereka yang membutuhkan') }}">
+    @php
+        $fav = \App\Models\AppSetting::get('app_favicon') ?: \App\Models\AppSetting::get('app_logo');
+    @endphp
+    @if($fav && \Illuminate\Support\Facades\Storage::disk('public')->exists($fav))
+        <link rel="icon" href="{{ asset('storage/' . $fav) }}">
+    @endif
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         .header-pattern {
@@ -56,8 +63,8 @@
                 <div class="relative z-10">
                     <div class="flex items-center justify-between text-white mb-3">
                         <div class="text-center flex-1">
-                            <h1 class="text-lg font-bold">Bantuan</h1>
-                            <p class="text-xs text-white/90 mt-0.5">Temukan bantuan yang tersedia</p>
+                            <x-brand-title as="h1" size="xl" theme="light" withDot="true" />
+                            <p class="text-xs text-white/90 font-medium mt-0.5">{{ \App\Models\AppSetting::get('app_tagline', 'Platform Bantuan Sosial') }}</p>
                         </div>
                     </div>
                 </div>
@@ -184,8 +191,10 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                         </svg>
                     </div>
-                    <h1 class="text-3xl font-bold text-gray-900 mb-3">sayabantu</h1>
-                    <p class="text-gray-600 max-w-xs mx-auto">Platform berbagi bantuan sosial untuk mereka yang membutuhkan</p>
+                    <div>
+                        <x-brand-title as="h1" size="3xl" theme="dark" withDot="true" class="mb-3" />
+                    </div>
+                    <p class="text-gray-600 max-w-xs mx-auto">{{ \App\Models\AppSetting::get('app_description', 'Platform berbagi bantuan sosial untuk mereka yang membutuhkan') }}</p>
                 </div>
 
                 <!-- Features -->

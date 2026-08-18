@@ -14,7 +14,8 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ["Inter", "Figtree", ...defaultTheme.fontFamily.sans],
+                sans: ["Plus Jakarta Sans", "Inter", "Figtree", ...defaultTheme.fontFamily.sans],
+                brand: ["Plus Jakarta Sans", "Inter", ...defaultTheme.fontFamily.sans],
             },
             colors: {
                 primary: {
