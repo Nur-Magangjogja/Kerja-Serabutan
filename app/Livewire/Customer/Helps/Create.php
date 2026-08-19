@@ -70,21 +70,65 @@ class Create extends Component
             abort(403, 'Akses ditolak. Hanya akun Customer yang dapat membuat permintaan bantuan.');
         }
 
-        // Prefill kota dari profil user
-        $user = auth()->user();
-        if (!empty($user->city_id)) {
-            $this->setCityId($user->city_id);
-        } elseif (!empty($user->city)) {
-            $matched = City::where('is_active', true)
-                ->where('name', 'like', '%' . trim($user->city) . '%')
-                ->first();
-            if ($matched) {
-                $this->setCityId($matched->id);
-            }
+        // Set default nominal yang wajar
+        if (empty($this->amount)) {
+            $this->amount = 25000;
         }
+
+        // Biarkan kota kosong agar customer dapat memilih sendiri
+        $this->city_id       = '';
+        $this->cityQuery     = '';
+        $this->searchResults = [];
 
         if (Schema::hasTable('req_provinces')) {
             $this->req_provinces = DB::table('req_provinces')->orderBy('province')->get()->toArray();
+        }
+    }
+
+    /**
+     * Tambah/kurang nominal bantuan secara instan dan user friendly.
+     */
+    public function adjustAmount(int $delta): void
+    {
+        $current = (int) ($this->amount ?: 0);
+        $new = max(10000, min(100000000, $current + $delta));
+        $this->amount = $new;
+    }
+
+    /**
+     * Set nominal langsung dari pilihan cepat.
+     */
+    public function setPresetAmount(int $value): void
+    {
+        $this->amount = max(10000, min(100000000, $value));
+    }
+
+    /**
+     * Hapus pilihan jadwal bantuan.
+     */
+    public function clearSchedule(): void
+    {
+        $this->scheduled_date = null;
+        $this->scheduled_time = null;
+    }
+
+    /**
+     * Set pilihan jadwal cepat.
+     */
+    public function setPresetSchedule(string $preset): void
+    {
+        if ($preset === 'plus_2h') {
+            $t = now()->addHours(2);
+            $this->scheduled_date = $t->format('Y-m-d');
+            $this->scheduled_time = $t->format('H:i');
+        } elseif ($preset === 'tomorrow_morning') {
+            $t = now()->addDay()->setTime(8, 0);
+            $this->scheduled_date = $t->format('Y-m-d');
+            $this->scheduled_time = '08:00';
+        } elseif ($preset === 'tomorrow_afternoon') {
+            $t = now()->addDay()->setTime(13, 0);
+            $this->scheduled_date = $t->format('Y-m-d');
+            $this->scheduled_time = '13:00';
         }
     }
 
@@ -94,6 +138,7 @@ class Create extends Component
 
     public function updatedCityQuery($value)
     {
+        $this->city_id = '';
         if (trim($value) === '') {
             $this->searchResults = [];
             return;
@@ -124,6 +169,7 @@ class Create extends Component
             $this->timezoneLabel = $zone;
             $this->timezoneIana  = $iana;
             $this->dispatch('help:timezone-changed', zone: $zone, iana: $iana);
+            $this->dispatch('city-selected', cityName: $city->name, province: $city->province);
         }
         $this->searchResults = [];
     }
@@ -259,38 +305,43 @@ class Create extends Component
             abort(403, 'Akses ditolak. Hanya akun Customer yang dapat membuat permintaan bantuan.');
         }
 
-        // Auto-match kota jika user mengetik tapi tidak klik dropdown
-        if (empty($this->city_id) && !empty($this->cityQuery)) {
-            $q       = trim($this->cityQuery);
-            $matched = City::where('is_active', true)
-                ->where(fn($b) => $b->where('name', 'like', "%{$q}%")
-                                    ->orWhere('province', 'like', "%{$q}%")
-                                    ->orWhere('code', 'like', "%{$q}%"))
-                ->first();
-            if ($matched) {
-                $this->setCityId($matched->id);
-            }
-        }
-
-        // Fallback ke kota profil user
-        if (empty($this->city_id) && !empty(auth()->user()->city_id)) {
-            $this->setCityId(auth()->user()->city_id);
-        }
-
         $minNominal = (float) AppSetting::get('min_help_nominal', 10000);
         $adminFee   = (float) AppSetting::get('admin_fee', 0);
 
-        $this->rules['amount'] = 'required|numeric|min:' . $minNominal . '|max:100000000';
-        $this->validate();
+        $this->rules['amount']  = 'required|numeric|min:' . $minNominal . '|max:100000000';
+        $this->rules['city_id'] = 'required|exists:cities,id';
+        $this->rules['title']   = 'required|string|max:255';
+        $this->rules['description'] = 'required|string';
+        
+        try {
+            $this->validate();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->dispatch('scroll-to-first-error');
+            throw $e;
+        }
 
-        // Validasi jadwal tidak di masa lalu
+        // Validasi dan normalisasi jadwal
         if ($this->scheduled_date) {
-            $time        = $this->scheduled_time ?: '00:00';
-            $scheduledAt = Carbon::parse($this->scheduled_date . ' ' . $time);
-            if ($scheduledAt->lt(Carbon::now())) {
-                $this->addError('scheduled_date', 'Jadwal tidak boleh berada di masa lalu');
+            $dateStr = trim($this->scheduled_date);
+            $timeStr = $this->scheduled_time ? trim($this->scheduled_time) : null;
+            
+            if ($timeStr) {
+                $scheduledAt = Carbon::parse($dateStr . ' ' . $timeStr);
+            } else {
+                $scheduledAt = ($dateStr === Carbon::now()->format('Y-m-d'))
+                    ? Carbon::now()
+                    : Carbon::parse($dateStr . ' 08:00');
+            }
+
+            if ($scheduledAt->lt(Carbon::now()->subMinutes(5))) {
+                $this->addError('scheduled_date', 'Waktu jadwal tidak boleh berada di masa lalu');
+                $this->dispatch('scroll-to-first-error');
                 return;
             }
+        } elseif (!empty($this->scheduled_time)) {
+            $this->addError('scheduled_date', 'Silakan pilih tanggal untuk jadwal bantuan');
+            $this->dispatch('scroll-to-first-error');
+            return;
         }
 
         $amount    = (float) $this->amount;
@@ -300,7 +351,7 @@ class Create extends Component
         $this->confirmAdminFee  = $adminFee;
         $this->confirmTotal     = $total;
         $this->confirmScheduled = $this->scheduled_date
-            ? date('d M Y H:i', strtotime($this->scheduled_date . ' ' . ($this->scheduled_time ?: '00:00')))
+            ? (date('d M Y', strtotime($this->scheduled_date)) . ($this->scheduled_time ? ' Pukul ' . $this->scheduled_time . ' ' . $this->timezoneLabel : ''))
             : null;
 
         $this->showConfirmModal = true;
@@ -327,14 +378,26 @@ class Create extends Component
         $amount = (float) $this->amount;
         $total  = $amount + $adminFee;
 
-        // Validasi jadwal tidak di masa lalu
+        // Validasi dan normalisasi jadwal
         if ($this->scheduled_date) {
-            $time        = $this->scheduled_time ?: '00:00';
-            $scheduledAt = Carbon::parse($this->scheduled_date . ' ' . $time);
-            if ($scheduledAt->lt(Carbon::now())) {
-                $this->addError('scheduled_date', 'Jadwal tidak boleh berada di masa lalu');
+            $dateStr = trim($this->scheduled_date);
+            $timeStr = $this->scheduled_time ? trim($this->scheduled_time) : null;
+            
+            if ($timeStr) {
+                $scheduledAt = Carbon::parse($dateStr . ' ' . $timeStr);
+            } else {
+                $scheduledAt = ($dateStr === Carbon::now()->format('Y-m-d'))
+                    ? Carbon::now()
+                    : Carbon::parse($dateStr . ' 08:00');
+            }
+
+            if ($scheduledAt->lt(Carbon::now()->subMinutes(5))) {
+                $this->addError('scheduled_date', 'Waktu jadwal tidak boleh berada di masa lalu');
                 return;
             }
+        } elseif (!empty($this->scheduled_time)) {
+            $this->addError('scheduled_date', 'Silakan pilih tanggal untuk jadwal bantuan');
+            return;
         }
 
         DB::transaction(function () use ($userId, $amount, $adminFee, $total) {
@@ -342,7 +405,7 @@ class Create extends Component
             $orderId     = $this->generateOrderId();
             $scheduledAt = null;
             if ($this->scheduled_date) {
-                $time        = $this->scheduled_time ?: '00:00';
+                $time        = $this->scheduled_time ?: '08:00';
                 $scheduledAt = date('Y-m-d H:i:s', strtotime($this->scheduled_date . ' ' . $time));
             }
 
@@ -366,8 +429,32 @@ class Create extends Component
             ]);
         });
 
+        $this->dispatch('draft-cleared');
         session()->flash('message', 'Permintaan bantuan berhasil dibuat! Menunggu Rekan Jasa tersedia.');
         return redirect()->route('customer.helps.index');
+    }
+
+    /**
+     * Pulihkan data draf dari localStorage/cookie jika halaman ter-refresh.
+     */
+    public function restoreDraft(array $data): void
+    {
+        if (isset($data['title']) && is_string($data['title']) && !empty($data['title'])) $this->title = $data['title'];
+        if (isset($data['amount']) && is_numeric($data['amount'])) $this->amount = (int) $data['amount'];
+        if (isset($data['city_id']) && !empty($data['city_id'])) {
+            $this->setCityId($data['city_id']);
+        }
+        if (isset($data['cityQuery']) && is_string($data['cityQuery']) && empty($this->cityQuery)) {
+            $this->cityQuery = $data['cityQuery'];
+        }
+        if (isset($data['location']) && is_string($data['location']) && !empty($data['location'])) $this->location = $data['location'];
+        if (isset($data['full_address']) && is_string($data['full_address']) && !empty($data['full_address'])) $this->full_address = $data['full_address'];
+        if (isset($data['scheduled_date']) && is_string($data['scheduled_date']) && !empty($data['scheduled_date'])) $this->scheduled_date = $data['scheduled_date'];
+        if (isset($data['scheduled_time']) && is_string($data['scheduled_time']) && !empty($data['scheduled_time'])) $this->scheduled_time = $data['scheduled_time'];
+        if (isset($data['description']) && is_string($data['description']) && !empty($data['description'])) $this->description = $data['description'];
+        if (isset($data['equipment_provided']) && is_string($data['equipment_provided']) && !empty($data['equipment_provided'])) $this->equipment_provided = $data['equipment_provided'];
+        if (isset($data['latitude']) && is_numeric($data['latitude'])) $this->latitude = $data['latitude'];
+        if (isset($data['longitude']) && is_numeric($data['longitude'])) $this->longitude = $data['longitude'];
     }
 
     // ─────────────────────────────────────────────────────────────────────────

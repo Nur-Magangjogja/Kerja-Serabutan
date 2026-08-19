@@ -5,17 +5,17 @@ namespace App\Livewire\Mitra;
 use App\Models\Chat as ChatModel;
 use App\Models\Help;
 use App\Models\User;
-use Livewire\Component;
-use Livewire\WithPagination;
-use Illuminate\Support\Facades\Auth;
 use App\Notifications\ChatMessageNotification;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Livewire\Component;
 
 class Chat extends Component
 {
-    use WithPagination;
-
-    public $selected_help_id = null;
+    public $selected_partner_id = null; // ID Customer yang sedang diajak chat
+    public $selected_partner = null;    // Objek User Customer
+    public $active_help_id = null;      // ID Help terkini/terkait
+    public $active_help = null;         // Objek Help terkini/terkait
     public $message = '';
     public $search = '';
 
@@ -25,119 +25,199 @@ class Chat extends Component
 
     public function mount($help = null)
     {
-        $this->user = Auth::user();
-
+        // Jika route dibuka dengan parameter bantuan (misal /mitra/chat/{help})
         if ($help) {
-            $this->selected_help_id = $help;
-            // Mark customer messages as read
-            ChatModel::where('help_id', $help)
-                ->where('sender_type', 'customer')
-                ->whereNull('read_at')
-                ->update(['read_at' => now()]);
+            $helpModel = Help::with(['user', 'mitra'])->find($help);
+
+            if ($helpModel && $helpModel->user_id) {
+                $this->selectPartner($helpModel->user_id, $helpModel->id);
+            }
         }
     }
 
-    public function updatingSearch()
-    {
-        $this->resetPage();
-    }
-
-    // Get all help conversations for the mitra (where they are mitra_id)
     public function getConversations()
     {
-        $query = Help::where('mitra_id', Auth::id());
+        $mitraId = Auth::id();
 
-        // Search by customer name or help description
-        if ($this->search) {
-            $query->where(function ($q) {
-                $q->whereHas('user', function ($userQuery) {
-                    $userQuery->where('name', 'like', '%' . $this->search . '%');
-                })
-                    ->orWhere('description', 'like', '%' . $this->search . '%');
-            });
-        }
+        // Ambil seluruh ID Customer yang pernah bertukar pesan dengan mitra ini
+        $chatCustomerIds = ChatModel::where('mitra_id', $mitraId)
+            ->whereNotNull('customer_id')
+            ->pluck('customer_id');
 
-        return $query->with([
-            // 'avatar' column doesn't exist; load the user's selfie_photo instead
-            'user:id,name,selfie_photo',
-            'chatMessages' => function ($q) {
-                $q->latest()->limit(1);
-            }
-        ])
-            ->latest('updated_at')
-            ->paginate(20);
-    }
+        // Dan ID Customer dari bantuan yang pernah/sedang diambil mitra ini
+        $helpCustomerIds = Help::where('mitra_id', $mitraId)
+            ->whereNotNull('user_id')
+            ->pluck('user_id');
 
-    // Get all messages for selected help
-    public function getMessages()
-    {
-        if (!$this->selected_help_id) {
+        $customerIds = $chatCustomerIds->merge($helpCustomerIds)->unique()->values();
+
+        if ($customerIds->isEmpty()) {
             return collect();
         }
 
-        return ChatModel::where('help_id', $this->selected_help_id)
+        $customersQuery = User::whereIn('id', $customerIds);
+
+        if ($this->search) {
+            $customersQuery->where('name', 'like', '%' . $this->search . '%');
+        }
+
+        $customers = $customersQuery->get();
+
+        // Transformasi menjadi 1 baris percakapan per Customer (Unique Partner)
+        $conversations = $customers->map(function ($customer) use ($mitraId) {
+            $lastMessage = ChatModel::where('mitra_id', $mitraId)
+                ->where('customer_id', $customer->id)
+                ->latest('created_at')
+                ->first();
+
+            $unreadCount = ChatModel::where('mitra_id', $mitraId)
+                ->where('customer_id', $customer->id)
+                ->where('sender_type', 'customer')
+                ->whereNull('read_at')
+                ->count();
+
+            // Cari bantuan aktif atau terakhir antara customer dan mitra ini
+            $latestHelp = Help::where('user_id', $customer->id)
+                ->where('mitra_id', $mitraId)
+                ->latest('updated_at')
+                ->first();
+
+            return (object) [
+                'partner'      => $customer,
+                'last_message' => $lastMessage,
+                'unread_count' => $unreadCount,
+                'latest_help'  => $latestHelp,
+                'updated_at'   => $lastMessage?->created_at ?? $latestHelp?->updated_at ?? $customer->updated_at,
+            ];
+        })
+        ->filter(fn($c) => $c->last_message !== null || $c->latest_help !== null)
+        ->sortByDesc('updated_at')
+        ->values();
+
+        return $conversations;
+    }
+
+    public function getMessages()
+    {
+        if (!$this->selected_partner_id) {
+            return collect();
+        }
+
+        $mitraId    = Auth::id();
+        $customerId = $this->selected_partner_id;
+
+        return ChatModel::where('mitra_id', $mitraId)
+            ->where('customer_id', $customerId)
+            ->with('help')
             ->orderBy('created_at', 'asc')
             ->get();
     }
 
-    // Send message
+    public function selectPartner($customerId, $helpId = null)
+    {
+        $this->selected_partner_id = (int) $customerId;
+        $this->selected_partner    = User::find($customerId);
+
+        if ($helpId) {
+            $this->active_help_id = (int) $helpId;
+            $this->active_help    = Help::find($helpId);
+        } else {
+            $latestHelp = Help::where('user_id', $customerId)
+                ->where('mitra_id', Auth::id())
+                ->latest('updated_at')
+                ->first();
+
+            $this->active_help_id = $latestHelp?->id;
+            $this->active_help    = $latestHelp;
+        }
+
+        // Tandai pesan dari customer sebagai sudah dibaca
+        ChatModel::where('mitra_id', Auth::id())
+            ->where('customer_id', $customerId)
+            ->where('sender_type', 'customer')
+            ->whereNull('read_at')
+            ->update([
+                'is_read' => true,
+                'read_at' => now(),
+            ]);
+
+        $this->dispatch('scroll-chat-bottom');
+    }
+
+    public function closeChat()
+    {
+        $this->selected_partner_id = null;
+        $this->selected_partner    = null;
+        $this->active_help_id      = null;
+        $this->active_help         = null;
+        $this->message             = '';
+    }
+
     public function sendMessage()
     {
-        // Validate explicitly using the Validator facade and pass an
-        // empty messages array to avoid any accidental Collection being
-        // interpreted as custom messages by the Validator.
-        $validator = \Illuminate\Support\Facades\Validator::make(
-            ['message' => $this->message],
-            ['message' => 'required|string|max:1000'],
-            [] // force empty array for custom messages
-        );
+        $this->validate();
 
-        $validator->validate();
-
-        if (!$this->selected_help_id) {
+        if (!$this->selected_partner_id) {
             $this->dispatch('error', 'Pilih percakapan terlebih dahulu');
             return;
         }
 
-        // Get help and customer info
-        $help = Help::findOrFail($this->selected_help_id);
+        $mitraId    = Auth::id();
+        $customerId = $this->selected_partner_id;
+
+        // Pastikan ada help_id yang valid
+        $helpId = $this->active_help_id;
+        if (!$helpId) {
+            $latestHelp = Help::where('user_id', $customerId)
+                ->where('mitra_id', $mitraId)
+                ->latest('updated_at')
+                ->first();
+            $helpId = $latestHelp?->id;
+        }
+
+        if (!$helpId) {
+            $anyChat = ChatModel::where('mitra_id', $mitraId)
+                ->where('customer_id', $customerId)
+                ->whereNotNull('help_id')
+                ->latest('created_at')
+                ->first();
+            $helpId = $anyChat?->help_id;
+        }
+
+        if (!$helpId) {
+            $this->dispatch('error', 'Tidak dapat mengirim pesan tanpa konteks bantuan.');
+            return;
+        }
 
         $chat = ChatModel::create([
-            'help_id' => $this->selected_help_id,
-            'mitra_id' => Auth::id(),
-            'customer_id' => $help->user_id,
-            'message' => $this->message,
+            'help_id'     => $helpId,
+            'mitra_id'    => $mitraId,
+            'customer_id' => $customerId,
+            'message'     => $this->message,
             'sender_type' => 'mitra',
+            'is_read'     => false,
         ]);
 
-        $this->message = '';
-        // Dispatch message-sent with helpId so listeners can link to the conversation
-        $this->dispatch('message-sent', helpId: $this->selected_help_id);
-        // Notify the customer
-        $customer = User::find($help->user_id);
-        if ($customer) {
-            $customer->notify(new ChatMessageNotification($this->selected_help_id, Str::limit($this->message, 150), Auth::id(), optional(Auth::user())->name));
+        // Notifikasi ke Customer
+        if ($this->selected_partner) {
+            try {
+                $this->selected_partner->notify(
+                    new ChatMessageNotification($helpId, Str::limit($this->message, 150), $mitraId, Auth::user()->name)
+                );
+            } catch (\Throwable $e) {
+                \Log::warning('[MitraChat] Failed to notify customer: ' . $e->getMessage());
+            }
         }
-    }
 
-    // Select help for chat
-    public function selectHelp($help_id)
-    {
-        $this->selected_help_id = $help_id;
-
-        // Mark messages as read
-        ChatModel::where('help_id', $help_id)
-            ->where('sender_type', 'customer')
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+        $this->message = '';
+        $this->dispatch('message-sent');
     }
 
     public function render()
     {
         return view('livewire.mitra.chat.index', [
             'conversations' => $this->getConversations(),
-            'messages' => $this->getMessages(),
-            'selected_help' => $this->selected_help_id ? Help::find($this->selected_help_id) : null,
+            'messages'      => $this->getMessages(),
         ])->layout('layouts.mitra');
     }
 }

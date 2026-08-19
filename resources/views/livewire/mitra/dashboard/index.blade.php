@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100" wire:poll.5s>
+<div class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
     <style>
         :root{
             --brand-500: #0ea5a4;
@@ -242,7 +242,7 @@
                 <a href="{{ route('mitra.helps.all') }}" class="text-xs font-semibold" style="color: #0098e7;">Lihat Semua →</a>
             </div>
 
-            <div class="space-y-3 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none">
+            <div class="space-y-3">
                 @forelse($recommendedHelps as $help)
                     @php $schedLabel = $help->scheduled_at ? \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') : '' ; @endphp
                     <button type="button" onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ addslashes($schedLabel) }}')"

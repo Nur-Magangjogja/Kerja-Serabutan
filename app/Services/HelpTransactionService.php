@@ -54,6 +54,10 @@ class HelpTransactionService
                 throw new \RuntimeException('Bantuan ini sudah diambil oleh Rekan Jasa lain atau tidak tersedia lagi.');
             }
 
+            if ($lockedHelp->scheduled_at && \Illuminate\Support\Carbon::parse($lockedHelp->scheduled_at)->isFuture()) {
+                throw new \RuntimeException('Bantuan ini dijadwalkan untuk waktu yang akan datang dan belum dapat diambil saat ini.');
+            }
+
             $lockedHelp->update([
                 'mitra_id' => $mitra->id,
                 'status'   => Help::STATUS_TAKEN,
@@ -729,8 +733,6 @@ class HelpTransactionService
                 'activity_type' => $type,
                 'description'   => $description,
                 'photo'         => $photo,
-                'ip_address'    => request()?->ip(),
-                'user_agent'    => request()?->header('User-Agent'),
             ]);
         } catch (\Throwable $e) {
             Log::warning('[HelpTransactionService] Failed to log PartnerActivity: ' . $e->getMessage());

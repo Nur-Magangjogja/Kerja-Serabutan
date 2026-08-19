@@ -253,10 +253,15 @@ class Help extends Model
     // QUERY SCOPES
     // ─────────────────────────────────────────────────────────────────────────
 
-    /** Bantuan yang sedang menunggu mitra (tersedia di pool). */
+    /** Bantuan yang sedang menunggu mitra (tersedia di pool dan jadwalnya sudah tiba atau tanpa jadwal). */
     public function scopePending($query)
     {
-        return $query->where('status', self::STATUS_MENUNGGU_MITRA)->whereNull('mitra_id');
+        return $query->where('status', self::STATUS_MENUNGGU_MITRA)
+                     ->whereNull('mitra_id')
+                     ->where(function ($q) {
+                         $q->whereNull('scheduled_at')
+                           ->orWhere('scheduled_at', '<=', now());
+                     });
     }
 
     /** Bantuan yang sedang aktif dikerjakan. */

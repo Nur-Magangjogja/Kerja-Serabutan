@@ -104,7 +104,13 @@ class Dashboard extends Component
         $balance = $userBalance ? $userBalance->balance : 0;
 
         // Statistik bantuan
-        $availableHelpsCount = Help::where('status', 'menunggu_mitra')->whereNull('mitra_id')->count();
+        $availableHelpsCount = Help::where('status', 'menunggu_mitra')
+            ->whereNull('mitra_id')
+            ->where(function ($q) {
+                $q->whereNull('scheduled_at')
+                  ->orWhere('scheduled_at', '<=', now());
+            })
+            ->count();
 
         $inProgressCount = Help::where('mitra_id', $user->id)
             ->whereIn('status', ['memperoleh_mitra', 'taken', 'sedang_diproses', 'in_progress', 'partner_on_the_way', 'partner_arrived', 'waiting_customer_confirmation'])
@@ -120,6 +126,10 @@ class Dashboard extends Component
         if ($this->activeTab === 'tersedia' || $this->activeTab === 'semua') {
             $helpsQuery = Help::where('status', 'menunggu_mitra')
                 ->whereNull('mitra_id')
+                ->where(function ($q) {
+                    $q->whereNull('scheduled_at')
+                      ->orWhere('scheduled_at', '<=', now());
+                })
                 ->with(['user', 'city']);
 
             if ($userCityId) {
@@ -151,6 +161,10 @@ class Dashboard extends Component
 
         $recommendedQuery = Help::where('status', 'menunggu_mitra')
             ->whereNull('mitra_id')
+            ->where(function ($q) {
+                $q->whereNull('scheduled_at')
+                  ->orWhere('scheduled_at', '<=', now());
+            })
             ->with($relations);
         if ($userCityId) {
             $recommendedQuery->orderByRaw("(city_id = ?) DESC", [$userCityId])->latest();
@@ -162,12 +176,20 @@ class Dashboard extends Component
         // Terbaru: order by created_at desc
         $latestQuery = Help::where('status', 'menunggu_mitra')
             ->whereNull('mitra_id')
+            ->where(function ($q) {
+                $q->whereNull('scheduled_at')
+                  ->orWhere('scheduled_at', '<=', now());
+            })
             ->with($relations);
         $latestHelps = $latestQuery->latest()->take(6)->get();
 
         // Terdekat: prioritize user's city
         $nearbyQuery = Help::where('status', 'menunggu_mitra')
             ->whereNull('mitra_id')
+            ->where(function ($q) {
+                $q->whereNull('scheduled_at')
+                  ->orWhere('scheduled_at', '<=', now());
+            })
             ->with($relations);
         if ($userCityId) {
             $nearbyQuery->orderByRaw("(city_id = ?) DESC", [$userCityId])->latest();

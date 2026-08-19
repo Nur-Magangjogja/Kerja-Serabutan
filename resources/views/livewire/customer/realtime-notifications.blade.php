@@ -1,4 +1,4 @@
-<div wire:poll.15s.visible="poll"></div>
+<div></div>
 
 <script>
     // Listen for Livewire dispatched events and re-dispatch as browser events

@@ -87,8 +87,6 @@ class BalanceTransactionObserver
                             number_format($amount, 0, ',', '.'),
                             $transaction->order_id ? '(Order #' . $transaction->order_id . ')' : ''
                         ),
-                        'ip_address' => request()?->ip(),
-                        'user_agent' => request()?->header('User-Agent'),
                     ]);
                 } catch (\Throwable $e) {
                     Log::warning('BalanceTransactionObserver: failed to log PartnerActivity', [

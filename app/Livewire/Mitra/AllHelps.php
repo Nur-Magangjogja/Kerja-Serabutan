@@ -80,7 +80,12 @@ class AllHelps extends Component
         $user            = auth()->user();
         $locationService = app(LocationTrackingService::class);
 
-        $query = Help::where('status', Help::STATUS_MENUNGGU_MITRA)->whereNull('mitra_id');
+        $query = Help::where('status', Help::STATUS_MENUNGGU_MITRA)
+            ->whereNull('mitra_id')
+            ->where(function ($q) {
+                $q->whereNull('scheduled_at')
+                  ->orWhere('scheduled_at', '<=', now());
+            });
 
         // Filter Kota Saya
         if ($this->distanceRadius === 'city' && $user && !empty($user->city_id)) {

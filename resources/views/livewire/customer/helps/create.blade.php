@@ -52,7 +52,17 @@
         .leaflet-container {
             height: 100%;
             width: 100%;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
+        }
+
+        /* Hilangkan panah spinner default pada input number */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
         }
     </style>
 
@@ -66,8 +76,8 @@
 
                 <div class="relative z-10">
                     <div class="flex items-center justify-between text-white mb-3">
-                        <button onclick="window.history.back()" aria-label="Kembali"
-                            class="p-2 hover:bg-white/20 rounded-lg transition">
+                        <button onclick="sessionStorage.removeItem('sayabantu_create_help_draft'); localStorage.removeItem('sayabantu_create_help_draft'); window.history.back()" aria-label="Kembali"
+                            class="p-2 hover:bg-white/20 rounded-lg transition cursor-pointer">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M15 19l-7-7 7-7" />
@@ -92,10 +102,27 @@
 
             <!-- Content -->
             <div class="bg-white rounded-t-3xl -mt-6 px-5 pt-8 pb-8">
+                {{-- Floating Validation Error Banner --}}
+                @if ($errors->any())
+                    <div x-data="{ show: true }" x-show="show" x-init="scrollToFirstError(); setTimeout(() => show = false, 6000)"
+                         class="mb-4 bg-red-50 border-l-4 border-red-500 p-3.5 rounded-r-xl shadow-sm flex items-start justify-between gap-3 animate-fade-in">
+                        <div class="flex items-start gap-2.5">
+                            <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                            <div>
+                                <p class="text-xs font-bold text-red-800">Permintaan Belum Bisa Dikirim</p>
+                                <p class="text-xs text-red-700 mt-0.5">Mohon lengkapi dan perbaiki kolom yang bertanda merah di bawah ini.</p>
+                            </div>
+                        </div>
+                        <button type="button" @click="show = false" class="text-red-400 hover:text-red-600 text-base font-bold leading-none cursor-pointer">&times;</button>
+                    </div>
+                @endif
+
                 <form wire:submit.prevent="prepareConfirm" enctype="multipart/form-data" class="space-y-5"
                       onsubmit="console.log('📤 Form submitted with coordinates:', { lat: @this.get('latitude'), lng: @this.get('longitude') })">
                     <!-- Title -->
-                    <div class="pt-1 pb-1">
+                    <div class="pt-1 pb-1" id="group-title">
                         <label class="block text-xs font-bold text-gray-700 mb-2">
                             <span class="flex items-center">
                                 <svg class="w-3.5 h-3.5 mr-1.5 text-primary-500" fill="currentColor"
@@ -109,12 +136,12 @@
                                 <span class="text-red-500 ml-1">*</span>
                             </span>
                         </label>
-                        <input type="text" wire:model="title"
+                        <input type="text" wire:model="title" id="title-input"
                             placeholder="Contoh: Butuh Bantuan Makanan untuk Keluarga"
-                            class="w-full px-4 py-3 text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition bg-white">
+                            class="w-full px-4 py-3 text-sm rounded-lg border @error('title') border-red-500 ring-1 ring-red-500 bg-red-50/20 @else border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white">
                         @error('title')
-                            <span class="text-red-500 text-xs mt-1.5 block flex items-center">
-                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <span class="field-error-message text-red-500 text-xs mt-1.5 block flex items-center font-medium">
+                                <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
                                         d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
                                         clip-rule="evenodd" />
@@ -125,41 +152,84 @@
                     </div>
 
                     <!-- Amount (Nominal Uang) -->
-                    <div>
+                    <div id="group-amount">
                         <label class="block text-xs font-bold text-gray-700 mb-1.5">
                             <span class="flex items-center">
-                                <svg class="w-3.5 h-3.5 mr-1.5 text-primary-500" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path
-                                        d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                                    <path fill-rule="evenodd"
-                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
-                                        clip-rule="evenodd" />
+                                <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd" />
                                 </svg>
-                                Nominal Uang untuk Mitra
+                                Nominal Imbalan untuk Rekan Jasa
                                 <span class="text-red-500 ml-1">*</span>
                             </span>
                         </label>
-                        <div class="relative">
-                            <span
-                                class="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-500 font-bold text-sm">Rp</span>
-                            <input type="number" wire:model="amount" placeholder="50000" min="10000" step="1000"
-                                class="w-full pl-12 pr-4 py-3 text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition bg-white">
+
+                        <!-- Custom Stepper Input (Tanpa Panah Bawaan Browser) -->
+                        <div class="flex items-center rounded-xl border @error('amount') border-red-500 ring-1 ring-red-500 bg-red-50/20 @else border-gray-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 bg-white @enderror p-1.5 shadow-sm transition">
+                            <!-- Decrement Button -->
+                            <button type="button" wire:click="adjustAmount(-1000)" title="Kurangi Rp 1.000" class="w-11 h-11 rounded-lg bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-700 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
+                                −
+                            </button>
+
+                            <!-- Input Nominal -->
+                            <div class="relative flex-1 px-3">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-base">Rp</span>
+                                <input type="number" wire:model.live="amount" id="amount-input" placeholder="25000" min="10000" step="1000"
+                                    class="w-full pl-8 pr-2 py-1.5 text-center font-bold text-lg text-gray-900 border-none focus:ring-0 focus:outline-none bg-transparent">
+                            </div>
+
+                            <!-- Increment Button -->
+                            <button type="button" wire:click="adjustAmount(1000)" title="Tambah Rp 1.000" class="w-11 h-11 rounded-lg bg-blue-50 hover:bg-blue-100 active:scale-95 text-blue-600 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
+                                +
+                            </button>
                         </div>
+
+                        <!-- Quick Increment Pills -->
+                        <div class="flex items-center gap-1.5 mt-2.5 overflow-x-auto pb-1 scrollbar-hide">
+                            <span class="text-[11px] font-medium text-gray-400 flex-shrink-0">Tambah:</span>
+                            <button type="button" wire:click="adjustAmount(5000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                                +5 rb
+                            </button>
+                            <button type="button" wire:click="adjustAmount(10000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                                +10 rb
+                            </button>
+                            <button type="button" wire:click="adjustAmount(20000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                                +20 rb
+                            </button>
+                            <button type="button" wire:click="adjustAmount(50000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                                +50 rb
+                            </button>
+                            <button type="button" wire:click="adjustAmount(100000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                                +100 rb
+                            </button>
+                        </div>
+
+                        <!-- Quick Preset Buttons -->
+                        <div class="grid grid-cols-4 gap-2 mt-2">
+                            <button type="button" wire:click="setPresetAmount(25000)" class="py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer {{ $amount == 25000 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
+                                25 rb
+                            </button>
+                            <button type="button" wire:click="setPresetAmount(50000)" class="py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer {{ $amount == 50000 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
+                                50 rb
+                            </button>
+                            <button type="button" wire:click="setPresetAmount(75000)" class="py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer {{ $amount == 75000 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
+                                75 rb
+                            </button>
+                            <button type="button" wire:click="setPresetAmount(100000)" class="py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer {{ $amount == 100000 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
+                                100 rb
+                            </button>
+                        </div>
+
                         <p class="text-xs text-gray-500 mt-1.5 flex items-center">
                             <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                    clip-rule="evenodd" />
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                             </svg>
                             Minimal Rp 10.000 - Maksimal Rp 100.000.000
                         </p>
                         @error('amount')
-                            <span class="text-red-500 text-xs mt-1.5 block flex items-center">
+                            <span class="field-error-message text-red-500 text-xs mt-1.5 block flex items-center font-medium">
                                 <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                                        clip-rule="evenodd" />
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                 </svg>
                                 {{ $message }}
                             </span>
@@ -167,24 +237,21 @@
                     </div>
 
                     <!-- City -->
-                    <div>
+                    <div id="group-city">
                         <label class="block text-xs font-bold text-gray-700 mb-1.5">
                             <span class="flex items-center">
-                                <svg class="w-3.5 h-3.5 mr-1.5 text-primary-500" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                                        clip-rule="evenodd" />
+                                <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
                                 </svg>
-                                Kota
+                                Kota / Kabupaten
                                 <span class="text-red-500 ml-1">*</span>
                             </span>
                         </label>
                         <div class="relative">
                             <input type="text" 
                                 wire:model.live.debounce.300ms="cityQuery" 
-                                placeholder="Ketik nama kota..."
-                                class="w-full px-4 py-3 text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition bg-white" 
+                                placeholder="Ketik nama kota atau kabupaten..."
+                                class="w-full px-4 py-3 text-sm rounded-lg border @error('city_id') border-red-500 ring-1 ring-red-500 bg-red-50/20 @else border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white" 
                                 autocomplete="off"
                                 id="city-search-input">
                             
@@ -238,18 +305,16 @@
                                     </svg>
                                     <span class="font-medium text-blue-900 text-xs">{{ $cityQuery }}</span>
                                 </div>
-                                <button type="button" wire:click="clearCity" class="text-blue-600 hover:text-blue-800 text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 hover:bg-blue-200 transition">
-                                    Ganti
+                                <button type="button" wire:click="clearCity" class="text-blue-600 hover:text-blue-800 text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 hover:bg-blue-200 transition cursor-pointer">
+                                    Ganti Kota
                                 </button>
                             </div>
                         @endif
 
                         @error('city_id')
-                            <span class="text-red-500 text-xs mt-1.5 block flex items-center">
+                            <span class="field-error-message text-red-500 text-xs mt-1.5 block flex items-center font-medium">
                                 <svg class="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                                        clip-rule="evenodd" />
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                 </svg>
                                 {{ $message }}
                             </span>
@@ -257,146 +322,36 @@
                         
                         <p class="text-xs text-gray-500 mt-1.5 flex items-center">
                             <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                    clip-rule="evenodd" />
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                             </svg>
-                            Ketik minimal 2 karakter untuk mencari kota
+                            Ketik minimal 2 karakter untuk mencari kota Anda
                         </p>
-                    </div>
-
-                    <!-- Alamat Lengkap (Manual Input) -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1.5">
-                            <span class="flex items-center">
-                                <svg class="w-3.5 h-3.5 mr-1.5 text-primary-500" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                Alamat Lengkap
-                            </span>
-                        </label>
-                        <textarea wire:model="full_address" rows="3"
-                            placeholder="Contoh: Dukuh Sabet, Desa Sumberejo, Kecamatan Balong, Kabupaten Ponorogo, Jawa Timur"
-                            class="w-full px-4 py-3 text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition resize-none bg-white"></textarea>
-                        <p class="text-xs text-gray-500 mt-1.5 flex items-center">
-                            <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            Tulis alamat lengkap termasuk desa, kecamatan, kabupaten, provinsi
-                        </p>
-                        @error('full_address')
-                            <span class="text-red-500 text-xs mt-1.5 block flex items-center">
-                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                {{ $message }}
-                            </span>
-                        @enderror
-                    </div>
-
-                    <!-- Location -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1.5">
-                            <span class="flex items-center">
-                                <svg class="w-3.5 h-3.5 mr-1.5 text-gray-500" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                Detail Lokasi Bantuan
-                            </span>
-                        </label>
-                        <input type="text" wire:model="location"
-                            placeholder="Contoh: Jl. Merdeka No. 123, RT 01/RW 05"
-                            class="w-full px-4 py-3 text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition bg-white">
-                        @error('location')
-                            <span class="text-red-500 text-xs mt-1.5 block flex items-center">
-                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                {{ $message }}
-                            </span>
-                        @enderror
-                    </div>
-
-                    <!-- Jadwal Permintaan (Tanggal & Jam) -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1.5">
-                            <span class="flex items-center">
-                                <svg class="w-3.5 h-3.5 mr-1.5 text-primary-500" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M6 2a1 1 0 000 2h8a1 1 0 100-2H6zM4 6a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                Jadwalkan Bantuan (Opsional)
-                            </span>
-                        </label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <input type="date" wire:model="scheduled_date"
-                                    class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition bg-white">
-                                @error('scheduled_date')
-                                    <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
-                                @enderror
-                            </div>
-                            <div>
-                                <div class="flex items-center space-x-2">
-                                    <input type="hidden" id="scheduled-time-hidden" wire:model="scheduled_time">
-
-                                    <input id="scheduled-time-manual" type="text" inputmode="numeric"
-                                        pattern="^([01]?\d|2[0-3]):[0-5]\d$" placeholder="HH:MM"
-                                        class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                                    <span id="timezone-badge"
-                                        class="inline-block px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded">{{ $timezoneLabel }}</span>
-                                </div>
-                                @error('scheduled_time')
-                                    <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
-                                @enderror
-                                <p id="timezone-display" class="text-xs text-gray-500 mt-1">Waktu lokal: {{ $timezoneLabel }}</p>
-                            </div>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-1.5">Jika ingin bantuan di lain hari atau jam tertentu,
-                            masukkan tanggal dan jam di sini.</p>
                     </div>
 
                     <!-- Tandai Lokasi di Peta -->
-                    <div>
+                    <div id="group-map">
                         <div class="flex items-center justify-between mb-1.5 flex-wrap gap-2">
                             <label class="block text-xs font-bold text-gray-700">
                                 <span class="flex items-center">
-                                    <svg class="w-3.5 h-3.5 mr-1.5 text-primary-500" fill="currentColor"
-                                        viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd"
-                                            d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                                            clip-rule="evenodd" />
+                                    <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
                                     </svg>
                                     Titik Lokasi Bantuan (Peta Realtime)
                                 </span>
                             </label>
-                            <button type="button" onclick="locateUserGPS()" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition shadow-sm active:scale-95">
+                            <button type="button" onclick="locateUserGPS()" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition shadow-sm active:scale-95 cursor-pointer">
                                 <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.071-7.071l-1.414 1.414M8.343 15.657l-1.414 1.414m12.728 0l-1.414-1.414M8.343 8.343L6.929 6.929M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
                                 Gunakan Lokasi GPS Saya
                             </button>
                         </div>
 
-                        <!-- Map Container with relative button & overlay -->
+                        <!-- Map Container -->
                         <div class="relative rounded-xl overflow-hidden border border-gray-300 shadow-inner bg-gray-100 mb-2">
                             <div wire:ignore id="map" style="height: 280px; min-height: 280px;" class="w-full"></div>
                         </div>
 
-                        <!-- Koordinat Display & Address helper -->
+                        <!-- Koordinat Display & Status Geocoding -->
                         <div id="coordinates-display"
                             class="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 mb-2 hidden flex items-center justify-between flex-wrap gap-2 text-xs">
                             <div class="flex items-center gap-1.5 text-emerald-800 font-medium">
@@ -406,22 +361,143 @@
                             <span id="gps-status-pill" class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-semibold">Tersimpan</span>
                         </div>
 
-                        <!-- Hidden inputs for Livewire -->
+                        <!-- Hidden inputs for Livewire coordinates -->
                         <input type="hidden" wire:model="latitude" id="latitude-input">
                         <input type="hidden" wire:model="longitude" id="longitude-input">
 
                         <p class="text-xs text-gray-500 mt-1 flex items-center">
                             <svg class="w-3.5 h-3.5 mr-1 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            Klik pada peta atau geser pin merah untuk menyesuaikan titik lokasi bantuan.
+                            Klik pada peta atau geser pin merah untuk menentukan titik lokasi bantuan.
                         </p>
 
                         @error('latitude')
-                            <span class="text-red-500 text-xs mt-1.5 block">{{ $message }}</span>
+                            <span class="field-error-message text-red-500 text-xs mt-1.5 block font-medium">{{ $message }}</span>
                         @enderror
                     </div>
 
+                    <!-- Detail Lokasi Bantuan (Otomatis dari Peta, Diposisikan Tepat di Bawah Peta) -->
+                    <div id="group-location">
+                        <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                            <span class="flex items-center justify-between">
+                                <span class="flex items-center">
+                                    <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                                    </svg>
+                                    Alamat / Nama Lokasi Bantuan
+                                    <span class="text-xs font-normal text-gray-400 ml-1">(Otomatis dari Peta)</span>
+                                </span>
+                                <span id="reverse-geocode-indicator" class="hidden text-[11px] text-blue-600 animate-pulse font-normal">
+                                    📍 Mendeteksi alamat...
+                                </span>
+                            </span>
+                        </label>
+                        <div class="relative">
+                            <input type="text" wire:model="location" id="location-input"
+                                placeholder="Alamat akan terisi otomatis saat Anda memilih titik peta..."
+                                class="w-full px-4 py-3 text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition bg-white">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Alamat terisi otomatis dari titik peta di atas dan dapat Anda sempurnakan jika perlu.</p>
+                        @error('location')
+                            <span class="field-error-message text-red-500 text-xs mt-1.5 block flex items-center font-medium">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                                {{ $message }}
+                            </span>
+                        @enderror
+                    </div>
+
+                    <!-- Patokan & Detail Khusus Tempat (Opsional) -->
+                    <div id="group-full-address">
+                        <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                            <span class="flex items-center">
+                                <svg class="w-3.5 h-3.5 mr-1.5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+                                </svg>
+                                Detail Patokan Tempat / Ciri Rumah
+                                <span class="text-gray-400 text-xs ml-1">(Opsional)</span>
+                            </span>
+                        </label>
+                        <textarea wire:model="full_address" rows="2"
+                            placeholder="Contoh: Rumah pagar hitam samping warung Bu Siti, gang melati no. 4, lantai 2"
+                            class="w-full px-4 py-2.5 text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition resize-none bg-white"></textarea>
+                        <p class="text-xs text-gray-500 mt-1 flex items-center">
+                            <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                            Tuliskan patokan spesifik atau petunjuk arah agar Rekan Jasa tidak kesulitan mencari rumah/lokasi Anda.
+                        </p>
+                        @error('full_address')
+                            <span class="field-error-message text-red-500 text-xs mt-1.5 block flex items-center font-medium">
+                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                                {{ $message }}
+                            </span>
+                        @enderror
+                    </div>
+
+                    <!-- Jadwal Permintaan (Tanggal & Jam) -->
+                    <div id="group-schedule">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-xs font-bold text-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M6 2a1 1 0 000 2h8a1 1 0 100-2H6zM4 6a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" clip-rule="evenodd" />
+                                    </svg>
+                                    Jadwalkan Waktu Bantuan
+                                    <span class="text-gray-400 text-xs ml-1">(Opsional)</span>
+                                </span>
+                            </label>
+                            @if ($scheduled_date || $scheduled_time)
+                                <button type="button" wire:click="clearSchedule" class="text-red-500 hover:text-red-700 text-xs font-semibold px-2 py-0.5 rounded bg-red-50 hover:bg-red-100 transition cursor-pointer">
+                                    ✕ Hapus Jadwal
+                                </button>
+                            @endif
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <!-- Input Tanggal -->
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-500 mb-1">Tanggal</label>
+                                <input type="date" wire:model.live="scheduled_date" min="{{ date('Y-m-d') }}"
+                                    class="w-full px-3 py-2.5 text-sm rounded-lg border @error('scheduled_date') border-red-500 ring-1 ring-red-500 bg-red-50/20 @else border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white">
+                                @error('scheduled_date')
+                                    <span class="field-error-message text-red-500 text-xs mt-1 block font-medium">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <!-- Input Jam / Waktu -->
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-500 mb-1 flex items-center justify-between">
+                                    <span>Jam / Pukul</span>
+                                    <span class="text-[10px] text-blue-600 font-semibold bg-blue-50 px-1.5 py-0.5 rounded">{{ $timezoneLabel }}</span>
+                                </label>
+                                <input type="time" wire:model.live="scheduled_time"
+                                    class="w-full px-3 py-2.5 text-sm rounded-lg border @error('scheduled_time') border-red-500 ring-1 ring-red-500 bg-red-50/20 @else border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white">
+                                @error('scheduled_time')
+                                    <span class="field-error-message text-red-500 text-xs mt-1 block font-medium">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Quick Schedule Presets -->
+                        <div class="flex items-center gap-1.5 mt-2 overflow-x-auto pb-1 scrollbar-hide">
+                            <span class="text-[11px] font-medium text-gray-400 flex-shrink-0">Pilihan:</span>
+                            <button type="button" wire:click="setPresetSchedule('plus_2h')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                                +2 Jam Lagi
+                            </button>
+                            <button type="button" wire:click="setPresetSchedule('tomorrow_morning')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                                Besok Pagi (08:00)
+                            </button>
+                            <button type="button" wire:click="setPresetSchedule('tomorrow_afternoon')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                                Besok Siang (13:00)
+                            </button>
+                        </div>
+
+                        <p class="text-xs text-gray-500 mt-1.5">
+                            Kosongkan jika butuh bantuan sekarang (langsung tayang ke Mitra). Jika diisi, bantuan akan tayang saat waktu jadwal tiba.
+                        </p>
+                    </div>
+
                     <!-- Description -->
-                    <div>
+                    <div id="group-description">
                         <label class="block text-xs font-bold text-gray-700 mb-1.5">
                             <span class="flex items-center">
                                 <svg class="w-3.5 h-3.5 mr-1.5 text-primary-500" fill="currentColor"
@@ -434,11 +510,11 @@
                                 <span class="text-red-500 ml-1">*</span>
                             </span>
                         </label>
-                        <textarea wire:model="description" rows="4"
+                        <textarea wire:model="description" id="description-input" rows="4"
                             placeholder="Jelaskan detail kebutuhan bantuan Anda secara lengkap..."
-                            class="w-full px-4 py-3 text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition resize-none bg-white"></textarea>
+                            class="w-full px-4 py-3 text-sm rounded-lg border @error('description') border-red-500 ring-1 ring-red-500 bg-red-50/20 @else border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition resize-none bg-white"></textarea>
                         @error('description')
-                            <span class="text-red-500 text-xs mt-1.5 block flex items-center">
+                            <span class="field-error-message text-red-500 text-xs mt-1.5 block flex items-center font-medium">
                                 <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
                                         d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
@@ -1112,7 +1188,7 @@
 
             const pill = document.getElementById('gps-status-pill');
             if (pill) {
-                pill.textContent = isGPS ? 'GPS Realtime' : 'Manual Peta';
+                pill.textContent = isGPS ? 'GPS Realtime' : 'Titik Peta';
                 pill.className = isGPS 
                     ? 'px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-semibold'
                     : 'px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-semibold';
@@ -1122,19 +1198,27 @@
             @this.set('latitude', lat);
             @this.set('longitude', lng);
 
-            // Optional reverse geocode to assist user with address detail
+            // Automatic reverse geocode to fill 'location' field
+            const geocodeIndicator = document.getElementById('reverse-geocode-indicator');
+            if (geocodeIndicator) geocodeIndicator.classList.remove('hidden');
+
             try {
                 fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, { headers: { 'Accept-Language': 'id' } })
                     .then(r => r.json())
                     .then(data => {
+                        if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
                         if (data && data.display_name) {
-                            const locationInput = document.querySelector('input[wire\\:model="location"]');
-                            if (locationInput && !locationInput.value) {
-                                @this.set('location', data.display_name.split(',').slice(0, 3).join(',').trim());
-                            }
+                            // Extract clean address (e.g. road / village / district)
+                            let parts = data.display_name.split(',');
+                            let cleanAddress = parts.slice(0, 4).join(',').trim();
+                            @this.set('location', cleanAddress);
                         }
-                    }).catch(() => {});
-            } catch (e) {}
+                    }).catch(() => {
+                        if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
+                    });
+            } catch (e) {
+                if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
+            }
         }
 
         function initializeMap() {
@@ -1142,18 +1226,17 @@
             if (!mapContainer) return;
 
             if (mapContainer._leaflet_id) {
-                console.log('Map already initialized');
                 return;
             }
             
-            // Default center
-            const defaultLocation = [-7.8664, 111.4620];
+            // Default center (Indonesia)
+            const defaultLocation = [-7.7956, 110.3695]; // Yogyakarta
             const existingLat = @this.get('latitude');
             const existingLng = @this.get('longitude');
 
             customerMap = L.map('map', {
                 center: (existingLat && existingLng) ? [existingLat, existingLng] : defaultLocation,
-                zoom: (existingLat && existingLng) ? 15 : 13,
+                zoom: (existingLat && existingLng) ? 16 : 13,
                 scrollWheelZoom: true,
                 zoomControl: true
             });
@@ -1173,9 +1256,6 @@
                     const pos = e.target.getLatLng();
                     updateCoordinates(pos.lat, pos.lng, false);
                 });
-            } else {
-                // Auto detect user GPS on initial creation if no coordinates saved
-                locateUserGPS();
             }
 
             // Click to pin
@@ -1195,6 +1275,166 @@
 
                 updateCoordinates(lat, lng, false);
             });
+
+            // Listen for city selection to center the map
+            window.addEventListener('city-selected', (e) => {
+                if (e.detail && e.detail.cityName && customerMap) {
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(e.detail.cityName + ', Indonesia')}&limit=1`)
+                        .then(r => r.json())
+                        .then(results => {
+                            if (results && results.length > 0) {
+                                const cLat = parseFloat(results[0].lat);
+                                const cLng = parseFloat(results[0].lon);
+                                customerMap.setView([cLat, cLng], 13);
+                            }
+                        }).catch(() => {});
+                }
+            });
         }
+
+        // Auto-scroll ke pesan peringatan / kolom error pertama HANYA saat form disubmit
+        function scrollToFirstError() {
+            setTimeout(() => {
+                const errorEl = document.querySelector('.field-error-message, #group-title .field-error-message, #title-input.border-red-500, input.border-red-500, textarea.border-red-500');
+                if (errorEl) {
+                    const yOffset = -140;
+                    const y = errorEl.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+
+                    const parentGroup = errorEl.closest('div[id^="group-"]') || errorEl.closest('div');
+                    if (parentGroup) {
+                        const input = parentGroup.querySelector('input:not([type="hidden"]), textarea, select');
+                        if (input) {
+                            input.focus();
+                            input.classList.add('ring-4', 'ring-red-400', 'transition-all');
+                            setTimeout(() => input.classList.remove('ring-4', 'ring-red-400'), 3500);
+                        }
+                    }
+                }
+            }, 80);
+        }
+
+        window.addEventListener('scroll-to-first-error', scrollToFirstError);
+
+        // ─── Kunci posisi scroll saat mengunggah foto (mencegah mental ke atas) ───
+        let uploadScrollPos = null;
+
+        document.addEventListener('livewire:upload-start', () => {
+            uploadScrollPos = window.pageYOffset || document.documentElement.scrollTop;
+        });
+
+        document.addEventListener('livewire:upload-finish', () => {
+            if (uploadScrollPos !== null) {
+                const targetY = uploadScrollPos;
+                setTimeout(() => {
+                    window.scrollTo({ top: targetY, behavior: 'instant' });
+                    uploadScrollPos = null;
+                }, 40);
+            }
+            saveFormDraft();
+        });
+
+        document.addEventListener('livewire:upload-error', () => {
+            if (uploadScrollPos !== null) {
+                window.scrollTo({ top: uploadScrollPos, behavior: 'instant' });
+                uploadScrollPos = null;
+            }
+        });
+
+        // ─── Draf Form (Tersimpan saat REFRESH, Bersih/Kosong saat BERPINDAH HALAMAN) ───
+        const DRAFT_KEY = 'sayabantu_create_help_draft';
+
+        // Deteksi apakah pemuatan halaman ini adalah akibat REFRESH / RELOAD
+        function isPageReload() {
+            try {
+                const navEntries = performance.getEntriesByType('navigation');
+                if (navEntries && navEntries.length > 0) {
+                    return navEntries[0].type === 'reload';
+                }
+                // Fallback untuk browser lawas
+                return performance.navigation && performance.navigation.type === 1;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function saveFormDraft() {
+            try {
+                const data = {
+                    title: @this.get('title') || '',
+                    amount: @this.get('amount') || 25000,
+                    city_id: @this.get('city_id') || '',
+                    cityQuery: @this.get('cityQuery') || '',
+                    location: @this.get('location') || '',
+                    full_address: @this.get('full_address') || '',
+                    scheduled_date: @this.get('scheduled_date') || '',
+                    scheduled_time: @this.get('scheduled_time') || '',
+                    description: @this.get('description') || '',
+                    equipment_provided: @this.get('equipment_provided') || '',
+                    latitude: @this.get('latitude') || null,
+                    longitude: @this.get('longitude') || null,
+                    timestamp: Date.now()
+                };
+                sessionStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+            } catch (e) {}
+        }
+
+        function restoreFormDraft() {
+            try {
+                // JIKA BUKAN REFRESH (yaitu masuk dari halaman lain), hapus draf dan biarkan form kosong
+                if (!isPageReload()) {
+                    sessionStorage.removeItem(DRAFT_KEY);
+                    localStorage.removeItem(DRAFT_KEY);
+                    return;
+                }
+
+                const raw = sessionStorage.getItem(DRAFT_KEY) || localStorage.getItem(DRAFT_KEY);
+                if (!raw) return;
+                const draft = JSON.parse(raw);
+                if (draft && (Date.now() - (draft.timestamp || 0) < 86400000)) {
+                    const curTitle = @this.get('title');
+                    const curDesc = @this.get('description');
+                    if (!curTitle && !curDesc && (draft.title || draft.description || draft.city_id || draft.location || draft.full_address)) {
+                        @this.call('restoreDraft', draft);
+                        if (draft.latitude && draft.longitude && window.customerMap) {
+                            setTimeout(() => {
+                                updateCoordinates(draft.latitude, draft.longitude, false);
+                            }, 300);
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+
+        document.addEventListener('livewire:initialized', () => {
+            restoreFormDraft();
+        });
+
+        // Hapus draf saat bantuan berhasil dibuat atau form di-submit
+        window.addEventListener('draft-cleared', () => {
+            sessionStorage.removeItem(DRAFT_KEY);
+            localStorage.removeItem(DRAFT_KEY);
+        });
+
+        // Bersihkan draf jika user menekan link navigasi / menu keluar dari halaman
+        document.addEventListener('click', (e) => {
+            const navLink = e.target.closest('a, button[onclick*="history"], [data-nav-leave]');
+            if (navLink && !navLink.closest('form')) {
+                sessionStorage.removeItem(DRAFT_KEY);
+                localStorage.removeItem(DRAFT_KEY);
+            }
+        });
+
+        // Simpan draf saat ada perubahan input pada form (hanya disimpan untuk antisipasi refresh)
+        document.addEventListener('input', (e) => {
+            if (e.target.closest('form')) {
+                setTimeout(saveFormDraft, 250);
+            }
+        });
+        document.addEventListener('change', (e) => {
+            if (e.target.closest('form')) {
+                setTimeout(saveFormDraft, 250);
+            }
+        });
     </script>
 </div>

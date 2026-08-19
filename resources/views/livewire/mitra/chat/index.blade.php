@@ -1,219 +1,278 @@
-<!-- Mitra Chat Page - reworked to use mitra header and content container -->
-<div class="min-h-screen bg-white">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200" wire:poll.10s.visible>
     <div class="max-w-md mx-auto">
-        <!-- Header - BRImo style to match other mitra pages -->
-        <div class="px-5 pt-5 pb-8 relative overflow-hidden" style="background: linear-gradient(to bottom right, #0098e7, #0077cc, #0060b0);">
-            <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20"></div>
-            <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mb-16"></div>
+        <!-- Header - Modern Harmonious Gradient with Native Dark Mode -->
+        <div class="px-5 pt-5 pb-8 relative overflow-hidden bg-gradient-to-br from-sky-600 via-blue-700 to-indigo-800 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 dark:border-b dark:border-gray-800 transition-colors duration-200">
+            <!-- Decorative Ambient Glows -->
+            <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 dark:bg-blue-500/10 rounded-full -mr-20 -mt-20 blur-xl"></div>
+            <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 dark:bg-indigo-500/10 rounded-full -ml-16 -mb-16 blur-lg"></div>
 
             <div class="relative z-10">
                 <div class="flex items-center justify-between text-white mb-3">
-                    <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-lg transition">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
+                    @if($selected_partner_id)
+                        <button wire:click="closeChat" aria-label="Kembali ke Daftar Percakapan" class="p-2 hover:bg-white/20 dark:hover:bg-white/10 rounded-xl transition cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                    @else
+                        <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 dark:hover:bg-white/10 rounded-xl transition cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                    @endif
+
                     <div class="text-center flex-1">
-                        <h1 class="text-lg font-bold">Chat</h1>
-                        <p class="text-xs text-white/90 mt-0.5">Percakapan antara Anda dan customer</p>
+                        <h1 class="text-lg font-bold text-white">
+                            @if($selected_partner)
+                                {{ $selected_partner->name }}
+                            @else
+                                Pesan
+                            @endif
+                        </h1>
+                        <p class="text-xs text-white/80 dark:text-gray-300 mt-0.5">
+                            @if($selected_partner)
+                                Customer
+                            @else
+                                Percakapan Anda dengan Customer
+                            @endif
+                        </p>
                     </div>
+
                     <div class="w-8"></div>
                 </div>
             </div>
 
-            <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 72" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0,32 C360,72 1080,0 1440,40 L1440,72 L0,72 Z" fill="#ffffff"></path>
+            <!-- Curved separator blending dynamically into dark mode -->
+            <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M0,24 C360,60 1080,0 1440,32 L1440,60 L0,60 Z" class="fill-gray-50 dark:fill-gray-900 transition-colors duration-200"></path>
             </svg>
         </div>
 
-        <!-- Content container -->
-        <div class="bg-white rounded-t-3xl -mt-6 px-5 pt-6 pb-24 min-h-[60vh]">
-            <div class="space-y-4">
-                <!-- Search -->
-                <div class="relative">
-                    <input type="text" wire:model.debounce.400ms="search" placeholder="Cari percakapan atau customer..."
-                        class="w-full px-4 py-2.5 rounded-xl bg-gray-50 text-gray-900 placeholder-gray-400 border border-gray-200 focus:ring-2 focus:ring-blue-200 outline-none text-sm">
-                    <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
+        <div class="px-4 -mt-2 pb-24 min-h-[65vh]">
+            {{-- CASE 1: Daftar Percakapan (Inbox List) --}}
+            @if(!$selected_partner_id)
+                <div class="space-y-3.5">
+                    <!-- Search Input -->
+                    <div class="relative">
+                        <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama customer..."
+                            class="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200/80 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 outline-none text-sm transition shadow-xs">
+                        <svg class="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
 
-                @if(!$selected_help_id)
-                    <!-- Conversations list -->
-                    <div class="space-y-3">
+                    <div class="space-y-2.5">
                         @if($conversations && $conversations->count() > 0)
-                            @foreach($conversations as $conversation)
-                                <button wire:click="selectHelp({{ $conversation->id }})"
-                                    class="w-full px-3 py-3 rounded-xl hover:shadow-md transition text-left {{ $selected_help_id === $conversation->id ? 'bg-primary-50 border border-primary-200' : 'bg-white border border-gray-100' }}">
-                                    <div class="flex items-start gap-3">
-                                        <div class="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center text-lg">
-                                            @if(optional($conversation->user)->selfie_photo)
-                                                <img src="{{ asset('storage/' . optional($conversation->user)->selfie_photo) }}" alt="User" class="w-full h-full object-cover">
-                                            @elseif(optional($conversation->user)->photo)
-                                                <img src="{{ asset('storage/' . optional($conversation->user)->photo) }}" alt="User" class="w-full h-full object-cover">
-                                            @else
-                                                {{ strtoupper(substr($conversation->user->name ?? 'U', 0, 1)) }}
-                                            @endif
-                                        </div>
-                                        <div class="flex-1 min-w-0">
-                                            <div class="flex items-start justify-between gap-2 mb-1">
-                                                <h3 class="font-semibold text-sm text-gray-900 line-clamp-1">{{ $conversation->user->name ?? 'Unknown' }}</h3>
-                                                <span class="text-xs text-gray-400">{{ optional($conversation->updated_at)->format('H:i') }}</span>
-                                            </div>
-                                            <p class="text-xs text-gray-600 line-clamp-2">{{ $conversation->chatMessages->first()?->message ?? 'Mulai percakapan...' }}</p>
-                                        </div>
-
-                                        @if($conversation->chatMessages->first()?->sender_type === 'customer' && !$conversation->chatMessages->first()?->read_at)
-                                            <div class="ml-2 w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0"></div>
+                            @foreach($conversations as $conv)
+                                <button wire:click="selectPartner({{ $conv->partner->id }})"
+                                    class="w-full p-3.5 rounded-2xl transition-all text-left bg-white dark:bg-gray-800/90 border border-gray-100 dark:border-gray-700/80 hover:border-blue-200 dark:hover:border-blue-500/40 hover:bg-blue-50/20 dark:hover:bg-gray-750 shadow-xs hover:shadow-sm flex items-center gap-3.5 cursor-pointer">
+                                    
+                                    <!-- Avatar -->
+                                    <div class="w-12 h-12 rounded-2xl overflow-hidden bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-950 dark:to-teal-950 flex-shrink-0 flex items-center justify-center text-teal-700 dark:text-teal-300 font-bold text-base shadow-xs border border-emerald-200/50 dark:border-emerald-800/50">
+                                        @if($conv->partner->selfie_photo)
+                                            <img src="{{ asset('storage/' . $conv->partner->selfie_photo) }}" alt="{{ $conv->partner->name }}" class="w-full h-full object-cover">
+                                        @else
+                                            {{ strtoupper(substr($conv->partner->name ?? 'C', 0, 1)) }}
                                         @endif
                                     </div>
+
+                                    <!-- Content -->
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between gap-1 mb-0.5">
+                                            <h3 class="font-bold text-sm text-gray-900 dark:text-white truncate">{{ $conv->partner->name }}</h3>
+                                            <span class="text-[11px] text-gray-400 dark:text-gray-500 flex-shrink-0">
+                                                {{ $conv->last_message ? $conv->last_message->created_at->diffForHumans(null, true, true) : '' }}
+                                            </span>
+                                        </div>
+
+                                        <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-1 leading-relaxed">
+                                            @if($conv->last_message)
+                                                @if($conv->last_message->sender_type === 'mitra')
+                                                    <span class="text-gray-400 dark:text-gray-500 font-medium">Anda: </span>
+                                                @endif
+                                                @if($conv->last_message->photo)
+                                                    <span class="inline-flex items-center gap-0.5 text-blue-600 dark:text-blue-400 font-medium">📷 Foto bukti • </span>
+                                                @endif
+                                                {{ $conv->last_message->message }}
+                                            @elseif($conv->latest_help)
+                                                <span class="text-blue-600 dark:text-blue-400 italic">Tugas: {{ $conv->latest_help->title }}</span>
+                                            @else
+                                                <span class="text-gray-400 dark:text-gray-500 italic">Mulai percakapan...</span>
+                                            @endif
+                                        </p>
+
+                                        @if($conv->latest_help && in_array($conv->latest_help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'waiting_customer_confirmation']))
+                                            <div class="mt-1">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/60">
+                                                    ● {{ $conv->latest_help->status_label }}
+                                                </span>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <!-- Unread Badge -->
+                                    @if($conv->unread_count > 0)
+                                        <div class="w-5 h-5 rounded-full bg-blue-600 dark:bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 shadow-xs animate-pulse">
+                                            {{ $conv->unread_count }}
+                                        </div>
+                                    @endif
                                 </button>
                             @endforeach
                         @else
-                            <div class="text-center py-12">
-                                <svg class="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                </svg>
-                                <p class="text-sm font-semibold text-gray-700">Tidak ada percakapan</p>
-                                <p class="text-xs text-gray-500 mt-1">Percakapan akan muncul saat Anda mulai membantu customer</p>
+                            <div class="text-center py-14 px-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs">
+                                <div class="w-16 h-16 mx-auto bg-gray-50 dark:bg-gray-700/50 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500 mb-3 border border-gray-100 dark:border-gray-700">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                    </svg>
+                                </div>
+                                <p class="text-sm font-bold text-gray-800 dark:text-gray-200">Belum Ada Percakapan</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">Percakapan akan muncul otomatis ketika Anda mengambil tugas bantuan dari customer.</p>
                             </div>
                         @endif
                     </div>
-                @else
-                    <!-- Chat detail -->
-                    <div class="bg-white rounded-xl p-3.5 shadow-sm border border-gray-100 flex flex-col min-h-[60vh]">
-                        <div class="flex items-center gap-3 mb-3">
-                            <button wire:click="$set('selected_help_id', null)" class="p-2 hover:bg-gray-50 rounded-md">
-                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                                </svg>
-                            </button>
-                            <div class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-                                @if(optional($selected_help->user)->selfie_photo)
-                                    <img src="{{ asset('storage/' . optional($selected_help->user)->selfie_photo) }}" alt="User" class="w-full h-full object-cover">
-                                @elseif(optional($selected_help->user)->photo)
-                                    <img src="{{ asset('storage/' . optional($selected_help->user)->photo) }}" alt="User" class="w-full h-full object-cover">
+                </div>
+
+            {{-- CASE 2: Ruang Obrolan dengan Customer Terpilih (Room Detail) --}}
+            @else
+                <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-sm flex flex-col min-h-[62vh] overflow-hidden">
+                    <!-- Room Header Bar -->
+                    <div class="p-3.5 border-b border-gray-100 dark:border-gray-700/80 flex items-center justify-between gap-3 bg-gray-50/90 dark:bg-gray-800/95">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-700 dark:text-emerald-300 font-bold text-sm border border-emerald-200/60 dark:border-emerald-800/60">
+                                @if($selected_partner->selfie_photo)
+                                    <img src="{{ asset('storage/' . $selected_partner->selfie_photo) }}" alt="{{ $selected_partner->name }}" class="w-full h-full object-cover">
                                 @else
-                                    <div class="w-full h-full bg-blue-600 text-white flex items-center justify-center font-semibold">{{ strtoupper(substr($selected_help->user->name ?? 'U',0,1)) }}</div>
+                                    {{ strtoupper(substr($selected_partner->name ?? 'C', 0, 1)) }}
                                 @endif
                             </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="font-semibold text-sm text-gray-900 truncate">{{ $selected_help->user->name ?? 'Customer' }}</div>
-                                <div class="text-xs text-gray-500 truncate">{{ Str::limit($selected_help->description, 60) }}</div>
+                            <div class="min-w-0">
+                                <h3 class="font-bold text-sm text-gray-900 dark:text-white truncate">{{ $selected_partner->name }}</h3>
+                                @if($active_help)
+                                    <a href="{{ route('mitra.helps.detail', $active_help->id) }}" class="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 truncate font-medium" title="Lihat Tugas">
+                                        <span>Bantuan #{{ $active_help->id }}: {{ Str::limit($active_help->title, 25) }}</span>
+                                    </a>
+                                @else
+                                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Customer</p>
+                                @endif
                             </div>
-                            @if(optional($selected_help->user)->id)
-                                <a href="{{ auth()->user() && auth()->user()->role === 'mitra' ? route('mitra.reports.create.user', optional($selected_help->user)->id) : route('customer.reports.create.user', optional($selected_help->user)->id) }}"
-                                    class="ml-2 px-3 py-1.5 text-sm text-red-600 rounded-lg border border-red-100 hover:bg-red-50">Laporkan</a>
+                        </div>
+
+                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                            @if($active_help)
+                                <a href="{{ route('mitra.helps.detail', $active_help->id) }}" class="px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-lg transition border border-blue-100 dark:border-blue-900/60" title="Rincian Tugas">
+                                    Tugas
+                                </a>
                             @endif
+                            <a href="{{ route('mitra.reports.create.user', $selected_partner->id) }}" class="px-2.5 py-1 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 text-xs font-semibold rounded-lg transition border border-rose-100 dark:border-rose-900/60" title="Laporkan">
+                                Lapor
+                            </a>
                         </div>
-
-                        <div id="mitraMessagesWrapper" class="flex-1 overflow-auto px-1 py-2 bg-white">
-                            <div class="space-y-3">
-                                @if($messages && $messages->count() > 0)
-                                    @foreach($messages as $msg)
-                                        <div class="flex {{ $msg->sender_type === 'mitra' ? 'justify-end' : 'justify-start' }}">
-                                            <div class="rounded-2xl p-3.5 max-w-[85%] shadow-sm {{ $msg->sender_type === 'mitra' ? 'bg-blue-600 text-white rounded-br-xs' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-xs' }}">
-                                                @if($msg->photo)
-                                                    <div class="mb-2 rounded-xl overflow-hidden border border-black/10">
-                                                        <a href="{{ asset('storage/' . $msg->photo) }}" target="_blank" rel="noopener">
-                                                            <img src="{{ asset('storage/' . $msg->photo) }}" alt="Foto Lampiran / Bukti" class="w-full max-h-56 object-cover hover:opacity-95 transition cursor-pointer">
-                                                        </a>
-                                                        <div class="px-2 py-1 bg-black/40 text-[10px] text-white flex items-center gap-1">
-                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                                            Foto Bukti Pengerjaan
-                                                        </div>
-                                                    </div>
-                                                @endif
-                                                <p class="text-sm leading-relaxed break-words">{{ $msg->message }}</p>
-                                                <div class="text-[10px] mt-1.5 text-right {{ $msg->sender_type === 'mitra' ? 'text-white/80' : 'text-gray-400' }}">{{ $msg->created_at->format('H:i') }}</div>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                @else
-                                    <div class="text-center text-gray-500 py-8">Mulai percakapan dengan customer</div>
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- Floating input form positioned above bottom nav on mobile -->
-                        <form wire:submit.prevent="sendMessage" class="chat-input-fixed mt-3">
-                            <div class="flex items-center gap-3">
-                                <input type="text" wire:model.defer="message" placeholder="Tulis pesan..."
-                                    class="flex-1 px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-200">
-                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl">Kirim</button>
-                            </div>
-                        </form>
                     </div>
-                @endif
-            </div>
+
+                    <!-- Messages Stream -->
+                    <div id="messagesWrapper"
+                         x-data="{
+                             scrollToBottom(smooth = false) {
+                                 this.$nextTick(() => {
+                                     this.$el.scrollTo({
+                                         top: this.$el.scrollHeight,
+                                         behavior: smooth ? 'smooth' : 'instant'
+                                     });
+                                 });
+                             }
+                         }"
+                         x-init="scrollToBottom(false); setTimeout(() => scrollToBottom(false), 80);"
+                         x-on:scroll-chat-bottom.window="scrollToBottom(false)"
+                         x-on:message-sent.window="scrollToBottom(true)"
+                         class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/60 dark:bg-gray-900/80 min-h-[40vh] max-h-[55vh]">
+                        @if($messages && $messages->count() > 0)
+                            @php $lastHelpContextId = null; @endphp
+                            @foreach($messages as $msg)
+                                {{-- Context Separator jika berpindah bantuan --}}
+                                @if($msg->help_id && $msg->help_id !== $lastHelpContextId && $msg->help)
+                                    @php $lastHelpContextId = $msg->help_id; @endphp
+                                    <div class="flex items-center justify-center my-3">
+                                        <div class="bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/80 px-3 py-1 rounded-full text-[11px] text-blue-700 dark:text-blue-300 font-semibold shadow-xs flex items-center gap-1">
+                                            <span>📌 Konteks: Bantuan #{{ $msg->help_id }} — {{ Str::limit($msg->help->title, 35) }}</span>
+                                        </div>
+                                    </div>
+                                @endif
+
+                                <div class="flex {{ $msg->sender_type === 'mitra' ? 'justify-end' : 'justify-start' }}">
+                                    <div class="rounded-2xl p-3.5 max-w-[85%] shadow-xs {{ $msg->sender_type === 'mitra' ? 'bg-blue-600 dark:bg-blue-600 text-white rounded-br-xs' : 'bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/80 text-gray-900 dark:text-gray-100 rounded-bl-xs' }}">
+                                        @if($msg->photo)
+                                            <div class="mb-2 rounded-xl overflow-hidden border border-black/10 dark:border-white/10">
+                                                <a href="{{ asset('storage/' . $msg->photo) }}" target="_blank" rel="noopener">
+                                                    <img src="{{ asset('storage/' . $msg->photo) }}" alt="Foto Bukti" class="w-full max-h-56 object-cover hover:opacity-95 transition cursor-pointer">
+                                                </a>
+                                                <div class="px-2 py-1 bg-black/60 text-[10px] text-white flex items-center gap-1">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                    Lampiran Foto Bukti
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        <p class="text-xs leading-relaxed break-words whitespace-pre-line">{{ $msg->message }}</p>
+                                        <div class="text-[10px] mt-1 text-right {{ $msg->sender_type === 'mitra' ? 'text-white/80' : 'text-gray-400 dark:text-gray-500' }}">
+                                            {{ $msg->created_at->format('H:i') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        @else
+                            <div class="text-center text-gray-400 dark:text-gray-500 text-xs py-12">
+                                Belum ada pesan. Ketik pesan di bawah untuk memulai percakapan.
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Input Bar -->
+                    <form wire:submit.prevent="sendMessage" class="p-3 border-t border-gray-100 dark:border-gray-700/80 bg-white dark:bg-gray-800">
+                        <div class="flex items-center gap-2">
+                            <input type="text" wire:model="message" placeholder="Tulis pesan ke {{ $selected_partner->name }}..."
+                                class="flex-1 px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700/70 border border-gray-200 dark:border-gray-600 text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500/30 focus:bg-white dark:focus:bg-gray-700 transition"
+                                autofocus>
+                            <button type="submit" wire:loading.attr="disabled"
+                                class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1 disabled:opacity-50 cursor-pointer">
+                                <span wire:loading.remove wire:target="sendMessage">Kirim</span>
+                                <span wire:loading wire:target="sendMessage">...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            @endif
         </div>
     </div>
-
-    <style>
-        /* ensure messages area has room for input on mobile */
-        #mitraMessagesWrapper { padding-bottom: 12px; }
-        /* make messages area taller so it looks less empty on desktop */
-        @media (min-width: 640px) {
-            #mitraMessagesWrapper { min-height: calc(60vh); }
-        }
-
-        /* Floating chat input fixed above bottom nav (mobile) */
-        .chat-input-fixed {
-            position: fixed;
-            left: 50%;
-            transform: translateX(-50%);
-            bottom: calc(env(safe-area-inset-bottom, 0px) + 90px); /* small gap above bottom nav */
-            width: calc(100% - 48px);
-            max-width: 420px;
-            z-index: 60;
-            background: transparent;
-            padding-left: 8px;
-            padding-right: 8px;
-            box-shadow: 0 6px 18px rgba(2,6,23,0.06);
-            border-radius: 12px;
-        }
-
-        /* On wider screens, keep input in-flow inside the card */
-        @media (min-width: 768px) {
-            .chat-input-fixed {
-                position: static;
-                transform: none;
-                bottom: auto;
-                width: 100%;
-                max-width: none;
-                padding-left: 0;
-                padding-right: 0;
-            }
-        }
-    </style>
 </div>
 
 <script>
-    // Scroll messages area to bottom when opening a conversation
-    function scrollMitraMessagesToBottom() {
-        const el = document.getElementById('mitraMessagesWrapper');
+    function scrollMitraChatToBottom(smooth = false) {
+        const el = document.getElementById('messagesWrapper');
         if (!el) return;
-        // small timeout to allow Livewire to render
-        setTimeout(() => {
-            try {
+        el.scrollTo({
+            top: el.scrollHeight,
+            behavior: smooth ? 'smooth' : 'instant'
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => setTimeout(() => scrollMitraChatToBottom(false), 60));
+    document.addEventListener('livewire:navigated', () => setTimeout(() => scrollMitraChatToBottom(false), 60));
+    window.addEventListener('message-sent', () => setTimeout(() => scrollMitraChatToBottom(true), 60));
+    window.addEventListener('scroll-chat-bottom', () => setTimeout(() => scrollMitraChatToBottom(false), 40));
+
+    const mitraObserver = new MutationObserver(() => {
+        const el = document.getElementById('messagesWrapper');
+        if (el) {
+            const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+            if (isNearBottom || el.scrollTop === 0) {
                 el.scrollTop = el.scrollHeight;
-            } catch (e) {
-                // ignore
             }
-        }, 50);
-    }
+        }
+    });
 
-    // Initial scroll on page load
-    document.addEventListener('DOMContentLoaded', scrollMitraMessagesToBottom);
-
-    // Listen for Livewire browser event dispatched after sending a message
-    window.addEventListener('message-sent', scrollMitraMessagesToBottom);
-
-    // Also listen to help selection change via Livewire 'selected_help_id' update
-    // Livewire will emit an event when DOM updates; use a MutationObserver fallback
-    const wrapper = document.getElementById('mitraMessagesWrapper');
-    if (wrapper) {
-        const mo = new MutationObserver(scrollMitraMessagesToBottom);
-        mo.observe(wrapper, { childList: true, subtree: true });
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+        const el = document.getElementById('messagesWrapper');
+        if (el) mitraObserver.observe(el, { childList: true, subtree: true });
+    });
 </script>
