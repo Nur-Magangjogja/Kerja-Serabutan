@@ -63,7 +63,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/notifications', \App\Livewire\Customer\Notifications\Index::class)->name('notifications.index');
         Route::post('/notifications/cleanup-on-exit', function () {
             if (auth()->check()) {
-                auth()->user()->notifications()->whereNotNull('read_at')->delete();
+                $user = auth()->user();
+                $settings = $user->notification_settings ?? [];
+                if (!empty($settings['auto_cleanup_read'])) {
+                    $user->notifications()->whereNotNull('read_at')->delete();
+                }
             }
             return response()->json(['success' => true]);
         })->name('notifications.cleanup-on-exit');
@@ -148,7 +152,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/notifications', \App\Livewire\Mitra\Notifications\Index::class)->name('notifications.index');
         Route::post('/notifications/cleanup-on-exit', function () {
             if (auth()->check()) {
-                auth()->user()->notifications()->whereNotNull('read_at')->delete();
+                $user = auth()->user();
+                $settings = $user->notification_settings ?? [];
+                if (!empty($settings['auto_cleanup_read'])) {
+                    $user->notifications()->whereNotNull('read_at')->delete();
+                }
             }
             return response()->json(['success' => true]);
         })->name('notifications.cleanup-on-exit');

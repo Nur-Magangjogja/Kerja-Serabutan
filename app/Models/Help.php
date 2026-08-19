@@ -6,6 +6,118 @@ use Illuminate\Database\Eloquent\Model;
 
 class Help extends Model
 {
+    // ─────────────────────────────────────────────────────────────────────────
+    // STATE MACHINE
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Status yang valid dalam sistem.
+     */
+    public const STATUS_MENUNGGU_MITRA              = 'menunggu_mitra';
+    public const STATUS_TAKEN                       = 'taken';
+    public const STATUS_PARTNER_ON_THE_WAY          = 'partner_on_the_way';
+    public const STATUS_PARTNER_ARRIVED             = 'partner_arrived';
+    public const STATUS_IN_PROGRESS                 = 'in_progress';
+    public const STATUS_WAITING_CONFIRMATION        = 'waiting_customer_confirmation';
+    public const STATUS_SELESAI                     = 'selesai';
+    public const STATUS_DIBATALKAN                  = 'dibatalkan';
+    public const STATUS_PARTNER_CANCEL_REQUESTED    = 'partner_cancel_requested';
+
+    /**
+     * Transisi status yang diizinkan.
+     * Key: status saat ini
+     * Value: array status tujuan yang valid
+     */
+    public const VALID_TRANSITIONS = [
+        self::STATUS_MENUNGGU_MITRA => [
+            self::STATUS_TAKEN,
+            self::STATUS_DIBATALKAN,
+        ],
+        self::STATUS_TAKEN => [
+            self::STATUS_PARTNER_ON_THE_WAY,
+            self::STATUS_PARTNER_ARRIVED,   // jika mitra tiba tanpa update on_the_way
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_PARTNER_CANCEL_REQUESTED,
+            // Alias lawas yang mungkin masih ada di data
+            'memperoleh_mitra',
+        ],
+        'memperoleh_mitra' => [
+            self::STATUS_TAKEN,
+            self::STATUS_PARTNER_ON_THE_WAY,
+            self::STATUS_PARTNER_CANCEL_REQUESTED,
+        ],
+        self::STATUS_PARTNER_ON_THE_WAY => [
+            self::STATUS_PARTNER_ARRIVED,
+            self::STATUS_PARTNER_CANCEL_REQUESTED,
+        ],
+        self::STATUS_PARTNER_ARRIVED => [
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_PARTNER_CANCEL_REQUESTED,
+            // Alias
+            'sedang_diproses',
+        ],
+        'sedang_diproses' => [
+            self::STATUS_WAITING_CONFIRMATION,
+        ],
+        self::STATUS_IN_PROGRESS => [
+            self::STATUS_WAITING_CONFIRMATION,
+        ],
+        self::STATUS_WAITING_CONFIRMATION => [
+            self::STATUS_SELESAI,
+        ],
+        self::STATUS_PARTNER_CANCEL_REQUESTED => [
+            self::STATUS_MENUNGGU_MITRA,    // customer accept
+            // Kembali ke status sebelumnya (dinamis, ditangani di service)
+            self::STATUS_TAKEN,
+            self::STATUS_PARTNER_ON_THE_WAY,
+            self::STATUS_PARTNER_ARRIVED,
+            self::STATUS_IN_PROGRESS,
+        ],
+        self::STATUS_SELESAI   => [], // terminal
+        'completed'            => [], // alias lawas
+        self::STATUS_DIBATALKAN => [], // terminal
+        'cancelled'             => [], // alias lawas
+    ];
+
+    /**
+     * Cek apakah transisi ke status target diizinkan.
+     */
+    public function canTransitionTo(string $toStatus): bool
+    {
+        $from = $this->status ?? '';
+        $allowed = self::VALID_TRANSITIONS[$from] ?? null;
+
+        // Jika status saat ini tidak dikenal dalam map, izinkan transisi
+        // (misal: data lama yang belum dimigrasi)
+        if ($allowed === null) {
+            return true;
+        }
+
+        return in_array($toStatus, $allowed, true);
+    }
+
+    /**
+     * Validasi dan lakukan transisi status.
+     *
+     * @throws \RuntimeException jika transisi tidak valid
+     */
+    public function transitionTo(string $toStatus, array $extraData = []): self
+    {
+        if (!$this->canTransitionTo($toStatus)) {
+            throw new \RuntimeException(
+                "Transisi status dari '{$this->status}' ke '{$toStatus}' tidak diizinkan."
+            );
+        }
+
+        $this->update(array_merge(['status' => $toStatus], $extraData));
+
+        return $this;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // BOOT (GUARD)
+    // ─────────────────────────────────────────────────────────────────────────
+
     protected static function booted()
     {
         static::saving(function ($help) {
@@ -13,12 +125,17 @@ class Help extends Model
                 $user = User::find($help->user_id);
                 if ($user && !$user->isCustomer()) {
                     throw new \InvalidArgumentException(
-                        "Hanya pengguna dengan peran Customer yang dapat membuat atau memiliki permintaan bantuan. Pengguna '{$user->name}' memiliki peran '{$user->role}'."
+                        "Hanya pengguna dengan peran Customer yang dapat membuat atau memiliki permintaan bantuan. " .
+                        "Pengguna '{$user->name}' memiliki peran '{$user->role}'."
                     );
                 }
             }
         });
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // FILLABLE & CASTS
+    // ─────────────────────────────────────────────────────────────────────────
 
     protected $fillable = [
         'user_id',
@@ -58,39 +175,44 @@ class Help extends Model
         'partner_started_moving_at',
         'partner_cancel_requested_at',
         'partner_cancel_reason',
+        'partner_cancel_notes',
         'partner_cancel_prev_status',
     ];
 
     protected $casts = [
-        'taken_at' => 'datetime',
-        'completed_at' => 'datetime',
-        'amount' => 'decimal:2',
-        'admin_fee' => 'decimal:2',
-        'total_amount' => 'decimal:2',
-        'latitude' => 'decimal:8',
-        'longitude' => 'decimal:8',
-        'discount_amount' => 'decimal:2',
-        'booking_fee' => 'decimal:2',
-        'mitra_assigned_at' => 'datetime',
-        'partner_started_at' => 'datetime',
-        'partner_arrived_at' => 'datetime',
-        'service_started_at' => 'datetime',
-        'service_completed_at' => 'datetime',
-        'scheduled_at' => 'datetime',
-        'partner_initial_lat' => 'decimal:8',
-        'partner_initial_lng' => 'decimal:8',
-        'partner_current_lat' => 'decimal:8',
-        'partner_current_lng' => 'decimal:8',
-        'partner_started_moving_at' => 'datetime',
-        'partner_cancel_requested_at' => 'datetime',
+        'taken_at'                   => 'datetime',
+        'completed_at'               => 'datetime',
+        'amount'                     => 'decimal:2',
+        'admin_fee'                  => 'decimal:2',
+        'total_amount'               => 'decimal:2',
+        'latitude'                   => 'decimal:8',
+        'longitude'                  => 'decimal:8',
+        'discount_amount'            => 'decimal:2',
+        'booking_fee'                => 'decimal:2',
+        'mitra_assigned_at'          => 'datetime',
+        'partner_started_at'         => 'datetime',
+        'partner_arrived_at'         => 'datetime',
+        'service_started_at'         => 'datetime',
+        'service_completed_at'       => 'datetime',
+        'scheduled_at'               => 'datetime',
+        'partner_initial_lat'        => 'decimal:8',
+        'partner_initial_lng'        => 'decimal:8',
+        'partner_current_lat'        => 'decimal:8',
+        'partner_current_lng'        => 'decimal:8',
+        'partner_started_moving_at'  => 'datetime',
+        'partner_cancel_requested_at'=> 'datetime',
     ];
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // RELATIONSHIPS
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // Alias untuk customer (sama dengan user)
+    /** Alias untuk user (customer yang membuat bantuan). */
     public function customer()
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -116,10 +238,7 @@ class Help extends Model
         return $this->hasMany(Rating::class);
     }
 
-    /**
-     * The rating left by the owner of this help (if any).
-     * This is useful to eager-load the single rating that belongs to the help's creator.
-     */
+    /** Rating tunggal yang diberikan oleh pemilik bantuan. */
     public function rating()
     {
         return $this->hasOne(Rating::class);
@@ -130,23 +249,115 @@ class Help extends Model
         return $this->hasMany(Chat::class);
     }
 
-    public function scopeApproved($query)
+    // ─────────────────────────────────────────────────────────────────────────
+    // QUERY SCOPES
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** Bantuan yang sedang menunggu mitra (tersedia di pool). */
+    public function scopePending($query)
     {
-        return $query->where('status', 'approved');
+        return $query->where('status', self::STATUS_MENUNGGU_MITRA)->whereNull('mitra_id');
     }
 
-    public function scopeAvailable($query)
+    /** Bantuan yang sedang aktif dikerjakan. */
+    public function scopeActive($query)
     {
-        return $query->where('status', 'approved')->whereNull('mitra_id');
+        return $query->whereIn('status', [
+            self::STATUS_TAKEN,
+            'memperoleh_mitra',
+            self::STATUS_PARTNER_ON_THE_WAY,
+            self::STATUS_PARTNER_ARRIVED,
+            self::STATUS_IN_PROGRESS,
+            'sedang_diproses',
+            self::STATUS_WAITING_CONFIRMATION,
+            self::STATUS_PARTNER_CANCEL_REQUESTED,
+        ]);
     }
 
-    public function scopeTaken($query)
-    {
-        return $query->whereIn('status', ['taken', 'in_progress']);
-    }
-
+    /** Bantuan yang sudah selesai. */
     public function scopeCompleted($query)
     {
-        return $query->where('status', 'completed');
+        return $query->whereIn('status', [self::STATUS_SELESAI, 'completed']);
+    }
+
+    /** Bantuan yang dibatalkan. */
+    public function scopeCancelled($query)
+    {
+        return $query->whereIn('status', [self::STATUS_DIBATALKAN, 'cancelled']);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // COMPUTED / HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Label status dalam bahasa Indonesia.
+     */
+    public function getStatusLabelAttribute(): string
+    {
+        return match($this->status) {
+            'menunggu_mitra'               => 'Menunggu Rekan Jasa',
+            'taken', 'memperoleh_mitra'   => 'Rekan Jasa Mengambil Pesanan',
+            'partner_on_the_way'           => 'Rekan Jasa Menuju Lokasi',
+            'partner_arrived'              => 'Rekan Jasa Tiba di Lokasi',
+            'in_progress', 'sedang_diproses' => 'Sedang Dikerjakan',
+            'waiting_customer_confirmation'=> 'Menunggu Konfirmasi Anda',
+            'selesai', 'completed'         => 'Selesai',
+            'dibatalkan', 'cancelled'      => 'Dibatalkan',
+            'partner_cancel_requested'     => 'Mitra Mengajukan Pembatalan',
+            default                        => ucfirst(str_replace('_', ' ', $this->status)),
+        };
+    }
+
+    /**
+     * Warna badge status (Tailwind classes).
+     */
+    public function getStatusColorAttribute(): string
+    {
+        return match($this->status) {
+            'menunggu_mitra'                => 'bg-blue-100 text-blue-700',
+            'taken', 'memperoleh_mitra'    => 'bg-blue-100 text-blue-700',
+            'partner_on_the_way'            => 'bg-indigo-100 text-indigo-700',
+            'partner_arrived'               => 'bg-green-100 text-green-700',
+            'in_progress', 'sedang_diproses'=> 'bg-cyan-100 text-cyan-700',
+            'waiting_customer_confirmation' => 'bg-orange-100 text-orange-700',
+            'selesai', 'completed'          => 'bg-green-100 text-green-700',
+            'dibatalkan', 'cancelled'       => 'bg-red-100 text-red-700',
+            'partner_cancel_requested'      => 'bg-yellow-100 text-yellow-700',
+            default                         => 'bg-gray-100 text-gray-700',
+        };
+    }
+
+    /**
+     * Apakah bantuan masih bisa dibatalkan oleh customer.
+     */
+    public function isCustomerCancellable(): bool
+    {
+        return $this->status === self::STATUS_MENUNGGU_MITRA;
+    }
+
+    /**
+     * Apakah bantuan sedang aktif (belum selesai dan belum dibatalkan).
+     */
+    public function isActive(): bool
+    {
+        return in_array($this->status, [
+            self::STATUS_TAKEN,
+            'memperoleh_mitra',
+            self::STATUS_PARTNER_ON_THE_WAY,
+            self::STATUS_PARTNER_ARRIVED,
+            self::STATUS_IN_PROGRESS,
+            'sedang_diproses',
+            self::STATUS_WAITING_CONFIRMATION,
+            self::STATUS_PARTNER_CANCEL_REQUESTED,
+        ]);
+    }
+
+    /**
+     * Apakah bantuan sudah selesai.
+     */
+    public function isDone(): bool
+    {
+        return in_array($this->status, [self::STATUS_SELESAI, 'completed']);
     }
 }

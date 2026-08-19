@@ -26,11 +26,23 @@ class Banners extends Component
     protected function rules()
     {
         return [
-            'customerUploads.*' => 'image|max:5120',
-            'mitraUploads.*' => 'image|max:5120',
-            'homeUploads.*' => 'image|max:5120',
+            'customerUploads.*' => 'image|mimes:jpg,jpeg,png|max:5120',
+            'mitraUploads.*' => 'image|mimes:jpg,jpeg,png|max:5120',
+            'homeUploads.*' => 'image|mimes:jpg,jpeg,png|max:5120',
         ];
     }
+
+    protected $messages = [
+        'customerUploads.*.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
+        'customerUploads.*.mimes' => 'Format file harus JPG, JPEG, atau PNG',
+        'customerUploads.*.max' => 'Ukuran file banner maksimal 5MB',
+        'mitraUploads.*.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
+        'mitraUploads.*.mimes' => 'Format file harus JPG, JPEG, atau PNG',
+        'mitraUploads.*.max' => 'Ukuran file banner maksimal 5MB',
+        'homeUploads.*.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
+        'homeUploads.*.mimes' => 'Format file harus JPG, JPEG, atau PNG',
+        'homeUploads.*.max' => 'Ukuran file banner maksimal 5MB',
+    ];
 
     public function mount()
     {

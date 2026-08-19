@@ -33,27 +33,31 @@ class HelpStatusNotification extends Notification
         $mitraName = $this->mitra?->name ?? 'Mitra';
 
         $title = match (strtolower($this->newStatus)) {
-            'partner_on_the_way' => "Mitra Menuju Lokasi",
-            'partner_arrived' => "Mitra Telah Tiba",
-            'in_progress', 'sedang_diproses', 'service_started' => "Pekerjaan Dimulai",
+            'taken', 'memperoleh_mitra'     => "Rekan Jasa Mengambil Pesanan",
+            'menunggu_mitra'                => "Mencari Rekan Jasa Baru",
+            'partner_on_the_way'            => "Rekan Jasa Menuju Lokasi",
+            'partner_arrived'               => "Rekan Jasa Telah Tiba",
+            'in_progress', 'sedang_diproses' => "Pekerjaan Dimulai",
             'waiting_customer_confirmation' => "Pekerjaan Selesai (Menunggu Konfirmasi)",
-            'completed', 'selesai' => "Bantuan Selesai",
-            'partner_cancel_requested' => "Permintaan Pembatalan Mitra",
-            'cancel_accepted' => "Pembatalan Diterima",
-            'cancel_rejected' => "Pembatalan Ditolak",
-            default => "Pembaruan Status Bantuan"
+            'completed', 'selesai'          => "Bantuan Selesai",
+            'partner_cancel_requested'      => "Permintaan Pembatalan Rekan Jasa",
+            'cancel_accepted'               => "Pembatalan Diterima",
+            'cancel_rejected'               => "Pembatalan Ditolak",
+            default                         => "Pembaruan Status Bantuan"
         };
 
         $message = match (strtolower($this->newStatus)) {
-            'partner_on_the_way' => "Mitra $mitraName sedang dalam perjalanan menuju lokasi Anda.",
-            'partner_arrived' => "Mitra $mitraName telah tiba di lokasi Anda.",
-            'in_progress', 'sedang_diproses', 'service_started' => "Mitra $mitraName telah mulai mengerjakan bantuan '{$this->help->title}'.",
-            'waiting_customer_confirmation' => "Mitra $mitraName telah menyelesaikan pekerjaan '{$this->help->title}'. Mohon periksa hasil pengerjaan dan konfirmasi penyelesaian.",
-            'completed', 'selesai' => "Bantuan '{$this->help->title}' telah selesai dikerjakan oleh $mitraName.",
-            'partner_cancel_requested' => "$mitraName mengajukan permintaan pembatalan bantuan. Silakan periksa rincian pesanan Anda.",
-            'cancel_accepted' => "Permintaan pembatalan bantuan telah diterima.",
-            'cancel_rejected' => "Permintaan pembatalan ditolak. Pekerjaan akan tetap dilanjutkan.",
-            default => "Status bantuan '{$this->help->title}' kini menjadi: {$this->newStatus}."
+            'taken', 'memperoleh_mitra'     => "Rekan Jasa $mitraName telah mengambil pesanan bantuan Anda '{$this->help->title}'. Silakan pantau perkembangannya.",
+            'menunggu_mitra'                => "Pesanan Anda '{$this->help->title}' kembali tersedia dan sedang mencari Rekan Jasa baru.",
+            'partner_on_the_way'            => "Rekan Jasa $mitraName sedang dalam perjalanan menuju lokasi Anda.",
+            'partner_arrived'               => "Rekan Jasa $mitraName telah tiba di lokasi Anda.",
+            'in_progress', 'sedang_diproses' => "Rekan Jasa $mitraName telah mulai mengerjakan bantuan '{$this->help->title}'.",
+            'waiting_customer_confirmation' => "Rekan Jasa $mitraName telah menyelesaikan pekerjaan '{$this->help->title}'. Mohon periksa hasil pengerjaan dan konfirmasi penyelesaian.",
+            'completed', 'selesai'          => "Bantuan '{$this->help->title}' telah selesai dikerjakan oleh $mitraName.",
+            'partner_cancel_requested'      => "$mitraName mengajukan permintaan pembatalan. Silakan tinjau dan berikan keputusan Anda.",
+            'cancel_accepted'               => "Permintaan pembatalan telah diterima. Kami sedang mencari Rekan Jasa lain untuk Anda.",
+            'cancel_rejected'               => "Permintaan pembatalan ditolak. Pekerjaan akan tetap dilanjutkan.",
+            default                         => "Status bantuan '{$this->help->title}' kini menjadi: {$this->newStatus}."
         };
 
         return [

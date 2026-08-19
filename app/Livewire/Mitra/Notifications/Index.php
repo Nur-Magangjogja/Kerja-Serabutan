@@ -19,20 +19,39 @@ class Index extends Component
 
     public function mount()
     {
-        // Auto mark all unread notifications as read on view
-        $this->markAllAsReadSilently();
+        $this->checkAutoMarkAsRead();
     }
 
     public function hydrate()
     {
-        // Auto mark as read on component hydration/updates as well
-        $this->markAllAsReadSilently();
+        $this->checkAutoMarkAsRead();
     }
 
-    protected function markAllAsReadSilently()
+    protected function checkAutoMarkAsRead()
+    {
+        if (auth()->check()) {
+            $settings = auth()->user()->notification_settings ?? [];
+            if (!empty($settings['auto_mark_read'])) {
+                auth()->user()->unreadNotifications->markAsRead();
+            }
+        }
+    }
+
+    public function markAsRead($notificationId)
+    {
+        if (auth()->check()) {
+            $notification = DatabaseNotification::find($notificationId);
+            if ($notification && $notification->notifiable_id === auth()->id()) {
+                $notification->markAsRead();
+            }
+        }
+    }
+
+    public function markAllAsRead()
     {
         if (auth()->check()) {
             auth()->user()->unreadNotifications->markAsRead();
+            session()->flash('message', 'Semua notifikasi ditandai telah dibaca');
         }
     }
 

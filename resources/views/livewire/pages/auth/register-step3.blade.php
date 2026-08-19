@@ -33,16 +33,29 @@ new #[Layout('layouts.guest')] class extends Component {
     public function updatedSelfiePhoto()
     {
         $this->validate([
-            'selfie_photo' => 'image|max:2048', // 2MB Max
+            'selfie_photo' => 'image|mimes:jpg,jpeg,png|max:2048', // 2MB Max
+        ], [
+            'selfie_photo.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
+            'selfie_photo.mimes' => 'Format foto harus PNG, JPG, atau JPEG',
+            'selfie_photo.max' => 'Ukuran foto maksimal 2MB',
         ]);
 
-        $this->preview_url = $this->selfie_photo->temporaryUrl();
+        try {
+            $this->preview_url = ($this->selfie_photo && method_exists($this->selfie_photo, 'temporaryUrl') && $this->selfie_photo->isPreviewable()) ? $this->selfie_photo->temporaryUrl() : null;
+        } catch (\Throwable $e) {
+            $this->preview_url = null;
+        }
     }
 
     public function nextStep(): void
     {
         $this->validate([
-            'selfie_photo' => ['required', 'image', 'max:2048'],
+            'selfie_photo' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+        ], [
+            'selfie_photo.required' => 'Foto selfie wajib diupload',
+            'selfie_photo.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
+            'selfie_photo.mimes' => 'Format foto harus PNG, JPG, atau JPEG',
+            'selfie_photo.max' => 'Ukuran foto maksimal 2MB',
         ]);
 
         // Simpan file ke storage
@@ -129,7 +142,7 @@ new #[Layout('layouts.guest')] class extends Component {
                                     </div>
                                 </div>
                             </div>
-                            <input wire:model="selfie_photo" id="selfie_photo" type="file" accept="image/*" capture="user"
+                            <input wire:model="selfie_photo" id="selfie_photo" type="file" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" capture="user"
                                 class="hidden">
                         </label>
                     @endif

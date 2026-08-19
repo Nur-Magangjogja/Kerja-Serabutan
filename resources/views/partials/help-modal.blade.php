@@ -170,16 +170,6 @@
                     document.getElementById('help-modal-detail-link').href = '/mitra/help/' + help.id;
                 }
 
-                // If a Livewire inline rating component is present, tell it to load this help
-                try {
-                    if (window.Livewire && typeof window.Livewire.emitTo === 'function') {
-                        // component name is 'mitra.rate-customer' and key is 'help-modal-rate'
-                        window.Livewire.emitTo('mitra.rate-customer', 'loadHelp', help.id);
-                    }
-                } catch (e) {
-                    console.warn('Failed to emit loadHelp to mitra.rate-customer', e);
-                }
-
                 show();
             }
 

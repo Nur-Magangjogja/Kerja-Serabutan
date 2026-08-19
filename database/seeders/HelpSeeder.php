@@ -271,6 +271,7 @@ class HelpSeeder extends Seeder
             }
 
             $data = [
+                'order_id' => 'HELP-' . date('Ymd') . '-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT) . '-' . rand(1000, 9999),
                 'user_id' => $customer->id,
                 'mitra_id' => $mitra?->id,
                 'city_id' => $cityId,

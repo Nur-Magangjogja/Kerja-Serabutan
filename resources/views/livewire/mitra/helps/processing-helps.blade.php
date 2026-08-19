@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-white" wire:poll.10s.visible="loadHelps">
+<div class="min-h-screen bg-white" wire:poll.5s.visible="checkForUpdates">
     <style>
         :root{
             --brand-500: #0ea5a4;

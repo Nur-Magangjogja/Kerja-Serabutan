@@ -8,7 +8,7 @@
     $mitraLng = $mitraLng ?? null;
 @endphp
 
-<div class="min-h-screen bg-white">
+<div class="min-h-screen bg-white" wire:poll.5s>
     <style>
         :root{
             --brand-500: #0ea5a4;
@@ -143,6 +143,25 @@
 
         <!-- Content -->
         <div class="bg-white rounded-t-3xl -mt-6 px-5 pt-6 pb-6 min-h-[60vh]">
+            @if (!empty($activeTask))
+                <div class="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 shadow-sm">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-2.5">
+                            <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm flex-shrink-0 mt-0.5 font-bold">
+                                ⏳
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-blue-900">Anda Sedang Mengerjakan Tugas</h4>
+                                <p class="text-xs text-blue-800 mt-0.5">"{{ $activeTask->title }}" (<span class="font-semibold">{{ $activeTask->status_label }}</span>). Selesaikan tugas ini terlebih dahulu sebelum mengambil tugas baru.</p>
+                            </div>
+                        </div>
+                        <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" class="flex-shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap">
+                            Buka Tugas
+                        </a>
+                    </div>
+                </div>
+            @endif
+
             <!-- GPS Status Bar -->
             <div class="flex items-center justify-between mb-4 bg-gray-50 border border-gray-100 rounded-xl p-2.5 text-xs text-gray-600 flex-wrap gap-2">
                 <div class="flex items-center gap-1.5">

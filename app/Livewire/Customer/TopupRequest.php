@@ -229,7 +229,8 @@ class TopupRequest extends Component
         ], [
             'paymentMethod.required' => 'Silakan pilih metode pembayaran',
             'proofOfPayment.required' => 'Bukti transfer wajib diupload',
-            'proofOfPayment.image' => 'File harus berupa gambar',
+            'proofOfPayment.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
+            'proofOfPayment.mimes' => 'Format file harus berupa JPG, JPEG, atau PNG',
             'proofOfPayment.max' => 'Ukuran file maksimal 2MB',
         ]);
 

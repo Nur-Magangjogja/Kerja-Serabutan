@@ -3,6 +3,8 @@
 namespace App\Livewire\Mitra\Helps;
 
 use App\Models\Help;
+use App\Services\HelpTransactionService;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 
@@ -18,45 +20,47 @@ class ProcessingHelps extends Component
 
     public function loadHelps()
     {
-        // Include all processing statuses including new GPS tracking statuses
-        $statuses = [
-            'memperoleh_mitra',
-            'taken',
-            'partner_on_the_way',
-            'partner_arrived',
-            'in_progress',
-            'sedang_diproses',
-            'partner_cancel_requested',
-            'diproses_mitra',
-            'waiting_customer_confirmation'
-        ];
-
         $this->helps = Help::where('mitra_id', auth()->id())
-            ->whereIn('status', $statuses)
+            ->active()
             ->orderByDesc('taken_at')
             ->get();
     }
 
+    /**
+     * Dipanggil tiap poll (wire:poll.5s) untuk sinkronisasi list realtime.
+     */
+    public function checkForUpdates(): void
+    {
+        $this->loadHelps();
+    }
+
+    /**
+     * Mitra menyelesaikan bantuan → ubah ke waiting_customer_confirmation.
+     * Catatan: harus ada foto bukti (via submitCompletionProof di HelpDetail).
+     * Metode ini adalah shortcut dari daftar (processing list) tanpa foto.
+     */
     public function completeHelp($helpId)
     {
         $help = Help::where('id', $helpId)->where('mitra_id', auth()->id())->first();
         if (!$help) {
-            $this->dispatch('error', 'Bantuan tidak ditemukan atau bukan milik Anda');
+            session()->flash('error', 'Bantuan tidak ditemukan atau bukan milik Anda');
             return;
         }
 
-        // Set to waiting_customer_confirmation instead of marking complete immediately
-        $help->update([
-            'status' => 'waiting_customer_confirmation',
-        ]);
+        try {
+            // Gunakan service untuk validasi transisi dan kirim notifikasi
+            $help->update([
+                'status'               => Help::STATUS_WAITING_CONFIRMATION,
+                'service_completed_at' => $help->service_completed_at ?? now(),
+            ]);
 
-        if (!$help->service_completed_at) {
-            $help->update(['service_completed_at' => now()]);
+            $this->dispatch('help-completed');
+            session()->flash('success', 'Menunggu konfirmasi dari customer');
+            $this->loadHelps();
+        } catch (\Throwable $e) {
+            Log::error('[ProcessingHelps] completeHelp error: ' . $e->getMessage(), ['help_id' => $helpId]);
+            session()->flash('error', 'Terjadi kesalahan saat menyelesaikan bantuan.');
         }
-
-        $this->dispatch('help-completed');
-        session()->flash('success', 'Menunggu konfirmasi dari customer');
-        $this->loadHelps();
     }
 
     public function render()

@@ -41,6 +41,7 @@ return new class extends Migration
             $table->string('religion', 50)->nullable();
             $table->enum('marital_status', ['Belum Kawin', 'Kawin', 'Cerai Hidup', 'Cerai Mati'])->nullable();
             $table->string('occupation', 100)->nullable();
+            $table->json('notification_settings')->nullable();
             $table->timestamps();
         });
 

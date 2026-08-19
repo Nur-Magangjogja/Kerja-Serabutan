@@ -32,16 +32,29 @@ new #[Layout('layouts.guest')] class extends Component {
     public function updatedKtpPhoto()
     {
         $this->validate([
-            'ktp_photo' => 'image|max:2048', // 2MB Max
+            'ktp_photo' => 'image|mimes:jpg,jpeg,png|max:2048', // 2MB Max
+        ], [
+            'ktp_photo.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
+            'ktp_photo.mimes' => 'Format foto harus PNG, JPG, atau JPEG',
+            'ktp_photo.max' => 'Ukuran foto maksimal 2MB',
         ]);
 
-        $this->preview_url = $this->ktp_photo->temporaryUrl();
+        try {
+            $this->preview_url = ($this->ktp_photo && method_exists($this->ktp_photo, 'temporaryUrl') && $this->ktp_photo->isPreviewable()) ? $this->ktp_photo->temporaryUrl() : null;
+        } catch (\Throwable $e) {
+            $this->preview_url = null;
+        }
     }
 
     public function nextStep(): void
     {
         $this->validate([
-            'ktp_photo' => ['required', 'image', 'max:2048'],
+            'ktp_photo' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+        ], [
+            'ktp_photo.required' => 'Foto KTP wajib diupload',
+            'ktp_photo.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
+            'ktp_photo.mimes' => 'Format foto harus PNG, JPG, atau JPEG',
+            'ktp_photo.max' => 'Ukuran foto maksimal 2MB',
         ]);
 
         // Simpan file ke storage
@@ -126,7 +139,7 @@ new #[Layout('layouts.guest')] class extends Component {
                                     </div>
                                 </div>
                             </div>
-                            <input wire:model="ktp_photo" id="ktp_photo" type="file" accept="image/*" class="hidden">
+                            <input wire:model="ktp_photo" id="ktp_photo" type="file" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" class="hidden">
                         </label>
                     @endif
 

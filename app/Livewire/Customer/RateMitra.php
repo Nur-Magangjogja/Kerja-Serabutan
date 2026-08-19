@@ -67,7 +67,7 @@ class RateMitra extends Component
             return;
         }
 
-        Rating::create([
+        $ratingRecord = Rating::create([
             'help_id' => $this->help->id,
             'rater_id' => auth()->id(),
             'ratee_id' => $this->help->mitra_id,
@@ -78,6 +78,14 @@ class RateMitra extends Component
             'user_id' => auth()->id(),
             'mitra_id' => $this->help->mitra_id,
         ]);
+
+        if ($this->help->mitra) {
+            try {
+                $this->help->mitra->notify(new \App\Notifications\RatingReceivedNotification($this->help, $ratingRecord, auth()->user()));
+            } catch (\Throwable $e) {
+                \Log::warning('[RateMitra] Failed to notify mitra of rating: ' . $e->getMessage());
+            }
+        }
 
         $this->alreadyRated = true;
         session()->flash('message', 'Terima kasih! Rating & ulasan Anda berhasil dikirim.');

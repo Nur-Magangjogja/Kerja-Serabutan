@@ -21,9 +21,19 @@ return new class extends Migration
         Schema::create('balance_transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->enum('type', ['topup', 'withdraw', 'payment', 'refund', 'service_fee', 'earning'])->index();
+            $table->string('order_id')->nullable()->index();
+            $table->string('reference_id')->nullable()->index();
+            $table->string('request_code')->nullable();
+            $table->enum('type', ['topup', 'withdraw', 'payment', 'refund', 'service_fee', 'earning', 'deduction'])->index();
             $table->decimal('amount', 15, 2);
-            $table->enum('status', ['pending', 'approved', 'rejected', 'completed', 'failed', 'cancelled'])->default('pending')->index();
+            $table->decimal('admin_fee', 15, 2)->default(0.00);
+            $table->decimal('total_payment', 15, 2)->default(0.00);
+            $table->string('payment_method')->nullable();
+            $table->string('customer_name')->nullable();
+            $table->string('customer_phone')->nullable();
+            $table->string('customer_email')->nullable();
+            $table->text('customer_notes')->nullable();
+            $table->string('status')->default('pending')->index();
             $table->string('midtrans_transaction_id')->nullable()->index();
             $table->string('midtrans_payment_type')->nullable();
             $table->string('midtrans_fraud_status')->nullable();
@@ -34,6 +44,7 @@ return new class extends Migration
             $table->timestamp('approved_at')->nullable();
             $table->text('rejection_reason')->nullable();
             $table->timestamp('processed_at')->nullable();
+            $table->timestamp('expired_at')->nullable();
             $table->string('description')->nullable();
             $table->timestamps();
 

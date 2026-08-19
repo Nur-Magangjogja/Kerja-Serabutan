@@ -15,12 +15,13 @@ class UpdateProfilePhoto extends Component
     public $showModal = false;
 
     protected $rules = [
-        'photo' => 'required|image|max:2048', // max 2MB
+        'photo' => 'required|image|mimes:jpg,jpeg,png|max:2048', // max 2MB
     ];
 
     protected $messages = [
         'photo.required' => 'Pilih foto terlebih dahulu',
-        'photo.image' => 'File harus berupa gambar',
+        'photo.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
+        'photo.mimes' => 'Format foto harus berupa PNG, JPG, atau JPEG',
         'photo.max' => 'Ukuran foto maksimal 2MB',
     ];
 

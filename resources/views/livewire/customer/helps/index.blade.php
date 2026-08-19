@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-white">
+<div class="min-h-screen bg-white" wire:poll.5s>
     <style>
         :root{
             --brand-500: #0ea5a4;
@@ -243,6 +243,32 @@
                                             </a>
                                         </div>
                                     </div>
+
+                                    @if($help->status === 'partner_cancel_requested')
+                                        <div class="mt-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                                            <div class="flex items-start gap-2 mb-2">
+                                                <svg class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                                </svg>
+                                                <div class="flex-1">
+                                                    <p class="text-xs font-bold text-amber-900">Mitra Mengajukan Pembatalan</p>
+                                                    @if($help->partner_cancel_reason)
+                                                        <p class="text-xs text-amber-800 italic mt-0.5">"{{ $help->partner_cancel_reason }}"</p>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-2 mt-2">
+                                                <button wire:click="acceptPartnerCancellation({{ $help->id }})" wire:loading.attr="disabled"
+                                                    class="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition cursor-pointer text-center">
+                                                    Terima (Cari Mitra Lain)
+                                                </button>
+                                                <button wire:click="rejectPartnerCancellation({{ $help->id }})" wire:loading.attr="disabled"
+                                                    class="flex-1 py-1.5 px-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-xs font-semibold transition cursor-pointer text-center">
+                                                    Tolak Pembatalan
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endif
 
                                     <div class="mt-3 flex items-center justify-end gap-2">
                                         <a href="{{ route('customer.helps.detail', $help->id) }}" class="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200 transition w-32 text-center">
@@ -897,7 +923,7 @@
                             </span>
                         </label>
                         <div class="relative">
-                            <input type="file" wire:model="editPhoto" accept="image/*" id="edit-photo-input" class="hidden">
+                            <input type="file" wire:model="editPhoto" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" id="edit-photo-input" class="hidden">
                             <label for="edit-photo-input"
                                 class="flex flex-col items-center justify-center w-full h-28 rounded-xl border-2 border-dashed border-gray-300 hover:border-primary-400 cursor-pointer transition bg-white shadow-sm hover:bg-gray-50">
                                 <svg class="w-5 h-5 text-gray-400 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -923,8 +949,22 @@
                         @enderror
 
                         @if ($editPhoto)
+                            @php
+                                $canPreviewEdit = false;
+                                try {
+                                    $canPreviewEdit = method_exists($editPhoto, 'temporaryUrl') && $editPhoto->isPreviewable();
+                                } catch (\Throwable $e) {
+                                    $canPreviewEdit = false;
+                                }
+                            @endphp
                             <div class="mt-2 relative">
-                                <img src="{{ $editPhoto->temporaryUrl() }}" class="w-full h-40 object-cover rounded-xl shadow-md">
+                                @if ($canPreviewEdit)
+                                    <img src="{{ $editPhoto->temporaryUrl() }}" class="w-full h-40 object-cover rounded-xl shadow-md">
+                                @else
+                                    <div class="w-full h-40 flex flex-col items-center justify-center bg-gray-100 rounded-xl shadow-md text-gray-700 p-2 text-center">
+                                        <span class="text-xs font-semibold">{{ $editPhoto->getClientOriginalName() }}</span>
+                                    </div>
+                                @endif
                                 <button type="button" wire:click="$set('editPhoto', null)"
                                     class="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg hover:bg-red-600 transition">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

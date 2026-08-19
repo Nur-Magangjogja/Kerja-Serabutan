@@ -133,7 +133,7 @@
                     <!-- Drag & Drop Zone -->
                     <div id="customer-dropzone"
                         class="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-primary-400 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                        <input type="file" id="customer-file-input" wire:model="customerUploads" accept="image/*"
+                        <input type="file" id="customer-file-input" wire:model="customerUploads" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg"
                             multiple class="hidden" />
                         <div class="space-y-2">
                             <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" stroke="currentColor" fill="none"
@@ -147,7 +147,7 @@
                                     upload</span>
                                 <span> atau drag & drop</span>
                             </div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, JPEG hingga 10MB</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, JPEG hingga 5MB</p>
                         </div>
                     </div>
 
@@ -201,7 +201,7 @@
                     <!-- Drag & Drop Zone -->
                     <div id="mitra-dropzone"
                         class="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-primary-400 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                        <input type="file" id="mitra-file-input" wire:model="mitraUploads" accept="image/*" multiple
+                        <input type="file" id="mitra-file-input" wire:model="mitraUploads" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" multiple
                             class="hidden" />
                         <div class="space-y-2">
                             <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" stroke="currentColor" fill="none"
@@ -215,7 +215,7 @@
                                     upload</span>
                                 <span> atau drag & drop</span>
                             </div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, JPEG hingga 10MB</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, JPEG hingga 5MB</p>
                         </div>
                     </div>
 
@@ -266,7 +266,7 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Upload banner Beranda (bisa pilih beberapa)</label>
 
                 <div id="home-dropzone" class="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-primary-400 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                    <input type="file" id="home-file-input" wire:model="homeUploads" accept="image/*" multiple class="hidden" />
+                    <input type="file" id="home-file-input" wire:model="homeUploads" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" multiple class="hidden" />
                     <div class="space-y-2">
                         <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                             <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />

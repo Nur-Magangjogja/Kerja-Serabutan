@@ -379,11 +379,25 @@
                             <span class="text-lg"></span> Upload Bukti Transfer *
                         </label>
                         <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition relative">
-                            <input type="file" wire:model="proofOfPayment" accept="image/*" class="hidden" id="proofUpload">
+                            <input type="file" wire:model="proofOfPayment" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" class="hidden" id="proofUpload">
                             @if ($proofOfPayment)
                                 <label for="proofUpload" class="cursor-pointer block">
                                     <div class="w-full rounded-lg overflow-hidden border border-gray-200 bg-white">
-                                        <img src="{{ $proofOfPayment->temporaryUrl() }}" alt="Preview" class="w-full h-48 object-cover">
+                                        @php
+                                            $canPreviewTopup = false;
+                                            try {
+                                                $canPreviewTopup = method_exists($proofOfPayment, 'temporaryUrl') && $proofOfPayment->isPreviewable();
+                                            } catch (\Throwable $e) {
+                                                $canPreviewTopup = false;
+                                            }
+                                        @endphp
+                                        @if ($canPreviewTopup)
+                                            <img src="{{ $proofOfPayment->temporaryUrl() }}" alt="Preview" class="w-full h-48 object-cover">
+                                        @else
+                                            <div class="w-full h-48 flex flex-col items-center justify-center bg-gray-100 text-gray-700 p-2 text-center">
+                                                <span class="text-xs font-semibold">{{ $proofOfPayment->getClientOriginalName() }}</span>
+                                            </div>
+                                        @endif
                                     </div>
                                     <p class="text-xs text-gray-500 mt-2">Ketuk untuk mengganti file</p>
                                 </label>
@@ -393,7 +407,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                     </svg>
                                     <p class="text-sm font-semibold text-gray-700">Klik untuk upload</p>
-                                    <p class="text-xs text-gray-500 mt-1">JPG atau PNG (Max 2MB)</p>
+                                    <p class="text-xs text-gray-500 mt-1">JPG, JPEG, atau PNG (Max 2MB)</p>
                                 </label>
                             @endif
                         </div>

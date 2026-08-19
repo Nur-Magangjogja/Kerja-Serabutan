@@ -38,9 +38,9 @@
     @php
         // Mitra stats
         $totalHelped = \App\Models\Help::where('mitra_id', $user->id)->count();
-        $completedHelps = \App\Models\Help::where('mitra_id', $user->id)->where('status', 'selesai')->count();
-        $averageRating = round($user->average_rating ?? 0, 1);
-        $totalRatings = $user->rating_count ?? 0;
+        $completedHelps = \App\Models\Help::where('mitra_id', $user->id)->whereIn('status', ['selesai', 'completed'])->count();
+        $averageRating = round($user->mitra_average_rating ?? $user->average_rating ?? 0, 1);
+        $totalRatings = $user->mitra_rating_count ?? $user->rating_count ?? 0;
     @endphp
 
     <div class="max-w-md mx-auto">
@@ -112,9 +112,9 @@
         <div class="px-5 -mt-16 relative z-20">
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 stats-card">
                 <div class="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700">
-                    <x-profile-stat-card :href="route('mitra.helps.all')" :value="$totalHelped" label="Bantuan" colorClass="text-primary-600 dark:text-primary-400" rounded="rounded-l-2xl" />
-                    <x-profile-stat-card :href="route('mitra.helps.completed')" :value="$completedHelps" label="Selesai" colorClass="text-green-600 dark:text-green-400" />
-                    <x-profile-stat-card :href="route('mitra.ratings')" :value="$averageRating" :label="'Rating (' . $totalRatings . ')'" colorClass="text-yellow-500" rounded="rounded-r-2xl" :isRating="true" />
+                    <x-profile-stat-card :value="$totalHelped" label="Bantuan" colorClass="text-primary-600 dark:text-primary-400" rounded="rounded-l-2xl" />
+                    <x-profile-stat-card :value="$completedHelps" label="Selesai" colorClass="text-green-600 dark:text-green-400" />
+                    <x-profile-stat-card :value="$averageRating" :label="'Rating (' . $totalRatings . ')'" colorClass="text-yellow-500" rounded="rounded-r-2xl" :isRating="true" />
                 </div>
             </div>
         </div>
@@ -125,40 +125,40 @@
 
             <!-- Section: Akun & Aktivitas -->
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/60">
-                <x-profile-menu-item :href="route('mitra.profile.edit')" title="Edit Profil" subtitle="Ubah nama, biodata, & kontak mitra" iconStyle="background: linear-gradient(135deg, #0098e7 0%, #0060b0 100%);">
-                    <svg class="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                <x-profile-menu-item :href="route('mitra.profile.edit')" title="Edit Profil" subtitle="Ubah nama, biodata, & kontak mitra" iconBg="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                 </x-profile-menu-item>
 
-                <x-profile-menu-item :href="route('mitra.ratings')" title="Rating & Ulasan" subtitle="Penilaian & bintang yang Anda terima" iconBg="bg-gradient-to-br from-amber-400 to-yellow-500">
-                    <svg class="w-4.5 h-4.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                <x-profile-menu-item :href="route('mitra.ratings')" title="Rating & Ulasan" subtitle="Penilaian & bintang yang Anda terima" iconBg="bg-amber-50 dark:bg-amber-900/30 text-amber-500 dark:text-amber-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                     </svg>
                 </x-profile-menu-item>
             </div>
 
             <!-- Section: Preferensi & Dukungan -->
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/60">
-                <x-profile-menu-item :href="route('mitra.settings')" title="Pengaturan" subtitle="Tema tampilan, notifikasi, & preferensi" iconBg="bg-gradient-to-br from-indigo-500 to-purple-600">
-                    <svg class="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <x-profile-menu-item :href="route('mitra.settings')" title="Pengaturan" subtitle="Tema tampilan, notifikasi, & preferensi" iconBg="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                 </x-profile-menu-item>
 
-                <x-profile-menu-item :href="route('mitra.help-support')" title="Bantuan & Dukungan" subtitle="Pusat bantuan & kontak admin" iconBg="bg-gradient-to-br from-purple-500 to-pink-600">
-                    <svg class="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <x-profile-menu-item :href="route('mitra.help-support')" title="Bantuan & Dukungan" subtitle="Pusat bantuan & kontak admin" iconBg="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </x-profile-menu-item>
             </div>
 
             <!-- Logout Card -->
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <x-profile-menu-item :onClick="'document.getElementById(\'logout-modal\').classList.remove(\'hidden\')'" title="Keluar Akun" subtitle="Keluar dari sesi akun SayaBantu" iconBg="bg-gradient-to-br from-red-500 to-rose-600" :danger="true">
-                    <svg class="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                <x-profile-menu-item :onClick="'document.getElementById(\'logout-modal\').classList.remove(\'hidden\')'" title="Keluar Akun" subtitle="Keluar dari sesi akun SayaBantu" iconBg="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400" :danger="true">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                 </x-profile-menu-item>
             </div>

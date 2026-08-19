@@ -1,5 +1,5 @@
 <div class="min-h-screen bg-gray-50"
-    wire:poll.10s.visible
+    wire:poll.4s.visible="checkForUpdates"
     x-data="{ 
         showNotification: false, 
         notificationMessage: '',
@@ -450,6 +450,56 @@
             </div>
         @endif
 
+        {{-- Penilaian & Ulasan dari Customer --}}
+        @if (in_array($help->status, ['completed', 'selesai']))
+            @php
+                $customerReview = \App\Models\Rating::where('help_id', $help->id)
+                    ->where('type', 'customer_to_mitra')
+                    ->first();
+            @endphp
+
+            @if ($customerReview)
+                <div class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 rounded-2xl p-4 border border-amber-200/80 dark:border-amber-700/50 shadow-sm mb-3">
+                    <div class="flex items-center justify-between mb-2.5 pb-2.5 border-b border-amber-200/60 dark:border-amber-800/40">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm">
+                                ⭐
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-sm text-gray-900 dark:text-white">Ulasan dari Customer</h4>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ optional($customerReview->created_at)->translatedFormat('d M Y, H:i') }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/60 px-2.5 py-1 rounded-full border border-amber-200">
+                            <span class="text-sm font-extrabold text-amber-700 dark:text-amber-300">{{ $customerReview->rating }}.0</span>
+                            <div class="flex">
+                                @for ($i = 1; $i <= 5; $i++)
+                                    <svg class="w-3.5 h-3.5 {{ $i <= $customerReview->rating ? 'text-amber-500 fill-current' : 'text-gray-300 dark:text-gray-600 fill-current' }}" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                    </svg>
+                                @endfor
+                            </div>
+                        </div>
+                    </div>
+
+                    @if(!empty($customerReview->review))
+                        <div class="bg-white/80 dark:bg-gray-800/80 rounded-xl p-3 border border-amber-100 dark:border-amber-900/40 text-sm text-gray-800 dark:text-gray-200 italic leading-relaxed">
+                            "{{ $customerReview->review }}"
+                        </div>
+                    @else
+                        <p class="text-xs text-gray-500 italic">Customer memberikan rating {{ $customerReview->rating }} bintang tanpa ulasan tertulis.</p>
+                    @endif
+                </div>
+            @else
+                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-3.5 border border-gray-200 dark:border-gray-700 text-center mb-3">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1.5">
+                        <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        <span>Menunggu customer memberikan penilaian & ulasan</span>
+                    </p>
+                </div>
+            @endif
+        @endif
+
         @if (in_array($help->status, ['memperoleh_mitra', 'taken', 'partner_on_the_way', 'partner_arrived']) &&
                 $help->mitra_id === auth()->id())
             <div class="bg-white px-4 py-4 rounded-xl shadow-sm border border-gray-100 mb-3">
@@ -548,113 +598,6 @@
                 </div>
             </div>
         @endif
-
-        {{-- Rating Customer Form --}}
-        @if (in_array($help->status, ['selesai', 'completed']))
-            @php
-                $mitraRating = \App\Models\Rating::where('help_id', $help->id)
-                    ->where('rater_id', auth()->id())
-                    ->where('type', 'mitra_to_customer')
-                    ->first();
-            @endphp
-
-            @if ($mitraRating)
-                {{-- Already Rated Customer --}}
-                <div
-                    class="bg-gradient-to-r from-green-50 to-emerald-50 mt-3 px-4 py-4 border border-green-200 rounded-lg">
-                    <div class="flex items-start gap-3">
-                        <div
-                            class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="font-bold text-sm text-gray-900 mb-2">Rating untuk Customer</h3>
-                            <div class="flex items-center gap-1 mb-2">
-                                @for ($i = 1; $i <= 5; $i++)
-                                    <svg class="w-5 h-5 {{ $i <= $mitraRating->rating ? 'text-yellow-400' : 'text-gray-300' }}"
-                                        fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                    </svg>
-                                @endfor
-                                <span
-                                    class="ml-2 text-sm font-semibold text-gray-900">{{ $mitraRating->rating }}/5</span>
-                            </div>
-                            @if ($mitraRating->review)
-                                <p class="text-sm text-gray-700 italic">"{{ $mitraRating->review }}"</p>
-                            @endif
-                            <p class="text-xs text-gray-500 mt-2">{{ $mitraRating->created_at->diffForHumans() }}</p>
-                        </div>
-                    </div>
-                </div>
-            @else
-                {{-- Rating Form for Customer --}}
-                <div class="bg-gradient-to-r from-blue-50 to-cyan-50 mt-3 px-4 py-4 border border-blue-200 rounded-lg">
-                    <div class="flex items-start gap-3 mb-4">
-                        <div class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="font-bold text-sm text-gray-900 mb-1">Beri Rating untuk Customer</h3>
-                            <p class="text-xs text-gray-700">Bagaimana pengalaman Anda dengan
-                                {{ $help->user->name ?? 'customer ini' }}?</p>
-                        </div>
-                    </div>
-
-                    {{-- Star Rating --}}
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-900 mb-2">Rating</label>
-                        <div class="flex items-center gap-2">
-                            @for ($i = 1; $i <= 5; $i++)
-                                <button type="button" wire:click="setRating({{ $i }})"
-                                    class="focus:outline-none transition-transform hover:scale-110">
-                                    <svg class="w-10 h-10 {{ $rating >= $i ? 'text-yellow-400' : 'text-gray-300' }}"
-                                        fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                    </svg>
-                                </button>
-                            @endfor
-                            @if ($rating > 0)
-                                <span class="ml-2 text-sm font-semibold text-gray-900">{{ $rating }}/5</span>
-                            @endif
-                        </div>
-                        @error('rating')
-                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    {{-- Review Text --}}
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-900 mb-2">Ulasan (Opsional)</label>
-                        <textarea wire:model="review" rows="3" placeholder="Bagikan pengalaman Anda dengan customer ini..."
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                            maxlength="500"></textarea>
-                        <div class="flex justify-between items-center mt-1">
-                            @error('review')
-                                <p class="text-xs text-red-600">{{ $message }}</p>
-                            @else
-                                <p class="text-xs text-gray-500">Maksimal 500 karakter</p>
-                            @enderror
-                            <p class="text-xs text-gray-500">{{ strlen($review ?? '') }}/500</p>
-                        </div>
-                    </div>
-
-                    {{-- Submit Button --}}
-                    <button wire:click="submitCustomerRating" wire:loading.attr="disabled"
-                        class="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold py-3 px-4 rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span wire:loading.remove>Kirim Rating</span>
-                        <span wire:loading>Mengirim...</span>
-                    </button>
-                </div>
-            @endif
-        @endif
     </div>
     {{-- Partner Cancel Modal - Bottom Sheet Style --}}
     @if ($showPartnerCancelModal)
@@ -690,9 +633,24 @@
                         </div>
                     </div>
 
-                    <p class="text-sm text-gray-700 text-center mb-5">
-                        Tulis alasan singkat kenapa Anda ingin membatalkan bantuan ini. Customer akan menerima permintaan pembatalan dan bisa menerima atau menolak.
+                    <p class="text-sm text-gray-700 text-center mb-3">
+                        Tulis alasan singkat kenapa Anda ingin membatalkan bantuan ini. Customer akan menerima permintaan pembatalan dan dapat menyetujui atau menolak.
                     </p>
+
+                    {{-- Warning Denda Pembatalan --}}
+                    <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-3.5 mb-4 text-left">
+                        <div class="flex items-start gap-2.5">
+                            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                            <div>
+                                <p class="text-xs font-bold text-amber-900 dark:text-amber-200 mb-0.5">Ketentuan Denda Penalti:</p>
+                                <p class="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                                    Pembatalan tugas yang sudah diambil akan dikenakan denda penalti sebesar <strong>Rp {{ number_format(\App\Models\AppSetting::get('mitra_cancel_penalty_fee', 5000), 0, ',', '.') }}</strong> dari saldo Anda setelah pembatalan disetujui.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
                     {{-- Textarea --}}
                     <div class="mb-5">
@@ -875,7 +833,7 @@
 
                     <h4 class="text-center font-bold text-lg text-gray-900 mb-2">Permintaan Diterima!</h4>
                     <p class="text-sm text-gray-700 text-center mb-5">
-                        Customer telah menerima permintaan pembatalan Anda. Pesanan telah dibatalkan.
+                        Customer telah menyetujui permintaan pembatalan Anda. Pesanan telah dikembalikan ke daftar bantuan.
                     </p>
 
                     {{-- Success Message --}}
@@ -885,8 +843,8 @@
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                             </svg>
                             <div class="flex-1">
-                                <p class="text-sm font-semibold text-green-900 mb-1">Pembatalan Berhasil</p>
-                                <p class="text-xs text-green-800">Dana akan dikembalikan ke customer dan tidak ada penalti untuk Anda.</p>
+                                <p class="text-sm font-semibold text-green-900 mb-1">Pembatalan Berhasil Disetujui</p>
+                                <p class="text-xs text-green-800">Pesanan telah dikembalikan ke sistem agar dapat diambil oleh Rekan Jasa lain.</p>
                             </div>
                         </div>
                     </div>
@@ -1025,8 +983,23 @@
                         </label>
 
                         @if ($proof_photo)
-                            <div class="relative rounded-2xl overflow-hidden border-2 border-primary-500 bg-gray-50 mb-2">
-                                <img src="{{ $proof_photo->temporaryUrl() }}" alt="Preview Bukti" class="w-full h-48 object-cover">
+                            <div class="relative rounded-2xl overflow-hidden border-2 border-primary-500 bg-gray-50 dark:bg-gray-800 mb-2">
+                                @php
+                                    $canPreview = false;
+                                    try {
+                                        $canPreview = method_exists($proof_photo, 'temporaryUrl') && $proof_photo->isPreviewable();
+                                    } catch (\Throwable $e) {
+                                        $canPreview = false;
+                                    }
+                                @endphp
+                                @if ($canPreview)
+                                    <img src="{{ $proof_photo->temporaryUrl() }}" alt="Preview Bukti" class="w-full h-48 object-cover">
+                                @else
+                                    <div class="w-full h-48 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 p-4 text-center">
+                                        <svg class="w-10 h-10 text-gray-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                        <span class="text-xs font-semibold">{{ $proof_photo->getClientOriginalName() }}</span>
+                                    </div>
+                                @endif
                                 <button type="button" wire:click="$set('proof_photo', null)" class="absolute top-2 right-2 p-1.5 bg-rose-600 text-white rounded-full shadow-lg hover:bg-rose-700 transition">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                                 </button>
@@ -1038,9 +1011,9 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                     <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Klik untuk ambil foto / upload</p>
-                                    <p class="text-[11px] text-gray-400 mt-0.5">PNG, JPG, JPEG atau WEBP (Maks. 5MB)</p>
+                                    <p class="text-[11px] text-gray-400 mt-0.5">Format: PNG, JPG, atau JPEG (Maks. 5MB)</p>
                                 </div>
-                                <input type="file" wire:model="proof_photo" accept="image/*" class="hidden" capture="environment">
+                                <input type="file" wire:model="proof_photo" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" class="hidden" capture="environment">
                             </label>
                         @endif
 

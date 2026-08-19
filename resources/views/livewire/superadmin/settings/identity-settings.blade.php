@@ -179,7 +179,15 @@
                         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                             <!-- Thumbnail Preview -->
                             <div class="w-20 h-20 rounded-2xl bg-gray-50 dark:bg-gray-900/80 border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden flex-shrink-0 p-2 relative shadow-inner">
-                                @if ($logo)
+                                @php
+                                    $canPreviewLogo = false;
+                                    try {
+                                        $canPreviewLogo = $logo && method_exists($logo, 'temporaryUrl') && $logo->isPreviewable();
+                                    } catch (\Throwable $e) {
+                                        $canPreviewLogo = false;
+                                    }
+                                @endphp
+                                @if ($canPreviewLogo)
                                     <img src="{{ $logo->temporaryUrl() }}" alt="Preview Logo Baru" class="w-full h-full object-contain" />
                                 @elseif ($current_logo && \Illuminate\Support\Facades\Storage::disk('public')->exists($current_logo))
                                     <img src="{{ asset('storage/' . $current_logo) }}" alt="Logo Saat Ini" class="w-full h-full object-contain" />
@@ -240,7 +248,15 @@
                         
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-900/80 border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden flex-shrink-0 p-1.5 relative shadow-inner">
-                                @if ($favicon)
+                                @php
+                                    $canPreviewFavicon = false;
+                                    try {
+                                        $canPreviewFavicon = $favicon && method_exists($favicon, 'temporaryUrl') && $favicon->isPreviewable();
+                                    } catch (\Throwable $e) {
+                                        $canPreviewFavicon = false;
+                                    }
+                                @endphp
+                                @if ($canPreviewFavicon)
                                     <img src="{{ $favicon->temporaryUrl() }}" alt="Preview Favicon" class="w-full h-full object-contain" />
                                 @elseif ($current_favicon && \Illuminate\Support\Facades\Storage::disk('public')->exists($current_favicon))
                                     <img src="{{ asset('storage/' . $current_favicon) }}" alt="Favicon Saat Ini" class="w-full h-full object-contain" />

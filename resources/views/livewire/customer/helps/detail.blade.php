@@ -1,5 +1,5 @@
     <div class="min-h-screen bg-gray-50" 
-    wire:poll.10s.visible="loadHelp"
+    wire:poll.4s.visible="checkForUpdates"
     x-data="{ 
         showNotification: false, 
         notificationMessage: '',
@@ -830,8 +830,8 @@
                         <div class="flex-1">
                             <p class="text-xs font-semibold text-blue-900 mb-1">Pilihan Anda:</p>
                             <ul class="text-xs text-blue-800 space-y-1">
-                                <li><strong>• Terima:</strong> Pesanan dibatalkan, dana dikembalikan penuh</li>
-                                <li><strong>• Tolak:</strong> Rekan Jasa harus melanjutkan pekerjaan</li>
+                                <li><strong>• Terima Pembatalan:</strong> Pesanan dikembalikan ke daftar pencarian untuk mencari Rekan Jasa lain</li>
+                                <li><strong>• Tolak Pembatalan:</strong> Rekan Jasa diminta untuk tetap melanjutkan pengerjaan pesanan</li>
                             </ul>
                         </div>
                     </div>

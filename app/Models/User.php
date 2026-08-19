@@ -43,6 +43,7 @@ class User extends Authenticatable
         'occupation',
         'ktp_photo',
         'selfie_photo',
+        'notification_settings',
     ];
 
     /**
@@ -67,6 +68,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'verified' => 'boolean',
             'date_of_birth' => 'date',
+            'notification_settings' => 'array',
         ];
     }
 
@@ -112,7 +114,11 @@ class User extends Authenticatable
     // Ratings received as mitra (from customer)  
     public function mitraRatings()
     {
-        return $this->hasMany(Rating::class, 'ratee_id')->where('type', 'customer_to_mitra');
+        return $this->hasMany(Rating::class, 'mitra_id')
+            ->where(function ($q) {
+                $q->where('type', 'customer_to_mitra')
+                  ->orWhereNull('type');
+            });
     }
 
     public function partnerReports()
@@ -235,15 +241,70 @@ class User extends Authenticatable
             : null;
     }
 
+    // Notification Settings Accessor with robust defaults
+    public function getNotificationSettingsAttribute($value)
+    {
+        $defaults = [
+            'help_updates' => true,
+            'chat_messages' => true,
+            'transactions' => true,
+            'sound_enabled' => true,
+            'auto_mark_read' => false,
+            'auto_cleanup_read' => false,
+        ];
+
+        if (empty($value)) {
+            return $defaults;
+        }
+
+        $decoded = is_string($value) ? json_decode($value, true) : (array) $value;
+        return array_merge($defaults, is_array($decoded) ? $decoded : []);
+    }
+
+    // Unified Rating Accessors
+    public function getAverageRatingAttribute()
+    {
+        if ($this->isMitra()) {
+            return $this->mitra_average_rating;
+        } elseif ($this->isCustomer()) {
+            return $this->customer_average_rating;
+        }
+        return $this->mitra_average_rating ?: $this->customer_average_rating;
+    }
+
+    public function getRatingCountAttribute()
+    {
+        if ($this->isMitra()) {
+            return $this->mitra_rating_count;
+        } elseif ($this->isCustomer()) {
+            return $this->customer_rating_count;
+        }
+        return $this->mitra_rating_count ?: $this->customer_rating_count;
+    }
+
     // Customer Rating Methods
     public function getCustomerAverageRatingAttribute()
     {
-        return $this->customerRatings()->avg('rating') ?? 0;
+        $avg = Rating::where(function ($q) {
+            $q->where('ratee_id', $this->id)
+              ->orWhere(function ($q2) {
+                  $q2->where('user_id', $this->id)
+                     ->where('type', 'mitra_to_customer');
+              });
+        })->where('type', 'mitra_to_customer')->avg('rating');
+
+        return $avg ? round((float) $avg, 1) : 0;
     }
 
     public function getCustomerRatingCountAttribute()
     {
-        return $this->customerRatings()->count();
+        return Rating::where(function ($q) {
+            $q->where('ratee_id', $this->id)
+              ->orWhere(function ($q2) {
+                  $q2->where('user_id', $this->id)
+                     ->where('type', 'mitra_to_customer');
+              });
+        })->where('type', 'mitra_to_customer')->count();
     }
 
     public function getCustomerRatingBadgeAttribute()
@@ -277,14 +338,28 @@ class User extends Authenticatable
         }
     }
 
-    // Mitra Rating Methods (existing rating system)
+    // Mitra Rating Methods
     public function getMitraAverageRatingAttribute()
     {
-        return $this->mitraRatings()->avg('rating') ?? 0;
+        $avg = Rating::where(function ($q) {
+            $q->where('ratee_id', $this->id)
+              ->orWhere('mitra_id', $this->id);
+        })->where(function ($q) {
+            $q->where('type', 'customer_to_mitra')
+              ->orWhereNull('type');
+        })->avg('rating');
+
+        return $avg ? round((float) $avg, 1) : 0;
     }
 
     public function getMitraRatingCountAttribute()
     {
-        return $this->mitraRatings()->count();
+        return Rating::where(function ($q) {
+            $q->where('ratee_id', $this->id)
+              ->orWhere('mitra_id', $this->id);
+        })->where(function ($q) {
+            $q->where('type', 'customer_to_mitra')
+              ->orWhereNull('type');
+        })->count();
     }
 }

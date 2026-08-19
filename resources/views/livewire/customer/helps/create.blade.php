@@ -201,7 +201,7 @@
                             @if (!empty($searchResults))
                                 <ul class="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto z-50">
                                     @foreach ($searchResults as $c)
-                                        <li wire:click="setCityId({{ $c['id'] }}, '{{ $c['name'] }}', '{{ $c['province'] }}')"
+                                        <li wire:click="setCityId({{ $c['id'] }}, '{{ addslashes($c['name']) }}', '{{ addslashes($c['province']) }}')"
                                             class="px-4 py-3 text-sm hover:bg-blue-50 cursor-pointer transition border-b border-gray-100 last:border-b-0 flex items-start gap-2">
                                             <svg class="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
@@ -230,23 +230,23 @@
                         </div>
                         
                         <!-- Selected City Display -->
-                        {{-- @if (!empty($city_id))
+                        @if (!empty($city_id))
                             <div class="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-2.5 flex items-center justify-between">
                                 <div class="flex items-center gap-2 text-sm">
-                                    <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                     </svg>
-                                    <span class="font-medium text-blue-900">{{ $cityQuery }}</span>
+                                    <span class="font-medium text-blue-900 text-xs">{{ $cityQuery }}</span>
                                 </div>
-                                <button type="button" wire:click="clearCity" class="text-blue-600 hover:text-blue-800 text-xs font-medium">
-                                    Ubah
+                                <button type="button" wire:click="clearCity" class="text-blue-600 hover:text-blue-800 text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 hover:bg-blue-200 transition">
+                                    Ganti
                                 </button>
                             </div>
                         @endif
 
                         @error('city_id')
                             <span class="text-red-500 text-xs mt-1.5 block flex items-center">
-                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <svg class="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
                                         d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
                                         clip-rule="evenodd" />
@@ -262,7 +262,7 @@
                                     clip-rule="evenodd" />
                             </svg>
                             Ketik minimal 2 karakter untuk mencari kota
-                        </p> --}}
+                        </p>
                     </div>
 
                     <!-- Alamat Lengkap (Manual Input) -->
@@ -500,13 +500,27 @@
                             </span>
                         </label>
                         <div class="relative">
-                            <input type="file" wire:model="photo" accept="image/*" id="photo-input"
+                            <input type="file" wire:model="photo" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" id="photo-input"
                                 class="hidden">
                             <label for="photo-input"
                                 class="flex items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 cursor-pointer transition bg-gray-50 hover:bg-blue-50 overflow-hidden relative">
                                 @if ($photo)
-                                    <img src="{{ $photo->temporaryUrl() }}" alt="preview"
-                                        class="w-full h-full object-cover">
+                                    @php
+                                        $canPreview = false;
+                                        try {
+                                            $canPreview = method_exists($photo, 'temporaryUrl') && $photo->isPreviewable();
+                                        } catch (\Throwable $e) {
+                                            $canPreview = false;
+                                        }
+                                    @endphp
+                                    @if ($canPreview)
+                                        <img src="{{ $photo->temporaryUrl() }}" alt="preview" class="w-full h-full object-cover">
+                                    @else
+                                        <div class="flex flex-col items-center justify-center w-full p-2 text-center">
+                                            <svg class="w-6 h-6 text-gray-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                            <span class="text-xs font-semibold text-gray-700">{{ $photo->getClientOriginalName() }}</span>
+                                        </div>
+                                    @endif
 
                                     <button type="button" onclick="event.stopPropagation()"
                                         wire:click="$set('photo', null)"
@@ -821,54 +835,6 @@
         </div>
     </div>
 
-    <!-- Insufficient Balance Modal - Bottom Sheet Style -->
-    @if ($showInsufficientModal)
-        <div class="modal-overlay fixed inset-0 z-[9999] flex items-end justify-center animate-fade-in"
-            style="background: rgba(0,0,0,0.5);" wire:click="closeInsufficientModal">
-            <div class="bg-white rounded-t-3xl w-full max-w-md shadow-2xl animate-slide-up relative" wire:click.stop
-                style="padding-bottom: env(safe-area-inset-bottom,24px);">
-                <div class="sticky top-0 bg-white border-b px-5 py-4 rounded-t-3xl">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-bold text-gray-900">Saldo Tidak Cukup</h3>
-                        <button type="button" wire:click="closeInsufficientModal"
-                            class="p-2 hover:bg-gray-100 rounded-full transition">
-                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="p-5 pb-6">
-                    <div class="flex items-center justify-center mb-4">
-                        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                            <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                    </div>
-
-                    <p class="text-sm text-gray-700 text-center mb-6">{{ $insufficientMessage }}</p>
-
-                    <div class="flex gap-3">
-                        <button wire:click="closeInsufficientModal"
-                            class="flex-1 px-5 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition">
-                            Tutup
-                        </button>
-                        <a href="{{ route('customer.topup') }}"
-                            class="flex-1 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold text-center hover:from-blue-600 hover:to-blue-700 transition">
-                            Top Up Saldo
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
-
     <!-- Confirmation Modal - Bottom Sheet Style -->
     @if ($showConfirmModal)
         <div class="modal-overlay fixed inset-0 z-[9999] flex items-end justify-center animate-fade-in"
@@ -891,15 +857,10 @@
 
                 <!-- Modal Content -->
                 <div class="p-5 pb-6">
-                    <p class="text-sm text-gray-600 mb-4">Periksa ringkasan pesanan sebelum mengonfirmasi.</p>
+                    <p class="text-sm text-gray-600 mb-4">Periksa ringkasan pesanan bantuan sebelum mempublikasikan.</p>
 
-                    <!-- Saldo Info Card -->
+                    <!-- Rincian Biaya -->
                     <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-4 mb-4 border border-blue-100">
-                        <div class="flex items-center justify-between mb-3 pb-3 border-b border-blue-100">
-                            <span class="text-xs font-semibold text-gray-600">Saldo Tersedia</span>
-                            <span class="text-lg font-bold text-gray-900">Rp
-                                {{ number_format($currentBalance ?? 0, 0, ',', '.') }}</span>
-                        </div>
                         <div class="space-y-2.5">
                             <div class="flex justify-between items-center">
                                 <span class="text-sm text-gray-600">Nominal Bantuan</span>
@@ -918,7 +879,7 @@
                     <div class="bg-white border-2 border-blue-200 rounded-2xl p-4 mb-4">
                         <div class="flex items-center justify-between">
                             <div class="flex-1">
-                                <span class="text-xs font-semibold text-gray-600">Total Pembayaran</span>
+                                <span class="text-xs font-semibold text-gray-600">Total Imbalan Jasa</span>
                                 <div class="text-2xl font-bold text-blue-600 mt-1">Rp
                                     {{ number_format($confirmTotal ?? 0, 0, ',', '.') }}</div>
                             </div>
@@ -952,8 +913,7 @@
                                     clip-rule="evenodd" />
                             </svg>
                             <p class="text-xs text-amber-900 leading-relaxed">Dengan menekan
-                                <strong>Konfirmasi</strong>, Anda menyetujui bahwa saldo akan dipotong sesuai total
-                                pembayaran di atas.</p>
+                                <strong>Konfirmasi</strong>, permintaan bantuan Anda akan langsung diterbitkan agar dapat diambil oleh Rekan Jasa.</p>
                         </div>
                     </div>
                 </div>
