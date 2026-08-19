@@ -59,6 +59,7 @@
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+    @stack('styles')
     <style>
         [x-cloak] { display: none !important; }
         
@@ -256,6 +257,7 @@
             }
         }
     </script>
+    @stack('scripts')
 </body>
 
 </html>

@@ -315,6 +315,86 @@ class Help extends Model
     }
 
     /**
+     * Langkah progres saat ini (1 sampai 5).
+     */
+    public function getProgressStepAttribute(): int
+    {
+        return match($this->status) {
+            'menunggu_mitra', 'mencari_mitra', 'menunggu_pembayaran' => 1,
+            'taken', 'memperoleh_mitra'                             => 2,
+            'partner_on_the_way'                                    => 3,
+            'partner_arrived', 'in_progress', 'sedang_diproses'     => 4,
+            'waiting_customer_confirmation', 'selesai', 'completed' => 5,
+            default                                                 => 1,
+        };
+    }
+
+    /**
+     * Persentase progres bantuan (0% - 100%).
+     */
+    public function getProgressPercentageAttribute(): int
+    {
+        return match($this->status) {
+            'menunggu_mitra', 'mencari_mitra', 'menunggu_pembayaran' => 20,
+            'taken', 'memperoleh_mitra'                             => 40,
+            'partner_on_the_way'                                    => 60,
+            'partner_arrived', 'in_progress', 'sedang_diproses'     => 80,
+            'waiting_customer_confirmation'                         => 90,
+            'selesai', 'completed'                                  => 100,
+            'dibatalkan', 'cancelled'                               => 0,
+            'partner_cancel_requested'                              => 50,
+            default                                                 => 20,
+        };
+    }
+
+    /**
+     * Ikon/Emoji penanda status progres.
+     */
+    public function getProgressIconAttribute(): string
+    {
+        return match($this->status) {
+            'menunggu_mitra', 'mencari_mitra'                       => '🔍',
+            'taken', 'memperoleh_mitra'                             => '🤝',
+            'partner_on_the_way'                                    => '🛵',
+            'partner_arrived'                                       => '📍',
+            'in_progress', 'sedang_diproses'                        => '⚡',
+            'waiting_customer_confirmation'                         => '📸',
+            'selesai', 'completed'                                  => '✅',
+            'dibatalkan', 'cancelled'                               => '❌',
+            'partner_cancel_requested'                              => '⚠️',
+            default                                                 => '📋',
+        };
+    }
+
+    /**
+     * Ringkasan progres (contoh: "Langkah 3/5: Menuju Lokasi").
+     */
+    public function getProgressSummaryAttribute(): string
+    {
+        if (in_array($this->status, ['dibatalkan', 'cancelled'])) {
+            return 'Pesanan Dibatalkan';
+        }
+        if ($this->status === 'partner_cancel_requested') {
+            return '⚠️ Pengajuan Pembatalan';
+        }
+        if (in_array($this->status, ['selesai', 'completed'])) {
+            return '✅ 100% Selesai';
+        }
+
+        $step = $this->progress_step;
+        $label = match($step) {
+            1 => 'Mencari Mitra',
+            2 => 'Pesanan Diambil',
+            3 => 'Menuju Lokasi',
+            4 => 'Sedang Dikerjakan',
+            5 => 'Menunggu Konfirmasi',
+            default => 'Diproses',
+        };
+
+        return "Langkah {$step}/5: {$label}";
+    }
+
+    /**
      * Warna badge status (Tailwind classes).
      */
     public function getStatusColorAttribute(): string

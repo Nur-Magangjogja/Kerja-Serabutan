@@ -105,17 +105,18 @@
                                     <span class="text-xs font-bold whitespace-nowrap" style="color: #0098e7;">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
                                 </div>
 
-                                <div class="flex items-center gap-2 mb-2">
-                                    @if($help->status === 'partner_cancel_requested')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style="background: rgba(250,204,21,0.08); color:#c27803; border:1px solid rgba(245,158,11,0.12);">
-                                            Permintaan Pembatalan — Menunggu Konfirmasi
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style="background: rgba(34, 197, 94, 0.08); color:#22c55e; border:1px solid rgba(34,197,94,0.12);">
-                                            Diproses
-                                        </span>
-                                    @endif
-                                    <span class="text-xs text-gray-400">{{ optional($help->taken_at)->diffForHumans() ?? optional($help->created_at)->diffForHumans() }}</span>
+                                <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold {{ $help->status_color }} dark:bg-opacity-20 border border-current border-opacity-20">
+                                        <span>{{ $help->progress_icon }}</span>
+                                        <span>{{ $help->progress_summary }}</span>
+                                    </span>
+                                    <span class="text-xs text-gray-400 font-medium">{{ optional($help->taken_at)->diffForHumans() ?? optional($help->created_at)->diffForHumans() }}</span>
+                                </div>
+
+                                <!-- Progress Track -->
+                                <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden mb-3">
+                                    <div class="h-full rounded-full transition-all duration-500 {{ $help->progress_percentage == 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-blue-500 to-indigo-600' }}"
+                                         style="width: {{ $help->progress_percentage }}%;"></div>
                                 </div>
 
                                 <p class="text-xs text-gray-600 line-clamp-2 mb-3">{{ Str::limit($help->description ?? $help->location ?? '-', 100) }}</p>

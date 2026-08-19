@@ -82,10 +82,14 @@ class CitySearchService
                 ->first();
 
             if ($row) {
-                return City::firstOrCreate(
-                    ['code' => 'reqr-' . $row->regency_id],
-                    ['name' => $row->regency, 'province' => $row->province, 'is_active' => true]
-                );
+                return City::where('code', $row->regency_id)
+                    ->orWhere(fn($q) => $q->where('name', $row->regency)->where('province', $row->province))
+                    ->first() ?? City::create([
+                        'code'      => $row->regency_id,
+                        'name'      => $row->regency,
+                        'province'  => $row->province,
+                        'is_active' => true,
+                    ]);
             }
         }
 
@@ -99,10 +103,14 @@ class CitySearchService
                 ->first();
 
             if ($row) {
-                return City::firstOrCreate(
-                    ['code' => 'reqr-' . $row->regency_id],
-                    ['name' => $row->regency, 'province' => $row->province, 'is_active' => true]
-                );
+                return City::where('code', $row->regency_id)
+                    ->orWhere(fn($q) => $q->where('name', $row->regency)->where('province', $row->province))
+                    ->first() ?? City::create([
+                        'code'      => $row->regency_id,
+                        'name'      => $row->regency,
+                        'province'  => $row->province,
+                        'is_active' => true,
+                    ]);
             }
         }
 
@@ -238,10 +246,14 @@ class CitySearchService
                     ->first();
 
                 if ($parent) {
-                    $targetCity = City::firstOrCreate(
-                        ['code' => 'reqr-' . $parent->pid],
-                        ['name' => $parent->pregency, 'province' => $parent->province, 'is_active' => true]
-                    );
+                    $targetCity = City::where('code', $parent->pid)
+                        ->orWhere(fn($q) => $q->where('name', $parent->pregency)->where('province', $parent->province))
+                        ->first() ?? City::create([
+                            'code'      => $parent->pid,
+                            'name'      => $parent->pregency,
+                            'province'  => $parent->province,
+                            'is_active' => true,
+                        ]);
                     $display = $parent->district . ', ' . $parent->pregency . ', ' . $parent->province;
                 }
             } elseif (str_starts_with($regencyIdStr, 'regd-')) {
@@ -254,19 +266,28 @@ class CitySearchService
                     ->first();
 
                 if ($parent) {
-                    $targetCity = City::firstOrCreate(
-                        ['code' => 'reqr-' . $parent->pid],
-                        ['name' => $parent->pregency, 'province' => $parent->province, 'is_active' => true]
-                    );
+                    $targetCity = City::where('code', $parent->pid)
+                        ->orWhere(fn($q) => $q->where('name', $parent->pregency)->where('province', $parent->province))
+                        ->first() ?? City::create([
+                            'code'      => $parent->pid,
+                            'name'      => $parent->pregency,
+                            'province'  => $parent->province,
+                            'is_active' => true,
+                        ]);
                     $display = $parent->district . ', ' . $parent->pregency . ', ' . $parent->province;
                 }
             }
 
             if (!$targetCity) {
-                $targetCity = City::firstOrCreate(
-                    ['code' => $regencyIdStr],
-                    ['name' => $r->regency, 'province' => $r->province, 'type' => $r->type ?? null, 'is_active' => true]
-                );
+                $targetCity = City::where('code', $regencyIdStr)
+                    ->orWhere(fn($q) => $q->where('name', $r->regency)->where('province', $r->province))
+                    ->first() ?? City::create([
+                        'code'      => $regencyIdStr,
+                        'name'      => $r->regency,
+                        'province'  => $r->province,
+                        'type'      => $r->type ?? null,
+                        'is_active' => true,
+                    ]);
                 if (!$display && !empty($r->parent_regency)) {
                     $display = $r->regency . ', ' . $r->parent_regency . ', ' . $r->province;
                 }

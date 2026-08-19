@@ -128,15 +128,16 @@
                                         <span class="text-xs font-bold whitespace-nowrap" style="color: #0098e7;">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
                                     </div>
 
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style="background: rgba(255, 159, 67, 0.08); color:#ff8a00; border:1px solid rgba(255,159,67,0.12);">
-                                            @if($help->status === 'menunggu_mitra')
-                                                Menunggu Mitra
-                                            @else
-                                                {{ ucfirst(str_replace('_',' ', $help->status)) }}
-                                            @endif
+                                    <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                            <span>🔍</span>
+                                            <span>Langkah 1/5: Mencari Mitra</span>
                                         </span>
-                                        <span class="text-xs text-gray-400">{{ optional($help->created_at)->diffForHumans() }}</span>
+                                        <span class="text-xs text-gray-400 font-medium">{{ optional($help->created_at)->diffForHumans() }}</span>
+                                    </div>
+                                    <!-- Progress Track -->
+                                    <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden mb-2.5">
+                                        <div class="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 animate-pulse" style="width: 20%;"></div>
                                     </div>
 
                                     <p class="text-xs text-gray-600 line-clamp-2 mb-3">{{ Str::limit($help->description, 100) }}</p>
@@ -177,32 +178,26 @@
                                     </div>
 
                                     @if($help->status === 'partner_cancel_requested')
-                                        <div class="flex items-center gap-2 mb-2">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style="background: rgba(250,204,21,0.08); color:#b45309; border:1px solid rgba(245,158,11,0.12);">
-                                                Menunggu Konfirmasi Pembatalan
+                                        <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                                <span>⚠️</span>
+                                                <span>Menunggu Konfirmasi Pembatalan</span>
                                             </span>
-                                            <span class="text-xs text-gray-400">{{ optional($help->partner_cancel_requested_at ?? $help->created_at)->diffForHumans() }}</span>
+                                            <span class="text-xs text-gray-400 font-medium">{{ optional($help->partner_cancel_requested_at ?? $help->created_at)->diffForHumans() }}</span>
+                                        </div>
+                                        <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden mb-2.5">
+                                            <div class="h-full rounded-full bg-amber-500" style="width: 50%;"></div>
                                         </div>
                                     @else
-                                        <div class="flex items-center gap-2 mb-2">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style="background: rgba(56,189,248,0.08); color:#0284c7; border:1px solid rgba(3,105,161,0.08);">
-                                                @if($help->status === 'memperoleh_mitra')
-                                                    Mitra Ditemukan
-                                                @elseif($help->status === 'taken')
-                                                    Diambil Mitra
-                                                @elseif($help->status === 'partner_on_the_way')
-                                                    Rekan Jasa Menuju Lokasi
-                                                @elseif($help->status === 'partner_arrived')
-                                                    Rekan Jasa Tiba di Lokasi
-                                                @elseif(in_array($help->status, ['in_progress', 'sedang_diproses']))
-                                                    Sedang Dikerjakan
-                                                @elseif($help->status === 'waiting_customer_confirmation')
-                                                    Menunggu Konfirmasi Anda
-                                                @else
-                                                    Sedang Diproses
-                                                @endif
+                                        <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold {{ $help->status_color }} dark:bg-opacity-20 border border-current border-opacity-20">
+                                                <span>{{ $help->progress_icon }}</span>
+                                                <span>{{ $help->progress_summary }}</span>
                                             </span>
-                                            <span class="text-xs text-gray-400">{{ optional($help->created_at)->diffForHumans() }}</span>
+                                            <span class="text-xs text-gray-400 font-medium">{{ optional($help->created_at)->diffForHumans() }}</span>
+                                        </div>
+                                        <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden mb-2.5">
+                                            <div class="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500" style="width: {{ $help->progress_percentage }}%;"></div>
                                         </div>
                                     @endif
 
@@ -298,11 +293,15 @@
                                         <span class="text-xs font-bold whitespace-nowrap" style="color: #0098e7;">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
                                     </div>
 
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style="background: rgba(255, 159, 67, 0.08); color:#ff8a00; border:1px solid rgba(255,159,67,0.12);">
-                                            Menunggu Konfirmasi Anda
+                                    <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200">
+                                            <span>📸</span>
+                                            <span>Langkah 5/5: Menunggu Konfirmasi Anda</span>
                                         </span>
-                                        <span class="text-xs text-gray-400">{{ optional($help->service_completed_at)->diffForHumans() }}</span>
+                                        <span class="text-xs text-gray-400 font-medium">{{ optional($help->service_completed_at)->diffForHumans() }}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden mb-2.5">
+                                        <div class="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-500 animate-pulse" style="width: 90%;"></div>
                                     </div>
 
                                     <p class="text-xs text-gray-600 line-clamp-2 mb-3">{{ Str::limit($help->description, 100) }}</p>

@@ -44,33 +44,23 @@ class Dashboard extends Component
     {
         $help = Help::findOrFail($helpId);
 
-        if ($help->mitra_id) {
-            session()->flash('error', 'Bantuan ini sudah diambil oleh mitra lain.');
+        try {
+            app(\App\Services\HelpTransactionService::class)->takeHelp(
+                $help,
+                auth()->user(),
+                $latitude ? (float) $latitude : null,
+                $longitude ? (float) $longitude : null
+            );
+
+            session()->flash('message', 'Bantuan berhasil diambil! GPS tracking aktif. Segera menuju lokasi customer.');
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+            return;
+        } catch (\Throwable $e) {
+            \Log::error('[Mitra/Dashboard] takeHelp error: ' . $e->getMessage(), ['help_id' => $helpId]);
+            session()->flash('error', 'Terjadi kesalahan saat mengambil bantuan.');
             return;
         }
-
-        $help->update([
-            'mitra_id' => auth()->id(),
-            'status' => 'taken',
-            'taken_at' => now(),
-        ]);
-
-        // Set lokasi awal mitra jika GPS tersedia
-        if ($latitude && $longitude) {
-            $locationService = app(LocationTrackingService::class);
-            $locationService->setInitialLocation($help, $latitude, $longitude);
-        }
-
-        // Send notification to customer that their help has been taken
-        try {
-            if ($help->user) {
-                $help->user->notify(new HelpTakenNotification($help, auth()->user()));
-            }
-        } catch (\Exception $e) {
-            \Log::warning('Failed to send HelpTakenNotification', ['error' => $e->getMessage()]);
-        }
-
-        session()->flash('message', 'Bantuan berhasil diambil! GPS tracking aktif. Segera menuju lokasi customer.');
         
         // Emit event untuk mulai GPS tracking
         $this->dispatch('start-gps-tracking', helpId: $helpId);
@@ -78,7 +68,6 @@ class Dashboard extends Component
         $this->setTab('diproses');
 
         // Redirect mitra to the help detail page so they can see full info and navigation
-        // Use Livewire helper to redirect to named route
         return $this->redirectRoute('mitra.helps.detail', ['id' => $helpId]);
     }
 
@@ -205,9 +194,12 @@ class Dashboard extends Component
                 ->whereNull('read_at')
                 ->where('sender_type', 'customer')
                 ->count();
-        } catch (\Exception $e) {
-            // ignore if Chat model or columns missing
+        } catch (\Throwable $e) {
+            // ignore if Chat table or column is missing
         }
+
+        // Active task checking
+        $activeTask = $user ? Help::where('mitra_id', $user->id)->active()->first() : null;
 
         return view('livewire.mitra.dashboard.index', [
             'helps' => $helps,
@@ -220,6 +212,7 @@ class Dashboard extends Component
             'latestHelps' => $latestHelps,
             'nearbyHelps' => $nearbyHelps,
             'unreadChatCount' => $unreadChatCount,
+            'activeTask' => $activeTask,
         ]);
     }
 }

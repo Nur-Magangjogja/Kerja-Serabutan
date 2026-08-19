@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
             IndonesiaRegionsSeeder::class,
             CategorySeeder::class,
             UserSeeder::class,
-            HelpSeeder::class,
+            HelpsSeeder::class,
             \Database\Seeders\UserBalancesSeeder::class,
         ]);
     }

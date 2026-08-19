@@ -131,6 +131,11 @@ class GpsSimulator extends Component
 
         $this->isSimulating = true;
         $this->dispatch('simulation-started');
+        $this->dispatch('partner-location-updated', [
+            'latitude' => $this->currentLat,
+            'longitude' => $this->currentLng,
+            'isSimulating' => true,
+        ]);
         
         Log::info('GPS Simulator: Simulation started', [
             'help_id' => $this->helpId,
@@ -144,6 +149,7 @@ class GpsSimulator extends Component
     {
         $this->isSimulating = false;
         $this->dispatch('simulation-stopped');
+        $this->dispatch('partner-simulation-stopped');
         
         Log::info('GPS Simulator: Simulation stopped', ['help_id' => $this->helpId]);
     }
@@ -223,6 +229,13 @@ class GpsSimulator extends Component
                 ]);
             }
 
+            // Dispatch location update for map & listeners
+            $this->dispatch('partner-location-updated', [
+                'latitude' => $this->currentLat,
+                'longitude' => $this->currentLng,
+                'isSimulating' => $this->isSimulating,
+            ]);
+
             return [
                 'distance' => round($distanceToTarget),
                 'status' => $help->status,
@@ -255,6 +268,12 @@ class GpsSimulator extends Component
             );
         }
         
+        $this->dispatch('partner-location-updated', [
+            'latitude' => $this->currentLat,
+            'longitude' => $this->currentLng,
+            'isSimulating' => false,
+        ]);
+
         $this->stopSimulation();
     }
 

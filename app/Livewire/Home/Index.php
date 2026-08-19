@@ -62,18 +62,17 @@ class Index extends Component
 
         $help = Help::findOrFail($helpId);
 
-        if ($help->mitra_id) {
-            session()->flash('error', 'Bantuan ini sudah diambil oleh mitra lain.');
+        try {
+            app(\App\Services\HelpTransactionService::class)->takeHelp($help, auth()->user());
+            session()->flash('message', 'Bantuan berhasil diambil! Segera hubungi yang membutuhkan.');
+            return redirect()->route('mitra.helps.detail', $help->id);
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+            return;
+        } catch (\Throwable $e) {
+            \Log::error('[Home/Index] takeHelp error: ' . $e->getMessage(), ['help_id' => $helpId]);
+            session()->flash('error', 'Terjadi kesalahan saat mengambil bantuan.');
             return;
         }
-
-        $help->update([
-            'mitra_id' => auth()->id(),
-            'status' => 'taken',
-            'taken_at' => now(),
-        ]);
-
-        session()->flash('message', 'Bantuan berhasil diambil! Segera hubungi yang membutuhkan.');
-        return redirect()->route('helps.index');
     }
 }

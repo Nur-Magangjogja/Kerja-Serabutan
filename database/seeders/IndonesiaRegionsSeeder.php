@@ -71,8 +71,8 @@ class IndonesiaRegionsSeeder extends Seeder
             foreach (array_chunk($citiesBatch, 100) as $chunk) {
                 City::upsert(
                     $chunk,
-                    ['name', 'province'],
-                    ['code', 'type', 'postal_code', 'latitude', 'longitude', 'is_active', 'updated_at']
+                    ['code'],
+                    ['name', 'province', 'type', 'postal_code', 'latitude', 'longitude', 'is_active', 'updated_at']
                 );
             }
         });

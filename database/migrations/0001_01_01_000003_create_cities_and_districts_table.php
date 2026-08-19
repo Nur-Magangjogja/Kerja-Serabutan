@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('cities', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->nullable();
+            $table->string('code')->nullable()->unique();
             $table->string('name');
             $table->string('type')->nullable(); // e.g. "Kota" or "Kabupaten"
             $table->string('province')->nullable();
@@ -33,7 +33,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('city_id')->constrained('cities')->cascadeOnDelete();
             $table->string('name');
-            $table->string('code')->nullable();
+            $table->string('code')->nullable()->unique();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

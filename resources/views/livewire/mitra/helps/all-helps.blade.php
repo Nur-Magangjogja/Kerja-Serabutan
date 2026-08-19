@@ -143,21 +143,47 @@
 
         <!-- Content -->
         <div class="bg-white rounded-t-3xl -mt-6 px-5 pt-6 pb-6 min-h-[60vh]">
+            @if(session()->has('error'))
+                <div class="mb-4 bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-2xl text-xs flex items-start gap-2.5 shadow-xs">
+                    <svg class="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                    <div class="flex-1 font-medium">{{ session('error') }}</div>
+                </div>
+            @endif
+
+            @if(session()->has('message'))
+                <div class="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-2xl text-xs flex items-start gap-2.5 shadow-xs">
+                    <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                    <div class="flex-1 font-medium">{{ session('message') }}</div>
+                </div>
+            @endif
+
             @if (!empty($activeTask))
-                <div class="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 shadow-sm">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex items-start gap-2.5">
-                            <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm flex-shrink-0 mt-0.5 font-bold">
-                                ⏳
+                <div class="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 shadow-sm">
+                    <div class="flex items-start justify-between gap-3 mb-2.5">
+                        <div class="flex items-start gap-2.5 min-w-0">
+                            <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-base flex-shrink-0 font-bold shadow-xs">
+                                {{ $activeTask->progress_icon }}
                             </div>
-                            <div>
-                                <h4 class="text-xs font-bold text-blue-900">Anda Sedang Mengerjakan Tugas</h4>
-                                <p class="text-xs text-blue-800 mt-0.5">"{{ $activeTask->title }}" (<span class="font-semibold">{{ $activeTask->status_label }}</span>). Selesaikan tugas ini terlebih dahulu sebelum mengambil tugas baru.</p>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="text-xs font-bold text-blue-900 dark:text-blue-200 truncate">Tugas Aktif Berjalan</h4>
+                                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-600 text-white shadow-xs">
+                                        {{ $activeTask->progress_percentage }}%
+                                    </span>
+                                </div>
+                                <p class="text-xs text-blue-800 dark:text-blue-300 mt-0.5 font-medium truncate">
+                                    "{{ $activeTask->title }}" • <span class="font-bold">{{ $activeTask->progress_summary }}</span>
+                                </p>
                             </div>
                         </div>
                         <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" class="flex-shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap">
                             Buka Tugas
                         </a>
+                    </div>
+                    <!-- Mini Progress Track -->
+                    <div class="w-full bg-blue-100/70 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                        <div class="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 {{ $activeTask->progress_percentage < 100 ? 'animate-pulse' : '' }}"
+                             style="width: {{ $activeTask->progress_percentage }}%;"></div>
                     </div>
                 </div>
             @endif
@@ -258,8 +284,12 @@
                                                 $distVal = $help->distance_km ?? null;
                                                 $cityName = $help->city->name ?? 'Luar Daerah';
                                             @endphp
-                                            <button type="button" onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ addslashes($schedLabel) }}', {{ $distVal ?? 'null' }}, '{{ addslashes($cityName) }}')" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200 transition">Lihat</button>
-                                            <button type="button" onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ addslashes($schedLabel) }}', {{ $distVal ?? 'null' }}, '{{ addslashes($cityName) }}')" class="px-3.5 py-1.5 bg-primary-600 text-white rounded-lg text-xs font-bold hover:bg-primary-700 shadow-sm transition">Ambil</button>
+                                            @if(!empty($activeTask))
+                                                <button type="button" onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ addslashes($schedLabel) }}', {{ $distVal ?? 'null' }}, '{{ addslashes($cityName) }}')" class="px-3.5 py-1.5 bg-gray-100 text-gray-500 rounded-lg text-xs font-semibold hover:bg-gray-200 transition" title="Sedang mengerjakan tugas lain">Lihat Rincian</button>
+                                            @else
+                                                <button type="button" onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ addslashes($schedLabel) }}', {{ $distVal ?? 'null' }}, '{{ addslashes($cityName) }}')" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200 transition">Lihat</button>
+                                                <button type="button" onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ addslashes($schedLabel) }}', {{ $distVal ?? 'null' }}, '{{ addslashes($cityName) }}')" class="px-3.5 py-1.5 bg-primary-600 text-white rounded-lg text-xs font-bold hover:bg-primary-700 shadow-sm transition">Ambil</button>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -361,9 +391,15 @@
                     <button type="button" onclick="closePreviewModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold text-xs hover:bg-gray-200 transition">
                         Kembali
                     </button>
-                    <button type="button" id="previewTakeBtn" onclick="takeHelpFromModal()" class="flex-[1.5] bg-primary-600 text-white py-3 rounded-xl font-bold text-xs hover:bg-primary-700 shadow-md transition">
-                        Ambil Tugas Ini
-                    </button>
+                    @if(!empty($activeTask))
+                        <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" class="flex-[1.5] bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center text-center">
+                            Selesaikan Tugas Aktif
+                        </a>
+                    @else
+                        <button type="button" id="previewTakeBtn" onclick="takeHelpFromModal()" class="flex-[1.5] bg-primary-600 text-white py-3 rounded-xl font-bold text-xs hover:bg-primary-700 shadow-md transition">
+                            Ambil Tugas Ini
+                        </button>
+                    @endif
                 </div>
             </div>
         </div>
@@ -488,10 +524,12 @@
 
             // Add Help Markers
             if (mapHelpsData && mapHelpsData.length) {
+                const hasActive = @json(!empty($activeTask));
                 mapHelpsData.forEach(h => {
                     if (h.lat && h.lng) {
                         const marker = L.marker([h.lat, h.lng]).addTo(radarMapInstance);
                         const distInfo = h.distance_km ? `<span class="inline-block px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold text-[10px] mt-1">🟢 ${h.distance_km} km</span>` : '';
+                        const btnLabel = hasActive ? 'Lihat Rincian' : 'Lihat & Ambil';
                         
                         const popupContent = `
                             <div class="p-1 min-w-[160px]">
@@ -501,7 +539,7 @@
                                 <p class="text-[11px] text-gray-500 mt-1">📍 ${h.city || '-'}</p>
                                 <button onclick="window.showHelpPreview(${h.id}, '${h.title.replace(/'/g, "\\'")}', ${h.amount}, '${h.scheduled || ''}', ${h.distance_km || 'null'}, '${(h.city || '').replace(/'/g, "\\'")}')" 
                                     class="mt-2 w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow transition">
-                                    Lihat & Ambil
+                                    ${btnLabel}
                                 </button>
                             </div>
                         `;

@@ -85,7 +85,7 @@
     </div>
 
     {{-- Header - match other customer pages (gradient BRImo style) --}}
-    <div class="px-5 pt-5 pb-8 relative overflow-hidden" style="background: linear-gradient(to bottom right, #0098e7, #0077cc, #0060b0);">
+    <div class="px-5 pt-5 pb-8 relative overflow-hidden bg-gradient-to-br from-sky-500 via-blue-600 to-blue-700 dark:from-slate-900 dark:via-blue-950 dark:to-slate-900">
         <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20"></div>
         <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mb-16"></div>
 
@@ -118,16 +118,16 @@
 
             <!-- Curved separator (SVG) to create non-flat divider into content -->
             <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 72" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0,32 C360,72 1080,0 1440,40 L1440,72 L0,72 Z" fill="#ffffff"></path>
+                <path d="M0,32 C360,72 1080,0 1440,40 L1440,72 L0,72 Z" class="text-white dark:text-gray-900 fill-current"></path>
             </svg>
     </div>
 
     <!-- Content -->
-    <div class="bg-white rounded-t-3xl -mt-6 px-5 pt-6 pb-8 max-w-md mx-auto">
+    <div class="bg-white dark:bg-gray-900 rounded-t-3xl -mt-6 px-5 pt-6 pb-8 max-w-md mx-auto transition-colors duration-200">
         {{-- Order ID --}}
-        <div class="bg-white px-4 py-3 flex items-center justify-between rounded-xl shadow-sm border border-gray-100">
-            <span class="text-sm text-gray-600">ID Pesanan: <span class="font-semibold text-gray-900">{{ $help->order_id }}</span></span>
-            <button wire:click="copyOrderId" class="text-blue-500 text-sm font-semibold flex items-center gap-1">
+        <div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
+            <span class="text-sm text-gray-600 dark:text-gray-400">ID Pesanan: <span class="font-semibold text-gray-900 dark:text-white">{{ $help->order_id }}</span></span>
+            <button wire:click="copyOrderId" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 text-sm font-semibold flex items-center gap-1">
                 Salin
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
@@ -136,9 +136,9 @@
         </div>
 
         {{-- Service Info --}}
-        <div class="bg-white mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100">
+        <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
             <div class="flex items-start gap-3">
-                <div class="w-12 h-12 rounded-lg bg-pink-100 flex items-center justify-center flex-shrink-0">
+                <div class="w-12 h-12 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center flex-shrink-0">
                     @if($help->photo)
                         <img src="{{ asset('storage/' . $help->photo) }}" alt="{{ $help->title }}" class="w-full h-full object-cover rounded-lg">
                     @else
@@ -148,23 +148,23 @@
                     @endif
                 </div>
                 <div class="flex-1">
-                    <h2 class="font-semibold text-base text-gray-900">{{ $help->title }}</h2>
+                    <h2 class="font-semibold text-base text-gray-900 dark:text-white">{{ $help->title }}</h2>
                 </div>
             </div>
 
-                {{-- Partner Info --}}
+            {{-- Partner Info --}}
             @if($help->mitra)
-                <div class="mt-4 p-3 bg-white rounded-xl flex items-center justify-between shadow-sm border border-gray-100">
+                <div class="mt-4 p-3 bg-white dark:bg-gray-700/50 rounded-xl flex items-center justify-between shadow-sm border border-gray-100 dark:border-gray-600">
                     <div class="flex items-center gap-3">
                         @if($help->mitra->selfie_photo)
-                            <img src="{{ asset('storage/' . $help->mitra->selfie_photo) }}" alt="{{ $help->mitra->name }}" class="w-10 h-10 rounded-full object-cover border-2 border-blue-100">
+                            <img src="{{ asset('storage/' . $help->mitra->selfie_photo) }}" alt="{{ $help->mitra->name }}" class="w-10 h-10 rounded-full object-cover border-2 border-blue-100 dark:border-blue-900">
                         @else
                             <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
                                 {{ strtoupper(substr($help->mitra->name ?? 'M', 0, 1)) }}
                             </div>
                         @endif
                         <div>
-                            <h3 class="font-semibold text-sm text-gray-900">{{ $help->mitra->name ?? 'Mitra' }}</h3>
+                            <h3 class="font-semibold text-sm text-gray-900 dark:text-white">{{ $help->mitra->name ?? 'Mitra' }}</h3>
                             <div class="flex items-center gap-1 mt-0.5">
                                 <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
@@ -174,75 +174,64 @@
                                     $avgRating = $mitra ? ($mitra->mitra_average_rating ?? ($mitra->rating ?? 0)) : 0;
                                     $ratingCount = $mitra ? ($mitra->mitra_rating_count ?? null) : null;
                                 @endphp
-                                <span class="text-sm font-semibold text-gray-900">{{ number_format($avgRating, 2) }}</span>
+                                <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ number_format($avgRating, 2) }}</span>
                                 @if($ratingCount)
-                                    <span class="text-xs text-gray-400 ml-2">({{ $ratingCount }})</span>
+                                    <span class="text-xs text-gray-400 dark:text-gray-400 ml-2">({{ $ratingCount }})</span>
                                 @endif
                             </div>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        {{-- <a href="tel:{{ $help->mitra->phone ?? '' }}" class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition">
-                            <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                            </svg>
-                        </a> --}}
-                        <a href="{{ route('customer.chat', $help->id) }}" class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition">
-                            <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <a href="{{ route('customer.chat', $help->id) }}" class="w-10 h-10 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-200">
+                            <svg class="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                             </svg>
                         </a>
                     </div>
                 </div>
-
             @endif
 
             {{-- Description & Additional Details --}}
-            <div class="bg-white mt-2 px-4 py-4 rounded-lg shadow-sm border border-gray-100">
-                <h3 class="font-bold text-sm text-gray-900 mb-3">Deskripsi & Detail</h3>
+            <div class="bg-white dark:bg-gray-800 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60">
+                <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-3">Deskripsi & Detail</h3>
 
                 @if(!empty($help->description))
                     <div class="mb-3">
-                        <p class="text-sm text-gray-700 whitespace-pre-line break-words break-all">{{ $help->description }}</p>
+                        <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line break-words break-all">{{ $help->description }}</p>
                     </div>
                 @endif
 
-                <div class="grid grid-cols-2 gap-3 text-sm text-gray-700">
+                <div class="grid grid-cols-2 gap-3 text-sm text-gray-700 dark:text-gray-300">
                     @if(!empty($help->equipment_provided))
                         <div>
-                            <div class="text-xs text-gray-500">Perlengkapan</div>
-                            <div class="font-semibold break-words break-all">{{ $help->equipment_provided }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Perlengkapan</div>
+                            <div class="font-semibold break-words break-all text-gray-900 dark:text-white">{{ $help->equipment_provided }}</div>
                         </div>
                     @endif
 
                     @if($help->mitra && !empty($help->mitra->phone))
                         <div>
-                            <div class="text-xs text-gray-500">Kontak Mitra</div>
-                            <div class="font-semibold"><a href="tel:{{ $help->mitra->phone }}" class="text-blue-600">{{ $help->mitra->phone }}</a></div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Kontak Mitra</div>
+                            <div class="font-semibold"><a href="tel:{{ $help->mitra->phone }}" class="text-blue-600 dark:text-blue-400">{{ $help->mitra->phone }}</a></div>
                         </div>
                     @endif
 
                     @if(!empty($help->city->name) || !empty($help->province->name))
                         <div>
-                            <div class="text-xs text-gray-500">Kota / Provinsi</div>
-                            <div class="font-semibold">{{ $help->city->name ?? '-' }}{{ $help->province ? (', ' . $help->province->name) : '' }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Kota / Provinsi</div>
+                            <div class="font-semibold text-gray-900 dark:text-white">{{ $help->city->name ?? '-' }}{{ $help->province ? (', ' . $help->province->name) : '' }}</div>
                         </div>
                     @endif
-
-                    {{-- <div>
-                        <div class="text-xs text-gray-500">Koordinat</div>
-                        <div class="font-semibold">{{ $help->latitude ? $help->latitude : '-' }}, {{ $help->longitude ? $help->longitude : '-' }}</div>
-                    </div> --}}
                 </div>
 
                 @if(!empty($help->photo))
                     <div class="mt-3">
-                        <div class="text-xs text-gray-500">Foto Pesanan</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Foto Pesanan</div>
                         <img src="{{ asset('storage/' . $help->photo) }}" alt="Foto bantuan" class="w-full mt-2 rounded-lg object-cover">
                     </div>
                 @endif
 
-                <div class="mt-3 text-xs text-gray-500">
+                <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
                     <div>Dibuat: {{ \Carbon\Carbon::parse($help->created_at)->translatedFormat('d F Y, H:i') }}</div>
                     <div>Terakhir diperbarui: {{ \Carbon\Carbon::parse($help->updated_at)->translatedFormat('d F Y, H:i') }}</div>
                     @if(!empty($help->scheduled_at))
@@ -251,103 +240,109 @@
                 </div>
             </div>
 
-            @php
-                $status = $help->status;
-                $statusLabel = match($status) {
-                    'menunggu_pembayaran' => 'Pembayaran',
-                    'mencari_mitra', 'menunggu_mitra', 'memperoleh_mitra' => 'Mencari Rekan Jasa',
-                    'taken' => 'Menunggu Rekan Jasa berangkat',
-                    'partner_on_the_way' => 'Rekan Jasa menuju ke lokasi',
-                    'partner_arrived' => 'Rekan Jasa tiba di lokasi',
-                    'in_progress', 'sedang_diproses' => 'Pelayanan dalam proses',
-                    'waiting_customer_confirmation' => 'Menunggu konfirmasi Anda',
-                    'selesai', 'completed' => 'Pesanan selesai',
-                    'dibatalkan', 'cancelled' => 'Dibatalkan',
-                    default => ucfirst(str_replace('_', ' ', $status)),
-                };
-
-                $statusBg = match($status) {
-                    'menunggu_pembayaran' => 'bg-yellow-500',
-                    'mencari_mitra', 'menunggu_mitra', 'memperoleh_mitra' => 'bg-blue-600',
-                    'taken', 'partner_on_the_way' => 'bg-blue-600',
-                    'partner_arrived' => 'bg-green-600',
-                    'in_progress', 'sedang_diproses' => 'bg-cyan-600',
-                    'waiting_customer_confirmation' => 'bg-orange-500',
-                    'selesai', 'completed' => 'bg-green-700',
-                    default => 'bg-gray-400'
-                };
-            @endphp
-
-            <button 
-                @if(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']))
-                    wire:click="showTrackingMap"
-                @endif
-                class="w-full mt-3 py-2.5 text-white rounded-lg font-semibold text-sm hover:opacity-95 transition flex items-center justify-center gap-2 {{ $statusBg }} {{ in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']) ? 'cursor-pointer' : '' }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    @if(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']))
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    @else
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                    @endif
-                </svg>
-                {{ $statusLabel }}
-                @if(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']))
-                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
-                @endif
-            </button>
-        </div>
-
-        {{-- Warning Info --}}
-        {{-- <div class="bg-yellow-50 mt-2 px-4 py-3 rounded-lg shadow-sm border border-yellow-100">
-            <div class="flex gap-3">
-                <div class="w-9 h-9 rounded-md bg-yellow-100 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                    </svg>
+        {{-- Progress Stepper Card --}}
+        <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100 dark:border-gray-700/50">
+                <div>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Progres Pesanan</span>
+                    <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5 mt-0.5">
+                        <span>{{ $help->progress_icon }}</span>
+                        <span>{{ $help->progress_summary }}</span>
+                    </h3>
                 </div>
-                <div class="flex-1">
-                    <h3 class="font-bold text-sm text-gray-900 mb-1">Selalu jaga keamanan pesananmu</h3>
-                    <p class="text-xs text-gray-700 leading-relaxed">Pastikan hanya transaksi di aplikasi agar pesananmu terlindungi asuransi. Laporkan Rekan Jasa yang meminta pembayaran di luar aplikasi untuk dapatkan pengembalian dana atau layanan gratis.</p>
+                <div class="text-right">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-extrabold bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800">
+                        {{ $help->progress_percentage }}%
+                    </span>
                 </div>
             </div>
-        </div> --}}
+
+            <!-- Stepper 5-Steps Horizontal -->
+            <div class="relative pt-2 pb-1">
+                <!-- Connecting Line -->
+                <div class="absolute top-6 left-6 right-6 h-1 bg-gray-100 dark:bg-gray-700 -z-0">
+                    <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-700 rounded-full"
+                         style="width: {{ max(0, min(100, ($help->progress_step - 1) * 25)) }}%;"></div>
+                </div>
+
+                <!-- Step Nodes -->
+                <div class="flex items-start justify-between relative z-10">
+                    @php
+                        $steps = [
+                            ['step' => 1, 'icon' => '🔍', 'title' => 'Mencari'],
+                            ['step' => 2, 'icon' => '🤝', 'title' => 'Diambil'],
+                            ['step' => 3, 'icon' => '🛵', 'title' => 'Menuju Lokasi'],
+                            ['step' => 4, 'icon' => '⚡', 'title' => 'Pengerjaan'],
+                            ['step' => 5, 'icon' => '✅', 'title' => 'Selesai'],
+                        ];
+                        $currentStep = $help->progress_step;
+                        $isDone = in_array($help->status, ['selesai', 'completed']);
+                    @endphp
+
+                    @foreach($steps as $s)
+                        @php
+                            $isPassed = $s['step'] < $currentStep || ($s['step'] === 5 && $isDone);
+                            $isCurrent = $s['step'] === $currentStep && !$isDone;
+                        @endphp
+                        <div class="flex flex-col items-center text-center" style="width: 18%;">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 shadow-xs
+                                {{ $isPassed ? 'bg-blue-600 text-white shadow-blue-500/30' : ($isCurrent ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 dark:ring-indigo-900/50 animate-pulse' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500') }}">
+                                @if($isPassed)
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                @else
+                                    <span>{{ $s['icon'] }}</span>
+                                @endif
+                            </div>
+                            <span class="text-[10px] font-semibold mt-1.5 leading-tight {{ $isCurrent ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ($isPassed ? 'text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500') }}">
+                                {{ $s['title'] }}
+                            </span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            @if(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']))
+                <button wire:click="showTrackingMap" class="w-full mt-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition shadow-sm flex items-center justify-center gap-2 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Lihat Lokasi Rekan Jasa di Peta Real-time
+                    <svg class="w-3.5 h-3.5 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </button>
+            @endif
+        </div>
 
         {{-- Location --}}
-        <div class="bg-white mt-2 px-4 py-4 rounded-lg shadow-sm border border-gray-100">
+        <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
             <div class="flex items-start gap-3">
-                <svg class="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
                 <div class="flex-1">
-                    <h3 class="font-bold text-sm text-gray-900 mb-1">Lokasi</h3>
-                    <p class="text-sm text-gray-700">{{ $help->location ?? $help->full_address ?? 'Rumah warna coklat' }}</p>
+                    <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Lokasi</h3>
+                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ $help->location ?? $help->full_address ?? 'Rumah warna coklat' }}</p>
                     @if($help->full_address)
-                        <p class="text-xs text-gray-500 mt-1"><span class="font-semibold">Detail :</span> {{ $help->full_address }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><span class="font-semibold">Detail :</span> {{ $help->full_address }}</p>
                     @endif
                 </div>
             </div>
         </div>
 
         {{-- Schedule --}}
-        <div class="bg-white mt-2 px-4 py-4 rounded-lg shadow-sm border border-gray-100">
+        <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
             <div class="flex items-start gap-3">
-                <svg class="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
                 <div class="flex-1">
-                    <h3 class="font-bold text-sm text-gray-900 mb-1">Jadwal Pesanan</h3>
-                    <p class="text-sm text-gray-700">
+                    <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Jadwal Pesanan</h3>
+                    <p class="text-sm text-gray-700 dark:text-gray-300">
                         {{ \Carbon\Carbon::parse($help->scheduled_at ?? $help->created_at)->translatedFormat('l, d F Y') }} 
-                        (Jam {{ \Carbon\Carbon::parse($help->scheduled_at ?? $help->created_at)->format('H:i') }}
-                        {{-- {{ \Carbon\Carbon::parse($help->scheduled_at ?? $help->created_at)->addHour()->format('H:i') }}  --}}
-                        WIB)
+                        (Jam {{ \Carbon\Carbon::parse($help->scheduled_at ?? $help->created_at)->format('H:i') }} WIB)
                     </p>
-                    <p class="text-xs text-gray-500 mt-1">*Jadwal tertera dalam WIB</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">*Jadwal tertera dalam WIB</p>
                 </div>
             </div>
         </div>
@@ -379,28 +374,28 @@
                                 <div class="relative z-10">
                                     @if($status['active'])
                                         @if($status['current'])
-                                            <div class="w-5 h-5 rounded-full border-2 border-blue-500 bg-white flex items-center justify-center">
+                                            <div class="w-5 h-5 rounded-full border-2 border-blue-500 bg-white dark:bg-gray-800 flex items-center justify-center">
                                                 <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse"></div>
                                             </div>
                                         @else
                                             <div class="w-4 h-4 rounded-full bg-blue-500"></div>
                                         @endif
                                     @else
-                                        <div class="w-4 h-4 rounded-full border-2 border-gray-300 bg-white"></div>
+                                        <div class="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"></div>
                                     @endif
                                 </div>
 
                                 {{-- connector below dot (except last) --}}
                                 @if(!$loop->last)
-                                    <div class="flex-1 w-px mt-2 {{ $status['active'] ? 'bg-blue-200' : 'bg-gray-200' }}"></div>
+                                    <div class="flex-1 w-px mt-2 {{ $status['active'] ? 'bg-blue-200 dark:bg-blue-800' : 'bg-gray-200 dark:bg-gray-700' }}"></div>
                                 @endif
                             </div>
 
                             {{-- content --}}
                             <div class="flex-1 pl-2">
                                 <div class="flex items-center justify-between">
-                                    <h4 class="text-sm font-semibold {{ $status['active'] ? 'text-gray-900' : 'text-gray-400' }}">{{ $status['title'] }}</h4>
-                                    <div class="text-xs {{ $status['active'] ? 'text-gray-600' : 'text-gray-400' }} whitespace-nowrap">
+                                    <h4 class="text-sm font-semibold {{ $status['active'] ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500' }}">{{ $status['title'] }}</h4>
+                                    <div class="text-xs {{ $status['active'] ? 'text-gray-600 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500' }} whitespace-nowrap">
                                         @if($status['time'])
                                             {{ \Carbon\Carbon::parse($status['time'])->format('d M, H:i') }}
                                         @else
@@ -422,15 +417,15 @@
                                                 $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
                                                 $distance = round($earthRadius * $c);
                                             @endphp
-                                            <p class="text-xs text-blue-600 flex items-center gap-1">Jarak: {{ $distance > 1000 ? number_format($distance/1000, 1) . ' km' : $distance . ' m' }}</p>
+                                            <p class="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">Jarak: {{ $distance > 1000 ? number_format($distance/1000, 1) . ' km' : $distance . ' m' }}</p>
                                         @elseif($status['key'] === 'accepted')
                                             {{-- <p class="text-xs text-blue-600">GPS tracking aktif</p> --}}
                                         @elseif($status['key'] === 'arrived')
-                                            <p class="text-xs text-green-600">Rekan jasa sudah sampai</p>
+                                            <p class="text-xs text-green-600 dark:text-green-400">Rekan jasa sudah sampai</p>
                                         @elseif($status['key'] === 'in_progress')
-                                            <p class="text-xs text-blue-600">Pekerjaan sedang berlangsung</p>
+                                            <p class="text-xs text-blue-600 dark:text-blue-400">Pekerjaan sedang berlangsung</p>
                                         @elseif($status['key'] === 'waiting_confirmation')
-                                            <p class="text-xs text-orange-600 font-semibold">Silakan konfirmasi pesanan selesai</p>
+                                            <p class="text-xs text-orange-600 dark:text-orange-400 font-semibold">Silakan konfirmasi pesanan selesai</p>
                                         @endif
                                     </div>
                                 @endif
@@ -443,42 +438,42 @@
 
         {{-- Confirmation Button with Proof Photo --}}
         @if($help->status === 'waiting_customer_confirmation')
-            <div class="bg-gradient-to-r from-amber-50 to-orange-50 mt-2 px-5 py-5 border border-amber-200 rounded-2xl shadow-sm">
+            <div class="bg-white dark:bg-gray-800 mt-2 px-5 py-5 border border-amber-200/80 dark:border-amber-500/30 rounded-2xl shadow-xs">
                 <div class="flex items-start gap-3 mb-4">
-                    <div class="w-11 h-11 rounded-xl bg-amber-500 flex items-center justify-center flex-shrink-0 text-white shadow-sm">
+                    <div class="w-11 h-11 rounded-xl bg-amber-500 flex items-center justify-center flex-shrink-0 text-white shadow-xs">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h3 class="font-bold text-sm text-gray-900 mb-1">Konfirmasi Penyelesaian Pesanan</h3>
-                        <p class="text-xs text-gray-700 leading-relaxed">Mitra telah menyelesaikan pekerjaan dan mengirimkan bukti hasil jasa. Silakan periksa bukti foto dan lakukan konfirmasi.</p>
+                        <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Konfirmasi Penyelesaian Pesanan</h3>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">Mitra telah menyelesaikan pekerjaan dan mengirimkan bukti hasil jasa. Silakan periksa bukti foto dan lakukan konfirmasi.</p>
                     </div>
                 </div>
 
                 @if($help->proof_photo)
-                    <div class="mb-4 p-3 bg-white rounded-xl border border-amber-200">
-                        <span class="text-xs font-bold text-gray-800 block mb-1.5 flex items-center gap-1">
-                            <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <div class="mb-4 p-3 bg-slate-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block mb-1.5 flex items-center gap-1">
+                            <svg class="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                             Foto Bukti Hasil Pengerjaan:
                         </span>
                         <a href="{{ asset('storage/' . $help->proof_photo) }}" target="_blank" rel="noopener">
-                            <img src="{{ asset('storage/' . $help->proof_photo) }}" alt="Bukti Pengerjaan" class="w-full max-h-52 object-cover rounded-lg border border-gray-100 hover:opacity-95 transition cursor-pointer shadow-xs">
+                            <img src="{{ asset('storage/' . $help->proof_photo) }}" alt="Bukti Pengerjaan" class="w-full max-h-52 object-cover rounded-lg border border-gray-100 dark:border-gray-700 hover:opacity-95 transition cursor-pointer shadow-xs">
                         </a>
                         @if($help->completion_notes)
-                            <p class="text-xs text-gray-600 mt-2 italic bg-amber-50/50 p-2 rounded-md">"{{ $help->completion_notes }}"</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-300 mt-2 italic bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-100 dark:border-gray-700">"{{ $help->completion_notes }}"</p>
                         @endif
                     </div>
                 @endif
 
                 <button wire:click="confirmCompletion" 
-                        class="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3.5 px-4 rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all duration-200 shadow-md flex items-center justify-center gap-2">
+                        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl transition shadow-md flex items-center justify-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                     </svg>
                     Konfirmasi Pesanan Selesai
                 </button>
-                <p class="text-[11px] text-center text-gray-500 mt-2">Dengan mengonfirmasi, pesanan dinyatakan tuntas dan dana diteruskan ke mitra</p>
+                <p class="text-[11px] text-center text-gray-500 dark:text-gray-400 mt-2">Dengan mengonfirmasi, pesanan dinyatakan tuntas dan dana diteruskan ke mitra</p>
             </div>
         @endif
 
@@ -493,84 +488,84 @@
 
             @if($customerRating)
                 {{-- Already Rated - Show Rating --}}
-                <div class="bg-gradient-to-r from-green-50 to-emerald-50 mt-2 px-4 py-4 border border-green-200 rounded-lg">
+                <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 border border-emerald-200/80 dark:border-emerald-500/30 rounded-2xl shadow-xs">
                     <div class="flex items-start gap-3">
-                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                        <div class="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
                             <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <h3 class="font-bold text-sm text-gray-900 mb-2">Rating Anda</h3>
+                            <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-2">Rating Anda</h3>
                             <div class="flex items-center gap-1 mb-2">
                                 @for($i = 1; $i <= 5; $i++)
-                                    <svg class="w-5 h-5 {{ $i <= $customerRating->rating ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg class="w-5 h-5 {{ $i <= $customerRating->rating ? 'text-amber-400' : 'text-gray-300 dark:text-gray-600' }}" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                     </svg>
                                 @endfor
-                                <span class="ml-2 text-sm font-semibold text-gray-900">{{ $customerRating->rating }}/5</span>
+                                <span class="ml-2 text-sm font-semibold text-gray-900 dark:text-white">{{ $customerRating->rating }}/5</span>
                             </div>
                             @if($customerRating->review)
-                                <p class="text-sm text-gray-700 italic">"{{ $customerRating->review }}"</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300 italic">"{{ $customerRating->review }}"</p>
                             @endif
-                            <p class="text-xs text-gray-500 mt-2">{{ $customerRating->created_at->diffForHumans() }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">{{ $customerRating->created_at->diffForHumans() }}</p>
                         </div>
                     </div>
                 </div>
             @else
                 {{-- Rating Form --}}
-                <div class="bg-gradient-to-r from-yellow-50 to-orange-50 mt-2 px-4 py-4 border border-yellow-200 rounded-lg">
+                <div class="bg-white dark:bg-gray-800 mt-2 px-5 py-5 border border-amber-200/80 dark:border-amber-500/30 rounded-2xl shadow-xs">
                     <div class="flex items-start gap-3 mb-4">
-                        <div class="w-12 h-12 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0">
+                        <div class="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
                             <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <h3 class="font-bold text-sm text-gray-900 mb-1">Bagaimana Pengalaman Anda?</h3>
-                            <p class="text-xs text-gray-700">Berikan rating untuk {{ $help->mitra->name ?? 'mitra' }}</p>
+                            <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Bagaimana Pengalaman Anda?</h3>
+                            <p class="text-xs text-gray-600 dark:text-gray-300">Berikan rating untuk {{ $help->mitra->name ?? 'mitra' }}</p>
                         </div>
                     </div>
 
                     {{-- Star Rating --}}
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-900 mb-2">Rating *</label>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Rating *</label>
                         <div class="flex items-center gap-2">
                             @for($i = 1; $i <= 5; $i++)
                                 <button 
                                     type="button"
                                     wire:click="setRating({{ $i }})"
                                     class="focus:outline-none transition-transform hover:scale-110">
-                                    <svg class="w-10 h-10 {{ $rating >= $i ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg class="w-9 h-9 {{ $rating >= $i ? 'text-amber-400' : 'text-gray-300 dark:text-gray-600' }}" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                     </svg>
                                 </button>
                             @endfor
                             @if($rating > 0)
-                                <span class="ml-2 text-sm font-semibold text-gray-900">{{ $rating }}/5</span>
+                                <span class="ml-2 text-sm font-semibold text-gray-900 dark:text-white">{{ $rating }}/5</span>
                             @endif
                         </div>
                         @error('rating')
-                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                            <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>
                         @enderror
                     </div>
 
                     {{-- Review Text --}}
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-900 mb-2">Ulasan (Opsional)</label>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Ulasan (Opsional)</label>
                         <textarea 
                             wire:model="review"
                             rows="3"
                             placeholder="Ceritakan pengalaman Anda..."
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm"
+                            class="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400"
                             maxlength="500"></textarea>
                         <div class="flex justify-between items-center mt-1">
                             @error('review')
-                                <p class="text-xs text-red-600">{{ $message }}</p>
+                                <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                             @else
-                                <p class="text-xs text-gray-500">Maksimal 500 karakter</p>
+                                <p class="text-xs text-gray-400">Maksimal 500 karakter</p>
                             @enderror
-                            <p class="text-xs text-gray-500">{{ strlen($review ?? '') }}/500</p>
+                            <p class="text-xs text-gray-400">{{ strlen($review ?? '') }}/500</p>
                         </div>
                     </div>
 
@@ -578,29 +573,29 @@
                     <button 
                         wire:click="submitRating"
                         wire:loading.attr="disabled"
-                        class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-gray-900 font-semibold py-3 px-4 rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all duration-200 shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span wire:loading.remove class="text-gray-900 font-semibold">Kirim Rating</span>
-                        <span wire:loading class="text-gray-900 font-semibold">Mengirim...</span>
+                        class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-xl transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span wire:loading.remove>Kirim Rating</span>
+                        <span wire:loading>Mengirim...</span>
                     </button>
                 </div>
             @endif
         @endif
 
         {{-- Payment Details --}}
-        <div class="bg-white mt-2 px-4 py-4">
-            <h3 class="font-bold text-sm text-gray-900 mb-4">Rincian Pembayaran</h3>
+        <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
+            <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-4">Rincian Pembayaran</h3>
 
             <div class="space-y-3">
                 <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-700">Harga Asli</span>
-                    <span class="font-semibold text-gray-900">Rp{{ number_format($help->amount, 0, ',', '.') }}</span>
+                    <span class="text-gray-700 dark:text-gray-300">Harga Asli</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">Rp{{ number_format($help->amount, 0, ',', '.') }}</span>
                 </div>
 
                 {{-- Perlengkapan ditampilkan di bagian "Deskripsi & Detail" di atas --}}
 
                 <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-700">Biaya Admin</span>
-                    <span class="font-semibold text-gray-900">Rp{{ number_format($help->admin_fee ?? $help->booking_fee ?? 0, 0, ',', '.') }}</span>
+                    <span class="text-gray-700 dark:text-gray-300">Biaya Admin</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">Rp{{ number_format($help->admin_fee ?? $help->booking_fee ?? 0, 0, ',', '.') }}</span>
                 </div>
 
                 @if(!empty($help->voucher_code) && ($help->discount_amount ?? 0) > 0)
@@ -615,14 +610,14 @@
                     </div>
                 @endif
 
-                <div class="border-t pt-3 flex items-center justify-between">
-                    <span class="font-bold text-gray-900">Total Pembayaran</span>
-                    <span class="font-bold text-gray-900">Rp{{ number_format($help->total_amount ?? ($help->amount + ($help->admin_fee ?? $help->booking_fee ?? 0) - ($help->discount_amount ?? 0)), 0, ',', '.') }}</span>
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-3 flex items-center justify-between">
+                    <span class="font-bold text-gray-900 dark:text-white">Total Pembayaran</span>
+                    <span class="font-bold text-gray-900 dark:text-white">Rp{{ number_format($help->total_amount ?? ($help->amount + ($help->admin_fee ?? $help->booking_fee ?? 0) - ($help->discount_amount ?? 0)), 0, ',', '.') }}</span>
                 </div>
             </div>
 
-            <div class="mt-4 p-3 bg-blue-50 rounded-lg">
-                <p class="text-xs text-gray-700 leading-relaxed">
+            <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 rounded-lg">
+                <p class="text-xs text-gray-700 dark:text-blue-200 leading-relaxed">
                     Kamu dapat meminta tindakan tambahan selama sesi layanan berlangsung (mis. tambahan bahan atau tindakan kecil). Pastikan semua pembayaran dilakukan melalui aplikasi agar pesananmu tercatat dan terlindungi. Jika ada masalah kualitas, ajukan keluhan atau klaim garansi dalam waktu 1x24 jam setelah layanan selesai.
                 </p>
             </div>
@@ -630,8 +625,8 @@
 
         {{-- Cancel Button --}}
         @if(in_array($help->status, ['menunggu_pembayaran', 'mencari_mitra', 'menunggu_mitra']))
-            <div class="bg-white mt-2 px-4 py-4">
-                <button wire:click="confirmCancel" class="w-full py-3 border-2 border-red-500 text-red-500 rounded-lg font-semibold text-sm hover:bg-red-50 transition">
+            <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
+                <button wire:click="confirmCancel" class="w-full py-3 border-2 border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg font-semibold text-sm transition">
                     Batalkan Pesanan
                 </button>
             </div>
@@ -655,7 +650,7 @@
         <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" wire:click="closeMapModal" data-tracking-modal>
             <div class="bg-white rounded-2xl w-full max-w-md mx-auto flex flex-col shadow-2xl" style="max-height: 85vh;" wire:click.stop>
                 {{-- Header --}}
-                <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-2xl shrink-0">
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl shrink-0">
                     <div class="flex items-center gap-2.5">
                         <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
                             <svg class="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -676,7 +671,7 @@
                 </div>
 
                 {{-- ETA Info Bar --}}
-                <div wire:ignore class="px-4 py-2.5 bg-blue-50 border-b border-blue-100 shrink-0">
+                <div wire:ignore class="px-4 py-2.5 bg-blue-50 dark:bg-blue-950/40 border-b border-blue-100 dark:border-blue-800 shrink-0">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <div class="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center animate-pulse">
@@ -685,13 +680,13 @@
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-600">Estimasi Tiba</p>
-                                <p class="text-xs font-bold text-blue-700" id="eta-time">Menghitung...</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">Estimasi Tiba</p>
+                                <p class="text-xs font-bold text-blue-700 dark:text-blue-400" id="eta-time">Menghitung...</p>
                             </div>
                         </div>
                         <div class="text-right">
-                            <p class="text-xs text-gray-600">Jarak</p>
-                            <p class="text-xs font-bold text-blue-700" id="distance-text">0.0 km</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">Jarak</p>
+                            <p class="text-xs font-bold text-blue-700 dark:text-blue-400" id="distance-text">0.0 km</p>
                         </div>
                     </div>
                 </div>
@@ -701,17 +696,17 @@
                     <div id="tracking-map" class="w-full h-full"></div>
                     
                     {{-- Loading Overlay --}}
-                    <div id="map-loading" class="absolute inset-0 bg-white/90 flex items-center justify-center">
+                    <div id="map-loading" class="absolute inset-0 bg-white/90 dark:bg-gray-800/90 flex items-center justify-center">
                         <div class="text-center">
                             <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                            <p class="text-xs text-gray-600">Memuat peta...</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-300">Memuat peta...</p>
                         </div>
                     </div>
                 </div>
 
                 {{-- Footer Info --}}
-                <div class="px-4 py-2.5 border-t border-gray-200 bg-gray-50 rounded-b-2xl shrink-0">
-                    <div class="flex items-center gap-2 text-xs text-gray-600">
+                <div class="px-4 py-2.5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-b-2xl shrink-0">
+                    <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                         <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                         </svg>
@@ -724,19 +719,19 @@
 
     {{-- Cancel Confirmation Modal --}}
     @if($showCancelConfirm)
-        <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4" wire:click="closeModal" data-confirm-modal>
-            <div class="bg-white rounded-2xl max-w-sm w-full p-6" wire:click.stop style="transform: translateY(-120px);">
+        <div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4" wire:click="closeModal" data-confirm-modal>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700" wire:click.stop style="transform: translateY(-120px);">
                 <div class="text-center">
-                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                         </svg>
                     </div>
-                    <h3 class="text-lg font-bold text-gray-900 mb-2">Batalkan Pesanan?</h3>
-                    <p class="text-sm text-gray-600 mb-6">Apakah Anda yakin ingin membatalkan pesanan ini? Tindakan ini tidak dapat dibatalkan.</p>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Batalkan Pesanan?</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 mb-6">Apakah Anda yakin ingin membatalkan pesanan ini? Tindakan ini tidak dapat dibatalkan.</p>
                     
                     <div class="flex gap-3">
-                        <button wire:click="closeModal" class="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition">
+                        <button wire:click="closeModal" class="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                             Tidak
                         </button>
                         <button wire:click="cancelHelp" class="flex-1 py-2.5 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition">
@@ -752,12 +747,12 @@
     @if($help->status === 'partner_cancel_requested')
     <div class="modal-overlay fixed inset-0 z-[9999] flex items-end justify-center animate-fade-in" 
          style="background: rgba(0,0,0,0.7);">
-        <div class="bg-white rounded-t-3xl w-full max-w-md shadow-2xl animate-slide-up relative" 
-             @click.stop
+        <div class="bg-white dark:bg-gray-800 rounded-t-3xl w-full max-w-md shadow-2xl animate-slide-up relative" 
+             @click.stop 
              style="padding-bottom: env(safe-area-inset-bottom,24px);">
             
             {{-- Header --}}
-            <div class="sticky top-0 bg-gradient-to-r from-orange-500 to-red-500 px-5 py-4 rounded-t-3xl">
+            <div class="sticky top-0 bg-gradient-to-r from-rose-600 to-red-600 px-5 py-4 rounded-t-3xl">
                 <div class="text-center text-white">
                     <div class="flex items-center justify-center gap-2">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -772,8 +767,8 @@
             <div class="p-5 pb-6">
                 {{-- Warning Icon --}}
                 <div class="flex items-center justify-center mb-4">
-                    <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center relative">
-                        <svg class="w-12 h-12 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-20 h-20 bg-orange-100 dark:bg-orange-900/40 rounded-full flex items-center justify-center relative">
+                        <svg class="w-12 h-12 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                         </svg>
                         <div class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
@@ -784,37 +779,37 @@
                     </div>
                 </div>
 
-                <h4 class="text-center font-bold text-lg text-gray-900 mb-2">Mitra Mengajukan Pembatalan</h4>
-                <p class="text-sm text-gray-700 text-center mb-5">
+                <h4 class="text-center font-bold text-lg text-gray-900 dark:text-white mb-2">Mitra Mengajukan Pembatalan</h4>
+                <p class="text-sm text-gray-700 dark:text-gray-300 text-center mb-5">
                     Rekan Jasa mengajukan pembatalan untuk pesanan ini. Silakan pilih tindakan yang Anda inginkan.
                 </p>
 
                 {{-- Mitra Info --}}
                 @if($help->mitra)
-                    <div class="bg-gray-50 rounded-xl p-4 mb-5">
+                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 mb-5">
                         <div class="flex items-center gap-3 mb-3">
                             @if($help->mitra->selfie_photo)
-                                <img src="{{ asset('storage/' . $help->mitra->selfie_photo) }}" alt="{{ $help->mitra->name }}" class="w-12 h-12 rounded-full object-cover border-2 border-blue-100">
+                                <img src="{{ asset('storage/' . $help->mitra->selfie_photo) }}" alt="{{ $help->mitra->name }}" class="w-12 h-12 rounded-full object-cover border-2 border-blue-100 dark:border-blue-900">
                             @else
                                 <div class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
                                     {{ strtoupper(substr($help->mitra->name ?? 'M', 0, 1)) }}
                                 </div>
                             @endif
                             <div class="flex-1">
-                                <p class="font-semibold text-sm text-gray-900">{{ $help->mitra->name ?? 'Rekan Jasa' }}</p>
-                                <p class="text-xs text-gray-500">Mengajukan pembatalan</p>
+                                <p class="font-semibold text-sm text-gray-900 dark:text-white">{{ $help->mitra->name ?? 'Rekan Jasa' }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Mengajukan pembatalan</p>
                             </div>
                         </div>
 
                         @if($help->partner_cancel_reason)
-                            <div class="border-t border-gray-200 pt-3">
-                                <p class="text-xs font-semibold text-gray-500 mb-1">Alasan Pembatalan:</p>
-                                <p class="text-sm text-gray-900 italic">"{{ $help->partner_cancel_reason }}"</p>
+                            <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+                                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Alasan Pembatalan:</p>
+                                <p class="text-sm text-gray-900 dark:text-white italic">"{{ $help->partner_cancel_reason }}"</p>
                             </div>
                         @endif
 
                         @if($help->partner_cancel_requested_at)
-                            <div class="flex items-center gap-2 text-xs text-gray-600 mt-3">
+                            <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 mt-3">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
@@ -825,14 +820,14 @@
                 @endif
 
                 {{-- Info Box --}}
-                <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-5">
+                <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 rounded-lg p-3 mb-5">
                     <div class="flex gap-2">
-                        <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                         </svg>
                         <div class="flex-1">
-                            <p class="text-xs font-semibold text-blue-900 mb-1">Pilihan Anda:</p>
-                            <ul class="text-xs text-blue-800 space-y-1">
+                            <p class="text-xs font-semibold text-blue-900 dark:text-blue-200 mb-1">Pilihan Anda:</p>
+                            <ul class="text-xs text-blue-800 dark:text-blue-300 space-y-1">
                                 <li><strong>• Terima Pembatalan:</strong> Pesanan dikembalikan ke daftar pencarian untuk mencari Rekan Jasa lain</li>
                                 <li><strong>• Tolak Pembatalan:</strong> Rekan Jasa diminta untuk tetap melanjutkan pengerjaan pesanan</li>
                             </ul>
@@ -851,9 +846,9 @@
                         <span wire:loading.remove wire:target="acceptPartnerCancellation">Terima Pembatalan</span>
                         <span wire:loading wire:target="acceptPartnerCancellation">Memproses...</span>
                     </button>
-                    <button wire:click="rejectPartnerCancellation"
+                    <button wire:click="rejectPartnerCancellation" 
                             wire:loading.attr="disabled"
-                            class="w-full px-5 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            class="w-full px-5 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
