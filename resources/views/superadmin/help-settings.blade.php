@@ -3,13 +3,36 @@
     $breadcrumb = 'Super Admin / Pengaturan / Bantuan';
 @endphp
 
-<div>
+<div class="py-2"
+     x-data="{}" 
+     x-on:settings-saved.window="
+        $nextTick(() => {
+            const el = document.getElementById('help-settings-alert') || document.getElementById('settings-form-start');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+     ">
     <!-- Sub-navigation tabs -->
-    <x-superadmin-settings-nav />
+    <x-superadmin-settings-nav active="help" />
+
+    <!-- Notifikasi Sukses / Alert Section -->
+    @if(session()->has('message'))
+        <div id="help-settings-alert" class="mb-6 p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-2xl shadow-xs ring-2 ring-emerald-500/20">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <span class="text-emerald-800 dark:text-emerald-300 font-semibold text-sm">{{ session('message') }}</span>
+            </div>
+        </div>
+    @endif
 
     <!-- Admin Fee Revenue Chart Section -->
     <div class="mb-8">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-200">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <!-- Chart Header -->
             <div class="border-b border-gray-200 dark:border-gray-700 px-4 sm:px-8 py-5 bg-gray-50/80 dark:bg-gray-900/60">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -126,8 +149,8 @@
                 </div>
 
                 <!-- Chart Container -->
-                <div class="w-full transition-all duration-500 ease-out bg-gray-50/80 dark:bg-gray-900/60 rounded-2xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 min-h-[220px]"
-                    id="adminFeeChartContainer">
+                <div class="w-full bg-gray-50/80 dark:bg-gray-900/60 rounded-2xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 min-h-[220px]"
+                    id="adminFeeChartContainer" wire:ignore>
                     <canvas id="adminFeeChart" height="140"></canvas>
                 </div>
 
@@ -142,7 +165,7 @@
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Help (Bantuan) Breakdown -->
-                        <div class="bg-blue-50/80 dark:bg-blue-950/30 rounded-2xl p-5 border border-blue-200 dark:border-blue-800/60 transition-colors duration-200">
+                        <div class="bg-blue-50/80 dark:bg-blue-950/30 rounded-2xl p-5 border border-blue-200 dark:border-blue-800/60">
                             <div class="flex items-start justify-between mb-3">
                                 <div class="flex items-center gap-2.5">
                                     <div class="w-10 h-10 rounded-xl bg-blue-500 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
@@ -188,7 +211,7 @@
                         </div>
 
                         <!-- Top-up Breakdown -->
-                        <div class="bg-emerald-50/80 dark:bg-emerald-950/30 rounded-2xl p-5 border border-emerald-200 dark:border-emerald-800/60 transition-colors duration-200">
+                        <div class="bg-emerald-50/80 dark:bg-emerald-950/30 rounded-2xl p-5 border border-emerald-200 dark:border-emerald-800/60">
                             <div class="flex items-start justify-between mb-3">
                                 <div class="flex items-center gap-2.5">
                                     <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
@@ -239,23 +262,13 @@
     </div>
 
     <!-- Settings Form Section (Combined Form) -->
+    <div id="settings-form-start" class="scroll-mt-8"></div>
     <form wire:submit.prevent="save" class="space-y-8 mb-12">
-        @if(session()->has('message'))
-            <div class="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-2xl">
-                <div class="flex items-center gap-3">
-                    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span class="text-emerald-800 dark:text-emerald-300 font-medium text-sm">{{ session('message') }}</span>
-                </div>
-            </div>
-        @endif
-
         <!-- Settings flash hook for JS (used to detect Livewire updates) -->
         <div id="settingsFlash" data-message="{{ session('message') ?? '' }}" style="display:none"></div>
 
         <!-- 1. Konfigurasi Bantuan -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-200">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="border-b border-gray-200 dark:border-gray-700 px-4 sm:px-8 py-5 bg-gray-50/80 dark:bg-gray-900/60 flex items-center justify-between gap-4">
                 <div>
                     <h2 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -304,7 +317,7 @@
         </div>
 
         <!-- 2. Konfigurasi Biaya Admin Top-Up -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-200">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="border-b border-gray-200 dark:border-gray-700 px-4 sm:px-8 py-5 bg-gray-50/80 dark:bg-gray-900/60">
                 <h2 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -456,7 +469,7 @@
 
                     <div class="space-y-3.5">
                         @foreach($payment_banks as $i => $bank)
-                            <div class="border border-gray-200 dark:border-gray-700 rounded-2xl p-4 bg-white dark:bg-gray-800 shadow-xs transition-colors duration-200">
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-2xl p-4 bg-white dark:bg-gray-800 shadow-xs">
                                 <div class="grid grid-cols-1 lg:grid-cols-6 gap-3 items-center">
                                     <div class="lg:col-span-1">
                                         <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Kode Bank</label>
@@ -503,7 +516,9 @@
 
                 <!-- Submit Button Bar (Pindah ke Kanan) -->
                 <div class="pt-6 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end">
-                    <button type="submit" wire:loading.attr="disabled"
+                    <button type="submit" 
+                        @click="window.scrollTo({ top: 0, behavior: 'smooth' })"
+                        wire:loading.attr="disabled"
                         class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm hover:shadow-md active:scale-[0.98] disabled:opacity-50 cursor-pointer w-full sm:w-auto">
                         <svg wire:loading.remove wire:target="save" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -574,14 +589,30 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         (function() {
-            let adminChart = null;
             let observer = null;
+
+            function waitForChart(callback, maxAttempts = 50) {
+                if (typeof Chart !== 'undefined') {
+                    callback();
+                    return;
+                }
+                let attempts = 0;
+                const timer = setInterval(() => {
+                    attempts++;
+                    if (typeof Chart !== 'undefined') {
+                        clearInterval(timer);
+                        callback();
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(timer);
+                    }
+                }, 60);
+            }
 
             function initAdminFeeChart() {
                 const chartData = {!! $adminFeeChartJson !!};
-                const ctx = document.getElementById('adminFeeChart');
-                if (!ctx) return;
-                const chartCtx = ctx.getContext('2d');
+                const canvasEl = document.getElementById('adminFeeChart');
+                if (!canvasEl) return;
+                const chartCtx = canvasEl.getContext('2d');
 
                 function isDarkMode() {
                     return document.documentElement.classList.contains('dark');
@@ -590,91 +621,94 @@
                 function renderRange(range) {
                     const container = document.getElementById('adminFeeChartContainer');
                     if (!container) return;
-                    container.style.opacity = '0';
-                    container.style.transform = 'translateY(10px) scale(0.99)';
+                    
+                    const labels = chartData[range]?.labels || [];
+                    const data = chartData[range]?.data || [];
+                    const dark = isDarkMode();
 
-                    setTimeout(() => {
-                        const labels = chartData[range]?.labels || [];
-                        const data = chartData[range]?.data || [];
-                        const dark = isDarkMode();
+                    const gradient = chartCtx.createLinearGradient(0, 0, 0, 200);
+                    if (dark) {
+                        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.85)');
+                        gradient.addColorStop(1, 'rgba(37, 99, 235, 0.3)');
+                    } else {
+                        gradient.addColorStop(0, 'rgba(37, 99, 235, 0.85)');
+                        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.4)');
+                    }
 
-                        const gradient = chartCtx.createLinearGradient(0, 0, 0, 200);
-                        if (dark) {
-                            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.85)');
-                            gradient.addColorStop(1, 'rgba(37, 99, 235, 0.3)');
-                        } else {
-                            gradient.addColorStop(0, 'rgba(37, 99, 235, 0.85)');
-                            gradient.addColorStop(1, 'rgba(59, 130, 246, 0.4)');
-                        }
-
-                        const cfg = {
-                            type: 'bar',
-                            data: {
-                                labels: labels,
-                                datasets: [{
-                                    label: 'Pendapatan Biaya Admin',
-                                    data: data,
-                                    backgroundColor: gradient,
-                                    borderColor: dark ? 'rgba(96, 165, 250, 1)' : 'rgba(37, 99, 235, 1)',
-                                    borderWidth: 1.5,
-                                    borderRadius: 8,
-                                    maxBarThickness: 36
-                                }]
+                    const cfg = {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Pendapatan Biaya Admin',
+                                data: data,
+                                backgroundColor: gradient,
+                                borderColor: dark ? 'rgba(96, 165, 250, 1)' : 'rgba(37, 99, 235, 1)',
+                                borderWidth: 1.5,
+                                borderRadius: 8,
+                                maxBarThickness: 36
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: dark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(15, 23, 42, 0.95)',
+                                    padding: 12,
+                                    titleColor: '#fff',
+                                    bodyColor: '#e2e8f0',
+                                    borderColor: dark ? 'rgba(75, 85, 99, 0.4)' : 'rgba(203, 213, 225, 0.4)',
+                                    borderWidth: 1,
+                                    cornerRadius: 8,
+                                    callbacks: {
+                                        label: function (c) {
+                                            const v = c.raw ?? c.parsed?.y ?? 0;
+                                            return 'Rp ' + Number(v).toLocaleString('id-ID');
+                                        }
+                                    }
+                                }
                             },
-                            options: {
-                                plugins: {
-                                    legend: { display: false },
-                                    tooltip: {
-                                        backgroundColor: dark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(15, 23, 42, 0.95)',
-                                        padding: 12,
-                                        titleColor: '#fff',
-                                        bodyColor: '#e2e8f0',
-                                        borderColor: dark ? 'rgba(75, 85, 99, 0.4)' : 'rgba(203, 213, 225, 0.4)',
-                                        borderWidth: 1,
-                                        cornerRadius: 8,
-                                        callbacks: {
-                                            label: function (c) {
-                                                const v = c.raw ?? c.parsed?.y ?? 0;
-                                                return 'Rp ' + Number(v).toLocaleString('id-ID');
-                                            }
-                                        }
+                            scales: {
+                                x: {
+                                    grid: { display: false },
+                                    ticks: {
+                                        autoSkip: true,
+                                        maxRotation: 45,
+                                        font: { size: 11, weight: '500' },
+                                        color: dark ? '#9ca3af' : '#6b7280'
                                     }
                                 },
-                                scales: {
-                                    x: {
-                                        grid: { display: false },
-                                        ticks: {
-                                            autoSkip: true,
-                                            maxRotation: 45,
-                                            font: { size: 11, weight: '500' },
-                                            color: dark ? '#9ca3af' : '#6b7280'
-                                        }
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function (v) { return 'Rp ' + Number(v).toLocaleString('id-ID'); },
+                                        font: { size: 11, weight: '500' },
+                                        color: dark ? '#9ca3af' : '#6b7280'
                                     },
-                                    y: {
-                                        beginAtZero: true,
-                                        ticks: {
-                                            callback: function (v) { return 'Rp ' + Number(v).toLocaleString('id-ID'); },
-                                            font: { size: 11, weight: '500' },
-                                            color: dark ? '#9ca3af' : '#6b7280'
-                                        },
-                                        grid: {
-                                            color: dark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(156, 163, 175, 0.15)'
-                                        }
+                                    grid: {
+                                        color: dark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(156, 163, 175, 0.15)'
                                     }
-                                },
-                                responsive: true,
-                                maintainAspectRatio: false,
-                            }
-                        };
+                                }
+                            },
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: false
+                        }
+                    };
 
-                        if (adminChart) adminChart.destroy();
-                        adminChart = new Chart(chartCtx, cfg);
+                    // Destroy old chart on canvas if it exists
+                    if (typeof Chart !== 'undefined' && Chart.getChart) {
+                        const existing = Chart.getChart(canvasEl);
+                        if (existing) {
+                            try { existing.destroy(); } catch(e) {}
+                        }
+                    }
+                    if (window.adminFeeChartInstance) {
+                        try { window.adminFeeChartInstance.destroy(); } catch(e) {}
+                        window.adminFeeChartInstance = null;
+                    }
 
-                        setTimeout(() => {
-                            container.style.opacity = '1';
-                            container.style.transform = 'translateY(0) scale(1)';
-                        }, 100);
-                    }, 80);
+                    window.adminFeeChartInstance = new Chart(chartCtx, cfg);
                 }
 
                 const tabs = document.querySelectorAll('.chart-range-tab');
@@ -722,63 +756,71 @@
                 }
             }
 
-            document.addEventListener('DOMContentLoaded', initAdminFeeChart);
-            document.addEventListener('livewire:navigated', initAdminFeeChart);
+            function safeInit() {
+                waitForChart(initAdminFeeChart);
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', safeInit);
+            } else {
+                safeInit();
+            }
+            document.addEventListener('livewire:navigated', safeInit);
         })();
     </script>
     <script>
-        let modalTimeout = null;
-        
-        function showSettingsSaved(message) {
-            const modal = document.getElementById('settingsSavedModal');
-            const msgEl = document.getElementById('settingsSavedMessage');
-            if (!modal) return;
-            if (!message) return;
+        (function() {
+            let localModalTimeout = null;
             
-            // Update message
-            if (msgEl) msgEl.textContent = message;
-            
-            // Clear any existing timeout
-            if (modalTimeout) {
-                clearTimeout(modalTimeout);
-                modalTimeout = null;
+            function showSettingsSaved(message) {
+                const modal = document.getElementById('settingsSavedModal');
+                const msgEl = document.getElementById('settingsSavedMessage');
+                if (!modal) return;
+                if (!message) return;
+                
+                if (msgEl) msgEl.textContent = message;
+                
+                if (localModalTimeout) {
+                    clearTimeout(localModalTimeout);
+                    localModalTimeout = null;
+                }
+                
+                modal.classList.add('hidden');
+                
+                setTimeout(() => {
+                    modal.classList.remove('hidden');
+                    localModalTimeout = setTimeout(() => {
+                        modal.classList.add('hidden');
+                        localModalTimeout = null;
+                    }, 3000);
+                }, 50);
             }
-            
-            // Force hide first
-            modal.classList.add('hidden');
-            
-            // Then show with slight delay
-            setTimeout(() => {
-                modal.classList.remove('hidden');
-                // Auto hide after 3 seconds
-                modalTimeout = setTimeout(() => {
-                    modal.classList.add('hidden');
-                    modalTimeout = null;
-                }, 3000);
-            }, 50);
-        }
 
-        // Setup Livewire listener
-        document.addEventListener('livewire:init', () => {
-            Livewire.on('settingsSaved', (event) => {
-                const message = event[0]?.message || event.message || 'Pengaturan berhasil disimpan';
-                showSettingsSaved(message);
-            });
-        });
+            if (window.Livewire && typeof window.Livewire.on === 'function') {
+                window.Livewire.on('settingsSaved', (event) => {
+                    const message = event[0]?.message || event.message || 'Pengaturan berhasil disimpan';
+                    showSettingsSaved(message);
+                });
+            } else {
+                document.addEventListener('livewire:init', () => {
+                    Livewire.on('settingsSaved', (event) => {
+                        const message = event[0]?.message || event.message || 'Pengaturan berhasil disimpan';
+                        showSettingsSaved(message);
+                    });
+                });
+            }
 
-        // Close button handler
-        document.addEventListener('DOMContentLoaded', function() {
-            const closeBtn = document.getElementById('settingsSavedClose');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', function () {
-                    if (modalTimeout) {
-                        clearTimeout(modalTimeout);
-                        modalTimeout = null;
+            document.addEventListener('click', function(e) {
+                const closeBtn = e.target.closest('#settingsSavedClose');
+                if (closeBtn) {
+                    if (localModalTimeout) {
+                        clearTimeout(localModalTimeout);
+                        localModalTimeout = null;
                     }
                     const modal = document.getElementById('settingsSavedModal');
                     if (modal) modal.classList.add('hidden');
-                });
-            }
-        });
+                }
+            });
+        })();
     </script>
 </div>

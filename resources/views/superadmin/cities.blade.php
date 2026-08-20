@@ -377,6 +377,12 @@
 
         function createChartInstance(el, labels, customerData, mitraData) {
             const ctx = el.getContext('2d');
+            if (typeof Chart !== 'undefined' && Chart.getChart) {
+                const existing = Chart.getChart(el) || Chart.getChart('cityUsersChart');
+                if (existing) {
+                    try { existing.destroy(); } catch (e) {}
+                }
+            }
             if (window.cityUsersChartInstance) {
                 try { window.cityUsersChartInstance.destroy(); } catch (e) {}
                 window.cityUsersChartInstance = null;
@@ -430,6 +436,17 @@
                 }
             });
         }
+
+        window.addEventListener('theme-changed', function(e) {
+            const dark = e.detail?.isDark ?? document.documentElement.classList.contains('dark');
+            if (window.cityUsersChartInstance && window.cityUsersChartInstance.options && window.cityUsersChartInstance.options.scales) {
+                window.cityUsersChartInstance.options.scales.x.ticks.color = dark ? '#9ca3af' : '#6b7280';
+                window.cityUsersChartInstance.options.scales.y.ticks.color = dark ? '#9ca3af' : '#6b7280';
+                window.cityUsersChartInstance.options.scales.x.grid.color = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+                window.cityUsersChartInstance.options.scales.y.grid.color = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+                window.cityUsersChartInstance.update();
+            }
+        });
     })();
     </script>
 </div>

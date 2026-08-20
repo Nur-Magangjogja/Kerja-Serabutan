@@ -495,3 +495,93 @@ html.dark .dropdown-menu {
     border-color: #374151 !important;
     color: #d1d5db;
 }
+
+/* ==========================================================================
+   Universal Dark Mode Card & Container Protection (Anti-White Flash)
+   ========================================================================== */
+html.dark .dark\:bg-gray-800,
+html.dark [class*="dark:bg-gray-800"] {
+    background-color: #1f2937 !important;
+}
+
+html.dark .dark\:bg-gray-900,
+html.dark [class*="dark:bg-gray-900"] {
+    background-color: #111827 !important;
+}
+
+html.dark .dark\:bg-gray-700,
+html.dark [class*="dark:bg-gray-700"] {
+    background-color: #374151 !important;
+}
+
+html.dark .dark\:border-gray-700,
+html.dark [class*="dark:border-gray-700"] {
+    border-color: #374151 !important;
+}
+
+html.dark .dark\:text-white,
+html.dark [class*="dark:text-white"] {
+    color: #ffffff !important;
+}
+
+html.dark .dark\:text-gray-400,
+html.dark [class*="dark:text-gray-400"] {
+    color: #9ca3af !important;
+}
+
+html.dark .dark\:text-gray-300,
+html.dark [class*="dark:text-gray-300"] {
+    color: #d1d5db !important;
+}
+
+/* Comprehensive Dark Mode Fallback for Form Controls & Modals */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="file"]),
+html.dark textarea,
+html.dark select {
+    background-color: #1f2937;
+    color: #f9fafb;
+    border-color: #374151;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #6b7280;
+}
+
+html.dark [role="dialog"] > div {
+    color: #f9fafb;
+}
+
+html.dark table thead th {
+    color: #9ca3af;
+}
+
+/* ==========================================================================
+   Instant Navigation (Zero Animation / Zero Dizziness / Stable Layout)
+   ========================================================================== */
+html {
+    scrollbar-gutter: stable;
+}
+
+aside,
+aside *,
+main,
+nav,
+nav *,
+header,
+header *,
+[role="navigation"],
+[role="navigation"] *,
+.custom-scrollbar,
+#bottom-nav,
+.nav-item {
+    -webkit-transition: none !important;
+    transition: none !important;
+    animation: none !important;
+}
+
+/* Eliminate Livewire progress bar judder */
+#nprogress,
+.livewire-progress-bar {
+    display: none !important;
+}

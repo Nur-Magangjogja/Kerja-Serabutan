@@ -1,6 +1,6 @@
-<div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex transition-colors duration-200">
+<div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex">
     <!-- Sidebar -->
-    <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg fixed inset-y-0 left-0 flex flex-col z-30 transition-colors duration-200">
+    <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg fixed inset-y-0 left-0 flex flex-col z-30">
         @php
             $siteName = \App\Models\AppSetting::get('app_name', 'SayaBantu');
             $siteLogo = \App\Models\AppSetting::get('app_logo');
@@ -133,12 +133,7 @@
     <!-- Main Content -->
     <main class="flex-1 ml-64 min-h-screen">
         <!-- Header -->
-        <header x-data="{ isScrolled: false }"
-                @scroll.window="isScrolled = (window.pageYOffset > 10)"
-                class="shadow-sm border-b sticky top-0 z-10 transition-all duration-300"
-                :class="isScrolled 
-                    ? 'bg-white/20 dark:bg-gray-800/20 backdrop-blur-md border-gray-200/30 dark:border-gray-700/30 shadow-xs' 
-                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'">
+        <header class="shadow-xs border-b sticky top-0 z-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <div class="px-8 py-5">
                 <div class="flex items-center justify-between">
                     <div>

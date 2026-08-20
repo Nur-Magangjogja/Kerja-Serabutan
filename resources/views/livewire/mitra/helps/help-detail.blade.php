@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200"
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100"
     x-data="{ 
         showNotification: false, 
         notificationMessage: '',
@@ -96,7 +96,7 @@
     </div>
 
     <!-- Content -->
-    <div class="bg-gray-50 dark:bg-gray-900 -mt-6 px-5 pt-6 pb-20 max-w-md mx-auto transition-colors duration-200">
+    <div class="bg-gray-50 dark:bg-gray-900 -mt-6 px-5 pt-6 pb-20 max-w-md mx-auto">
         {{-- GPS Tracker - Auto tracking untuk status aktif --}}
         @if (in_array($help->status, ['memperoleh_mitra', 'taken', 'partner_on_the_way', 'partner_arrived']))
             {{-- <div class="mb-3">

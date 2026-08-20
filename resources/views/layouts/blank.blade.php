@@ -44,7 +44,7 @@
     @livewireStyles
 </head>
 
-<body class="antialiased font-sans bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 min-h-screen">
+<body class="antialiased font-sans bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
     {{ $slot }}
     @livewireScripts
 </body>

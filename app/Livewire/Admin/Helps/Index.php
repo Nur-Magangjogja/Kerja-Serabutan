@@ -62,7 +62,7 @@ class Index extends Component
     public function render()
     {
         $query = Help::query()
-            ->with(['customer', 'category', 'city'])
+            ->with(['customer', 'mitra', 'category', 'city'])
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('title', 'like', '%' . $this->search . '%')

@@ -101,7 +101,7 @@ class IdentitySettings extends Component
         AppSetting::set('app_brand_style', $this->app_brand_style ?: 'two_tone');
 
         session()->flash('message', 'Identitas dan tipografi aplikasi berhasil diperbarui!');
-        $this->dispatch('identitySaved', ['message' => 'Identitas dan tipografi aplikasi berhasil diperbarui!']);
+        $this->dispatch('identity-saved', ['message' => 'Identitas dan tipografi aplikasi berhasil diperbarui!']);
     }
 
     public function removeLogo()
@@ -115,7 +115,7 @@ class IdentitySettings extends Component
         $this->logo = null;
 
         session()->flash('message', 'Logo aplikasi berhasil dihapus. Sistem akan menggunakan emblem logo default.');
-        $this->dispatch('identitySaved', ['message' => 'Logo aplikasi berhasil dihapus.']);
+        $this->dispatch('identity-saved', ['message' => 'Logo aplikasi berhasil dihapus.']);
     }
 
     public function removeFavicon()
@@ -129,7 +129,7 @@ class IdentitySettings extends Component
         $this->favicon = null;
 
         session()->flash('message', 'Favicon aplikasi berhasil dihapus.');
-        $this->dispatch('identitySaved', ['message' => 'Favicon aplikasi berhasil dihapus.']);
+        $this->dispatch('identity-saved', ['message' => 'Favicon aplikasi berhasil dihapus.']);
     }
 
     public function render()

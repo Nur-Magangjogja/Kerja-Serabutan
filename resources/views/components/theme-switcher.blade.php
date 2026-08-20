@@ -1,5 +1,5 @@
 <div x-data="{ 
-    currentTheme: (typeof window.getTheme === 'function' ? window.getTheme() : (localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system')),
+    currentTheme: (typeof window.getTheme === 'function' ? window.getTheme() : (localStorage.getItem('theme') || localStorage.getItem('color-theme') || 'system')),
     changeTheme(mode) {
         this.currentTheme = mode;
         if (typeof window.setTheme === 'function') {
@@ -7,12 +7,18 @@
         } else {
             localStorage.setItem('theme', mode);
             localStorage.setItem('color-theme', mode);
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const isDark = mode === 'dark' || (mode === 'system' && prefersDark);
+            var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var isDark = (mode === 'dark') || (mode === 'system' && prefersDark);
             if (isDark) {
                 document.documentElement.classList.add('dark');
+                document.documentElement.style.colorScheme = 'dark';
+                document.documentElement.style.backgroundColor = '#111827';
+                if (document.body) document.body.style.backgroundColor = '#111827';
             } else {
                 document.documentElement.classList.remove('dark');
+                document.documentElement.style.colorScheme = 'light';
+                document.documentElement.style.backgroundColor = '#f3f4f6';
+                if (document.body) document.body.style.backgroundColor = '#f3f4f6';
             }
             window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: mode, isDark: isDark } }));
         }

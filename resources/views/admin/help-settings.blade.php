@@ -1,8 +1,28 @@
-<div class="p-6 max-w-5xl mx-auto">
+<div class="py-2 space-y-6"
+     x-data="{}"
+     x-on:settings-saved.window="
+        $nextTick(() => {
+            const el = document.getElementById('admin-help-alert') || document.getElementById('alert-message');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+     ">
     <!-- Sub-navigation tabs -->
-    <x-admin-settings-nav />
+    <x-admin-settings-nav active="help" />
 
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 md:p-8 transition-colors duration-200">
+    @if (session()->has('message'))
+        <div id="admin-help-alert" class="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-2xl shadow-xs ring-2 ring-emerald-500/20 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <span class="text-sm font-semibold text-emerald-800 dark:text-emerald-300">{{ session('message') }}</span>
+        </div>
+    @endif
+
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 md:p-8">
         <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
             <div>
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white">Pengaturan Batasan Bantuan</h2>
@@ -12,15 +32,6 @@
                 Admin Panel
             </span>
         </div>
-
-        @if (session()->has('message'))
-            <div class="mb-6 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-xl flex items-center gap-3">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span class="text-sm font-medium">{{ session('message') }}</span>
-            </div>
-        @endif
 
         <form wire:submit.prevent="save" class="space-y-6">
             <div>
@@ -57,6 +68,7 @@
 
             <div class="pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-end">
                 <button type="submit"
+                    @click="window.scrollTo({ top: 0, behavior: 'smooth' })"
                     class="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow transition duration-150 ease-in-out cursor-pointer">
                     <svg wire:loading wire:target="save" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

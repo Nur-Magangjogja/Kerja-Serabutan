@@ -3,88 +3,65 @@
     $breadcrumb = 'Super Admin / Pengaturan';
 @endphp
 
-<div>
-    <div class="py-2">
-        <!-- Sub-navigation tabs -->
-        <x-superadmin-settings-nav />
-    </div>
+<div class="py-2">
+    <!-- Sub-navigation tabs -->
+    <x-superadmin-settings-nav active="banners" />
 
-    <!-- Notifications Modals -->
+    <!-- Notifications Alerts -->
     @if (session('message'))
-        <div id="success-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 border border-gray-200 dark:border-gray-700 transform transition-all">
-                <div class="p-6">
-                    <div class="flex items-center gap-4">
-                        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Berhasil!</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ session('message') }}</p>
-                        </div>
-                    </div>
-                    <div class="mt-6 flex justify-end">
-                        <button onclick="document.getElementById('success-modal').remove()"
-                            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
-                            Tutup
-                        </button>
-                    </div>
-                </div>
+        <div id="alert-message" class="mb-6 flex items-center p-4 text-emerald-800 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-xs ring-2 ring-emerald-500/20" role="alert">
+            <div class="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center mr-3 flex-shrink-0">
+                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
             </div>
+            <div class="text-sm font-semibold flex-1">
+                {{ session('message') }}
+            </div>
+            <button type="button" onclick="document.getElementById('alert-message')?.remove()" class="ml-auto -mx-1.5 -my-1.5 bg-emerald-50 text-emerald-500 rounded-lg p-1.5 hover:bg-emerald-100 dark:bg-transparent dark:text-emerald-400 dark:hover:bg-emerald-900/50 inline-flex h-8 w-8 transition cursor-pointer">
+                <span class="sr-only">Close</span>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
         </div>
     @endif
 
     @if (session('info'))
-        <div id="info-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 border border-gray-200 dark:border-gray-700 transform transition-all">
-                <div class="p-6">
-                    <div class="flex items-center gap-4">
-                        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01" />
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Info</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ session('info') }}</p>
-                        </div>
-                    </div>
-                    <div class="mt-6 flex justify-end">
-                        <button onclick="document.getElementById('info-modal').remove()"
-                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
-                            Tutup
-                        </button>
-                    </div>
-                </div>
+        <div id="alert-info" class="mb-6 flex items-center p-4 text-blue-800 rounded-2xl bg-blue-50 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 shadow-xs ring-2 ring-blue-500/20" role="alert">
+            <div class="w-8 h-8 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center mr-3 flex-shrink-0">
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01" />
+                </svg>
             </div>
+            <div class="text-sm font-semibold flex-1">
+                {{ session('info') }}
+            </div>
+            <button type="button" onclick="document.getElementById('alert-info')?.remove()" class="ml-auto -mx-1.5 -my-1.5 bg-blue-50 text-blue-500 rounded-lg p-1.5 hover:bg-blue-100 dark:bg-transparent dark:text-blue-400 dark:hover:bg-blue-900/50 inline-flex h-8 w-8 transition cursor-pointer">
+                <span class="sr-only">Close</span>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
         </div>
     @endif
 
     @if (session('error'))
-        <div id="error-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 border border-gray-200 dark:border-gray-700 transform transition-all">
-                <div class="p-6">
-                    <div class="flex items-center gap-4">
-                        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Terjadi Kesalahan</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ session('error') }}</p>
-                        </div>
-                    </div>
-                    <div class="mt-6 flex justify-end">
-                        <button onclick="document.getElementById('error-modal').remove()"
-                            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors">
-                            Tutup
-                        </button>
-                    </div>
-                </div>
+        <div id="alert-error" class="mb-6 flex items-center p-4 text-red-800 rounded-2xl bg-red-50 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-800/60 shadow-xs ring-2 ring-red-500/20" role="alert">
+            <div class="w-8 h-8 rounded-xl bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center mr-3 flex-shrink-0">
+                <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
             </div>
+            <div class="text-sm font-semibold flex-1">
+                {{ session('error') }}
+            </div>
+            <button type="button" onclick="document.getElementById('alert-error')?.remove()" class="ml-auto -mx-1.5 -my-1.5 bg-red-50 text-red-500 rounded-lg p-1.5 hover:bg-red-100 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-900/50 inline-flex h-8 w-8 transition cursor-pointer">
+                <span class="sr-only">Close</span>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
         </div>
     @endif
 
@@ -152,10 +129,10 @@
                     <div class="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                         <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Unggah Banner Customer Baru</label>
 
-                        <!-- Drag & Drop Zone Customer -->
-                        <div id="customer-dropzone" data-max-slots="{{ $customerRemain }}"
-                            class="relative border-2 border-dashed {{ $customerRemain === 0 ? 'border-red-300 dark:border-red-800 bg-red-50/40 dark:bg-red-950/20 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 bg-gray-50/60 dark:bg-gray-800/80 hover:bg-blue-50/20 dark:hover:bg-gray-750 cursor-pointer' }} rounded-2xl p-5 text-center transition-all duration-200 shadow-xs group">
-                            <input type="file" id="customer-file-input" wire:model="customerUploads" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" multiple class="hidden" {{ $customerRemain === 0 ? 'disabled' : '' }} />
+                        <!-- Upload Zone Customer -->
+                        <label for="customer-file-input"
+                            class="relative block border-2 border-dashed {{ $customerRemain === 0 ? 'border-red-300 dark:border-red-800 bg-red-50/40 dark:bg-red-950/20 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 bg-gray-50/60 dark:bg-gray-800/80 hover:bg-blue-50/20 dark:hover:bg-gray-750 cursor-pointer' }} rounded-2xl p-5 text-center transition-all duration-200 shadow-xs group">
+                            <input type="file" id="customer-file-input" wire:model="customerUploads" accept="image/png,image/jpeg,image/jpg,.png,.jpg,.jpeg" multiple class="hidden" {{ $customerRemain === 0 ? 'disabled' : '' }} />
                             <div class="flex flex-col items-center justify-center space-y-2">
                                 <div class="w-11 h-11 rounded-2xl {{ $customerRemain === 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-400' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 group-hover:scale-110' }} flex items-center justify-center transition-transform duration-200 shadow-2xs">
                                     @if($customerRemain === 0)
@@ -168,27 +145,44 @@
                                     @if($customerRemain === 0)
                                         <span class="font-bold text-red-500 dark:text-red-400">Slot penuh</span> — hapus banner untuk menambah
                                     @else
-                                        <span class="font-bold text-blue-600 dark:text-blue-400 hover:underline">Pilih Gambar</span> atau seret ke sini
+                                        <span class="font-bold text-blue-600 dark:text-blue-400 group-hover:underline">Pilih Gambar</span> (PNG / JPG / JPEG)
                                     @endif
                                 </div>
                                 <div class="flex items-center gap-1.5 text-[10px] text-gray-400 dark:text-gray-400">
-                                    <span class="px-1.5 py-0.5 rounded bg-white dark:bg-gray-700 font-mono text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">PNG / JPG</span>
-                                    <span>Maks 5MB • Rasio 16:9 • {{ $customerRemain > 0 ? 'Maks ' . $customerRemain . ' file' : 'Tidak bisa unggah' }}</span>
+                                    <span class="px-1.5 py-0.5 rounded bg-white dark:bg-gray-700 font-mono text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">PNG / JPG / JPEG</span>
+                                    <span>Khusus Gambar • Maks 5MB • Rasio 16:9 • {{ $customerRemain > 0 ? 'Maks ' . $customerRemain . ' file' : 'Tidak bisa unggah' }}</span>
                                 </div>
                             </div>
+                        </label>
+
+                        <!-- Loading Indicator -->
+                        <div wire:loading wire:target="customerUploads" class="text-xs text-blue-600 dark:text-blue-400 font-semibold flex items-center justify-center gap-2 py-2">
+                            <svg class="animate-spin h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <span>Sedang memproses upload gambar...</span>
                         </div>
 
-                        @error('customerUploads.*') <div class="text-xs text-red-600 dark:text-red-400">{{ $message }}</div> @enderror
+                        @error('customerUploads') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
+                        @error('customerUploads.*') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
 
-                        <!-- Preview Upload -->
-                        <div wire:ignore id="customer-preview-uploads" class="hidden space-y-2.5 mt-2"></div>
-
-                        <div class="flex items-center justify-end pt-1">
-                            <button wire:ignore id="customer-clear-preview"
-                                class="hidden px-3 py-1.5 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl text-xs font-medium transition-colors">
-                                ✕ Batal Pilihan
-                            </button>
-                        </div>
+                        <!-- Reactive Livewire Preview -->
+                        @if(!empty($customerUploads))
+                            <div class="space-y-2.5 mt-3">
+                                <div class="flex items-center justify-between text-xs font-semibold text-blue-700 dark:text-blue-300">
+                                    <span>{{ count($customerUploads) }} banner baru dipilih:</span>
+                                    <button type="button" wire:click="$set('customerUploads', [])" class="text-red-500 hover:text-red-700 text-xs font-medium cursor-pointer">✕ Batal Pilihan</button>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                    @foreach($customerUploads as $upload)
+                                        @if($upload)
+                                            <div class="relative rounded-xl overflow-hidden border-2 border-blue-500 aspect-[16/9] bg-gray-900 shadow-sm">
+                                                <img src="{{ $upload->temporaryUrl() }}" class="w-full h-full object-cover">
+                                                <span class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-blue-600/90 text-white text-[9px] font-bold">Siap Simpan</span>
+                                            </div>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
@@ -231,10 +225,10 @@
                     <div class="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                         <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Unggah Banner Mitra Baru</label>
 
-                        <!-- Drag & Drop Zone Mitra -->
-                        <div id="mitra-dropzone" data-max-slots="{{ $mitraRemain }}"
-                            class="relative border-2 border-dashed {{ $mitraRemain === 0 ? 'border-red-300 dark:border-red-800 bg-red-50/40 dark:bg-red-950/20 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-600 hover:border-emerald-500 dark:hover:border-emerald-400 bg-gray-50/60 dark:bg-gray-800/80 hover:bg-emerald-50/20 dark:hover:bg-gray-750 cursor-pointer' }} rounded-2xl p-5 text-center transition-all duration-200 shadow-xs group">
-                            <input type="file" id="mitra-file-input" wire:model="mitraUploads" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" multiple class="hidden" {{ $mitraRemain === 0 ? 'disabled' : '' }} />
+                        <!-- Upload Zone Mitra -->
+                        <label for="mitra-file-input"
+                            class="relative block border-2 border-dashed {{ $mitraRemain === 0 ? 'border-red-300 dark:border-red-800 bg-red-50/40 dark:bg-red-950/20 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-600 hover:border-emerald-500 dark:hover:border-emerald-400 bg-gray-50/60 dark:bg-gray-800/80 hover:bg-emerald-50/20 dark:hover:bg-gray-750 cursor-pointer' }} rounded-2xl p-5 text-center transition-all duration-200 shadow-xs group">
+                            <input type="file" id="mitra-file-input" wire:model="mitraUploads" accept="image/png,image/jpeg,image/jpg,.png,.jpg,.jpeg" multiple class="hidden" {{ $mitraRemain === 0 ? 'disabled' : '' }} />
                             <div class="flex flex-col items-center justify-center space-y-2">
                                 <div class="w-11 h-11 rounded-2xl {{ $mitraRemain === 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 group-hover:scale-110' }} flex items-center justify-center transition-transform duration-200 shadow-2xs">
                                     @if($mitraRemain === 0)
@@ -247,27 +241,44 @@
                                     @if($mitraRemain === 0)
                                         <span class="font-bold text-red-500 dark:text-red-400">Slot penuh</span> — hapus banner untuk menambah
                                     @else
-                                        <span class="font-bold text-emerald-600 dark:text-emerald-400 hover:underline">Pilih Gambar</span> atau seret ke sini
+                                        <span class="font-bold text-emerald-600 dark:text-emerald-400 group-hover:underline">Pilih Gambar</span> (PNG / JPG / JPEG)
                                     @endif
                                 </div>
                                 <div class="flex items-center gap-1.5 text-[10px] text-gray-400 dark:text-gray-400">
-                                    <span class="px-1.5 py-0.5 rounded bg-white dark:bg-gray-700 font-mono text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">PNG / JPG</span>
-                                    <span>Maks 5MB • Rasio 16:9 • {{ $mitraRemain > 0 ? 'Maks ' . $mitraRemain . ' file' : 'Tidak bisa unggah' }}</span>
+                                    <span class="px-1.5 py-0.5 rounded bg-white dark:bg-gray-700 font-mono text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">PNG / JPG / JPEG</span>
+                                    <span>Khusus Gambar • Maks 5MB • Rasio 16:9 • {{ $mitraRemain > 0 ? 'Maks ' . $mitraRemain . ' file' : 'Tidak bisa unggah' }}</span>
                                 </div>
                             </div>
+                        </label>
+
+                        <!-- Loading Indicator -->
+                        <div wire:loading wire:target="mitraUploads" class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center justify-center gap-2 py-2">
+                            <svg class="animate-spin h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <span>Sedang memproses upload gambar...</span>
                         </div>
 
-                        @error('mitraUploads.*') <div class="text-xs text-red-600 dark:text-red-400">{{ $message }}</div> @enderror
+                        @error('mitraUploads') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
+                        @error('mitraUploads.*') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
 
-                        <!-- Preview Upload -->
-                        <div wire:ignore id="mitra-preview-uploads" class="hidden space-y-2.5 mt-2"></div>
-
-                        <div class="flex items-center justify-end pt-1">
-                            <button wire:ignore id="mitra-clear-preview"
-                                class="hidden px-3 py-1.5 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl text-xs font-medium transition-colors">
-                                ✕ Batal Pilihan
-                            </button>
-                        </div>
+                        <!-- Reactive Livewire Preview -->
+                        @if(!empty($mitraUploads))
+                            <div class="space-y-2.5 mt-3">
+                                <div class="flex items-center justify-between text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                    <span>{{ count($mitraUploads) }} banner baru dipilih:</span>
+                                    <button type="button" wire:click="$set('mitraUploads', [])" class="text-red-500 hover:text-red-700 text-xs font-medium cursor-pointer">✕ Batal Pilihan</button>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                    @foreach($mitraUploads as $upload)
+                                        @if($upload)
+                                            <div class="relative rounded-xl overflow-hidden border-2 border-emerald-500 aspect-[16/9] bg-gray-900 shadow-sm">
+                                                <img src="{{ $upload->temporaryUrl() }}" class="w-full h-full object-cover">
+                                                <span class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-emerald-600/90 text-white text-[9px] font-bold">Siap Simpan</span>
+                                            </div>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -437,226 +448,10 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            function formatBytes(bytes) {
-                if (!bytes || bytes === 0) return '0 B';
-                const k = 1024;
-                const sizes = ['B', 'KB', 'MB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
-            }
-
-            function showSlotWarning(dropzone, totalSelected, maxAllowed) {
-                const existing = dropzone.parentElement.querySelector('.slot-warning-msg');
-                if (existing) existing.remove();
-
-                const warn = document.createElement('div');
-                warn.className = 'slot-warning-msg mt-2 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-800 dark:text-amber-300 font-medium flex items-center gap-2';
-
-                const icon = document.createElement('span');
-                icon.className = 'w-2 h-2 rounded-full bg-amber-500 flex-shrink-0';
-                warn.appendChild(icon);
-
-                const text = document.createElement('span');
-                text.textContent = 'Hanya ' + maxAllowed + ' file yang dipilih (dari ' + totalSelected + ' file) sesuai sisa slot maksimal 5 banner.';
-                warn.appendChild(text);
-
-                dropzone.parentElement.appendChild(warn);
-
-                setTimeout(() => {
-                    if (warn.parentElement) warn.remove();
-                }, 6000);
-            }
-
-            // Drag & Drop functionality
-            function setupDragDrop(theme, dropzoneId, fileInputId, previewId, clearBtnId) {
-                const dropzone = document.getElementById(dropzoneId);
-                const fileInput = document.getElementById(fileInputId);
-                const previewContainer = document.getElementById(previewId);
-                const clearBtn = document.getElementById(clearBtnId);
-
-                if (!dropzone || !fileInput || !previewContainer || !clearBtn) return;
-
-                const activeThemeClass = theme === 'blue'
-                    ? ['border-blue-500', 'bg-blue-50/50', 'dark:bg-blue-950/30', 'ring-4', 'ring-blue-500/20']
-                    : theme === 'emerald'
-                    ? ['border-emerald-500', 'bg-emerald-50/50', 'dark:bg-emerald-950/30', 'ring-4', 'ring-emerald-500/20']
-                    : ['border-primary-500', 'bg-primary-50/50', 'dark:bg-primary-950/30', 'ring-4', 'ring-primary-500/20'];
-
-                // Click to upload — block if full
-                dropzone.addEventListener('click', () => {
-                    const maxSlots = parseInt(dropzone.dataset.maxSlots || '5', 10);
-                    if (maxSlots <= 0) return; // slot penuh, abaikan klik
-                    fileInput.click();
-                });
-
-                // Drag events
-                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                    dropzone.addEventListener(eventName, preventDefaults, false);
-                });
-
-                function preventDefaults(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-
-                ['dragenter', 'dragover'].forEach(eventName => {
-                    dropzone.addEventListener(eventName, () => {
-                        dropzone.classList.add(...activeThemeClass, 'scale-[1.01]');
-                    });
-                });
-
-                ['dragleave', 'drop'].forEach(eventName => {
-                    dropzone.addEventListener(eventName, () => {
-                        dropzone.classList.remove(...activeThemeClass, 'scale-[1.01]');
-                    });
-                });
-
-                dropzone.addEventListener('drop', (e) => {
-                    const dt = e.dataTransfer;
-                    const maxSlots = parseInt(dropzone.dataset.maxSlots || '5', 10);
-                    if (maxSlots <= 0) return; // slot penuh, tolak drop
-
-                    let files = dt.files;
-                    if (files.length > maxSlots) {
-                        showSlotWarning(dropzone, files.length, maxSlots);
-                        // Buat DataTransfer baru dengan file yang dipotong
-                        const dt2 = new DataTransfer();
-                        Array.from(files).slice(0, maxSlots).forEach(f => dt2.items.add(f));
-                        files = dt2.files;
-                    }
-                    let assigned = false;
-                    try {
-                        fileInput.files = files;
-                        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-                        assigned = true;
-                    } catch (err) {
-                        console.warn('Could not assign files to input programmatically', err);
-                    }
-
-                    if (!assigned) {
-                        handleFiles(files);
-                    }
-                });
-
-                fileInput.addEventListener('change', (e) => {
-                    const maxSlots = parseInt(dropzone.dataset.maxSlots || '5', 10);
-                    let files = e.target.files;
-                    if (maxSlots > 0 && files.length > maxSlots) {
-                        showSlotWarning(dropzone, files.length, maxSlots);
-                        const dt2 = new DataTransfer();
-                        Array.from(files).slice(0, maxSlots).forEach(f => dt2.items.add(f));
-                        try {
-                            fileInput.files = dt2.files;
-                        } catch(ex) {}
-                        files = dt2.files;
-                    }
-                    handleFiles(files);
-                });
-
-                clearBtn.addEventListener('click', () => {
-                    previewContainer.innerHTML = '';
-                    previewContainer.classList.add('hidden');
-                    clearBtn.classList.add('hidden');
-                    try { fileInput.value = ''; } catch(e) {}
-                });
-
-                function handleFiles(files) {
-                    if (!files || files.length === 0) return;
-
-                    previewContainer.innerHTML = '';
-                    previewContainer.classList.remove('hidden');
-                    clearBtn.classList.remove('hidden');
-
-                    let totalBytes = 0;
-                    Array.from(files).forEach(f => { totalBytes += f.size || 0; });
-
-                    const themeColor = theme === 'blue' ? 'blue' : (theme === 'emerald' ? 'emerald' : 'primary');
-
-                    // Header Status Banner
-                    const headerInfo = document.createElement('div');
-                    headerInfo.className = 'flex items-center justify-between px-3 py-2 rounded-xl bg-' + themeColor + '-50 dark:bg-' + themeColor + '-950/40 border border-' + themeColor + '-200 dark:border-' + themeColor + '-800/60 text-xs text-' + themeColor + '-700 dark:text-' + themeColor + '-300 font-medium animate-fade-in';
-                    
-                    const countWrapper = document.createElement('div');
-                    countWrapper.className = 'flex items-center gap-1.5 font-semibold';
-                    
-                    const countDot = document.createElement('span');
-                    countDot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0';
-                    
-                    const countText = document.createElement('span');
-                    countText.textContent = files.length + ' gambar dipilih';
-                    
-                    countWrapper.appendChild(countDot);
-                    countWrapper.appendChild(countText);
-                    
-                    const totalBadge = document.createElement('span');
-                    totalBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold border border-' + themeColor + '-200 dark:border-' + themeColor + '-700';
-                    totalBadge.textContent = 'Total: ' + formatBytes(totalBytes);
-                    
-                    headerInfo.appendChild(countWrapper);
-                    headerInfo.appendChild(totalBadge);
-                    previewContainer.appendChild(headerInfo);
-
-                    // Grid of 16:9 Banner Cards
-                    const grid = document.createElement('div');
-                    grid.className = 'grid grid-cols-2 sm:grid-cols-2 gap-2.5';
-
-                    Array.from(files).forEach((file, index) => {
-                        if (!file.type.startsWith('image/')) return;
-
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            const card = document.createElement('div');
-                            card.className = 'relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm bg-gray-900 aspect-[16/9] group ring-2 ring-' + themeColor + '-500/20';
-
-                            const img = document.createElement('img');
-                            img.src = e.target.result;
-                            img.alt = 'preview-' + index;
-                            img.className = 'w-full h-full object-cover group-hover:scale-105 transition-transform duration-300';
-                            card.appendChild(img);
-
-                            const overlay = document.createElement('div');
-                            overlay.className = 'absolute inset-0 bg-gradient-to-t from-gray-950/90 via-gray-950/20 to-transparent flex flex-col justify-between p-2 pointer-events-none';
-
-                            const topRow = document.createElement('div');
-                            topRow.className = 'flex items-center justify-between';
-
-                            const badge = document.createElement('span');
-                            badge.className = 'inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500 text-white text-[9px] font-bold shadow-xs';
-                            badge.textContent = 'Siap Simpan';
-
-                            const sizeBadge = document.createElement('span');
-                            sizeBadge.className = 'text-[9px] font-mono px-1 py-0.5 rounded bg-black/60 text-gray-200 backdrop-blur-xs';
-                            sizeBadge.textContent = formatBytes(file.size);
-
-                            topRow.appendChild(badge);
-                            topRow.appendChild(sizeBadge);
-
-                            const title = document.createElement('div');
-                            title.className = 'truncate text-white text-[11px] font-medium drop-shadow-sm';
-                            title.textContent = file.name;
-
-                            overlay.appendChild(topRow);
-                            overlay.appendChild(title);
-                            card.appendChild(overlay);
-
-                            grid.appendChild(card);
-                        };
-                        reader.readAsDataURL(file);
-                    });
-
-                    previewContainer.appendChild(grid);
-                }
-            }
-
-            setupDragDrop('blue', 'customer-dropzone', 'customer-file-input', 'customer-preview-uploads', 'customer-clear-preview');
-            setupDragDrop('emerald', 'mitra-dropzone', 'mitra-file-input', 'mitra-preview-uploads', 'mitra-clear-preview');
-
-            // Robust isolated slider manager
+        (function () {
             window.bannerSliderInstances = window.bannerSliderInstances || {};
 
             function createSlider(prefix) {
-                // Clear any existing instance and timer
                 if (window.bannerSliderInstances[prefix]) {
                     window.bannerSliderInstances[prefix].destroy();
                 }
@@ -719,11 +514,9 @@
                     }
                 }
 
-                // Initial position & dots
                 goTo(0);
                 startAutoplay();
 
-                // Button listeners
                 if (prevBtn) {
                     prevBtn.onclick = function(e) {
                         e.preventDefault();
@@ -742,7 +535,6 @@
                     };
                 }
 
-                // Dot click listeners
                 dots.forEach((dot, i) => {
                     dot.onclick = function(e) {
                         e.preventDefault();
@@ -753,32 +545,11 @@
                     dot.style.cursor = 'pointer';
                 });
 
-                // Pause on hover
                 if (container) {
                     container.onmouseenter = stopAutoplay;
                     container.onmouseleave = startAutoplay;
-
-                    // Touch swipe support
-                    let touchStartX = 0;
-                    container.ontouchstart = function(e) {
-                        if (e.touches && e.touches[0]) {
-                            touchStartX = e.touches[0].clientX;
-                            stopAutoplay();
-                        }
-                    };
-                    container.ontouchend = function(e) {
-                        if (e.changedTouches && e.changedTouches[0]) {
-                            const diff = e.changedTouches[0].clientX - touchStartX;
-                            if (Math.abs(diff) > 40) {
-                                if (diff > 0) prev();
-                                else next();
-                            }
-                            startAutoplay();
-                        }
-                    };
                 }
 
-                // Store instance
                 window.bannerSliderInstances[prefix] = {
                     goTo: goTo,
                     next: next,
@@ -791,105 +562,50 @@
                         if (container) {
                             container.onmouseenter = null;
                             container.onmouseleave = null;
-                            container.ontouchstart = null;
-                            container.ontouchend = null;
                         }
                     }
                 };
             }
 
-            window.initBannerSliders = function () {
+            function initAllSliders() {
                 createSlider('customer');
                 createSlider('mitra');
-            };
+            }
 
-            // Initialize sliders on load
-            window.initBannerSliders();
-
-            // Re-init after Livewire DOM morphs
-            document.addEventListener('livewire:initialized', function () {
-                if (window.Livewire && Livewire.hook) {
-                    Livewire.hook('morph.updated', function () {
-                        setTimeout(window.initBannerSliders, 60);
-                    });
+            // Client-side file type validator before upload
+            document.addEventListener('change', function(e) {
+                if (e.target && (e.target.id === 'customer-file-input' || e.target.id === 'mitra-file-input')) {
+                    const files = e.target.files;
+                    if (!files || files.length === 0) return;
+                    
+                    const validExtensions = ['png', 'jpg', 'jpeg'];
+                    const invalidFiles = [];
+                    
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const nameParts = file.name.split('.');
+                        const ext = nameParts.length > 1 ? nameParts.pop().toLowerCase() : '';
+                        const isImageMime = file.type.startsWith('image/');
+                        if (!validExtensions.includes(ext) || !isImageMime) {
+                            invalidFiles.push(file.name);
+                        }
+                    }
+                    
+                    if (invalidFiles.length > 0) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.target.value = '';
+                        alert('⚠️ Format file tidak diizinkan:\n\n• ' + invalidFiles.join('\n• ') + '\n\nAnda hanya dapat mengunggah file gambar bertipe PNG, JPG, atau JPEG (bukan PDF, DOC, atau Excel).');
+                    }
                 }
-            });
+            }, true);
 
-            // Listen for saved event from Livewire to rebuild preview with saved images
-            if (window.Livewire) {
-                try {
-                    Livewire.on && Livewire.on('bannersSaved', function (payload) {
-                        try {
-                            if (payload && payload.customer) {
-                                const cp = document.getElementById('customer-preview-uploads');
-                                const ci = document.getElementById('customer-file-input');
-                                const cclear = document.getElementById('customer-clear-preview');
-                                if (cp) {
-                                    cp.innerHTML = '';
-                                    cp.classList.remove('hidden');
-                                    payload.customer.forEach(function (p) {
-                                        const div = document.createElement('div');
-                                        div.className = 'relative rounded-lg overflow-hidden border-2 border-primary-200 shadow-sm';
-                                        const img = document.createElement('img');
-                                        img.src = '/storage/' + p;
-                                        img.className = 'w-full h-32 object-cover';
-                                        div.appendChild(img);
-                                        cp.appendChild(div);
-                                    });
-                                }
-                                if (ci) ci.value = '';
-                                if (cclear) cclear.classList.remove('hidden');
-                            }
-
-                            if (payload && payload.mitra) {
-                                const mp = document.getElementById('mitra-preview-uploads');
-                                const mi = document.getElementById('mitra-file-input');
-                                const mclear = document.getElementById('mitra-clear-preview');
-                                if (mp) {
-                                    mp.innerHTML = '';
-                                    mp.classList.remove('hidden');
-                                    payload.mitra.forEach(function (p) {
-                                        const div = document.createElement('div');
-                                        div.className = 'relative rounded-lg overflow-hidden border-2 border-primary-200 shadow-sm';
-                                        const img = document.createElement('img');
-                                        img.src = '/storage/' + p;
-                                        img.className = 'w-full h-32 object-cover';
-                                        div.appendChild(img);
-                                        mp.appendChild(div);
-                                    });
-                                }
-                                if (mi) mi.value = '';
-                                if (mclear) mclear.classList.remove('hidden');
-                            }
-                        } catch (e) { console.warn('bannersSaved handler error', e); }
-                    });
-                } catch (e) { console.warn('Livewire bannersSaved attach error', e); }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initAllSliders);
+            } else {
+                initAllSliders();
             }
-
-            // Clear previews (client-side) when user clicks any Save button
-            function clearUploadPreviews() {
-                try {
-                    const cp = document.getElementById('customer-preview-uploads');
-                    const mp = document.getElementById('mitra-preview-uploads');
-                    const cclear = document.getElementById('customer-clear-preview');
-                    const mclear = document.getElementById('mitra-clear-preview');
-
-                    if (cp) { cp.innerHTML = ''; cp.classList.add('hidden'); }
-                    if (mp) { mp.innerHTML = ''; mp.classList.add('hidden'); }
-                    if (cclear) cclear.classList.add('hidden');
-                    if (mclear) mclear.classList.add('hidden');
-                } catch (err) {
-                    console.warn('clearUploadPreviews error', err);
-                }
-            }
-
-            const unifiedBtn = document.getElementById('unified-save-btn');
-            if (unifiedBtn) {
-                unifiedBtn.addEventListener('click', function () {
-                    clearUploadPreviews();
-                });
-            }
-        });
+            document.addEventListener('livewire:navigated', initAllSliders);
+        })();
     </script>
-
 </div>

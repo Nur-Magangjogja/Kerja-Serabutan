@@ -1,5 +1,8 @@
+@php
+    $isDarkActive = ($isDark ?? (request()->cookie('theme') === 'dark'));
+@endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="min-h-full scroll-smooth">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="min-h-full scroll-smooth {{ $isDarkActive ? 'dark' : '' }}">
 
 <head>
     <meta charset="utf-8">
@@ -19,22 +22,47 @@
     </style>
     <script>
         (function() {
-            try {
-                var d = document.documentElement;
-                d.classList.add('no-transition');
-                var saved = localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
-                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-                var isDark = (saved === 'dark') || (saved === 'system' && prefersDark);
-                if (isDark) {
-                    d.classList.add('dark');
-                    d.style.colorScheme = 'dark';
-                    d.style.backgroundColor = '#111827';
-                } else {
-                    d.classList.remove('dark');
-                    d.style.colorScheme = 'light';
-                    d.style.backgroundColor = '#f3f4f6';
-                }
-            } catch (e) {}
+            window.applyTheme = function(mode) {
+                try {
+                    mode = mode || localStorage.getItem('theme') || localStorage.getItem('color-theme') || 'system';
+                    if (mode !== 'dark' && mode !== 'light') mode = 'system';
+                    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    var isDark = (mode === 'dark') || (mode === 'system' && prefersDark);
+                    var d = document.documentElement;
+                    if (isDark) {
+                        d.classList.add('dark');
+                        d.style.colorScheme = 'dark';
+                        d.style.backgroundColor = '#111827';
+                        if (document.body) document.body.style.backgroundColor = '#111827';
+                    } else {
+                        d.classList.remove('dark');
+                        d.style.colorScheme = 'light';
+                        d.style.backgroundColor = '#f3f4f6';
+                        if (document.body) document.body.style.backgroundColor = '#f3f4f6';
+                    }
+                    window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: mode, isDark: isDark } }));
+                } catch(e) {}
+            };
+
+            window.setTheme = function(mode) {
+                if (mode !== 'dark' && mode !== 'light') mode = 'system';
+                localStorage.setItem('theme', mode);
+                localStorage.setItem('color-theme', mode);
+                document.cookie = "theme=" + mode + "; path=/; max-age=31536000; SameSite=Lax";
+                window.applyTheme(mode);
+            };
+
+            window.getTheme = function() {
+                var saved = localStorage.getItem('theme') || localStorage.getItem('color-theme');
+                if (saved === 'dark' || saved === 'light') return saved;
+                return 'system';
+            };
+
+            // Execute immediately on page load
+            window.applyTheme();
+
+            document.addEventListener('livewire:navigating', function() { if (window.applyTheme) window.applyTheme(); });
+            document.addEventListener('livewire:navigated', function() { if (window.applyTheme) window.applyTheme(); });
         })();
     </script>
 
@@ -77,19 +105,14 @@
         <div x-show="sidebarOpenMobile" 
              @click="sidebarOpenMobile = false" 
              x-cloak 
-             x-transition:enter="transition-opacity ease-linear duration-300" 
-             x-transition:enter-start="opacity-0" 
-             x-transition:enter-end="opacity-100" 
-             x-transition:leave="transition-opacity ease-linear duration-300" 
-             x-transition:leave-start="opacity-100" 
-             x-transition:leave-end="opacity-0" 
              class="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-40 lg:hidden">
         </div>
 
         <!-- Sidebar / Drawer Menu -->
-        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-2xl lg:shadow-md fixed inset-y-0 left-0 flex flex-col z-50 transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0"
+        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-2xl lg:shadow-md fixed inset-y-0 left-0 flex flex-col z-50 -translate-x-full lg:translate-x-0"
                :class="{
                    'translate-x-0': sidebarOpenMobile,
+                   'lg:translate-x-0': sidebarOpenDesktop,
                    'lg:-translate-x-full': !sidebarOpenDesktop
                }">
             @php
@@ -231,20 +254,10 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 min-h-screen min-w-0 flex flex-col w-full lg:ml-64 transition-[margin] duration-300 ease-in-out"
-              :class="{ 'lg:!ml-0': !sidebarOpenDesktop }">
+        <main class="flex-1 min-h-screen min-w-0 flex flex-col w-full lg:ml-64"
+              :class="{ 'lg:ml-64': sidebarOpenDesktop, 'lg:!ml-0': !sidebarOpenDesktop }">
             <!-- Topbar -->
-            <div x-data="{ 
-                     isScrolled: false,
-                     checkScroll() { this.isScrolled = (window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0) > 10; }
-                 }" 
-                 x-init="checkScroll()"
-                 @scroll.window="checkScroll()"
-                 class="sticky top-0 z-30 border-b w-full"
-                 :class="isScrolled 
-                     ? 'bg-white/20 dark:bg-gray-800/20 backdrop-blur-md border-gray-200/20 dark:border-gray-700/20 shadow-sm' 
-                     : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'"
-                 style="position: -webkit-sticky; position: sticky; top: 0;">
+            <header class="sticky top-0 z-30 border-b w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-xs">
                 <div class="px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
                         <!-- Menu Toggle Button (Always visible on all screens: Desktop, Tablet & Mobile) -->
@@ -279,7 +292,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </header>
 
             <!-- Content Area -->
             <div class="p-4 sm:p-6 lg:p-8 w-full max-w-full flex-1 overflow-x-clip min-w-0">

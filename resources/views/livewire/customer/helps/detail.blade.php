@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200" 
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100" 
     x-data="{ 
         showNotification: false, 
         notificationMessage: '',
@@ -123,7 +123,7 @@
     </div>
 
     <!-- Content -->
-    <div class="bg-white dark:bg-gray-900 rounded-t-3xl -mt-6 px-5 pt-6 pb-8 max-w-md mx-auto transition-colors duration-200">
+    <div class="bg-white dark:bg-gray-900 rounded-t-3xl -mt-6 px-5 pt-6 pb-8 max-w-md mx-auto">
         {{-- Order ID --}}
         <div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
             <span class="text-sm text-gray-600 dark:text-gray-400">ID Pesanan: <span class="font-semibold text-gray-900 dark:text-white">{{ $help->order_id }}</span></span>

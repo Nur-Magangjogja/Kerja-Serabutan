@@ -268,7 +268,9 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
     
     // Appearance / Theme settings
     Route::view('/settings/appearance', 'superadmin.settings.appearance')->name('settings.appearance');
-    Route::view('/settings', 'superadmin.settings.appearance');
+    Route::get('/settings', function () {
+        return redirect()->route('superadmin.settings.identity');
+    });
 });
 
 // Admin routes - require admin role only (for moderasi)

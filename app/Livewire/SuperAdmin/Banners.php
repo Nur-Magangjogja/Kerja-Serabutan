@@ -24,19 +24,71 @@ class Banners extends Component
     protected function rules()
     {
         return [
-            'customerUploads.*' => 'image|mimes:jpg,jpeg,png|max:5120',
-            'mitraUploads.*' => 'image|mimes:jpg,jpeg,png|max:5120',
+            'customerUploads.*' => 'image|mimes:png,jpg,jpeg|max:5120',
+            'mitraUploads.*' => 'image|mimes:png,jpg,jpeg|max:5120',
         ];
     }
 
     protected $messages = [
-        'customerUploads.*.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
-        'customerUploads.*.mimes' => 'Format file harus JPG, JPEG, atau PNG',
-        'customerUploads.*.max' => 'Ukuran file banner maksimal 5MB',
-        'mitraUploads.*.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
-        'mitraUploads.*.mimes' => 'Format file harus JPG, JPEG, atau PNG',
-        'mitraUploads.*.max' => 'Ukuran file banner maksimal 5MB',
+        'customerUploads.*.image' => 'File yang diunggah harus berupa gambar (bukan PDF, dokumen, atau file lain).',
+        'customerUploads.*.mimes' => 'Format file banner yang diizinkan hanya PNG, JPG, atau JPEG.',
+        'customerUploads.*.max' => 'Ukuran file banner maksimal 5MB.',
+        'mitraUploads.*.image' => 'File yang diunggah harus berupa gambar (bukan PDF, dokumen, atau file lain).',
+        'mitraUploads.*.mimes' => 'Format file banner yang diizinkan hanya PNG, JPG, atau JPEG.',
+        'mitraUploads.*.max' => 'Ukuran file banner maksimal 5MB.',
     ];
+
+    public function updatedCustomerUploads()
+    {
+        $validFiles = [];
+        $invalidFiles = [];
+        $uploads = is_array($this->customerUploads) ? $this->customerUploads : ($this->customerUploads ? [$this->customerUploads] : []);
+
+        foreach ($uploads as $file) {
+            if (!$file) continue;
+            $ext = strtolower($file->getClientOriginalExtension());
+            $mime = $file->getMimeType();
+            if (in_array($ext, ['png', 'jpg', 'jpeg']) && str_starts_with($mime, 'image/')) {
+                $validFiles[] = $file;
+            } else {
+                $invalidFiles[] = $file->getClientOriginalName();
+            }
+        }
+
+        if (!empty($invalidFiles)) {
+            $this->customerUploads = $validFiles;
+            $this->addError('customerUploads', 'Format file tidak diizinkan (' . implode(', ', $invalidFiles) . '). Hanya file gambar PNG, JPG, atau JPEG yang diperbolehkan (bukan PDF, DOC, atau Excel).');
+        } else {
+            $this->resetErrorBag('customerUploads');
+            $this->validateOnly('customerUploads.*');
+        }
+    }
+
+    public function updatedMitraUploads()
+    {
+        $validFiles = [];
+        $invalidFiles = [];
+        $uploads = is_array($this->mitraUploads) ? $this->mitraUploads : ($this->mitraUploads ? [$this->mitraUploads] : []);
+
+        foreach ($uploads as $file) {
+            if (!$file) continue;
+            $ext = strtolower($file->getClientOriginalExtension());
+            $mime = $file->getMimeType();
+            if (in_array($ext, ['png', 'jpg', 'jpeg']) && str_starts_with($mime, 'image/')) {
+                $validFiles[] = $file;
+            } else {
+                $invalidFiles[] = $file->getClientOriginalName();
+            }
+        }
+
+        if (!empty($invalidFiles)) {
+            $this->mitraUploads = $validFiles;
+            $this->addError('mitraUploads', 'Format file tidak diizinkan (' . implode(', ', $invalidFiles) . '). Hanya file gambar PNG, JPG, atau JPEG yang diperbolehkan (bukan PDF, DOC, atau Excel).');
+        } else {
+            $this->resetErrorBag('mitraUploads');
+            $this->validateOnly('mitraUploads.*');
+        }
+    }
 
     public function mount()
     {
@@ -52,20 +104,25 @@ class Banners extends Component
         $errors = [];
         $successCount = 0;
 
+        $custUploads = is_array($this->customerUploads) ? $this->customerUploads : ($this->customerUploads ? [$this->customerUploads] : []);
+        $mitUploads = is_array($this->mitraUploads) ? $this->mitraUploads : ($this->mitraUploads ? [$this->mitraUploads] : []);
+
         // process customer uploads
-        if (!empty($this->customerUploads)) {
+        if (!empty($custUploads)) {
             $customerRemaining = max(0, self::MAX_BANNERS - count($this->customerBanners));
             if ($customerRemaining <= 0) {
                 $errors[] = 'Slot banner customer sudah penuh (maksimal ' . self::MAX_BANNERS . ' banner).';
                 $this->customerUploads = [];
             } else {
-                if (count($this->customerUploads) > $customerRemaining) {
-                    $this->customerUploads = array_slice($this->customerUploads, 0, $customerRemaining);
+                if (count($custUploads) > $customerRemaining) {
+                    $custUploads = array_slice($custUploads, 0, $customerRemaining);
                 }
                 try {
-                    foreach ($this->customerUploads as $f) {
-                        $path = $f->store('banners', 'public');
-                        $this->customerBanners[] = $path;
+                    foreach ($custUploads as $f) {
+                        if ($f) {
+                            $path = $f->store('banners', 'public');
+                            $this->customerBanners[] = $path;
+                        }
                     }
                     $this->customerUploads = [];
                 } catch (\Exception $e) {
@@ -85,19 +142,21 @@ class Banners extends Component
         }
 
         // process mitra uploads
-        if (!empty($this->mitraUploads)) {
+        if (!empty($mitUploads)) {
             $mitraRemaining = max(0, self::MAX_BANNERS - count($this->mitraBanners));
             if ($mitraRemaining <= 0) {
                 $errors[] = 'Slot banner mitra sudah penuh (maksimal ' . self::MAX_BANNERS . ' banner).';
                 $this->mitraUploads = [];
             } else {
-                if (count($this->mitraUploads) > $mitraRemaining) {
-                    $this->mitraUploads = array_slice($this->mitraUploads, 0, $mitraRemaining);
+                if (count($mitUploads) > $mitraRemaining) {
+                    $mitUploads = array_slice($mitUploads, 0, $mitraRemaining);
                 }
                 try {
-                    foreach ($this->mitraUploads as $f) {
-                        $path = $f->store('banners', 'public');
-                        $this->mitraBanners[] = $path;
+                    foreach ($mitUploads as $f) {
+                        if ($f) {
+                            $path = $f->store('banners', 'public');
+                            $this->mitraBanners[] = $path;
+                        }
                     }
                     $this->mitraUploads = [];
                 } catch (\Exception $e) {
@@ -122,7 +181,6 @@ class Banners extends Component
                 'mitra' => array_values($this->mitraBanners),
             ]);
             if (!empty($errors)) {
-                \Log::warning('Partial success saving banners: ' . implode(' | ', $errors));
                 $errMsg = implode(' ', $errors);
                 session()->flash('error', $errMsg);
                 $this->dispatch('bannersError', ['message' => $errMsg]);

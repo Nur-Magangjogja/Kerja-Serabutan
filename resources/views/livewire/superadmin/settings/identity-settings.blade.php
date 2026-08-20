@@ -3,12 +3,23 @@
     $breadcrumb = 'Super Admin / Pengaturan / Identitas Aplikasi';
 @endphp
 
-<div class="py-2">
+<div class="py-2" 
+     x-data="{}" 
+     x-on:identity-saved.window="
+        $nextTick(() => {
+            const el = document.getElementById('alert-section');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+     ">
     <!-- Sub-navigation tabs -->
-    <x-superadmin-settings-nav />
+    <x-superadmin-settings-nav active="identity" />
 
     <!-- Notifikasi Sukses / Alert Section -->
-    <div id="alert-section" class="scroll-mt-6">
+    <div id="alert-section" class="scroll-mt-8">
         @if (session('message'))
             <div id="alert-message" class="mb-6 flex items-center p-4 text-emerald-800 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-sm transition-all duration-300 ring-2 ring-emerald-500/20" role="alert">
                 <div class="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center mr-3 flex-shrink-0">
@@ -32,7 +43,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- Form Pengaturan (7 Cols) -->
         <div class="lg:col-span-7 space-y-6">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 sm:p-8 transition-colors duration-200">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
                 <div class="flex items-center gap-3 pb-5 border-b border-gray-100 dark:border-gray-700 mb-6">
                     <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -291,8 +302,9 @@
                     <div class="pt-4 flex items-center justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
                         <button 
                             type="submit" 
+                            @click="window.scrollTo({ top: 0, behavior: 'smooth' })"
                             wire:loading.attr="disabled"
-                            class="inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-primary-500/20 transition-all duration-200 disabled:opacity-50"
+                            class="inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-primary-500/20 transition-all duration-200 disabled:opacity-50 cursor-pointer"
                         >
                             <svg wire:loading wire:target="save,logo,favicon" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -308,7 +320,7 @@
 
         <!-- Pratinjau Interaktif (5 Cols) -->
         <div class="lg:col-span-5 space-y-6">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200 sticky top-24">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 sticky top-24">
                 <div class="flex items-center gap-2 pb-4 border-b border-gray-100 dark:border-gray-700 mb-5">
                     <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -411,36 +423,4 @@
             </div>
         </div>
     </div>
-
-    <!-- Script: Auto-scroll to Alert when Saving -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            function scrollToAlert() {
-                setTimeout(function () {
-                    const alertEl = document.getElementById('alert-message') || document.getElementById('alert-section');
-                    if (alertEl) {
-                        alertEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    } else {
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }
-                }, 80);
-            }
-
-            // Listen to Livewire custom event dispatched from backend
-            if (window.Livewire) {
-                Livewire.on && Livewire.on('identitySaved', scrollToAlert);
-            }
-            document.addEventListener('livewire:init', function () {
-                Livewire.on('identitySaved', scrollToAlert);
-            });
-
-            // Also listen to form submit for instant feedback
-            const form = document.querySelector('form[wire\\:submit\\.prevent="save"]');
-            if (form) {
-                form.addEventListener('submit', function () {
-                    scrollToAlert();
-                });
-            }
-        });
-    </script>
 </div>

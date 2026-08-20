@@ -92,12 +92,12 @@
                     <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">Statistik pendaftaran per periode</p>
                 </div>
                 <div id="chartRangeTabs" role="tablist" class="inline-flex bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 gap-0.5 w-full sm:w-auto justify-between sm:justify-start flex-shrink-0">
-                    <button type="button" data-range="daily"   class="chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md transition-all duration-200">Harian</button>
-                    <button type="button" data-range="monthly" class="chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md transition-all duration-200">Bulanan</button>
-                    <button type="button" data-range="yearly"  class="chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md transition-all duration-200">Tahunan</button>
+                    <button type="button" data-range="daily"   class="chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md">Harian</button>
+                    <button type="button" data-range="monthly" class="chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md">Bulanan</button>
+                    <button type="button" data-range="yearly"  class="chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md">Tahunan</button>
                 </div>
             </div>
-            <div class="w-full transition-all duration-500 ease-out min-w-0" id="chartContainer" style="opacity:0;transform:translateY(20px)">
+            <div class="w-full min-w-0" id="chartContainer" wire:ignore>
                 <canvas id="usersChart" height="180"></canvas>
             </div>
         </div>
@@ -144,18 +144,18 @@
                     ['href' => route('superadmin.transactions.log'), 'label' => 'Laporan',         'color' => 'teal',    'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>'],
                 ];
                 $colorMapQA = [
-                    'blue'    => ['bg' => 'bg-blue-50 dark:bg-blue-900/30',    'icon' => 'text-blue-600 dark:text-blue-400',    'hover' => 'hover:bg-blue-100 dark:hover:bg-blue-900/50'],
-                    'emerald' => ['bg' => 'bg-emerald-50 dark:bg-emerald-900/30', 'icon' => 'text-emerald-600 dark:text-emerald-400', 'hover' => 'hover:bg-emerald-100 dark:hover:bg-emerald-900/50'],
-                    'amber'   => ['bg' => 'bg-amber-50 dark:bg-amber-900/30',   'icon' => 'text-amber-600 dark:text-amber-400',   'hover' => 'hover:bg-amber-100 dark:hover:bg-amber-900/50'],
-                    'violet'  => ['bg' => 'bg-violet-50 dark:bg-violet-900/30', 'icon' => 'text-violet-600 dark:text-violet-400', 'hover' => 'hover:bg-violet-100 dark:hover:bg-violet-900/50'],
-                    'rose'    => ['bg' => 'bg-rose-50 dark:bg-rose-900/30',    'icon' => 'text-rose-600 dark:text-rose-400',    'hover' => 'hover:bg-rose-100 dark:hover:bg-rose-900/50'],
-                    'teal'    => ['bg' => 'bg-teal-50 dark:bg-teal-900/30',    'icon' => 'text-teal-600 dark:text-teal-400',    'hover' => 'hover:bg-teal-100 dark:hover:bg-teal-900/50'],
+                    'blue'    => ['bg' => 'bg-blue-50/90 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50',    'icon' => 'text-blue-600 dark:text-blue-400',    'hover' => 'hover:bg-blue-100/90 dark:hover:bg-blue-900/60'],
+                    'emerald' => ['bg' => 'bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/50', 'icon' => 'text-emerald-600 dark:text-emerald-400', 'hover' => 'hover:bg-emerald-100/90 dark:hover:bg-emerald-900/60'],
+                    'amber'   => ['bg' => 'bg-amber-50/90 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-900/50',   'icon' => 'text-amber-600 dark:text-amber-400',   'hover' => 'hover:bg-amber-100/90 dark:hover:bg-amber-900/60'],
+                    'violet'  => ['bg' => 'bg-violet-50/90 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-900/50', 'icon' => 'text-violet-600 dark:text-violet-400', 'hover' => 'hover:bg-violet-100/90 dark:hover:bg-violet-900/60'],
+                    'rose'    => ['bg' => 'bg-rose-50/90 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/50',    'icon' => 'text-rose-600 dark:text-rose-400',    'hover' => 'hover:bg-rose-100/90 dark:hover:bg-rose-900/60'],
+                    'teal'    => ['bg' => 'bg-teal-50/90 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900/50',    'icon' => 'text-teal-600 dark:text-teal-400',    'hover' => 'hover:bg-teal-100/90 dark:hover:bg-teal-900/60'],
                 ];
                 @endphp
                 @foreach($quickActions as $qa)
                 @php $c = $colorMapQA[$qa['color']]; @endphp
-                <a href="{{ $qa['href'] }}" class="flex flex-col items-center gap-2 p-3 rounded-lg {{ $c['bg'] }} {{ $c['hover'] }} transition-all duration-200 group">
-                    <div class="w-9 h-9 rounded-lg bg-white/80 dark:bg-gray-700/80 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                <a href="{{ $qa['href'] }}" wire:navigate class="flex flex-col items-center gap-2 p-3 rounded-lg {{ $c['bg'] }} {{ $c['hover'] }} group">
+                    <div class="w-9 h-9 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-xs flex items-center justify-center">
                         <svg class="w-5 h-5 {{ $c['icon'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $qa['icon'] !!}</svg>
                     </div>
                     <span class="text-xs font-semibold text-gray-700 dark:text-gray-200 text-center leading-tight">{{ $qa['label'] }}</span>
@@ -350,6 +350,23 @@
     let usersChart = null;
     let observer = null;
 
+    function waitForChart(callback, maxAttempts = 50) {
+        if (typeof Chart !== 'undefined') {
+            callback();
+            return;
+        }
+        let attempts = 0;
+        const timer = setInterval(() => {
+            attempts++;
+            if (typeof Chart !== 'undefined') {
+                clearInterval(timer);
+                callback();
+            } else if (attempts >= maxAttempts) {
+                clearInterval(timer);
+            }
+        }, 60);
+    }
+
     function initUsersChart() {
         const canvas = document.getElementById('usersChart');
         if (!canvas) return;
@@ -369,67 +386,77 @@
 
         function renderRange(range) {
             const container = document.getElementById('chartContainer');
-            if (!container) return;
-            container.style.opacity = '0';
-            container.style.transform = 'translateY(16px) scale(0.99)';
+            if (container) {
+                container.style.opacity = '1';
+                container.style.transform = 'none';
+            }
 
-            setTimeout(() => {
-                const c = getColors();
-                const grad = ctx.createLinearGradient(0, 0, 0, 200);
-                grad.addColorStop(0, c.bar);
-                grad.addColorStop(1, isDark() ? 'rgba(99,102,241,0.45)' : 'rgba(59,130,246,0.45)');
+            const c = getColors();
+            const grad = ctx.createLinearGradient(0, 0, 0, 200);
+            grad.addColorStop(0, c.bar);
+            grad.addColorStop(1, isDark() ? 'rgba(99,102,241,0.45)' : 'rgba(59,130,246,0.45)');
 
-                const cfg = {
-                    type: 'bar',
-                    data: {
-                        labels: chartData[range]?.labels || [],
-                        datasets: [{
-                            label: 'Pendaftaran',
-                            data: chartData[range]?.data || [],
-                            backgroundColor: grad,
-                            borderColor: c.border,
-                            borderWidth: 1,
-                            borderRadius: 6,
-                            maxBarThickness: 36,
-                        }]
+            const cfg = {
+                type: 'bar',
+                data: {
+                    labels: chartData[range]?.labels || [],
+                    datasets: [{
+                        label: 'Pendaftaran',
+                        data: chartData[range]?.data || [],
+                        backgroundColor: grad,
+                        borderColor: c.border,
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        maxBarThickness: 36,
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: isDark() ? '#1e293b' : 'rgba(0,0,0,0.8)',
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: ctx => 'Pendaftaran: ' + Number(ctx.raw ?? 0).toLocaleString()
+                            }
+                        }
                     },
-                    options: {
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: isDark() ? '#1e293b' : 'rgba(0,0,0,0.8)',
-                                padding: 10,
-                                cornerRadius: 8,
-                                callbacks: {
-                                    label: ctx => 'Pendaftaran: ' + Number(ctx.raw ?? 0).toLocaleString()
-                                }
-                            }
+                    scales: {
+                        x: {
+                            ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12, color: c.tickColor },
+                            grid: { display: false }
                         },
-                        scales: {
-                            x: {
-                                ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12, color: c.tickColor },
-                                grid: { display: false }
-                            },
-                            y: {
-                                beginAtZero: true,
-                                ticks: { precision: 0, color: c.tickColor, callback: v => Number(v).toLocaleString() },
-                                grid: { color: c.gridColor }
-                            }
-                        },
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        animation: { duration: 900, easing: 'easeOutCubic' }
-                    }
-                };
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0, color: c.tickColor, callback: v => Number(v).toLocaleString() },
+                            grid: { color: c.gridColor }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false
+                }
+            };
 
-                if (usersChart) usersChart.destroy();
-                usersChart = new Chart(ctx, cfg);
+            // Destroy old chart on canvas if it exists
+            if (typeof Chart !== 'undefined' && Chart.getChart) {
+                const existing = Chart.getChart(canvas) || Chart.getChart('usersChart');
+                if (existing) {
+                    try { existing.destroy(); } catch(e) {}
+                }
+            }
+            if (usersChart) {
+                try { usersChart.destroy(); } catch(e) {}
+                usersChart = null;
+            }
+            if (window.usersChartInstance) {
+                try { window.usersChartInstance.destroy(); } catch(e) {}
+                window.usersChartInstance = null;
+            }
 
-                setTimeout(() => {
-                    container.style.opacity = '1';
-                    container.style.transform = 'translateY(0) scale(1)';
-                }, 80);
-            }, 180);
+            usersChart = new Chart(ctx, cfg);
+            window.usersChartInstance = usersChart;
         }
 
         const tabs = document.querySelectorAll('.chart-range-tab');
@@ -440,9 +467,9 @@
         function setActive(range) {
             tabs.forEach(t => {
                 if (t.dataset.range === range) {
-                    t.className = 'chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md transition-all duration-200 bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm';
+                    t.className = 'chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-xs';
                 } else {
-                    t.className = 'chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200';
+                    t.className = 'chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200';
                 }
             });
         }
@@ -466,7 +493,15 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', initUsersChart);
-    document.addEventListener('livewire:navigated', initUsersChart);
+    function safeInit() {
+        waitForChart(initUsersChart);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', safeInit);
+    } else {
+        safeInit();
+    }
+    document.addEventListener('livewire:navigated', safeInit);
 })();
 </script>

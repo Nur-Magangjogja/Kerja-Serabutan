@@ -1,7 +1,7 @@
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200" wire:poll.10s.visible>
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100" wire:poll.10s.visible>
     <div class="max-w-md mx-auto">
         <!-- Header - Modern Harmonious Gradient with Native Dark Mode -->
-        <div class="px-5 pt-5 pb-8 relative overflow-hidden bg-gradient-to-br from-sky-600 via-blue-700 to-indigo-800 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 dark:border-b dark:border-gray-800 transition-colors duration-200">
+        <div class="px-5 pt-5 pb-8 relative overflow-hidden bg-gradient-to-br from-sky-600 via-blue-700 to-indigo-800 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 dark:border-b dark:border-gray-800">
             <!-- Decorative Ambient Glows -->
             <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 dark:bg-blue-500/10 rounded-full -mr-20 -mt-20 blur-xl"></div>
             <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 dark:bg-indigo-500/10 rounded-full -ml-16 -mb-16 blur-lg"></div>
@@ -45,7 +45,7 @@
 
             <!-- Curved separator blending dynamically into dark mode -->
             <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0,24 C360,60 1080,0 1440,32 L1440,60 L0,60 Z" class="fill-gray-50 dark:fill-gray-900 transition-colors duration-200"></path>
+                <path d="M0,24 C360,60 1080,0 1440,32 L1440,60 L0,60 Z" class="fill-gray-50 dark:fill-gray-900"></path>
             </svg>
         </div>
 

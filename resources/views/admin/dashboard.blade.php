@@ -289,44 +289,78 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         (function () {
-            const ctx = document.getElementById('activityChart');
-            if (!ctx) return;
+            let chart = null;
 
-            const isDark = document.documentElement.classList.contains('dark');
-            const data = {
-                labels: @json($chartLabels),
-                datasets: [{
-                    label: 'Permintaan Bantuan',
-                    backgroundColor: 'rgba(14,165,233,0.1)',
-                    borderColor: '#0ea5e9',
-                    pointBackgroundColor: '#0ea5e9',
-                    data: @json($chartData),
-                    fill: true,
-                    tension: 0.35,
-                    borderWidth: 2.5
-                }]
-            };
+            function waitForChart(callback, maxAttempts = 50) {
+                if (typeof Chart !== 'undefined') {
+                    callback();
+                    return;
+                }
+                let attempts = 0;
+                const timer = setInterval(() => {
+                    attempts++;
+                    if (typeof Chart !== 'undefined') {
+                        clearInterval(timer);
+                        callback();
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(timer);
+                    }
+                }, 60);
+            }
 
-            const chart = new Chart(ctx.getContext('2d'), {
-                type: 'line',
-                data: data,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: isDark ? '#9ca3af' : '#6b7280', font: { size: 11 } }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
-                            ticks: { color: isDark ? '#9ca3af' : '#6b7280', precision: 0, font: { size: 11 } }
+            function initAdminChart() {
+                const ctx = document.getElementById('activityChart');
+                if (!ctx) return;
+
+                const isDark = document.documentElement.classList.contains('dark');
+                const data = {
+                    labels: @json($chartLabels),
+                    datasets: [{
+                        label: 'Permintaan Bantuan',
+                        backgroundColor: 'rgba(14,165,233,0.1)',
+                        borderColor: '#0ea5e9',
+                        pointBackgroundColor: '#0ea5e9',
+                        data: @json($chartData),
+                        fill: true,
+                        tension: 0.35,
+                        borderWidth: 2.5
+                    }]
+                };
+
+                if (chart) chart.destroy();
+                chart = new Chart(ctx.getContext('2d'), {
+                    type: 'line',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: isDark ? '#9ca3af' : '#6b7280', font: { size: 11 } }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
+                                ticks: { color: isDark ? '#9ca3af' : '#6b7280', precision: 0, font: { size: 11 } }
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
+
+            function safeInit() {
+                waitForChart(initAdminChart);
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', safeInit);
+            } else {
+                safeInit();
+            }
+            document.addEventListener('livewire:navigated', safeInit);
 
             window.addEventListener('theme-changed', function(e) {
                 const dark = e.detail?.isDark ?? document.documentElement.classList.contains('dark');

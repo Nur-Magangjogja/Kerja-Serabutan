@@ -42,7 +42,7 @@ class HelpsApproved extends Component
     public function render()
     {
         $helps = Help::query()
-            ->with(['customer', 'city'])
+            ->with(['customer', 'mitra', 'city', 'category'])
             ->whereIn('status', ['active', 'menunggu_mitra', 'taken', 'memperoleh_mitra', 'sedang_diproses', 'in_progress', 'waiting_customer_confirmation', 'selesai', 'completed'])
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {

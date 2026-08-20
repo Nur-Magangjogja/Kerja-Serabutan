@@ -64,12 +64,14 @@ class History extends Component
 
     public function render()
     {
-        // DEBUG: Confirm component is loading
-        \Log::info('History Component Loaded for user: ' . auth()->id());
-        
         $completedHelps = Help::where('user_id', auth()->id())
-            ->where('status', 'selesai')
-            ->with(['user', 'city', 'mitra'])
+            ->whereIn('status', ['selesai', 'completed'])
+            ->with([
+                'user',
+                'city',
+                'mitra',
+                'ratings' => fn($q) => $q->where('rater_id', auth()->id())->where('type', 'customer_to_mitra')
+            ])
             ->latest()
             ->paginate(10);
 

@@ -29,7 +29,7 @@ class Approved extends Component
 
     public function render()
     {
-        $query = Help::query()->with(['customer', 'category', 'city'])
+        $query = Help::query()->with(['customer', 'mitra', 'category', 'city'])
             ->whereIn('status', ['active', 'menunggu_mitra', 'taken', 'memperoleh_mitra', 'sedang_diproses', 'in_progress', 'waiting_customer_confirmation', 'selesai', 'completed'])
             ->when($this->search, function ($q) {
                 $q->where(function ($qq) {

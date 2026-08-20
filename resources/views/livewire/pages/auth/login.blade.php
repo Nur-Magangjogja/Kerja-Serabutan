@@ -70,7 +70,7 @@ new #[Layout('layouts.blank')] class extends Component {
     <x-splash-screen duration="850" />
 
     <!-- Main Split Login Container -->
-    <div class="min-h-screen flex flex-col lg:flex-row w-full bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <div class="min-h-screen flex flex-col lg:flex-row w-full bg-gray-50 dark:bg-gray-900">
         
         <!-- Left Side - Feature Showcase & Branding (Desktop/Tablet) -->
         <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-indigo-900 p-12 lg:p-16 flex-col justify-between text-white shadow-2xl">
@@ -183,7 +183,7 @@ new #[Layout('layouts.blank')] class extends Component {
                 </div>
 
                 <!-- Main Login Card -->
-                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-700 p-7 sm:p-9 transition-colors duration-200">
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-700 p-7 sm:p-9">
                     
                     <!-- Card Header -->
                     <div class="mb-6">
