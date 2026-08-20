@@ -5,6 +5,39 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="color-scheme" content="dark light">
+
+    <!-- Instant Theme Anti-FOUC (Executed synchronously before any network requests/fonts) -->
+    <style>
+        html { color-scheme: light dark; }
+        html.dark { background-color: #111827 !important; color-scheme: dark; }
+        html.dark body { background-color: #111827 !important; color: #f9fafb; }
+        html.dark main { background-color: #111827 !important; }
+        html:not(.dark) { background-color: #f3f4f6 !important; color-scheme: light; }
+        html:not(.dark) body { background-color: #f3f4f6 !important; }
+        .no-transition, .no-transition * { -webkit-transition: none !important; transition: none !important; }
+    </style>
+    <script>
+        (function() {
+            try {
+                var d = document.documentElement;
+                d.classList.add('no-transition');
+                var saved = localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
+                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var isDark = (saved === 'dark') || (saved === 'system' && prefersDark);
+                if (isDark) {
+                    d.classList.add('dark');
+                    d.style.colorScheme = 'dark';
+                    d.style.backgroundColor = '#111827';
+                } else {
+                    d.classList.remove('dark');
+                    d.style.colorScheme = 'light';
+                    d.style.backgroundColor = '#f3f4f6';
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     <title>{{ \App\Models\AppSetting::get('app_name', 'SayaBantu') }} - Super Admin Panel</title>
     @php
         $fav = \App\Models\AppSetting::get('app_favicon') ?: \App\Models\AppSetting::get('app_logo');
@@ -13,30 +46,15 @@
         <link rel="icon" href="{{ asset('storage/' . $fav) }}">
     @endif
 
-    <!-- Fonts -->
+    <!-- Fonts (Loaded asynchronously / non-blocking) -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
-
-    <!-- Theme Anti-FOUC -->
-    <script>
-        (function() {
-            const saved = localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (saved === 'dark' || (saved === 'system' && prefersDark)) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        })();
-    </script>
-
-
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
 
-<body class="antialiased bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-200" 
+<body class="antialiased bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100" 
       x-data="{ 
           sidebarOpenMobile: false, 
           sidebarOpenDesktop: true,
@@ -53,7 +71,7 @@
       x-on:livewire:navigated.window="if (window.innerWidth < 1024) sidebarOpenMobile = false"
       @open-logout-modal.window="showLogoutModal = true">
 
-    <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex transition-colors duration-200 relative w-full">
+    <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex relative w-full">
 
         <!-- Mobile Drawer Backdrop -->
         <div x-show="sidebarOpenMobile" 
@@ -82,11 +100,11 @@
             <div class="p-4 sm:p-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
                 <a href="{{ route('superadmin.dashboard') }}" wire:navigate class="flex items-center gap-3 group min-w-0">
                     @if($siteLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($siteLogo))
-                        <div class="w-10 h-10 rounded-xl bg-white dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 shadow-md shadow-purple-500/10 group-hover:scale-105 transition-all duration-200 flex items-center justify-center p-1.5 flex-shrink-0">
+                        <div class="w-10 h-10 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-md shadow-purple-500/10 group-hover:scale-105 transition-transform flex items-center justify-center p-1.5 flex-shrink-0">
                             <img src="{{ asset('storage/' . $siteLogo) }}" alt="{{ $siteName }}" class="w-full h-full object-contain" />
                         </div>
                     @else
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-600 to-primary-600 flex items-center justify-center text-white shadow-md shadow-purple-500/25 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-purple-500/40 transition-all duration-200 flex-shrink-0">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-600 to-primary-600 flex items-center justify-center text-white shadow-md shadow-purple-500/25 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-purple-500/40 transition-transform flex-shrink-0">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
@@ -156,7 +174,7 @@
                 </div>
 
                 <a href="{{ route('superadmin.transactions.log') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.transactions.log*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.transactions.log') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
@@ -164,7 +182,7 @@
                 </a>
 
                 <a href="{{ route('superadmin.withdraws.index') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.withdraws*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.withdraws.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
@@ -190,7 +208,7 @@
             </nav>
 
             <!-- Fixed Bottom Actions (Pengaturan & Logout) -->
-            <div class="p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0 space-y-1 transition-colors duration-200">
+            <div class="p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0 space-y-1">
                 <a href="{{ route('superadmin.settings.appearance') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.settings.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-lg transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,7 +240,7 @@
                  }" 
                  x-init="checkScroll()"
                  @scroll.window="checkScroll()"
-                 class="sticky top-0 z-30 transition-colors duration-200 border-b w-full"
+                 class="sticky top-0 z-30 border-b w-full"
                  :class="isScrolled 
                      ? 'bg-white/20 dark:bg-gray-800/20 backdrop-blur-md border-gray-200/20 dark:border-gray-700/20 shadow-sm' 
                      : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'"

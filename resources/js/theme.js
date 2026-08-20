@@ -21,9 +21,18 @@ export function applyTheme(mode) {
 
     if (isDark) {
         document.documentElement.classList.add('dark');
+        document.documentElement.style.colorScheme = 'dark';
     } else {
         document.documentElement.classList.remove('dark');
+        document.documentElement.style.colorScheme = 'light';
     }
+
+    // Smoothly remove no-transition after render
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            document.documentElement.classList.remove('no-transition');
+        }, 50);
+    });
 
     window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: mode, isDark: isDark } }));
 }

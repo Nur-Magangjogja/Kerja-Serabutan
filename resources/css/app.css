@@ -11,6 +11,18 @@
         max-width: 100%;
         overflow-x: clip;
     }
+
+    /* Prevent transition flicker / flash on initial load & refresh */
+    .no-transition,
+    .no-transition *,
+    .no-transition *:before,
+    .no-transition *:after {
+        -webkit-transition: none !important;
+        -moz-transition: none !important;
+        -ms-transition: none !important;
+        -o-transition: none !important;
+        transition: none !important;
+    }
     
     /* Backdrop blur support */
     @supports ((-webkit-backdrop-filter: blur(10px)) or (backdrop-filter: blur(10px))) {

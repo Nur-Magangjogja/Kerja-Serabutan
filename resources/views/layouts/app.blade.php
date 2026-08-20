@@ -5,6 +5,38 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="color-scheme" content="dark light">
+
+    <!-- Instant Theme Anti-FOUC (Executed synchronously before any network requests/fonts) -->
+    <style>
+        html { color-scheme: light dark; }
+        html.dark { background-color: #111827 !important; color-scheme: dark; }
+        html.dark body { background-color: #111827 !important; color: #f9fafb; }
+        html.dark main { background-color: #111827 !important; }
+        html:not(.dark) { background-color: #f9fafb !important; color-scheme: light; }
+        html:not(.dark) body { background-color: #f9fafb !important; }
+        .no-transition, .no-transition * { -webkit-transition: none !important; transition: none !important; }
+    </style>
+    <script>
+        (function() {
+            try {
+                var d = document.documentElement;
+                d.classList.add('no-transition');
+                var saved = localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
+                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var isDark = (saved === 'dark') || (saved === 'system' && prefersDark);
+                if (isDark) {
+                    d.classList.add('dark');
+                    d.style.colorScheme = 'dark';
+                    d.style.backgroundColor = '#111827';
+                } else {
+                    d.classList.remove('dark');
+                    d.style.colorScheme = 'light';
+                    d.style.backgroundColor = '#f9fafb';
+                }
+            } catch (e) {}
+        })();
+    </script>
 
     <title>{{ \App\Models\AppSetting::get('app_name', config('app.name', 'SayaBantu')) }}</title>
     <meta name="description" content="{{ \App\Models\AppSetting::get('app_description', 'Solusi bantuan cepat, aman, dan terpercaya.') }}">
@@ -15,23 +47,9 @@
         <link rel="icon" href="{{ asset('storage/' . $fav) }}">
     @endif
 
-    <!-- Fonts -->
+    <!-- Fonts (Loaded asynchronously / non-blocking) -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
-
-    <!-- Theme Anti-FOUC -->
-    <script>
-        (function() {
-            const saved = localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (saved === 'dark' || (saved === 'system' && prefersDark)) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        })();
-    </script>
-
 
     <!-- Scripts & Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
