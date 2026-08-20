@@ -7,25 +7,27 @@
     <!-- Sub-navigation tabs -->
     <x-superadmin-settings-nav />
 
-    <!-- Notifikasi Sukses -->
-    @if (session('message'))
-        <div id="alert-message" class="mb-6 flex items-center p-4 text-emerald-800 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-sm transition-all duration-300" role="alert">
-            <div class="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center mr-3 flex-shrink-0">
-                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
+    <!-- Notifikasi Sukses / Alert Section -->
+    <div id="alert-section" class="scroll-mt-6">
+        @if (session('message'))
+            <div id="alert-message" class="mb-6 flex items-center p-4 text-emerald-800 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-sm transition-all duration-300 ring-2 ring-emerald-500/20" role="alert">
+                <div class="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center mr-3 flex-shrink-0">
+                    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <div class="text-sm font-semibold flex-1">
+                    {{ session('message') }}
+                </div>
+                <button type="button" onclick="document.getElementById('alert-message')?.remove()" class="ml-auto -mx-1.5 -my-1.5 bg-emerald-50 text-emerald-500 rounded-lg focus:ring-2 focus:ring-emerald-400 p-1.5 hover:bg-emerald-100 dark:bg-transparent dark:text-emerald-400 dark:hover:bg-emerald-900/50 inline-flex h-8 w-8 transition">
+                    <span class="sr-only">Close</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
-            <div class="text-sm font-medium flex-1">
-                {{ session('message') }}
-            </div>
-            <button type="button" onclick="document.getElementById('alert-message').remove()" class="ml-auto -mx-1.5 -my-1.5 bg-emerald-50 text-emerald-500 rounded-lg focus:ring-2 focus:ring-emerald-400 p-1.5 hover:bg-emerald-100 dark:bg-transparent dark:text-emerald-400 dark:hover:bg-emerald-900/50 inline-flex h-8 w-8 transition">
-                <span class="sr-only">Close</span>
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-    @endif
+        @endif
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- Form Pengaturan (7 Cols) -->
@@ -409,4 +411,36 @@
             </div>
         </div>
     </div>
+
+    <!-- Script: Auto-scroll to Alert when Saving -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            function scrollToAlert() {
+                setTimeout(function () {
+                    const alertEl = document.getElementById('alert-message') || document.getElementById('alert-section');
+                    if (alertEl) {
+                        alertEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                }, 80);
+            }
+
+            // Listen to Livewire custom event dispatched from backend
+            if (window.Livewire) {
+                Livewire.on && Livewire.on('identitySaved', scrollToAlert);
+            }
+            document.addEventListener('livewire:init', function () {
+                Livewire.on('identitySaved', scrollToAlert);
+            });
+
+            // Also listen to form submit for instant feedback
+            const form = document.querySelector('form[wire\\:submit\\.prevent="save"]');
+            if (form) {
+                form.addEventListener('submit', function () {
+                    scrollToAlert();
+                });
+            }
+        });
+    </script>
 </div>

@@ -13,11 +13,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
 
-        // Add global middleware for role-based redirects
-        $middleware->web(append: [
-            \App\Http\Middleware\RedirectBasedOnRole::class,
-        ]);
-
         $middleware->alias([
             'super_admin' => \App\Http\Middleware\EnsureSuperAdmin::class,
             'admin' => \App\Http\Middleware\EnsureAdmin::class,

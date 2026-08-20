@@ -9,59 +9,90 @@
             <h1 class="text-xl font-bold text-gray-900 dark:text-white">Financial Report</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Laporan keuangan dan transaksi sistem</p>
         </div>
-        <div class="flex items-center gap-2">
-            <button wire:click="exportExcel"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                Excel
+        <div class="flex items-center gap-2 flex-wrap">
+            <!-- 1. CSV Export -->
+            <button wire:click="exportCsv" wire:loading.attr="disabled"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-700 hover:bg-slate-800 active:bg-slate-900 text-white text-xs sm:text-sm font-semibold rounded-xl transition-all shadow-xs hover:shadow active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                title="Unduh Data Format CSV">
+                <svg wire:loading.remove wire:target="exportCsv" class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <svg wire:loading wire:target="exportCsv" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>CSV</span>
             </button>
-            <button wire:click="exportPdf"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white text-sm font-semibold rounded-lg hover:bg-rose-700 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                PDF
+
+            <!-- 2. XLSX Export -->
+            <button wire:click="exportXlsx" wire:loading.attr="disabled"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs sm:text-sm font-semibold rounded-xl transition-all shadow-xs hover:shadow active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                title="Unduh Spreadsheet Format Excel XLSX">
+                <svg wire:loading.remove wire:target="exportXlsx, exportExcel" class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <svg wire:loading wire:target="exportXlsx, exportExcel" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>XLSX</span>
+            </button>
+
+            <!-- 3. PDF Export -->
+            <button wire:click="exportPdf" wire:loading.attr="disabled"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-xs sm:text-sm font-semibold rounded-xl transition-all shadow-xs hover:shadow active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                title="Unduh Laporan Format PDF">
+                <svg wire:loading.remove wire:target="exportPdf" class="w-4 h-4 text-rose-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+                <svg wire:loading wire:target="exportPdf" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>PDF</span>
             </button>
         </div>
     </div>
 
     {{-- ===== Summary Cards ===== --}}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
-            <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
+            <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
             <div class="min-w-0 flex-1">
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Top Up</p>
-                <p class="text-lg font-bold text-gray-900 dark:text-white truncate">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</p>
+                <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</p>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
-            <div class="w-11 h-11 rounded-xl bg-rose-50 dark:bg-rose-900/40 flex items-center justify-center flex-shrink-0">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
+            <div class="w-11 h-11 rounded-xl bg-rose-50 dark:bg-rose-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             </div>
             <div class="min-w-0 flex-1">
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Withdraw</p>
-                <p class="text-lg font-bold text-gray-900 dark:text-white truncate">Rp {{ number_format($totalWithdraw, 0, ',', '.') }}</p>
+                <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">Rp {{ number_format($totalWithdraw, 0, ',', '.') }}</p>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
-            <div class="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
+            <div class="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
             </div>
             <div class="min-w-0 flex-1">
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Transaksi</p>
-                <p class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ number_format($totalTransactions) }}</p>
+                <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">{{ number_format($totalTransactions) }}</p>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
-            <div class="w-11 h-11 rounded-xl bg-violet-50 dark:bg-violet-900/40 flex items-center justify-center flex-shrink-0">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
+            <div class="w-11 h-11 rounded-xl bg-violet-50 dark:bg-violet-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             </div>
             <div class="min-w-0 flex-1">
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Rata-rata</p>
-                <p class="text-lg font-bold text-gray-900 dark:text-white truncate">Rp {{ number_format($avgTransaction, 0, ',', '.') }}</p>
+                <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">Rp {{ number_format($avgTransaction, 0, ',', '.') }}</p>
             </div>
         </div>
     </div>
@@ -83,6 +114,7 @@
                     <option value="all">Semua Tipe</option>
                     <option value="topup">Topup</option>
                     <option value="withdraw">Withdraw</option>
+                    <option value="deduction">Deduction (Potongan / Denda)</option>
                     <option value="other">Lainnya</option>
                 </select>
                 <input wire:model="from" type="date"
@@ -90,7 +122,7 @@
                 <input wire:model="to" type="date"
                     class="py-2 px-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <button wire:click="$refresh"
-                    class="px-4 py-2 text-sm font-semibold bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                    class="px-4 py-2 text-sm font-semibold bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors cursor-pointer">
                     Filter
                 </button>
                 <select wire:model="perPage" wire:change="$refresh"
@@ -114,7 +146,7 @@
                     <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Waktu</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pengguna</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipe</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipe & Deskripsi</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Jumlah</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Referensi</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
@@ -124,15 +156,16 @@
                     @forelse($transactions as $t)
                     @php
                     $typeColor = match($t->type ?? '') {
-                        'topup'    => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
-                        'withdraw' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
-                        default    => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+                        'topup'     => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60',
+                        'withdraw'  => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60',
+                        'deduction' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60',
+                        default     => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60',
                     };
                     $statusColor = match($t->status ?? 'ok') {
-                        'approved', 'success', 'ok' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
-                        'pending'  => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
-                        'rejected', 'failed' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
-                        default    => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
+                        'approved', 'success', 'ok', 'completed' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+                        'pending'                                => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
+                        'rejected', 'failed'                     => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
+                        default                                  => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
                     };
                     @endphp
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-150">
@@ -153,15 +186,55 @@
                             @endif
                         </td>
                         <td class="px-4 py-3.5">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $typeColor }}">{{ ucfirst($t->type) }}</span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $typeColor }}">
+                                {{ $t->type === 'deduction' ? 'Deduction' : ucfirst($t->type) }}
+                            </span>
+                            @if($t->description)
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1 max-w-[280px]" title="{{ $t->description }}">
+                                    {{ $t->description }}
+                                </p>
+                            @endif
                         </td>
                         <td class="px-4 py-3.5 text-right">
-                            <span class="font-bold {{ ($t->type ?? '') === 'topup' ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-100' }}">
-                                Rp {{ number_format($t->amount, 0, ',', '.') }}
+                            <span class="font-bold {{ ($t->type ?? '') === 'topup' ? 'text-emerald-700 dark:text-emerald-400' : (($t->type ?? '') === 'deduction' || ($t->type ?? '') === 'withdraw' ? 'text-rose-600 dark:text-rose-400' : 'text-gray-800 dark:text-gray-100') }}">
+                                {{ ($t->type ?? '') === 'topup' ? '+' : '-' }} Rp {{ number_format($t->amount, 0, ',', '.') }}
                             </span>
                         </td>
                         <td class="px-4 py-3.5 hidden lg:table-cell">
-                            <code class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">{{ $t->reference ?? '—' }}</code>
+                            <div class="flex flex-col gap-1 items-start min-w-[120px]">
+                                @if(!empty($t->order_id))
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
+                                        <span class="text-gray-400 dark:text-gray-500 font-sans text-[9px] uppercase font-bold tracking-wider">Order</span>
+                                        {{ $t->order_id }}
+                                    </span>
+                                @endif
+
+                                @if(!empty($t->reference_id))
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60">
+                                        <svg class="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                        </svg>
+                                        <span>Bantuan ID: {{ $t->reference_id }}</span>
+                                    </span>
+                                @endif
+
+                                @if(!empty($t->request_code))
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+                                        <span class="text-emerald-500 font-bold text-[9px]">KODE</span>
+                                        {{ $t->request_code }}
+                                    </span>
+                                @endif
+
+                                @if(empty($t->order_id) && empty($t->reference_id) && empty($t->request_code))
+                                    @if(!empty($t->reference))
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                            {{ $t->reference }}
+                                        </span>
+                                    @else
+                                        <span class="text-gray-400 dark:text-gray-500 text-xs">—</span>
+                                    @endif
+                                @endif
+                            </div>
                         </td>
                         <td class="px-4 py-3.5">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $statusColor }}">{{ ucfirst($t->status ?? 'ok') }}</span>

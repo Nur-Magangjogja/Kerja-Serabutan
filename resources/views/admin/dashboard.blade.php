@@ -75,70 +75,71 @@
         </div>
 
         {{-- ===== Top Stat Cards Grid ===== --}}
-        <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+        {{-- ===== Top Stat Cards Grid ===== --}}
+        <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-3">
             {{-- Total Bantuan --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3 transition-colors">
-                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 transition-colors min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                     <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 16V8a2 2 0 00-2-2h-3l-2-2H10L8 6H5a2 2 0 00-2 2v8"/><rect x="3" y="8" width="18" height="10" rx="2" ry="2" fill="none"/></svg>
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Bantuan</p>
-                    <p class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ number_format($totalHelps) }}</p>
+                    <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">{{ number_format($totalHelps) }}</p>
                 </div>
             </div>
 
             {{-- Pending --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3 transition-colors">
-                <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 transition-colors min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                     <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Pending</p>
-                    <p class="text-lg font-bold text-amber-600 dark:text-amber-400 truncate">{{ number_format($pendingHelps) }}</p>
+                    <p class="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-400 truncate">{{ number_format($pendingHelps) }}</p>
                 </div>
             </div>
 
             {{-- Aktif --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3 transition-colors">
-                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 transition-colors min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                     <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Aktif</p>
-                    <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400 truncate">{{ number_format($activeHelps) }}</p>
+                    <p class="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 truncate">{{ number_format($activeHelps) }}</p>
                 </div>
             </div>
 
             {{-- Selesai --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3 transition-colors">
-                <div class="w-10 h-10 rounded-xl bg-cyan-50 dark:bg-cyan-900/40 flex items-center justify-center flex-shrink-0">
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 transition-colors min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-cyan-50 dark:bg-cyan-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                     <svg class="w-5 h-5 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Selesai</p>
-                    <p class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ number_format($completedHelps) }}</p>
+                    <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">{{ number_format($completedHelps) }}</p>
                 </div>
             </div>
 
             {{-- KTP Pending --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3 transition-colors">
-                <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 transition-colors min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                     <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-xs text-gray-500 dark:text-gray-400 truncate">KTP Pending</p>
-                    <p class="text-lg font-bold text-orange-600 dark:text-orange-400 truncate">{{ number_format($pendingVerifications) }}</p>
+                    <p class="text-base sm:text-lg font-bold text-orange-600 dark:text-orange-400 truncate">{{ number_format($pendingVerifications) }}</p>
                 </div>
             </div>
 
             {{-- Mitra Terverifikasi --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3 transition-colors">
-                <div class="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-900/40 flex items-center justify-center flex-shrink-0">
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 transition-colors min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                     <svg class="w-5 h-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Mitra Terverifikasi</p>
-                    <p class="text-lg font-bold text-teal-600 dark:text-teal-400 truncate">{{ number_format($verifiedMitras) }}</p>
+                    <p class="text-base sm:text-lg font-bold text-teal-600 dark:text-teal-400 truncate">{{ number_format($verifiedMitras) }}</p>
                 </div>
             </div>
         </div>

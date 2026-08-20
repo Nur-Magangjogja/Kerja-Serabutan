@@ -83,9 +83,8 @@ class BalanceTransactionObserver
                         'user_id' => $transaction->user_id,
                         'activity_type' => 'balance_topup',
                         'description' => sprintf(
-                            'Top up berhasil Rp %s %s',
-                            number_format($amount, 0, ',', '.'),
-                            $transaction->order_id ? '(Order #' . $transaction->order_id . ')' : ''
+                            'Top up saldo berhasil Rp %s',
+                            number_format($amount, 0, ',', '.')
                         ),
                     ]);
                 } catch (\Throwable $e) {

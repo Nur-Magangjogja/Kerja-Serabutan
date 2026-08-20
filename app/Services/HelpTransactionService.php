@@ -91,7 +91,7 @@ class HelpTransactionService
             $mitra->id,
             $help->id,
             'take_help',
-            "Mitra {$mitra->name} mengambil bantuan #{$help->id} ('{$help->title}')"
+            "Mitra {$mitra->name} mengambil bantuan ('{$help->title}')"
         );
 
         Log::info('[HelpTransactionService] takeHelp success', ['help_id' => $help->id, 'mitra_id' => $mitra->id]);
@@ -118,7 +118,7 @@ class HelpTransactionService
             $mitra->id,
             $help->id,
             'partner_on_the_way',
-            "Mitra {$mitra->name} berangkat menuju lokasi bantuan #{$help->id}"
+            "Mitra {$mitra->name} berangkat menuju lokasi bantuan"
         );
     }
 
@@ -143,7 +143,7 @@ class HelpTransactionService
             $mitra->id,
             $help->id,
             'partner_arrived',
-            "Mitra {$mitra->name} tiba di lokasi bantuan #{$help->id}"
+            "Mitra {$mitra->name} tiba di lokasi bantuan"
         );
     }
 
@@ -168,7 +168,7 @@ class HelpTransactionService
             $mitra->id,
             $help->id,
             'help_started',
-            "Mitra {$mitra->name} mulai mengerjakan bantuan #{$help->id}"
+            "Mitra {$mitra->name} mulai mengerjakan bantuan"
         );
     }
 
@@ -204,7 +204,7 @@ class HelpTransactionService
             $mitra->id,
             $help->id,
             'help_completed',
-            "Mitra {$mitra->name} menyelesaikan bantuan #{$help->id} dan mengunggah foto bukti",
+            "Mitra {$mitra->name} menyelesaikan bantuan dan mengunggah foto bukti",
             $path
         );
     }
@@ -241,7 +241,7 @@ class HelpTransactionService
             $mitra->id,
             $help->id,
             'cancel_requested',
-            "Mitra {$mitra->name} mengajukan pembatalan bantuan #{$help->id}. Alasan: " . ($reason ?: 'Tidak disebutkan')
+            "Mitra {$mitra->name} mengajukan pembatalan bantuan. Alasan: " . ($reason ?: 'Tidak disebutkan')
         );
     }
 
@@ -279,7 +279,7 @@ class HelpTransactionService
             $customer->id,
             $help->id,
             'help_confirmed',
-            "Customer {$customer->name} mengonfirmasi bantuan #{$help->id} telah selesai",
+            "Customer {$customer->name} mengonfirmasi bantuan telah selesai",
             $help->proof_photo
         );
 
@@ -308,7 +308,7 @@ class HelpTransactionService
             $customer->id,
             $help->id,
             'help_cancelled',
-            "Customer {$customer->name} membatalkan bantuan #{$help->id}"
+            "Customer {$customer->name} membatalkan bantuan"
         );
     }
 
@@ -380,7 +380,7 @@ class HelpTransactionService
             $customer->id,
             $help->id,
             'cancel_accepted',
-            "Customer {$customer->name} menyetujui pembatalan bantuan #{$help->id}. Mitra dikenakan denda Rp " . number_format($penaltyFee, 0, ',', '.') . ". Pesanan dikembalikan ke pool."
+            "Customer {$customer->name} menyetujui pembatalan bantuan. Mitra dikenakan denda Rp " . number_format($penaltyFee, 0, ',', '.') . ". Pesanan dikembalikan ke pool."
         );
 
         Log::info('[HelpTransactionService] customerAcceptCancel success', [
@@ -439,7 +439,7 @@ class HelpTransactionService
             $customer->id,
             $help->id,
             'cancel_rejected',
-            "Customer {$customer->name} menolak pembatalan bantuan #{$help->id}. Mitra diminta lanjutkan pekerjaan."
+            "Customer {$customer->name} menolak pembatalan bantuan. Mitra diminta lanjutkan pekerjaan."
         );
     }
 
@@ -509,7 +509,7 @@ class HelpTransactionService
             ->exists();
 
         if ($alreadyCredited) {
-            Log::info('[HelpTransactionService] Mitra sudah dikreditkan untuk help #' . $help->id . ', skip.');
+            Log::info('[HelpTransactionService] Mitra sudah dikreditkan untuk help ' . $help->id . ', skip.');
             return;
         }
 
@@ -520,7 +520,7 @@ class HelpTransactionService
 
         $userBalance->addBalance(
             $help->amount,
-            'Pendapatan Bantuan #' . $help->id . ' (' . $help->title . ')',
+            'Pendapatan Bantuan (' . $help->title . ')',
             $help->id
         );
 
@@ -549,7 +549,7 @@ class HelpTransactionService
             ->exists();
 
         if ($alreadyPenalized) {
-            Log::info("[HelpTransactionService] Denda sudah pernah diterapkan untuk mitra {$mitra->id} pada help #{$help->id}");
+            Log::info("[HelpTransactionService] Denda sudah pernah diterapkan untuk mitra {$mitra->id} pada help {$help->id}");
             return $penaltyFee;
         }
 
@@ -560,11 +560,11 @@ class HelpTransactionService
 
         $userBalance->deductBalance(
             $penaltyFee,
-            "Denda Pembatalan Bantuan #{$help->id} ('{$help->title}')",
+            "Denda Pembatalan Bantuan ('{$help->title}')",
             $help->id
         );
 
-        Log::info("[HelpTransactionService] Denda pembatalan Rp {$penaltyFee} dipotong dari mitra {$mitra->id} untuk help #{$help->id}");
+        Log::info("[HelpTransactionService] Denda pembatalan Rp {$penaltyFee} dipotong dari mitra {$mitra->id} untuk help {$help->id}");
 
         return $penaltyFee;
     }

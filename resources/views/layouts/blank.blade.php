@@ -20,21 +20,19 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
 
-    <!-- Theme Initialization Script (Anti-FOUC) -->
+    <!-- Theme Anti-FOUC -->
     <script>
         (function() {
-            const theme = localStorage.getItem('theme') || 'system';
-            const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-            if (isDark) document.documentElement.classList.add('dark');
-            else document.documentElement.classList.remove('dark');
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-                if (localStorage.getItem('theme') === 'system' || !localStorage.getItem('theme')) {
-                    if (e.matches) document.documentElement.classList.add('dark');
-                    else document.documentElement.classList.remove('dark');
-                }
-            });
+            const saved = localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (saved === 'dark' || (saved === 'system' && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
         })();
     </script>
+
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])

@@ -17,75 +17,70 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
 
-    <!-- Flowbite & Global Theme Initialization Script (Anti-FOUC) -->
+    <!-- Theme Anti-FOUC -->
     <script>
-        window.getTheme = function() {
-            return localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
-        };
-
-        window.applyTheme = function(mode) {
-            mode = mode || window.getTheme();
+        (function() {
+            const saved = localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
             const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const isDark = mode === 'dark' || (mode === 'system' && prefersDark);
-            
-            if (isDark) {
+            if (saved === 'dark' || (saved === 'system' && prefersDark)) {
                 document.documentElement.classList.add('dark');
             } else {
                 document.documentElement.classList.remove('dark');
             }
-            
-            window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: mode, isDark: isDark } }));
-        };
-
-        window.setTheme = function(mode) {
-            localStorage.setItem('theme', mode);
-            localStorage.setItem('color-theme', mode);
-            window.applyTheme(mode);
-        };
-
-        // Execute immediately to set dark class before DOM render (Flowbite compatible)
-        window.applyTheme();
-
-        window.updateChartDefaults = function() {
-            if (window.Chart) {
-                const isDark = document.documentElement.classList.contains('dark');
-                Chart.defaults.color = isDark ? '#9ca3af' : '#64748b';
-                Chart.defaults.borderColor = isDark ? '#374151' : 'rgba(15, 23, 42, 0.06)';
-            }
-        };
-
-        window.addEventListener('theme-changed', function() {
-            window.updateChartDefaults();
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            window.updateChartDefaults();
-        });
-
-        if (window.matchMedia) {
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-                if (window.getTheme() === 'system') {
-                    window.applyTheme('system');
-                }
-            });
-        }
+        })();
     </script>
+
+
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
 
-<body class="antialiased bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-200" x-data="{ showLogoutModal: false }" @open-logout-modal.window="showLogoutModal = true">
-    <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex transition-colors duration-200">
-        <!-- Sidebar -->
-        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg fixed inset-y-0 left-0 flex flex-col z-30 transition-colors duration-200">
+<body class="antialiased bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-200" 
+      x-data="{ 
+          sidebarOpenMobile: false, 
+          sidebarOpenDesktop: true,
+          showLogoutModal: false,
+          toggleSidebar() {
+              if (window.innerWidth < 1024) {
+                  this.sidebarOpenMobile = !this.sidebarOpenMobile;
+              } else {
+                  this.sidebarOpenDesktop = !this.sidebarOpenDesktop;
+              }
+          }
+      }" 
+      @keydown.escape.window="sidebarOpenMobile = false"
+      x-on:livewire:navigated.window="if (window.innerWidth < 1024) sidebarOpenMobile = false"
+      @open-logout-modal.window="showLogoutModal = true">
+
+    <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex transition-colors duration-200 relative w-full">
+
+        <!-- Mobile Drawer Backdrop -->
+        <div x-show="sidebarOpenMobile" 
+             @click="sidebarOpenMobile = false" 
+             x-cloak 
+             x-transition:enter="transition-opacity ease-linear duration-300" 
+             x-transition:enter-start="opacity-0" 
+             x-transition:enter-end="opacity-100" 
+             x-transition:leave="transition-opacity ease-linear duration-300" 
+             x-transition:leave-start="opacity-100" 
+             x-transition:leave-end="opacity-0" 
+             class="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-40 lg:hidden">
+        </div>
+
+        <!-- Sidebar / Drawer Menu -->
+        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-2xl lg:shadow-md fixed inset-y-0 left-0 flex flex-col z-50 transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0"
+               :class="{
+                   'translate-x-0': sidebarOpenMobile,
+                   'lg:-translate-x-full': !sidebarOpenDesktop
+               }">
             @php
                 $siteName = \App\Models\AppSetting::get('app_name', 'SayaBantu');
                 $siteLogo = \App\Models\AppSetting::get('app_logo');
             @endphp
             <!-- Brand / Logo (Pinned Top) -->
-            <div class="p-5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-                <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 group">
+            <div class="p-4 sm:p-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
+                <a href="{{ route('admin.dashboard') }}" wire:navigate class="flex items-center gap-3 group min-w-0">
                     @if($siteLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($siteLogo))
                         <div class="w-10 h-10 rounded-xl bg-white dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 shadow-md shadow-primary-500/10 group-hover:scale-105 transition-all duration-200 flex items-center justify-center p-1.5 flex-shrink-0">
                             <img src="{{ asset('storage/' . $siteLogo) }}" alt="{{ $siteName }}" class="w-full h-full object-contain" />
@@ -108,11 +103,18 @@
                         </div>
                     </div>
                 </a>
+                <button @click="if (window.innerWidth < 1024) { sidebarOpenMobile = false } else { sidebarOpenDesktop = false }" 
+                        type="button" 
+                        class="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition ml-2 flex-shrink-0 cursor-pointer" 
+                        title="Tutup Menu"
+                        aria-label="Tutup Menu">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
             </div>
 
             <!-- Scrollable Navigation -->
             <nav class="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-1.5 custom-scrollbar min-h-0">
-                <a href="{{ route('admin.dashboard') }}"
+                <a href="{{ route('admin.dashboard') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.dashboard') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -124,7 +126,7 @@
                     <p class="px-4 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Moderasi</p>
                 </div>
 
-                <a href="{{ route('admin.verifications') }}"
+                <a href="{{ route('admin.verifications') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.verifications*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
@@ -132,7 +134,7 @@
                     Verifikasi KTP
                 </a>
 
-                <a href="{{ route('admin.users.index') }}"
+                <a href="{{ route('admin.users.index') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.users.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -140,7 +142,7 @@
                     Kelola Pengguna
                 </a>
 
-                <a href="{{ route('admin.partners.activity') }}"
+                <a href="{{ route('admin.partners.activity') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.partners.activity') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -148,7 +150,7 @@
                     Aktivitas Mitra
                 </a>
 
-                <a href="{{ route('admin.partners.report') }}"
+                <a href="{{ route('admin.partners.report') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.partners.report') || request()->routeIs('admin.partners.reports.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -156,7 +158,7 @@
                     Manajemen Laporan Aduan
                 </a>
 
-                <a href="{{ route('admin.partners.blocked') }}"
+                <a href="{{ route('admin.partners.blocked') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.partners.blocked') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
@@ -168,7 +170,7 @@
                     <p class="px-4 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Keuangan</p>
                 </div>
 
-                <a href="{{ route('admin.withdraws.index') }}"
+                <a href="{{ route('admin.withdraws.index') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.withdraws.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -176,7 +178,7 @@
                     Manajemen Withdraw
                 </a>
 
-                <a href="{{ route('admin.topup.approvals') }}"
+                <a href="{{ route('admin.topup.approvals') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.topup.approvals*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -188,7 +190,7 @@
 
             <!-- Fixed Bottom Actions (Pengaturan & Logout) -->
             <div class="p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0 space-y-1 transition-colors duration-200">
-                <a href="{{ route('admin.settings.appearance') }}"
+                <a href="{{ route('admin.settings.appearance') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.settings.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-lg transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -210,7 +212,8 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 ml-64 min-h-screen min-w-0">
+        <main class="flex-1 min-h-screen min-w-0 flex flex-col w-full lg:ml-64 transition-[margin] duration-300 ease-in-out"
+              :class="{ 'lg:!ml-0': !sidebarOpenDesktop }">
             <!-- Topbar -->
             <div x-data="{ 
                      isScrolled: false,
@@ -218,13 +221,24 @@
                  }" 
                  x-init="checkScroll()"
                  @scroll.window="checkScroll()"
-                 class="sticky top-0 z-30 transition-all duration-300 border-b"
+                 class="sticky top-0 z-30 transition-colors duration-200 border-b w-full"
                  :class="isScrolled 
-                     ? 'bg-white/20 dark:bg-gray-900/20 backdrop-blur-md border-gray-200/40 dark:border-gray-700/40 shadow-sm' 
+                     ? 'bg-white/20 dark:bg-gray-800/20 backdrop-blur-md border-gray-200/20 dark:border-gray-700/20 shadow-sm' 
                      : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'"
                  style="position: -webkit-sticky; position: sticky; top: 0;">
-                <div class="px-6 py-3 flex items-center justify-between">
-                    <div class="flex items-center gap-4 min-w-0">
+                <div class="px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <!-- Menu Toggle Button (Always visible on all screens: Desktop, Tablet & Mobile) -->
+                        <button @click="toggleSidebar()" 
+                                type="button" 
+                                class="inline-flex items-center justify-center p-2 rounded-xl bg-gray-100 dark:bg-gray-700/80 text-gray-600 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all flex-shrink-0 cursor-pointer" 
+                                title="Toggle Menu Sidebar"
+                                aria-label="Toggle Menu Sidebar">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+
                         <div class="hidden sm:flex items-center text-xs text-gray-400 dark:text-gray-400 gap-2">
                             <a href="{{ route('admin.dashboard') }}" class="hover:underline">Admin</a>
                             <svg class="w-3 h-3 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -234,18 +248,16 @@
                         <div class="min-w-0">
                             @hasSection('page-title')
                                 <div>
-                                    <h2 class="text-lg font-semibold text-gray-800 dark:text-white truncate">@yield('page-title')</h2>
+                                    <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white truncate">@yield('page-title')</h2>
                                     @hasSection('page-description')
-                                        <div class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">@yield('page-description')</div>
+                                        <div class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">@yield('page-description')</div>
                                     @endif
                                 </div>
-                            @else
-                                <div></div>
                             @endif
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                         <!-- Quick actions (Refresh) -->
                         <div class="hidden sm:flex items-center gap-2">
                             <button onclick="location.reload()" class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
@@ -269,7 +281,7 @@
                                 @endif
                             </button>
 
-                            <div x-show="open" x-cloak x-transition class="origin-top-right absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden z-50">
+                            <div x-show="open" x-cloak x-transition class="origin-top-right absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden z-50">
                                 <div class="p-3 border-b border-gray-100 dark:border-gray-700 text-sm font-semibold text-gray-800 dark:text-gray-100">Notifikasi</div>
                                 <div class="max-h-64 overflow-auto">
                                     @if($notes->isEmpty())
@@ -303,10 +315,10 @@
                         </div>
 
                         <!-- User Profile -->
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-full bg-primary-600 text-white flex items-center justify-center font-semibold">{{ strtoupper(substr(auth()->user()->name ?? 'A',0,1)) }}</div>
+                        <div class="flex items-center gap-2 sm:gap-3">
+                            <div class="w-9 h-9 rounded-full bg-primary-600 text-white flex items-center justify-center font-semibold text-sm">{{ strtoupper(substr(auth()->user()->name ?? 'A',0,1)) }}</div>
                             <div class="hidden sm:block">
-                                <div class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ auth()->user()->name ?? 'Admin' }}</div>
+                                <div class="text-sm font-medium text-gray-800 dark:text-gray-200 max-w-[120px] truncate">{{ auth()->user()->name ?? 'Admin' }}</div>
                                 <div class="text-xs text-gray-400 dark:text-gray-400">Admin</div>
                             </div>
                         </div>
@@ -314,7 +326,8 @@
                 </div>
             </div>
 
-            <div class="p-4 sm:p-6">
+            <!-- Content Area -->
+            <div class="p-4 sm:p-6 lg:p-8 w-full max-w-full flex-1 overflow-x-clip min-w-0">
                 @hasSection('content')
                     @yield('content')
                 @elseif(isset($slot))
@@ -322,6 +335,7 @@
                 @endif
             </div>
         </main>
+
     </div>
 
     <!-- Logout Confirmation Modal -->
@@ -409,18 +423,9 @@
             </div>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (typeof initFlowbite === 'function') initFlowbite();
-        });
-        document.addEventListener('livewire:navigated', () => {
-            if (typeof initFlowbite === 'function') initFlowbite();
-        });
-    </script>
     @livewireScripts
     @stack('scripts')
 </body>
+
 
 </html>

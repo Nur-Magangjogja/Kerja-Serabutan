@@ -17,7 +17,8 @@
     </div>
 
     {{-- ===== Summary Cards ===== --}}
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
+    {{-- ===== Summary Cards ===== --}}
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-2.5 sm:gap-3 mb-5">
         @php
         $statCards = [
             ['label' => 'Total',     'value' => $stats['total_logs'],    'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', 'bg' => 'bg-blue-50 dark:bg-blue-900/40', 'color' => 'text-blue-600 dark:text-blue-400'],
@@ -28,13 +29,13 @@
         ];
         @endphp
         @foreach($statCards as $card)
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
-            <div class="w-10 h-10 {{ $card['bg'] }} rounded-xl flex items-center justify-center flex-shrink-0">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 {{ $card['bg'] }} rounded-xl hidden sm:flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 {{ $card['color'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $card['icon'] }}"/></svg>
             </div>
-            <div>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $card['label'] }}</p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">{{ number_format($card['value']) }}</p>
+            <div class="min-w-0 flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $card['label'] }}</p>
+                <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{{ number_format($card['value']) }}</p>
             </div>
         </div>
         @endforeach

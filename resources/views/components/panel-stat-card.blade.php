@@ -31,17 +31,17 @@ $colorMap = [
 $c = $colorMap[$color] ?? $colorMap['blue'];
 @endphp
 
-<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow duration-200 min-w-0">
+<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3.5 sm:p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow duration-200 min-w-0">
     @if(isset($icon))
-    <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 {{ $c['bg'] }}">
+    <div class="w-11 h-11 rounded-xl hidden sm:flex items-center justify-center flex-shrink-0 {{ $c['bg'] }}">
         <span class="{{ $c['icon'] }}">{{ $icon }}</span>
     </div>
     @endif
     <div class="min-w-0 flex-1">
         <p class="text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{{ $label }}</p>
-        <p class="text-xl font-bold text-gray-900 dark:text-white mt-0.5 truncate">{{ $value }}</p>
+        <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mt-0.5 truncate">{{ $value }}</p>
         @if($sub || $trend)
-        <div class="flex items-center gap-1 mt-0.5">
+        <div class="hidden sm:flex items-center gap-1 mt-0.5">
             @if($trend)
             <span class="text-xs font-medium {{ $trendUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
                 {{ $trendUp ? '↑' : '↓' }} {{ $trend }}
@@ -53,3 +53,4 @@ $c = $colorMap[$color] ?? $colorMap['blue'];
         @endif
     </div>
 </div>
+

@@ -18,90 +18,26 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
 
-    <!-- Flowbite & Global Theme Initialization Script (Anti-FOUC) -->
+    <!-- Theme Anti-FOUC -->
     <script>
-        window.getTheme = function() {
-            return localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
-        };
-
-        window.applyTheme = function(mode) {
-            mode = mode || window.getTheme();
+        (function() {
+            const saved = localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
             const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const isDark = mode === 'dark' || (mode === 'system' && prefersDark);
-            
-            if (isDark) {
+            if (saved === 'dark' || (saved === 'system' && prefersDark)) {
                 document.documentElement.classList.add('dark');
             } else {
                 document.documentElement.classList.remove('dark');
             }
-            
-            window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: mode, isDark: isDark } }));
-        };
-
-        window.setTheme = function(mode) {
-            localStorage.setItem('theme', mode);
-            localStorage.setItem('color-theme', mode);
-            window.applyTheme(mode);
-        };
-
-        // Execute immediately before DOM render
-        window.applyTheme();
-
-        if (window.matchMedia) {
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-                if (window.getTheme() === 'system') {
-                    window.applyTheme('system');
-                }
-            });
-        }
+        })();
     </script>
 
-    <!-- Scripts -->
+
+    <!-- Scripts & Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     @stack('styles')
-    <style>
-        [x-cloak] { display: none !important; }
-        
-        /* Bottom Navigation Styles */
-        .nav-item {
-            position: relative;
-            cursor: pointer;
-            overflow: hidden;
-            border-radius: 0.75rem;
-            transition: color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
-        }
-
-        .nav-item:active {
-            transform: scale(0.95);
-        }
-
-        .nav-item svg {
-            transition: transform 0.2s ease, color 0.2s ease;
-        }
-
-        .nav-item:active svg {
-            transform: scale(0.9);
-        }
-
-        .nav-item .nav-label {
-            transition: color 0.2s ease;
-        }
-
-        /* Indicator dot for active state */
-        .nav-item.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: currentColor;
-        }
-    </style>
 </head>
+
 
 <body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 overflow-x-hidden">
     <!-- Centered Container -->
@@ -126,7 +62,7 @@
                 <!-- Bottom Navigation Bar -->
                 <nav id="bottom-nav" class="fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-2xl z-50 transition-colors duration-200">
                     <div class="flex items-center justify-around px-2 py-2">
-                        <a href="{{ route('mitra.dashboard') }}"
+                        <a href="{{ route('mitra.dashboard') }}" wire:navigate
                             class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.dashboard') && !request()->has('tab') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
@@ -134,7 +70,7 @@
                             <span class="nav-label text-xs font-bold mt-0.5">Beranda</span>
                         </a>
 
-                        <a href="{{ route('mitra.helps.all') }}"
+                        <a href="{{ route('mitra.helps.all') }}" wire:navigate
                             class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.helps.all') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
@@ -142,7 +78,7 @@
                             <span class="nav-label text-xs font-bold mt-0.5">Bantuan</span>
                         </a>
 
-                        <a href="{{ route('mitra.helps.processing') }}"
+                        <a href="{{ route('mitra.helps.processing') }}" wire:navigate
                             class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.helps.processing') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z" />
@@ -150,7 +86,7 @@
                             <span class="nav-label text-xs font-bold mt-0.5">Diproses</span>
                         </a>
 
-                        <a href="{{ route('mitra.helps.completed') }}"
+                        <a href="{{ route('mitra.helps.completed') }}" wire:navigate
                             class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.helps.completed') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M3 3h18v2H3V3zm0 4h18v14H3V7zm5 3v8h2v-8H8zm4 0v8h2v-8h-2z" />
@@ -158,7 +94,7 @@
                             <span class="nav-label text-xs font-bold mt-0.5">Riwayat</span>
                         </a>
 
-                        <a href="{{ route('mitra.profile') }}"
+                        <a href="{{ route('mitra.profile') }}" wire:navigate
                             class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.profile*') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />

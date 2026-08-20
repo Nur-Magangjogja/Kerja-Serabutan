@@ -19,90 +19,26 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
 
-    <!-- Flowbite & Global Theme Initialization Script (Anti-FOUC) -->
+    <!-- Theme Anti-FOUC -->
     <script>
-        window.getTheme = function() {
-            return localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
-        };
-
-        window.applyTheme = function(mode) {
-            mode = mode || window.getTheme();
+        (function() {
+            const saved = localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
             const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const isDark = mode === 'dark' || (mode === 'system' && prefersDark);
-            
-            if (isDark) {
+            if (saved === 'dark' || (saved === 'system' && prefersDark)) {
                 document.documentElement.classList.add('dark');
             } else {
                 document.documentElement.classList.remove('dark');
             }
-            
-            window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: mode, isDark: isDark } }));
-        };
-
-        window.setTheme = function(mode) {
-            localStorage.setItem('theme', mode);
-            localStorage.setItem('color-theme', mode);
-            window.applyTheme(mode);
-        };
-
-        // Execute immediately before DOM render
-        window.applyTheme();
-
-        if (window.matchMedia) {
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-                if (window.getTheme() === 'system') {
-                    window.applyTheme('system');
-                }
-            });
-        }
+        })();
     </script>
 
-    <!-- Scripts -->
+
+    <!-- Scripts & Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     @stack('styles')
-    <style>
-        [x-cloak] { display: none !important; }
-        
-        /* Bottom Navigation Styles */
-        .nav-item {
-            position: relative;
-            cursor: pointer;
-            overflow: hidden;
-            border-radius: 0.75rem;
-            transition: color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
-        }
-
-        .nav-item:active {
-            transform: scale(0.95);
-        }
-
-        .nav-item svg {
-            transition: transform 0.2s ease, color 0.2s ease;
-        }
-
-        .nav-item:active svg {
-            transform: scale(0.9);
-        }
-
-        .nav-item .nav-label {
-            transition: color 0.2s ease;
-        }
-
-        /* Indicator dot for active state */
-        .nav-item.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: currentColor;
-        }
-    </style>
 </head>
+
 
 <body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 overflow-x-hidden">
     <!-- Centered Container -->
@@ -126,7 +62,7 @@
             @auth
                 <nav id="bottom-nav" class="fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-2xl z-50 transition-colors duration-200">
                     <div class="flex items-center justify-around px-2 py-2">
-                        <a href="{{ route('customer.dashboard') }}"
+                        <a href="{{ route('customer.dashboard') }}" wire:navigate
                             class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('customer.dashboard') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
@@ -134,7 +70,7 @@
                             <span class="nav-label text-xs font-bold mt-0.5">Beranda</span>
                         </a>
 
-                        <a href="{{ route('customer.helps.index') }}"
+                        <a href="{{ route('customer.helps.index') }}" wire:navigate
                             class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('customer.helps.*') && !request()->routeIs('customer.helps.create') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                 <path
@@ -143,7 +79,7 @@
                             <span class="nav-label text-xs font-bold mt-0.5">Bantuan</span>
                         </a>
 
-                        <a href="{{ route('customer.helps.create') }}"
+                        <a href="{{ route('customer.helps.create') }}" wire:navigate
                             class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('customer.helps.create') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M12 4a1 1 0 011 1v6h6a1 1 0 110 2h-6v6a1 1 0 11-2 0v-6H5a1 1 0 110-2h6V5a1 1 0 011-1z" />
@@ -151,7 +87,7 @@
                             <span class="nav-label text-xs font-bold mt-0.5">Bantu</span>
                         </a>
 
-                        <a href="{{ route('customer.transactions.index') }}"
+                        <a href="{{ route('customer.transactions.index') }}" wire:navigate
                             class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('customer.transactions.*') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M3 3h18v2H3V3zm0 4h18v14H3V7zm5 3v8h2v-8H8zm4 0v8h2v-8h-2z" />
@@ -159,7 +95,7 @@
                             <span class="nav-label text-xs font-bold mt-0.5">Transaksi</span>
                         </a>
 
-                        <a href="{{ route('profile') }}"
+                        <a href="{{ route('profile') }}" wire:navigate
                             class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('profile.*') || request()->routeIs('profile') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                 <path

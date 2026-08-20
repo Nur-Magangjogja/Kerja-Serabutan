@@ -18,89 +18,26 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
 
-    <!-- Flowbite & Global Theme Initialization Script (Anti-FOUC) -->
+    <!-- Theme Anti-FOUC -->
     <script>
-        window.getTheme = function() {
-            return localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
-        };
-
-        window.applyTheme = function(mode) {
-            mode = mode || window.getTheme();
+        (function() {
+            const saved = localStorage.getItem('color-theme') || localStorage.getItem('theme') || 'system';
             const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const isDark = mode === 'dark' || (mode === 'system' && prefersDark);
-            
-            if (isDark) {
+            if (saved === 'dark' || (saved === 'system' && prefersDark)) {
                 document.documentElement.classList.add('dark');
             } else {
                 document.documentElement.classList.remove('dark');
             }
-            
-            window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: mode, isDark: isDark } }));
-        };
-
-        window.setTheme = function(mode) {
-            localStorage.setItem('theme', mode);
-            localStorage.setItem('color-theme', mode);
-            window.applyTheme(mode);
-        };
-
-        // Execute immediately before DOM render
-        window.applyTheme();
-
-        if (window.matchMedia) {
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-                if (window.getTheme() === 'system') {
-                    window.applyTheme('system');
-                }
-            });
-        }
+        })();
     </script>
 
-    <!-- Scripts -->
+
+    <!-- Scripts & Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
-    <style>
-        [x-cloak] { display: none !important; }
-        
-        /* Bottom Navigation Styles */
-        .nav-item {
-            position: relative;
-            cursor: pointer;
-            overflow: hidden;
-            border-radius: 0.75rem;
-            transition: color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
-        }
-
-        .nav-item:active {
-            transform: scale(0.95);
-        }
-
-        .nav-item svg {
-            transition: transform 0.2s ease, color 0.2s ease;
-        }
-
-        .nav-item:active svg {
-            transform: scale(0.9);
-        }
-
-        .nav-item .nav-label {
-            transition: color 0.2s ease;
-        }
-
-        /* Indicator dot for active state */
-        .nav-item.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: currentColor;
-        }
-    </style>
+    @stack('styles')
 </head>
+
 
 <body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 overflow-x-hidden">
     <!-- Centered Container -->

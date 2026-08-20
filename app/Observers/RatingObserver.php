@@ -25,7 +25,7 @@ class RatingObserver
             PartnerActivity::create([
                 'user_id' => $rating->user_id,
                 'activity_type' => 'help_reviewed',
-                'description' => 'Customer menilai bantuan #' . ($rating->help_id ?? ''),
+                'description' => 'Customer memberikan ulasan dan rating',
                 'ip_address' => $ip,
                 'user_agent' => $ua,
             ]);

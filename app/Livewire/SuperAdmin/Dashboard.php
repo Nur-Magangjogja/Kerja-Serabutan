@@ -106,8 +106,9 @@ class Dashboard extends Component
 
         // Recent items for quick view
         $recentUsers = User::orderByDesc('created_at')->limit(6)->get(['id', 'name', 'email', 'role', 'created_at']);
-        $recentHelps = Help::with('user')->orderByDesc('created_at')->limit(6)->get(['id', 'title', 'status', 'created_at', 'user_id']);
+        $recentTransactions = \App\Models\BalanceTransaction::with('user')->orderByDesc('created_at')->limit(6)->get();
+        $recentHelps = Help::with('user')->orderByDesc('created_at')->limit(8)->get(['id', 'title', 'status', 'created_at', 'user_id', 'amount']);
 
-        return view('superadmin.dashboard', compact('stats', 'recentUsers', 'recentHelps'));
+        return view('superadmin.dashboard', compact('stats', 'recentUsers', 'recentTransactions', 'recentHelps'));
     }
 }

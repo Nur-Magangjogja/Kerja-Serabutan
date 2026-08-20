@@ -1,6 +1,7 @@
 @php
     $stats = $stats ?? [];
     $recentUsers = $recentUsers ?? collect();
+    $recentTransactions = $recentTransactions ?? collect();
     $recentHelps = $recentHelps ?? collect();
     $userChart = $userChart ?? [
         'daily'   => ['labels' => [], 'data' => []],
@@ -24,59 +25,59 @@
     </div>
 
     {{-- ===== Stat Cards ===== --}}
-    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3 shadow-sm min-w-0">
-            <div class="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3.5 sm:p-4 flex items-center gap-3 shadow-sm min-w-0">
+            <div class="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             </div>
             <div class="min-w-0 flex-1">
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Pengguna</p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_users'] ?? 0) }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate">Semua pengguna</p>
+                <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_users'] ?? 0) }}</p>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate hidden sm:block">Semua pengguna</p>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3 shadow-sm min-w-0">
-            <div class="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3.5 sm:p-4 flex items-center gap-3 shadow-sm min-w-0">
+            <div class="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
             </div>
             <div class="min-w-0 flex-1">
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Customer</p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_customers'] ?? 0) }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate">Pengguna aktif</p>
+                <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_customers'] ?? 0) }}</p>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate hidden sm:block">Pengguna aktif</p>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3 shadow-sm min-w-0">
-            <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3.5 sm:p-4 flex items-center gap-3 shadow-sm min-w-0">
+            <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             </div>
             <div class="min-w-0 flex-1">
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Kota</p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_cities'] ?? 0) }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate">Kota terdaftar</p>
+                <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_cities'] ?? 0) }}</p>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate hidden sm:block">Kota terdaftar</p>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3 shadow-sm min-w-0">
-            <div class="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3.5 sm:p-4 flex items-center gap-3 shadow-sm min-w-0">
+            <div class="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
             </div>
             <div class="min-w-0 flex-1">
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Mitra</p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_mitras'] ?? 0) }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate">Pengguna mitra</p>
+                <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_mitras'] ?? 0) }}</p>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate hidden sm:block">Pengguna mitra</p>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3 shadow-sm min-w-0 col-span-2 sm:col-span-1">
-            <div class="w-11 h-11 rounded-xl bg-violet-50 dark:bg-violet-900/40 flex items-center justify-center flex-shrink-0">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3.5 sm:p-4 flex items-center gap-3 shadow-sm min-w-0 col-span-2 sm:col-span-1">
+            <div class="w-11 h-11 rounded-xl bg-violet-50 dark:bg-violet-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
             </div>
             <div class="min-w-0 flex-1">
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Admin</p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_admins'] ?? 0) }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate">Admin & Super Admin</p>
+                <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{{ number_format($stats['total_admins'] ?? 0) }}</p>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate hidden sm:block">Admin & Super Admin</p>
             </div>
         </div>
     </div>
@@ -84,19 +85,19 @@
     {{-- ===== Chart + Ringkasan ===== --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
         {{-- Chart --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 lg:col-span-2">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h2 class="text-sm font-semibold text-gray-800 dark:text-white">Grafik Pendaftaran Pengguna</h2>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Statistik pendaftaran per periode</p>
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 sm:p-5 lg:col-span-2 min-w-0">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div class="min-w-0">
+                    <h2 class="text-sm font-semibold text-gray-800 dark:text-white truncate">Grafik Pendaftaran Pengguna</h2>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">Statistik pendaftaran per periode</p>
                 </div>
-                <div id="chartRangeTabs" role="tablist" class="inline-flex bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 gap-0.5">
-                    <button type="button" data-range="daily"   class="chart-range-tab px-3 py-1 text-xs font-medium rounded-md transition-all duration-200">Harian</button>
-                    <button type="button" data-range="monthly" class="chart-range-tab px-3 py-1 text-xs font-medium rounded-md transition-all duration-200">Bulanan</button>
-                    <button type="button" data-range="yearly"  class="chart-range-tab px-3 py-1 text-xs font-medium rounded-md transition-all duration-200">Tahunan</button>
+                <div id="chartRangeTabs" role="tablist" class="inline-flex bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 gap-0.5 w-full sm:w-auto justify-between sm:justify-start flex-shrink-0">
+                    <button type="button" data-range="daily"   class="chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md transition-all duration-200">Harian</button>
+                    <button type="button" data-range="monthly" class="chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md transition-all duration-200">Bulanan</button>
+                    <button type="button" data-range="yearly"  class="chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md transition-all duration-200">Tahunan</button>
                 </div>
             </div>
-            <div class="w-full transition-all duration-500 ease-out" id="chartContainer" style="opacity:0;transform:translateY(20px)">
+            <div class="w-full transition-all duration-500 ease-out min-w-0" id="chartContainer" style="opacity:0;transform:translateY(20px)">
                 <canvas id="usersChart" height="180"></canvas>
             </div>
         </div>
@@ -124,7 +125,7 @@
         </div>
     </div>
 
-    {{-- ===== Quick Actions + Recent Users + Recent Helps ===== --}}
+    {{-- ===== Quick Actions + Recent Users + Recent Transactions ===== --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
         {{-- Aksi Cepat --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
@@ -197,36 +198,67 @@
             @endif
         </div>
 
-        {{-- Permintaan Terbaru --}}
+        {{-- Transaksi Keuangan Terbaru --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
-            <h2 class="text-sm font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-                Permintaan Terbaru
-            </h2>
-            @if($recentHelps->isEmpty())
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-sm font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Transaksi Keuangan Terbaru
+                </h2>
+                <a href="{{ route('superadmin.transactions.log') }}" class="text-xs text-primary-600 dark:text-sky-400 hover:underline font-medium flex items-center gap-0.5">
+                    Lihat Semua
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+            @if($recentTransactions->isEmpty())
             <div class="flex flex-col items-center justify-center py-10 text-center">
                 <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-2">
-                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Belum ada permintaan</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Belum ada transaksi</p>
             </div>
             @else
             <div class="space-y-2">
-                @foreach($recentHelps->take(6) as $h)
+                @foreach($recentTransactions as $trx)
                 @php
-                $statusMap = [
-                    'pending'   => ['bg' => 'bg-amber-100 dark:bg-amber-900/40',   'text' => 'text-amber-700 dark:text-amber-400',  'label' => 'Pending'],
-                    'active'    => ['bg' => 'bg-blue-100 dark:bg-blue-900/40',     'text' => 'text-blue-700 dark:text-blue-400',    'label' => 'Aktif'],
-                    'completed' => ['bg' => 'bg-emerald-100 dark:bg-emerald-900/40','text'=> 'text-emerald-700 dark:text-emerald-400','label'=> 'Selesai'],
-                ];
-                $sc = $statusMap[$h->status] ?? ['bg' => 'bg-gray-100 dark:bg-gray-700', 'text' => 'text-gray-600 dark:text-gray-400', 'label' => ucfirst($h->status)];
+                $isTopup = ($trx->type ?? '') === 'topup';
+                $isWithdraw = ($trx->type ?? '') === 'withdraw';
+                $typeBadge = match($trx->type ?? '') {
+                    'topup'    => 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400',
+                    'withdraw' => 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400',
+                    default    => 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+                };
+                $statusBadge = match(strtolower($trx->status ?? 'ok')) {
+                    'approved', 'success', 'ok' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
+                    'pending'                   => 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
+                    'rejected', 'failed'        => 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400',
+                    default                     => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
+                };
                 @endphp
-                <div class="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
-                    <div class="min-w-0 flex-1">
-                        <p class="text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1 leading-snug">{{ $h->title }}</p>
-                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ optional($h->user)->name ?? '—' }} &bull; {{ $h->created_at->diffForHumans() }}</p>
+                <div class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 {{ $isTopup ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400' : ($isWithdraw ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400') }}">
+                            @if($isTopup)
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                            @elseif($isWithdraw)
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                            @else
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                            @endif
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ optional($trx->user)->name ?? 'User' }}</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ optional($trx->created_at)->diffForHumans() }}</p>
+                        </div>
                     </div>
-                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 {{ $sc['bg'] }} {{ $sc['text'] }}">{{ $sc['label'] }}</span>
+                    <div class="text-right flex-shrink-0 ml-2">
+                        <p class="text-xs sm:text-sm font-bold {{ $isTopup ? 'text-emerald-600 dark:text-emerald-400' : ($isWithdraw ? 'text-rose-600 dark:text-rose-400' : 'text-gray-900 dark:text-white') }}">
+                            {{ $isTopup ? '+' : ($isWithdraw ? '-' : '') }} Rp {{ number_format($trx->amount, 0, ',', '.') }}
+                        </p>
+                        <span class="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.2 rounded {{ $statusBadge }} mt-0.5">
+                            {{ ucfirst($trx->status ?? 'Success') }}
+                        </span>
+                    </div>
                 </div>
                 @endforeach
             </div>
@@ -248,7 +280,7 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
-                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">#</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Judul</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pengguna</th>
@@ -314,116 +346,127 @@
 {{-- Chart.js --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const chartData = @json($userChart);
-    const ctx = document.getElementById('usersChart').getContext('2d');
+(function() {
     let usersChart = null;
-    const isDark = () => document.documentElement.classList.contains('dark');
+    let observer = null;
 
-    function getColors() {
-        return {
-            gridColor : isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-            tickColor : isDark() ? '#9ca3af' : '#6b7280',
-            bar       : isDark() ? 'rgba(99,102,241,0.85)' : 'rgba(59,130,246,0.85)',
-            barHover  : isDark() ? 'rgba(129,140,248,0.95)' : 'rgba(59,130,246,0.95)',
-            border    : isDark() ? 'rgba(129,140,248,1)' : 'rgba(59,130,246,1)',
-        };
-    }
+    function initUsersChart() {
+        const canvas = document.getElementById('usersChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const chartData = @json($userChart);
+        const isDark = () => document.documentElement.classList.contains('dark');
 
-    function renderRange(range) {
-        const container = document.getElementById('chartContainer');
-        container.style.opacity = '0';
-        container.style.transform = 'translateY(16px) scale(0.99)';
-
-        setTimeout(() => {
-            const c = getColors();
-            const grad = ctx.createLinearGradient(0, 0, 0, 200);
-            grad.addColorStop(0, c.bar);
-            grad.addColorStop(1, isDark() ? 'rgba(99,102,241,0.45)' : 'rgba(59,130,246,0.45)');
-
-            const cfg = {
-                type: 'bar',
-                data: {
-                    labels: chartData[range].labels,
-                    datasets: [{
-                        label: 'Pendaftaran',
-                        data: chartData[range].data,
-                        backgroundColor: grad,
-                        borderColor: c.border,
-                        borderWidth: 1,
-                        borderRadius: 6,
-                        maxBarThickness: 36,
-                    }]
-                },
-                options: {
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: isDark() ? '#1e293b' : 'rgba(0,0,0,0.8)',
-                            padding: 10,
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: ctx => 'Pendaftaran: ' + Number(ctx.raw ?? 0).toLocaleString()
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12, color: c.tickColor },
-                            grid: { display: false }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: { precision: 0, color: c.tickColor, callback: v => Number(v).toLocaleString() },
-                            grid: { color: c.gridColor }
-                        }
-                    },
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: 900, easing: 'easeOutCubic' }
-                }
+        function getColors() {
+            return {
+                gridColor : isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                tickColor : isDark() ? '#9ca3af' : '#6b7280',
+                bar       : isDark() ? 'rgba(99,102,241,0.85)' : 'rgba(59,130,246,0.85)',
+                barHover  : isDark() ? 'rgba(129,140,248,0.95)' : 'rgba(59,130,246,0.95)',
+                border    : isDark() ? 'rgba(129,140,248,1)' : 'rgba(59,130,246,1)',
             };
+        }
 
-            if (usersChart) usersChart.destroy();
-            usersChart = new Chart(ctx, cfg);
+        function renderRange(range) {
+            const container = document.getElementById('chartContainer');
+            if (!container) return;
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(16px) scale(0.99)';
 
             setTimeout(() => {
-                container.style.opacity = '1';
-                container.style.transform = 'translateY(0) scale(1)';
-            }, 80);
-        }, 180);
+                const c = getColors();
+                const grad = ctx.createLinearGradient(0, 0, 0, 200);
+                grad.addColorStop(0, c.bar);
+                grad.addColorStop(1, isDark() ? 'rgba(99,102,241,0.45)' : 'rgba(59,130,246,0.45)');
+
+                const cfg = {
+                    type: 'bar',
+                    data: {
+                        labels: chartData[range]?.labels || [],
+                        datasets: [{
+                            label: 'Pendaftaran',
+                            data: chartData[range]?.data || [],
+                            backgroundColor: grad,
+                            borderColor: c.border,
+                            borderWidth: 1,
+                            borderRadius: 6,
+                            maxBarThickness: 36,
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: isDark() ? '#1e293b' : 'rgba(0,0,0,0.8)',
+                                padding: 10,
+                                cornerRadius: 8,
+                                callbacks: {
+                                    label: ctx => 'Pendaftaran: ' + Number(ctx.raw ?? 0).toLocaleString()
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12, color: c.tickColor },
+                                grid: { display: false }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0, color: c.tickColor, callback: v => Number(v).toLocaleString() },
+                                grid: { color: c.gridColor }
+                            }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 900, easing: 'easeOutCubic' }
+                    }
+                };
+
+                if (usersChart) usersChart.destroy();
+                usersChart = new Chart(ctx, cfg);
+
+                setTimeout(() => {
+                    container.style.opacity = '1';
+                    container.style.transform = 'translateY(0) scale(1)';
+                }, 80);
+            }, 180);
+        }
+
+        const tabs = document.querySelectorAll('.chart-range-tab');
+        const validRanges = ['daily', 'monthly', 'yearly'];
+        let initialRange = localStorage.getItem('superadmin.usersChart.range') || 'daily';
+        if (!validRanges.includes(initialRange)) initialRange = 'daily';
+
+        function setActive(range) {
+            tabs.forEach(t => {
+                if (t.dataset.range === range) {
+                    t.className = 'chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md transition-all duration-200 bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm';
+                } else {
+                    t.className = 'chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200';
+                }
+            });
+        }
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function () {
+                const r = tab.dataset.range;
+                if (!validRanges.includes(r)) return;
+                setActive(r);
+                localStorage.setItem('superadmin.usersChart.range', r);
+                renderRange(r);
+            });
+        });
+
+        setActive(initialRange);
+        renderRange(initialRange);
+
+        if (!observer) {
+            observer = new MutationObserver(() => { if (usersChart) renderRange(localStorage.getItem('superadmin.usersChart.range') || 'daily'); });
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        }
     }
 
-    const tabs = document.querySelectorAll('.chart-range-tab');
-    const validRanges = ['daily', 'monthly', 'yearly'];
-    let initialRange = localStorage.getItem('superadmin.usersChart.range') || 'daily';
-    if (!validRanges.includes(initialRange)) initialRange = 'daily';
-
-    function setActive(range) {
-        tabs.forEach(t => {
-            if (t.dataset.range === range) {
-                t.className = 'chart-range-tab px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm';
-            } else {
-                t.className = 'chart-range-tab px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200';
-            }
-        });
-    }
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', function () {
-            const r = tab.dataset.range;
-            if (!validRanges.includes(r)) return;
-            setActive(r);
-            localStorage.setItem('superadmin.usersChart.range', r);
-            renderRange(r);
-        });
-    });
-
-    setActive(initialRange);
-    renderRange(initialRange);
-
-    // Re-render on dark mode toggle
-    const observer = new MutationObserver(() => { if (usersChart) renderRange(localStorage.getItem('superadmin.usersChart.range') || 'daily'); });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-});
+    document.addEventListener('DOMContentLoaded', initUsersChart);
+    document.addEventListener('livewire:navigated', initUsersChart);
+})();
 </script>

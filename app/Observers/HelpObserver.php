@@ -35,7 +35,7 @@ class HelpObserver
                 'user_id'       => $help->user_id,
                 'help_id'       => $help->id,
                 'activity_type' => 'help_created',
-                'description'   => "Customer {$customerName} membuat permohonan bantuan #{$help->id} ('{$help->title}')",
+                'description'   => "Customer {$customerName} membuat permohonan bantuan ('{$help->title}')",
                 'photo'         => $help->photo,
                 'ip_address'    => request()?->ip(),
                 'user_agent'    => request()?->header('User-Agent'),
@@ -122,7 +122,7 @@ class HelpObserver
 
             $userBalance->addBalance(
                 $help->amount,
-                'Pendapatan Bantuan #' . $help->id,
+                'Pendapatan Bantuan (' . $help->title . ')',
                 $help->id
             );
 

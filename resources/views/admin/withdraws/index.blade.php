@@ -21,44 +21,45 @@
     @endif
 
     {{-- ===== Summary Stat Cards ===== --}}
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+    {{-- ===== Summary Stat Cards ===== --}}
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             </div>
-            <div>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">{{ $counts['all'] ?? 0 }}</p>
+            <div class="min-w-0 flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Total</p>
+                <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{{ $counts['all'] ?? 0 }}</p>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
-            <div>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Pending</p>
-                <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ $counts['pending'] ?? 0 }}</p>
+            <div class="min-w-0 flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Pending</p>
+                <p class="text-lg sm:text-xl font-bold text-amber-600 dark:text-amber-400 truncate">{{ $counts['pending'] ?? 0 }}</p>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-900/40 flex items-center justify-center flex-shrink-0">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
             </div>
-            <div>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Processing</p>
-                <p class="text-xl font-bold text-violet-600 dark:text-violet-400">{{ $counts['processing'] ?? 0 }}</p>
+            <div class="min-w-0 flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Processing</p>
+                <p class="text-lg sm:text-xl font-bold text-violet-600 dark:text-violet-400 truncate">{{ $counts['processing'] ?? 0 }}</p>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
-            <div>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Success</p>
-                <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ $counts['success'] ?? 0 }}</p>
+            <div class="min-w-0 flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Success</p>
+                <p class="text-lg sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 truncate">{{ $counts['success'] ?? 0 }}</p>
             </div>
         </div>
     </div>
