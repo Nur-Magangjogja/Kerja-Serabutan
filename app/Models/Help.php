@@ -177,6 +177,13 @@ class Help extends Model
         'partner_cancel_reason',
         'partner_cancel_notes',
         'partner_cancel_prev_status',
+        // Kolom model v2 (Commission-Based / Escrow System)
+        'model_version',
+        'platform_commission_rate',
+        'platform_fee_amount',
+        'mitra_earning',
+        'escrow_transaction_id',
+        'escrow_locked_at',
     ];
 
     protected $casts = [
@@ -201,6 +208,12 @@ class Help extends Model
         'partner_current_lng'        => 'decimal:8',
         'partner_started_moving_at'  => 'datetime',
         'partner_cancel_requested_at'=> 'datetime',
+        // Model v2 casts
+        'model_version'              => 'integer',
+        'platform_commission_rate'   => 'decimal:2',
+        'platform_fee_amount'        => 'decimal:2',
+        'mitra_earning'              => 'decimal:2',
+        'escrow_locked_at'           => 'datetime',
     ];
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -444,5 +457,54 @@ class Help extends Model
     public function isDone(): bool
     {
         return in_array($this->status, [self::STATUS_SELESAI, 'completed']);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // MODEL V2 HELPERS (Commission-Based / Escrow)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Apakah bantuan ini menggunakan model v2 (Commission-Based / Escrow).
+     * Data lama (model_version = 1 atau NULL) menggunakan logika Buyer-Pays lama.
+     */
+    public function isV2Model(): bool
+    {
+        return (int) ($this->model_version ?? 1) >= 2;
+    }
+
+    /**
+     * Kalkulasi nominal bersih mitra (jika model_version = 2).
+     * Nilai sudah tersimpan di kolom mitra_earning saat tugas dibuat.
+     */
+    public function getNetEarning(): float
+    {
+        if ($this->isV2Model() && $this->mitra_earning > 0) {
+            return (float) $this->mitra_earning;
+        }
+        // Fallback untuk data lama
+        return (float) $this->amount;
+    }
+
+    /**
+     * Kalkulasi nominal komisi platform (jika model_version = 2).
+     */
+    public function getPlatformFee(): float
+    {
+        if ($this->isV2Model() && $this->platform_fee_amount > 0) {
+            return (float) $this->platform_fee_amount;
+        }
+        return 0.0;
+    }
+
+    /**
+     * Label persentase komisi untuk ditampilkan ke mitra.
+     * Contoh: "10%"
+     */
+    public function getCommissionRateLabel(): string
+    {
+        if ($this->isV2Model()) {
+            return number_format($this->platform_commission_rate ?? 0, 0) . '%';
+        }
+        return '0%';
     }
 }

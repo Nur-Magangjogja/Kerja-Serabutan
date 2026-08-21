@@ -13,7 +13,8 @@ use Carbon\Carbon;
 class HelpSettings extends Component
 {
     public $min_help_nominal;
-    public $admin_fee;
+    public $platform_commission_rate;
+    public $admin_fee; // legacy
     
     // Top-up admin fee settings
     public $tier1_limit;
@@ -29,7 +30,8 @@ class HelpSettings extends Component
     {
         return [
             'min_help_nominal' => 'required|numeric|min:0',
-            'admin_fee' => 'required|numeric|min:0',
+            'platform_commission_rate' => 'required|numeric|min:0|max:100',
+            'admin_fee' => 'nullable|numeric|min:0',
             'tier1_limit' => 'required|numeric|min:0',
             'tier1_fee' => 'required|numeric|min:0',
             'tier2_limit' => 'required|numeric|min:0',
@@ -47,7 +49,8 @@ class HelpSettings extends Component
 
     public function mount()
     {
-        $this->min_help_nominal = (int) AppSetting::get('min_help_nominal', 10000);
+        $this->min_help_nominal = (int) AppSetting::get('min_help_nominal', 20000);
+        $this->platform_commission_rate = (float) AppSetting::get('platform_commission_rate', 10);
         $this->admin_fee = (float) AppSetting::get('admin_fee', 0);
         
         // Load top-up fee settings
@@ -73,7 +76,10 @@ class HelpSettings extends Component
         $this->validate();
 
         AppSetting::set('min_help_nominal', (string) $this->min_help_nominal);
-        AppSetting::set('admin_fee', (string) $this->admin_fee);
+        AppSetting::set('platform_commission_rate', (string) $this->platform_commission_rate);
+        if ($this->admin_fee !== null) {
+            AppSetting::set('admin_fee', (string) $this->admin_fee);
+        }
         
         // Save top-up fee settings
         AppSetting::set('topup_tier1_limit', (string) $this->tier1_limit);

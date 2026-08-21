@@ -23,6 +23,12 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                     </svg>
                                 </div>
+                            @elseif($transaction->type === 'penalty')
+                                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-red-100">
+                                    <svg class="w-6 h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                                    </svg>
+                                </div>
                             @else
                                 <div class="flex items-center justify-center w-10 h-10 rounded-full bg-red-100">
                                     <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,6 +43,8 @@
                             <div class="font-semibold text-gray-900">
                                 @if($transaction->type === 'topup')
                                     Tambah Saldo
+                                @elseif($transaction->type === 'penalty')
+                                    Denda Pembatalan
                                 @else
                                     Pengurangan Saldo
                                 @endif
@@ -48,6 +56,17 @@
                                     @if($transaction->order_id)
                                         <div class="text-xs text-gray-400">Order: {{ $transaction->order_id }}</div>
                                     @endif
+                                @elseif($transaction->type === 'penalty')
+                                    {{-- penalty: tampilkan deskripsi denda dan keterangan kas administrasi --}}
+                                    <span class="text-red-600 font-medium">
+                                        {{ $transaction->description ?? 'Denda Pelanggaran' }}
+                                    </span>
+                                    <div class="text-xs text-gray-400 mt-0.5">
+                                        💼 Denda masuk ke kas administrasi
+                                        @if($transaction->reference_id)
+                                            · Bantuan #{{ $transaction->reference_id }}
+                                        @endif
+                                    </div>
                                 @else
                                     {{-- deduction: show reference help id if present --}}
                                     @if($transaction->reference_id)
@@ -65,7 +84,7 @@
 
                     <!-- Right Side - Amount -->
                     <div class="text-right">
-                        <div class="font-bold {{ $transaction->type === 'topup' ? 'text-green-600' : 'text-red-600' }}">
+                        <div class="font-bold {{ $transaction->type === 'topup' ? 'text-green-600' : ($transaction->type === 'penalty' ? 'text-red-700' : 'text-red-600') }}">
                             {{ $transaction->type === 'topup' ? '+' : '-' }} Rp
                             {{ number_format($transaction->amount, 0, ',', '.') }}
                         </div>

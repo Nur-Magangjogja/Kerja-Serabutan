@@ -30,7 +30,13 @@ class UserBalancesSeeder extends Seeder
                     ->whereRaw("LOWER(TRIM(COALESCE(status, ''))) = 'completed'")
                     ->sum('amount');
 
-                $balance = $topups - $deductions;
+                // 'penalty' (denda pembatalan) juga mengurangi saldo, seperti deduction
+                $penalties = BalanceTransaction::where('user_id', $user->id)
+                    ->where('type', 'penalty')
+                    ->whereRaw("LOWER(TRIM(COALESCE(status, ''))) = 'completed'")
+                    ->sum('amount');
+
+                $balance = $topups - $deductions - $penalties;
 
                 // Provide a default starting balance for test accounts if no transactions exist
                 if ($balance <= 0) {

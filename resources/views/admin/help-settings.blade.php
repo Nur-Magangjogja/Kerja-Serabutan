@@ -51,19 +51,19 @@
             </div>
 
             <div>
-                <label for="admin_fee" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Biaya Admin Platform (Rp)
+                <label for="platform_commission_rate" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Komisi Platform (%)
                 </label>
                 <div class="relative rounded-xl shadow-sm">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <span class="text-gray-500 dark:text-gray-400 sm:text-sm font-medium">Rp</span>
+                    <input type="number" wire:model="platform_commission_rate" id="platform_commission_rate"
+                        class="block w-full pl-4 pr-10 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 dark:text-white text-sm font-medium"
+                        placeholder="10" min="0" max="100" step="0.5">
+                    <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                        <span class="text-gray-500 dark:text-gray-400 sm:text-sm font-bold">%</span>
                     </div>
-                    <input type="number" wire:model="admin_fee" id="admin_fee"
-                        class="block w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 dark:text-white text-sm font-medium"
-                        placeholder="0" min="0" step="500">
                 </div>
-                @error('admin_fee') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Biaya layanan yang dikenakan per transaksi bantuan.</p>
+                @error('platform_commission_rate') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Persentase komisi yang dipotong dari nilai tugas saat pekerjaan selesai (Seller-Pays).</p>
             </div>
 
             <div class="pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-end">

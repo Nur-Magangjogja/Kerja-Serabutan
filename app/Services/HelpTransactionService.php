@@ -29,8 +29,14 @@ use Illuminate\Support\Facades\Log;
  * 3. Notifikasi dan pesan chat dikirim secara otomatis ke ruang obrolan (chat)
  *    pada setiap fase (ambil tugas, pembatalan mitra, persetujuan/penolakan batal,
  *    penyelesaian tugas, dan konfirmasi customer).
- * 4. Pembatalan oleh mitra yang disetujui dikenakan denda penalti (AppSetting / default Rp 5.000).
+ * 4. Pembatalan oleh mitra yang disetujui dikenakan denda penalti.
  * 5. Idempotency guard pada kredit dan denda saldo untuk menjamin keadilan 2 belah pihak.
+ *
+ * Model v2 (Commission-Based / Escrow — berlaku untuk helps dengan model_version = 2):
+ * - Escrow Lock: Dana customer ditahan ke Holding saat tugas dibuat.
+ * - Split Payment: Saat selesai, Holding dibagi: Earning (mitra) + Platform Fee (kas).
+ * - Refund: Jika batal, Holding dikembalikan 100% ke customer (tanpa potongan).
+ * - Penalty: Denda mitra tetap dari saldo mitra sendiri (bukan dari escrow).
  */
 class HelpTransactionService
 {
@@ -288,13 +294,15 @@ class HelpTransactionService
 
     /**
      * Customer membatalkan bantuan sebelum mitra ditemukan.
+     * Model v2: refund escrow 100% ke customer.
+     * Model v1: tidak ada escrow, tidak ada refund (logika lama).
      */
     public function customerCancelHelp(Help $help, User $customer): void
     {
         $this->assertCustomerOwns($help, $customer);
         $this->assertCanTransition($help, Help::STATUS_DIBATALKAN);
 
-        DB::transaction(function () use ($help) {
+        DB::transaction(function () use ($help, $customer) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
 
             if ($lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA) {
@@ -302,19 +310,25 @@ class HelpTransactionService
             }
 
             $lockedHelp->update(['status' => Help::STATUS_DIBATALKAN]);
+
+            // MODEL V2: Kembalikan escrow ke customer (refund 100%)
+            if ($lockedHelp->isV2Model() && $lockedHelp->amount > 0) {
+                $this->refundFromEscrow($lockedHelp, $customer);
+            }
         });
 
         $this->logActivity(
             $customer->id,
             $help->id,
             'help_cancelled',
-            "Customer {$customer->name} membatalkan bantuan"
+            "Customer {$customer->name} membatalkan bantuan" . ($help->isV2Model() ? " (Refund escrow Rp " . number_format($help->amount, 0, ',', '.') . " ke customer)" : "")
         );
     }
 
     /**
      * Customer menerima permintaan pembatalan dari mitra.
-     * Mitra dikenakan denda penalti, dan bantuan dikembalikan ke pool.
+     * Model v2: Escrow dikembalikan 100% ke customer, kemudian mitra dikenakan denda.
+     * Model v1: Hanya denda ke mitra (logika lama).
      */
     public function customerAcceptCancel(Help $help, User $customer): void
     {
@@ -327,14 +341,19 @@ class HelpTransactionService
         $formerMitra = $help->mitra;
         $penaltyFee  = 0;
 
-        DB::transaction(function () use ($help, $formerMitra, &$penaltyFee) {
+        DB::transaction(function () use ($help, $formerMitra, $customer, &$penaltyFee) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
 
             if ($lockedHelp->status !== Help::STATUS_PARTNER_CANCEL_REQUESTED) {
                 throw new \RuntimeException('Status pesanan telah berubah atau pembatalan sudah diproses.');
             }
 
-            // Terapkan denda penalti pembatalan ke mitra
+            // MODEL V2: Kembalikan escrow ke customer DULU (100%, tanpa potongan)
+            if ($lockedHelp->isV2Model() && $lockedHelp->amount > 0) {
+                $this->refundFromEscrow($lockedHelp, $customer);
+            }
+
+            // Terapkan denda penalti pembatalan ke mitra (dari saldo mitra, bukan dari escrow)
             if ($formerMitra) {
                 $penaltyFee = $this->applyCancellationPenalty($formerMitra, $lockedHelp);
             }
@@ -387,6 +406,7 @@ class HelpTransactionService
             'help_id'     => $help->id,
             'mitra_id'    => $formerMitra?->id,
             'penalty_fee' => $penaltyFee,
+            'model_v2'    => $help->isV2Model(),
         ]);
     }
 
@@ -495,7 +515,10 @@ class HelpTransactionService
 
     /**
      * Kredit saldo mitra saat bantuan selesai dikonfirmasi.
-     * Dilindungi idempotency check agar tidak double-credit.
+     *
+     * Backward-compatible:
+     * - Model v2 (isV2Model): gunakan splitPaymentFromEscrow() — split earning + platform_fee
+     * - Model v1 (data lama): gunakan logika lama (topup penuh ke mitra)
      */
     private function creditMitra(Help $help): void
     {
@@ -503,13 +526,19 @@ class HelpTransactionService
             return;
         }
 
+        if ($help->isV2Model()) {
+            $this->splitPaymentFromEscrow($help);
+            return;
+        }
+
+        // ── MODEL V1 (logika lama — backward compatible) ──────────────────────
         $alreadyCredited = BalanceTransaction::where('user_id', $help->mitra_id)
             ->where('reference_id', $help->id)
             ->where('type', 'topup')
             ->exists();
 
         if ($alreadyCredited) {
-            Log::info('[HelpTransactionService] Mitra sudah dikreditkan untuk help ' . $help->id . ', skip.');
+            Log::info('[HelpTransactionService] Mitra sudah dikreditkan (v1) untuk help ' . $help->id . ', skip.');
             return;
         }
 
@@ -524,7 +553,7 @@ class HelpTransactionService
             $help->id
         );
 
-        Log::info('[HelpTransactionService] Mitra dikreditkan', [
+        Log::info('[HelpTransactionService] Mitra dikreditkan (v1)', [
             'help_id'  => $help->id,
             'mitra_id' => $help->mitra_id,
             'amount'   => $help->amount,
@@ -532,7 +561,98 @@ class HelpTransactionService
     }
 
     /**
+     * MODEL V2: Pecah dana dari Holding ke Mitra + Platform (Split Payment).
+     *
+     * Dilakukan secara atomik dalam DB::transaction yang sudah ada (dipanggil dari dalam transaksi).
+     * Platform tidak memotong dari saldo mitra — potongan sudah dihitung dari nilai tugas.
+     *
+     * Alur: Holding (Rp 50.000) → Earning Mitra (Rp 45.000) + Platform Fee (Rp 5.000)
+     */
+    private function splitPaymentFromEscrow(Help $help): void
+    {
+        // Idempotency: cek sudah pernah di-split
+        $alreadySplit = BalanceTransaction::where('user_id', $help->mitra_id)
+            ->where('reference_id', $help->id)
+            ->whereIn('type', ['earning', 'topup']) // topup = v1 compat
+            ->exists();
+
+        if ($alreadySplit) {
+            Log::info('[HelpTransactionService] Split payment sudah dilakukan untuk help ' . $help->id . ', skip.');
+            return;
+        }
+
+        $netEarning  = $help->getNetEarning();
+        $platformFee = $help->getPlatformFee();
+
+        // 1. Kredit saldo mitra (earning bersih)
+        $mitraBalance = UserBalance::firstOrCreate(
+            ['user_id' => $help->mitra_id],
+            ['balance' => 0]
+        );
+        $mitraBalance->receiveEarning(
+            $netEarning,
+            $help->id,
+            "Pendapatan Bantuan '{$help->title}' (Bersih {$help->getCommissionRateLabel()} komisi platform)"
+        );
+
+        // 2. Catat Platform Fee ke ledger (tidak masuk ke saldo user manapun — kas platform)
+        if ($platformFee > 0) {
+            BalanceTransaction::create([
+                'user_id'     => null, // kas platform, bukan milik user
+                'amount'      => $platformFee,
+                'type'        => 'platform_fee',
+                'description' => "Komisi Platform {$help->getCommissionRateLabel()} dari Bantuan '{$help->title}'",
+                'reference_id'=> $help->id,
+                'status'      => 'completed',
+            ]);
+        }
+
+        Log::info('[HelpTransactionService] Split payment (v2) selesai', [
+            'help_id'      => $help->id,
+            'mitra_id'     => $help->mitra_id,
+            'net_earning'  => $netEarning,
+            'platform_fee' => $platformFee,
+        ]);
+    }
+
+    /**
+     * MODEL V2: Kembalikan escrow dari Holding ke saldo Customer (Refund 100%).
+     *
+     * Dipanggil saat tugas dibatalkan. Platform TIDAK memotong komisi apapun.
+     * Dana dikembalikan utuh ke customer.
+     */
+    private function refundFromEscrow(Help $help, User $customer): void
+    {
+        // Idempotency: cek sudah pernah direfund
+        $alreadyRefunded = BalanceTransaction::where('user_id', $customer->id)
+            ->where('reference_id', $help->id)
+            ->where('type', 'refund')
+            ->exists();
+
+        if ($alreadyRefunded) {
+            Log::info('[HelpTransactionService] Refund sudah dilakukan untuk help ' . $help->id . ', skip.');
+            return;
+        }
+
+        $customerBalance = UserBalance::firstOrCreate(
+            ['user_id' => $customer->id],
+            ['balance' => 0]
+        );
+
+        $customerBalance->refundToCustomer($help->amount, $help->id);
+
+        Log::info('[HelpTransactionService] Refund escrow (v2) ke customer', [
+            'help_id'     => $help->id,
+            'customer_id' => $customer->id,
+            'amount'      => $help->amount,
+        ]);
+    }
+
+    /**
      * Menerapkan denda penalti pembatalan ke saldo mitra.
+     *
+     * Denda dicatat sebagai tipe 'penalty' (bukan 'deduction') agar jelas
+     * bahwa ini adalah sanksi atas pelanggaran dan uangnya masuk ke kas administrasi.
      */
     private function applyCancellationPenalty(User $mitra, Help $help): float
     {
@@ -542,11 +662,20 @@ class HelpTransactionService
         }
 
         // Idempotency: pastikan denda hanya dikenakan 1 kali per help
+        // Cek pada tipe 'penalty' (tipe khusus denda pembatalan)
         $alreadyPenalized = BalanceTransaction::where('user_id', $mitra->id)
             ->where('reference_id', $help->id)
-            ->where('type', 'deduction')
-            ->where('description', 'like', '%Denda%')
+            ->where('type', 'penalty')
             ->exists();
+
+        // Backward compat: cek juga denda lama yang masih bertipe 'deduction'
+        if (!$alreadyPenalized) {
+            $alreadyPenalized = BalanceTransaction::where('user_id', $mitra->id)
+                ->where('reference_id', $help->id)
+                ->where('type', 'deduction')
+                ->where('description', 'like', '%Denda%')
+                ->exists();
+        }
 
         if ($alreadyPenalized) {
             Log::info("[HelpTransactionService] Denda sudah pernah diterapkan untuk mitra {$mitra->id} pada help {$help->id}");
@@ -558,13 +687,15 @@ class HelpTransactionService
             ['balance' => 0]
         );
 
-        $userBalance->deductBalance(
+        // Gunakan applyPenalty() agar tercatat sebagai tipe 'penalty',
+        // bukan 'deduction', sehingga jelas ini adalah denda → kas administrasi.
+        $userBalance->applyPenalty(
             $penaltyFee,
-            "Denda Pembatalan Bantuan ('{$help->title}')",
+            "Denda Pembatalan Bantuan ('{$help->title}') → Kas Administrasi",
             $help->id
         );
 
-        Log::info("[HelpTransactionService] Denda pembatalan Rp {$penaltyFee} dipotong dari mitra {$mitra->id} untuk help {$help->id}");
+        Log::info("[HelpTransactionService] Denda pembatalan Rp {$penaltyFee} (penalty) dipotong dari mitra {$mitra->id} untuk help {$help->id}");
 
         return $penaltyFee;
     }

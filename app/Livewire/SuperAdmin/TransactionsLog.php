@@ -288,17 +288,25 @@ class TransactionsLog extends Component
         // Calculate summary statistics (filtered)
         $summaryQuery = $this->getBaseQuery();
         
-        $totalRevenue = $summaryQuery->clone()->where('type', 'topup')->sum('amount');
-        $totalWithdraw = $summaryQuery->clone()->where('type', 'withdraw')->sum('amount');
+        $totalTopup       = (float) $summaryQuery->clone()->where('type', 'topup')->where('status', 'completed')->sum('amount');
+        $totalWithdraw    = (float) $summaryQuery->clone()->where('type', 'withdraw')->where('status', 'completed')->sum('amount');
+        $totalPlatformFee = (float) $summaryQuery->clone()->where('type', 'platform_fee')->where('status', 'completed')->sum('amount');
+        $totalEarning     = (float) $summaryQuery->clone()->where('type', 'earning')->where('status', 'completed')->sum('amount');
+        $totalPenalty     = (float) $summaryQuery->clone()->where('type', 'penalty')->where('status', 'completed')->sum('amount');
+        $totalEscrow      = (float) $summaryQuery->clone()->where('type', 'escrow_lock')->where('status', 'completed')->sum('amount');
+        $totalRefund      = (float) $summaryQuery->clone()->where('type', 'refund')->where('status', 'completed')->sum('amount');
         $totalTransactions = $summaryQuery->clone()->count();
-        $avgTransaction = $totalTransactions > 0 ? $summaryQuery->clone()->avg('amount') : 0;
 
         return view('superadmin.transactions-log', [
-            'transactions' => $transactions,
-            'totalRevenue' => $totalRevenue,
-            'totalWithdraw' => $totalWithdraw,
-            'totalTransactions' => $totalTransactions,
-            'avgTransaction' => $avgTransaction,
+            'transactions'     => $transactions,
+            'totalTopup'       => $totalTopup,
+            'totalWithdraw'    => $totalWithdraw,
+            'totalPlatformFee' => $totalPlatformFee,
+            'totalEarning'     => $totalEarning,
+            'totalPenalty'     => $totalPenalty,
+            'totalEscrow'      => $totalEscrow,
+            'totalRefund'      => $totalRefund,
+            'totalTransactions'=> $totalTransactions,
         ]);
     }
 }

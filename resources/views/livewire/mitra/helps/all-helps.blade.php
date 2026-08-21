@@ -285,10 +285,10 @@
                                                 $cityName = $help->city->name ?? 'Luar Daerah';
                                             @endphp
                                             @if(!empty($activeTask))
-                                                <button type="button" onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ addslashes($schedLabel) }}', {{ $distVal ?? 'null' }}, '{{ addslashes($cityName) }}')" class="px-3.5 py-1.5 bg-gray-100 text-gray-500 rounded-lg text-xs font-semibold hover:bg-gray-200 transition" title="Sedang mengerjakan tugas lain">Lihat Rincian</button>
+                                                <button type="button" onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ addslashes($schedLabel) }}', {{ $distVal ?? 'null' }}, '{{ addslashes($cityName) }}', {{ $help->platform_commission_rate ?? 10 }}, {{ $help->platform_fee_amount ?? 0 }}, {{ $help->mitra_earning ?? 0 }})" class="px-3.5 py-1.5 bg-gray-100 text-gray-500 rounded-lg text-xs font-semibold hover:bg-gray-200 transition" title="Sedang mengerjakan tugas lain">Lihat Rincian</button>
                                             @else
-                                                <button type="button" onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ addslashes($schedLabel) }}', {{ $distVal ?? 'null' }}, '{{ addslashes($cityName) }}')" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200 transition">Lihat</button>
-                                                <button type="button" onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ addslashes($schedLabel) }}', {{ $distVal ?? 'null' }}, '{{ addslashes($cityName) }}')" class="px-3.5 py-1.5 bg-primary-600 text-white rounded-lg text-xs font-bold hover:bg-primary-700 shadow-sm transition">Ambil</button>
+                                                <button type="button" onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ addslashes($schedLabel) }}', {{ $distVal ?? 'null' }}, '{{ addslashes($cityName) }}', {{ $help->platform_commission_rate ?? 10 }}, {{ $help->platform_fee_amount ?? 0 }}, {{ $help->mitra_earning ?? 0 }})" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200 transition">Lihat</button>
+                                                <button type="button" onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ addslashes($schedLabel) }}', {{ $distVal ?? 'null' }}, '{{ addslashes($cityName) }}', {{ $help->platform_commission_rate ?? 10 }}, {{ $help->platform_fee_amount ?? 0 }}, {{ $help->mitra_earning ?? 0 }})" class="px-3.5 py-1.5 bg-primary-600 text-white rounded-lg text-xs font-bold hover:bg-primary-700 shadow-sm transition">Ambil</button>
                                             @endif
                                         </div>
                                     </div>
@@ -357,20 +357,31 @@
                     <p id="previewTitle" class="text-base font-bold text-gray-900">-</p>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 mb-3.5">
-                    <div class="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                        <p class="text-[11px] text-blue-700 font-semibold mb-0.5">Nominal Upah</p>
-                        <p id="previewAmount" class="text-sm font-extrabold text-blue-900">Rp 0</p>
+                <!-- Transparansi Komisi & Pendapatan Bersih -->
+                <div class="bg-gradient-to-br from-slate-50 to-blue-50/50 border border-blue-100 rounded-2xl p-3.5 mb-3.5 space-y-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-600 font-medium">Nilai Tugas:</span>
+                        <span id="previewTaskValue" class="font-bold text-gray-900">Rp 0</span>
                     </div>
+                    <div class="flex justify-between items-center text-xs text-rose-600">
+                        <span id="previewCommissionLabel" class="font-medium">Potongan Platform (10%):</span>
+                        <span id="previewCommissionAmount" class="font-semibold">- Rp 0</span>
+                    </div>
+                    <div class="border-t border-blue-200/60 pt-2 flex justify-between items-center">
+                        <span class="text-xs font-bold text-emerald-800">Pendapatan Bersih Mitra:</span>
+                        <span id="previewNetAmount" class="text-base font-black text-emerald-600">Rp 0</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-3.5">
                     <div class="bg-gray-50 border border-gray-100 rounded-xl p-3">
                         <p class="text-[11px] text-gray-500 font-semibold mb-0.5">Estimasi Jarak</p>
                         <p id="previewDistance" class="text-sm font-bold text-gray-800">Menghitung...</p>
                     </div>
-                </div>
-
-                <div class="mb-4">
-                    <p class="text-xs text-gray-500 font-semibold mb-1">Jadwal Permintaan</p>
-                    <div id="previewScheduled" class="text-xs text-gray-700 font-medium bg-gray-50 p-2.5 rounded-lg">-</div>
+                    <div class="bg-gray-50 border border-gray-100 rounded-xl p-3">
+                        <p class="text-[11px] text-gray-500 font-semibold mb-0.5">Jadwal Tugas</p>
+                        <p id="previewScheduled" class="text-xs font-bold text-gray-800 truncate">-</p>
+                    </div>
                 </div>
 
                 <!-- Notice -->
@@ -413,10 +424,26 @@
         let userMitraLng = @json($mitraLng);
         const mapHelpsData = @json($mapHelps);
 
-        window.showHelpPreview = function(helpId, title, amount, scheduled, distanceKm, cityName) {
+        window.showHelpPreview = function(helpId, title, amount, scheduled, distanceKm, cityName, commissionRate, feeAmount, netEarning) {
             currentHelpId = helpId;
             document.getElementById('previewTitle').textContent = title;
-            document.getElementById('previewAmount').textContent = 'Rp ' + Number(amount).toLocaleString('id-ID');
+            
+            const taskVal = Number(amount) || 0;
+            const rate = (commissionRate !== undefined && commissionRate !== null) ? Number(commissionRate) : 10;
+            const fee = (feeAmount !== undefined && feeAmount !== null && feeAmount > 0) ? Number(feeAmount) : Math.round(taskVal * rate / 100);
+            const net = (netEarning !== undefined && netEarning !== null && netEarning > 0) ? Number(netEarning) : (taskVal - fee);
+
+            const taskValEl = document.getElementById('previewTaskValue');
+            if (taskValEl) taskValEl.textContent = 'Rp ' + taskVal.toLocaleString('id-ID');
+
+            const commLabelEl = document.getElementById('previewCommissionLabel');
+            if (commLabelEl) commLabelEl.textContent = `Potongan Platform (${rate}%):`;
+
+            const commAmtEl = document.getElementById('previewCommissionAmount');
+            if (commAmtEl) commAmtEl.textContent = '- Rp ' + fee.toLocaleString('id-ID');
+
+            const netAmtEl = document.getElementById('previewNetAmount');
+            if (netAmtEl) netAmtEl.textContent = 'Rp ' + net.toLocaleString('id-ID');
             
             const distEl = document.getElementById('previewDistance');
             const warnBox = document.getElementById('previewDistanceWarning');

@@ -69,6 +69,56 @@ class BalanceTransaction extends Model
         return $query->where('type', 'deduction');
     }
 
+    public function scopePenalty($query)
+    {
+        return $query->where('type', 'penalty');
+    }
+
+    public function scopeEscrowLock($query)
+    {
+        return $query->where('type', 'escrow_lock');
+    }
+
+    public function scopeEarning($query)
+    {
+        return $query->where('type', 'earning');
+    }
+
+    public function scopePlatformFee($query)
+    {
+        return $query->where('type', 'platform_fee');
+    }
+
+    public function scopeRefund($query)
+    {
+        return $query->where('type', 'refund');
+    }
+
+    /**
+     * Jenis transaksi yang mengurangi saldo pengguna.
+     * Digunakan untuk kalkulasi RecalculateUserBalances dan balance sync.
+     */
+    public static function debitTypes(): array
+    {
+        return ['deduction', 'penalty', 'escrow_lock', 'withdraw', 'pg_fee_topup', 'pg_fee_withdraw'];
+    }
+
+    /**
+     * Jenis transaksi yang menambah saldo pengguna.
+     */
+    public static function creditTypes(): array
+    {
+        return ['topup', 'earning', 'refund'];
+    }
+
+    /**
+     * Apakah transaksi ini mengurangi saldo (debit dari sisi user).
+     */
+    public function getIsDebitAttribute(): bool
+    {
+        return in_array($this->type, self::debitTypes(), true);
+    }
+
     public function scopeWaitingApproval($query)
     {
         return $query->where('status', 'waiting_approval');

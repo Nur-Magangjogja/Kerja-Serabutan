@@ -174,7 +174,7 @@
                             <!-- Input Nominal -->
                             <div class="relative flex-1 px-3">
                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-base">Rp</span>
-                                <input type="number" wire:model.live="amount" id="amount-input" placeholder="25000" min="10000" step="1000"
+                                <input type="number" wire:model.live="amount" id="amount-input" placeholder="25000" min="20000" step="1000"
                                     class="w-full pl-8 pr-2 py-1.5 text-center font-bold text-lg text-gray-900 border-none focus:ring-0 focus:outline-none bg-transparent">
                             </div>
 
@@ -220,12 +220,20 @@
                             </button>
                         </div>
 
-                        <p class="text-xs text-gray-500 mt-1.5 flex items-center">
-                            <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                            </svg>
-                            Minimal Rp 10.000 - Maksimal Rp 100.000.000
-                        </p>
+                        <div class="mt-2 space-y-1">
+                            <p class="text-xs text-gray-500 flex items-center">
+                                <svg class="w-3 h-3 mr-1 flex-shrink-0 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                </svg>
+                                Minimal Rp 20.000 — Maksimal Rp 100.000.000
+                            </p>
+                            <p class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center">
+                                <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                Bebas biaya tambahan! Harga yang Anda masukkan adalah total bayaran yang ditahan aman (Escrow).
+                            </p>
+                        </div>
                         @error('amount')
                             <span class="field-error-message text-red-500 text-xs mt-1.5 block flex items-center font-medium">
                                 <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -939,14 +947,16 @@
                     <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-4 mb-4 border border-blue-100">
                         <div class="space-y-2.5">
                             <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Nominal Bantuan</span>
+                                <span class="text-sm text-gray-600">Nilai Tugas (Imbalan)</span>
                                 <span class="text-sm font-semibold text-gray-900">Rp
                                     {{ number_format($confirmAmount ?? 0, 0, ',', '.') }}</span>
                             </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Biaya Admin</span>
-                                <span class="text-sm font-semibold text-gray-900">Rp
-                                    {{ number_format($confirmAdminFee ?? 0, 0, ',', '.') }}</span>
+                            <div class="flex justify-between items-center text-xs text-emerald-700 bg-emerald-50/80 px-2.5 py-1 rounded-lg border border-emerald-200">
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    Biaya Layanan Customer
+                                </span>
+                                <span class="font-bold">Gratis (Rp 0)</span>
                             </div>
                         </div>
                     </div>
@@ -955,7 +965,7 @@
                     <div class="bg-white border-2 border-blue-200 rounded-2xl p-4 mb-4">
                         <div class="flex items-center justify-between">
                             <div class="flex-1">
-                                <span class="text-xs font-semibold text-gray-600">Total Imbalan Jasa</span>
+                                <span class="text-xs font-semibold text-gray-600">Total Pembayaran (Escrow)</span>
                                 <div class="text-2xl font-bold text-blue-600 mt-1">Rp
                                     {{ number_format($confirmTotal ?? 0, 0, ',', '.') }}</div>
                             </div>
@@ -979,17 +989,18 @@
                         </div>
                     @endif
 
-                    <!-- Info Box -->
-                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5">
+                    <!-- Info Box Escrow -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5">
                         <div class="flex gap-2">
-                            <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor"
-                                viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                    clip-rule="evenodd" />
+                            <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
-                            <p class="text-xs text-amber-900 leading-relaxed">Dengan menekan
-                                <strong>Konfirmasi</strong>, permintaan bantuan Anda akan langsung diterbitkan agar dapat diambil oleh Rekan Jasa.</p>
+                            <div class="text-xs text-blue-900 leading-relaxed">
+                                <p class="font-semibold mb-0.5">Jaminan Keamanan Dana (Escrow):</p>
+                                Dana sebesar <strong>Rp {{ number_format($confirmTotal ?? 0, 0, ',', '.') }}</strong> akan ditahan aman oleh sistem selama tugas berlangsung. Uang baru akan diteruskan ke Rekan Jasa setelah Anda mengonfirmasi pekerjaan selesai. Jika tugas dibatalkan, dana 100% dikembalikan utuh ke saldo Anda.
+                            </div>
                         </div>
                     </div>
                 </div>

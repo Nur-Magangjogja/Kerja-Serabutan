@@ -299,10 +299,13 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Biaya Admin (Rp)</label>
-                        <input type="number" wire:model.defer="admin_fee" placeholder="0"
-                            class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" />
-                        @error('admin_fee')
+                        <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Komisi Platform (%)</label>
+                        <div class="relative">
+                            <input type="number" wire:model.defer="platform_commission_rate" placeholder="10" min="0" max="100" step="0.5"
+                                class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all pr-10" />
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">%</span>
+                        </div>
+                        @error('platform_commission_rate')
                             <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs">
                                 <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -310,7 +313,9 @@
                                 {{ $message }}
                             </div>
                         @enderror
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Biaya layanan platform yang dikenakan saat customer membuat bantuan.</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            Persentase komisi yang dipotong dari nilai tugas saat pekerjaan selesai (Seller-Pays). Contoh: 10% dari tugas Rp 50.000 = Rp 5.000 kas platform, Rp 45.000 diterima mitra.
+                        </p>
                     </div>
                 </div>
             </div>

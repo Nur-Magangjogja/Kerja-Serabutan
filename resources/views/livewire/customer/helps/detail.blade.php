@@ -583,20 +583,29 @@
 
         {{-- Payment Details --}}
         <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
-            <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-4">Rincian Pembayaran</h3>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-sm text-gray-900 dark:text-white">Rincian Pembayaran</h3>
+                @if($help->isV2Model() && !in_array($help->status, ['selesai', 'completed', 'dibatalkan', 'cancelled']))
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
+                        <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        Dana Ditahan (Escrow)
+                    </span>
+                @endif
+            </div>
 
             <div class="space-y-3">
                 <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-700 dark:text-gray-300">Harga Asli</span>
+                    <span class="text-gray-700 dark:text-gray-300">{{ $help->isV2Model() ? 'Nilai Tugas (Imbalan)' : 'Harga Asli' }}</span>
                     <span class="font-semibold text-gray-900 dark:text-white">Rp{{ number_format($help->amount, 0, ',', '.') }}</span>
                 </div>
 
-                {{-- Perlengkapan ditampilkan di bagian "Deskripsi & Detail" di atas --}}
-
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-700 dark:text-gray-300">Biaya Admin</span>
-                    <span class="font-semibold text-gray-900 dark:text-white">Rp{{ number_format($help->admin_fee ?? $help->booking_fee ?? 0, 0, ',', '.') }}</span>
-                </div>
+                {{-- Biaya Admin hanya untuk model v1 legacy --}}
+                @if(!$help->isV2Model() && ($help->admin_fee > 0 || $help->booking_fee > 0))
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-700 dark:text-gray-300">Biaya Admin</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">Rp{{ number_format($help->admin_fee ?? $help->booking_fee ?? 0, 0, ',', '.') }}</span>
+                    </div>
+                @endif
 
                 @if(!empty($help->voucher_code) && ($help->discount_amount ?? 0) > 0)
                     <div class="flex items-center justify-between text-sm">
@@ -612,13 +621,17 @@
 
                 <div class="border-t border-gray-200 dark:border-gray-700 pt-3 flex items-center justify-between">
                     <span class="font-bold text-gray-900 dark:text-white">Total Pembayaran</span>
-                    <span class="font-bold text-gray-900 dark:text-white">Rp{{ number_format($help->total_amount ?? ($help->amount + ($help->admin_fee ?? $help->booking_fee ?? 0) - ($help->discount_amount ?? 0)), 0, ',', '.') }}</span>
+                    <span class="font-bold text-gray-900 dark:text-white">Rp{{ number_format($help->isV2Model() ? $help->amount : ($help->total_amount ?? ($help->amount + ($help->admin_fee ?? $help->booking_fee ?? 0) - ($help->discount_amount ?? 0))), 0, ',', '.') }}</span>
                 </div>
             </div>
 
             <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 rounded-lg">
                 <p class="text-xs text-gray-700 dark:text-blue-200 leading-relaxed">
-                    Kamu dapat meminta tindakan tambahan selama sesi layanan berlangsung (mis. tambahan bahan atau tindakan kecil). Pastikan semua pembayaran dilakukan melalui aplikasi agar pesananmu tercatat dan terlindungi. Jika ada masalah kualitas, ajukan keluhan atau klaim garansi dalam waktu 1x24 jam setelah layanan selesai.
+                    @if($help->isV2Model())
+                        🛡️ <strong>Proteksi Escrow:</strong> Pembayaran Anda ditahan aman oleh sistem SayaBantu selama pengerjaan. Dana baru akan diteruskan ke Rekan Jasa setelah Anda mengonfirmasi pekerjaan selesai dengan baik.
+                    @else
+                        Kamu dapat meminta tindakan tambahan selama sesi layanan berlangsung. Pastikan semua pembayaran dilakukan melalui aplikasi agar pesananmu tercatat dan terlindungi.
+                    @endif
                 </p>
             </div>
         </div>

@@ -26,17 +26,19 @@ class RecalculateUserBalances extends Command
 
         $query->chunkById(200, function ($users) use ($bar) {
             foreach ($users as $user) {
-                $topups = BalanceTransaction::where('user_id', $user->id)
-                    ->where('type', 'topup')
+                // Kredit (menambah saldo user): topup, earning, refund
+                $credits = BalanceTransaction::where('user_id', $user->id)
+                    ->whereIn('type', BalanceTransaction::creditTypes())
                     ->whereRaw("LOWER(TRIM(COALESCE(status, ''))) = 'completed'")
                     ->sum('amount');
 
-                $deductions = BalanceTransaction::where('user_id', $user->id)
-                    ->where('type', 'deduction')
+                // Debit (mengurangi saldo user): deduction, penalty, escrow_lock, withdraw, pg_fee_*
+                $debits = BalanceTransaction::where('user_id', $user->id)
+                    ->whereIn('type', BalanceTransaction::debitTypes())
                     ->whereRaw("LOWER(TRIM(COALESCE(status, ''))) = 'completed'")
                     ->sum('amount');
 
-                $balance = $topups - $deductions;
+                $balance = (float) $credits - (float) $debits;
 
                 UserBalance::updateOrCreate(['user_id' => $user->id], ['balance' => $balance]);
 

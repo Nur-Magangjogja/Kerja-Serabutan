@@ -5,6 +5,8 @@ namespace App\Livewire\Customer\Helps;
 use App\Models\AppSetting;
 use App\Models\City;
 use App\Models\Help;
+use App\Models\UserBalance;
+use App\Services\HelpTransactionService;
 use App\Services\CitySearchService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -45,12 +47,16 @@ class Create extends Component
     public $timezoneLabel  = 'WIB';
     public $timezoneIana   = 'Asia/Jakarta';
 
-    // ─── Confirm modal (tanpa pengecekan saldo) ───────────────────────────────
-    public $showConfirmModal = false;
-    public $confirmAmount    = 0;
-    public $confirmAdminFee  = 0;
-    public $confirmTotal     = 0;
-    public $confirmScheduled = null;
+    // ─── Confirm modal (model v2: tampilkan komisi + earning) ─────────────────────
+    public $showConfirmModal      = false;
+    public $confirmAmount         = 0; // Nilai tugas = total yang didebit dari customer
+    public $confirmAdminFee       = 0; // Legacy — selalu 0 di model v2
+    public $confirmTotal          = 0; // = confirmAmount (Seller-Pays: customer bayar full)
+    public $confirmScheduled      = null;
+    // Model v2 — transparansi komisi
+    public $confirmCommissionRate = 0;  // persentase, contoh: 10
+    public $confirmPlatformFee    = 0;  // nominal komisi platform
+    public $confirmMitraEarning   = 0;  // nominal bersih mitra
 
     protected $listeners = [
         'citySelected' => 'setCityId',
@@ -90,8 +96,9 @@ class Create extends Component
      */
     public function adjustAmount(int $delta): void
     {
+        $min = (int) AppSetting::get('min_help_nominal', 20000);
         $current = (int) ($this->amount ?: 0);
-        $new = max(10000, min(100000000, $current + $delta));
+        $new = max($min, min(100000000, $current + $delta));
         $this->amount = $new;
     }
 
@@ -100,7 +107,8 @@ class Create extends Component
      */
     public function setPresetAmount(int $value): void
     {
-        $this->amount = max(10000, min(100000000, $value));
+        $min = (int) AppSetting::get('min_help_nominal', 20000);
+        $this->amount = max($min, min(100000000, $value));
     }
 
     /**
@@ -305,8 +313,9 @@ class Create extends Component
             abort(403, 'Akses ditolak. Hanya akun Customer yang dapat membuat permintaan bantuan.');
         }
 
-        $minNominal = (float) AppSetting::get('min_help_nominal', 10000);
-        $adminFee   = (float) AppSetting::get('admin_fee', 0);
+        // Model v2: minimum Rp 20.000, tanpa admin_fee (Seller-Pays)
+        $minNominal          = (float) AppSetting::get('min_help_nominal', 20000);
+        $commissionRate      = (float) AppSetting::get('platform_commission_rate', 10);
 
         $this->rules['amount']  = 'required|numeric|min:' . $minNominal . '|max:100000000';
         $this->rules['city_id'] = 'required|exists:cities,id';
@@ -345,12 +354,28 @@ class Create extends Component
         }
 
         $amount    = (float) $this->amount;
-        $total     = $amount + $adminFee;
+        $feeAmount = round($amount * $commissionRate / 100, 2);
+        $earning   = $amount - $feeAmount;
 
-        $this->confirmAmount    = $amount;
-        $this->confirmAdminFee  = $adminFee;
-        $this->confirmTotal     = $total;
-        $this->confirmScheduled = $this->scheduled_date
+        // Validasi saldo customer mencukupi
+        $customer        = auth()->user();
+        $customerBalance = \App\Models\UserBalance::where('user_id', $customer->id)->first();
+        $currentBalance  = $customerBalance ? (float) $customerBalance->balance : 0;
+
+        if ($currentBalance < $amount) {
+            $this->addError('amount', 'Saldo tidak mencukupi. Saldo Anda: Rp ' . number_format($currentBalance, 0, ',', '.') . '. Silakan top up terlebih dahulu.');
+            $this->dispatch('scroll-to-first-error');
+            return;
+        }
+
+        // Confirm modal data (model v2: Seller-Pays, tidak ada biaya tambahan untuk customer)
+        $this->confirmAmount         = $amount;
+        $this->confirmAdminFee       = 0;    // model v2: customer tidak bayar biaya tambahan
+        $this->confirmTotal          = $amount; // customer bayar = amount utuh
+        $this->confirmCommissionRate = $commissionRate;
+        $this->confirmPlatformFee    = $feeAmount;
+        $this->confirmMitraEarning   = $earning;
+        $this->confirmScheduled      = $this->scheduled_date
             ? (date('d M Y', strtotime($this->scheduled_date)) . ($this->scheduled_time ? ' Pukul ' . $this->scheduled_time . ' ' . $this->timezoneLabel : ''))
             : null;
 
@@ -363,20 +388,32 @@ class Create extends Component
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // SAVE — tanpa deduct saldo
+    // SAVE — Model v2: Escrow Lock + Kalkulasi Komisi
     // ─────────────────────────────────────────────────────────────────────────
 
     public function save()
     {
-        $minNominal = (float) AppSetting::get('min_help_nominal', 10000);
-        $adminFee   = (float) AppSetting::get('admin_fee', 0);
+        // Model v2: minimum Rp 20.000, tanpa admin_fee
+        $minNominal     = (float) AppSetting::get('min_help_nominal', 20000);
+        $commissionRate = (float) AppSetting::get('platform_commission_rate', 10);
 
         $this->rules['amount'] = 'required|numeric|min:' . $minNominal . '|max:100000000';
         $this->validate();
 
-        $userId = auth()->id();
-        $amount = (float) $this->amount;
-        $total  = $amount + $adminFee;
+        $userId    = auth()->id();
+        $customer  = auth()->user();
+        $amount    = (float) $this->amount;
+        $feeAmount = round($amount * $commissionRate / 100, 2);
+        $earning   = $amount - $feeAmount;
+
+        // Validasi saldo customer mencukupi sebelum buat tugas
+        $customerBalance = \App\Models\UserBalance::where('user_id', $userId)->first();
+        $currentBalance  = $customerBalance ? (float) $customerBalance->balance : 0;
+
+        if ($currentBalance < $amount) {
+            $this->addError('amount', 'Saldo tidak mencukupi. Saldo Anda: Rp ' . number_format($currentBalance, 0, ',', '.') . '. Silakan top up terlebih dahulu.');
+            return;
+        }
 
         // Validasi dan normalisasi jadwal
         if ($this->scheduled_date) {
@@ -400,7 +437,7 @@ class Create extends Component
             return;
         }
 
-        DB::transaction(function () use ($userId, $amount, $adminFee, $total) {
+        DB::transaction(function () use ($userId, $customer, $amount, $commissionRate, $feeAmount, $earning) {
             $photoPath   = $this->photo ? $this->photo->store('helps', 'public') : null;
             $orderId     = $this->generateOrderId();
             $scheduledAt = null;
@@ -409,24 +446,39 @@ class Create extends Component
                 $scheduledAt = date('Y-m-d H:i:s', strtotime($this->scheduled_date . ' ' . $time));
             }
 
-            Help::create([
-                'user_id'             => $userId,
-                'order_id'            => $orderId,
-                'city_id'             => $this->city_id,
-                'title'               => $this->title,
-                'amount'              => $amount,
-                'admin_fee'           => $adminFee,
-                'total_amount'        => $total,
-                'description'         => $this->description,
-                'equipment_provided'  => $this->equipment_provided,
-                'location'            => $this->location,
-                'full_address'        => $this->full_address,
-                'scheduled_at'        => $scheduledAt,
-                'latitude'            => $this->latitude,
-                'longitude'           => $this->longitude,
-                'photo'               => $photoPath,
-                'status'              => Help::STATUS_MENUNGGU_MITRA,
+            // Model v2: simpan kalkulasi komisi (snapshot) saat tugas dibuat
+            $help = Help::create([
+                'user_id'                    => $userId,
+                'order_id'                   => $orderId,
+                'city_id'                    => $this->city_id,
+                'title'                      => $this->title,
+                'amount'                     => $amount,
+                'admin_fee'                  => 0,   // model v2: tidak ada biaya tambahan customer
+                'total_amount'               => $amount,
+                'description'                => $this->description,
+                'equipment_provided'         => $this->equipment_provided,
+                'location'                   => $this->location,
+                'full_address'               => $this->full_address,
+                'scheduled_at'               => $scheduledAt,
+                'latitude'                   => $this->latitude,
+                'longitude'                  => $this->longitude,
+                'photo'                      => $photoPath,
+                'status'                     => Help::STATUS_MENUNGGU_MITRA,
+                // Kolom model v2
+                'model_version'              => 2,
+                'platform_commission_rate'   => $commissionRate,
+                'platform_fee_amount'        => $feeAmount,
+                'mitra_earning'              => $earning,
+                'escrow_locked_at'           => now(),
             ]);
+
+            // Escrow Lock: tahan dana customer ke Holding
+            $customerBalance = \App\Models\UserBalance::firstOrCreate(
+                ['user_id' => $userId],
+                ['balance' => 0]
+            );
+            $escrowTx = $customerBalance->lockForEscrow($amount, $help->id);
+            $help->update(['escrow_transaction_id' => $escrowTx->id]);
         });
 
         $this->dispatch('draft-cleared');

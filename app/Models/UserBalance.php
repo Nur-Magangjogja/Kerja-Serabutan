@@ -72,4 +72,148 @@ class UserBalance extends Model
 
         return $this;
     }
+
+    /**
+     * Menerapkan denda (penalty) kepada pengguna akibat pelanggaran.
+     *
+     * Berbeda dari deductBalance(), transaksi ini bertipe 'penalty' agar
+     * jelas bahwa ini adalah denda — bukan potongan biasa.
+     * Uang denda ini masuk ke kas administrasi sistem.
+     *
+     * @param  float       $amount       Nominal denda
+     * @param  string|null $description  Keterangan denda (misal: "Denda Pembatalan Bantuan")
+     * @param  mixed|null  $referenceId  ID bantuan / referensi terkait
+     * @return $this
+     */
+    public function applyPenalty($amount, $description = null, $referenceId = null)
+    {
+        $this->decrement('balance', $amount);
+
+        BalanceTransaction::create([
+            'user_id'      => $this->user_id,
+            'amount'       => $amount,
+            'type'         => 'penalty',
+            'description'  => $description ?? 'Denda Pelanggaran → Kas Administrasi',
+            'reference_id' => $referenceId,
+            'status'       => 'completed',
+        ]);
+
+        // Emit Livewire event so dashboard components can refresh immediately
+        try {
+            Livewire::emit('balance-updated');
+        } catch (\Throwable $e) {
+            // ignore if Livewire not available in this context
+        }
+
+        return $this;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // MODEL V2: Escrow / Commission-Based Methods
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Tahan dana customer ke Holding (Escrow Lock).
+     *
+     * Dipanggil saat customer membuat tugas baru (model v2).
+     * Mengurangi saldo customer dan mencatat transaksi bertipe 'escrow_lock'.
+     *
+     * @param  float       $amount       Nominal tugas yang ditahan
+     * @param  mixed|null  $referenceId  ID bantuan
+     * @return BalanceTransaction        Transaksi escrow yang dibuat
+     */
+    public function lockForEscrow(float $amount, $referenceId = null): BalanceTransaction
+    {
+        if ($this->balance < $amount) {
+            throw new \RuntimeException(
+                "Saldo tidak mencukupi. Saldo Anda: Rp " . number_format($this->balance, 0, ',', '.') .
+                ", dibutuhkan: Rp " . number_format($amount, 0, ',', '.')
+            );
+        }
+
+        $this->decrement('balance', $amount);
+
+        $tx = BalanceTransaction::create([
+            'user_id'      => $this->user_id,
+            'amount'       => $amount,
+            'type'         => 'escrow_lock',
+            'description'  => 'Dana Ditahan untuk Bantuan → Holding',
+            'reference_id' => $referenceId,
+            'status'       => 'completed',
+        ]);
+
+        try {
+            Livewire::emit('balance-updated');
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        return $tx;
+    }
+
+    /**
+     * Terima pendapatan bersih dari Holding ke saldo Mitra (Earning).
+     *
+     * Dipanggil saat tugas selesai dikonfirmasi (model v2).
+     * Menambah saldo mitra dengan nominal BERSIH (setelah potong komisi platform).
+     *
+     * @param  float       $netAmount    Nominal bersih setelah potong komisi
+     * @param  mixed|null  $referenceId  ID bantuan
+     * @param  string|null $description  Deskripsi
+     * @return $this
+     */
+    public function receiveEarning(float $netAmount, $referenceId = null, ?string $description = null): self
+    {
+        $this->increment('balance', $netAmount);
+
+        BalanceTransaction::create([
+            'user_id'      => $this->user_id,
+            'amount'       => $netAmount,
+            'type'         => 'earning',
+            'description'  => $description ?? 'Pendapatan Bantuan (Bersih setelah Komisi Platform)',
+            'reference_id' => $referenceId,
+            'status'       => 'completed',
+        ]);
+
+        try {
+            Livewire::emit('balance-updated');
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        return $this;
+    }
+
+    /**
+     * Kembalikan dana dari Holding ke saldo Customer (Refund 100%).
+     *
+     * Dipanggil saat tugas dibatalkan (customer cancel atau accept cancel mitra).
+     * Platform TIDAK memotong komisi apapun dari transaksi yang gagal/batal.
+     *
+     * @param  float       $amount       Nominal yang dikembalikan (harus = escrow amount)
+     * @param  mixed|null  $referenceId  ID bantuan
+     * @return $this
+     */
+    public function refundToCustomer(float $amount, $referenceId = null): self
+    {
+        $this->increment('balance', $amount);
+
+        BalanceTransaction::create([
+            'user_id'      => $this->user_id,
+            'amount'       => $amount,
+            'type'         => 'refund',
+            'description'  => 'Pengembalian Dana 100% (Tugas Dibatalkan)',
+            'reference_id' => $referenceId,
+            'status'       => 'completed',
+        ]);
+
+        try {
+            Livewire::emit('balance-updated');
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        return $this;
+    }
 }
+

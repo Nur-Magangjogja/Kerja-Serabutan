@@ -159,8 +159,24 @@
                 </div>
                 <div class="flex-1">
                     <h2 class="font-semibold text-base text-gray-900 dark:text-white">{{ $help->title }}</h2>
-                    <p class="text-lg font-bold text-blue-600 dark:text-blue-400 mt-2">Rp {{ number_format($help->amount, 0, ',', '.') }}
-                    </p>
+                    @if($help->isV2Model())
+                        <div class="mt-2 bg-gradient-to-br from-slate-50 to-emerald-50/50 dark:from-gray-700/50 dark:to-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 rounded-xl p-3 space-y-1.5">
+                            <div class="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                                <span>Nilai Tugas:</span>
+                                <span class="font-semibold text-gray-800 dark:text-gray-200">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs text-rose-600 dark:text-rose-400">
+                                <span>Potongan Komisi ({{ $help->getCommissionRateLabel() }}):</span>
+                                <span class="font-semibold">- Rp {{ number_format($help->getPlatformFee(), 0, ',', '.') }}</span>
+                            </div>
+                            <div class="border-t border-emerald-200/60 dark:border-emerald-800/60 pt-1.5 flex justify-between items-center">
+                                <span class="text-xs font-bold text-emerald-800 dark:text-emerald-300">Pendapatan Bersih:</span>
+                                <span class="text-base font-black text-emerald-600 dark:text-emerald-400">Rp {{ number_format($help->getNetEarning(), 0, ',', '.') }}</span>
+                            </div>
+                        </div>
+                    @else
+                        <p class="text-lg font-bold text-blue-600 dark:text-blue-400 mt-2">Rp {{ number_format($help->amount, 0, ',', '.') }}</p>
+                    @endif
                 </div>
             </div>
 

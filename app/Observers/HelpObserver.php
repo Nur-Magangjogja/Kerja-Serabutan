@@ -104,10 +104,10 @@ class HelpObserver
         }
 
         try {
-            // Idempotency: cek apakah sudah pernah dikreditkan
+            // Idempotency: cek apakah sudah pernah dikreditkan (oleh HelpTransactionService atau observer ini)
             $already = BalanceTransaction::where('user_id', $help->mitra_id)
                 ->where('reference_id', $help->id)
-                ->where('type', 'credit')
+                ->whereIn('type', ['topup', 'earning'])
                 ->exists();
 
             if ($already) {
@@ -120,17 +120,48 @@ class HelpObserver
                 ['balance' => 0]
             );
 
-            $userBalance->addBalance(
-                $help->amount,
-                'Pendapatan Bantuan (' . $help->title . ')',
-                $help->id
-            );
+            if ($help->isV2Model()) {
+                // MODEL V2: Split Payment
+                $netEarning  = $help->getNetEarning();
+                $platformFee = $help->getPlatformFee();
 
-            \Log::info('[HelpObserver] Mitra dikreditkan via observer (fallback)', [
-                'help_id'  => $help->id,
-                'mitra_id' => $help->mitra_id,
-                'amount'   => $help->amount,
-            ]);
+                $userBalance->receiveEarning(
+                    $netEarning,
+                    $help->id,
+                    "Pendapatan Bantuan '{$help->title}' (Bersih {$help->getCommissionRateLabel()} komisi platform)"
+                );
+
+                if ($platformFee > 0) {
+                    BalanceTransaction::create([
+                        'user_id'      => null, // kas platform
+                        'amount'       => $platformFee,
+                        'type'         => 'platform_fee',
+                        'description'  => "Komisi Platform {$help->getCommissionRateLabel()} dari Bantuan '{$help->title}'",
+                        'reference_id' => $help->id,
+                        'status'       => 'completed',
+                    ]);
+                }
+
+                \Log::info('[HelpObserver] Mitra dikreditkan via observer model v2 (fallback)', [
+                    'help_id'      => $help->id,
+                    'mitra_id'     => $help->mitra_id,
+                    'net_earning'  => $netEarning,
+                    'platform_fee' => $platformFee,
+                ]);
+            } else {
+                // MODEL V1: Logika lama (topup utuh)
+                $userBalance->addBalance(
+                    $help->amount,
+                    'Pendapatan Bantuan (' . $help->title . ')',
+                    $help->id
+                );
+
+                \Log::info('[HelpObserver] Mitra dikreditkan via observer model v1 (fallback)', [
+                    'help_id'  => $help->id,
+                    'mitra_id' => $help->mitra_id,
+                    'amount'   => $help->amount,
+                ]);
+            }
         } catch (\Throwable $e) {
             \Log::warning('[HelpObserver] creditMitraIfNeeded error: ' . $e->getMessage(), ['help_id' => $help->id]);
         }
