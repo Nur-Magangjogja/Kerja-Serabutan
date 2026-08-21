@@ -242,7 +242,7 @@
         @foreach($helps as $help)
             @if(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']) && $help->mitra_id === auth()->id())
                 <div class="mb-3">
-                    <livewire:mitra.gps-tracker :helpId="$help->id" :key="'gps-'.$help->id" />
+                    <livewire:mitra.gps.tracker :helpId="$help->id" :key="'gps-'.$help->id" />
                 </div>
             @endif
         @endforeach

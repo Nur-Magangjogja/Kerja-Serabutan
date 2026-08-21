@@ -446,7 +446,7 @@
 
                                     @if($help->mitra && !$hasRated)
                                         <div class="pt-3 border-t border-gray-100">
-                                            @livewire('customer.rate-mitra', ['helpId' => $help->id], key('rate-mitra-'.$help->id))
+                                            @livewire('customer.ratings.rate-mitra', ['helpId' => $help->id], key('rate-mitra-'.$help->id))
                                         </div>
                                     @elseif($hasRated)
                                         @php

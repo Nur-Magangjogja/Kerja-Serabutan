@@ -157,7 +157,7 @@
     @include('partials.help-modal')
 
     {{-- Realtime notifications poll component (invisible) --}}
-    @livewire('mitra.realtime-notifications')
+    @livewire('mitra.notifications.realtime')
 
     <script>
         function showMitraNotification({ title = 'Notifikasi', message = '', url = '#' , timeout = 4000 }) {

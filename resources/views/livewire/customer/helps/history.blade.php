@@ -142,7 +142,7 @@
 											{{-- Rating form for customer -> mitra (shown when not yet rated) --}}
 											@if($help->mitra && $help->ratings->isEmpty())
 												<div class="pt-3 border-t border-gray-100">
-													@livewire('customer.rate-mitra', ['helpId' => $help->id], key('rate-'.$help->id))
+													@livewire('customer.ratings.rate-mitra', ['helpId' => $help->id], key('rate-'.$help->id))
 												</div>
 											@endif
 										</div>

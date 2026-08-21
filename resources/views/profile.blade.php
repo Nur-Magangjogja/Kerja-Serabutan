@@ -270,7 +270,7 @@
 
             <!-- Menu Items -->
             <div class="px-5 pt-5 pb-24 space-y-4">
-                @livewire('customer.update-profile-photo')
+                @livewire('customer.profile.update-photo')
 
                 <!-- Section: Akun & Aktivitas -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/60">

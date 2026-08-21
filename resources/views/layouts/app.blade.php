@@ -158,7 +158,7 @@
     @livewireScripts
     @stack('scripts')
     {{-- Realtime notifications for customer (invisible) --}}
-    @livewire('customer.realtime-notifications')
+    @livewire('customer.notifications.realtime')
 
     <script>
         function showCustomerNotification({ title = 'Notifikasi', message = '', url = '#' , timeout = 4000, type = 'success' }) {

@@ -107,7 +107,7 @@
     @include('partials.help-modal')
 
     {{-- Realtime notifications poll component (invisible) --}}
-    @livewire('mitra.realtime-notifications')
+    @livewire('mitra.notifications.realtime')
 
     <script>
         function togglePassword(fieldId) {

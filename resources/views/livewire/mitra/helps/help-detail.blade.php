@@ -100,7 +100,7 @@
         {{-- GPS Tracker - Auto tracking untuk status aktif --}}
         @if (in_array($help->status, ['memperoleh_mitra', 'taken', 'partner_on_the_way', 'partner_arrived']))
             {{-- <div class="mb-3">
-                <livewire:mitra.gps-tracker :helpId="$help->id" :key="'gps-tracker-'.$help->id" />
+                <livewire:mitra.gps.tracker :helpId="$help->id" :key="'gps-tracker-'.$help->id" />
             </div> --}}
         @endif
 
@@ -448,7 +448,7 @@
                 $help->mitra_id === auth()->id() &&
                 !in_array($help->status, ['selesai', 'dibatalkan']))
             <div class="mb-3">
-                <livewire:mitra.gps-simulator :help-id="$help->id" :key="'gps-simulator-' . $help->id" />
+                <livewire:mitra.gps.simulator :help-id="$help->id" :key="'gps-simulator-' . $help->id" />
             </div>
         @endif
 

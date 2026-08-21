@@ -51,7 +51,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ========================================
     Route::prefix('customer')->name('customer.')->middleware('customer')->group(function () {
         // Dashboard
-        Route::get('/dashboard', \App\Livewire\Customer\Dashboard::class)->name('dashboard');
+        Route::get('/dashboard', \App\Livewire\Customer\Dashboard\Index::class)->name('dashboard');
 
         // Helps Management (specific routes BEFORE general routes)
         Route::get('/helps/create', \App\Livewire\Customer\Helps\Create::class)->name('helps.create');
@@ -73,18 +73,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         })->name('notifications.cleanup-on-exit');
 
         // Balance & Transactions
-        // Route untuk balance management bisa ditambahkan di sini
         Route::get('/transactions', \App\Livewire\Customer\Transactions\Index::class)->name('transactions.index');
 
         // Top Up Saldo - New approval system
-        Route::get('/topup/request', \App\Livewire\Customer\TopupRequest::class)->name('topup.request');
-        Route::get('/topup/history', \App\Livewire\Customer\TopupHistory::class)->name('topup.history');
-        
+        Route::get('/topup/request', \App\Livewire\Customer\Topup\TopupRequest::class)->name('topup.request');
+        Route::get('/topup/history', \App\Livewire\Customer\Topup\History::class)->name('topup.history');
+
         // Top Up Saldo (Old Midtrans - kept for backward compatibility)
-        Route::get('/top-up', \App\Livewire\Customer\Topup::class)->name('topup');
+        Route::get('/top-up', \App\Livewire\Customer\Topup\Index::class)->name('topup');
 
         // Chat (optional help id for opening detail directly)
-        Route::get('/chat/{help?}', \App\Livewire\Customer\Chat::class)->name('chat');
+        Route::get('/chat/{help?}', \App\Livewire\Customer\Chat\Index::class)->name('chat');
 
         // Ratings (customer receives ratings from mitra)
         Route::get('/ratings', \App\Livewire\Customer\Ratings\Index::class)->name('ratings');
@@ -142,7 +141,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Profile
         Route::get('/profile', \App\Livewire\Mitra\Profile\Index::class)->name('profile');
-        // Edit profile page for mitra (full page, not modal)
         Route::get('/profile/edit', \App\Livewire\Mitra\Profile\EditPage::class)->name('profile.edit');
 
         // Chat (optional help id for opening detail directly)
@@ -165,22 +163,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reports/create', \App\Livewire\Mitra\Reports\Create::class)->name('reports.create');
         Route::get('/reports/create/user/{user_id}', \App\Livewire\Mitra\Reports\Create::class)->name('reports.create.user');
         Route::get('/reports/create/help/{help_id}', \App\Livewire\Mitra\Reports\Create::class)->name('reports.create.help');
-        // Show a submitted report (mitra can view their own submitted report status)
         Route::get('/reports/{report}', function (\App\Models\PartnerReport $report) {
-            // simple ownership check: only reporter or admin can view; mitra middleware ensures auth
             if ($report->reporter_id !== auth()->id()) {
                 abort(403);
             }
             return view('livewire.mitra.reports.show', ['report' => $report]);
         })->name('reports.show');
 
-        // Processing helps (in-progress) - page for mitra to manage helps they are currently handling
+        // Processing helps (in-progress)
         Route::get('/helps/processing', \App\Livewire\Mitra\Helps\ProcessingHelps::class)->name('helps.processing');
 
         // Ratings
         Route::get('/ratings', \App\Livewire\Mitra\Ratings\Index::class)->name('ratings');
 
-        // Settings (Mitra) - similar to customer profile settings
+        // Settings (Mitra)
         Route::view('/settings', 'mitra.settings')->name('settings');
         Route::view('/settings/notifications', 'mitra.settings.notifications')->name('settings.notifications');
         Route::view('/settings/password', 'mitra.settings.password')->name('settings.password');
@@ -199,7 +195,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ========================================
     // SHARED ROUTES (Accessible by both)
     // ========================================
-    // Profile Management (accessible by all authenticated users)
     Route::view('/profile', 'profile')->name('profile');
     Route::view('/profile/edit', 'profile.edit')->name('profile.edit');
     Route::view('/profile/settings', 'profile.settings')->name('profile.settings');
@@ -232,78 +227,55 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('profile.delete');
 });
 
-// Super Admin routes - require super_admin role only
+// ========================================
+// SUPER ADMIN ROUTES
+// ========================================
 Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->name('superadmin.')->group(function () {
-    Route::get('/dashboard', \App\Livewire\SuperAdmin\Dashboard::class)->name('dashboard');
-    Route::get('/users', \App\Livewire\SuperAdmin\Users::class)->name('users');
-    Route::get('/cities', \App\Livewire\SuperAdmin\Cities::class)->name('cities');
-    // Notifications
-    Route::get('/notifications', \App\Livewire\SuperAdmin\Notifications::class)->name('notifications.index');
-    // Activity Logs
-    Route::get('/activity-logs', \App\Livewire\SuperAdmin\ActivityLogs::class)->name('activity.logs');
-    // Transaction Logs (detailed)
-    Route::get('/transactions/logs', \App\Livewire\SuperAdmin\TransactionsLog::class)->name('transactions.log');
-    // Moderasi Bantuan page removed for SuperAdmin
-    Route::get('/helps/approved', \App\Livewire\SuperAdmin\HelpsApproved::class)->name('helps.approved');
-    // Verifikasi KTP page removed for SuperAdmin
-    // Identity settings (app name & logo) - SuperAdmin only
+    Route::get('/dashboard', \App\Livewire\SuperAdmin\Dashboard\Index::class)->name('dashboard');
+    Route::get('/users', \App\Livewire\SuperAdmin\Users\Index::class)->name('users');
+    Route::get('/cities', \App\Livewire\SuperAdmin\Cities\Index::class)->name('cities');
+    Route::get('/notifications', \App\Livewire\SuperAdmin\Notifications\Index::class)->name('notifications.index');
+    Route::get('/activity-logs', \App\Livewire\SuperAdmin\ActivityLogs\Index::class)->name('activity.logs');
+    Route::get('/transactions/logs', \App\Livewire\SuperAdmin\Transactions\Log::class)->name('transactions.log');
+    Route::get('/helps/approved', \App\Livewire\SuperAdmin\Helps\Approved::class)->name('helps.approved');
     Route::get('/settings/identity', \App\Livewire\SuperAdmin\Settings\IdentitySettings::class)->name('settings.identity');
-    // Help settings (minimum nominal and admin fee)
     Route::get('/settings/help', \App\Livewire\SuperAdmin\Settings\HelpSettings::class)->name('settings.help');
-    // Banners management for dashboards
-    Route::get('/settings/banners', \App\Livewire\SuperAdmin\Banners::class)->name('settings.banners');
-    // Transactions / Logs (topup, withdraw, mutasi)
+    Route::get('/settings/banners', \App\Livewire\SuperAdmin\Banners\Index::class)->name('settings.banners');
     Route::view('/settings/transactions', 'superadmin.transactions')->name('settings.transactions');
-    // Top-up approval management
-    Route::get('/topup/approvals', \App\Livewire\SuperAdmin\TopupApproval::class)->name('topup.approvals');
-    // Superadmin management page for admin-role users
-    Route::get('/admin-users', \App\Livewire\SuperAdmin\AdminUsers::class)->name('admin.users');
-    // Withdraw management (moved to SuperAdmin for approvals)
+    Route::get('/topup/approvals', \App\Livewire\SuperAdmin\Topup\Approval::class)->name('topup.approvals');
+    Route::get('/admin-users', \App\Livewire\SuperAdmin\Users\AdminUsers::class)->name('admin.users');
     Route::get('/withdraws', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'index'])->name('withdraws.index');
     Route::get('/withdraws/{withdraw}/modal', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'modal'])->name('withdraws.modal');
     Route::get('/withdraws/{withdraw}', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'show'])->name('withdraws.show');
     Route::post('/withdraws/{withdraw}/approve', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'approve'])->name('withdraws.approve');
     Route::post('/withdraws/{withdraw}/reject', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'reject'])->name('withdraws.reject');
-    
-    
-    // Appearance / Theme settings
     Route::view('/settings/appearance', 'superadmin.settings.appearance')->name('settings.appearance');
     Route::get('/settings', function () {
         return redirect()->route('superadmin.settings.identity');
     });
 });
 
-// Admin routes - require admin role only (for moderasi)
+// ========================================
+// ADMIN ROUTES
+// ========================================
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
-    // Settings (Appearance & Help settings)
+    Route::get('/dashboard', \App\Livewire\Admin\Dashboard\Index::class)->name('dashboard');
     Route::view('/settings/appearance', 'admin.settings.appearance')->name('settings.appearance');
     Route::get('/settings/help', \App\Livewire\Admin\Settings\HelpSettings::class)->name('settings.help');
     Route::get('/helps', \App\Livewire\Admin\Helps\Index::class)->name('helps');
     Route::get('/helps/approved', \App\Livewire\Admin\Helps\Approved::class)->name('helps.approved');
-    // Restore original verifications Livewire component
     Route::get('/verifications', \App\Livewire\Admin\Verifications\Index::class)->name('verifications');
-
-    // Withdraw management (Admin)
     Route::get('/withdraws', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'index'])->name('withdraws.index');
-    // Modal endpoint to load withdraw details into a modal (AJAX)
     Route::get('/withdraws/{withdraw}/modal', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'modal'])->name('withdraws.modal');
     Route::get('/withdraws/{withdraw}', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'show'])->name('withdraws.show');
-    
-
-    // Users management (Admin area)
     Route::get('/users', [\App\Http\Controllers\Admin\AdminUserController::class, 'index'])->name('users.index');
     Route::get('/users/{user}', [\App\Http\Controllers\Admin\AdminUserController::class, 'show'])->name('users.show');
-
-    // Partners activity and exports
     Route::get('/partners/activity', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'index'])->name('partners.activity');
     Route::get('/partners/activity/export/csv', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'exportCsv'])->name('partners.activity.export.csv');
     Route::get('/partners/activity/export/excel', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'exportExcel'])->name('partners.activity.export.excel');
     Route::get('/partners/activity/export/print', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'exportPrint'])->name('partners.activity.export.print');
     Route::post('/partners/activity/{user}/reset-sessions', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'resetSessions'])->name('partners.activity.reset_sessions');
     Route::post('/partners/activity/{user}/reset-password', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'resetPassword'])->name('partners.activity.reset_password');
-
-    // Partner reports and summaries
     Route::get('/partners/report', [\App\Http\Controllers\Admin\PartnerReportController::class, 'index'])->name('partners.report');
     Route::get('/partners/reports', [\App\Http\Controllers\Admin\PartnerReportController::class, 'reportsIndex'])->name('partners.reports');
     Route::get('/partners/reports/{report}', [\App\Http\Controllers\Admin\PartnerReportController::class, 'show'])->name('partners.reports.show');
@@ -311,15 +283,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::post('/partners/reports/{report}/add-note', [\App\Http\Controllers\Admin\PartnerReportController::class, 'addNote'])->name('partners.reports.add-note');
     Route::post('/partners/reports/{report}/resolve', [\App\Http\Controllers\Admin\PartnerReportController::class, 'resolve'])->name('partners.reports.resolve');
     Route::post('/partners/reports/{report}/reopen', [\App\Http\Controllers\Admin\PartnerReportController::class, 'reopen'])->name('partners.reports.reopen');
-
-    // Blocked partners
     Route::get('/partners/blocked', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'index'])->name('partners.blocked');
     Route::post('/partners/blocked/{id}/toggle', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'toggle'])->name('partners.blocked.toggle');
-    // Backwards-compatible toggle route used by views: route('admin.partners.toggle', $id)
     Route::post('/partners/toggle/{id}', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'toggle'])->name('partners.toggle');
-
-    // Top-Up Approval Management
-    Route::get('/topup/approvals', \App\Livewire\Admin\TopupApproval::class)->name('topup.approvals');
+    Route::get('/topup/approvals', \App\Livewire\Admin\Topup\Approval::class)->name('topup.approvals');
 });
 
 // ========================================
@@ -331,7 +298,6 @@ Route::prefix('topup')->name('topup.')->group(function () {
     Route::get('/error', [\App\Http\Controllers\TopupController::class, 'error'])->name('error');
     Route::get('/success', [\App\Http\Controllers\TopupController::class, 'success'])->name('success');
     Route::post('/notification', [\App\Http\Controllers\TopupController::class, 'notification'])->name('notification');
-    // Client-side callback (AJAX) used to notify server immediately when Snap reports success
     Route::post('/client-callback', [\App\Http\Controllers\TopupController::class, 'clientCallback'])->name('client-callback');
 });
 

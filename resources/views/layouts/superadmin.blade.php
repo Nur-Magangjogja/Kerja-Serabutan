@@ -280,7 +280,7 @@
 
                     <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                         <!-- Notifications Dropdown -->
-                        <livewire:superadmin.notification-dropdown />
+                        <livewire:superadmin.notifications.dropdown />
 
                         <!-- User Profile -->
                         <div class="flex items-center gap-2 sm:gap-3">

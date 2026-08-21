@@ -2,7 +2,30 @@
 
 namespace App\Livewire\Mitra\Profile;
 
-class Index extends \App\Livewire\Mitra\Profile
+use App\Models\Help;
+use App\Models\Rating;
+use Livewire\Component;
+use Livewire\Attributes\Layout;
+
+#[Layout('layouts.mitra')]
+class Index extends Component
 {
-    // Proxy for grouping profile-related components
+    public function render()
+    {
+        $user = auth()->user();
+
+        // Get mitra statistics
+        $totalHelped = Help::where('mitra_id', $user->id)->count();
+        $completedHelps = Help::where('mitra_id', $user->id)->where('status', 'selesai')->count();
+        $averageRating = Rating::where('mitra_id', $user->id)->avg('rating') ?? 0;
+        $totalRatings = Rating::where('mitra_id', $user->id)->count();
+
+        return view('livewire.mitra.profile.index', [
+            'user' => $user,
+            'totalHelped' => $totalHelped,
+            'completedHelps' => $completedHelps,
+            'averageRating' => round($averageRating, 1),
+            'totalRatings' => $totalRatings,
+        ]);
+    }
 }
