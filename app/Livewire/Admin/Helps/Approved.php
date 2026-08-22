@@ -47,6 +47,6 @@ class Approved extends Component
 
         $helps = $query->latest()->paginate($this->perPage);
 
-        return view('admin.helps-approved', compact('helps'));
+        return view('livewire.admin.helps.approved', compact('helps'));
     }
 }

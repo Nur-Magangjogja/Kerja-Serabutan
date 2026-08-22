@@ -318,7 +318,7 @@ class Approval extends Component
 
         $transactions = $query->orderBy('created_at', 'desc')->paginate(15);
 
-        return view('superadmin.topup-approval', [
+        return view('livewire.superadmin.topup.approval', [
             'transactions' => $transactions,
             'totalPending' => $totalPending,
             'totalCompleted' => $totalCompleted,

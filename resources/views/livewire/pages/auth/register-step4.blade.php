@@ -155,161 +155,166 @@ new #[Layout('layouts.guest')] class extends Component {
     }
 }; ?>
 
-            <div class="w-full">
-                <div class="bg-white rounded-2xl p-6 w-full shadow-lg max-w-md mx-auto">
-                    <div class="flex items-center justify-between mb-4">
-                        <button wire:click="previousStep" class="text-gray-500">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </button>
-                        <h1 class="text-lg font-bold text-gray-900">Verifikasi Data</h1>
-                        <div class="w-6"></div>
-                    </div>
+<div class="space-y-5">
+    <!-- Step Header -->
+    <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
+        <div>
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Langkah Terakhir</span>
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Verifikasi & Buat Akun</h2>
+        </div>
+        <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center justify-center border border-emerald-200 dark:border-emerald-800">
+            4/4
+        </div>
+    </div>
 
-                    <div class="flex items-center gap-2 mb-4">
-                        <div class="flex-1 h-1 bg-gray-200 rounded-full"></div>
-                        <div class="flex-1 h-1 bg-gray-200 rounded-full"></div>
-                        <div class="flex-1 h-1 bg-gray-200 rounded-full"></div>
-                        <div class="flex-1 h-1 bg-gray-200 rounded-full"></div>
-                    </div>
-                    <p class="text-sm text-gray-500 mb-4 text-center">Step 4 of 4</p>
+    <!-- Progress Indicator Pills -->
+    <div class="grid grid-cols-4 gap-1.5 mb-2">
+        <div class="h-1.5 rounded-full bg-emerald-600"></div>
+        <div class="h-1.5 rounded-full bg-emerald-600"></div>
+        <div class="h-1.5 rounded-full bg-emerald-600"></div>
+        <div class="h-1.5 rounded-full bg-emerald-600"></div>
+    </div>
 
-                    <form wire:submit="complete" class="flex flex-col space-y-4">
-                        <p class="text-sm text-gray-600 mb-2">Periksa kembali data Anda sebelum melanjutkan</p>
+    <form wire:submit="complete" class="flex flex-col space-y-4">
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Periksa kembali ringkasan data Anda dan tentukan email serta kata sandi akun.</p>
 
-                        <!-- Data KTP Summary -->
-                        <div class="bg-white rounded-xl p-4 shadow-sm">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-bold text-gray-900 flex items-center gap-2">
-                                    <svg class="w-5 h-5 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                    Data Pribadi
-                                </h3>
-                                <button type="button" wire:click="editStep(1)"
-                                    class="text-primary-600 text-sm font-semibold">Edit</button>
-                            </div>
-                            <div class="space-y-2 text-sm">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">NIK:</span>
-                                    <span class="font-semibold text-gray-900">{{ $step1_data['nik'] }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Nama:</span>
-                                    <span class="font-semibold text-gray-900">{{ $step1_data['full_name'] }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">TTL:</span>
-                                    <span class="font-semibold text-gray-900">{{ $step1_data['place_of_birth'] }},
-                                        {{ date('d/m/Y', strtotime($step1_data['date_of_birth'])) }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Jenis Kelamin:</span>
-                                    <span class="font-semibold text-gray-900">{{ $step1_data['gender'] }}</span>
-                                </div>
-                                <div class="pt-2 border-t">
-                                    <span class="text-gray-600 block mb-1">Alamat:</span>
-                                    <span class="font-semibold text-gray-900 text-xs">
-                                        {{ $step1_data['address'] }}, RT {{ $step1_data['rt'] }}/RW {{ $step1_data['rw'] }},
-                                        Kel. {{ $step1_data['kelurahan'] }}, Kec. {{ $step1_data['kecamatan'] }},
-                                        {{ $step1_data['city'] }}, {{ $step1_data['province'] }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+        <!-- Data KTP Summary -->
+        <div class="bg-gray-50/70 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200/60 dark:border-gray-700/60">
+                <h3 class="font-bold text-xs sm:text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg class="w-4 h-4 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                    </svg>
+                    Data Pribadi
+                </h3>
+                <button type="button" wire:click="editStep(1)" class="text-primary-600 dark:text-sky-400 text-xs font-bold hover:underline cursor-pointer">
+                    Edit
+                </button>
+            </div>
+            <div class="space-y-2 text-xs sm:text-sm">
+                <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">NIK:</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ $step1_data['nik'] }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">Nama Lengkap:</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ $step1_data['full_name'] }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">Tempat, Tanggal Lahir:</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ $step1_data['place_of_birth'] }}, {{ date('d/m/Y', strtotime($step1_data['date_of_birth'])) }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">Jenis Kelamin:</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ $step1_data['gender'] }}</span>
+                </div>
+                <div class="pt-2 border-t border-gray-200/60 dark:border-gray-700/60">
+                    <span class="text-gray-500 dark:text-gray-400 block mb-0.5">Alamat:</span>
+                    <span class="font-medium text-gray-900 dark:text-gray-200 text-xs leading-relaxed">
+                        {{ $step1_data['address'] }}, RT {{ $step1_data['rt'] }}/RW {{ $step1_data['rw'] }}, Kel. {{ $step1_data['kelurahan'] }}, Kec. {{ $step1_data['kecamatan'] }}, {{ $step1_data['city'] }}, {{ $step1_data['province'] }}
+                    </span>
+                </div>
+            </div>
+        </div>
 
-                        <!-- Foto KTP -->
-                        <div class="bg-white rounded-xl p-4 shadow-sm">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-bold text-gray-900 flex items-center gap-2">
-                                    <svg class="w-5 h-5 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd"
-                                            d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                    Foto KTP
-                                </h3>
-                                <button type="button" wire:click="editStep(2)"
-                                    class="text-primary-600 text-sm font-semibold">Edit</button>
-                            </div>
-                            <img src="{{ Storage::url($step2_data['ktp_photo_path']) }}" alt="KTP" class="w-full rounded-lg">
-                        </div>
+        <!-- Foto KTP Summary -->
+        <div class="bg-gray-50/70 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200/60 dark:border-gray-700/60">
+                <h3 class="font-bold text-xs sm:text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg class="w-4 h-4 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" clip-rule="evenodd" />
+                    </svg>
+                    Foto e-KTP
+                </h3>
+                <button type="button" wire:click="editStep(2)" class="text-primary-600 dark:text-sky-400 text-xs font-bold hover:underline cursor-pointer">
+                    Edit
+                </button>
+            </div>
+            <img src="{{ Storage::url($step2_data['ktp_photo_path']) }}" alt="KTP" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 max-h-48 object-cover">
+        </div>
 
-                        <!-- Foto Selfie -->
-                        <div class="bg-white rounded-xl p-4 shadow-sm">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-bold text-gray-900 flex items-center gap-2">
-                                    <svg class="w-5 h-5 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd"
-                                            d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                    Foto Selfie dengan KTP
-                                </h3>
-                                <button type="button" wire:click="editStep(3)"
-                                    class="text-primary-600 text-sm font-semibold">Edit</button>
-                            </div>
-                            <img src="{{ Storage::url($step3_data['selfie_photo_path']) }}" alt="Selfie" class="w-full rounded-lg">
-                        </div>
+        <!-- Foto Selfie Summary -->
+        <div class="bg-gray-50/70 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200/60 dark:border-gray-700/60">
+                <h3 class="font-bold text-xs sm:text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg class="w-4 h-4 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" clip-rule="evenodd" />
+                    </svg>
+                    Foto Selfie + KTP
+                </h3>
+                <button type="button" wire:click="editStep(3)" class="text-primary-600 dark:text-sky-400 text-xs font-bold hover:underline cursor-pointer">
+                    Edit
+                </button>
+            </div>
+            <img src="{{ Storage::url($step3_data['selfie_photo_path']) }}" alt="Selfie" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 max-h-48 object-cover">
+        </div>
 
-                        <!-- Email & Password -->
-                        <div class="bg-white rounded-xl p-4 shadow-sm">
-                            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                <svg class="w-5 h-5 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+        <!-- Email & Password Form -->
+        <div class="bg-gray-50/70 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-4">
+            <h3 class="font-bold text-xs sm:text-sm text-gray-900 dark:text-white mb-3 flex items-center gap-2 pb-2 border-b border-gray-200/60 dark:border-gray-700/60">
+                <svg class="w-4 h-4 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                </svg>
+                Informasi Akun Masuk
+            </h3>
+            <div class="space-y-3">
+                <div>
+                    <label for="email" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Alamat Email <span class="text-red-500">*</span></label>
+                    <input wire:model="email" id="email" type="email" placeholder="nama@email.com"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                    <x-input-error :messages="$errors->get('email')" />
+                </div>
+                <div>
+                    <label for="password" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Kata Sandi <span class="text-red-500">*</span></label>
+                    <input wire:model="password" id="password" type="password" placeholder="Minimal 8 karakter"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                    <x-input-error :messages="$errors->get('password')" />
+                </div>
+                <div>
+                    <label for="password_confirmation" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Konfirmasi Kata Sandi <span class="text-red-500">*</span></label>
+                    <input wire:model="password_confirmation" id="password_confirmation" type="password" placeholder="Ketik ulang kata sandi"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                    <x-input-error :messages="$errors->get('password_confirmation')" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Terms & Conditions -->
+        <div class="bg-gray-50/70 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-4">
+            <label class="flex items-start gap-3 cursor-pointer">
+                <input wire:model="agree_terms" type="checkbox" class="w-4 h-4 text-primary-500 rounded border-gray-300 dark:border-gray-600 mt-0.5 focus:ring-primary-500">
+                <span class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed flex-1">
+                    Saya menyetujui <a href="#" class="text-primary-600 dark:text-sky-400 font-semibold hover:underline">Syarat & Ketentuan</a> serta <a href="#" class="text-primary-600 dark:text-sky-400 font-semibold hover:underline">Kebijakan Privasi</a> platform.
+                </span>
+            </label>
+            <x-input-error :messages="$errors->get('agree_terms')" />
+        </div>
+
+                        <!-- Actions -->
+                        <!-- Actions -->
+                        <div class="pt-4 pb-2 flex items-center gap-3">
+                            <button type="button" wire:click="previousStep"
+                                class="px-5 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 font-bold text-xs sm:text-sm transition cursor-pointer flex items-center justify-center gap-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                                 </svg>
-                                Akun Login
-                            </h3>
-                            <div class="space-y-3">
-                                <div>
-                                    <label for="email" class="block text-xs font-semibold text-gray-700 mb-2">Email *</label>
-                                    <input wire:model="email" id="email" type="email" placeholder="example@email.com"
-                                        class="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl text-gray-700 text-sm placeholder-gray-400 focus:ring-2 focus:ring-primary-400 transition">
-                                    <x-input-error :messages="$errors->get('email')" class="mt-2" />
-                                </div>
-                                <div>
-                                    <label for="password" class="block text-xs font-semibold text-gray-700 mb-2">Password *</label>
-                                    <input wire:model="password" id="password" type="password" placeholder="Min. 8 karakter"
-                                        class="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl text-gray-700 text-sm placeholder-gray-400 focus:ring-2 focus:ring-primary-400 transition">
-                                    <x-input-error :messages="$errors->get('password')" class="mt-2" />
-                                </div>
-                                <div>
-                                    <label for="password_confirmation"
-                                        class="block text-xs font-semibold text-gray-700 mb-2">Konfirmasi Password *</label>
-                                    <input wire:model="password_confirmation" id="password_confirmation" type="password"
-                                        placeholder="Ketik ulang password"
-                                        class="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl text-gray-700 text-sm placeholder-gray-400 focus:ring-2 focus:ring-primary-400 transition">
-                                    <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
-                                </div>
-                            </div>
-                        </div>
+                                <span>Kembali</span>
+                            </button>
 
-                        <!-- Terms & Conditions -->
-                        <div class="bg-gray-50 rounded-xl p-4">
-                            <label class="flex items-start gap-3 cursor-pointer">
-                                <input wire:model="agree_terms" type="checkbox" class="w-5 h-5 text-primary-500 rounded mt-0.5">
-                                <span class="text-sm text-gray-700 flex-1">
-                                    Saya menyetujui <a href="#" class="text-primary-600 font-semibold">Syarat & Ketentuan</a>
-                                    serta <a href="#" class="text-primary-600 font-semibold">Kebijakan Privasi</a> yang berlaku
-                                </span>
-                            </label>
-                            <x-input-error :messages="$errors->get('agree_terms')" class="mt-2" />
-                        </div>
-
-                        <!-- Complete Button -->
-                        <div class="pt-2 pb-2">
                             <button type="submit" wire:loading.attr="disabled"
-                                class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-full shadow-lg hover:shadow-xl transition disabled:opacity-50">
-                                <span wire:loading.remove>Selesai & Daftar</span>
-                                <span wire:loading>Mendaftarkan akun...</span>
+                                class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm py-3.5 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2">
+                                <span wire:loading.remove>Selesai & Buat Akun</span>
+                                <span wire:loading class="flex items-center gap-2">
+                                    <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Mendaftarkan...
+                                </span>
                             </button>
                         </div>
                     </form>
-                </div>
-            </div>
 
             <script>
                 (function () {
@@ -343,6 +348,4 @@ new #[Layout('layouts.guest')] class extends Component {
                     });
                 })();
             </script>
-        </div>
-    </div>
 </div>

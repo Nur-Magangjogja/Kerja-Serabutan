@@ -112,6 +112,33 @@ class UserBalance extends Model
         return $this;
     }
 
+    /**
+     * Potong saldo untuk penarikan dana (Withdraw) yang disetujui admin.
+     * Mencatat transaksi bertipe 'withdraw' agar sinkron dengan laporan keuangan.
+     */
+    public function withdrawBalance(float $amount, $referenceId = null, $orderId = null, ?string $description = null): BalanceTransaction
+    {
+        $this->decrement('balance', $amount);
+
+        $transaction = BalanceTransaction::create([
+            'user_id'      => $this->user_id,
+            'amount'       => $amount,
+            'type'         => 'withdraw',
+            'description'  => $description ?? 'Penarikan Dana (Withdraw) → Rekening Bank/E-Wallet',
+            'reference_id' => $referenceId,
+            'order_id'     => $orderId,
+            'status'       => 'completed',
+        ]);
+
+        try {
+            Livewire::emit('balance-updated');
+        } catch (\Throwable $e) {
+            // ignore if Livewire not available in this context
+        }
+
+        return $transaction;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // MODEL V2: Escrow / Commission-Based Methods
     // ─────────────────────────────────────────────────────────────────────────

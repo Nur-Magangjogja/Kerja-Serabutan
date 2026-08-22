@@ -1,6 +1,9 @@
-@extends('layouts.admin')
+@extends(in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? 'layouts.superadmin' : 'layouts.admin')
 
 @section('content')
+@php
+    $routePrefix = in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? 'superadmin.' : 'admin.';
+@endphp
 <div class="space-y-5">
     {{-- ===== Page Header ===== --}}
     <div class="flex items-center justify-between flex-wrap gap-3">
@@ -44,7 +47,7 @@
 
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
             </div>
             <div>
                 <p class="text-xs text-gray-500 dark:text-gray-400">Mitra</p>
@@ -65,7 +68,7 @@
 
     {{-- ===== Filter Toolbar ===== --}}
     <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-4 py-3.5 shadow-sm">
-        <form method="GET" action="{{ route('admin.partners.blocked') }}" class="flex flex-wrap items-end gap-3">
+        <form method="GET" action="{{ route($routePrefix . 'partners.blocked') }}" class="flex flex-wrap items-end gap-3">
             <div class="relative flex-1 min-w-[200px]">
                 <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Cari Pengguna</label>
                 <div class="relative">
@@ -103,7 +106,7 @@
                     Filter
                 </button>
                 @if (request()->hasAny(['search', 'role', 'status']))
-                <a href="{{ route('admin.partners.blocked') }}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <a href="{{ route($routePrefix . 'partners.blocked') }}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     Reset
                 </a>
                 @endif
@@ -183,12 +186,12 @@
                             </td>
                             <td class="px-4 py-3.5 text-right whitespace-nowrap">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <a href="{{ route('admin.partners.activity', ['search' => $user->email]) }}"
+                                    <a href="{{ route($routePrefix . 'partners.activity', ['search' => $user->email]) }}"
                                         class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                         Aktivitas
                                     </a>
 
-                                    <form method="POST" action="{{ route('admin.partners.toggle', $user->id) }}" class="inline confirm-action-form" data-action-type="{{ $user->status === 'blocked' ? 'unblock' : 'block' }}" data-user-name="{{ $user->name }}">
+                                    <form method="POST" action="{{ route($routePrefix . 'partners.toggle', $user->id) }}" class="inline confirm-action-form" data-action-type="{{ $user->status === 'blocked' ? 'unblock' : 'block' }}" data-user-name="{{ $user->name }}">
                                         @csrf
                                         <button type="submit"
                                             class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold {{ $user->status === 'blocked' ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-rose-600 text-white hover:bg-rose-700' }} transition-colors">

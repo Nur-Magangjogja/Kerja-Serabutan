@@ -1,8 +1,9 @@
-@extends('layouts.admin')
+@extends(in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? 'layouts.superadmin' : 'layouts.admin')
 
 @section('content')
 <div class="space-y-5">
     @php
+        $routePrefix = in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? 'superadmin.' : 'admin.';
         $collection = ($activities instanceof \Illuminate\Pagination\AbstractPaginator) ? collect($activities->items()) : collect($activities);
         $roleCounts = [
             'mitra' => $collection->filter(fn($a) => optional($a->user)?->isMitra())->count(),
@@ -28,20 +29,13 @@
             'help_started' => ['label' => 'Mulai Pekerjaan', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'],
             'help_completed' => ['label' => 'Pekerjaan Selesai (Bukti Terkirim)', 'badge' => 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300'],
             'help_confirmed' => ['label' => 'Customer Konfirmasi Selesai', 'badge' => 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300'],
-            'help_cancelled' => ['label' => 'Batalkan Bantuan', 'badge' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400'],
-            'help_reviewed' => ['label' => 'Customer Beri Ulasan', 'badge' => 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400'],
-            'profile_updated' => ['label' => 'Update Profil', 'badge' => 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'],
-            'ktp_reuploaded' => ['label' => 'Upload Ulang KTP', 'badge' => 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'],
-            'phone_changed' => ['label' => 'Ubah No. Telepon', 'badge' => 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'],
-            'password_changed' => ['label' => 'Ubah Password', 'badge' => 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'],
-            'balance_topup' => ['label' => 'Top Up Saldo', 'badge' => 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'],
-            'balance_withdraw' => ['label' => 'Tarik Saldo', 'badge' => 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'],
-            'balance_deducted' => ['label' => 'Pengurangan Saldo', 'badge' => 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'],
-            'security_bruteforce' => ['label' => 'Banyak Login Gagal', 'badge' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400'],
-            'security_location_anomaly' => ['label' => 'Lokasi Mencurigakan', 'badge' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400'],
-            'security_outdated_app' => ['label' => 'Aplikasi Lama', 'badge' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400'],
-            'ktp_verified' => ['label' => 'KTP Diverifikasi', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'],
-            'ktp_rejected' => ['label' => 'KTP Ditolak', 'badge' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400'],
+            'help_cancelled' => ['label' => 'Bantuan Dibatalkan', 'badge' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400'],
+            'partner_blocked' => ['label' => 'Mitra Diblokir', 'badge' => 'bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-300'],
+            'partner_unblocked' => ['label' => 'Blokir Mitra Dibuka', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'],
+            'profile_updated' => ['label' => 'Profil Diperbarui', 'badge' => 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'],
+            'password_changed' => ['label' => 'Password Diubah', 'badge' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'],
+            'session_reset' => ['label' => 'Sesi Direset Admin', 'badge' => 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400'],
+            'password_reset_by_admin' => ['label' => 'Password Direset Admin', 'badge' => 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'],
         ];
 
         $formatActivity = function ($type) use ($activityMeta) {
@@ -52,16 +46,16 @@
             if (!$userAgent) return ['label' => 'Unknown Device', 'badge' => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'];
             $ua = strtolower($userAgent);
             if (str_contains($ua, 'android') || str_contains($ua, 'iphone') || str_contains($ua, 'ipad')) {
-                return ['label' => 'Mobile Browser', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'];
+                return ['label' => 'Mobile Device', 'badge' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'];
             }
             if (str_contains($ua, 'windows')) {
-                return ['label' => 'Chrome Windows', 'badge' => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'];
+                return ['label' => 'Windows PC', 'badge' => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'];
             }
             if (str_contains($ua, 'mac os') || str_contains($ua, 'macintosh')) {
-                return ['label' => 'MacOS Browser', 'badge' => 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400'];
+                return ['label' => 'MacOS Device', 'badge' => 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400'];
             }
             if (str_contains($ua, 'linux')) {
-                return ['label' => 'Linux Browser', 'badge' => 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400'];
+                return ['label' => 'Linux Device', 'badge' => 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400'];
             }
             return ['label' => 'Unknown Device', 'badge' => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'];
         };
@@ -74,17 +68,17 @@
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Pantau rekaman audit aktivitas pengguna sistem</p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('admin.partners.activity.export.csv', request()->query()) }}"
+            <a href="{{ route($routePrefix . 'partners.activity.export.csv', request()->query()) }}"
                 class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm transition">
                 <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 CSV
             </a>
-            <a href="{{ route('admin.partners.activity.export.excel', request()->query()) }}"
+            <a href="{{ route($routePrefix . 'partners.activity.export.excel', request()->query()) }}"
                 class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-sm transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 Excel
             </a>
-            <a href="{{ route('admin.partners.activity.export.print', request()->query()) }}" target="_blank"
+            <a href="{{ route($routePrefix . 'partners.activity.export.print', request()->query()) }}" target="_blank"
                 class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-rose-600 text-white rounded-lg hover:bg-rose-700 shadow-sm transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 PDF / Print
@@ -94,7 +88,7 @@
 
     {{-- ===== Filter Toolbar ===== --}}
     <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-4 py-3.5 shadow-sm">
-        <form method="GET" action="{{ route('admin.partners.activity') }}" class="flex flex-wrap items-end gap-3">
+        <form method="GET" action="{{ route($routePrefix . 'partners.activity') }}" class="flex flex-wrap items-end gap-3">
             <div class="relative flex-1 min-w-[200px]">
                 <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Cari Aktivitas</label>
                 <div class="relative">
@@ -203,11 +197,11 @@
                                 <td class="px-4 py-3.5">
                                     @if($a->user)
                                         <div class="flex items-center gap-2.5">
-                                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                                            <div class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                                                 {{ strtoupper(substr($a->user->name, 0, 1)) }}
                                             </div>
                                             <div class="min-w-0">
-                                                <a href="{{ route('admin.users.show', $a->user) }}" class="font-semibold text-gray-800 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 truncate block">
+                                                <a href="{{ in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? route('superadmin.users') : route('admin.users.show', $a->user) }}" class="font-semibold text-gray-800 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 truncate block">
                                                     {{ $a->user->name }}
                                                 </a>
                                                 <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ $a->user->email }}</p>
@@ -247,7 +241,7 @@
                                     {{ optional($a->created_at)->diffForHumans() }}
                                 </td>
                                 <td class="px-4 py-3.5 text-right">
-                                    <a href="{{ route('admin.partners.activity', array_merge(request()->query(), ['detail' => $a->id])) }}"
+                                    <a href="{{ route($routePrefix . 'partners.activity', array_merge(request()->query(), ['detail' => $a->id])) }}"
                                         class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                         Detail
                                     </a>
@@ -269,14 +263,14 @@
     {{-- Detail Modal when query 'detail' is present --}}
     @if(isset($selectedActivity) && $selectedActivity)
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <a href="{{ route('admin.partners.activity', request()->except('detail')) }}" class="fixed inset-0 bg-black/50 backdrop-blur-sm"></a>
+        <a href="{{ route($routePrefix . 'partners.activity', request()->except(['detail', 'activity_id'])) }}" class="fixed inset-0 bg-black/50 backdrop-blur-sm"></a>
         <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full z-10 overflow-hidden border border-gray-100 dark:border-gray-700 flex flex-col max-h-[90vh]">
             <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <div>
                     <h3 class="text-base font-bold text-gray-900 dark:text-white">Detail Aktivitas #{{ $selectedActivity->id }}</h3>
                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ optional($selectedActivity->created_at)->format('d M Y, H:i:s') }} WIB</p>
                 </div>
-                <a href="{{ route('admin.partners.activity', request()->except('detail')) }}" class="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <a href="{{ route($routePrefix . 'partners.activity', request()->except(['detail', 'activity_id'])) }}" class="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </a>
             </div>
@@ -294,6 +288,20 @@
                     <div class="flex justify-between"><span class="text-gray-400">User Agent:</span> <span class="text-gray-700 dark:text-gray-300 text-right max-w-xs truncate">{{ $selectedActivity->user_agent ?? '—' }}</span></div>
                 </div>
 
+                @if(isset($suspicious) && is_array($suspicious) && ($suspicious['flag'] ?? false))
+                <div class="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-800 dark:text-rose-300 space-y-1">
+                    <p class="font-bold flex items-center gap-1.5 text-xs">
+                        <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        Peringatan Aktivitas Mencurigakan:
+                    </p>
+                    <ul class="list-disc list-inside text-[11px] space-y-0.5 pl-1">
+                        @foreach($suspicious['reasons'] as $r)
+                            <li>{{ $r }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+                @endif
+
                 @if($selectedActivity->photo)
                     <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-700">
                         <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block mb-2 flex items-center gap-1.5">
@@ -305,7 +313,6 @@
                         </a>
                     </div>
                 @endif
-            </div>
 
                 @if(isset($recentActivities) && !$recentActivities->isEmpty())
                 <div class="space-y-2">
@@ -326,7 +333,7 @@
             </div>
 
             <div class="px-6 py-3.5 bg-gray-50 dark:bg-gray-700/30 border-t border-gray-100 dark:border-gray-700 flex justify-end">
-                <a href="{{ route('admin.partners.activity', request()->except('detail')) }}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <a href="{{ route($routePrefix . 'partners.activity', request()->except(['detail', 'activity_id'])) }}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     Tutup
                 </a>
             </div>

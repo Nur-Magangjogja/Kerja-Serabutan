@@ -10,118 +10,82 @@ new #[Layout('layouts.guest')] class extends Component {
     }
 }; ?>
 
-<div class="bg-gradient-to-br from-green-400 via-green-500 to-green-600 flex flex-col overflow-hidden shadow-2xl"
-    style="height: 100vh; max-height: 100vh;">
+<div class="space-y-6 text-center py-2">
+    <!-- Success Icon Animation -->
+    <div class="relative inline-flex items-center justify-center">
+        <div class="w-20 h-20 bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 rounded-3xl flex items-center justify-center shadow-lg shadow-emerald-500/20 border-2 border-emerald-300 dark:border-emerald-700">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+            </svg>
+        </div>
+        <!-- Celebration badges -->
+        <span class="absolute -top-2 -right-2 text-2xl animate-bounce">🎉</span>
+    </div>
 
-    <!-- Success Animation Container -->
-    <div class="flex-1 flex flex-col bg-gray-50 rounded-t-[2.5rem] overflow-y-auto px-6 py-8">
-        <div class="flex-1 flex flex-col items-center justify-center text-center">
-            <!-- Success Icon -->
-            <div class="mb-6 relative">
-                <div class="w-32 h-32 bg-green-100 rounded-full flex items-center justify-center animate-bounce">
-                    <svg class="w-20 h-20 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <!-- Confetti Effect -->
-                <div class="absolute -top-4 -left-4 text-4xl animate-ping">🎉</div>
-                <div class="absolute -top-4 -right-4 text-4xl animate-ping" style="animation-delay: 0.1s;">🎊</div>
-                <div class="absolute -bottom-4 -left-4 text-4xl animate-ping" style="animation-delay: 0.2s;">✨</div>
-                <div class="absolute -bottom-4 -right-4 text-4xl animate-ping" style="animation-delay: 0.3s;">🌟</div>
+    <!-- Title & Description -->
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Pendaftaran Berhasil!</h2>
+        <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-sm mx-auto leading-relaxed">
+            Akun Anda telah berhasil dibuat dan saat ini sedang dalam proses verifikasi oleh tim Admin.
+        </p>
+    </div>
+
+    <!-- Status Cards Checklist -->
+    <div class="bg-gray-50/70 dark:bg-gray-750/50 rounded-2xl p-5 border border-gray-200/80 dark:border-gray-700/80 text-left space-y-3">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
             </div>
-
-            <!-- Success Message -->
-            <h1 class="text-3xl font-bold text-gray-900 mb-3">Registrasi Berhasil!</h1>
-            <p class="text-gray-600 mb-8 max-w-md">
-                Akun Anda telah berhasil dibuat. Saat ini akun Anda sedang menunggu verifikasi dari admin. Anda akan
-                dapat login setelah admin menyetujui akun Anda.
-            </p>
-
-            <!-- Success Details -->
-            <div class="bg-white rounded-2xl p-6 shadow-lg mb-8 max-w-md w-full">
-                <div class="space-y-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="flex-1 text-left">
-                            <h3 class="font-semibold text-gray-900 text-sm">Data KTP Tersimpan</h3>
-                            <p class="text-xs text-gray-600">Informasi identitas Anda aman</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="flex-1 text-left">
-                            <h3 class="font-semibold text-gray-900 text-sm">Foto Terverifikasi</h3>
-                            <p class="text-xs text-gray-600">KTP dan selfie sudah diupload</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="flex-1 text-left">
-                            <h3 class="font-semibold text-gray-900 text-sm">Menunggu Verifikasi</h3>
-                            <p class="text-xs text-gray-600">Akun akan aktif setelah disetujui admin</p>
-                        </div>
-                    </div>
-                </div>
+            <div>
+                <h4 class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">Data Diri & KTP Tersimpan</h4>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400">Informasi identitas Anda tersimpan dengan aman.</p>
             </div>
+        </div>
 
-            <!-- Info Banner -->
-            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8 max-w-md w-full">
-                <div class="flex gap-3">
-                    <div class="flex-shrink-0">
-                        <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd"
-                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="flex-1 text-left">
-                        <h4 class="text-sm font-bold text-blue-900 mb-1">Langkah Selanjutnya</h4>
-                        <p class="text-xs text-blue-800">Tunggu email konfirmasi dari admin atau coba login dalam 1x24
-                            jam. Setelah disetujui, Anda dapat menggunakan aplikasi untuk mendapatkan atau memberikan
-                            bantuan.</p>
-                    </div>
-                </div>
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
             </div>
+            <div>
+                <h4 class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">Foto Berkas Terunggah</h4>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400">Foto KTP dan selfie siap diverifikasi.</p>
+            </div>
+        </div>
 
-            <!-- Action Button -->
-            <a href="{{ route('login') }}"
-                class="block w-full max-w-md bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-full shadow-lg hover:shadow-xl transition text-center">
-                Kembali ke Halaman Login
-            </a>
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-amber-100 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+            <div>
+                <h4 class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">Menunggu Persetujuan Admin</h4>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400">Proses review verifikasi berkas 1x24 jam.</p>
+            </div>
         </div>
     </div>
-    <style>
-        @keyframes bounce {
 
-            0%,
-            100% {
-                transform: translateY(-5%);
-                animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-            }
+    <!-- Info Next Step -->
+    <div class="bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-2xl p-4 text-left flex items-start gap-3">
+        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+        </svg>
+        <div class="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
+            <span class="font-bold block mb-0.5">Langkah Berikutnya</span>
+            Setelah disetujui, Anda dapat langsung masuk dengan email dan kata sandi yang telah Anda buat.
+        </div>
+    </div>
 
-            50% {
-                transform: translateY(0);
-                animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-            }
-        }
-    </style>
+    <!-- Action Button -->
+    <div class="pt-2">
+        <a href="{{ route('login') }}" wire:navigate
+            class="w-full inline-flex items-center justify-center bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs sm:text-sm py-3.5 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
+            Masuk ke Halaman Login
+        </a>
+    </div>
 </div>

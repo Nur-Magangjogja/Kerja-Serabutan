@@ -80,7 +80,7 @@ class Approval extends Component
 
         $pendingRequests = $query->orderBy('created_at', 'asc')->paginate(15);
 
-        return view('admin.topup-approval', [
+        return view('livewire.admin.topup.approval', [
             'pendingRequests' => $pendingRequests,
         ]);
     }

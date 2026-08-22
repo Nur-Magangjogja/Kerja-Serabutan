@@ -52,4 +52,3 @@
 
     <div class="mt-4">{{ $helps->links() }}</div>
 </div>
-

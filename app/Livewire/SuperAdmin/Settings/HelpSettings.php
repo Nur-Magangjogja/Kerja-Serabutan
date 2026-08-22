@@ -136,9 +136,44 @@ class HelpSettings extends Component
         $this->dispatch('settingsSaved', ['message' => 'Pengaturan bantuan dan biaya top-up berhasil disimpan.']);
     }
 
-    public function addBank()
+    public function addBank($code = '', $name = '')
     {
-        $this->payment_banks[] = ['code' => '', 'name' => '', 'account_number' => '', 'account_name' => '', 'enabled' => true];
+        $code = strtolower(trim($code));
+        $name = trim($name);
+
+        // Pre-fill name if code is provided without name
+        if ($code && !$name) {
+            $presets = [
+                'bca' => 'Bank Central Asia (BCA)',
+                'mandiri' => 'Bank Mandiri',
+                'bni' => 'Bank Negara Indonesia (BNI)',
+                'bri' => 'Bank Rakyat Indonesia (BRI)',
+                'bsi' => 'Bank Syariah Indonesia (BSI)',
+                'cimb' => 'CIMB Niaga',
+                'permata' => 'Bank Permata',
+                'danamon' => 'Bank Danamon',
+                'seabank' => 'SeaBank Indonesia',
+                'jago' => 'Bank Jago',
+            ];
+            $name = $presets[$code] ?? strtoupper($code);
+        }
+
+        $defaultAccountName = '';
+        if (!empty($this->payment_banks)) {
+            // Inherit account_name from the first configured bank for convenience
+            $defaultAccountName = $this->payment_banks[0]['account_name'] ?? '';
+        }
+
+        $this->payment_banks[] = [
+            'code' => $code,
+            'name' => $name,
+            'account_number' => '',
+            'account_name' => $defaultAccountName,
+            'enabled' => true
+        ];
+
+        $newIndex = count($this->payment_banks) - 1;
+        $this->dispatch('bankAdded', ['index' => $newIndex]);
     }
 
     public function removeBank($index)
@@ -252,6 +287,6 @@ class HelpSettings extends Component
             ],
         ];
 
-        return view('superadmin.help-settings', compact('adminFeeChart', 'totalAll', 'total30', 'totalMonth', 'helpsWithFee', 'avgAdmin', 'breakdown'));
+        return view('livewire.superadmin.settings.help-settings', compact('adminFeeChart', 'totalAll', 'total30', 'totalMonth', 'helpsWithFee', 'avgAdmin', 'breakdown'));
     }
 }

@@ -54,9 +54,9 @@
                 <!-- Summary Cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-6 sm:mb-8">
                     <!-- Total Admin Fee -->
-                    <div class="bg-white dark:bg-gray-800/90 rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
                         <div class="flex items-center gap-3 sm:gap-4">
-                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex-shrink-0">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-750 text-gray-700 dark:text-gray-300 flex-shrink-0">
                                 <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
@@ -73,9 +73,9 @@
                     </div>
 
                     <!-- 30 Hari -->
-                    <div class="bg-white dark:bg-gray-800/90 rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
                         <div class="flex items-center gap-3 sm:gap-4">
-                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex-shrink-0">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-750 text-gray-700 dark:text-gray-300 flex-shrink-0">
                                 <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -92,9 +92,9 @@
                     </div>
 
                     <!-- Bulan Ini -->
-                    <div class="bg-white dark:bg-gray-800/90 rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
                         <div class="flex items-center gap-3 sm:gap-4">
-                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex-shrink-0">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-750 text-gray-700 dark:text-gray-300 flex-shrink-0">
                                 <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -111,9 +111,9 @@
                     </div>
 
                     <!-- Rata-rata -->
-                    <div class="bg-white dark:bg-gray-800/90 rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
                         <div class="flex items-center gap-3 sm:gap-4">
-                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex-shrink-0">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-750 text-gray-700 dark:text-gray-300 flex-shrink-0">
                                 <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -130,28 +130,160 @@
                     </div>
                 </div>
 
-                <!-- Chart Tabs -->
-                <div class="mb-6">
-                    <div id="adminFeeChartTabs" class="inline-flex bg-gray-100 dark:bg-gray-700/80 rounded-xl p-1 w-full sm:w-auto max-w-full justify-between sm:justify-start border border-gray-200/60 dark:border-gray-600/60">
-                        <button type="button" data-range="daily"
-                            class="chart-range-tab flex-1 sm:flex-none text-center px-4 sm:px-5 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer">
-                            Harian
-                        </button>
-                        <button type="button" data-range="monthly"
-                            class="chart-range-tab flex-1 sm:flex-none text-center px-4 sm:px-5 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer">
-                            Bulanan
-                        </button>
-                        <button type="button" data-range="yearly"
-                            class="chart-range-tab flex-1 sm:flex-none text-center px-4 sm:px-5 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer">
-                            Tahunan
-                        </button>
-                    </div>
-                </div>
+                @php
+                    $adminFeeChartJson = json_encode($adminFeeChart ?? ['daily' => ['labels' => [], 'data' => []], 'monthly' => ['labels' => [], 'data' => []], 'yearly' => ['labels' => [], 'data' => []]]);
+                @endphp
 
-                <!-- Chart Container -->
-                <div class="w-full bg-gray-50/80 dark:bg-gray-900/60 rounded-2xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 min-h-[220px]"
-                    id="adminFeeChartContainer" wire:ignore>
-                    <canvas id="adminFeeChart" height="140"></canvas>
+                <!-- Alpine Chart Component -->
+                <div x-data="{
+                    currentRange: localStorage.getItem('superadmin.adminFeeChart.range') || 'daily',
+                    chartData: {{ $adminFeeChartJson }},
+                    chartInstance: null,
+                    renderChart() {
+                        const canvas = this.$refs.canvas;
+                        if (!canvas) return;
+                        const isDark = document.documentElement.classList.contains('dark');
+                        const labels = this.chartData[this.currentRange]?.labels || [];
+                        const data = this.chartData[this.currentRange]?.data || [];
+
+                        const ctx = canvas.getContext('2d');
+                        const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+                        if (isDark) {
+                            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.85)');
+                            gradient.addColorStop(1, 'rgba(37, 99, 235, 0.3)');
+                        } else {
+                            gradient.addColorStop(0, 'rgba(37, 99, 235, 0.85)');
+                            gradient.addColorStop(1, 'rgba(59, 130, 246, 0.4)');
+                        }
+
+                        if (this.chartInstance && this.chartInstance.canvas === canvas) {
+                            this.chartInstance.data.labels = labels;
+                            this.chartInstance.data.datasets[0].data = data;
+                            this.chartInstance.data.datasets[0].backgroundColor = gradient;
+                            this.chartInstance.data.datasets[0].borderColor = isDark ? 'rgba(96, 165, 250, 1)' : 'rgba(37, 99, 235, 1)';
+                            if (this.chartInstance.options?.scales?.x?.ticks) {
+                                this.chartInstance.options.scales.x.ticks.color = isDark ? '#9ca3af' : '#6b7280';
+                            }
+                            if (this.chartInstance.options?.scales?.y?.ticks) {
+                                this.chartInstance.options.scales.y.ticks.color = isDark ? '#9ca3af' : '#6b7280';
+                            }
+                            if (this.chartInstance.options?.scales?.y?.grid) {
+                                this.chartInstance.options.scales.y.grid.color = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(156, 163, 175, 0.15)';
+                            }
+                            this.chartInstance.update('none');
+                            return;
+                        }
+
+                        if (typeof Chart === 'undefined') return;
+
+                        if (this.chartInstance) {
+                            try { this.chartInstance.destroy(); } catch(e) {}
+                        }
+
+                        this.chartInstance = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Pendapatan Biaya Admin',
+                                    data: data,
+                                    backgroundColor: gradient,
+                                    borderColor: isDark ? 'rgba(96, 165, 250, 1)' : 'rgba(37, 99, 235, 1)',
+                                    borderWidth: 1.5,
+                                    borderRadius: 8,
+                                    maxBarThickness: 36
+                                }]
+                            },
+                            options: {
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: {
+                                        backgroundColor: isDark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(15, 23, 42, 0.95)',
+                                        padding: 12,
+                                        titleColor: '#fff',
+                                        bodyColor: '#e2e8f0',
+                                        cornerRadius: 8,
+                                        callbacks: {
+                                            label: function(c) {
+                                                const v = c.raw ?? c.parsed?.y ?? 0;
+                                                return 'Rp ' + Number(v).toLocaleString('id-ID');
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        grid: { display: false },
+                                        ticks: {
+                                            autoSkip: true,
+                                            maxRotation: 45,
+                                            font: { size: 11, weight: '500' },
+                                            color: isDark ? '#9ca3af' : '#6b7280'
+                                        }
+                                    },
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            callback: function(v) { return 'Rp ' + Number(v).toLocaleString('id-ID'); },
+                                            font: { size: 11, weight: '500' },
+                                            color: isDark ? '#9ca3af' : '#6b7280'
+                                        },
+                                        grid: {
+                                            color: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(156, 163, 175, 0.15)'
+                                        }
+                                    }
+                                },
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                animation: false
+                            }
+                        });
+                    },
+                    setRange(r) {
+                        this.currentRange = r;
+                        localStorage.setItem('superadmin.adminFeeChart.range', r);
+                        this.renderChart();
+                    }
+                }"
+                x-init="
+                    $nextTick(() => { 
+                        setTimeout(() => renderChart(), 20); 
+                    });
+                    window.addEventListener('theme-changed', () => { renderChart(); });
+                "
+                class="mb-6">
+
+                    <!-- Chart Tabs -->
+                    <div class="mb-4">
+                        <div class="inline-flex bg-gray-100 dark:bg-gray-700/70 rounded-xl p-1 w-full sm:w-auto border border-gray-200/60 dark:border-gray-600/60 gap-1">
+                            <button type="button" @click="setRange('daily')"
+                                :class="currentRange === 'daily' 
+                                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs' 
+                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                class="flex-1 sm:flex-none text-center px-4 sm:px-5 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-colors whitespace-nowrap cursor-pointer">
+                                Harian
+                            </button>
+                            <button type="button" @click="setRange('monthly')"
+                                :class="currentRange === 'monthly' 
+                                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs' 
+                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                class="flex-1 sm:flex-none text-center px-4 sm:px-5 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-colors whitespace-nowrap cursor-pointer">
+                                Bulanan
+                            </button>
+                            <button type="button" @click="setRange('yearly')"
+                                :class="currentRange === 'yearly' 
+                                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs' 
+                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                class="flex-1 sm:flex-none text-center px-4 sm:px-5 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-colors whitespace-nowrap cursor-pointer">
+                                Tahunan
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Chart Container -->
+                    <div class="w-full bg-gray-50 dark:bg-gray-900 rounded-2xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 h-64 min-h-[250px]" wire:ignore>
+                        <canvas x-ref="canvas" id="adminFeeChart" class="w-full h-full"></canvas>
+                    </div>
                 </div>
 
                 <!-- Breakdown by Source -->
@@ -464,70 +596,156 @@
                 </div>
 
                 <!-- Payment Methods (Banks) -->
-                <div class="border border-gray-200 dark:border-gray-700 rounded-2xl p-4 sm:p-6 bg-gray-50/80 dark:bg-gray-900/50">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div class="border border-gray-200 dark:border-gray-700 rounded-2xl p-4 sm:p-6 bg-gray-50/80 dark:bg-gray-900/50 space-y-4">
+                    <!-- Section Header -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-200/80 dark:border-gray-700/80">
                         <div>
-                            <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                </svg>
-                                Metode Pembayaran Top-Up (Transfer Bank)
-                            </h3>
-                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Atur daftar rekening bank yang akan ditampilkan pada proses top-up customer.</p>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                    </svg>
+                                    Metode Pembayaran Top-Up (Transfer Bank)
+                                </h3>
+                                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-blue-900/40 text-primary-700 dark:text-primary-300 border border-blue-200 dark:border-blue-800/60">
+                                    {{ count($payment_banks) }} Rekening
+                                </span>
+                            </div>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Daftar rekening bank resmi platform sebagai tujuan transfer deposit saldo customer.</p>
                         </div>
-                        <button type="button" wire:click.prevent="addBank"
-                            class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-semibold transition-all shadow-xs self-start sm:self-auto cursor-pointer">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+                        <!-- Primary Add Bank Button -->
+                        <button type="button" wire:click.prevent="addBank('', '')"
+                            wire:loading.attr="disabled"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-xs self-start sm:self-auto cursor-pointer">
+                            <svg wire:loading.remove wire:target="addBank" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                             </svg>
-                            Tambah Rekening
+                            <svg wire:loading wire:target="addBank" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>+ Tambah Rekening</span>
                         </button>
                     </div>
 
-                    <div class="space-y-3.5">
-                        @foreach($payment_banks as $i => $bank)
-                            <div class="border border-gray-200 dark:border-gray-700 rounded-2xl p-4 bg-white dark:bg-gray-800 shadow-xs">
-                                <div class="grid grid-cols-1 lg:grid-cols-6 gap-3 items-center">
-                                    <div class="lg:col-span-1">
-                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Kode Bank</label>
-                                        <input type="text" wire:model.defer="payment_banks.{{ $i }}.code" placeholder="bca"
-                                            class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition" />
+                    <!-- Quick Preset Chips -->
+                    <div class="bg-white dark:bg-gray-800/80 rounded-xl p-3 border border-gray-200/80 dark:border-gray-700/80 flex flex-wrap items-center gap-2 text-xs">
+                        <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 mr-1">⚡ Tambah Cepat:</span>
+                        @foreach([
+                            ['code' => 'bca', 'label' => '+ BCA'],
+                            ['code' => 'mandiri', 'label' => '+ Mandiri'],
+                            ['code' => 'bni', 'label' => '+ BNI'],
+                            ['code' => 'bri', 'label' => '+ BRI'],
+                            ['code' => 'bsi', 'label' => '+ BSI'],
+                            ['code' => 'cimb', 'label' => '+ CIMB'],
+                            ['code' => 'seabank', 'label' => '+ SeaBank'],
+                            ['code' => 'jago', 'label' => '+ Jago'],
+                        ] as $preset)
+                            <button type="button" wire:click.prevent="addBank('{{ $preset['code'] }}')"
+                                wire:loading.attr="disabled"
+                                class="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-gray-100 hover:bg-primary-50 dark:bg-gray-750 dark:hover:bg-primary-950/40 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 border border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 transition cursor-pointer">
+                                {{ $preset['label'] }}
+                            </button>
+                        @endforeach
+                    </div>
+
+                    <!-- Bank Cards List -->
+                    <div class="space-y-3" id="payment_banks_list">
+                        @forelse($payment_banks as $i => $bank)
+                            <div id="bank_card_{{ $i }}" class="border border-gray-200 dark:border-gray-700 rounded-2xl p-4 sm:p-5 bg-white dark:bg-gray-800 shadow-xs hover:shadow-md transition-all duration-300">
+                                <!-- Card Header -->
+                                <div class="flex items-center justify-between gap-3 pb-3 mb-3 border-b border-gray-100 dark:border-gray-700/70">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <div class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/40 text-primary-600 dark:text-sky-400 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                                            {{ strtoupper(substr($bank['code'] ?? 'BK', 0, 3)) }}
+                                        </div>
+                                        <div class="min-w-0">
+                                            <h4 class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">
+                                                {{ !empty($bank['name']) ? $bank['name'] : 'Rekening Bank #' . ($i + 1) }}
+                                            </h4>
+                                            <span class="text-[11px] text-gray-400 truncate block">
+                                                {{ !empty($bank['account_number']) ? 'No: ' . $bank['account_number'] : 'Nomor rekening belum diisi' }}
+                                            </span>
+                                        </div>
                                     </div>
 
-                                    <div class="lg:col-span-3">
-                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Nama Bank</label>
-                                        <input type="text" wire:model.defer="payment_banks.{{ $i }}.name" placeholder="BCA"
-                                            class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition" />
-                                    </div>
-
-                                    <div class="lg:col-span-2">
-                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">No. Rekening</label>
-                                        <input type="text" wire:model.defer="payment_banks.{{ $i }}.account_number" placeholder="1234567890"
-                                            class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition" />
-                                    </div>
-
-                                    <div class="lg:col-span-6">
-                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 mt-1">Nama Pemilik Rekening (a.n.)</label>
-                                        <input type="text" wire:model.defer="payment_banks.{{ $i }}.account_name" placeholder="PT sayabantu"
-                                            class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition" />
-                                    </div>
-
-                                    <div class="lg:col-span-6 flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/60">
-                                        <label class="inline-flex items-center gap-2 cursor-pointer">
-                                            <input type="checkbox" wire:model.defer="payment_banks.{{ $i }}.enabled" class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 h-4 w-4" />
-                                            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Aktifkan Rekening Ini</span>
+                                    <div class="flex items-center gap-3 flex-shrink-0">
+                                        <!-- Active Toggle Status -->
+                                        <label class="inline-flex items-center gap-2 cursor-pointer bg-gray-50 dark:bg-gray-750 px-2.5 py-1 rounded-xl border border-gray-200 dark:border-gray-700">
+                                            <input type="checkbox" wire:model.defer="payment_banks.{{ $i }}.enabled" class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 h-4 w-4 cursor-pointer" />
+                                            <span class="text-[11px] font-bold {{ !empty($bank['enabled']) ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400' }}">
+                                                {{ !empty($bank['enabled']) ? 'Aktif' : 'Nonaktif' }}
+                                            </span>
                                         </label>
+
+                                        <!-- Delete Button -->
                                         <button type="button" wire:click.prevent="removeBank({{ $i }})"
-                                            class="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium cursor-pointer">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            wire:loading.attr="disabled"
+                                            class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-xl transition cursor-pointer"
+                                            title="Hapus Rekening">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                             </svg>
-                                            Hapus
                                         </button>
                                     </div>
                                 </div>
+
+                                <!-- Form Inputs Grid -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                                    <div>
+                                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Kode Bank *</label>
+                                        <input type="text" wire:model.defer="payment_banks.{{ $i }}.code" placeholder="Contoh: bca"
+                                            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition" />
+                                        @error('payment_banks.' . $i . '.code')
+                                            <span class="text-[10px] text-red-500 mt-0.5 block">{{ $message }}</span>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Nama Bank *</label>
+                                        <input type="text" wire:model.defer="payment_banks.{{ $i }}.name" placeholder="Contoh: Bank Central Asia"
+                                            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition" />
+                                        @error('payment_banks.' . $i . '.name')
+                                            <span class="text-[10px] text-red-500 mt-0.5 block">{{ $message }}</span>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Nomor Rekening *</label>
+                                        <input type="text" wire:model.defer="payment_banks.{{ $i }}.account_number" placeholder="Contoh: 1234567890"
+                                            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition" />
+                                        @error('payment_banks.' . $i . '.account_number')
+                                            <span class="text-[10px] text-red-500 mt-0.5 block">{{ $message }}</span>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Nama Pemilik (a.n.) *</label>
+                                        <input type="text" wire:model.defer="payment_banks.{{ $i }}.account_name" placeholder="Contoh: PT SayaBantu"
+                                            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition" />
+                                        @error('payment_banks.' . $i . '.account_name')
+                                            <span class="text-[10px] text-red-500 mt-0.5 block">{{ $message }}</span>
+                                        @enderror
+                                    </div>
+                                </div>
                             </div>
-                        @endforeach
+                        @empty
+                            <!-- Empty State -->
+                            <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 border border-dashed border-gray-300 dark:border-gray-700 text-center space-y-3">
+                                <div class="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-700 text-gray-400 flex items-center justify-center mx-auto text-xl">
+                                    🏦
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-gray-900 dark:text-white">Belum Ada Rekening Bank</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Tambahkan minimal 1 nomor rekening bank sebagai tujuan transfer deposit customer.</p>
+                                </div>
+                                <button type="button" wire:click.prevent="addBank('bca')"
+                                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
+                                    + Tambah Rekening Pertama
+                                </button>
+                            </div>
+                        @endforelse
                     </div>
                 </div>
 
@@ -599,192 +817,7 @@
         }
     </style>
 
-    <!-- Chart.js & Scripts -->
-    @php
-        $adminFeeChartJson = json_encode($adminFeeChart ?? ['daily' => ['labels' => [], 'data' => []], 'monthly' => ['labels' => [], 'data' => []], 'yearly' => ['labels' => [], 'data' => []]]);
-    @endphp
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        (function() {
-            let observer = null;
 
-            function waitForChart(callback, maxAttempts = 50) {
-                if (typeof Chart !== 'undefined') {
-                    callback();
-                    return;
-                }
-                let attempts = 0;
-                const timer = setInterval(() => {
-                    attempts++;
-                    if (typeof Chart !== 'undefined') {
-                        clearInterval(timer);
-                        callback();
-                    } else if (attempts >= maxAttempts) {
-                        clearInterval(timer);
-                    }
-                }, 60);
-            }
-
-            function initAdminFeeChart() {
-                const chartData = {!! $adminFeeChartJson !!};
-                const canvasEl = document.getElementById('adminFeeChart');
-                if (!canvasEl) return;
-                const chartCtx = canvasEl.getContext('2d');
-
-                function isDarkMode() {
-                    return document.documentElement.classList.contains('dark');
-                }
-
-                function renderRange(range) {
-                    const container = document.getElementById('adminFeeChartContainer');
-                    if (!container) return;
-                    
-                    const labels = chartData[range]?.labels || [];
-                    const data = chartData[range]?.data || [];
-                    const dark = isDarkMode();
-
-                    const gradient = chartCtx.createLinearGradient(0, 0, 0, 200);
-                    if (dark) {
-                        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.85)');
-                        gradient.addColorStop(1, 'rgba(37, 99, 235, 0.3)');
-                    } else {
-                        gradient.addColorStop(0, 'rgba(37, 99, 235, 0.85)');
-                        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.4)');
-                    }
-
-                    const cfg = {
-                        type: 'bar',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: 'Pendapatan Biaya Admin',
-                                data: data,
-                                backgroundColor: gradient,
-                                borderColor: dark ? 'rgba(96, 165, 250, 1)' : 'rgba(37, 99, 235, 1)',
-                                borderWidth: 1.5,
-                                borderRadius: 8,
-                                maxBarThickness: 36
-                            }]
-                        },
-                        options: {
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: {
-                                    backgroundColor: dark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(15, 23, 42, 0.95)',
-                                    padding: 12,
-                                    titleColor: '#fff',
-                                    bodyColor: '#e2e8f0',
-                                    borderColor: dark ? 'rgba(75, 85, 99, 0.4)' : 'rgba(203, 213, 225, 0.4)',
-                                    borderWidth: 1,
-                                    cornerRadius: 8,
-                                    callbacks: {
-                                        label: function (c) {
-                                            const v = c.raw ?? c.parsed?.y ?? 0;
-                                            return 'Rp ' + Number(v).toLocaleString('id-ID');
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    grid: { display: false },
-                                    ticks: {
-                                        autoSkip: true,
-                                        maxRotation: 45,
-                                        font: { size: 11, weight: '500' },
-                                        color: dark ? '#9ca3af' : '#6b7280'
-                                    }
-                                },
-                                y: {
-                                    beginAtZero: true,
-                                    ticks: {
-                                        callback: function (v) { return 'Rp ' + Number(v).toLocaleString('id-ID'); },
-                                        font: { size: 11, weight: '500' },
-                                        color: dark ? '#9ca3af' : '#6b7280'
-                                    },
-                                    grid: {
-                                        color: dark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(156, 163, 175, 0.15)'
-                                    }
-                                }
-                            },
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            animation: false
-                        }
-                    };
-
-                    // Destroy old chart on canvas if it exists
-                    if (typeof Chart !== 'undefined' && Chart.getChart) {
-                        const existing = Chart.getChart(canvasEl);
-                        if (existing) {
-                            try { existing.destroy(); } catch(e) {}
-                        }
-                    }
-                    if (window.adminFeeChartInstance) {
-                        try { window.adminFeeChartInstance.destroy(); } catch(e) {}
-                        window.adminFeeChartInstance = null;
-                    }
-
-                    window.adminFeeChartInstance = new Chart(chartCtx, cfg);
-                }
-
-                const tabs = document.querySelectorAll('.chart-range-tab');
-                const valid = ['daily', 'monthly', 'yearly'];
-                let initial = 'daily';
-                const saved = localStorage.getItem('superadmin.adminFeeChart.range');
-                if (saved && valid.includes(saved)) initial = saved;
-
-                function setActive(r) {
-                    tabs.forEach(t => {
-                        if (t.dataset.range === r) {
-                            t.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-900', 'dark:text-white', 'shadow-xs');
-                            t.classList.remove('text-gray-600', 'dark:text-gray-400');
-                        } else {
-                            t.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-900', 'dark:text-white', 'shadow-xs');
-                            t.classList.add('text-gray-600', 'dark:text-gray-400');
-                        }
-                    });
-                }
-
-                if (tabs.length) {
-                    tabs.forEach(t => t.addEventListener('click', function () {
-                        const r = t.dataset.range;
-                        if (!valid.includes(r)) return;
-                        setActive(r);
-                        localStorage.setItem('superadmin.adminFeeChart.range', r);
-                        renderRange(r);
-                    }));
-                    setActive(initial);
-                    renderRange(initial);
-                } else {
-                    renderRange('daily');
-                }
-
-                if (!observer) {
-                    observer = new MutationObserver(function (mutations) {
-                        mutations.forEach(function (mutation) {
-                            if (mutation.attributeName === 'class') {
-                                const currentRange = localStorage.getItem('superadmin.adminFeeChart.range') || 'daily';
-                                renderRange(currentRange);
-                            }
-                        });
-                    });
-                    observer.observe(document.documentElement, { attributes: true });
-                }
-            }
-
-            function safeInit() {
-                waitForChart(initAdminFeeChart);
-            }
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', safeInit);
-            } else {
-                safeInit();
-            }
-            document.addEventListener('livewire:navigated', safeInit);
-        })();
-    </script>
     <script>
         (function() {
             let localModalTimeout = null;
@@ -813,17 +846,52 @@
                 }, 50);
             }
 
+            function handleBankAdded(event) {
+                const index = event[0]?.index ?? event?.index;
+                setTimeout(() => {
+                    let targetCard = null;
+                    if (index !== undefined && index !== null) {
+                        targetCard = document.getElementById(`bank_card_${index}`);
+                    }
+                    if (!targetCard) {
+                        const list = document.getElementById('payment_banks_list');
+                        if (list && list.lastElementChild) {
+                            targetCard = list.lastElementChild;
+                        }
+                    }
+                    if (targetCard) {
+                        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Add highlight glow animation
+                        targetCard.classList.add('ring-2', 'ring-primary-500', 'border-primary-400');
+                        setTimeout(() => {
+                            targetCard.classList.remove('ring-2', 'ring-primary-500', 'border-primary-400');
+                        }, 1800);
+
+                        // Focus on first input with empty value or input
+                        const inputs = targetCard.querySelectorAll('input[type="text"]');
+                        for (let input of inputs) {
+                            if (!input.value) {
+                                input.focus();
+                                break;
+                            }
+                        }
+                    }
+                }, 120);
+            }
+
             if (window.Livewire && typeof window.Livewire.on === 'function') {
                 window.Livewire.on('settingsSaved', (event) => {
                     const message = event[0]?.message || event.message || 'Pengaturan berhasil disimpan';
                     showSettingsSaved(message);
                 });
+                window.Livewire.on('bankAdded', handleBankAdded);
             } else {
                 document.addEventListener('livewire:init', () => {
                     Livewire.on('settingsSaved', (event) => {
                         const message = event[0]?.message || event.message || 'Pengaturan berhasil disimpan';
                         showSettingsSaved(message);
                     });
+                    Livewire.on('bankAdded', handleBankAdded);
                 });
             }
 

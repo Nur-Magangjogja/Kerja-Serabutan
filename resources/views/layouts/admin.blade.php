@@ -31,17 +31,31 @@
                     var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
                     var isDark = (mode === 'dark') || (mode === 'system' && prefersDark);
                     var d = document.documentElement;
-                    if (isDark) {
-                        d.classList.add('dark');
-                        d.style.colorScheme = 'dark';
-                        d.style.backgroundColor = '#111827';
-                        if (document.body) document.body.style.backgroundColor = '#111827';
-                    } else {
-                        d.classList.remove('dark');
-                        d.style.colorScheme = 'light';
-                        d.style.backgroundColor = '#f3f4f6';
-                        if (document.body) document.body.style.backgroundColor = '#f3f4f6';
+                    var currentlyDark = d.classList.contains('dark');
+
+                    if (isDark !== currentlyDark) {
+                        var css = document.createElement('style');
+                        css.type = 'text/css';
+                        css.appendChild(document.createTextNode('*,*::before,*::after{-webkit-transition:none!important;-moz-transition:none!important;-o-transition:none!important;-ms-transition:none!important;transition:none!important}'));
+                        document.head.appendChild(css);
+
+                        if (isDark) {
+                            d.classList.add('dark');
+                            d.style.colorScheme = 'dark';
+                            d.style.backgroundColor = '#111827';
+                            if (document.body) document.body.style.backgroundColor = '#111827';
+                        } else {
+                            d.classList.remove('dark');
+                            d.style.colorScheme = 'light';
+                            d.style.backgroundColor = '#f3f4f6';
+                            if (document.body) document.body.style.backgroundColor = '#f3f4f6';
+                        }
+
+                        setTimeout(function() {
+                            if (css.parentNode) css.parentNode.removeChild(css);
+                        }, 50);
                     }
+
                     window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: mode, isDark: isDark } }));
                 } catch(e) {}
             };
@@ -81,6 +95,7 @@
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     @livewireStyles
 </head>
 

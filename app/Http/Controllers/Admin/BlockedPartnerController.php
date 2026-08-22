@@ -13,8 +13,17 @@ class BlockedPartnerController extends Controller
         $baseQuery = User::whereIn('role', ['mitra', 'customer']);
 
         // Filter by admin's city if user is admin
-        if (auth()->user() && auth()->user()->role === 'admin' && auth()->user()->city_id) {
-            $baseQuery->where('city_id', auth()->user()->city_id);
+        if (auth()->user() && auth()->user()->role === 'admin') {
+            $admin = auth()->user();
+            $cityIds = collect([$admin->city_id])
+                ->merge($admin->managedCities?->pluck('id') ?? [])
+                ->merge(\App\Models\City::where('admin_id', $admin->id)->pluck('id'))
+                ->filter()
+                ->unique();
+
+            if ($cityIds->isNotEmpty()) {
+                $baseQuery->whereIn('city_id', $cityIds);
+            }
         }
 
         // Counts for cards (fresh queries to avoid mutation)
@@ -28,8 +37,17 @@ class BlockedPartnerController extends Controller
         $query = User::whereIn('role', ['mitra', 'customer'])->with('city');
 
         // Filter by admin's city if user is admin
-        if (auth()->user() && auth()->user()->role === 'admin' && auth()->user()->city_id) {
-            $query->where('city_id', auth()->user()->city_id);
+        if (auth()->user() && auth()->user()->role === 'admin') {
+            $admin = auth()->user();
+            $cityIds = collect([$admin->city_id])
+                ->merge($admin->managedCities?->pluck('id') ?? [])
+                ->merge(\App\Models\City::where('admin_id', $admin->id)->pluck('id'))
+                ->filter()
+                ->unique();
+
+            if ($cityIds->isNotEmpty()) {
+                $query->whereIn('city_id', $cityIds);
+            }
         }
 
         if ($search = $request->get('search')) {
@@ -54,7 +72,7 @@ class BlockedPartnerController extends Controller
 
         $users = $query->orderByDesc('updated_at')->paginate(15)->withQueryString();
 
-        return view('admin.partners.blocked', [
+        return view('livewire.admin.partners.blocked', [
             'blocked' => $users,
             'counts' => [
                 'total' => $totalCount,

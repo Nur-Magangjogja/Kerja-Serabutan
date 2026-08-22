@@ -23,12 +23,12 @@ class AdminUsers extends Component
     public $selectedUser = null;
 
     // form fields
-    public $name;
-    public $email;
-    public $phone;
+    public $name = '';
+    public $email = '';
+    public $phone = '';
     public $role = 'admin';
-    public $status = 'inactive';
-    public $verified = false;
+    public $status = 'active';
+    public $verified = true;
     public $city_id = null;
     public $managed_city_ids = []; 
     public $address = null;
@@ -68,11 +68,48 @@ class AdminUsers extends Component
         $this->resetPage();
     }
 
-    public function viewUser($id)
+    public function toggleVerified($id)
     {
         $user = User::find($id);
         if (!$user) {
-            session()->flash('error', 'User not found');
+            session()->flash('error', 'Admin tidak ditemukan');
+            return;
+        }
+
+        $newVerified = !$user->verified;
+        $user->verified = $newVerified;
+        if ($newVerified) {
+            $user->email_verified_at = now();
+            if ($user->status === 'inactive') {
+                $user->status = 'active';
+            }
+        } else {
+            $user->email_verified_at = null;
+        }
+        $user->save();
+
+        session()->flash('message', 'Status verifikasi admin ' . $user->name . ' berhasil diperbarui.');
+    }
+
+    public function toggleStatus($id)
+    {
+        $user = User::find($id);
+        if (!$user) {
+            session()->flash('error', 'Admin tidak ditemukan');
+            return;
+        }
+
+        $user->status = ($user->status === 'active') ? 'inactive' : 'active';
+        $user->save();
+
+        session()->flash('message', 'Status akun admin ' . $user->name . ' berhasil diubah menjadi ' . $user->status . '.');
+    }
+
+    public function viewUser($id)
+    {
+        $user = User::with(['city', 'managedCities'])->find($id);
+        if (!$user) {
+            session()->flash('error', 'Admin tidak ditemukan');
             return;
         }
         $this->selectedUser = $user;
@@ -81,20 +118,23 @@ class AdminUsers extends Component
 
     public function editUser($id)
     {
-        $user = User::find($id);
+        $user = User::with('managedCities')->find($id);
         if (!$user) {
-            session()->flash('error', 'User not found');
+            session()->flash('error', 'Admin tidak ditemukan');
             return;
         }
         $this->selectedUser = $user;
         $this->name = $user->name;
         $this->email = $user->email;
         $this->phone = $user->phone;
-        $this->role = $user->role;
-        $this->status = $user->status ?? 'inactive';
-        $this->verified = (bool) ($user->verified ?? false);
+        $this->role = $user->role ?? 'admin';
+        $this->status = $user->status ?? 'active';
+        $this->verified = (bool) ($user->verified ?? true);
         $this->city_id = $user->city_id;
         $this->managed_city_ids = $user->managedCities->pluck('id')->toArray();
+        if ($this->city_id && !in_array($this->city_id, $this->managed_city_ids)) {
+            $this->managed_city_ids[] = $this->city_id;
+        }
         $this->address = $user->address;
         $this->nik = $user->nik;
         $this->place_of_birth = $user->place_of_birth;
@@ -108,6 +148,7 @@ class AdminUsers extends Component
         $this->religion = $user->religion;
         $this->marital_status = $user->marital_status;
         $this->occupation = $user->occupation;
+        $this->password = '';
         $this->showEditModal = true;
     }
 
@@ -130,8 +171,8 @@ class AdminUsers extends Component
         $this->email = '';
         $this->phone = '';
         $this->role = 'admin';
-        $this->status = 'inactive';
-        $this->verified = false;
+        $this->status = 'active';
+        $this->verified = true;
         $this->city_id = null;
         $this->managed_city_ids = [];
         $this->address = null;
@@ -152,7 +193,6 @@ class AdminUsers extends Component
 
     public function saveUser()
     {
-        // build validation rules and handle unique email on update
         $emailRules = ['required', 'email', 'max:255'];
         if ($this->selectedUser) {
             $emailRules[] = Rule::unique('users', 'email')->ignore($this->selectedUser->id);
@@ -185,14 +225,23 @@ class AdminUsers extends Component
 
         $this->validate($rules);
 
+        // Compute primary city_id
+        $primaryCityId = $this->city_id;
+        if (!$primaryCityId && !empty($this->managed_city_ids)) {
+            $primaryCityId = $this->managed_city_ids[0];
+        }
+        if ($primaryCityId && !in_array($primaryCityId, $this->managed_city_ids)) {
+            $this->managed_city_ids[] = $primaryCityId;
+        }
+
         $data = [
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
-            'role' => $this->role,
-            'status' => $this->status,
-            'verified' => $this->verified,
-            'city_id' => $this->city_id,
+            'role' => $this->role ?: 'admin',
+            'status' => $this->status ?: 'active',
+            'verified' => (bool) $this->verified,
+            'city_id' => $primaryCityId,
             'address' => $this->address,
             'nik' => $this->nik,
             'place_of_birth' => $this->place_of_birth,
@@ -208,16 +257,20 @@ class AdminUsers extends Component
             'occupation' => $this->occupation,
         ];
 
+        if ($this->verified) {
+            $data['email_verified_at'] = now();
+        } else {
+            $data['email_verified_at'] = null;
+        }
+
         if ($this->selectedUser) {
             $user = User::find($this->selectedUser->id);
             if (!$user) {
-                session()->flash('error', 'User not found');
+                session()->flash('error', 'Admin tidak ditemukan');
                 return;
             }
             if (!empty($this->password)) {
                 $data['password'] = bcrypt($this->password);
-            } else {
-                unset($data['password']);
             }
             $user->update($data);
 
@@ -227,7 +280,7 @@ class AdminUsers extends Component
                 $user->managedCities()->sync([]);
             }
 
-            session()->flash('message', 'User updated successfully');
+            session()->flash('message', 'Data admin ' . $user->name . ' berhasil diperbarui.');
         } else {
             $data['password'] = bcrypt($this->password);
             $user = User::create($data);
@@ -236,7 +289,7 @@ class AdminUsers extends Component
                 $user->managedCities()->sync($this->managed_city_ids ?? []);
             }
 
-            session()->flash('message', 'User created successfully');
+            session()->flash('message', 'Admin baru ' . $user->name . ' berhasil dibuat dan terverifikasi.');
         }
 
         $this->showCreateModal = false;
@@ -252,12 +305,15 @@ class AdminUsers extends Component
         }
         $user = User::find($this->confirmingDeleteId);
         if (!$user) {
-            session()->flash('error', 'User not found');
+            session()->flash('error', 'Admin tidak ditemukan');
             $this->showConfirmDelete = false;
             return;
         }
+        $userName = $user->name;
+        $user->managedCities()->sync([]);
         $user->delete();
-        session()->flash('message', 'User deleted');
+
+        session()->flash('message', 'Admin ' . $userName . ' berhasil dihapus.');
         $this->showConfirmDelete = false;
         $this->confirmingDeleteId = null;
         $this->resetPage();
@@ -289,18 +345,6 @@ class AdminUsers extends Component
 
         $cities = City::orderBy('name')->get();
 
-        // compute available cities for create modal: exclude cities already assigned to other admins
-        $assignedToOthers = DB::table('admin_city')
-            ->when($this->selectedUser, function ($q) {
-                // when editing, exclude cities assigned to this user so they remain selectable
-                $q->where('user_id', '!=', $this->selectedUser->id);
-            })
-            ->pluck('city_id')
-            ->toArray();
-
-        $availableCities = City::whereNotIn('id', $assignedToOthers)->orderBy('name')->get();
-
-        return view('superadmin.admin-users', compact('users', 'cities', 'availableCities'));
+        return view('livewire.superadmin.users.admin-users', compact('users', 'cities'));
     }
 }
-

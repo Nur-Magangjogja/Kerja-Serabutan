@@ -24,6 +24,49 @@
         </div>
     </div>
 
+    {{-- Pending Alerts Grid --}}
+    @if((isset($stats['pending_topups']) && $stats['pending_topups'] > 0) || (isset($stats['pending_withdraws']) && $stats['pending_withdraws'] > 0))
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+        @if(isset($stats['pending_topups']) && $stats['pending_topups'] > 0)
+        <a href="{{ route('superadmin.topup.approvals') }}" class="block group">
+            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex items-center justify-between gap-4 group-hover:bg-amber-100/70 dark:group-hover:bg-amber-900/30 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-800/50 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-amber-700 dark:text-amber-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-amber-900 dark:text-amber-200">{{ $stats['pending_topups'] }} Top-Up Menunggu Approval</h3>
+                        <p class="text-xs text-amber-700 dark:text-amber-300 mt-0.5">Verifikasi bukti transfer deposit customer.</p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center gap-1 text-xs font-semibold text-amber-800 dark:text-amber-200 group-hover:translate-x-1 transition-transform">
+                    Proses <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </span>
+            </div>
+        </a>
+        @endif
+
+        @if(isset($stats['pending_withdraws']) && $stats['pending_withdraws'] > 0)
+        <a href="{{ route('superadmin.withdraws.index') }}" class="block group">
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between gap-4 group-hover:bg-blue-100/70 dark:group-hover:bg-blue-900/30 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-800/50 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-blue-700 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-blue-900 dark:text-blue-200">{{ $stats['pending_withdraws'] }} Tarik Saldo Menunggu Transfer</h3>
+                        <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5">Pengajuan penarikan dana mitra perlu ditransfer.</p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center gap-1 text-xs font-semibold text-blue-800 dark:text-blue-200 group-hover:translate-x-1 transition-transform">
+                    Proses <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </span>
+            </div>
+        </a>
+        @endif
+    </div>
+    @endif
+
     {{-- ===== Stat Cards ===== --}}
     <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 mb-6">
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3.5 sm:p-4 flex items-center gap-3 shadow-sm min-w-0">
@@ -97,8 +140,8 @@
                     <button type="button" data-range="yearly"  class="chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md">Tahunan</button>
                 </div>
             </div>
-            <div class="w-full min-w-0" id="chartContainer" wire:ignore>
-                <canvas id="usersChart" height="180"></canvas>
+            <div class="w-full min-w-0 h-64 sm:h-72 relative" id="chartContainer" wire:ignore>
+                <canvas id="usersChart"></canvas>
             </div>
         </div>
 
@@ -392,9 +435,6 @@
             }
 
             const c = getColors();
-            const grad = ctx.createLinearGradient(0, 0, 0, 200);
-            grad.addColorStop(0, c.bar);
-            grad.addColorStop(1, isDark() ? 'rgba(99,102,241,0.45)' : 'rgba(59,130,246,0.45)');
 
             const cfg = {
                 type: 'bar',
@@ -403,7 +443,8 @@
                     datasets: [{
                         label: 'Pendaftaran',
                         data: chartData[range]?.data || [],
-                        backgroundColor: grad,
+                        backgroundColor: c.bar,
+                        hoverBackgroundColor: c.barHover,
                         borderColor: c.border,
                         borderWidth: 1,
                         borderRadius: 6,
@@ -414,7 +455,9 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: isDark() ? '#1e293b' : 'rgba(0,0,0,0.8)',
+                            backgroundColor: isDark() ? '#1e293b' : 'rgba(0,0,0,0.85)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
                             padding: 10,
                             cornerRadius: 8,
                             callbacks: {
@@ -484,11 +527,19 @@
             });
         });
 
+        // Immediately render and activate initial range on load
         setActive(initialRange);
         renderRange(initialRange);
 
+        let lastKnownDark = isDark();
         if (!observer) {
-            observer = new MutationObserver(() => { if (usersChart) renderRange(localStorage.getItem('superadmin.usersChart.range') || 'daily'); });
+            observer = new MutationObserver(() => {
+                const currentDark = isDark();
+                if (currentDark !== lastKnownDark) {
+                    lastKnownDark = currentDark;
+                    if (usersChart) renderRange(localStorage.getItem('superadmin.usersChart.range') || 'daily');
+                }
+            });
             observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
         }
     }
@@ -503,5 +554,12 @@
         safeInit();
     }
     document.addEventListener('livewire:navigated', safeInit);
+
+    window.addEventListener('theme-changed', function() {
+        if (usersChart) {
+            const currentRange = localStorage.getItem('superadmin.usersChart.range') || 'daily';
+            initUsersChart();
+        }
+    });
 })();
 </script>

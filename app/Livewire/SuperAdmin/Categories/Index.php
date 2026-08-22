@@ -60,7 +60,7 @@ class Index extends Component
             ->latest()
             ->paginate($this->perPage);
 
-        return view('superadmin.categories', compact('categories'));
+        return view('livewire.superadmin.categories.index', compact('categories'));
     }
 }
 

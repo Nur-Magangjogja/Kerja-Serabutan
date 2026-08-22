@@ -97,6 +97,6 @@ class Index extends Component
         $selectedHelp = $this->selectedHelpId ? Help::with(['customer', 'mitra', 'category', 'city', 'rating'])->find($this->selectedHelpId) : null;
         $helpActivities = $this->selectedHelpId ? \App\Models\PartnerActivity::with('user')->where('help_id', $this->selectedHelpId)->orderBy('created_at', 'asc')->get() : collect();
 
-        return view('admin.helps', compact('helps', 'totalHelps', 'pendingHelps', 'completedHelps', 'selectedHelp', 'helpActivities'));
+        return view('livewire.admin.helps.index', compact('helps', 'totalHelps', 'pendingHelps', 'completedHelps', 'selectedHelp', 'helpActivities'));
     }
 }

@@ -70,36 +70,58 @@ class WithdrawController extends Controller
     /** Handle withdraw request */
     public function requestWithdraw(Request $request)
     {
+        $user = $request->user();
+        $userBalance = (int) round((float) ($user->balance ?? 0));
+
         $request->validate([
-            'amount' => ['required', 'integer', 'min:10000'],
-            'bank_code' => ['required', 'string'],
-            'account_number' => ['required', 'string'],
+            'amount' => ['required', 'integer', 'min:10000', 'max:' . max(10000, $userBalance)],
+            'bank_code' => ['required', 'string', 'max:50'],
+            'account_number' => ['required', 'string', 'min:5', 'max:30'],
+            'account_name' => ['required', 'string', 'min:3', 'max:100'],
+        ], [
+            'amount.required' => 'Nominal penarikan wajib diisi.',
+            'amount.integer' => 'Nominal penarikan harus berupa angka bulat.',
+            'amount.min' => 'Minimum penarikan saldo adalah Rp 10.000.',
+            'amount.max' => 'Nominal penarikan tidak boleh melebihi saldo tersedia (Rp ' . number_format($userBalance, 0, ',', '.') . ').',
+            'bank_code.required' => 'Silakan pilih bank atau e-wallet tujuan.',
+            'account_number.required' => 'Nomor rekening atau nomor e-wallet wajib diisi.',
+            'account_number.min' => 'Nomor rekening minimal 5 karakter/digit.',
+            'account_name.required' => 'Nama pemilik rekening / e-wallet wajib diisi.',
+            'account_name.min' => 'Nama pemilik rekening minimal 3 karakter.',
         ]);
 
-        $user = $request->user();
         $amount = (int) $request->input('amount');
+
+        if ($userBalance < 10000) {
+            return back()->withErrors(['amount' => 'Saldo Anda saat ini (Rp ' . number_format($userBalance, 0, ',', '.') . ') belum mencapai batas minimum penarikan Rp 10.000.'])->withInput();
+        }
+
+        if ($amount > $userBalance) {
+            return back()->withErrors(['amount' => 'Saldo Anda tidak mencukupi untuk melakukan penarikan sebesar Rp ' . number_format($amount, 0, ',', '.') . '. Saldo tersedia: Rp ' . number_format($userBalance, 0, ',', '.')])->withInput();
+        }
 
         // Business checks
         if ($user->hasPendingOrProcessingWithdraws()) {
-            return back()->withErrors(['general' => 'Anda memiliki permintaan tarik saldo yang sedang diproses. Mohon tunggu hingga selesai.']);
+            return back()->withErrors(['general' => 'Anda masih memiliki permintaan tarik saldo yang sedang diproses. Mohon tunggu hingga proses sebelumnya selesai.'])->withInput();
         }
 
         try {
-            // Create withdraw request WITHOUT deducting balance.
-            // Admin will review and deduct when approving the transfer.
+            $accountName = trim($request->input('account_name'));
+            $desc = 'A/N: ' . $accountName;
+
             $withdraw = WithdrawRequest::create([
                 'user_id' => $user->id,
                 'amount' => $amount,
-                'bank_code' => $request->input('bank_code'),
+                'bank_code' => strtoupper($request->input('bank_code')),
                 'account_number' => $request->input('account_number'),
+                'description' => $desc,
                 'status' => WithdrawRequest::STATUS_PENDING,
             ]);
 
-            // Redirect back to form — the form view will show a 'pending' message when a request exists
-            return redirect()->route('mitra.withdraw.form')->with('status', 'Pengajuan Anda berhasil dikirim dan sedang menunggu proses oleh admin. Mohon tunggu 1-5 hari kerja.');
+            return redirect()->route('mitra.withdraw.form')->with('status', 'Pengajuan penarikan dana sebesar Rp ' . number_format($amount, 0, ',', '.') . ' berhasil dikirim dan sedang menunggu proses transfer dari admin.');
         } catch (\Throwable $e) {
             Log::error('WithdrawController: error creating withdraw', ['error' => $e->getMessage()]);
-            return back()->withErrors(['general' => 'Terjadi kesalahan saat membuat permintaan tarik saldo.']);
+            return back()->withErrors(['general' => 'Terjadi kesalahan sistem saat membuat permintaan tarik saldo. Silakan coba kembali.'])->withInput();
         }
     }
 

@@ -15,14 +15,23 @@ class PartnerReportController extends Controller
         $statsQuery = PartnerReport::query();
         
         // Filter by admin's city if user is admin
-        if (auth()->user() && auth()->user()->role === 'admin' && auth()->user()->city_id) {
-            $statsQuery->where(function ($q) {
-                $q->whereHas('reporter', function ($sq) {
-                    $sq->where('city_id', auth()->user()->city_id);
-                })->orWhereHas('reportedUser', function ($sq) {
-                    $sq->where('city_id', auth()->user()->city_id);
+        if (auth()->user() && auth()->user()->role === 'admin') {
+            $admin = auth()->user();
+            $cityIds = collect([$admin->city_id])
+                ->merge($admin->managedCities?->pluck('id') ?? [])
+                ->merge(\App\Models\City::where('admin_id', $admin->id)->pluck('id'))
+                ->filter()
+                ->unique();
+
+            if ($cityIds->isNotEmpty()) {
+                $statsQuery->where(function ($q) use ($cityIds) {
+                    $q->whereHas('reporter', function ($sq) use ($cityIds) {
+                        $sq->whereIn('city_id', $cityIds);
+                    })->orWhereHas('reportedUser', function ($sq) use ($cityIds) {
+                        $sq->whereIn('city_id', $cityIds);
+                    });
                 });
-            });
+            }
         }
 
         // Statistik ringkasan
@@ -45,14 +54,23 @@ class PartnerReportController extends Controller
         $query = PartnerReport::with(['reporter', 'reportedUser', 'reportedHelp', 'resolvedBy']);
 
         // Filter by admin's city if user is admin
-        if (auth()->user() && auth()->user()->role === 'admin' && auth()->user()->city_id) {
-            $query->where(function ($q) {
-                $q->whereHas('reporter', function ($sq) {
-                    $sq->where('city_id', auth()->user()->city_id);
-                })->orWhereHas('reportedUser', function ($sq) {
-                    $sq->where('city_id', auth()->user()->city_id);
+        if (auth()->user() && auth()->user()->role === 'admin') {
+            $admin = auth()->user();
+            $cityIds = collect([$admin->city_id])
+                ->merge($admin->managedCities?->pluck('id') ?? [])
+                ->merge(\App\Models\City::where('admin_id', $admin->id)->pluck('id'))
+                ->filter()
+                ->unique();
+
+            if ($cityIds->isNotEmpty()) {
+                $query->where(function ($q) use ($cityIds) {
+                    $q->whereHas('reporter', function ($sq) use ($cityIds) {
+                        $sq->whereIn('city_id', $cityIds);
+                    })->orWhereHas('reportedUser', function ($sq) use ($cityIds) {
+                        $sq->whereIn('city_id', $cityIds);
+                    });
                 });
-            });
+            }
         }
 
         // Apply filters
@@ -110,7 +128,7 @@ class PartnerReportController extends Controller
 
         $reports = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
-        return view('admin.partners.report', compact(
+        return view('livewire.admin.partners.report', compact(
             'reports',
             'totalPending',
             'totalInProgress',
@@ -132,7 +150,7 @@ class PartnerReportController extends Controller
     {
         $report->load(['reporter', 'reportedUser', 'reportedHelp', 'resolvedBy']);
 
-        return view('admin.partners.report-detail', compact('report'));
+        return view('livewire.admin.partners.report-detail', compact('report'));
     }
 
     public function reportsIndex()

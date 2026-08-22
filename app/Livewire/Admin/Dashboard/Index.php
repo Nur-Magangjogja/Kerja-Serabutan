@@ -58,6 +58,15 @@ class Index extends Component
         }
         $pendingTopups = $topupQuery->count();
 
+        // Pending withdraw requests (filtered by admin's city)
+        $withdrawQuery = \App\Models\WithdrawRequest::where('status', \App\Models\WithdrawRequest::STATUS_PENDING);
+        if ($adminCityId) {
+            $withdrawQuery->whereHas('user', function ($q) use ($adminCityId) {
+                $q->where('city_id', $adminCityId)->orWhereNull('city_id');
+            });
+        }
+        $pendingWithdraws = $withdrawQuery->count();
+
         // Latest 6 helps
         $latestHelps = (clone $helpQuery)
             ->with(['customer', 'user', 'city'])
@@ -86,6 +95,7 @@ class Index extends Component
             'pendingVerifications' => $pendingVerifications,
             'verifiedMitras'       => $verifiedMitras,
             'pendingTopups'        => $pendingTopups,
+            'pendingWithdraws'     => $pendingWithdraws,
             'latestHelps'          => $latestHelps,
             'chartLabels'          => $chartLabels,
             'chartData'            => $chartData,

@@ -297,7 +297,7 @@ class Log extends Component
         $totalRefund      = (float) $summaryQuery->clone()->where('type', 'refund')->where('status', 'completed')->sum('amount');
         $totalTransactions = $summaryQuery->clone()->count();
 
-        return view('superadmin.transactions-log', [
+        return view('livewire.superadmin.transactions.log', [
             'transactions'     => $transactions,
             'totalTopup'       => $totalTopup,
             'totalWithdraw'    => $totalWithdraw,

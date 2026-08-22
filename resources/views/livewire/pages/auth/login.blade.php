@@ -73,20 +73,15 @@ new #[Layout('layouts.blank')] class extends Component {
     <div class="min-h-screen flex flex-col lg:flex-row w-full bg-gray-50 dark:bg-gray-900">
         
         <!-- Left Side - Feature Showcase & Branding (Desktop/Tablet) -->
-        <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-indigo-900 p-12 lg:p-16 flex-col justify-between text-white shadow-2xl">
-            <!-- Decorative Backing Gradients -->
-            <div class="absolute top-0 right-0 w-96 h-96 bg-sky-400/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none"></div>
-            <div class="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px] opacity-10 pointer-events-none"></div>
-
+        <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-primary-700 p-12 lg:p-16 flex-col justify-between text-white shadow-2xl">
             <!-- Top Brand Header -->
             <div class="relative z-10">
                 <div class="flex items-center gap-3 mb-2">
-                    <div class="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center p-2 shadow-inner">
+                    <div class="w-11 h-11 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center p-2 shadow-inner">
                         @if ($siteLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($siteLogo))
                             <img src="{{ asset('storage/' . $siteLogo) }}" alt="Logo" class="w-full h-full object-contain" />
                         @else
-                            <svg class="w-6 h-6 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-6 h-6 text-sky-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                         @endif
@@ -111,7 +106,7 @@ new #[Layout('layouts.blank')] class extends Component {
 
                 <div class="space-y-3.5 pt-2">
                     <!-- Feature 1 -->
-                    <div class="flex items-start gap-3.5 p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 transition-all hover:bg-white/15">
+                    <div class="flex items-start gap-3.5 p-4 rounded-2xl bg-white/10 border border-white/15 transition-all hover:bg-white/15">
                         <div class="w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -124,7 +119,7 @@ new #[Layout('layouts.blank')] class extends Component {
                     </div>
 
                     <!-- Feature 2 -->
-                    <div class="flex items-start gap-3.5 p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 transition-all hover:bg-white/15">
+                    <div class="flex items-start gap-3.5 p-4 rounded-2xl bg-white/10 border border-white/15 transition-all hover:bg-white/15">
                         <div class="w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -137,7 +132,7 @@ new #[Layout('layouts.blank')] class extends Component {
                     </div>
 
                     <!-- Feature 3 -->
-                    <div class="flex items-start gap-3.5 p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 transition-all hover:bg-white/15">
+                    <div class="flex items-start gap-3.5 p-4 rounded-2xl bg-white/10 border border-white/15 transition-all hover:bg-white/15">
                         <div class="w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -167,7 +162,7 @@ new #[Layout('layouts.blank')] class extends Component {
                 
                 <!-- Mobile Branding (Visible only on mobile/tablet) -->
                 <div class="lg:hidden text-center mb-8">
-                    <div class="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-400 to-primary-600 p-2 text-white shadow-lg shadow-primary-500/20 mb-3 items-center justify-center">
+                    <div class="inline-flex w-14 h-14 rounded-2xl bg-primary-600 p-2 text-white shadow-md shadow-primary-600/20 mb-3 items-center justify-center">
                         @if ($siteLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($siteLogo))
                             <img src="{{ asset('storage/' . $siteLogo) }}" alt="Logo" class="w-full h-full object-contain" />
                         @else
@@ -290,7 +285,7 @@ new #[Layout('layouts.blank')] class extends Component {
                                 type="submit" 
                                 wire:loading.attr="disabled"
                                 wire:target="login"
-                                class="w-full py-3.5 px-4 bg-gradient-to-r from-primary-600 via-primary-500 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md shadow-primary-500/25 transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
+                                class="w-full py-3.5 px-4 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
                             >
                                 <svg wire:loading wire:target="login" class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

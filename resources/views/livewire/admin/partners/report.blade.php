@@ -1,6 +1,9 @@
-@extends('layouts.admin')
+@extends(in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? 'layouts.superadmin' : 'layouts.admin')
 
 @section('content')
+@php
+    $routePrefix = in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? 'superadmin.' : 'admin.';
+@endphp
 <div class="space-y-5">
     {{-- ===== Page Header ===== --}}
     <div class="flex items-center justify-between flex-wrap gap-3">
@@ -93,7 +96,7 @@
                     Filter
                 </button>
                 @if (request()->hasAny(['status', 'category', 'report_type', 'search', 'start_date', 'end_date']))
-                <a href="{{ route('admin.partners.report') }}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <a href="{{ route($routePrefix . 'partners.report') }}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     Reset
                 </a>
                 @endif
@@ -180,7 +183,7 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3.5 text-right whitespace-nowrap">
-                                <a href="{{ route('admin.partners.reports.show', $report) }}"
+                                <a href="{{ route($routePrefix . 'partners.reports.show', $report) }}"
                                     class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                     Detail
                                 </a>

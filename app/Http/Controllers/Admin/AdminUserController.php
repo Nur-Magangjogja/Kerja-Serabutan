@@ -13,7 +13,11 @@ class AdminUserController extends Controller
     {
         $admin = auth()->user();
 
-        $cityIds = City::where('admin_id', $admin->id)->pluck('id');
+        $cityIds = collect([$admin->city_id])
+            ->merge($admin->managedCities?->pluck('id') ?? [])
+            ->merge(City::where('admin_id', $admin->id)->pluck('id'))
+            ->filter()
+            ->unique();
 
         $query = User::with('city')
             ->withCount('helps')
@@ -26,7 +30,7 @@ class AdminUserController extends Controller
             ->withAvg('mitraRatings as mitra_average_rating', 'rating')
             ->withAvg('customerRatings as customer_average_rating', 'rating');
 
-        // Apply city scoping only when admin has linked cities
+        // Apply city scoping when admin has linked cities
         if ($cityIds->isNotEmpty()) {
             $query->whereIn('city_id', $cityIds);
         }
@@ -88,7 +92,7 @@ class AdminUserController extends Controller
             }
         }
 
-        return view('admin.users.index', compact('users'));
+        return view('livewire.admin.users.index', compact('users'));
     }
 
     public function show(\Illuminate\Http\Request $request, User $user)
@@ -107,11 +111,11 @@ class AdminUserController extends Controller
         if ($request->ajax()) {
             $user->load('city');
             $user->city_name = optional($user->city)->name ?? optional(City::find($user->city_id))->name;
-            return view('admin.users.partials.show', compact('user'));
+            return view('livewire.admin.users.partials.show', compact('user'));
         }
 
         $user->load('city');
 
-        return view('admin.users.show', compact('user'));
+        return view('livewire.admin.users.show', compact('user'));
     }
 }

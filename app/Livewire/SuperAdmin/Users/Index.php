@@ -301,7 +301,7 @@ class Index extends Component
 
         $cities = City::orderBy('name')->get();
 
-        return view('superadmin.users', compact('users', 'cities'));
+        return view('livewire.superadmin.users.index', compact('users', 'cities'));
     }
 }
 

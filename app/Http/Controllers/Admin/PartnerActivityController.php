@@ -16,12 +16,21 @@ class PartnerActivityController extends Controller
         $query = PartnerActivity::with('user');
 
         // Filter by admin's city if user is admin
-        // Admin hanya melihat aktivitas customer dan mitra (bukan admin lain)
-        if (auth()->user() && auth()->user()->role === 'admin' && auth()->user()->city_id) {
-            $query->whereHas('user', function ($q) {
-                $q->where('city_id', auth()->user()->city_id)
-                  ->whereIn('role', ['customer', 'mitra']); // Hanya customer dan mitra
-            });
+        // Admin hanya melihat aktivitas customer dan mitra di kota kelolaannya
+        if (auth()->user() && auth()->user()->role === 'admin') {
+            $admin = auth()->user();
+            $cityIds = collect([$admin->city_id])
+                ->merge($admin->managedCities?->pluck('id') ?? [])
+                ->merge(\App\Models\City::where('admin_id', $admin->id)->pluck('id'))
+                ->filter()
+                ->unique();
+
+            if ($cityIds->isNotEmpty()) {
+                $query->whereHas('user', function ($q) use ($cityIds) {
+                    $q->whereIn('city_id', $cityIds)
+                      ->whereIn('role', ['customer', 'mitra']);
+                });
+            }
         }
 
         // Filter search: user name/email, description, IP
@@ -61,8 +70,9 @@ class PartnerActivityController extends Controller
             'reasons' => [],
         ];
 
-        if ($activityId = $request->get('activity_id')) {
-            $selectedActivity = PartnerActivity::with('user')->find($activityId);
+        $activityId = $request->get('detail') ?: $request->get('activity_id');
+        if ($activityId) {
+            $selectedActivity = PartnerActivity::with(['user', 'help'])->find($activityId);
 
             if ($selectedActivity) {
                 $recentStart = $selectedActivity->created_at->copy()->subDay();
@@ -85,7 +95,7 @@ class PartnerActivityController extends Controller
             ->orderBy('activity_type')
             ->pluck('activity_type');
 
-        return view('admin.partners.activity', compact('activities', 'activityTypes', 'selectedActivity', 'recentActivities', 'suspicious'));
+        return view('livewire.admin.partners.activity', compact('activities', 'activityTypes', 'selectedActivity', 'recentActivities', 'suspicious'));
     }
 
     public function exportCsv(Request $request)
@@ -160,7 +170,7 @@ class PartnerActivityController extends Controller
             ->limit(500)
             ->get();
 
-        return view('admin.partners.activity_print', compact('activities'));
+        return view('livewire.admin.partners.activity_print', compact('activities'));
     }
 
     protected function buildFilteredQuery(Request $request)
@@ -168,12 +178,21 @@ class PartnerActivityController extends Controller
         $query = PartnerActivity::with('user');
 
         // Filter by admin's city if user is admin
-        // Admin hanya melihat aktivitas customer dan mitra (bukan admin lain)
-        if (auth()->user() && auth()->user()->role === 'admin' && auth()->user()->city_id) {
-            $query->whereHas('user', function ($q) {
-                $q->where('city_id', auth()->user()->city_id)
-                  ->whereIn('role', ['customer', 'mitra']); // Hanya customer dan mitra
-            });
+        // Admin hanya melihat aktivitas customer dan mitra di kota kelolaannya
+        if (auth()->user() && auth()->user()->role === 'admin') {
+            $admin = auth()->user();
+            $cityIds = collect([$admin->city_id])
+                ->merge($admin->managedCities?->pluck('id') ?? [])
+                ->merge(\App\Models\City::where('admin_id', $admin->id)->pluck('id'))
+                ->filter()
+                ->unique();
+
+            if ($cityIds->isNotEmpty()) {
+                $query->whereHas('user', function ($q) use ($cityIds) {
+                    $q->whereIn('city_id', $cityIds)
+                      ->whereIn('role', ['customer', 'mitra']);
+                });
+            }
         }
 
         if ($search = $request->get('search')) {

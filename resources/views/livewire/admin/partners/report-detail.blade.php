@@ -1,6 +1,9 @@
-@extends('layouts.admin')
+@extends(in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? 'layouts.superadmin' : 'layouts.admin')
 
 @section('content')
+@php
+    $routePrefix = in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? 'superadmin.' : 'admin.';
+@endphp
 <div class="space-y-6">
     {{-- ===== Page Header ===== --}}
     <div class="flex items-center justify-between flex-wrap gap-3">
@@ -8,7 +11,7 @@
             <h1 class="text-xl font-bold text-gray-900 dark:text-white">Detail Laporan Aduan #{{ $report->id }}</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Informasi lengkap dan tindakan moderasi untuk aduan</p>
         </div>
-        <a href="{{ route('admin.partners.report') }}"
+        <a href="{{ route($routePrefix . 'partners.report') }}"
             class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             Kembali
@@ -132,7 +135,7 @@
         <div class="space-y-6">
             <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-3">
                 <h3 class="text-sm font-bold text-gray-900 dark:text-white">Update Status Aduan</h3>
-                <form method="POST" action="{{ route('admin.partners.reports.update', $report) }}" class="space-y-2">
+                <form method="POST" action="{{ route($routePrefix . 'partners.reports.update', $report) }}" class="space-y-2">
                     @csrf
                     <select name="status"
                         class="w-full py-2 px-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
@@ -148,7 +151,7 @@
                 </form>
 
                 @if (!$report->isResolved())
-                    <form method="POST" action="{{ route('admin.partners.reports.resolve', $report) }}" class="pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <form method="POST" action="{{ route($routePrefix . 'partners.reports.resolve', $report) }}" class="pt-2 border-t border-gray-100 dark:border-gray-700">
                         @csrf
                         <button type="submit"
                             class="w-full py-2 px-4 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
@@ -156,7 +159,7 @@
                         </button>
                     </form>
                 @else
-                    <form method="POST" action="{{ route('admin.partners.reports.reopen', $report) }}" class="pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <form method="POST" action="{{ route($routePrefix . 'partners.reports.reopen', $report) }}" class="pt-2 border-t border-gray-100 dark:border-gray-700">
                         @csrf
                         <button type="submit"
                             class="w-full py-2 px-4 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
@@ -173,7 +176,7 @@
                         {{ $report->admin_notes }}
                     </div>
                 @endif
-                <form method="POST" action="{{ route('admin.partners.reports.add-note', $report) }}" class="space-y-2">
+                <form method="POST" action="{{ route($routePrefix . 'partners.reports.add-note', $report) }}" class="space-y-2">
                     @csrf
                     <textarea name="admin_notes" rows="3" placeholder="Tulis catatan penanganan kasus..."
                         class="w-full p-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">{{ $report->admin_notes }}</textarea>

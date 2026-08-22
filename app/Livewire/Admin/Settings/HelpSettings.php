@@ -44,6 +44,6 @@ class HelpSettings extends Component
 
     public function render()
     {
-        return view('admin.help-settings');
+        return view('livewire.admin.settings.help-settings');
     }
 }

@@ -53,7 +53,7 @@ class Approved extends Component
             ->latest()
             ->paginate($this->perPage);
 
-        return view('superadmin.helps-approved', compact('helps'));
+        return view('livewire.superadmin.helps.approved', compact('helps'));
     }
 }
 

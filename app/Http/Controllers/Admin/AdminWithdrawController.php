@@ -17,10 +17,19 @@ class AdminWithdrawController extends Controller
         $query = WithdrawRequest::with('user');
 
         // Filter by admin's city if user is admin
-        if (auth()->user() && auth()->user()->role === 'admin' && auth()->user()->city_id) {
-            $query->whereHas('user', function ($q) {
-                $q->where('city_id', auth()->user()->city_id);
-            });
+        if (auth()->user() && auth()->user()->role === 'admin') {
+            $admin = auth()->user();
+            $cityIds = collect([$admin->city_id])
+                ->merge($admin->managedCities?->pluck('id') ?? [])
+                ->merge(\App\Models\City::where('admin_id', $admin->id)->pluck('id'))
+                ->filter()
+                ->unique();
+
+            if ($cityIds->isNotEmpty()) {
+                $query->whereHas('user', function ($q) use ($cityIds) {
+                    $q->whereIn('city_id', $cityIds)->orWhereNull('city_id');
+                });
+            }
         }
 
         // Filter by status
@@ -61,8 +70,9 @@ class AdminWithdrawController extends Controller
         // Summary counts - filter by admin's city
         $countsQuery = WithdrawRequest::query();
         if (auth()->user() && auth()->user()->role === 'admin' && auth()->user()->city_id) {
-            $countsQuery->whereHas('user', function ($q) {
-                $q->where('city_id', auth()->user()->city_id);
+            $adminCity = auth()->user()->city_id;
+            $countsQuery->whereHas('user', function ($q) use ($adminCity) {
+                $q->where('city_id', $adminCity)->orWhereNull('city_id');
             });
         }
 
@@ -79,7 +89,7 @@ class AdminWithdrawController extends Controller
             return view('superadmin.withdraws.index', ['items' => $items, 'banks' => $banks, 'counts' => $counts]);
         }
 
-        return view('admin.withdraws.index', ['items' => $items, 'banks' => $banks, 'counts' => $counts]);
+        return view('livewire.admin.withdraws.index', ['items' => $items, 'banks' => $banks, 'counts' => $counts]);
     }
 
     public function show(WithdrawRequest $withdraw)
@@ -90,7 +100,7 @@ class AdminWithdrawController extends Controller
             return view('superadmin.withdraws.show', ['withdraw' => $withdraw]);
         }
 
-        return view('admin.withdraws.show', ['withdraw' => $withdraw]);
+        return view('livewire.admin.withdraws.show', ['withdraw' => $withdraw]);
     }
 
     /** Return withdraw details as a partial for modal (AJAX) */
@@ -102,7 +112,7 @@ class AdminWithdrawController extends Controller
             return view('superadmin.withdraws._modal', ['withdraw' => $withdraw]);
         }
 
-        return view('admin.withdraws._modal', ['withdraw' => $withdraw]);
+        return view('livewire.admin.withdraws._modal', ['withdraw' => $withdraw]);
     }
 
     /** Approve and perform deduction */
@@ -119,15 +129,23 @@ class AdminWithdrawController extends Controller
 
         $user = $withdraw->user;
         $userBalance = $user->balance()->first();
-        $current = $userBalance ? (int) round((float) $userBalance->balance) : 0;
+        if (!$userBalance) {
+            $userBalance = $user->balance()->create(['balance' => 0]);
+        }
+        $current = (int) round((float) $userBalance->balance);
 
         if ($current < $withdraw->amount) {
-            return back()->withErrors(['general' => 'Saldo user tidak mencukupi untuk melakukan transfer.']);
+            return back()->withErrors(['general' => 'Saldo user tidak mencukupi untuk melakukan penarikan.']);
         }
 
         try {
-            // Deduct balance now
-            $user->adjustBalance(-((int) $withdraw->amount));
+            // Deduct balance with 'withdraw' transaction type
+            $userBalance->withdrawBalance(
+                (float) $withdraw->amount,
+                $withdraw->id,
+                'WD-' . $withdraw->id,
+                'Pencairan Saldo ke ' . $withdraw->bank_code . ' (' . $withdraw->account_number . ')'
+            );
 
             $withdraw->update([
                 'status' => WithdrawRequest::STATUS_SUCCESS,
@@ -143,7 +161,11 @@ class AdminWithdrawController extends Controller
                 Log::warning('Failed to send withdraw success notification: ' . $e->getMessage());
             }
 
-            return redirect()->route('superadmin.withdraws.index')->with('status', 'Withdraw berhasil diproses dan saldo telah dipotong.');
+            $redirectRoute = (auth()->user() && auth()->user()->role === 'super_admin') 
+                ? 'superadmin.withdraws.index' 
+                : 'admin.withdraws.index';
+
+            return redirect()->route($redirectRoute)->with('status', 'Withdraw berhasil disetujui dan saldo mitra telah dipotong.');
         } catch (\Throwable $e) {
             Log::error('AdminWithdrawController: approve error', ['error' => $e->getMessage(), 'withdraw_id' => $withdraw->id]);
             return back()->withErrors(['general' => 'Terjadi kesalahan saat memproses withdraw.']);
@@ -171,6 +193,10 @@ class AdminWithdrawController extends Controller
             Log::warning('Failed to send withdraw failed notification: ' . $e->getMessage());
         }
 
-        return redirect()->route('superadmin.withdraws.index')->with('status', 'Withdraw dibatalkan.');
+        $redirectRoute = (auth()->user() && auth()->user()->role === 'super_admin') 
+            ? 'superadmin.withdraws.index' 
+            : 'admin.withdraws.index';
+
+        return redirect()->route($redirectRoute)->with('status', 'Withdraw dibatalkan.');
     }
 }

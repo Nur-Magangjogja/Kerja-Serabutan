@@ -102,6 +102,8 @@ class Index extends Component
             'pending_helps' => Help::whereIn('status', ['pending', 'menunggu_mitra'])->count(),
             'active_helps' => Help::whereIn('status', ['active', 'memperoleh_mitra', 'sedang_diproses', 'taken', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'waiting_customer_confirmation'])->count(),
             'completed_helps' => Help::whereIn('status', ['selesai', 'completed'])->count(),
+            'pending_withdraws' => \App\Models\WithdrawRequest::where('status', \App\Models\WithdrawRequest::STATUS_PENDING)->count(),
+            'pending_topups' => \App\Models\BalanceTransaction::where('type', 'topup')->where('status', 'waiting_approval')->count(),
         ];
 
         // Recent items for quick view

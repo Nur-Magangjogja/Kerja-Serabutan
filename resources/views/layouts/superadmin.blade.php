@@ -31,17 +31,32 @@
                     var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
                     var isDark = (mode === 'dark') || (mode === 'system' && prefersDark);
                     var d = document.documentElement;
-                    if (isDark) {
-                        d.classList.add('dark');
-                        d.style.colorScheme = 'dark';
-                        d.style.backgroundColor = '#111827';
-                        if (document.body) document.body.style.backgroundColor = '#111827';
-                    } else {
-                        d.classList.remove('dark');
-                        d.style.colorScheme = 'light';
-                        d.style.backgroundColor = '#f3f4f6';
-                        if (document.body) document.body.style.backgroundColor = '#f3f4f6';
+                    var currentlyDark = d.classList.contains('dark');
+
+                    // If state is already what was requested, do not force redundant DOM mutations / animations
+                    if (isDark !== currentlyDark) {
+                        var css = document.createElement('style');
+                        css.type = 'text/css';
+                        css.appendChild(document.createTextNode('*,*::before,*::after{-webkit-transition:none!important;-moz-transition:none!important;-o-transition:none!important;-ms-transition:none!important;transition:none!important}'));
+                        document.head.appendChild(css);
+
+                        if (isDark) {
+                            d.classList.add('dark');
+                            d.style.colorScheme = 'dark';
+                            d.style.backgroundColor = '#111827';
+                            if (document.body) document.body.style.backgroundColor = '#111827';
+                        } else {
+                            d.classList.remove('dark');
+                            d.style.colorScheme = 'light';
+                            d.style.backgroundColor = '#f3f4f6';
+                            if (document.body) document.body.style.backgroundColor = '#f3f4f6';
+                        }
+
+                        setTimeout(function() {
+                            if (css.parentNode) css.parentNode.removeChild(css);
+                        }, 50);
                     }
+
                     window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: mode, isDark: isDark } }));
                 } catch(e) {}
             };
@@ -81,6 +96,7 @@
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     @livewireStyles
 </head>
 
@@ -192,6 +208,42 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                     Manajemen Admin
+                </a>
+
+                <a href="{{ route('superadmin.verifications') }}" wire:navigate
+                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.verifications*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                    </svg>
+                    Verifikasi KTP
+                </a>
+
+                <div class="pt-4 pb-1">
+                    <p class="px-4 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Moderasi & Laporan</p>
+                </div>
+
+                <a href="{{ route('superadmin.partners.report') }}" wire:navigate
+                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.partners.report*') || request()->routeIs('superadmin.partners.reports*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    Laporan Aduan
+                </a>
+
+                <a href="{{ route('superadmin.partners.activity') }}" wire:navigate
+                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.partners.activity*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Aktivitas Mitra
+                </a>
+
+                <a href="{{ route('superadmin.partners.blocked') }}" wire:navigate
+                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.partners.blocked*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                    Blokir Mitra
                 </a>
 
                 <div class="pt-4 pb-1">

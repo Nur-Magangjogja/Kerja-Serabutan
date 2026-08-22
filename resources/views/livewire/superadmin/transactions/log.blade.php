@@ -69,14 +69,14 @@
         </div>
 
         {{-- Card 2: Platform Fee --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-purple-100 dark:border-purple-900/40 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
-            <div class="w-11 h-11 rounded-xl bg-purple-50 dark:bg-purple-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-3.5 sm:p-4 flex items-center gap-3 min-w-0">
+            <div class="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-900/40 hidden sm:flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
             </div>
             <div class="min-w-0 flex-1">
-                <p class="text-xs text-purple-700 dark:text-purple-400 font-semibold truncate">Komisi Platform (Kas)</p>
-                <p class="text-base sm:text-lg font-bold text-purple-900 dark:text-purple-200 truncate">Rp {{ number_format($totalPlatformFee, 0, ',', '.') }}</p>
-                <p class="text-[10px] text-purple-500 font-medium truncate">Pendapatan bersih platform</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Komisi Platform (Kas)</p>
+                <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">Rp {{ number_format($totalPlatformFee, 0, ',', '.') }}</p>
+                <p class="text-[10px] text-blue-600 dark:text-blue-400 font-medium truncate">Pendapatan bersih platform</p>
             </div>
         </div>
 
@@ -191,7 +191,7 @@
                         'topup'        => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60',
                         'escrow_lock'  => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60',
                         'earning'      => 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60',
-                        'platform_fee' => 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800/60',
+                        'platform_fee' => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60',
                         'withdraw'     => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60',
                         'refund'       => 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800/60',
                         'penalty'      => 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700/60',
@@ -221,11 +221,11 @@
                             </div>
                             @elseif($t->type === 'platform_fee')
                             <div class="flex items-center gap-2">
-                                <div class="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                                <div class="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                                     🏢
                                 </div>
                                 <div class="min-w-0">
-                                    <p class="text-sm font-bold text-purple-700 dark:text-purple-300 truncate">Kas Platform</p>
+                                    <p class="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">Kas Platform</p>
                                     <p class="text-[10px] text-gray-400 truncate">Pendapatan Perusahaan</p>
                                 </div>
                             </div>

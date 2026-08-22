@@ -346,7 +346,7 @@ class Index extends Component
 
         $this->provinces = $provinces;
 
-        return view('superadmin.cities', compact('cities', 'admins', 'provinces', 'loadDistricts'));
+        return view('livewire.superadmin.cities.index', compact('cities', 'admins', 'provinces', 'loadDistricts'));
     }
 }
 
