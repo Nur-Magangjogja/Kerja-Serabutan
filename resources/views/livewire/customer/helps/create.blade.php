@@ -66,56 +66,48 @@
         }
     </style>
 
-    <div id="main-content" class="min-h-screen bg-white">
+    <div id="main-content" class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <div class="max-w-md mx-auto">
-            <!-- Header - BRImo Style (sama seperti index) -->
-            <div class="px-5 pt-5 pb-8 relative overflow-hidden header-pattern"
-                style="background: linear-gradient(to bottom right, #0098e7, #0077cc, #0060b0);">
-                <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20"></div>
-                <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mb-16"></div>
+            <!-- Header Section -->
+            <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+                <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
                 <div class="relative z-10">
-                    <div class="flex items-center justify-between text-white mb-3">
+                    <div class="flex items-center justify-between text-white">
                         <button onclick="sessionStorage.removeItem('sayabantu_create_help_draft'); localStorage.removeItem('sayabantu_create_help_draft'); window.history.back()" aria-label="Kembali"
-                            class="p-2 hover:bg-white/20 rounded-lg transition cursor-pointer">
+                            class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M15 19l-7-7 7-7" />
                             </svg>
                         </button>
 
-                        <div class="text-center flex-1">
-                            <h1 class="text-lg font-bold">Buat Permintaan Baru</h1>
-                            <p class="text-xs text-white/90 mt-0.5">Isi form di bawah untuk membuat permintaan</p>
+                        <div class="text-center flex-1 min-w-0 px-2">
+                            <h1 class="text-base font-bold truncate">Buat Permintaan Baru</h1>
+                            <p class="text-xs text-white/90 truncate mt-0.5">Isi form di bawah untuk membuat permintaan</p>
                         </div>
 
-                        <div class="w-9"></div>
+                        <div class="w-9 flex-shrink-0"></div>
                     </div>
                 </div>
-
-                <!-- Curved separator -->
-                <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 72" preserveAspectRatio="none"
-                    aria-hidden="true">
-                    <path d="M0,32 C360,72 1080,0 1440,40 L1440,72 L0,72 Z" fill="#ffffff"></path>
-                </svg>
             </div>
 
             <!-- Content -->
-            <div class="bg-white rounded-t-3xl -mt-6 px-5 pt-8 pb-8">
+            <div class="px-5 pt-5 pb-8">
                 {{-- Floating Validation Error Banner --}}
                 @if ($errors->any())
                     <div x-data="{ show: true }" x-show="show" x-init="scrollToFirstError(); setTimeout(() => show = false, 6000)"
-                         class="mb-4 bg-red-50 border-l-4 border-red-500 p-3.5 rounded-r-xl shadow-sm flex items-start justify-between gap-3 animate-fade-in">
+                         class="mb-4 bg-red-50 dark:bg-red-950/40 border-l-4 border-red-500 dark:border-red-500 p-3.5 rounded-r-xl shadow-sm flex items-start justify-between gap-3 animate-fade-in border border-red-100 dark:border-red-900/50">
                         <div class="flex items-start gap-2.5">
-                            <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                             </svg>
                             <div>
-                                <p class="text-xs font-bold text-red-800">Permintaan Belum Bisa Dikirim</p>
-                                <p class="text-xs text-red-700 mt-0.5">Mohon lengkapi dan perbaiki kolom yang bertanda merah di bawah ini.</p>
+                                <p class="text-xs font-bold text-red-800 dark:text-red-300">Permintaan Belum Bisa Dikirim</p>
+                                <p class="text-xs text-red-700 dark:text-red-400 mt-0.5">Mohon lengkapi dan perbaiki kolom yang bertanda merah di bawah ini.</p>
                             </div>
                         </div>
-                        <button type="button" @click="show = false" class="text-red-400 hover:text-red-600 text-base font-bold leading-none cursor-pointer">&times;</button>
+                        <button type="button" @click="show = false" class="text-red-400 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 text-base font-bold leading-none cursor-pointer">&times;</button>
                     </div>
                 @endif
 
@@ -123,7 +115,7 @@
                       onsubmit="console.log('📤 Form submitted with coordinates:', { lat: @this.get('latitude'), lng: @this.get('longitude') })">
                     <!-- Title -->
                     <div class="pt-1 pb-1" id="group-title">
-                        <label class="block text-xs font-bold text-gray-700 mb-2">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
                             <span class="flex items-center">
                                 <svg class="w-3.5 h-3.5 mr-1.5 text-primary-500" fill="currentColor"
                                     viewBox="0 0 20 20">
@@ -138,9 +130,9 @@
                         </label>
                         <input type="text" wire:model="title" id="title-input"
                             placeholder="Contoh: Butuh Bantuan Makanan untuk Keluarga"
-                            class="w-full px-4 py-3 text-sm rounded-lg border @error('title') border-red-500 ring-1 ring-red-500 bg-red-50/20 @else border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white">
+                            class="w-full px-4 py-3 text-sm rounded-lg border @error('title') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500">
                         @error('title')
-                            <span class="field-error-message text-red-500 text-xs mt-1.5 block flex items-center font-medium">
+                            <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block flex items-center font-medium">
                                 <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
                                         d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
@@ -153,7 +145,7 @@
 
                     <!-- Amount (Nominal Uang) -->
                     <div id="group-amount">
-                        <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                             <span class="flex items-center">
                                 <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
@@ -165,77 +157,71 @@
                         </label>
 
                         <!-- Custom Stepper Input (Tanpa Panah Bawaan Browser) -->
-                        <div class="flex items-center rounded-xl border @error('amount') border-red-500 ring-1 ring-red-500 bg-red-50/20 @else border-gray-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 bg-white @enderror p-1.5 shadow-sm transition">
+                        <div class="flex items-center rounded-xl border @error('amount') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 bg-white dark:bg-gray-800 @enderror p-1.5 shadow-sm transition">
                             <!-- Decrement Button -->
-                            <button type="button" wire:click="adjustAmount(-1000)" title="Kurangi Rp 1.000" class="w-11 h-11 rounded-lg bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-700 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
+                            <button type="button" wire:click="adjustAmount(-1000)" title="Kurangi Rp 1.000" class="w-11 h-11 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 text-gray-700 dark:text-gray-200 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
                                 −
                             </button>
 
                             <!-- Input Nominal -->
                             <div class="relative flex-1 px-3">
                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-base">Rp</span>
-                                <input type="number" wire:model.live="amount" id="amount-input" placeholder="25000" min="20000" step="1000"
-                                    class="w-full pl-8 pr-2 py-1.5 text-center font-bold text-lg text-gray-900 border-none focus:ring-0 focus:outline-none bg-transparent">
+                                <input type="number" wire:model.live="amount" id="amount-input" placeholder="20000" min="20000" step="1000"
+                                    class="w-full pl-8 pr-2 py-1.5 text-center font-bold text-lg text-gray-900 dark:text-white border-none focus:ring-0 focus:outline-none bg-transparent">
                             </div>
 
                             <!-- Increment Button -->
-                            <button type="button" wire:click="adjustAmount(1000)" title="Tambah Rp 1.000" class="w-11 h-11 rounded-lg bg-blue-50 hover:bg-blue-100 active:scale-95 text-blue-600 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
+                            <button type="button" wire:click="adjustAmount(1000)" title="Tambah Rp 1.000" class="w-11 h-11 rounded-lg bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-800/60 active:scale-95 text-blue-600 dark:text-blue-400 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
                                 +
                             </button>
                         </div>
 
                         <!-- Quick Increment Pills -->
                         <div class="flex items-center gap-1.5 mt-2.5 overflow-x-auto pb-1 scrollbar-hide">
-                            <span class="text-[11px] font-medium text-gray-400 flex-shrink-0">Tambah:</span>
-                            <button type="button" wire:click="adjustAmount(5000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                            <span class="text-[11px] font-medium text-gray-400 dark:text-gray-500 flex-shrink-0">Tambah:</span>
+                            <button type="button" wire:click="adjustAmount(5000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 text-gray-600 dark:text-gray-300 transition border border-gray-200/60 dark:border-gray-700 active:scale-95 flex-shrink-0 cursor-pointer">
                                 +5 rb
                             </button>
-                            <button type="button" wire:click="adjustAmount(10000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                            <button type="button" wire:click="adjustAmount(10000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 text-gray-600 dark:text-gray-300 transition border border-gray-200/60 dark:border-gray-700 active:scale-95 flex-shrink-0 cursor-pointer">
                                 +10 rb
                             </button>
-                            <button type="button" wire:click="adjustAmount(20000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                            <button type="button" wire:click="adjustAmount(20000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 text-gray-600 dark:text-gray-300 transition border border-gray-200/60 dark:border-gray-700 active:scale-95 flex-shrink-0 cursor-pointer">
                                 +20 rb
                             </button>
-                            <button type="button" wire:click="adjustAmount(50000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                            <button type="button" wire:click="adjustAmount(50000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 text-gray-600 dark:text-gray-300 transition border border-gray-200/60 dark:border-gray-700 active:scale-95 flex-shrink-0 cursor-pointer">
                                 +50 rb
                             </button>
-                            <button type="button" wire:click="adjustAmount(100000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                            <button type="button" wire:click="adjustAmount(100000)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 text-gray-600 dark:text-gray-300 transition border border-gray-200/60 dark:border-gray-700 active:scale-95 flex-shrink-0 cursor-pointer">
                                 +100 rb
                             </button>
                         </div>
 
                         <!-- Quick Preset Buttons -->
                         <div class="grid grid-cols-4 gap-2 mt-2">
-                            <button type="button" wire:click="setPresetAmount(25000)" class="py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer {{ $amount == 25000 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
+                            <button type="button" wire:click="setPresetAmount(25000)" class="py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer {{ $amount == 25000 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
                                 25 rb
                             </button>
-                            <button type="button" wire:click="setPresetAmount(50000)" class="py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer {{ $amount == 50000 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
+                            <button type="button" wire:click="setPresetAmount(50000)" class="py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer {{ $amount == 50000 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
                                 50 rb
                             </button>
-                            <button type="button" wire:click="setPresetAmount(75000)" class="py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer {{ $amount == 75000 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
+                            <button type="button" wire:click="setPresetAmount(75000)" class="py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer {{ $amount == 75000 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
                                 75 rb
                             </button>
-                            <button type="button" wire:click="setPresetAmount(100000)" class="py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer {{ $amount == 100000 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
+                            <button type="button" wire:click="setPresetAmount(100000)" class="py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer {{ $amount == 100000 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
                                 100 rb
                             </button>
                         </div>
 
                         <div class="mt-2 space-y-1">
-                            <p class="text-xs text-gray-500 flex items-center">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
                                 <svg class="w-3 h-3 mr-1 flex-shrink-0 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                                 </svg>
                                 Minimal Rp 20.000 — Maksimal Rp 100.000.000
                             </p>
-                            <p class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center">
-                                <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                Bebas biaya tambahan! Harga yang Anda masukkan adalah total bayaran yang ditahan aman (Escrow).
-                            </p>
                         </div>
                         @error('amount')
-                            <span class="field-error-message text-red-500 text-xs mt-1.5 block flex items-center font-medium">
+                            <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block flex items-center font-medium">
                                 <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                 </svg>
@@ -246,7 +232,7 @@
 
                     <!-- City -->
                     <div id="group-city">
-                        <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                             <span class="flex items-center">
                                 <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
@@ -259,7 +245,7 @@
                             <input type="text" 
                                 wire:model.live.debounce.300ms="cityQuery" 
                                 placeholder="Ketik nama kota atau kabupaten..."
-                                class="w-full px-4 py-3 text-sm rounded-lg border @error('city_id') border-red-500 ring-1 ring-red-500 bg-red-50/20 @else border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white" 
+                                class="w-full px-4 py-3 text-sm rounded-lg border @error('city_id') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
                                 autocomplete="off"
                                 id="city-search-input">
                             
@@ -274,27 +260,27 @@
 
                             <!-- Dropdown Results -->
                             @if (!empty($searchResults))
-                                <ul class="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto z-50">
+                                <ul class="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-auto z-50">
                                     @foreach ($searchResults as $c)
                                         <li wire:click="setCityId({{ $c['id'] }}, '{{ addslashes($c['name']) }}', '{{ addslashes($c['province']) }}')"
-                                            class="px-4 py-3 text-sm hover:bg-blue-50 cursor-pointer transition border-b border-gray-100 last:border-b-0 flex items-start gap-2">
+                                            class="px-4 py-3 text-sm hover:bg-blue-50 dark:hover:bg-gray-700/80 cursor-pointer transition border-b border-gray-100 dark:border-gray-700/60 last:border-b-0 flex items-start gap-2">
                                             <svg class="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                                             </svg>
                                             <div class="flex-1">
                                                 @if(!empty($c['display']))
-                                                    <div class="font-semibold text-gray-900">{{ $c['display'] }}</div>
+                                                    <div class="font-semibold text-gray-900 dark:text-white">{{ $c['display'] }}</div>
                                                 @else
-                                                    <div class="font-semibold text-gray-900">{{ $c['name'] }}</div>
-                                                    <div class="text-xs text-gray-500">{{ $c['province'] }}</div>
+                                                    <div class="font-semibold text-gray-900 dark:text-white">{{ $c['name'] }}</div>
+                                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $c['province'] }}</div>
                                                 @endif
                                             </div>
                                         </li>
                                     @endforeach
                                 </ul>
                             @elseif (empty($searchResults) && !empty($cityQuery) && strlen($cityQuery) >= 2 && empty($city_id))
-                                <div class="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50">
-                                    <div class="flex items-center gap-2 text-sm text-gray-500">
+                                <div class="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 z-50">
+                                    <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                         </svg>
@@ -306,21 +292,21 @@
                         
                         <!-- Selected City Display -->
                         @if (!empty($city_id))
-                            <div class="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-2.5 flex items-center justify-between">
+                            <div class="mt-2 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg p-2.5 flex items-center justify-between">
                                 <div class="flex items-center gap-2 text-sm">
-                                    <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                     </svg>
-                                    <span class="font-medium text-blue-900 text-xs">{{ $cityQuery }}</span>
+                                    <span class="font-medium text-blue-900 dark:text-blue-200 text-xs">{{ $cityQuery }}</span>
                                 </div>
-                                <button type="button" wire:click="clearCity" class="text-blue-600 hover:text-blue-800 text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 hover:bg-blue-200 transition cursor-pointer">
+                                <button type="button" wire:click="clearCity" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-800 transition cursor-pointer">
                                     Ganti Kota
                                 </button>
                             </div>
                         @endif
 
                         @error('city_id')
-                            <span class="field-error-message text-red-500 text-xs mt-1.5 block flex items-center font-medium">
+                            <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block flex items-center font-medium">
                                 <svg class="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                 </svg>
@@ -328,7 +314,7 @@
                             </span>
                         @enderror
                         
-                        <p class="text-xs text-gray-500 mt-1.5 flex items-center">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 flex items-center">
                             <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                             </svg>
@@ -339,7 +325,7 @@
                     <!-- Tandai Lokasi di Peta -->
                     <div id="group-map">
                         <div class="flex items-center justify-between mb-1.5 flex-wrap gap-2">
-                            <label class="block text-xs font-bold text-gray-700">
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
                                 <span class="flex items-center">
                                     <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
@@ -347,7 +333,7 @@
                                     Titik Lokasi Bantuan (Peta Realtime)
                                 </span>
                             </label>
-                            <button type="button" onclick="locateUserGPS()" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition shadow-sm active:scale-95 cursor-pointer">
+                            <button type="button" onclick="locateUserGPS()" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-800/60 transition shadow-sm active:scale-95 cursor-pointer">
                                 <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.071-7.071l-1.414 1.414M8.343 15.657l-1.414 1.414m12.728 0l-1.414-1.414M8.343 8.343L6.929 6.929M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
                                 Gunakan Lokasi GPS Saya
@@ -355,46 +341,46 @@
                         </div>
 
                         <!-- Map Container -->
-                        <div class="relative rounded-xl overflow-hidden border border-gray-300 shadow-inner bg-gray-100 mb-2">
+                        <div class="relative rounded-xl overflow-hidden border border-gray-300 dark:border-gray-700 shadow-inner bg-gray-100 dark:bg-gray-800 mb-2">
                             <div wire:ignore id="map" style="height: 280px; min-height: 280px;" class="w-full"></div>
                         </div>
 
                         <!-- Koordinat Display & Status Geocoding -->
                         <div id="coordinates-display"
-                            class="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 mb-2 hidden flex items-center justify-between flex-wrap gap-2 text-xs">
-                            <div class="flex items-center gap-1.5 text-emerald-800 font-medium">
-                                <svg class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg p-2.5 mb-2 hidden flex items-center justify-between flex-wrap gap-2 text-xs">
+                            <div class="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-medium">
+                                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                                 <span>Titik GPS: <span id="lat-display" class="font-mono font-semibold">-</span>, <span id="lng-display" class="font-mono font-semibold">-</span></span>
                             </div>
-                            <span id="gps-status-pill" class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-semibold">Tersimpan</span>
+                            <span id="gps-status-pill" class="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold">Tersimpan</span>
                         </div>
 
                         <!-- Hidden inputs for Livewire coordinates -->
                         <input type="hidden" wire:model="latitude" id="latitude-input">
                         <input type="hidden" wire:model="longitude" id="longitude-input">
 
-                        <p class="text-xs text-gray-500 mt-1 flex items-center">
-                            <svg class="w-3.5 h-3.5 mr-1 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center">
+                            <svg class="w-3.5 h-3.5 mr-1 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             Klik pada peta atau geser pin merah untuk menentukan titik lokasi bantuan.
                         </p>
 
                         @error('latitude')
-                            <span class="field-error-message text-red-500 text-xs mt-1.5 block font-medium">{{ $message }}</span>
+                            <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block font-medium">{{ $message }}</span>
                         @enderror
                     </div>
 
                     <!-- Detail Lokasi Bantuan (Otomatis dari Peta, Diposisikan Tepat di Bawah Peta) -->
                     <div id="group-location">
-                        <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                             <span class="flex items-center justify-between">
                                 <span class="flex items-center">
                                     <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
                                     </svg>
                                     Alamat / Nama Lokasi Bantuan
-                                    <span class="text-xs font-normal text-gray-400 ml-1">(Otomatis dari Peta)</span>
+                                    <span class="text-xs font-normal text-gray-400 dark:text-gray-500 ml-1">(Otomatis dari Peta)</span>
                                 </span>
-                                <span id="reverse-geocode-indicator" class="hidden text-[11px] text-blue-600 animate-pulse font-normal">
+                                <span id="reverse-geocode-indicator" class="hidden text-[11px] text-blue-600 dark:text-blue-400 animate-pulse font-normal">
                                     📍 Mendeteksi alamat...
                                 </span>
                             </span>
@@ -402,11 +388,11 @@
                         <div class="relative">
                             <input type="text" wire:model="location" id="location-input"
                                 placeholder="Alamat akan terisi otomatis saat Anda memilih titik peta..."
-                                class="w-full px-4 py-3 text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition bg-white">
+                                class="w-full px-4 py-3 text-sm rounded-lg border @error('location') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500">
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">Alamat terisi otomatis dari titik peta di atas dan dapat Anda sempurnakan jika perlu.</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Alamat terisi otomatis dari titik peta di atas dan dapat Anda sempurnakan jika perlu.</p>
                         @error('location')
-                            <span class="field-error-message text-red-500 text-xs mt-1.5 block flex items-center font-medium">
+                            <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block flex items-center font-medium">
                                 <svg class="w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                                 {{ $message }}
                             </span>
@@ -415,26 +401,26 @@
 
                     <!-- Patokan & Detail Khusus Tempat (Opsional) -->
                     <div id="group-full-address">
-                        <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                             <span class="flex items-center">
-                                <svg class="w-3.5 h-3.5 mr-1.5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                <svg class="w-3.5 h-3.5 mr-1.5 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
                                 </svg>
                                 Detail Patokan Tempat / Ciri Rumah
-                                <span class="text-gray-400 text-xs ml-1">(Opsional)</span>
+                                <span class="text-gray-400 dark:text-gray-500 text-xs ml-1">(Opsional)</span>
                             </span>
                         </label>
                         <textarea wire:model="full_address" rows="2"
                             placeholder="Contoh: Rumah pagar hitam samping warung Bu Siti, gang melati no. 4, lantai 2"
-                            class="w-full px-4 py-2.5 text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition resize-none bg-white"></textarea>
-                        <p class="text-xs text-gray-500 mt-1 flex items-center">
+                            class="w-full px-4 py-2.5 text-sm rounded-lg border @error('full_address') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"></textarea>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center">
                             <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                             </svg>
                             Tuliskan patokan spesifik atau petunjuk arah agar Rekan Jasa tidak kesulitan mencari rumah/lokasi Anda.
                         </p>
                         @error('full_address')
-                            <span class="field-error-message text-red-500 text-xs mt-1.5 block flex items-center font-medium">
+                            <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block flex items-center font-medium">
                                 <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                                 {{ $message }}
                             </span>
@@ -444,17 +430,17 @@
                     <!-- Jadwal Permintaan (Tanggal & Jam) -->
                     <div id="group-schedule">
                         <div class="flex items-center justify-between mb-1.5">
-                            <label class="block text-xs font-bold text-gray-700">
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
                                 <span class="flex items-center">
                                     <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M6 2a1 1 0 000 2h8a1 1 0 100-2H6zM4 6a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" clip-rule="evenodd" />
                                     </svg>
                                     Jadwalkan Waktu Bantuan
-                                    <span class="text-gray-400 text-xs ml-1">(Opsional)</span>
+                                    <span class="text-gray-400 dark:text-gray-500 text-xs ml-1">(Opsional)</span>
                                 </span>
                             </label>
                             @if ($scheduled_date || $scheduled_time)
-                                <button type="button" wire:click="clearSchedule" class="text-red-500 hover:text-red-700 text-xs font-semibold px-2 py-0.5 rounded bg-red-50 hover:bg-red-100 transition cursor-pointer">
+                                <button type="button" wire:click="clearSchedule" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs font-semibold px-2 py-0.5 rounded bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 transition cursor-pointer">
                                     ✕ Hapus Jadwal
                                 </button>
                             @endif
@@ -463,50 +449,50 @@
                         <div class="grid grid-cols-2 gap-2">
                             <!-- Input Tanggal -->
                             <div>
-                                <label class="block text-[11px] font-medium text-gray-500 mb-1">Tanggal</label>
+                                <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">Tanggal</label>
                                 <input type="date" wire:model.live="scheduled_date" min="{{ date('Y-m-d') }}"
-                                    class="w-full px-3 py-2.5 text-sm rounded-lg border @error('scheduled_date') border-red-500 ring-1 ring-red-500 bg-red-50/20 @else border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white">
+                                    class="w-full px-3 py-2.5 text-sm rounded-lg border @error('scheduled_date') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                                 @error('scheduled_date')
-                                    <span class="field-error-message text-red-500 text-xs mt-1 block font-medium">{{ $message }}</span>
+                                    <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1 block font-medium">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <!-- Input Jam / Waktu -->
                             <div>
-                                <label class="block text-[11px] font-medium text-gray-500 mb-1 flex items-center justify-between">
+                                <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
                                     <span>Jam / Pukul</span>
-                                    <span class="text-[10px] text-blue-600 font-semibold bg-blue-50 px-1.5 py-0.5 rounded">{{ $timezoneLabel }}</span>
+                                    <span class="text-[10px] text-blue-600 dark:text-blue-400 font-semibold bg-blue-50 dark:bg-blue-900/40 px-1.5 py-0.5 rounded">{{ $timezoneLabel }}</span>
                                 </label>
                                 <input type="time" wire:model.live="scheduled_time"
-                                    class="w-full px-3 py-2.5 text-sm rounded-lg border @error('scheduled_time') border-red-500 ring-1 ring-red-500 bg-red-50/20 @else border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white">
+                                    class="w-full px-3 py-2.5 text-sm rounded-lg border @error('scheduled_time') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                                 @error('scheduled_time')
-                                    <span class="field-error-message text-red-500 text-xs mt-1 block font-medium">{{ $message }}</span>
+                                    <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1 block font-medium">{{ $message }}</span>
                                 @enderror
                             </div>
                         </div>
 
                         <!-- Quick Schedule Presets -->
                         <div class="flex items-center gap-1.5 mt-2 overflow-x-auto pb-1 scrollbar-hide">
-                            <span class="text-[11px] font-medium text-gray-400 flex-shrink-0">Pilihan:</span>
-                            <button type="button" wire:click="setPresetSchedule('plus_2h')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                            <span class="text-[11px] font-medium text-gray-400 dark:text-gray-500 flex-shrink-0">Pilihan:</span>
+                            <button type="button" wire:click="setPresetSchedule('plus_2h')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 text-gray-600 dark:text-gray-300 transition border border-gray-200/60 dark:border-gray-700 active:scale-95 flex-shrink-0 cursor-pointer">
                                 +2 Jam Lagi
                             </button>
-                            <button type="button" wire:click="setPresetSchedule('tomorrow_morning')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                            <button type="button" wire:click="setPresetSchedule('tomorrow_morning')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 text-gray-600 dark:text-gray-300 transition border border-gray-200/60 dark:border-gray-700 active:scale-95 flex-shrink-0 cursor-pointer">
                                 Besok Pagi (08:00)
                             </button>
-                            <button type="button" wire:click="setPresetSchedule('tomorrow_afternoon')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-600 transition border border-gray-200/60 active:scale-95 flex-shrink-0 cursor-pointer">
+                            <button type="button" wire:click="setPresetSchedule('tomorrow_afternoon')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 text-gray-600 dark:text-gray-300 transition border border-gray-200/60 dark:border-gray-700 active:scale-95 flex-shrink-0 cursor-pointer">
                                 Besok Siang (13:00)
                             </button>
                         </div>
 
-                        <p class="text-xs text-gray-500 mt-1.5">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
                             Kosongkan jika butuh bantuan sekarang (langsung tayang ke Mitra). Jika diisi, bantuan akan tayang saat waktu jadwal tiba.
                         </p>
                     </div>
 
                     <!-- Description -->
                     <div id="group-description">
-                        <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                             <span class="flex items-center">
                                 <svg class="w-3.5 h-3.5 mr-1.5 text-primary-500" fill="currentColor"
                                     viewBox="0 0 20 20">
@@ -520,9 +506,9 @@
                         </label>
                         <textarea wire:model="description" id="description-input" rows="4"
                             placeholder="Jelaskan detail kebutuhan bantuan Anda secara lengkap..."
-                            class="w-full px-4 py-3 text-sm rounded-lg border @error('description') border-red-500 ring-1 ring-red-500 bg-red-50/20 @else border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition resize-none bg-white"></textarea>
+                            class="w-full px-4 py-3 text-sm rounded-lg border @error('description') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"></textarea>
                         @error('description')
-                            <span class="field-error-message text-red-500 text-xs mt-1.5 block flex items-center font-medium">
+                            <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block flex items-center font-medium">
                                 <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
                                         d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
@@ -535,21 +521,21 @@
 
                     <!-- Peralatan yang Sudah Disediakan -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                             <span class="flex items-center">
-                                <svg class="w-3.5 h-3.5 mr-1.5 text-gray-500" fill="currentColor"
+                                <svg class="w-3.5 h-3.5 mr-1.5 text-gray-500 dark:text-gray-400" fill="currentColor"
                                     viewBox="0 0 20 20">
                                     <path
                                         d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
                                 </svg>
                                 Peralatan yang Sudah Disediakan
-                                <span class="text-gray-400 text-xs ml-1">(Opsional)</span>
+                                <span class="text-gray-400 dark:text-gray-500 text-xs ml-1">(Opsional)</span>
                             </span>
                         </label>
                         <textarea wire:model="equipment_provided" rows="3"
                             placeholder="Contoh: Sudah ada gerobak dorong, ember besar 2 buah, timbangan digital"
-                            class="w-full px-4 py-3 text-sm rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition resize-none bg-white"></textarea>
-                        <p class="text-xs text-gray-500 mt-1.5 flex items-center">
+                            class="w-full px-4 py-3 text-sm rounded-lg border border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"></textarea>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 flex items-center">
                             <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd"
                                     d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
@@ -558,7 +544,7 @@
                             Tuliskan alat atau peralatan yang sudah Anda sediakan untuk membantu mitra
                         </p>
                         @error('equipment_provided')
-                            <span class="text-red-500 text-xs mt-1.5 block flex items-center">
+                            <span class="text-red-500 dark:text-red-400 text-xs mt-1.5 block flex items-center">
                                 <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
                                         d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
@@ -571,23 +557,23 @@
 
                     <!-- Photo -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                             <span class="flex items-center">
-                                <svg class="w-3.5 h-3.5 mr-1.5 text-gray-500" fill="currentColor"
+                                <svg class="w-3.5 h-3.5 mr-1.5 text-gray-500 dark:text-gray-400" fill="currentColor"
                                     viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
                                         d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
                                         clip-rule="evenodd" />
                                 </svg>
                                 Foto Pendukung
-                                <span class="text-gray-400 text-xs ml-1">(Opsional)</span>
+                                <span class="text-gray-400 dark:text-gray-500 text-xs ml-1">(Opsional)</span>
                             </span>
                         </label>
                         <div class="relative">
                             <input type="file" wire:model="photo" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" id="photo-input"
                                 class="hidden">
                             <label for="photo-input"
-                                class="flex items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 cursor-pointer transition bg-gray-50 hover:bg-blue-50 overflow-hidden relative">
+                                class="flex items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer transition bg-gray-50 dark:bg-gray-800/60 hover:bg-blue-50 dark:hover:bg-gray-700/50 overflow-hidden relative">
                                 @if ($photo)
                                     @php
                                         $canPreview = false;
@@ -602,7 +588,7 @@
                                     @else
                                         <div class="flex flex-col items-center justify-center w-full p-2 text-center">
                                             <svg class="w-6 h-6 text-gray-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                            <span class="text-xs font-semibold text-gray-700">{{ $photo->getClientOriginalName() }}</span>
+                                            <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">{{ $photo->getClientOriginalName() }}</span>
                                         </div>
                                     @endif
 
@@ -617,18 +603,18 @@
                                     </button>
                                 @else
                                     <div class="flex flex-col items-center justify-center w-full">
-                                        <svg class="w-6 h-6 text-gray-400 mb-2" fill="none" stroke="currentColor"
+                                        <svg class="w-6 h-6 text-gray-400 dark:text-gray-500 mb-2" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M12 4v16m8-8H4" />
                                         </svg>
-                                        <span class="text-sm font-medium text-gray-600">Pilih atau ambil foto</span>
-                                        <span class="text-xs text-gray-400 mt-1">Klik untuk upload gambar</span>
+                                        <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Pilih atau ambil foto</span>
+                                        <span class="text-xs text-gray-400 dark:text-gray-500 mt-1">Klik untuk upload gambar</span>
                                     </div>
                                 @endif
                             </label>
                         </div>
-                        <p class="text-xs text-gray-500 mt-1.5 flex items-center">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 flex items-center">
                             <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd"
                                     d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
@@ -637,7 +623,7 @@
                             Maksimal 2MB. Format: JPG, PNG, JPEG
                         </p>
                         @error('photo')
-                            <span class="text-red-500 text-xs mt-1.5 block flex items-center">
+                            <span class="text-red-500 dark:text-red-400 text-xs mt-1.5 block flex items-center">
                                 <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
                                         d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
@@ -646,14 +632,12 @@
                                 {{ $message }}
                             </span>
                         @enderror
-
-                        {{-- Preview is rendered inside the upload box above --}}
                     </div>
 
                     <!-- Submit Button -->
                     <div class="flex gap-3 pt-6">
                         <a href="{{ route('dashboard') }}"
-                            class="flex-1 inline-flex items-center justify-center bg-white border border-gray-300 text-gray-700 px-5 py-3 text-sm rounded-lg font-semibold hover:bg-gray-50 transition">
+                            class="flex-1 inline-flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-5 py-3 text-sm rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                             Batal
                         </a>
                         <button type="submit" wire:loading.attr="disabled"
@@ -908,29 +892,29 @@
     <div wire:loading.class.remove="hidden" wire:target="save"
         class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center pointer-events-none">
         <div
-            class="pointer-events-auto mb-6 md:mb-0 bg-white bg-opacity-95 rounded-lg px-4 py-3 flex items-center gap-3 shadow-lg">
+            class="pointer-events-auto mb-6 md:mb-0 bg-white dark:bg-gray-800 bg-opacity-95 dark:bg-opacity-95 rounded-lg px-4 py-3 flex items-center gap-3 shadow-lg border border-gray-100 dark:border-gray-700">
             <svg class="animate-spin h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none"
                 viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
                     stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
-            <div class="text-sm font-medium text-gray-800">Mengirim...</div>
+            <div class="text-sm font-medium text-gray-800 dark:text-gray-200">Mengirim...</div>
         </div>
     </div>
 
     <!-- Confirmation Modal - Bottom Sheet Style -->
     @if ($showConfirmModal)
         <div class="modal-overlay fixed inset-0 z-[9999] flex items-end justify-center animate-fade-in"
-            style="background: rgba(0,0,0,0.5);" wire:click="closeConfirmModal">
-            <div class="bg-white rounded-t-3xl w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto hide-scrollbar animate-slide-up relative"
+            style="background: rgba(0,0,0,0.6);" wire:click="closeConfirmModal">
+            <div class="bg-white dark:bg-gray-850 bg-white dark:bg-gray-800 rounded-t-3xl w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto hide-scrollbar animate-slide-up relative border-t border-gray-150 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                 wire:click.stop style="padding-bottom: env(safe-area-inset-bottom,24px);">
-                <div class="sticky top-0 bg-white border-b px-5 py-4 rounded-t-3xl z-10">
+                <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 rounded-t-3xl z-10">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-bold text-gray-900">Konfirmasi Permintaan</h3>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Konfirmasi Permintaan</h3>
                         <button type="button" wire:click="closeConfirmModal"
-                            class="p-2 hover:bg-gray-100 rounded-full transition">
-                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
+                            class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition text-gray-600 dark:text-gray-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M6 18L18 6M6 6l12 12" />
@@ -941,37 +925,19 @@
 
                 <!-- Modal Content -->
                 <div class="p-5 pb-6">
-                    <p class="text-sm text-gray-600 mb-4">Periksa ringkasan pesanan bantuan sebelum mempublikasikan.</p>
-
-                    <!-- Rincian Biaya -->
-                    <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-4 mb-4 border border-blue-100">
-                        <div class="space-y-2.5">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Nilai Tugas (Imbalan)</span>
-                                <span class="text-sm font-semibold text-gray-900">Rp
-                                    {{ number_format($confirmAmount ?? 0, 0, ',', '.') }}</span>
-                            </div>
-                            <div class="flex justify-between items-center text-xs text-emerald-700 bg-emerald-50/80 px-2.5 py-1 rounded-lg border border-emerald-200">
-                                <span class="flex items-center gap-1">
-                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                    Biaya Layanan Customer
-                                </span>
-                                <span class="font-bold">Gratis (Rp 0)</span>
-                            </div>
-                        </div>
-                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Periksa ringkasan pesanan bantuan sebelum mempublikasikan.</p>
 
                     <!-- Total -->
-                    <div class="bg-white border-2 border-blue-200 rounded-2xl p-4 mb-4">
+                    <div class="bg-white dark:bg-gray-800/90 border-2 border-blue-200 dark:border-blue-700/60 rounded-2xl p-4 mb-4">
                         <div class="flex items-center justify-between">
                             <div class="flex-1">
-                                <span class="text-xs font-semibold text-gray-600">Total Pembayaran (Escrow)</span>
-                                <div class="text-2xl font-bold text-blue-600 mt-1">Rp
+                                <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">Total Pembayaran (Escrow)</span>
+                                <div class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">Rp
                                     {{ number_format($confirmTotal ?? 0, 0, ',', '.') }}</div>
                             </div>
                             <div
-                                class="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <svg class="w-7 h-7 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                class="w-14 h-14 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center flex-shrink-0 text-blue-600 dark:text-blue-400">
+                                <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
                                     <path
                                         d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
                                     <path fill-rule="evenodd"
@@ -984,21 +950,21 @@
 
                     @if ($confirmScheduled)
                         <div class="mb-4">
-                            <div class="text-xs text-gray-600">Jadwal Permintaan</div>
-                            <div class="text-sm font-semibold">{{ $confirmScheduled }}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">Jadwal Permintaan</div>
+                            <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $confirmScheduled }}</div>
                         </div>
                     @endif
 
-                    <!-- Info Box Escrow -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5">
+                    <!-- Info Box Escrow (Alert) -->
+                    <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/80 rounded-xl p-3 mb-5">
                         <div class="flex gap-2">
-                            <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+                            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
-                            <div class="text-xs text-blue-900 leading-relaxed">
-                                <p class="font-semibold mb-0.5">Jaminan Keamanan Dana (Escrow):</p>
+                            <div class="text-xs text-blue-900 dark:text-blue-200 leading-relaxed">
+                                <p class="font-semibold mb-0.5">Jaminan Keamanan Dana :</p>
                                 Dana sebesar <strong>Rp {{ number_format($confirmTotal ?? 0, 0, ',', '.') }}</strong> akan ditahan aman oleh sistem selama tugas berlangsung. Uang baru akan diteruskan ke Rekan Jasa setelah Anda mengonfirmasi pekerjaan selesai. Jika tugas dibatalkan, dana 100% dikembalikan utuh ke saldo Anda.
                             </div>
                         </div>
@@ -1006,13 +972,13 @@
                 </div>
 
                 <!-- Sticky footer with action buttons (always visible) -->
-                <div class="sticky bottom-0 bg-white border-t px-5 py-4 z-20 flex gap-3">
+                <div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-5 py-4 z-20 flex gap-3">
                     <button wire:click="closeConfirmModal" type="button"
-                        class="flex-1 px-5 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition">
+                        class="flex-1 px-5 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-pointer">
                         Kembali
                     </button>
                     <button wire:click="save" type="button" wire:loading.attr="disabled"
-                        class="flex-1 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold hover:from-blue-600 hover:to-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="flex-1 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold hover:from-blue-600 hover:to-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                         <span wire:loading.remove wire:target="save">Konfirmasi</span>
                         <span wire:loading wire:target="save" class="flex items-center justify-center gap-2">
                             <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -1152,7 +1118,7 @@
             const pill = document.getElementById('gps-status-pill');
             if (pill) {
                 pill.textContent = 'Mencari GPS...';
-                pill.className = 'px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-semibold animate-pulse';
+                pill.className = 'px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-semibold animate-pulse';
             }
 
             navigator.geolocation.getCurrentPosition(
@@ -1180,7 +1146,7 @@
                     console.warn('GPS location error:', error.message);
                     if (pill) {
                         pill.textContent = 'Gagal Deteksi';
-                        pill.className = 'px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-semibold';
+                        pill.className = 'px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 text-[11px] font-semibold';
                     }
                 },
                 { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
@@ -1201,8 +1167,8 @@
             if (pill) {
                 pill.textContent = isGPS ? 'GPS Realtime' : 'Titik Peta';
                 pill.className = isGPS 
-                    ? 'px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-semibold'
-                    : 'px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-semibold';
+                    ? 'px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold'
+                    : 'px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-semibold';
             }
 
             // Sync to Livewire
@@ -1373,7 +1339,7 @@
             try {
                 const data = {
                     title: @this.get('title') || '',
-                    amount: @this.get('amount') || 25000,
+                    amount: @this.get('amount') || 20000,
                     city_id: @this.get('city_id') || '',
                     cityQuery: @this.get('cityQuery') || '',
                     location: @this.get('location') || '',

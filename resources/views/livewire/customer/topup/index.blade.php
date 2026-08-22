@@ -19,16 +19,16 @@
         </div>
 
         @if(session('status'))
-            <div class="mb-4 p-3 rounded-lg bg-green-50 border border-green-100 text-green-700">{{ session('status') }}
+            <div class="mb-4 p-3 rounded-xl bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-900/60 text-green-700 dark:text-green-300 text-sm flex items-center gap-2">{{ session('status') }}
             </div>
         @endif
 
         @if(session('error'))
-            <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-100 text-red-700">{{ session('error') }}
+            <div class="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-700 dark:text-red-300 text-sm flex items-center gap-2">{{ session('error') }}
             </div>
         @endif
 
-        <form wire:submit.prevent="submit" class="bg-white rounded-2xl shadow p-5">
+        <form wire:submit.prevent="submit" class="bg-white dark:bg-gray-800 rounded-2xl shadow border border-gray-100 dark:border-gray-700 p-5">
             @csrf
 
             <div class="mb-4">

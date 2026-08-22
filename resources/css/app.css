@@ -10,6 +10,25 @@
     html, body {
         max-width: 100%;
         overflow-x: clip;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    /* Disable number input spin buttons */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    input[type="number"] {
+        -moz-appearance: textfield;
     }
 
     /* Prevent transition flicker / flash on initial load & refresh */
@@ -58,6 +77,22 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
+
+    /* Scrollbar Hidden Utilities */
+    .no-scrollbar,
+    .hide-scrollbar,
+    .scrollbar-none {
+        -ms-overflow-style: none !important;
+        scrollbar-width: none !important;
+    }
+
+    .no-scrollbar::-webkit-scrollbar,
+    .hide-scrollbar::-webkit-scrollbar,
+    .scrollbar-none::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
 }
 
 @layer components {
@@ -87,40 +122,16 @@
         transform-origin: 0% 50%;
     }
 
-    /* Custom slim scrollbar for sidebar & tables */
+    /* Custom scrollbar hidden (Zero scrollbar UI, maintains scroll functionality) */
     .custom-scrollbar {
-        scrollbar-width: thin;
-        scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+        -ms-overflow-style: none !important;
+        scrollbar-width: none !important;
     }
 
     .custom-scrollbar::-webkit-scrollbar {
-        width: 5px;
-        height: 5px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(156, 163, 175, 0.4);
-        border-radius: 9999px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(156, 163, 175, 0.7);
-    }
-
-    html.dark .custom-scrollbar {
-        scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
-    }
-
-    html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(156, 163, 175, 0.3);
-    }
-
-    html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(156, 163, 175, 0.6);
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
     }
 
     /* Bottom Navigation Styles */
@@ -560,7 +571,22 @@ html.dark table thead th {
    Instant Navigation (Zero Animation / Zero Dizziness / Stable Layout)
    ========================================================================== */
 html {
-    scrollbar-gutter: stable;
+    scrollbar-gutter: auto;
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+*, *::before, *::after {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 aside,

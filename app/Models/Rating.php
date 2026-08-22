@@ -75,11 +75,24 @@ class Rating extends Model
     }
 
     // Check if user already rated this help
-    public static function hasRated($helpId, $raterId, $type)
+    public static function hasRated($helpId, $raterId = null, $type = 'customer_to_mitra')
     {
-        return self::where('help_id', $helpId)
-                   ->where('rater_id', $raterId)
-                   ->where('type', $type)
-                   ->exists();
+        $query = self::where('help_id', $helpId);
+        
+        if ($raterId) {
+            $query->where(function ($q) use ($raterId) {
+                $q->where('rater_id', $raterId)
+                  ->orWhere('user_id', $raterId);
+            });
+        }
+
+        if ($type) {
+            $query->where(function ($q) use ($type) {
+                $q->where('type', $type)
+                  ->orWhereNull('type');
+            });
+        }
+
+        return $query->exists();
     }
 }

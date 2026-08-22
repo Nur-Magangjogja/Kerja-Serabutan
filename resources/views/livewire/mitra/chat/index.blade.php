@@ -1,36 +1,35 @@
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100" wire:poll.10s.visible>
     <div class="max-w-md mx-auto">
-        <!-- Header - Modern Harmonious Gradient with Native Dark Mode -->
-        <div class="px-5 pt-5 pb-8 relative overflow-hidden bg-gradient-to-br from-sky-600 via-blue-700 to-indigo-800 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 dark:border-b dark:border-gray-800">
+        <!-- Header Section -->
+        <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
             <!-- Decorative Ambient Glows -->
-            <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 dark:bg-blue-500/10 rounded-full -mr-20 -mt-20 blur-xl"></div>
-            <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 dark:bg-indigo-500/10 rounded-full -ml-16 -mb-16 blur-lg"></div>
+            <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full -mr-12 -mt-12 blur-xl pointer-events-none"></div>
 
             <div class="relative z-10">
-                <div class="flex items-center justify-between text-white mb-3">
+                <div class="flex items-center justify-between text-white">
                     @if($selected_partner_id)
-                        <button wire:click="closeChat" aria-label="Kembali ke Daftar Percakapan" class="p-2 hover:bg-white/20 dark:hover:bg-white/10 rounded-xl transition cursor-pointer">
+                        <button wire:click="closeChat" aria-label="Kembali ke Daftar Percakapan" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                             </svg>
                         </button>
                     @else
-                        <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 dark:hover:bg-white/10 rounded-xl transition cursor-pointer">
+                        <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                             </svg>
                         </button>
                     @endif
 
-                    <div class="text-center flex-1">
-                        <h1 class="text-lg font-bold text-white">
+                    <div class="text-center flex-1 min-w-0 px-2">
+                        <h1 class="text-base font-bold text-white truncate">
                             @if($selected_partner)
                                 {{ $selected_partner->name }}
                             @else
                                 Pesan
                             @endif
                         </h1>
-                        <p class="text-xs text-white/80 dark:text-gray-300 mt-0.5">
+                        <p class="text-xs text-white/90 truncate mt-0.5">
                             @if($selected_partner)
                                 Customer
                             @else
@@ -39,17 +38,12 @@
                         </p>
                     </div>
 
-                    <div class="w-8"></div>
+                    <div class="w-9 flex-shrink-0"></div>
                 </div>
             </div>
-
-            <!-- Curved separator blending dynamically into dark mode -->
-            <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0,24 C360,60 1080,0 1440,32 L1440,60 L0,60 Z" class="fill-gray-50 dark:fill-gray-900"></path>
-            </svg>
         </div>
 
-        <div class="px-4 -mt-2 pb-24 min-h-[65vh]">
+        <div class="px-4 pt-4 pb-24 min-h-[65vh]">
             {{-- CASE 1: Daftar Percakapan (Inbox List) --}}
             @if(!$selected_partner_id)
                 <div class="space-y-3.5">
@@ -69,7 +63,7 @@
                                     class="w-full p-3.5 rounded-2xl transition-all text-left bg-white dark:bg-gray-800/90 border border-gray-100 dark:border-gray-700/80 hover:border-blue-200 dark:hover:border-blue-500/40 hover:bg-blue-50/20 dark:hover:bg-gray-750 shadow-xs hover:shadow-sm flex items-center gap-3.5 cursor-pointer">
                                     
                                     <!-- Avatar -->
-                                    <div class="w-12 h-12 rounded-2xl overflow-hidden bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-950 dark:to-teal-950 flex-shrink-0 flex items-center justify-center text-teal-700 dark:text-teal-300 font-bold text-base shadow-xs border border-emerald-200/50 dark:border-emerald-800/50">
+                                    <div class="w-12 h-12 rounded-2xl overflow-hidden bg-emerald-100 dark:bg-emerald-900/40 flex-shrink-0 flex items-center justify-center text-teal-700 dark:text-teal-300 font-bold text-base shadow-xs border border-emerald-200/50 dark:border-emerald-800/50">
                                         @if($conv->partner->selfie_photo)
                                             <img src="{{ asset('storage/' . $conv->partner->selfie_photo) }}" alt="{{ $conv->partner->name }}" class="w-full h-full object-cover">
                                         @else

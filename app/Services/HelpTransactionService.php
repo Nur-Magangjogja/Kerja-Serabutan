@@ -52,7 +52,21 @@ class HelpTransactionService
         // 1. Guard: Mitra tidak boleh mengambil tugas baru jika masih memiliki tugas aktif
         $this->assertMitraHasNoActiveTask($mitra);
 
-        // 2. Transaksi atomik dengan Pessimistic Locking
+        // 2. Guard: Batas radius jangkauan maksimal 60 km
+        $mitraLat = $lat ?? ($mitra->latitude ? (float) $mitra->latitude : null);
+        $mitraLng = $lng ?? ($mitra->longitude ? (float) $mitra->longitude : null);
+        if ($mitraLat && $mitraLng && $help->latitude && $help->longitude) {
+            $distMeters = app(LocationTrackingService::class)->calculateDistance(
+                (float) $mitraLat, (float) $mitraLng,
+                (float) $help->latitude, (float) $help->longitude
+            );
+            $distKm = $distMeters / 1000;
+            if ($distKm > 60) {
+                throw new \RuntimeException('Lokasi bantuan ini berjarak ' . round($distKm, 1) . ' km, melebihi batas radius jangkauan maksimal Mitra (60 km).');
+            }
+        }
+
+        // 3. Transaksi atomik dengan Pessimistic Locking
         DB::transaction(function () use ($help, $mitra, $lat, $lng) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
 
@@ -311,8 +325,8 @@ class HelpTransactionService
 
             $lockedHelp->update(['status' => Help::STATUS_DIBATALKAN]);
 
-            // MODEL V2: Kembalikan escrow ke customer (refund 100%)
-            if ($lockedHelp->isV2Model() && $lockedHelp->amount > 0) {
+            // Kembalikan escrow ke customer (refund 100%)
+            if ($lockedHelp->amount > 0) {
                 $this->refundFromEscrow($lockedHelp, $customer);
             }
         });
@@ -321,7 +335,7 @@ class HelpTransactionService
             $customer->id,
             $help->id,
             'help_cancelled',
-            "Customer {$customer->name} membatalkan bantuan" . ($help->isV2Model() ? " (Refund escrow Rp " . number_format($help->amount, 0, ',', '.') . " ke customer)" : "")
+            "Customer {$customer->name} membatalkan bantuan (Refund dana Rp " . number_format($help->amount, 0, ',', '.') . " ke saldo customer)"
         );
     }
 
@@ -338,18 +352,23 @@ class HelpTransactionService
             throw new \RuntimeException('Tidak ada permintaan pembatalan aktif dari Rekan Jasa.');
         }
 
-        $formerMitra = $help->mitra;
+        $mitraId = $help->mitra_id;
+        $formerMitra = $help->mitra ?: ($mitraId ? User::find($mitraId) : null);
         $penaltyFee  = 0;
 
-        DB::transaction(function () use ($help, $formerMitra, $customer, &$penaltyFee) {
+        DB::transaction(function () use ($help, &$formerMitra, $customer, &$penaltyFee) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
 
             if ($lockedHelp->status !== Help::STATUS_PARTNER_CANCEL_REQUESTED) {
                 throw new \RuntimeException('Status pesanan telah berubah atau pembatalan sudah diproses.');
             }
 
-            // MODEL V2: Kembalikan escrow ke customer DULU (100%, tanpa potongan)
-            if ($lockedHelp->isV2Model() && $lockedHelp->amount > 0) {
+            if (!$formerMitra && $lockedHelp->mitra_id) {
+                $formerMitra = User::find($lockedHelp->mitra_id);
+            }
+
+            // Kembalikan escrow ke customer DULU (100%, tanpa potongan)
+            if ($lockedHelp->amount > 0) {
                 $this->refundFromEscrow($lockedHelp, $customer);
             }
 
@@ -592,7 +611,8 @@ class HelpTransactionService
         $mitraBalance->receiveEarning(
             $netEarning,
             $help->id,
-            "Pendapatan Bantuan '{$help->title}' (Bersih {$help->getCommissionRateLabel()} komisi platform)"
+            "Pendapatan Bantuan '{$help->title}' (Bersih {$help->getCommissionRateLabel()} komisi platform)",
+            $help->order_id
         );
 
         // 2. Catat Platform Fee ke ledger (tidak masuk ke saldo user manapun — kas platform)
@@ -603,6 +623,7 @@ class HelpTransactionService
                 'type'        => 'platform_fee',
                 'description' => "Komisi Platform {$help->getCommissionRateLabel()} dari Bantuan '{$help->title}'",
                 'reference_id'=> $help->id,
+                'order_id'    => $help->order_id,
                 'status'      => 'completed',
             ]);
         }
@@ -639,7 +660,12 @@ class HelpTransactionService
             ['balance' => 0]
         );
 
-        $customerBalance->refundToCustomer($help->amount, $help->id);
+        $customerBalance->refundToCustomer(
+            $help->amount,
+            $help->id,
+            $help->order_id,
+            "Pengembalian Dana 100% (Bantuan '{$help->title}' Dibatalkan)"
+        );
 
         Log::info('[HelpTransactionService] Refund escrow (v2) ke customer', [
             'help_id'     => $help->id,
@@ -658,7 +684,7 @@ class HelpTransactionService
     {
         $penaltyFee = (float) AppSetting::get('mitra_cancel_penalty_fee', 5000);
         if ($penaltyFee <= 0) {
-            return 0;
+            $penaltyFee = 5000;
         }
 
         // Idempotency: pastikan denda hanya dikenakan 1 kali per help
@@ -692,7 +718,8 @@ class HelpTransactionService
         $userBalance->applyPenalty(
             $penaltyFee,
             "Denda Pembatalan Bantuan ('{$help->title}') → Kas Administrasi",
-            $help->id
+            $help->id,
+            $help->order_id
         );
 
         Log::info("[HelpTransactionService] Denda pembatalan Rp {$penaltyFee} (penalty) dipotong dari mitra {$mitra->id} untuk help {$help->id}");

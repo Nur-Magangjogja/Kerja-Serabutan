@@ -70,7 +70,8 @@ class History extends Component
                 'user',
                 'city',
                 'mitra',
-                'ratings' => fn($q) => $q->where('rater_id', auth()->id())->where('type', 'customer_to_mitra')
+                'rating',
+                'ratings'
             ])
             ->latest()
             ->paginate(10);

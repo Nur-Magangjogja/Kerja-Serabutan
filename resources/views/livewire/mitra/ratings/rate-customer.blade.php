@@ -171,14 +171,14 @@
     @if($showModal)
         <script>
             // Hide bottom navigation
-            document.querySelectorAll('nav.fixed.bottom-0').forEach(nav => {
+            document.querySelectorAll('#bottom-nav, .fixed.bottom-4, nav.fixed.bottom-0').forEach(nav => {
                 nav.style.display = 'none';
             });
         </script>
     @else
         <script>
             // Show bottom navigation
-            document.querySelectorAll('nav.fixed.bottom-0').forEach(nav => {
+            document.querySelectorAll('#bottom-nav, .fixed.bottom-4, nav.fixed.bottom-0').forEach(nav => {
                 nav.style.display = '';
             });
         </script>

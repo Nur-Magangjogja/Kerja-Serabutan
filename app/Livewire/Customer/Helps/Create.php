@@ -78,7 +78,7 @@ class Create extends Component
 
         // Set default nominal yang wajar
         if (empty($this->amount)) {
-            $this->amount = 25000;
+            $this->amount = (int) AppSetting::get('min_help_nominal', 20000);
         }
 
         // Biarkan kota kosong agar customer dapat memilih sendiri
@@ -477,7 +477,12 @@ class Create extends Component
                 ['user_id' => $userId],
                 ['balance' => 0]
             );
-            $escrowTx = $customerBalance->lockForEscrow($amount, $help->id);
+            $escrowTx = $customerBalance->lockForEscrow(
+                $amount,
+                $help->id,
+                $help->order_id,
+                "Dana Ditahan untuk Permintaan Bantuan ('{$help->title}')"
+            );
             $help->update(['escrow_transaction_id' => $escrowTx->id]);
         });
 

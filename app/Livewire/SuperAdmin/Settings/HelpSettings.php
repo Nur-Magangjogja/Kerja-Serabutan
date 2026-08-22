@@ -47,6 +47,33 @@ class HelpSettings extends Component
         ];
     }
 
+    protected function messages()
+    {
+        return [
+            'tier1_limit.required' => 'Batas maksimal Tier 1 tidak boleh kosong.',
+            'tier1_limit.numeric' => 'Batas maksimal Tier 1 harus berupa angka.',
+            'tier1_limit.min' => 'Batas maksimal Tier 1 minimal 0.',
+            'tier1_fee.required' => 'Biaya admin Tier 1 tidak boleh kosong.',
+            'tier1_fee.numeric' => 'Biaya admin Tier 1 harus berupa angka.',
+            'tier1_fee.min' => 'Biaya admin Tier 1 minimal 0.',
+            'tier2_limit.required' => 'Batas maksimal Tier 2 tidak boleh kosong.',
+            'tier2_limit.numeric' => 'Batas maksimal Tier 2 harus berupa angka.',
+            'tier2_limit.min' => 'Batas maksimal Tier 2 minimal 0.',
+            'tier2_fee.required' => 'Biaya admin Tier 2 tidak boleh kosong.',
+            'tier2_fee.numeric' => 'Biaya admin Tier 2 harus berupa angka.',
+            'tier2_fee.min' => 'Biaya admin Tier 2 minimal 0.',
+            'tier3_percentage.required' => 'Persentase biaya admin Tier 3 tidak boleh kosong.',
+            'tier3_percentage.numeric' => 'Persentase biaya admin Tier 3 harus berupa angka.',
+            'tier3_percentage.min' => 'Persentase biaya admin Tier 3 minimal 0%.',
+            'tier3_percentage.max' => 'Persentase biaya admin Tier 3 maksimal 100%.',
+            'tier3_max.required' => 'Biaya maksimal Tier 3 tidak boleh kosong.',
+            'tier3_max.numeric' => 'Biaya maksimal Tier 3 harus berupa angka.',
+            'tier3_max.min' => 'Biaya maksimal Tier 3 minimal 0.',
+            'min_help_nominal.required' => 'Nominal minimal bantuan tidak boleh kosong.',
+            'platform_commission_rate.required' => 'Komisi platform tidak boleh kosong.',
+        ];
+    }
+
     public function mount()
     {
         $this->min_help_nominal = (int) AppSetting::get('min_help_nominal', 20000);

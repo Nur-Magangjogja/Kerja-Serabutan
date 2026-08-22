@@ -55,27 +55,26 @@
         </div>
     </div>
 
-    {{-- Header - BRImo Style --}}
-    <div class="px-5 pt-5 pb-8 relative overflow-hidden bg-gradient-to-br from-sky-500 via-blue-600 to-blue-700 dark:from-slate-900 dark:via-blue-950 dark:to-slate-900">
-        <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20"></div>
-        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mb-16"></div>
+    {{-- Header Section --}}
+    <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+        <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
         <div class="relative z-10 max-w-md mx-auto">
-            <div class="flex items-center justify-between text-white mb-6">
+            <div class="flex items-center justify-between text-white">
                 <button onclick="window.history.back()" aria-label="Kembali"
-                    class="p-2 hover:bg-white/20 rounded-lg transition">
+                    class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
 
-                <div class="text-center flex-1 px-2">
-                    <h1 class="text-lg font-bold">Detail Pesanan</h1>
-                    <p class="text-xs text-white/90 mt-0.5">Informasi lengkap pesanan Anda</p>
+                <div class="text-center flex-1 min-w-0 px-2">
+                    <h1 class="text-base font-bold truncate">Detail Pesanan</h1>
+                    <p class="text-xs text-white/90 truncate mt-0.5">Informasi lengkap pesanan Anda</p>
                 </div>
 
-                <div class="w-9 flex items-center justify-end">
-                    <button wire:click="loadHelp" wire:loading.attr="disabled" title="Segarkan Status" class="p-2 hover:bg-white/20 rounded-lg transition cursor-pointer flex items-center justify-center">
+                <div class="w-9 flex items-center justify-end flex-shrink-0">
+                    <button wire:click="loadHelp" wire:loading.attr="disabled" title="Segarkan Status" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center">
                         <svg wire:loading.remove wire:target="loadHelp" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
@@ -87,16 +86,10 @@
                 </div>
             </div>
         </div>
-
-        <!-- Curved separator -->
-        <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 72" preserveAspectRatio="none"
-            aria-hidden="true">
-            <path d="M0,32 C360,72 1080,0 1440,40 L1440,72 L0,72 Z" class="text-gray-50 dark:text-gray-900 fill-current"></path>
-        </svg>
     </div>
 
     <!-- Content -->
-    <div class="bg-gray-50 dark:bg-gray-900 -mt-6 px-5 pt-6 pb-20 max-w-md mx-auto">
+    <div class="px-5 pt-5 pb-20 max-w-md mx-auto">
         {{-- GPS Tracker - Auto tracking untuk status aktif --}}
         @if (in_array($help->status, ['memperoleh_mitra', 'taken', 'partner_on_the_way', 'partner_arrived']))
             {{-- <div class="mb-3">
@@ -144,48 +137,58 @@
         @endif
 
         {{-- Service Info --}}
-        <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3">
-            <div class="flex items-start gap-3">
-                <div class="w-14 h-14 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center flex-shrink-0">
+        <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3">
+            {{-- Header Row: Photo & Title --}}
+            <div class="flex items-center gap-3.5 mb-3">
+                <div class="w-12 h-12 rounded-xl bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center flex-shrink-0 overflow-hidden border border-pink-200/50 dark:border-pink-800/40">
                     @if ($help->photo)
                         <img src="{{ asset('storage/' . $help->photo) }}" alt="{{ $help->title }}"
-                            class="w-full h-full object-cover rounded-lg">
+                            class="w-full h-full object-cover">
                     @else
-                        <svg class="w-7 h-7 text-pink-500" fill="currentColor" viewBox="0 0 20 20">
+                        <svg class="w-6 h-6 text-pink-500" fill="currentColor" viewBox="0 0 20 20">
                             <path
                                 d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
                         </svg>
                     @endif
                 </div>
-                <div class="flex-1">
-                    <h2 class="font-semibold text-base text-gray-900 dark:text-white">{{ $help->title }}</h2>
-                    @if($help->isV2Model())
-                        <div class="mt-2 bg-gradient-to-br from-slate-50 to-emerald-50/50 dark:from-gray-700/50 dark:to-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 rounded-xl p-3 space-y-1.5">
-                            <div class="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-                                <span>Nilai Tugas:</span>
-                                <span class="font-semibold text-gray-800 dark:text-gray-200">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
-                            </div>
-                            <div class="flex justify-between items-center text-xs text-rose-600 dark:text-rose-400">
-                                <span>Potongan Komisi ({{ $help->getCommissionRateLabel() }}):</span>
-                                <span class="font-semibold">- Rp {{ number_format($help->getPlatformFee(), 0, ',', '.') }}</span>
-                            </div>
-                            <div class="border-t border-emerald-200/60 dark:border-emerald-800/60 pt-1.5 flex justify-between items-center">
-                                <span class="text-xs font-bold text-emerald-800 dark:text-emerald-300">Pendapatan Bersih:</span>
-                                <span class="text-base font-black text-emerald-600 dark:text-emerald-400">Rp {{ number_format($help->getNetEarning(), 0, ',', '.') }}</span>
-                            </div>
-                        </div>
-                    @else
-                        <p class="text-lg font-bold text-blue-600 dark:text-blue-400 mt-2">Rp {{ number_format($help->amount, 0, ',', '.') }}</p>
-                    @endif
+                <div class="flex-1 min-w-0">
+                    <h2 class="font-bold text-base text-gray-900 dark:text-white truncate leading-snug">{{ $help->title }}</h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium truncate mt-0.5">{{ optional($help->category)->name ?? 'Bantuan Tugas' }}</p>
                 </div>
             </div>
 
-            {{-- Order ID --}}
-            <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between">
-                <span class="text-sm text-gray-600 dark:text-gray-400">ID: <span class="font-semibold text-gray-900 dark:text-white">{{ $help->order_id }}</span></span>
-                <button wire:click="copyOrderId" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 text-sm font-semibold flex items-center gap-1">
-                    Salin
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {{-- Commission & Earnings Breakdown (Full Width) --}}
+            @if($help->isV2Model())
+                <div class="bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/70 rounded-xl p-3.5 space-y-2 mb-3">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-500 dark:text-gray-400 font-medium">Nilai Tugas:</span>
+                        <span class="font-bold text-gray-900 dark:text-gray-100">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-rose-600 dark:text-rose-400 font-medium">Potongan Komisi ({{ $help->getCommissionRateLabel() }}):</span>
+                        <span class="font-semibold text-rose-600 dark:text-rose-400">- Rp {{ number_format($help->getPlatformFee(), 0, ',', '.') }}</span>
+                    </div>
+                    <div class="border-t border-gray-200 dark:border-gray-600/80 pt-2 flex justify-between items-center">
+                        <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Pendapatan Bersih:</span>
+                        <span class="text-base font-extrabold text-emerald-600 dark:text-emerald-400">Rp {{ number_format($help->getNetEarning(), 0, ',', '.') }}</span>
+                    </div>
+                </div>
+            @else
+                <div class="bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 mb-3 flex items-center justify-between">
+                    <span class="text-xs text-gray-600 dark:text-gray-400 font-medium">Nilai Tugas:</span>
+                    <span class="text-base font-bold text-blue-600 dark:text-blue-400">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
+                </div>
+            @endif
+
+            {{-- Order ID Row (Full Width & Overflow-Safe) --}}
+            <div class="pt-2.5 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                    <span class="text-xs text-gray-400 dark:text-gray-400 font-semibold shrink-0">ID:</span>
+                    <span class="font-mono font-bold text-xs sm:text-sm text-gray-800 dark:text-gray-200 truncate" title="{{ $help->order_id }}">{{ $help->order_id }}</span>
+                </div>
+                <button wire:click="copyOrderId" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 text-xs font-bold flex items-center gap-1 shrink-0 px-2.5 py-1 bg-primary-50 dark:bg-primary-950/60 hover:bg-primary-100 dark:hover:bg-primary-900/50 rounded-lg transition cursor-pointer border border-primary-100/80 dark:border-primary-900/40">
+                    <span>Salin</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                     </svg>
                 </button>
@@ -213,7 +216,7 @@
             <div class="relative pt-2 pb-1">
                 <!-- Connecting Line -->
                 <div class="absolute top-6 left-6 right-6 h-1 bg-gray-100 dark:bg-gray-700 -z-0">
-                    <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-700 rounded-full"
+                    <div class="h-full bg-blue-600 dark:bg-blue-500 transition-all duration-700 rounded-full"
                          style="width: {{ max(0, min(100, ($help->progress_step - 1) * 25)) }}%;"></div>
                 </div>
 
@@ -791,7 +794,7 @@
                  style="padding-bottom: env(safe-area-inset-bottom,24px);">
                 
                 {{-- Header --}}
-                <div class="sticky top-0 bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-4 rounded-t-3xl">
+                <div class="sticky top-0 bg-amber-600 px-5 py-4 rounded-t-3xl">
                     <div class="flex items-center justify-between text-white">
                         <h3 class="text-lg font-bold">Menunggu Konfirmasi</h3>
                         <div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
@@ -879,7 +882,7 @@
                  style="padding-bottom: env(safe-area-inset-bottom,24px);">
                 
                 {{-- Header --}}
-                <div class="sticky top-0 bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4 rounded-t-3xl">
+                <div class="sticky top-0 bg-emerald-600 px-5 py-4 rounded-t-3xl">
                     <div class="text-center text-white">
                         <div class="flex items-center justify-center gap-2">
                             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -949,7 +952,7 @@
                  style="padding-bottom: env(safe-area-inset-bottom,24px);">
                 
                 {{-- Header --}}
-                <div class="sticky top-0 bg-gradient-to-r from-rose-600 to-red-600 px-5 py-4 rounded-t-3xl">
+                <div class="sticky top-0 bg-rose-600 px-5 py-4 rounded-t-3xl">
                     <div class="text-center text-white">
                         <div class="flex items-center justify-center gap-2">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -986,7 +989,7 @@
                     {{-- Action Button --}}
                     <button wire:click="acknowledgeRejectedCancellation"
                             class="w-full px-5 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
                         Saya Mengerti, Lanjutkan Pekerjaan
@@ -1003,7 +1006,7 @@
                  @click.stop>
                 
                 {{-- Header --}}
-                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 text-white flex items-center justify-between">
+                <div class="bg-blue-600 px-6 py-5 text-white flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

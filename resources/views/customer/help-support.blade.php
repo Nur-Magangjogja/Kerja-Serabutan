@@ -1,37 +1,31 @@
 <x-app-layout>
     <x-slot name="title">Bantuan & Dukungan</x-slot>
 
-    <div class="min-h-screen bg-gray-50 pb-24">
-        <!-- BRImo Header -->
-        <div class="relative bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] pb-24 overflow-hidden">
-            <!-- Decorative Circles -->
-            <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-            <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
-            
-            <div class="relative max-w-md mx-auto px-6 pt-4 pb-6">
-                <div class="flex items-center justify-between mb-6">
-                    <a href="{{ route('profile') }}" class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 pb-24">
+        <!-- Header Section -->
+        <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+            <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
+
+            <div class="relative z-10">
+                <div class="flex items-center justify-between text-white">
+                    <a href="{{ route('profile') }}" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                         </svg>
                     </a>
-                    <div class="w-10"></div>
-                </div>
-                
-                <h1 class="text-2xl font-bold text-white mb-2">Bantuan & Dukungan</h1>
-                <p class="text-sm text-white/90">Kami siap membantu Anda</p>
-            </div>
 
-            <!-- Curved Separator -->
-            <div class="absolute bottom-0 left-0 right-0">
-                <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full">
-                    <path d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" fill="#F9FAFB"/>
-                </svg>
+                    <div class="text-center flex-1 min-w-0 px-2">
+                        <h1 class="text-base font-bold truncate">Bantuan & Dukungan</h1>
+                        <p class="text-xs text-white/90 truncate mt-0.5">Kami siap membantu Anda</p>
+                    </div>
+
+                    <div class="w-9"></div>
+                </div>
             </div>
         </div>
 
         <!-- Content -->
-        <div class="max-w-md mx-auto px-6 -mt-16 relative z-10 space-y-4">
+        <div class="px-5 pt-5 relative z-10 space-y-4">
             <!-- FAQ Section -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
                 <div class="flex items-center gap-3 mb-4">

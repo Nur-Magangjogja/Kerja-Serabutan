@@ -180,22 +180,22 @@
         @endphp
 
         <div class="max-w-md mx-auto">
-            <!-- Header - BRImo Style -->
-            <div class="px-5 pt-5 pb-28 relative overflow-hidden" style="background: linear-gradient(to bottom right, #0098e7, #0077cc, #0060b0);">
-                <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20"></div>
-                <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mb-16"></div>
+            <!-- Header Section -->
+            <div class="px-5 pt-5 pb-16 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-[2rem] shadow-sm text-white">
+                <div class="absolute top-0 right-0 w-44 h-44 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16 pointer-events-none"></div>
+                <div class="absolute bottom-0 left-0 w-36 h-36 bg-white/5 rounded-full blur-xl -ml-12 -mb-12 pointer-events-none"></div>
                 
                 <div class="relative z-10">
-                    <div class="flex items-center justify-between text-white mb-6">
-                        <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-lg transition cursor-pointer">
+                    <div class="flex items-center justify-between text-white mb-4">
+                        <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                             </svg>
                         </button>
 
-                        <h1 class="text-lg font-bold">Profil Saya</h1>
+                        <h1 class="text-base font-bold truncate px-2">Profil Saya</h1>
 
-                        <a href="{{ route('customer.notifications.index') }}" title="Notifikasi" class="p-2 hover:bg-white/20 rounded-lg transition cursor-pointer relative">
+                        <a href="{{ route('customer.notifications.index') }}" title="Notifikasi" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer relative flex-shrink-0">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                             </svg>
@@ -250,15 +250,10 @@
                         @endif
                     </div>
                 </div>
-
-                <!-- Curved separator -->
-                <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 72" preserveAspectRatio="none" aria-hidden="true">
-                    <path d="M0,32 C360,72 1080,0 1440,40 L1440,72 L0,72 Z" class="fill-gray-50 dark:fill-gray-900"></path>
-                </svg>
             </div>
 
-            <!-- Stats Card (overlapping header) -->
-            <div class="px-5 -mt-16 relative z-20">
+            <!-- Stats Card (overlapping header smoothly) -->
+            <div class="px-5 -mt-8 relative z-20">
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 stats-card">
                     <div class="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700">
                         <x-profile-stat-card :value="$completedHelps" label="Riwayat Bantuan" colorClass="text-primary-600 dark:text-primary-400" rounded="rounded-l-2xl" />
@@ -277,12 +272,6 @@
                     <x-profile-menu-item :href="route('profile.edit')" title="Edit Profil" subtitle="Ubah nama, email, & nomor kontak" iconBg="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                    </x-profile-menu-item>
-
-                    <x-profile-menu-item :href="route('customer.transactions.index')" title="Dompet & Saldo" subtitle="Riwayat transaksi, top up, & mutasi saldo" iconBg="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                         </svg>
                     </x-profile-menu-item>
 

@@ -1,29 +1,28 @@
 <div class="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
     <div class="max-w-md mx-auto">
-        <!-- Header - BRImo Style (smaller) -->
-        <div class="px-4 pt-4 pb-12 relative overflow-hidden" style="background: linear-gradient(to bottom right, #0098e7, #0077cc, #0060b0);">
-            <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16"></div>
-            <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12"></div>
+        <!-- Header Section -->
+        <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+            <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
             
-            <div class="relative z-10">
-                <div class="flex items-center justify-between text-white mb-4">
-                    <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-lg transition">
+            <div class="relative z-10 space-y-4">
+                <div class="flex items-center justify-between text-white">
+                    <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
 
-                    <h1 class="text-base font-semibold flex-1 text-center">Ulasan Saya</h1>
+                    <h1 class="text-base font-bold flex-1 text-center truncate px-2">Ulasan Saya</h1>
 
-                    <div class="w-9"></div>
+                    <div class="w-9 flex-shrink-0"></div>
                 </div>
 
                 <!-- Rating Summary Card (compact) -->
-                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
-                    <div class="flex items-center justify-center gap-1.5 mb-2">
+                <div class="bg-white/15 backdrop-blur-md rounded-2xl p-4 text-center border border-white/20 shadow-xs">
+                    <div class="flex items-center justify-center gap-1.5 mb-1.5">
                         @for($i = 1; $i <= 5; $i++)
                             @if($i <= $averageRating)
-                                <svg class="w-5 h-5 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
+                                <svg class="w-5 h-5 text-yellow-300 drop-shadow-xs" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                 </svg>
                             @else
@@ -34,21 +33,16 @@
                         @endfor
                     </div>
                     <div class="flex items-baseline justify-center gap-1.5">
-                        <span class="text-3xl font-bold text-white">{{ $averageRating }}</span>
-                        <span class="text-sm text-white/80">/5.0</span>
+                        <span class="text-3xl font-extrabold text-white">{{ $averageRating }}</span>
+                        <span class="text-xs text-white/80">/ 5.0</span>
                     </div>
-                    <p class="text-sm text-white/90 mt-1">{{ $totalRatings }} ulasan telah Anda berikan</p>
+                    <p class="text-xs text-white/90 mt-1">{{ $totalRatings }} ulasan telah Anda berikan</p>
                 </div>
             </div>
-
-            <!-- Curved separator -->
-            <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 72" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0,32 C360,72 1080,0 1440,40 L1440,72 L0,72 Z" class="fill-white dark:fill-gray-900"></path>
-            </svg>
         </div>
 
         <!-- Ratings List -->
-        <div class="bg-white dark:bg-gray-900 rounded-t-3xl -mt-6 px-5 pt-6 pb-24">
+        <div class="px-5 pt-5 pb-24">
             @if($ratings->count() > 0)
                 <div class="space-y-3">
                     @foreach($ratings as $rating)

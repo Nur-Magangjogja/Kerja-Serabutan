@@ -12,6 +12,7 @@ class RateMitra extends Component
     public $rating = 0;
     public $review = '';
     public $alreadyRated = false;
+    public $userRating = null;
 
     protected $rules = [
         'rating' => 'required|integer|min:1|max:5',
@@ -20,22 +21,32 @@ class RateMitra extends Component
 
     public function mount($helpId)
     {
-        $this->help = Help::with('mitra')->findOrFail($helpId);
+        $this->help = Help::with(['mitra', 'rating'])->findOrFail($helpId);
 
         if (!auth()->check() || !auth()->user()->isCustomer()) {
-            $this->alreadyRated = true;
             return;
         }
 
-        $this->alreadyRated = Rating::hasRated(
-            $this->help->id,
-            auth()->id(),
-            'customer_to_mitra'
-        );
+        $this->userRating = Rating::where('help_id', $this->help->id)
+            ->where(function ($q) {
+                $q->where('rater_id', auth()->id())
+                  ->orWhere('user_id', auth()->id());
+            })
+            ->first();
+
+        $this->alreadyRated = (bool) $this->userRating;
+
+        if ($this->userRating) {
+            $this->rating = (int) $this->userRating->rating;
+            $this->review = $this->userRating->review ?? '';
+        }
     }
 
     public function setRating($value)
     {
+        if ($this->alreadyRated) {
+            return;
+        }
         $this->rating = (int) $value;
     }
 
@@ -74,10 +85,12 @@ class RateMitra extends Component
             'type'     => 'customer_to_mitra',
             'rating'   => $this->rating,
             'review'   => $this->review,
-            // Legacy fields
             'user_id'  => auth()->id(),
             'mitra_id' => $this->help->mitra_id,
         ]);
+
+        $this->userRating = $ratingRecord;
+        $this->alreadyRated = true;
 
         if ($this->help->mitra) {
             try {
@@ -87,8 +100,7 @@ class RateMitra extends Component
             }
         }
 
-        $this->alreadyRated = true;
-        session()->flash('message', 'Terima kasih! Rating & ulasan Anda berhasil dikirim.');
+        session()->flash('message', 'Terima kasih! Penilaian Anda untuk mitra berhasil disimpan.');
         $this->dispatch('notify', ['type' => 'success', 'message' => 'Terima kasih, rating berhasil dikirim']);
         $this->dispatch('rating-submitted', ['helpId' => $this->help->id]);
         $this->dispatch('ratingSubmitted');
@@ -96,7 +108,9 @@ class RateMitra extends Component
 
     public function resetForm()
     {
-        $this->reset(['rating', 'review']);
+        if (!$this->alreadyRated) {
+            $this->reset(['rating', 'review']);
+        }
     }
 
     public function render()

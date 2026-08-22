@@ -251,7 +251,7 @@ class Help extends Model
         return $this->hasMany(Rating::class);
     }
 
-    /** Rating tunggal yang diberikan oleh pemilik bantuan. */
+    /** Rating & ulasan yang diberikan oleh customer kepada mitra. */
     public function rating()
     {
         return $this->hasOne(Rating::class);
@@ -388,10 +388,10 @@ class Help extends Model
             return 'Pesanan Dibatalkan';
         }
         if ($this->status === 'partner_cancel_requested') {
-            return '⚠️ Pengajuan Pembatalan';
+            return 'Pengajuan Pembatalan';
         }
         if (in_array($this->status, ['selesai', 'completed'])) {
-            return '✅ 100% Selesai';
+            return 'Pesanan Selesai';
         }
 
         $step = $this->progress_step;

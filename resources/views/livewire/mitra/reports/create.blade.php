@@ -1,52 +1,46 @@
-<div class="min-h-screen bg-gray-50">
-    <!-- Header - BRImo style -->
-    <div class="px-5 pt-5 pb-8 relative overflow-hidden" style="background: linear-gradient(to bottom right, #0098e7, #0077cc, #0060b0);">
-        <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20"></div>
-        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mb-16"></div>
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <!-- Header Section -->
+    <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+        <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
         <div class="relative z-10 max-w-md mx-auto">
-            <div class="flex items-center justify-between text-white mb-6">
-                <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-lg transition">
+            <div class="flex items-center justify-between text-white">
+                <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
 
-                <div class="text-center flex-1 px-2">
-                    <h1 class="text-lg font-bold">Buat Laporan Aduan</h1>
-                    <p class="text-xs text-white/90 mt-0.5">Laporkan masalah atau kendala yang Anda alami</p>
+                <div class="text-center flex-1 min-w-0 px-2">
+                    <h1 class="text-base font-bold truncate">Buat Laporan Aduan</h1>
+                    <p class="text-xs text-white/90 truncate mt-0.5">Laporkan masalah atau kendala yang Anda alami</p>
                 </div>
 
-                <div class="w-9"></div>
+                <div class="w-9 flex-shrink-0"></div>
             </div>
         </div>
-
-        <!-- Curved separator -->
-        <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 72" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M0,32 C360,72 1080,0 1440,40 L1440,72 L0,72 Z" fill="#f9fafb"></path>
-        </svg>
     </div>
 
     <!-- Content container -->
-    <div class="bg-gray-50 -mt-6 px-5 pt-6 pb-8 max-w-md mx-auto">
+    <div class="px-5 pt-5 pb-8 max-w-md mx-auto">
         <div class="max-w-md mx-auto">
             @if (session('message'))
-                <div class="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 rounded-xl shadow-sm">
+                <div class="mb-6 p-4 bg-green-50 dark:bg-green-950/40 border-l-4 border-green-500 rounded-xl shadow-sm">
                     <div class="flex items-start gap-3">
-                        <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <svg class="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                         </svg>
-                        <p class="text-sm font-medium text-green-800">{{ session('message') }}</p>
+                        <p class="text-sm font-medium text-green-800 dark:text-green-200">{{ session('message') }}</p>
                     </div>
                 </div>
             @endif
 
             <!-- Form Card -->
-            <form wire:submit.prevent="submit" class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+            <form wire:submit.prevent="submit" class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <!-- Form Header -->
-            <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="bg-gray-50 dark:bg-gray-750 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     Informasi Laporan
@@ -235,16 +229,16 @@
                 </div>
 
                 <!-- Info Box -->
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
                     <div class="flex items-start gap-3">
-                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                             </svg>
                         </div>
                         <div>
-                            <h4 class="text-sm font-semibold text-blue-900 mb-1">Tips Laporan yang Baik</h4>
-                            <ul class="text-xs text-blue-700 space-y-1">
+                            <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-1">Tips Laporan yang Baik</h4>
+                            <ul class="text-xs text-blue-700 dark:text-blue-300 space-y-1">
                                 <li class="flex items-start gap-2">
                                     <span class="text-blue-500 mt-0.5">•</span>
                                     <span>Berikan informasi selengkap mungkin</span>
@@ -264,17 +258,17 @@
             </div>
 
             <!-- Form Footer / Action Buttons -->
-            <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <div class="bg-gray-50 dark:bg-gray-750 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between gap-4">
                     <a href="{{ route('mitra.dashboard') }}"
-                        class="inline-flex items-center justify-center px-6 py-3 bg-white border border-gray-300 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors">
+                        class="inline-flex items-center justify-center px-6 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
                         Batal
                     </a>
                     <button type="submit"
-                        class="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all transform hover:-translate-y-0.5">
+                        class="inline-flex items-center justify-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all cursor-pointer">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                         </svg>

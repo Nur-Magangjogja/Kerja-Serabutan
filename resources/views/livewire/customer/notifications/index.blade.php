@@ -1,24 +1,23 @@
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
     <div class="max-w-md mx-auto">
-        <!-- Top Header Gradient (BRImo style) -->
-        <div class="px-5 pt-5 pb-10 relative overflow-hidden" style="background: linear-gradient(135deg, #0098e7 0%, #0077cc 50%, #005599 100%);">
-            <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full -mr-16 -mt-16 blur-lg"></div>
-            <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12 blur-md"></div>
+        <!-- Header Section -->
+        <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+            <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
             <div class="relative z-10">
-                <div class="flex items-center justify-between text-white mb-2">
-                    <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer">
+                <div class="flex items-center justify-between text-white">
+                    <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
 
-                    <div class="text-center flex-1">
-                        <h1 class="text-lg font-bold">Notifikasi</h1>
-                        <p class="text-xs text-white/80 mt-0.5">{{ $totalCount }} Pesan Masuk</p>
+                    <div class="text-center flex-1 min-w-0 px-2">
+                        <h1 class="text-base font-bold truncate">Notifikasi</h1>
+                        <p class="text-xs text-white/90 truncate mt-0.5">{{ $totalCount }} Pesan Masuk</p>
                     </div>
 
-                    <a href="{{ route('profile.settings.notifications') }}" title="Pengaturan Notifikasi" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer">
+                    <a href="{{ route('profile.settings.notifications') }}" title="Pengaturan Notifikasi" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -26,15 +25,10 @@
                     </a>
                 </div>
             </div>
-
-            <!-- Curved separator -->
-            <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 48" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0,20 C360,48 1080,0 1440,24 L1440,48 L0,48 Z" class="fill-gray-50 dark:fill-gray-900"></path>
-            </svg>
         </div>
 
         <!-- Main Content -->
-        <div class="px-4 -mt-2">
+        <div class="px-4 pt-4">
             <!-- Flash Message Banner -->
             @if(session()->has('message'))
                 <div class="mb-3 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">

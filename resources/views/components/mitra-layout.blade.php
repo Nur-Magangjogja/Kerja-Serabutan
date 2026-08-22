@@ -51,54 +51,56 @@
             <!-- Content -->
             <div class="flex flex-col min-h-screen">
                 <!-- Main Content -->
-                <div class="flex-1 pb-20">
+                <div class="flex-1 pb-24">
                     {{ $slot }}
                 </div>
 
-                <!-- Bottom Navigation Bar -->
-                <nav id="bottom-nav" class="fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-2xl z-50">
-                    <div class="flex items-center justify-around px-2 py-2">
-                        <a href="{{ route('mitra.dashboard') }}"
-                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.dashboard') && !request()->has('tab') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-                            </svg>
-                            <span class="nav-label text-xs font-bold mt-0.5">Beranda</span>
-                        </a>
+                <!-- Floating Glassmorphism Bottom Navigation Bar -->
+                <div class="fixed bottom-4 inset-x-0 mx-auto w-full max-w-md px-3 sm:px-4 z-50 pointer-events-none">
+                    <nav id="bottom-nav" class="pointer-events-auto bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/60 dark:border-gray-700/60 shadow-xl shadow-gray-900/10 dark:shadow-black/50 px-2 py-1.5 transition-all">
+                        <div class="flex items-center justify-around">
+                            <a href="{{ route('mitra.dashboard') }}"
+                                class="nav-item flex flex-col items-center py-1.5 px-3 rounded-2xl transition {{ request()->routeIs('mitra.dashboard') && !request()->has('tab') ? 'text-primary-600 dark:text-primary-400 font-bold active' : 'text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400' }}">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                                </svg>
+                                <span class="nav-label text-[11px] font-semibold mt-0.5">Beranda</span>
+                            </a>
 
-                        <a href="{{ route('mitra.helps.all') }}"
-                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.helps.all') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
-                            </svg>
-                            <span class="nav-label text-xs font-bold mt-0.5">Bantuan</span>
-                        </a>
+                            <a href="{{ route('mitra.helps.all') }}"
+                                class="nav-item flex flex-col items-center py-1.5 px-3 rounded-2xl transition {{ request()->routeIs('mitra.helps.all') ? 'text-primary-600 dark:text-primary-400 font-bold active' : 'text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400' }}">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+                                </svg>
+                                <span class="nav-label text-[11px] font-semibold mt-0.5">Bantuan</span>
+                            </a>
 
-                        <a href="{{ route('mitra.helps.processing') }}"
-                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.helps.processing') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z" />
-                            </svg>
-                            <span class="nav-label text-xs font-bold mt-0.5">Diproses</span>
-                        </a>
+                            <a href="{{ route('mitra.helps.processing') }}"
+                                class="nav-item flex flex-col items-center py-1.5 px-3 rounded-2xl transition {{ request()->routeIs('mitra.helps.processing') ? 'text-primary-600 dark:text-primary-400 font-bold active' : 'text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400' }}">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z" />
+                                </svg>
+                                <span class="nav-label text-[11px] font-semibold mt-0.5">Diproses</span>
+                            </a>
 
-                        <a href="{{ route('mitra.helps.completed') }}"
-                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.helps.completed') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M3 3h18v2H3V3zm0 4h18v14H3V7zm5 3v8h2v-8H8zm4 0v8h2v-8h-2z" />
-                            </svg>
-                            <span class="nav-label text-xs font-bold mt-0.5">Riwayat</span>
-                        </a>
+                            <a href="{{ route('mitra.helps.completed') }}"
+                                class="nav-item flex flex-col items-center py-1.5 px-3 rounded-2xl transition {{ request()->routeIs('mitra.helps.completed') ? 'text-primary-600 dark:text-primary-400 font-bold active' : 'text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400' }}">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 3h18v2H3V3zm0 4h18v14H3V7zm5 3v8h2v-8H8zm4 0v8h2v-8h-2z" />
+                                </svg>
+                                <span class="nav-label text-[11px] font-semibold mt-0.5">Riwayat</span>
+                            </a>
 
-                        <a href="{{ route('mitra.profile') }}"
-                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('mitra.profile*') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
-                            </svg>
-                            <span class="nav-label text-xs font-bold mt-0.5">Profil</span>
-                        </a>
-                    </div>
-                </nav>
+                            <a href="{{ route('mitra.profile') }}"
+                                class="nav-item flex flex-col items-center py-1.5 px-3 rounded-2xl transition {{ request()->routeIs('mitra.profile*') ? 'text-primary-600 dark:text-primary-400 font-bold active' : 'text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400' }}">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
+                                </svg>
+                                <span class="nav-label text-[11px] font-semibold mt-0.5">Profil</span>
+                            </a>
+                        </div>
+                    </nav>
+                </div>
             </div>
         </div>
     </div>
@@ -122,7 +124,7 @@
 
     <script>
         // Utility to show a temporary clickable toast in the mitra header area.
-        function showMitraNotification({ title = 'Notifikasi', message = '', url = '#' , timeout = 4000 }) {
+        function showMitraNotification({ title = 'Notifikasi', message = '', url = '#' , timeout = 4000, type = 'success' }) {
             try {
                 const container = document.getElementById('mitra-global-notification-inner');
                 if (!container) return;
@@ -131,22 +133,23 @@
                 container.innerHTML = '';
 
                 const wrap = document.createElement('div');
-                wrap.className = 'bg-white rounded-xl shadow-lg border border-gray-100 p-3 flex items-start gap-3 max-w-md mx-3 pointer-events-auto transition transform duration-300';
-                wrap.style.boxShadow = '0 6px 20px rgba(0,0,0,0.08)';
+                wrap.className = 'bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-3 max-w-md mx-3 pointer-events-auto transition transform duration-300';
+                wrap.style.boxShadow = '0 10px 30px rgba(2,6,23,0.08)';
 
-                const icon = document.createElement('div');
-                icon.className = 'w-10 h-10 rounded-lg flex items-center justify-center bg-blue-50 text-blue-600 flex-shrink-0';
-                icon.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341"/></svg>';
-
+                // Text-only body (matching customer notification style)
                 const body = document.createElement('div');
-                body.className = 'flex-1 min-w-0';
-                body.innerHTML = `<div class="text-sm font-semibold text-gray-900">${escapeHtml(title)}</div><div class="text-xs text-gray-600 mt-0.5">${escapeHtml(message)}</div>`;
+                body.className = 'min-w-0';
+                const titleEl = document.createElement('div');
+                titleEl.className = 'text-sm font-semibold text-gray-900 dark:text-white';
+                titleEl.innerText = String(title || 'Notifikasi');
 
-                const link = document.createElement('a');
-                link.href = url || '#';
-                link.className = 'contents';
-                // Wrap clickable area
-                wrap.appendChild(icon);
+                const msgEl = document.createElement('div');
+                msgEl.className = 'text-xs text-gray-600 dark:text-gray-300 mt-0.5';
+                msgEl.innerText = String(message || '');
+
+                body.appendChild(titleEl);
+                if ((message || '').toString().trim() !== '') body.appendChild(msgEl);
+
                 wrap.appendChild(body);
 
                 // When clicked, navigate to target and clear toast
@@ -161,9 +164,10 @@
                 container.appendChild(wrap);
 
                 // auto-hide
+                const effectiveTimeout = (type === 'error' || type === 'warning' || type === 'danger') ? Math.max(timeout, 8000) : timeout;
                 setTimeout(() => {
                     container.innerHTML = '';
-                }, timeout);
+                }, effectiveTimeout);
             } catch (err) {
                 console.error('showMitraNotification error', err);
             }

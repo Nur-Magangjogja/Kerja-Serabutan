@@ -334,6 +334,18 @@
             </div>
 
             <div class="p-4 sm:p-8 space-y-6">
+                @if ($errors->hasAny(['tier1_limit', 'tier1_fee', 'tier2_limit', 'tier2_fee', 'tier3_percentage', 'tier3_max']))
+                    <div class="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl text-red-700 dark:text-red-300 text-sm flex items-start gap-3 shadow-xs">
+                        <svg class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        <div>
+                            <p class="font-bold text-red-900 dark:text-red-100">Perhatian: Ada kolom konfigurasi biaya yang kosong atau tidak valid!</p>
+                            <p class="text-xs text-red-700 dark:text-red-300 mt-0.5">Silakan periksa kolom dengan garis merah di bawah dan pastikan semua kolom telah diisi angka yang sesuai.</p>
+                        </div>
+                    </div>
+                @endif
+
                 <!-- Tier 1 Settings -->
                 <div class="border border-gray-200 dark:border-gray-700 rounded-2xl p-4 sm:p-6 bg-gray-50/80 dark:bg-gray-900/50">
                     <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2.5">
@@ -342,11 +354,11 @@
                     </h3>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Batas Maksimal Tier 1 (Rp)</label>
-                            <input type="number" wire:model.defer="tier1_limit" placeholder="50000"
-                                class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" />
+                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Batas Maksimal Tier 1 (Rp) <span class="text-red-500">*</span></label>
+                            <input type="number" wire:model.defer="tier1_limit" 
+                                class="w-full px-4 py-3 bg-white dark:bg-gray-800 border @error('tier1_limit') border-red-500 focus:ring-red-500 focus:border-red-500 @else border-gray-300 dark:border-gray-700 focus:ring-primary-500 focus:border-primary-500 @enderror rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 transition-all" />
                             @error('tier1_limit')
-                                <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs">
+                                <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs font-medium">
                                     <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                     </svg>
@@ -357,18 +369,18 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Biaya Admin Tier 1 (Rp)</label>
-                            <input type="number" wire:model.defer="tier1_fee" placeholder="5000"
-                                class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" />
+                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Biaya Admin Tier 1 (Rp) <span class="text-red-500">*</span></label>
+                            <input type="number" wire:model.defer="tier1_fee" 
+                                class="w-full px-4 py-3 bg-white dark:bg-gray-800 border @error('tier1_fee') border-red-500 focus:ring-red-500 focus:border-red-500 @else border-gray-300 dark:border-gray-700 focus:ring-primary-500 focus:border-primary-500 @enderror rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 transition-all" />
                             @error('tier1_fee')
-                                <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs">
+                                <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs font-medium">
                                     <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                     </svg>
                                     {{ $message }}
                                 </div>
                             @enderror
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Biaya tetap untuk nominal di bawah Rp {{ number_format($tier1_limit ?? 50000, 0, ',', '.') }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Biaya tetap untuk nominal di bawah Rp {{ number_format(is_numeric($tier1_limit) ? (float)$tier1_limit : 50000, 0, ',', '.') }}</p>
                         </div>
                     </div>
                 </div>
@@ -381,11 +393,11 @@
                     </h3>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Batas Maksimal Tier 2 (Rp)</label>
-                            <input type="number" wire:model.defer="tier2_limit" placeholder="100000"
-                                class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" />
+                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Batas Maksimal Tier 2 (Rp) <span class="text-red-500">*</span></label>
+                            <input type="number" wire:model.defer="tier2_limit"
+                                class="w-full px-4 py-3 bg-white dark:bg-gray-800 border @error('tier2_limit') border-red-500 focus:ring-red-500 focus:border-red-500 @else border-gray-300 dark:border-gray-700 focus:ring-primary-500 focus:border-primary-500 @enderror rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 transition-all" />
                             @error('tier2_limit')
-                                <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs">
+                                <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs font-medium">
                                     <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                     </svg>
@@ -396,18 +408,18 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Biaya Admin Tier 2 (Rp)</label>
-                            <input type="number" wire:model.defer="tier2_fee" placeholder="7500"
-                                class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" />
+                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Biaya Admin Tier 2 (Rp) <span class="text-red-500">*</span></label>
+                            <input type="number" wire:model.defer="tier2_fee" 
+                                class="w-full px-4 py-3 bg-white dark:bg-gray-800 border @error('tier2_fee') border-red-500 focus:ring-red-500 focus:border-red-500 @else border-gray-300 dark:border-gray-700 focus:ring-primary-500 focus:border-primary-500 @enderror rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 transition-all" />
                             @error('tier2_fee')
-                                <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs">
+                                <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs font-medium">
                                     <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                     </svg>
                                     {{ $message }}
                                 </div>
                             @enderror
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Biaya tetap untuk nominal Rp {{ number_format($tier1_limit ?? 50000, 0, ',', '.') }} - Rp {{ number_format($tier2_limit ?? 100000, 0, ',', '.') }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Biaya tetap untuk nominal Rp {{ number_format(is_numeric($tier1_limit) ? (float)$tier1_limit : 50000, 0, ',', '.') }} - Rp {{ number_format(is_numeric($tier2_limit) ? (float)$tier2_limit : 100000, 0, ',', '.') }}</p>
                         </div>
                     </div>
                 </div>
@@ -420,26 +432,26 @@
                     </h3>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Persentase Biaya Admin (%)</label>
+                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Persentase Biaya Admin (%) <span class="text-red-500">*</span></label>
                             <input type="number" step="0.01" wire:model.defer="tier3_percentage" placeholder="3"
-                                class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" />
+                                class="w-full px-4 py-3 bg-white dark:bg-gray-800 border @error('tier3_percentage') border-red-500 focus:ring-red-500 focus:border-red-500 @else border-gray-300 dark:border-gray-700 focus:ring-primary-500 focus:border-primary-500 @enderror rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 transition-all" />
                             @error('tier3_percentage')
-                                <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs">
+                                <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs font-medium">
                                     <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                     </svg>
                                     {{ $message }}
                                 </div>
                             @enderror
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Persentase dari nominal top-up (untuk nominal ≥ Rp {{ number_format($tier2_limit ?? 100000, 0, ',', '.') }})</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Persentase dari nominal top-up (untuk nominal ≥ Rp {{ number_format(is_numeric($tier2_limit) ? (float)$tier2_limit : 100000, 0, ',', '.') }})</p>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Biaya Maksimal Tier 3 (Rp)</label>
+                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Biaya Maksimal Tier 3 (Rp) <span class="text-red-500">*</span></label>
                             <input type="number" wire:model.defer="tier3_max" placeholder="15000"
-                                class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" />
+                                class="w-full px-4 py-3 bg-white dark:bg-gray-800 border @error('tier3_max') border-red-500 focus:ring-red-500 focus:border-red-500 @else border-gray-300 dark:border-gray-700 focus:ring-primary-500 focus:border-primary-500 @enderror rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 transition-all" />
                             @error('tier3_max')
-                                <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs">
+                                <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs font-medium">
                                     <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                     </svg>

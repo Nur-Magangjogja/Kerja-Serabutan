@@ -84,26 +84,25 @@
         </div>
     </div>
 
-    {{-- Header - match other customer pages (gradient BRImo style) --}}
-    <div class="px-5 pt-5 pb-8 relative overflow-hidden bg-gradient-to-br from-sky-500 via-blue-600 to-blue-700 dark:from-slate-900 dark:via-blue-950 dark:to-slate-900">
-        <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20"></div>
-        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mb-16"></div>
+    {{-- Header Section --}}
+    <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+        <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
         <div class="relative z-10 max-w-md mx-auto">
-            <div class="flex items-center justify-between text-white mb-6">
-                <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-lg transition">
+            <div class="flex items-center justify-between text-white">
+                <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
 
-                <div class="text-center flex-1 px-2">
-                    <h1 class="text-lg font-bold">Detail Pesanan</h1>
-                    <p class="text-xs text-white/90 mt-0.5">Detail permintaan bantuan Anda</p>
+                <div class="text-center flex-1 min-w-0 px-2">
+                    <h1 class="text-base font-bold truncate">Detail Pesanan</h1>
+                    <p class="text-xs text-white/90 truncate mt-0.5">Detail permintaan bantuan Anda</p>
                 </div>
 
-                <div class="w-9 flex items-center justify-end">
-                    <button wire:click="loadHelp" wire:loading.attr="disabled" title="Segarkan Status" class="p-2 hover:bg-white/20 rounded-lg transition cursor-pointer flex items-center justify-center">
+                <div class="w-9 flex items-center justify-end flex-shrink-0">
+                    <button wire:click="loadHelp" wire:loading.attr="disabled" title="Segarkan Status" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center">
                         <svg wire:loading.remove wire:target="loadHelp" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
@@ -115,15 +114,10 @@
                 </div>
             </div>
         </div>        
-
-            <!-- Curved separator (SVG) to create non-flat divider into content -->
-            <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 72" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0,32 C360,72 1080,0 1440,40 L1440,72 L0,72 Z" class="text-white dark:text-gray-900 fill-current"></path>
-            </svg>
     </div>
 
     <!-- Content -->
-    <div class="bg-white dark:bg-gray-900 rounded-t-3xl -mt-6 px-5 pt-6 pb-8 max-w-md mx-auto">
+    <div class="px-5 pt-5 pb-8 max-w-md mx-auto">
         {{-- Order ID --}}
         <div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
             <span class="text-sm text-gray-600 dark:text-gray-400">ID Pesanan: <span class="font-semibold text-gray-900 dark:text-white">{{ $help->order_id }}</span></span>
@@ -481,8 +475,10 @@
         @if(in_array($help->status, ['selesai', 'completed']))
             @php
                 $customerRating = \App\Models\Rating::where('help_id', $help->id)
-                    ->where('rater_id', auth()->id())
-                    ->where('type', 'customer_to_mitra')
+                    ->where(function ($q) {
+                        $q->where('rater_id', auth()->id())
+                          ->orWhere('user_id', auth()->id());
+                    })
                     ->first();
             @endphp
 

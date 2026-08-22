@@ -38,160 +38,159 @@
         }
     </style>
 
-    <!-- Header Section - BRImo Style -->
-    <div class="px-5 pt-5 pb-20 relative overflow-hidden header-pattern" style="background: linear-gradient(to bottom right, #0098e7, #0077cc, #0060b0);">
-        <!-- Decorative circles (like BRImo) -->
-        <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20"></div>
-        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mb-16"></div>
+    <!-- Header Section -->
+    <div class="px-5 pt-5 pb-16 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-[2rem] shadow-sm text-white">
+        <!-- Decorative ambient circles -->
+        <div class="absolute top-0 right-0 w-44 h-44 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16 pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 w-36 h-36 bg-white/5 rounded-full blur-xl -ml-12 -mb-12 pointer-events-none"></div>
         
-        <div class="relative z-10">
+        <div class="relative z-10 space-y-4">
             <!-- Top Bar -->
-            <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     @php
                         $__avatar = optional(auth()->user())->selfie_photo ?? optional(auth()->user())->photo ?? optional(auth()->user())->profile_photo_path ?? null;
                     @endphp
-                    <div class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden ring-2 ring-white/30">
+                    <div class="w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden ring-2 ring-white/40 shadow-xs flex-shrink-0">
                         <img src="{{ $__avatar ? asset('storage/' . $__avatar) : asset('images/avatar-placeholder.svg') }}" alt="Avatar" class="w-full h-full object-cover">
                     </div>
                     <div>
-                        <p class="text-xs text-white/80">Selamat datang</p>
-                        <h1 class="text-sm font-bold text-white">{{ optional(auth()->user())->name ?? 'Mitra' }}</h1>
+                        <p class="text-xs text-white/80 font-medium">Selamat datang,</p>
+                        <h1 class="text-sm sm:text-base font-bold text-white leading-tight">{{ optional(auth()->user())->name ?? 'Mitra' }}</h1>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-2">
-                    @include('components.notification-icon', ['route' => route('mitra.notifications.index'), 'class' => 'bg-white/10 backdrop-blur-sm p-2 rounded-lg hover:bg-white/20 transition'])
+                    @include('components.notification-icon', ['route' => route('mitra.notifications.index'), 'class' => 'bg-white/15 backdrop-blur-md p-2.5 rounded-xl hover:bg-white/25 transition shadow-xs cursor-pointer text-white'])
                 </div>
             </div>
 
-            <!-- Header Content - Info Section -->
-            <div class="mt-4 mb-2">
-                <h2 class="text-white text-lg font-bold mb-1">Dashboard Mitra</h2>
-                <p class="text-white/80 text-sm leading-relaxed">Kelola pekerjaan bantuan dan pendapatan Anda dengan mudah</p>
-                
-                <!-- Quick Stats -->
-                {{-- <div class="flex items-center gap-4 mt-4">
-                    <div class="flex items-center gap-2 text-white/90">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
-                        </svg>
-                        <span class="text-xs font-medium">{{ $availableHelpsCount }} Tersedia</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-white/90">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
-                        </svg>
-                        <span class="text-xs font-medium">Saldo Aktif</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-white/90">
-                        <a href="{{ route('mitra.chat') }}" class="inline-flex items-center gap-2 text-white/90 hover:text-white/100">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-5 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-1l-4 4z" />
-                            </svg>
-                            <span class="text-xs font-medium">Chat</span>
-                        </a>
-                    </div>
-                </div> --}}
-            </div>
-        </div>
-    </div>
-    <br>
-
-    <!-- Small account info bar placed above the balance card (over header) -->
-    <div class="px-5 -mt-10 relative z-20">
-        <div class="max-w-full">
-            <div class="inline-flex items-center gap-3 bg-white/10 backdrop-hblur-sm text-white text-sm px-3 py-1 rounded-full shadow-sm">
-                <svg class="w-4 h-4 text-white/90" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 00-6-6z"/></svg>
-                <span>{{ optional(optional(auth()->user())->city)->name ?? (auth()->user()->city ?? '-') }}</span>
-                <span class="opacity-60">•</span>
-                <span>Member sejak {{ optional(auth()->user())->created_at ? optional(auth()->user())->created_at->format('M Y') : '-' }}</span>
+            <!-- Account Meta Badge -->
+            <div class="pt-0.5">
+                <div class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md text-white text-xs px-3.5 py-1.5 rounded-full font-medium shadow-xs border border-white/20">
+                    <svg class="w-3.5 h-3.5 text-white/90" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 00-6-6z"/></svg>
+                    <span>{{ optional(optional(auth()->user())->city)->name ?? (auth()->user()->city ?? '-') }}</span>
+                    <span class="opacity-60">•</span>
+                    <span>Member sejak {{ optional(auth()->user())->created_at ? optional(auth()->user())->created_at->format('M Y') : '-' }}</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Balance Card - BRImo Style (overlapping header) -->
-    <div class="px-5 -mt-20 relative z-20">
-        <div class="bg-white rounded-2xl p-4 shadow-xl">
-            <div class="flex items-start justify-between mb-2">
-                <div class="flex-1">
-                    <p class="text-xs text-gray-500 mb-1">Total Saldo</p>
-                    
+    <!-- Balance Card (Smooth Controlled Overlap) -->
+    <div class="px-5 -mt-8 relative z-20">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 shadow-md border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div
+                    class="flex-1"
+                    x-data="{
+                        show: sessionStorage.getItem('mitra_balance_visible') === 'true',
 
-                    <div class="flex items-center gap-2" x-data="{ show: false }">
-                        <h2 class="text-2xl font-bold text-gray-900" x-show="show">
+                        toggleBalance() {
+                            this.show = !this.show;
+
+                            sessionStorage.setItem(
+                                'mitra_balance_visible',
+                                this.show ? 'true' : 'false'
+                            );
+                        }
+                    }"
+                >
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Saldo</p>
+
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100" x-show="show" x-cloak>
                             Rp {{ number_format($balance ?? 0, 0, ',', '.') }}
                         </h2>
-                        <h2 class="text-2xl font-bold text-gray-900" x-show="!show">Rp ••••••</h2>
-                        <button @click="show = !show" class="p-1.5 hover:bg-gray-100 rounded-lg transition">
-                            <svg class="w-4 h-4 text-gray-500" x-show="!show" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100" x-show="!show" x-cloak>Rp ••••••</h2>
+                        <button type="button" @click="toggleBalance()" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition cursor-pointer text-gray-500 dark:text-gray-400" aria-label="Tampilkan atau sembunyikan saldo">
+                            <svg x-show="!show" x-cloak class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
-                            <svg class="w-4 h-4 text-gray-500" x-show="show" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg x-show="show" x-cloak class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                             </svg>
                         </button>
                     </div>
                 </div>
-                <a href="{{ route('mitra.withdraw.form') }}" class="text-white px-4 py-2 rounded-lg text-xs font-semibold transition shadow-md" style="background: #0098e7;">
-                    Tarik Saldo
-                </a>
-            </div>
-
-            <!-- Quick Actions Row -->
-            <div class="border-t pt-3 mt-3">
-                <div class="flex items-center justify-between gap-2">
-                    <a href="{{ route('mitra.helps.all') }}" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-gray-50 transition">
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(0, 152, 231, 0.1);">
-                            <svg class="w-5 h-5" style="color: #0098e7;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-                        <span class="text-[10px] font-medium text-gray-700 text-center">Cari</span>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <a
+                        href="{{ route('mitra.transactions.index') }}"
+                        class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border border-gray-200/60 dark:border-gray-600/60"
+                        title="Riwayat Mutasi Saldo"
+                    >
+                        <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                        <span>Mutasi</span>
                     </a>
-                    
-                    <a href="{{ route('mitra.helps.processing') }}" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-gray-50 transition">
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(0, 152, 231, 0.1);">
-                            <svg class="w-5 h-5" style="color: #0098e7;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </div>
-                        <span class="text-[10px] font-medium text-gray-700 text-center">Pekerjaan</span>
-                    </a>
-
-                    <a href="{{ route('mitra.withdraw.history') }}" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-gray-50 transition">
-                        <div class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                        </div>
-                        <span class="text-[10px] font-medium text-gray-700 text-center">Riwayat</span>
-                    </a>
-
-                    {{-- Profil quick-action removed per request --}}
-                    <a href="{{ route('mitra.chat') }}" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-gray-50 transition">
-                        <div class="relative">
-                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(0, 152, 231, 0.1);">
-                                <svg class="w-5 h-5" style="color: #0098e7;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-5 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-1l-4 4z" />
-                                </svg>
-                            </div>
-                            @if(!empty($unreadChatCount) && $unreadChatCount > 0)
-                                <span class="absolute -top-1 -right-2 inline-flex items-center justify-center text-[10px] font-semibold bg-red-500 text-white rounded-full px-1.5 py-0.5 shadow">{{ $unreadChatCount > 99 ? '99+' : $unreadChatCount }}</span>
-                            @endif
-                        </div>
-                        <span class="text-[10px] font-medium text-gray-700 text-center">Chat</span>
+                    <a
+                        href="{{ route('mitra.withdraw.form') }}"
+                        class="text-white px-3.5 py-2 rounded-xl text-xs font-bold bg-primary-600 hover:bg-primary-700 transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span>Tarik Saldo</span>
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Quick Action Sub-Nav Grid (Clean Button + Label without outer card) -->
+    <div class="px-5 mt-4 sm:mt-5 relative z-10">
+        <div class="grid grid-cols-4 gap-2">
+            <!-- 1. Cari Pekerjaan -->
+            <a href="{{ route('mitra.helps.all') }}" class="flex flex-col items-center gap-1.5 p-1 transition group cursor-pointer text-center">
+                <div class="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md transition">
+                    <svg class="w-5 h-5 text-[#0098e7] dark:text-[#38bdf8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">Cari</span>
+            </a>
+
+            <!-- 2. Pekerjaan Aktif -->
+            <a href="{{ route('mitra.helps.processing') }}" class="flex flex-col items-center gap-1.5 p-1 transition group cursor-pointer text-center">
+                <div class="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md transition">
+                    <svg class="w-5 h-5 text-[#0098e7] dark:text-[#38bdf8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">Pekerjaan</span>
+            </a>
+
+            <!-- 3. Riwayat -->
+            <a href="{{ route('mitra.withdraw.history') }}" class="flex flex-col items-center gap-1.5 p-1 transition group cursor-pointer text-center">
+                <div class="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md transition">
+                    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                </div>
+                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Riwayat</span>
+            </a>
+
+            <!-- 4. Chat -->
+            <a href="{{ route('mitra.chat') }}" class="flex flex-col items-center gap-1.5 p-1 transition group cursor-pointer text-center relative">
+                <div class="relative">
+                    <div class="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md transition">
+                        <svg class="w-5 h-5 text-[#0098e7] dark:text-[#38bdf8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-5 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-1l-4 4z" />
+                        </svg>
+                    </div>
+                    @if(!empty($unreadChatCount) && $unreadChatCount > 0)
+                        <span class="absolute -top-1 -right-1 inline-flex items-center justify-center text-[10px] font-bold bg-rose-500 text-white rounded-full min-w-[18px] h-[18px] px-1 shadow-xs ring-2 ring-white dark:ring-gray-800 animate-pulse">{{ $unreadChatCount > 99 ? '99+' : $unreadChatCount }}</span>
+                    @endif
+                </div>
+                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Chat</span>
+            </a>
+        </div>
+    </div>
+
     <!-- Main Content -->
-    <div class="px-5 pt-5 pb-6">
+    <div class="px-5 pt-9 sm:pt-11 pb-6">
         @if(session()->has('error'))
             <div class="mb-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 p-3.5 rounded-2xl text-xs flex items-start gap-2.5 shadow-xs">
                 <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
@@ -208,7 +207,7 @@
 
         <!-- Active Task Banner if Mitra already has an active task -->
         @if(!empty($activeTask))
-            <div class="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 shadow-sm">
+            <div class="mb-5 bg-blue-50/70 dark:bg-gray-800 border border-blue-200/80 dark:border-gray-700 rounded-2xl p-4 shadow-sm">
                 <div class="flex items-start justify-between gap-3 mb-2.5">
                     <div class="flex items-start gap-2.5 min-w-0">
                         <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-base flex-shrink-0 font-bold shadow-xs">
@@ -232,7 +231,7 @@
                 </div>
                 <!-- Mini Progress Track -->
                 <div class="w-full bg-blue-100/70 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
-                    <div class="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 {{ $activeTask->progress_percentage < 100 ? 'animate-pulse' : '' }}"
+                    <div class="h-full rounded-full bg-blue-600 dark:bg-blue-500 transition-all duration-500 {{ $activeTask->progress_percentage < 100 ? 'animate-pulse' : '' }}"
                          style="width: {{ $activeTask->progress_percentage }}%;"></div>
                 </div>
             </div>
@@ -241,94 +240,153 @@
         <!-- GPS Tracker Component - Tampil untuk bantuan aktif -->
         @foreach($helps as $help)
             @if(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']) && $help->mitra_id === auth()->id())
-                <div class="mb-3">
+                <div class="mb-4">
                     <livewire:mitra.gps.tracker :helpId="$help->id" :key="'gps-'.$help->id" />
                 </div>
             @endif
         @endforeach
 
-        <!-- Banner Section -->
+        <!-- Banner Section (Spacious, Modern & Interactive) -->
         @php
             $mitraBanners = json_decode((string) \App\Models\AppSetting::get('banner_mitra', '[]'), true) ?: [];
         @endphp
-        @if(!empty($mitraBanners) && count($mitraBanners))
-            <div class="mb-5">
-                <div class="rounded-xl overflow-hidden shadow-md">
-                    <div class="relative h-36 overflow-hidden">
-                        <div class="flex h-full will-change-transform mitra-banner-slides"
-                            style="transition: transform 700ms cubic-bezier(.2,.9,.2,1);">
-                            @foreach($mitraBanners as $b)
-                                <div class="flex-shrink-0 w-full h-full">
-                                    <img src="{{ asset('storage/' . $b) }}" alt="Banner" class="w-full h-full object-cover" />
+        <div class="mt-2 mb-8" x-data="{
+            active: 0,
+            total: {{ !empty($mitraBanners) && count($mitraBanners) ? count($mitraBanners) : 3 }},
+            timer: null,
+            startAuto() {
+                this.timer = setInterval(() => {
+                    this.active = (this.active + 1) % this.total;
+                }, 4500);
+            },
+            stopAuto() {
+                if (this.timer) clearInterval(this.timer);
+            },
+            goTo(index) {
+                this.active = index;
+                this.stopAuto();
+                this.startAuto();
+            }
+        }" x-init="startAuto()" @mouseenter="stopAuto()" @mouseleave="startAuto()">
+            <div class="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg shadow-sky-500/5 border border-gray-100/80 dark:border-gray-700/60 h-44 sm:h-48 bg-gray-900">
+                @if(!empty($mitraBanners) && count($mitraBanners))
+                    <div class="flex h-full transition-transform duration-700 ease-out" :style="'transform: translateX(-' + (active * 100) + '%)'">
+                        @foreach($mitraBanners as $b)
+                            <div class="flex-shrink-0 w-full h-full relative">
+                                <img src="{{ asset('storage/' . $b) }}" alt="Banner" class="w-full h-full object-cover" />
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <!-- Fallback High-Aesthetic Interactive Slides for Mitra -->
+                    <div class="flex h-full transition-transform duration-700 ease-out" :style="'transform: translateX(-' + (active * 100) + '%)'">
+                        <!-- Slide 1 -->
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
+                             style="background: linear-gradient(135deg, #0284c7 0%, #1d4ed8 50%, #0f172a 100%);">
+                            <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
+                            <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-blue-400/20 blur-xl pointer-events-none"></div>
+
+                            <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
+                                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
+                                    <span>💼</span>
+                                    <span>Peluang Kerja</span>
                                 </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @else
-            <div class="mb-5">
-                <div id="promo-banner" class="rounded-xl overflow-hidden shadow-md">
-                    <div class="relative h-36 overflow-hidden" style="background: linear-gradient(to right, #0098e7, #0077cc);">
-                        <div id="promo-track" class="flex h-full transition-transform duration-700 ease-in-out"></div>
-                    </div>
-                </div>
-                <div id="promo-dots" class="flex justify-center mt-3 gap-2">
-                    <button data-dot="0" class="w-2 h-2 rounded-full transition-all" style="background: #0098e7;"></button>
-                    <button data-dot="1" class="w-2 h-2 rounded-full bg-gray-300 transition-all"></button>
-                    <button data-dot="2" class="w-2 h-2 rounded-full bg-gray-300 transition-all"></button>
-                </div>
-            </div>
-        @endif
-
-        <!-- Bantuan Tersedia Section -->
-        <div class="mb-5">
-            <div class="flex items-center justify-between mb-3">
-                <h2 class="text-base font-bold text-gray-900">Bantuan Tersedia</h2>
-                <a href="{{ route('mitra.helps.all') }}" class="text-xs font-semibold" style="color: #0098e7;">Lihat Semua →</a>
-            </div>
-
-            <div class="space-y-3">
-                @forelse($recommendedHelps as $help)
-                    @php $schedLabel = $help->scheduled_at ? \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') : '' ; @endphp
-                    <button type="button" onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ addslashes($schedLabel) }}')"
-                        class="block w-full text-left bg-white rounded-xl p-3.5 shadow-sm hover:shadow-md transition-all">
-                        <div class="flex items-start gap-3">
-                            <div class="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                                @if($help->photo)
-                                    <img src="{{ asset('storage/' . $help->photo) }}" alt="{{ $help->title }}" class="w-full h-full object-cover">
-                                @else
-                                    <div class="w-full h-full flex items-center justify-center text-lg">
-                                        {{ ['🩺', '🏠', '💡', '🔧', '🎯'][($loop->index) % 5] }}
-                                    </div>
-                                @endif
+                                <h3 class="text-base sm:text-lg font-black text-white leading-tight">
+                                    Raih Penghasilan Tambahan
+                                </h3>
+                                <p class="text-xs text-white/90 font-medium line-clamp-2 leading-relaxed">
+                                    Ambil pekerjaan di sekitarmu dan atur jadwal kerja secara fleksibel.
+                                </p>
+                                <div class="pt-1">
+                                    <a href="{{ route('mitra.helps.all') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-blue-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                        <span>Cari Pekerjaan</span>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                    </a>
+                                </div>
                             </div>
 
-                                <div class="flex-1 min-w-0">
-                                <div class="flex items-start justify-between gap-2 mb-1">
-                                    <h3 class="font-semibold text-sm text-gray-900 line-clamp-1">{{ $help->title }}</h3>
-                                    <span class="text-xs font-bold whitespace-nowrap" style="color: #0098e7;">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
-                                </div>
-                                <p class="text-xs text-gray-600 line-clamp-1 mb-1.5">{{ Str::limit($help->description, 60) }}</p>
-                                @if($help->scheduled_at)
-                                    <div class="text-xs text-gray-500 mb-1">📅 {{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') }}</div>
-                                @endif
-                                <div class="flex items-center gap-3">
-                                    <span class="text-xs text-gray-500">📍 {{ $help->city->name ?? '-' }}</span>
-                                    <span class="text-xs text-gray-400">{{ $help->created_at->diffForHumans() }}</span>
+                            <div class="relative z-10 flex-shrink-0 mr-1 sm:mr-3">
+                                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/15 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-lg shadow-black/10 transform rotate-3 hover:rotate-0 transition-transform">
+                                    <span class="text-3xl sm:text-4xl">🧰</span>
                                 </div>
                             </div>
                         </div>
-                    </button>
-                @empty
-                    <div class="text-center py-10 bg-white rounded-xl shadow-sm">
-                        <svg class="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        <p class="text-sm font-semibold text-gray-700">Belum ada bantuan tersedia</p>
-                        <p class="text-xs text-gray-500 mt-1">Cek kembali nanti untuk bantuan baru</p>
+
+                        <!-- Slide 2 -->
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
+                             style="background: linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #1e1b4b 100%);">
+                            <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
+                            <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-indigo-400/20 blur-xl pointer-events-none"></div>
+
+                            <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
+                                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
+                                    <span>⚡</span>
+                                    <span>Penarikan Kilat</span>
+                                </div>
+                                <h3 class="text-base sm:text-lg font-black text-white leading-tight">
+                                    Tarik Saldo Kapan Saja
+                                </h3>
+                                <p class="text-xs text-white/90 font-medium line-clamp-2 leading-relaxed">
+                                    Cairkan pendapatanmu langsung ke rekening bank terdaftar tanpa repot.
+                                </p>
+                                <div class="pt-1">
+                                    <a href="{{ route('mitra.withdraw.form') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-indigo-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                        <span>Tarik Saldo</span>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="relative z-10 flex-shrink-0 mr-1 sm:mr-3">
+                                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/15 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-lg shadow-black/10 transform -rotate-3 hover:rotate-0 transition-transform">
+                                    <span class="text-3xl sm:text-4xl">💸</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide 3 -->
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
+                             style="background: linear-gradient(135deg, #d97706 0%, #ea580c 50%, #451a03 100%);">
+                            <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
+                            <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-amber-400/20 blur-xl pointer-events-none"></div>
+
+                            <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
+                                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
+                                    <span>⭐</span>
+                                    <span>Mitra Unggulan</span>
+                                </div>
+                                <h3 class="text-base sm:text-lg font-black text-white leading-tight">
+                                    Tingkatkan Rating & Order
+                                </h3>
+                                <p class="text-xs text-white/90 font-medium line-clamp-2 leading-relaxed">
+                                    Berikan pelayanan terbaik untuk meraih bintang 5 dan order prioritas.
+                                </p>
+                                <div class="pt-1">
+                                    <a href="{{ route('mitra.withdraw.history') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-amber-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                        <span>Riwayat Tugas</span>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="relative z-10 flex-shrink-0 mr-1 sm:mr-3">
+                                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/15 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-lg shadow-black/10 transform rotate-3 hover:rotate-0 transition-transform">
+                                    <span class="text-3xl sm:text-4xl">🏆</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                @endforelse
+                @endif
+            </div>
+
+            <!-- Interactive Indicator Dots (Pill Style) -->
+            <div class="flex justify-center items-center mt-3 gap-1.5">
+                <template x-for="i in total" :key="i">
+                    <button @click="goTo(i - 1)"
+                            class="h-1.5 rounded-full transition-all duration-300 cursor-pointer"
+                            :class="active === (i - 1) ? 'w-6 bg-[#0098e7]' : 'w-1.5 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400'"></button>
+                </template>
             </div>
         </div>
     </div>

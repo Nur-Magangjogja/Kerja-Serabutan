@@ -184,6 +184,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Help & Support
         Route::view('/help-support', 'mitra.help-support')->name('help-support');
 
+        // Balance & Transactions (Mitra)
+        Route::get('/transactions', \App\Livewire\Mitra\Transactions\Index::class)->name('transactions.index');
+
         // Withdraw (Mitra) - form & history
         Route::get('/withdraw', [\App\Http\Controllers\WithdrawController::class, 'showForm'])->name('withdraw.form');
         Route::post('/withdraw', [\App\Http\Controllers\WithdrawController::class, 'requestWithdraw'])->name('withdraw.request');

@@ -1,6 +1,6 @@
 <div x-data="gpsSimulator(@entangle('helpId'), @entangle('isSimulating'), @entangle('currentLat'), @entangle('currentLng'), @entangle('targetLat'), @entangle('targetLng'))" 
      x-init="init()" 
-     class="bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/50 dark:from-gray-800 dark:via-slate-850 dark:to-gray-850 rounded-2xl p-4 border border-slate-200/80 dark:border-gray-700/80 shadow-sm transition-colors">
+     class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700/80 shadow-sm transition-colors">
     
     <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2.5">

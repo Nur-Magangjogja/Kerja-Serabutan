@@ -35,7 +35,7 @@ class UserBalance extends Model
     }
 
     // Helper methods
-    public function addBalance($amount, $description = null, $referenceId = null)
+    public function addBalance($amount, $description = null, $referenceId = null, $orderId = null)
     {
         // Do not increment balance here — creation of a topup BalanceTransaction
         // will be processed by BalanceTransactionObserver which increments the balance.
@@ -45,12 +45,13 @@ class UserBalance extends Model
             'type' => 'topup',
             'description' => $description,
             'reference_id' => $referenceId,
+            'order_id' => $orderId,
             'status' => 'completed',
         ]);
         return $this;
     }
 
-    public function deductBalance($amount, $description = null, $referenceId = null)
+    public function deductBalance($amount, $description = null, $referenceId = null, $orderId = null)
     {
         $this->decrement('balance', $amount);
 
@@ -60,6 +61,7 @@ class UserBalance extends Model
             'type' => 'deduction',
             'description' => $description,
             'reference_id' => $referenceId,
+            'order_id' => $orderId,
             'status' => 'completed',
         ]);
 
@@ -83,9 +85,10 @@ class UserBalance extends Model
      * @param  float       $amount       Nominal denda
      * @param  string|null $description  Keterangan denda (misal: "Denda Pembatalan Bantuan")
      * @param  mixed|null  $referenceId  ID bantuan / referensi terkait
+     * @param  string|null $orderId      Order ID bantuan
      * @return $this
      */
-    public function applyPenalty($amount, $description = null, $referenceId = null)
+    public function applyPenalty($amount, $description = null, $referenceId = null, $orderId = null)
     {
         $this->decrement('balance', $amount);
 
@@ -95,6 +98,7 @@ class UserBalance extends Model
             'type'         => 'penalty',
             'description'  => $description ?? 'Denda Pelanggaran → Kas Administrasi',
             'reference_id' => $referenceId,
+            'order_id'     => $orderId,
             'status'       => 'completed',
         ]);
 
@@ -120,9 +124,11 @@ class UserBalance extends Model
      *
      * @param  float       $amount       Nominal tugas yang ditahan
      * @param  mixed|null  $referenceId  ID bantuan
+     * @param  string|null $orderId      Order ID bantuan
+     * @param  string|null $description  Deskripsi
      * @return BalanceTransaction        Transaksi escrow yang dibuat
      */
-    public function lockForEscrow(float $amount, $referenceId = null): BalanceTransaction
+    public function lockForEscrow(float $amount, $referenceId = null, $orderId = null, ?string $description = null): BalanceTransaction
     {
         if ($this->balance < $amount) {
             throw new \RuntimeException(
@@ -137,8 +143,9 @@ class UserBalance extends Model
             'user_id'      => $this->user_id,
             'amount'       => $amount,
             'type'         => 'escrow_lock',
-            'description'  => 'Dana Ditahan untuk Bantuan → Holding',
+            'description'  => $description ?? 'Dana Ditahan untuk Permintaan Bantuan',
             'reference_id' => $referenceId,
+            'order_id'     => $orderId,
             'status'       => 'completed',
         ]);
 
@@ -160,9 +167,10 @@ class UserBalance extends Model
      * @param  float       $netAmount    Nominal bersih setelah potong komisi
      * @param  mixed|null  $referenceId  ID bantuan
      * @param  string|null $description  Deskripsi
+     * @param  string|null $orderId      Order ID bantuan
      * @return $this
      */
-    public function receiveEarning(float $netAmount, $referenceId = null, ?string $description = null): self
+    public function receiveEarning(float $netAmount, $referenceId = null, ?string $description = null, $orderId = null): self
     {
         $this->increment('balance', $netAmount);
 
@@ -172,6 +180,7 @@ class UserBalance extends Model
             'type'         => 'earning',
             'description'  => $description ?? 'Pendapatan Bantuan (Bersih setelah Komisi Platform)',
             'reference_id' => $referenceId,
+            'order_id'     => $orderId,
             'status'       => 'completed',
         ]);
 
@@ -192,9 +201,11 @@ class UserBalance extends Model
      *
      * @param  float       $amount       Nominal yang dikembalikan (harus = escrow amount)
      * @param  mixed|null  $referenceId  ID bantuan
+     * @param  string|null $orderId      Order ID bantuan
+     * @param  string|null $description  Deskripsi
      * @return $this
      */
-    public function refundToCustomer(float $amount, $referenceId = null): self
+    public function refundToCustomer(float $amount, $referenceId = null, $orderId = null, ?string $description = null): self
     {
         $this->increment('balance', $amount);
 
@@ -202,8 +213,9 @@ class UserBalance extends Model
             'user_id'      => $this->user_id,
             'amount'       => $amount,
             'type'         => 'refund',
-            'description'  => 'Pengembalian Dana 100% (Tugas Dibatalkan)',
+            'description'  => $description ?? 'Pengembalian Dana 100% (Bantuan Dibatalkan)',
             'reference_id' => $referenceId,
+            'order_id'     => $orderId,
             'status'       => 'completed',
         ]);
 

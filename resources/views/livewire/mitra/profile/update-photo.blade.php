@@ -86,7 +86,7 @@
                         Batal
                     </button>
                     <button wire:click="updatePhoto" type="button" wire:loading.attr="disabled" wire:target="updatePhoto"
-                        class="flex-1 px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl font-bold text-white hover:from-primary-700 hover:to-primary-800 transition disabled:opacity-50">
+                        class="flex-1 px-4 py-3 bg-primary-600 hover:bg-primary-700 rounded-xl font-bold text-white transition disabled:opacity-50 cursor-pointer">
                         <span wire:loading.remove wire:target="updatePhoto">Upload</span>
                         <span wire:loading wire:target="updatePhoto" class="flex items-center justify-center gap-2">
                             <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">

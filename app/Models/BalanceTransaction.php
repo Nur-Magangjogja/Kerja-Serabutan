@@ -58,6 +58,11 @@ class BalanceTransaction extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    public function help()
+    {
+        return $this->belongsTo(Help::class, 'reference_id');
+    }
+
     // Scopes
     public function scopeTopup($query)
     {

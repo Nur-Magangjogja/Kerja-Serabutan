@@ -1,18 +1,20 @@
 <?php
 
-namespace App\Livewire\Customer\Transactions;
+namespace App\Livewire\Mitra\Transactions;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Layout;
 use App\Models\BalanceTransaction;
 
+#[Layout('layouts.mitra')]
 class Index extends Component
 {
     use WithPagination;
 
     protected $paginationTheme = 'tailwind';
 
-    public $filterType = 'all'; // 'all', 'topup', 'payment', 'refund'
+    public $filterType = 'all'; // 'all', 'earning', 'penalty', 'withdraw', 'topup'
     public $selectedTransaction = null;
 
     protected $listeners = [
@@ -35,16 +37,16 @@ class Index extends Component
             return;
         }
 
-        $type = $transaction->type ?? 'deduction';
-        $isCredit = in_array($type, ['topup', 'refund', 'earning'], true);
+        $type = $transaction->type ?? 'earning';
+        $isCredit = in_array($type, ['earning', 'topup', 'refund'], true);
 
         $typeLabel = match($type) {
-            'topup' => 'Top Up Saldo',
-            'refund' => 'Pengembalian Dana (Refund)',
-            'escrow_lock' => 'Pembayaran Permintaan Bantuan',
-            'deduction' => 'Potongan / Penyesuaian Saldo',
-            'penalty' => 'Denda Pelanggaran',
             'earning' => 'Pendapatan Bantuan',
+            'penalty' => 'Denda Pembatalan Bantuan',
+            'withdraw' => 'Penarikan Saldo (Withdraw)',
+            'topup' => 'Top Up Saldo',
+            'deduction' => 'Potongan Saldo',
+            'refund' => 'Pengembalian Dana',
             default => 'Transaksi Saldo',
         };
 
@@ -78,17 +80,19 @@ class Index extends Component
         $query = BalanceTransaction::with('help')
             ->where('user_id', auth()->id());
 
-        if ($this->filterType === 'topup') {
+        if ($this->filterType === 'earning') {
+            $query->where('type', 'earning');
+        } elseif ($this->filterType === 'penalty') {
+            $query->where('type', 'penalty');
+        } elseif ($this->filterType === 'withdraw') {
+            $query->where('type', 'withdraw');
+        } elseif ($this->filterType === 'topup') {
             $query->where('type', 'topup');
-        } elseif ($this->filterType === 'payment') {
-            $query->whereIn('type', ['escrow_lock', 'deduction']);
-        } elseif ($this->filterType === 'refund') {
-            $query->where('type', 'refund');
         }
 
         $transactions = $query->latest()->paginate(10);
 
-        return view('livewire.customer.transactions.index', [
+        return view('livewire.mitra.transactions.index', [
             'transactions' => $transactions,
         ]);
     }

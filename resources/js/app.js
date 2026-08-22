@@ -69,3 +69,16 @@ document.addEventListener('click', function(e) {
     } catch (err) {}
 }, true);
 
+/**
+ * Prevent mouse wheel scrolling from incrementing/decrementing number inputs
+ */
+document.addEventListener('wheel', function(e) {
+    if (document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'number') {
+        document.activeElement.blur();
+    }
+    if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'number') {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+

@@ -151,8 +151,8 @@ class TopupRequest extends Component
         }
 
         $this->totalPayment = $amount + $this->adminFee;
-        // generate or refresh unique code for this total payment
-        $this->ensureUniqueSuffix();
+        $this->uniqueCode = null;
+        $this->uniqueTotal = $this->totalPayment;
         $this->saveFormData();
     }
 
@@ -252,15 +252,12 @@ class TopupRequest extends Component
             // Generate request code
             $this->requestCode = $this->generateRequestCode();
 
-            // Ensure unique suffix exists before creating transaction
-            $this->ensureUniqueSuffix();
-
-            // Create transaction (store total_payment as uniqueTotal so admin can verify exact transfer)
+            // Create transaction (total_payment = amount + adminFee)
             $transaction = BalanceTransaction::create([
                 'user_id' => auth()->id(),
                 'amount' => $this->amount,
                 'admin_fee' => $this->adminFee,
-                'total_payment' => $this->uniqueTotal ?: $this->totalPayment,
+                'total_payment' => $this->totalPayment,
                 'type' => 'topup',
                 'description' => 'Top-up saldo via ' . $this->getPaymentMethodName(),
                 'status' => 'waiting_approval',
@@ -270,8 +267,7 @@ class TopupRequest extends Component
                 'payment_method' => $this->paymentMethod,
                 'proof_of_payment' => $proofPath,
                 'request_code' => $this->requestCode,
-                // store unique code in description so admins can quickly see it (no schema change required)
-                'customer_notes' => ($this->customerNotes ? $this->customerNotes . ' | ' : '') . 'UniqueCode:' . ($this->uniqueCode ?? '000'),
+                'customer_notes' => $this->customerNotes ?: null,
                 'expired_at' => now()->addHours(24),
             ]);
 
@@ -315,49 +311,10 @@ class TopupRequest extends Component
         return "TPU-{$date}-" . str_pad($sequence, 3, '0', STR_PAD_LEFT);
     }
 
-    /**
-     * Ensure a 3-digit unique suffix exists and compute uniqueTotal.
-     * The uniqueTotal is calculated from the nearest lower thousand plus the 3-digit code.
-     * If that produces a value lower than the calculated totalPayment, bump the base by 1000.
-     */
     protected function ensureUniqueSuffix()
     {
-        if (!$this->totalPayment) {
-            $this->uniqueCode = null;
-            $this->uniqueTotal = 0;
-            return;
-        }
-
-        $total = (int) round($this->totalPayment);
-
-        $base = intdiv($total, 1000) * 1000; // nearest lower thousand
-
-        // If we already have a uniqueCode and base matches, verify uniqueTotal still valid
-        if ($this->uniqueCode) {
-            $existingBase = intdiv((int) $this->uniqueTotal, 1000) * 1000;
-            if ($existingBase === $base && (int) $this->uniqueTotal >= $total) {
-                return; // still valid
-            }
-        }
-
-        // Generate a random 3-digit code
-        try {
-            $code = random_int(1, 999);
-        } catch (\Exception $e) {
-            $code = mt_rand(1, 999);
-        }
-
-        $padded = str_pad($code, 3, '0', STR_PAD_LEFT);
-        $uniqueTotal = $base + $code;
-
-        if ($uniqueTotal < $total) {
-            // bump base by 1k to ensure uniqueTotal >= total
-            $base += 1000;
-            $uniqueTotal = $base + $code;
-        }
-
-        $this->uniqueCode = $padded;
-        $this->uniqueTotal = $uniqueTotal;
+        $this->uniqueCode = null;
+        $this->uniqueTotal = $this->totalPayment;
     }
 
     protected function getPaymentMethodName()

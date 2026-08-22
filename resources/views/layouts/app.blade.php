@@ -10,15 +10,17 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="color-scheme" content="dark light">
 
-    <!-- Instant Theme Anti-FOUC (Executed synchronously before any network requests/fonts) -->
+    <!-- Instant Theme Anti-FOUC & Scrollbar Hidden (Executed synchronously before any network requests/fonts) -->
     <style>
-        html { color-scheme: light dark; }
+        html { color-scheme: light dark; -ms-overflow-style: none !important; scrollbar-width: none !important; }
         html.dark { background-color: #111827 !important; color-scheme: dark; }
         html.dark body { background-color: #111827 !important; color: #f9fafb; }
         html.dark main { background-color: #111827 !important; }
         html:not(.dark) { background-color: #f9fafb !important; color-scheme: light; }
         html:not(.dark) body { background-color: #f9fafb !important; }
         .no-transition, .no-transition * { -webkit-transition: none !important; transition: none !important; }
+        html, body, *, *::before, *::after { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+        *::-webkit-scrollbar, html::-webkit-scrollbar, body::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
     </style>
     <script>
         (function() {
@@ -96,7 +98,7 @@
                 <div id="customer-global-notification-inner" class="mx-auto max-w-md"></div>
             </div>
             <!-- Content -->
-            <main class="pb-20">
+            <main class="pb-24">
                 @if($__env->hasSection('content'))
                     @yield('content')
                 @else
@@ -104,53 +106,57 @@
                 @endif
             </main>
 
-            <!-- Bottom Navigation -->
+            <!-- Floating Glassmorphism Bottom Navigation -->
             @auth
-                <nav id="bottom-nav" class="fixed bottom-0 inset-x-0 mx-auto w-full max-w-md bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-2xl z-50">
-                    <div class="flex items-center justify-around px-2 py-2">
-                        <a href="{{ route('customer.dashboard') }}" wire:navigate
-                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('customer.dashboard') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-                            </svg>
-                            <span class="nav-label text-xs font-bold mt-0.5">Beranda</span>
-                        </a>
+                <div class="fixed bottom-4 inset-x-0 mx-auto w-full max-w-md px-3 sm:px-4 z-50 pointer-events-none">
+                    <nav id="bottom-nav" class="pointer-events-auto bg-white/20 dark:bg-gray-800/20 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/60 dark:border-gray-700/60 shadow-xl shadow-gray-900/10 dark:shadow-black/50 px-2 py-1.5 transition-all">
+                        <div class="flex items-center justify-around">
+                            <a href="{{ route('customer.dashboard') }}" wire:navigate
+                                class="nav-item flex flex-col items-center py-1.5 px-3 rounded-2xl transition {{ request()->routeIs('customer.dashboard') ? 'text-primary-600 dark:text-primary-400 font-bold active' : 'text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400' }}">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                                </svg>
+                                <span class="nav-label text-[11px] font-semibold mt-0.5">Beranda</span>
+                            </a>
 
-                        <a href="{{ route('customer.helps.index') }}" wire:navigate
-                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('customer.helps.*') && !request()->routeIs('customer.helps.create') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
-                            </svg>
-                            <span class="nav-label text-xs font-bold mt-0.5">Bantuan</span>
-                        </a>
+                            <a href="{{ route('customer.helps.index') }}" wire:navigate
+                                class="nav-item flex flex-col items-center py-1.5 px-3 rounded-2xl transition {{ request()->routeIs('customer.helps.*') && !request()->routeIs('customer.helps.create') ? 'text-primary-600 dark:text-primary-400 font-bold active' : 'text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400' }}">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                        d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+                                </svg>
+                                <span class="nav-label text-[11px] font-semibold mt-0.5">Bantuan</span>
+                            </a>
 
-                        <a href="{{ route('customer.helps.create') }}" wire:navigate
-                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('customer.helps.create') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M12 4a1 1 0 011 1v6h6a1 1 0 110 2h-6v6a1 1 0 11-2 0v-6H5a1 1 0 110-2h6V5a1 1 0 011-1z" />
-                            </svg>
-                            <span class="nav-label text-xs font-bold mt-0.5">Bantu</span>
-                        </a>
+                            <a href="{{ route('customer.helps.create') }}" wire:navigate
+                                class="nav-item flex flex-col items-center py-1.5 px-3 rounded-2xl transition {{ request()->routeIs('customer.helps.create') ? 'text-primary-600 dark:text-primary-400 font-bold active' : 'text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400' }}">
+                                <div class="w-8 h-8 rounded-xl flex items-center justify-center -mt-1 {{ request()->routeIs('customer.helps.create') ? 'bg-[#0098e7] text-white shadow-md shadow-sky-500/30' : 'bg-gray-100 dark:bg-gray-700/80 text-gray-500 dark:text-gray-300' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                </div>
+                                <span class="nav-label text-[10px] font-bold mt-0.5 {{ request()->routeIs('customer.helps.create') ? 'text-[#0098e7]' : '' }}">Bantu</span>
+                            </a>
 
-                        <a href="{{ route('customer.transactions.index') }}" wire:navigate
-                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('customer.transactions.*') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M3 3h18v2H3V3zm0 4h18v14H3V7zm5 3v8h2v-8H8zm4 0v8h2v-8h-2z" />
-                            </svg>
-                            <span class="nav-label text-xs font-bold mt-0.5">Transaksi</span>
-                        </a>
+                            <a href="{{ route('customer.transactions.index') }}" wire:navigate
+                                class="nav-item flex flex-col items-center py-1.5 px-3 rounded-2xl transition {{ request()->routeIs('customer.transactions.*') ? 'text-primary-600 dark:text-primary-400 font-bold active' : 'text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400' }}">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 3h18v2H3V3zm0 4h18v14H3V7zm5 3v8h2v-8H8zm4 0v8h2v-8h-2z" />
+                                </svg>
+                                <span class="nav-label text-[11px] font-semibold mt-0.5">Transaksi</span>
+                            </a>
 
-                        <a href="{{ route('profile') }}" wire:navigate
-                            class="nav-item flex flex-col items-center py-1.5 {{ request()->routeIs('profile.*') || request()->routeIs('profile') ? 'text-primary-600 active' : 'text-gray-400 hover:text-primary-600' }}">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
-                            </svg>
-                            <span class="nav-label text-xs font-bold mt-0.5">Profil</span>
-                        </a>
-                    </div>
-                </nav>
+                            <a href="{{ route('profile') }}" wire:navigate
+                                class="nav-item flex flex-col items-center py-1.5 px-3 rounded-2xl transition {{ request()->routeIs('profile.*') || request()->routeIs('profile') ? 'text-primary-600 dark:text-primary-400 font-bold active' : 'text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400' }}">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
+                                </svg>
+                                <span class="nav-label text-[11px] font-semibold mt-0.5">Profil</span>
+                            </a>
+                        </div>
+                    </nav>
+                </div>
             @endauth
         </div>
     </div>

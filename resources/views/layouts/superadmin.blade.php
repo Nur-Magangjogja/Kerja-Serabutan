@@ -10,15 +10,17 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="color-scheme" content="dark light">
 
-    <!-- Instant Theme Anti-FOUC (Executed synchronously before any network requests/fonts) -->
+    <!-- Instant Theme Anti-FOUC & Scrollbar Hidden (Executed synchronously before any network requests/fonts) -->
     <style>
-        html { color-scheme: light dark; }
+        html { color-scheme: light dark; -ms-overflow-style: none !important; scrollbar-width: none !important; }
         html.dark { background-color: #111827 !important; color-scheme: dark; }
         html.dark body { background-color: #111827 !important; color: #f9fafb; }
         html.dark main { background-color: #111827 !important; }
         html:not(.dark) { background-color: #f3f4f6 !important; color-scheme: light; }
         html:not(.dark) body { background-color: #f3f4f6 !important; }
         .no-transition, .no-transition * { -webkit-transition: none !important; transition: none !important; }
+        html, body, *, *::before, *::after { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+        *::-webkit-scrollbar, html::-webkit-scrollbar, body::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
     </style>
     <script>
         (function() {
