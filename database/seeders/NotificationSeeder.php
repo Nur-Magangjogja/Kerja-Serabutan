@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\User;
 use App\Models\Help;
+use App\Models\User;
 use App\Notifications\HelpTakenNotification;
+use Illuminate\Database\Seeder;
 
 class NotificationSeeder extends Seeder
 {
@@ -14,25 +14,23 @@ class NotificationSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get a customer user and a mitra
-        $customer = User::where('role', 'customer')->first();
-        $mitra = User::where('role', 'mitra')->first();
+        $customer = User::where('email', 'customer@sayabantu.com')->first();
+        $mitra    = User::where('email', 'mitra@sayabantu.com')->first();
 
         if ($customer && $mitra) {
-            // Get the customer's helps
-            $helps = Help::where('user_id', $customer->id)
-                ->where('status', 'approved')
-                ->take(2)
-                ->get();
+            $help = Help::where('user_id', $customer->id)
+                ->whereIn('status', [Help::STATUS_TAKEN, Help::STATUS_SELESAI])
+                ->first();
 
-            // Create notifications for each help
-            foreach ($helps as $help) {
-                $customer->notify(new HelpTakenNotification($help, $mitra));
+            if ($help) {
+                try {
+                    $customer->notify(new HelpTakenNotification($help, $mitra));
+                } catch (\Throwable $e) {
+                    // Ignore if mail driver / channel not configured
+                }
             }
 
-            $this->command->info('Sample notifications created successfully!');
-        } else {
-            $this->command->warn('No customer or mitra found. Run UserSeeder first.');
+            $this->command->info('NotificationSeeder berhasil membuat notifikasi bantuan diambil.');
         }
     }
 }

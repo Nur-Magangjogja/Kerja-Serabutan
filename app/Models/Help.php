@@ -262,6 +262,12 @@ class Help extends Model
         return $this->hasMany(Chat::class);
     }
 
+    /** Transaksi escrow holding saat bantuan dibuat (model v2). */
+    public function escrowTransaction()
+    {
+        return $this->belongsTo(BalanceTransaction::class, 'escrow_transaction_id');
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // QUERY SCOPES
     // ─────────────────────────────────────────────────────────────────────────

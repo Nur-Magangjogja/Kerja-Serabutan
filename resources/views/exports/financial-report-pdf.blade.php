@@ -238,8 +238,8 @@
                 <td class="text-center">{{ $index + 1 }}</td>
                 <td>{{ optional($t->created_at)->format('d/m/Y H:i') }}</td>
                 <td>
-                    <strong>{{ optional($t->user)->name ?? 'User Terhapus' }}</strong><br>
-                    <span style="color: #64748b; font-size: 8px;">{{ optional($t->user)->email ?? '-' }}</span>
+                    <strong>{{ $t->user_display_name }}</strong><br>
+                    <span style="color: #64748b; font-size: 8px;">{{ optional($t->user)->email ?? ($t->isPlatformTransaction() ? 'sistem@internal' : '-') }}</span>
                 </td>
                 <td>
                     <span class="badge {{ $badgeType }}">{{ ucfirst($t->type) }}</span>

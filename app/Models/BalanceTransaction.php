@@ -117,6 +117,54 @@ class BalanceTransaction extends Model
     }
 
     /**
+     * Jenis transaksi pemasukan kas platform / admin.
+     */
+    public static function platformIncomeTypes(): array
+    {
+        return ['platform_fee', 'penalty'];
+    }
+
+    /**
+     * Jenis transaksi pengeluaran/beban kas platform (cth: fee PG).
+     */
+    public static function platformExpenseTypes(): array
+    {
+        return ['pg_fee_topup', 'pg_fee_withdraw'];
+    }
+
+    /**
+     * Apakah transaksi ini merupakan transaksi internal Kas Platform (bukan akun perorangan).
+     */
+    public function isPlatformTransaction(): bool
+    {
+        return $this->type === 'platform_fee' || ($this->user_id === null && in_array($this->type, self::platformIncomeTypes(), true));
+    }
+
+    /**
+     * Apakah transaksi ini milik akun user yang sudah dihapus dari sistem (audit trail).
+     */
+    public function isDeletedUser(): bool
+    {
+        return $this->user_id === null && !$this->isPlatformTransaction();
+    }
+
+    /**
+     * Nama entitas pemilik transaksi untuk keperluan audit & tampilan UI.
+     */
+    public function getUserDisplayNameAttribute(): string
+    {
+        if ($this->user) {
+            return $this->user->name;
+        }
+
+        if ($this->isPlatformTransaction()) {
+            return 'Kas Platform (Sistem)';
+        }
+
+        return 'Pengguna Terhapus (Historis)';
+    }
+
+    /**
      * Apakah transaksi ini mengurangi saldo (debit dari sisi user).
      */
     public function getIsDebitAttribute(): bool

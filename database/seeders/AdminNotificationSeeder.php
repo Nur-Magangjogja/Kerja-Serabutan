@@ -2,11 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\User;
-use App\Models\BalanceTransaction;
-use App\Notifications\NewTopupRequest;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AdminNotificationSeeder extends Seeder
 {
@@ -15,71 +14,58 @@ class AdminNotificationSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get admin user
-        $admin = User::where('role', 'admin')->first();
+        $admin = User::where('email', 'admin@sayabantu.com')->first();
+        $customer = User::where('email', 'customer@sayabantu.com')->first();
         
         if (!$admin) {
-            $this->command->warn('No admin user found. Run UserSeeder first.');
+            $this->command->warn('Admin Sleman tidak ditemukan.');
             return;
         }
 
-        // Create some test notifications for admin
         $notifications = [
             [
                 'type' => 'App\Notifications\CustomNotification',
                 'data' => [
-                    'type' => 'new_topup_request',
-                    'customer_name' => 'Budi Santoso',
-                    'customer_id' => 1,
-                    'amount' => 100000,
-                    'request_code' => 'TOP-' . strtoupper(uniqid()),
-                    'message' => 'Request top-up baru menunggu persetujuan Anda'
+                    'type'          => 'new_help_created',
+                    'customer_name' => $customer ? $customer->name : 'Rina Kusuma',
+                    'customer_id'   => $customer ? $customer->id : 4,
+                    'title'         => 'Bantu Pindahan & Angkat Barang Kos Dekat Kampus UNY/UGM',
+                    'location'      => 'Kec. Depok, Sleman',
+                    'message'       => 'Permintaan bantuan baru telah dibuat di wilayah Sleman.',
                 ],
-                'read_at' => null
+                'read_at' => null,
             ],
             [
                 'type' => 'App\Notifications\CustomNotification',
                 'data' => [
-                    'type' => 'new_registration',
-                    'message' => 'Pendaftaran mitra baru perlu verifikasi KTP'
+                    'type'    => 'new_registration',
+                    'message' => 'Pendaftaran mitra baru (Agus Prasetyo - Sleman) telah diverifikasi.',
                 ],
-                'read_at' => null
+                'read_at' => now()->subHours(5),
             ],
             [
                 'type' => 'App\Notifications\CustomNotification',
                 'data' => [
-                    'type' => 'help_taken',
-                    'message' => 'Mitra telah mengambil bantuan "Butuh Angkut Barang"'
+                    'type'    => 'help_completed',
+                    'message' => 'Bantuan "Antar Berkas Dokumen ke Pemda Sleman" telah selesai dikonfirmasi.',
                 ],
-                'read_at' => now()->subHours(2)
-            ],
-            [
-                'type' => 'App\Notifications\CustomNotification',
-                'data' => [
-                    'type' => 'new_topup_request',
-                    'customer_name' => 'Siti Rahma',
-                    'customer_id' => 2,
-                    'amount' => 250000,
-                    'request_code' => 'TOP-' . strtoupper(uniqid()),
-                    'message' => 'Request top-up baru menunggu persetujuan Anda'
-                ],
-                'read_at' => now()->subDay()
+                'read_at' => now()->subDays(1),
             ],
         ];
 
-        foreach ($notifications as $notificationData) {
-            \Illuminate\Support\Facades\DB::table('notifications')->insert([
-                'id' => \Illuminate\Support\Str::uuid(),
-                'type' => $notificationData['type'],
-                'notifiable_type' => 'App\Models\User',
-                'notifiable_id' => $admin->id,
-                'data' => json_encode($notificationData['data']),
-                'read_at' => $notificationData['read_at'],
-                'created_at' => now()->subMinutes(rand(1, 120)),
-                'updated_at' => now()->subMinutes(rand(1, 120)),
+        foreach ($notifications as $n) {
+            DB::table('notifications')->insert([
+                'id'              => Str::uuid(),
+                'type'            => $n['type'],
+                'notifiable_type' => User::class,
+                'notifiable_id'   => $admin->id,
+                'data'            => json_encode($n['data']),
+                'read_at'         => $n['read_at'],
+                'created_at'      => now()->subMinutes(rand(10, 180)),
+                'updated_at'      => now()->subMinutes(rand(10, 180)),
             ]);
         }
 
-        $this->command->info('Admin test notifications created successfully!');
+        $this->command->info('AdminNotificationSeeder berhasil membuat notifikasi untuk Admin Sleman.');
     }
 }

@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('order_id')->nullable()->index();
             $table->string('reference_id')->nullable()->index();
             $table->string('request_code')->nullable();
-            $table->enum('type', ['topup', 'withdraw', 'payment', 'refund', 'service_fee', 'earning', 'deduction'])->index();
+            $table->enum('type', ['topup', 'withdraw', 'payment', 'refund', 'service_fee', 'earning', 'deduction', 'penalty'])->index();
             $table->decimal('amount', 15, 2);
             $table->decimal('admin_fee', 15, 2)->default(0.00);
             $table->decimal('total_payment', 15, 2)->default(0.00);

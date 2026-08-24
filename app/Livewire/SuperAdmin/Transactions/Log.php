@@ -106,8 +106,8 @@ class Log extends Component
                 fputcsv($handle, [
                     $index + 1,
                     optional($t->created_at)->format('Y-m-d H:i:s'),
-                    optional($t->user)->name ?? 'User Terhapus',
-                    optional($t->user)->email ?? '-',
+                    $t->user_display_name,
+                    optional($t->user)->email ?? ($t->isPlatformTransaction() ? 'sistem@internal' : '-'),
                     strtoupper($t->type),
                     $t->description ?? '-',
                     $t->amount,
@@ -196,8 +196,8 @@ class Log extends Component
         foreach ($transactions as $index => $t) {
             $sheet->setCellValue('A' . $row, $index + 1);
             $sheet->setCellValue('B' . $row, optional($t->created_at)->format('Y-m-d H:i:s'));
-            $sheet->setCellValue('C' . $row, optional($t->user)->name ?? 'User Terhapus');
-            $sheet->setCellValue('D' . $row, optional($t->user)->email ?? '-');
+            $sheet->setCellValue('C' . $row, $t->user_display_name);
+            $sheet->setCellValue('D' . $row, optional($t->user)->email ?? ($t->isPlatformTransaction() ? 'sistem@internal' : '-'));
             $sheet->setCellValue('E' . $row, strtoupper($t->type));
             $sheet->setCellValue('F' . $row, $t->description ?? '-');
             $sheet->setCellValue('G' . $row, $t->amount);

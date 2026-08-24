@@ -290,7 +290,7 @@
                             @endif
                         </div>
                         <div class="min-w-0">
-                            <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ optional($trx->user)->name ?? 'User' }}</p>
+                            <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ $trx->user_display_name }}</p>
                             <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ optional($trx->created_at)->diffForHumans() }}</p>
                         </div>
                     </div>
