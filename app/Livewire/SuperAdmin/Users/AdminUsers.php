@@ -52,6 +52,8 @@ class AdminUsers extends Component
     public $showCreateModal = false;
     public $showConfirmDelete = false;
     public $confirmingDeleteId = null;
+    public $userToDelete = null;
+    public $adminPassword = '';
 
     public function updatedSearch()
     {
@@ -149,12 +151,22 @@ class AdminUsers extends Component
         $this->marital_status = $user->marital_status;
         $this->occupation = $user->occupation;
         $this->password = '';
+        $this->adminPassword = '';
+        $this->resetErrorBag();
         $this->showEditModal = true;
     }
 
     public function confirmDelete($id)
     {
+        $user = User::find($id);
+        if (!$user) {
+            session()->flash('error', 'Admin tidak ditemukan');
+            return;
+        }
         $this->confirmingDeleteId = $id;
+        $this->userToDelete = $user;
+        $this->adminPassword = '';
+        $this->resetErrorBag();
         $this->showConfirmDelete = true;
     }
 
@@ -189,6 +201,8 @@ class AdminUsers extends Component
         $this->marital_status = null;
         $this->occupation = null;
         $this->password = null;
+        $this->adminPassword = '';
+        $this->userToDelete = null;
     }
 
     public function saveUser()
@@ -212,6 +226,8 @@ class AdminUsers extends Component
             'managed_city_ids.*' => 'exists:cities,id',
             'nik' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:1000',
+            'rt' => 'nullable|integer|min:1|max:999',
+            'rw' => 'nullable|integer|min:1|max:999',
             'date_of_birth' => 'nullable|date',
             'gender' => 'nullable|in:Laki-laki,Perempuan',
             'occupation' => 'nullable|string|max:150',
@@ -219,11 +235,21 @@ class AdminUsers extends Component
 
         if ($this->selectedUser) {
             $rules['password'] = 'nullable|string|min:8';
+            $rules['adminPassword'] = 'required|string';
         } else {
             $rules['password'] = 'required|string|min:8';
         }
 
-        $this->validate($rules);
+        $this->validate($rules, [
+            'adminPassword.required' => 'Kata sandi Superadmin wajib dimasukkan untuk mengonfirmasi perubahan data admin.',
+        ]);
+
+        if ($this->selectedUser) {
+            if (!\Illuminate\Support\Facades\Hash::check($this->adminPassword, auth()->user()->password)) {
+                $this->addError('adminPassword', 'Kata sandi Superadmin yang Anda masukkan salah. Perubahan data admin dibatalkan.');
+                return;
+            }
+        }
 
         // Compute primary city_id
         $primaryCityId = $this->city_id;
@@ -280,6 +306,8 @@ class AdminUsers extends Component
                 $user->managedCities()->sync([]);
             }
 
+            \Illuminate\Support\Facades\Log::info("[SuperAdmin] Superadmin #" . auth()->id() . " updated admin #{$user->id} ({$user->name}) with password confirmation.");
+
             session()->flash('message', 'Data admin ' . $user->name . ' berhasil diperbarui.');
         } else {
             $data['password'] = bcrypt($this->password);
@@ -303,19 +331,39 @@ class AdminUsers extends Component
         if (!$this->confirmingDeleteId) {
             return;
         }
+
+        $this->validate([
+            'adminPassword' => ['required', 'string'],
+        ], [
+            'adminPassword.required' => 'Kata sandi Superadmin wajib dimasukkan untuk mengonfirmasi penghapusan admin.',
+        ]);
+
+        if (!\Illuminate\Support\Facades\Hash::check($this->adminPassword, auth()->user()->password)) {
+            $this->addError('adminPassword', 'Kata sandi Superadmin salah. Penghapusan admin dibatalkan.');
+            return;
+        }
+
         $user = User::find($this->confirmingDeleteId);
         if (!$user) {
             session()->flash('error', 'Admin tidak ditemukan');
-            $this->showConfirmDelete = false;
+            $this->closeModal();
             return;
         }
+
+        if ($user->id === auth()->id()) {
+            session()->flash('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
+            $this->closeModal();
+            return;
+        }
+
         $userName = $user->name;
         $user->managedCities()->sync([]);
         $user->delete();
 
+        \Illuminate\Support\Facades\Log::info("[SuperAdmin] Superadmin #" . auth()->id() . " deleted admin #{$user->id} ({$userName}) with password confirmation.");
+
         session()->flash('message', 'Admin ' . $userName . ' berhasil dihapus.');
-        $this->showConfirmDelete = false;
-        $this->confirmingDeleteId = null;
+        $this->closeModal();
         $this->resetPage();
     }
 
@@ -327,6 +375,9 @@ class AdminUsers extends Component
         $this->showViewModal = false;
         $this->showConfirmDelete = false;
         $this->confirmingDeleteId = null;
+        $this->userToDelete = null;
+        $this->adminPassword = '';
+        $this->resetErrorBag();
     }
 
     public function render()

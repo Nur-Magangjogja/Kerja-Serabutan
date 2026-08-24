@@ -32,8 +32,8 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive', 'blocked'])->default('inactive');
             $table->string('phone')->nullable();
             $table->text('address')->nullable();
-            $table->string('rt', 5)->nullable();
-            $table->string('rw', 5)->nullable();
+            $table->unsignedInteger('rt')->nullable();
+            $table->unsignedInteger('rw')->nullable();
             $table->string('kelurahan', 100)->nullable();
             $table->string('kecamatan', 100)->nullable();
             $table->string('city', 100)->nullable();

@@ -34,7 +34,10 @@ class BlockedPartnerController extends Controller
         $customerCount = (clone $baseQuery)->where('role', 'customer')->count();
 
         // Apply filters from request
-        $query = User::whereIn('role', ['mitra', 'customer'])->with('city');
+        $query = User::whereIn('role', ['mitra', 'customer'])
+            ->with('city')
+            ->withMax('helps', 'updated_at')
+            ->withMax('takenHelps', 'updated_at');
 
         // Filter by admin's city if user is admin
         if (auth()->user() && auth()->user()->role === 'admin') {
@@ -84,14 +87,34 @@ class BlockedPartnerController extends Controller
         ]);
     }
 
-    public function toggle($id)
+    public function toggle($id, \Illuminate\Http\Request $request)
     {
+        $request->validate([
+            'admin_password' => ['required', 'string'],
+        ], [
+            'admin_password.required' => 'Kata sandi Admin wajib dimasukkan untuk mengonfirmasi tindakan ini.',
+        ]);
+
+        if (!\Illuminate\Support\Facades\Hash::check($request->admin_password, auth()->user()->password)) {
+            return back()->withErrors(['admin_password' => 'Kata sandi Admin yang Anda masukkan salah. Tindakan dibatalkan.'])->with('error', 'Kata sandi Admin salah. Tindakan dibatalkan.');
+        }
+
         $user = User::findOrFail($id);
         // Toggle between 'blocked' and 'active' status
         $user->status = $user->status === 'blocked' ? 'active' : 'blocked';
         $user->save();
 
-        $label = $user->status === 'blocked' ? 'User diblokir.' : 'User dibuka blokirnya.';
+        try {
+            \App\Models\PartnerActivity::create([
+                'user_id' => $user->id,
+                'activity_type' => $user->status === 'blocked' ? 'partner_blocked' : 'partner_unblocked',
+                'description' => "Status akun diubah menjadi {$user->status} oleh Admin #" . auth()->id() . " (" . auth()->user()->name . ")",
+            ]);
+        } catch (\Throwable $e) {
+            // Ignore activity logging errors
+        }
+
+        $label = $user->status === 'blocked' ? "Akun {$user->name} berhasil diblokir." : "Blokir akun {$user->name} berhasil dibuka.";
         return back()->with('success', $label);
     }
 }

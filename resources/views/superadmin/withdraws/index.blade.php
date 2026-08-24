@@ -116,9 +116,11 @@
                 <thead>
                     <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">#</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mitra</th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Jumlah</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Bank / Rekening</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pengguna</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pengajuan</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Biaya Admin</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dana Cair (Net)</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tujuan Bank</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
                     </tr>
@@ -143,7 +145,9 @@
                                 </div>
                                 <div>
                                     <p class="font-medium text-gray-800 dark:text-gray-100">{{ $item->user->name }}</p>
-                                    <p class="text-xs text-gray-400 dark:text-gray-500">ID: {{ $item->user_id }}</p>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500">
+                                        <span class="capitalize">{{ $item->user->role }}</span> • ID: {{ $item->user_id }}
+                                    </p>
                                 </div>
                             </div>
                             @else
@@ -151,7 +155,16 @@
                             @endif
                         </td>
                         <td class="px-4 py-3.5 text-right font-bold text-gray-800 dark:text-gray-100">Rp {{ number_format($item->amount, 0, ',', '.') }}</td>
-                        <td class="px-4 py-3.5 text-gray-600 dark:text-gray-300">{{ $item->bank_code }} / {{ $item->account_number }}</td>
+                        <td class="px-4 py-3.5 text-right font-medium {{ $item->effective_admin_fee === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
+                            {{ $item->effective_admin_fee === 0 ? 'Gratis' : 'Rp ' . number_format($item->effective_admin_fee, 0, ',', '.') }}
+                        </td>
+                        <td class="px-4 py-3.5 text-right font-black text-emerald-600 dark:text-emerald-400">
+                            Rp {{ number_format($item->effective_net_amount, 0, ',', '.') }}
+                        </td>
+                        <td class="px-4 py-3.5 text-gray-600 dark:text-gray-300">
+                            <div class="font-semibold text-gray-800 dark:text-gray-200">{{ $item->bank_code }}</div>
+                            <div class="text-xs text-gray-400 font-mono">{{ $item->account_number }}</div>
+                        </td>
                         <td class="px-4 py-3.5">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $statusConfig['class'] }}">{{ $statusConfig['label'] }}</span>
                         </td>

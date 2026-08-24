@@ -173,17 +173,31 @@
                     </div>
                 </div>
 
-                <!-- TOP UP -->
-                <a
-                    href="{{ route('customer.topup.request') }}"
-                    class="text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-md hover:shadow-lg flex items-center gap-1.5 cursor-pointer flex-shrink-0"
-                    style="background: linear-gradient(to bottom right, #0098e7, #0060b0);"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span>Top Up</span>
-                </a>
+                <!-- ACTIONS: TARIK DANA & TOP UP -->
+                <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                    <!-- TARIK DANA -->
+                    <a
+                        href="{{ route('customer.withdraw.form') }}"
+                        class="px-3 py-2.5 rounded-xl text-xs font-bold transition border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/60 text-gray-700 dark:text-gray-200 flex items-center gap-1.5 cursor-pointer flex-shrink-0 shadow-xs"
+                    >
+                        <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span>Tarik Dana</span>
+                    </a>
+
+                    <!-- TOP UP -->
+                    <a
+                        href="{{ route('customer.topup.request') }}"
+                        class="text-white px-3.5 py-2.5 rounded-xl text-xs font-bold transition shadow-md hover:shadow-lg flex items-center gap-1.5 cursor-pointer flex-shrink-0"
+                        style="background: linear-gradient(to bottom right, #0098e7, #0060b0);"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Top Up</span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>

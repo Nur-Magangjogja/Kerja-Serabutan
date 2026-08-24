@@ -49,6 +49,8 @@ class Index extends Component
     public $showCreateModal = false;
     public $showConfirmDelete = false;
     public $confirmingDeleteId = null;
+    public $userToDelete = null;
+    public $adminPassword = '';
 
 
     public function updatedSearch()
@@ -107,12 +109,23 @@ class Index extends Component
         $this->religion = $user->religion;
         $this->marital_status = $user->marital_status;
         $this->occupation = $user->occupation;
+        $this->adminPassword = '';
+        $this->resetErrorBag();
         $this->showEditModal = true;
     }
 
     public function confirmDelete($id)
     {
+        $user = User::find($id);
+        if (!$user) {
+            session()->flash('error', 'User tidak ditemukan.');
+            return;
+        }
+
         $this->confirmingDeleteId = $id;
+        $this->userToDelete = $user;
+        $this->adminPassword = '';
+        $this->resetErrorBag();
         $this->showConfirmDelete = true;
     }
 
@@ -171,19 +184,30 @@ class Index extends Component
             'managed_city_ids.*' => 'exists:cities,id',
             'nik' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:1000',
+            'rt' => 'nullable|integer|min:1|max:999',
+            'rw' => 'nullable|integer|min:1|max:999',
             'date_of_birth' => 'nullable|date',
             'gender' => 'nullable|in:Laki-laki,Perempuan',
             'occupation' => 'nullable|string|max:150',
         ];
 
-        // Password validation - required for new users, optional for update
         if ($this->selectedUser) {
             $rules['password'] = 'nullable|string|min:8';
+            $rules['adminPassword'] = 'required|string';
         } else {
             $rules['password'] = 'required|string|min:8';
         }
 
-        $this->validate($rules);
+        $this->validate($rules, [
+            'adminPassword.required' => 'Kata sandi Superadmin wajib dimasukkan untuk mengonfirmasi perubahan data pengguna.',
+        ]);
+
+        if ($this->selectedUser) {
+            if (!\Illuminate\Support\Facades\Hash::check($this->adminPassword, auth()->user()->password)) {
+                $this->addError('adminPassword', 'Kata sandi Superadmin yang Anda masukkan salah. Perubahan data dibatalkan.');
+                return;
+            }
+        }
 
         $data = [
             'name' => $this->name,
@@ -254,16 +278,38 @@ class Index extends Component
         if (!$this->confirmingDeleteId) {
             return;
         }
-        $user = User::find($this->confirmingDeleteId);
-        if (!$user) {
-            session()->flash('error', 'User not found');
-            $this->showConfirmDelete = false;
+
+        $this->validate([
+            'adminPassword' => ['required', 'string'],
+        ], [
+            'adminPassword.required' => 'Kata sandi Superadmin wajib dimasukkan untuk konfirmasi penghapusan.',
+        ]);
+
+        if (!\Illuminate\Support\Facades\Hash::check($this->adminPassword, auth()->user()->password)) {
+            $this->addError('adminPassword', 'Kata sandi Superadmin salah. Penghapusan akun dibatalkan.');
             return;
         }
+
+        $user = User::find($this->confirmingDeleteId);
+        if (!$user) {
+            session()->flash('error', 'User tidak ditemukan.');
+            $this->closeModal();
+            return;
+        }
+
+        if ($user->id === auth()->id()) {
+            session()->flash('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
+            $this->closeModal();
+            return;
+        }
+
+        $userName = $user->name;
         $user->delete();
-        session()->flash('message', 'User deleted');
-        $this->showConfirmDelete = false;
-        $this->confirmingDeleteId = null;
+
+        \Illuminate\Support\Facades\Log::info("[SuperAdmin] Superadmin #" . auth()->id() . " deleted user #{$user->id} ({$userName}) after password confirmation.");
+
+        session()->flash('message', "User '{$userName}' berhasil dihapus dari sistem.");
+        $this->closeModal();
         $this->resetPage();
     }
 
@@ -278,11 +324,16 @@ class Index extends Component
         $this->showViewModal = false;
         $this->showConfirmDelete = false;
         $this->confirmingDeleteId = null;
+        $this->userToDelete = null;
+        $this->adminPassword = '';
+        $this->resetErrorBag();
     }
 
     public function render()
     {
         $users = User::with(['city', 'managedCities'])
+            ->withMax('helps', 'updated_at')
+            ->withMax('takenHelps', 'updated_at')
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('name', 'like', '%' . $this->search . '%')

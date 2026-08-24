@@ -79,6 +79,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/topup/request', \App\Livewire\Customer\Topup\TopupRequest::class)->name('topup.request');
         Route::get('/topup/history', \App\Livewire\Customer\Topup\History::class)->name('topup.history');
 
+        // Withdraw (Customer) - form & history
+        Route::get('/withdraw', [\App\Http\Controllers\WithdrawController::class, 'showForm'])->name('withdraw.form');
+        Route::post('/withdraw', [\App\Http\Controllers\WithdrawController::class, 'requestWithdraw'])->name('withdraw.request');
+        Route::get('/withdraw/history', [\App\Http\Controllers\WithdrawController::class, 'withdrawHistory'])->name('withdraw.history');
+        Route::get('/withdraw/success/{withdraw}', [\App\Http\Controllers\WithdrawController::class, 'showSuccess'])->name('withdraw.success');
+        Route::get('/withdraw/rejected/{withdraw}', [\App\Http\Controllers\WithdrawController::class, 'showRejected'])->name('withdraw.rejected');
+
         // Top Up Saldo (Old Midtrans - kept for backward compatibility)
         Route::get('/top-up', \App\Livewire\Customer\Topup\Index::class)->name('topup');
 
@@ -217,17 +224,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return back()->with('status', 'Password updated successfully!');
     })->name('profile.password.update');
 
-    Route::delete('/profile', function (\Illuminate\Http\Request $request) {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
-
-        $user = $request->user();
-        \Illuminate\Support\Facades\Auth::logout();
-        $user->delete();
-
-        return redirect('/')->with('status', 'Account deleted successfully!');
-    })->name('profile.delete');
+    // Account Deletion Requests (Permintaan Hapus Akun ke Superadmin)
+    Route::post('/profile/account-deletion-request', [\App\Http\Controllers\AccountDeletionRequestController::class, 'requestDeletion'])->name('profile.deletion.request');
+    Route::post('/profile/account-deletion-cancel', [\App\Http\Controllers\AccountDeletionRequestController::class, 'cancelDeletion'])->name('profile.deletion.cancel');
 });
 
 // ========================================
@@ -236,6 +235,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->name('superadmin.')->group(function () {
     Route::get('/dashboard', \App\Livewire\SuperAdmin\Dashboard\Index::class)->name('dashboard');
     Route::get('/users', \App\Livewire\SuperAdmin\Users\Index::class)->name('users');
+    Route::get('/account-deletions', \App\Livewire\SuperAdmin\AccountDeletions\Index::class)->name('account.deletions');
     Route::get('/cities', \App\Livewire\SuperAdmin\Cities\Index::class)->name('cities');
     Route::get('/notifications', \App\Livewire\SuperAdmin\Notifications\Index::class)->name('notifications.index');
     Route::get('/activity-logs', \App\Livewire\SuperAdmin\ActivityLogs\Index::class)->name('activity.logs');
@@ -243,6 +243,7 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
     Route::get('/helps/approved', \App\Livewire\SuperAdmin\Helps\Approved::class)->name('helps.approved');
     Route::get('/settings/identity', \App\Livewire\SuperAdmin\Settings\IdentitySettings::class)->name('settings.identity');
     Route::get('/settings/help', \App\Livewire\SuperAdmin\Settings\HelpSettings::class)->name('settings.help');
+    Route::get('/settings/withdraw', \App\Livewire\SuperAdmin\Settings\WithdrawSettings::class)->name('settings.withdraw');
     Route::get('/settings/banners', \App\Livewire\SuperAdmin\Banners\Index::class)->name('settings.banners');
     Route::view('/settings/transactions', 'superadmin.transactions')->name('settings.transactions');
     Route::get('/topup/approvals', \App\Livewire\SuperAdmin\Topup\Approval::class)->name('topup.approvals');
@@ -271,6 +272,7 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
     Route::get('/partners/blocked', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'index'])->name('partners.blocked');
     Route::post('/partners/blocked/{id}/toggle', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'toggle'])->name('partners.blocked.toggle');
     Route::post('/partners/toggle/{id}', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'toggle'])->name('partners.toggle');
+    Route::get('/users/{user}', [\App\Http\Controllers\Admin\AdminUserController::class, 'show'])->name('users.show');
 
     Route::view('/settings/appearance', 'superadmin.settings.appearance')->name('settings.appearance');
     Route::get('/settings', function () {
@@ -291,6 +293,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/withdraws', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'index'])->name('withdraws.index');
     Route::get('/withdraws/{withdraw}/modal', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'modal'])->name('withdraws.modal');
     Route::get('/withdraws/{withdraw}', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'show'])->name('withdraws.show');
+    Route::post('/withdraws/{withdraw}/approve', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'approve'])->name('withdraws.approve');
+    Route::post('/withdraws/{withdraw}/reject', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'reject'])->name('withdraws.reject');
     Route::get('/users', [\App\Http\Controllers\Admin\AdminUserController::class, 'index'])->name('users.index');
     Route::get('/users/{user}', [\App\Http\Controllers\Admin\AdminUserController::class, 'show'])->name('users.show');
     Route::get('/partners/activity', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'index'])->name('partners.activity');

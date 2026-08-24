@@ -2,6 +2,7 @@
 
 use App\Models\Registration;
 use App\Models\City;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
@@ -14,8 +15,8 @@ new #[Layout('layouts.guest')] class extends Component {
     public string $date_of_birth = '';
     public string $gender = '';
     public string $address = '';
-    public string $rt = '';
-    public string $rw = '';
+    public $rt = null;
+    public $rw = null;
     public string $kelurahan = '';
     public string $kecamatan = '';
     public string $city = '';
@@ -27,47 +28,88 @@ new #[Layout('layouts.guest')] class extends Component {
     public string $cityQuery = '';
     public array $searchResults = [];
 
-    // Auto-detect gender from NIK
-    public function updatedNik($value)
-    {
-        if (strlen($value) >= 8) {
-            $tglLahir = (int) substr($value, 6, 2);
-            // Jika tanggal > 40, berarti perempuan
-            $this->gender = $tglLahir > 40 ? 'Perempuan' : 'Laki-laki';
-        }
-    }
-
-    // Preload saved registration values if a registration UUID exists in session
+    // Preload saved registration values from DB session/cookie or draft cookie
     public function mount(): void
     {
         // Always load available cities so the dropdown can be rendered from DB
         $this->cities = City::orderBy('name')->get();
 
-        $uuid = Session::get('registration_uuid');
-        if (!$uuid) {
-            return;
+        $getCookieVal = function($name) {
+            return request()->cookie($name)
+                ?? request()->cookies->get($name)
+                ?? (Cookie::hasQueued($name) ? Cookie::queued($name)->getValue() : null)
+                ?? Cookie::get($name);
+        };
+
+        $uuid = Session::get('registration_uuid') ?? $getCookieVal('registration_uuid');
+        if ($uuid) {
+            $registration = Registration::where('uuid', $uuid)->first();
+            if ($registration) {
+                Session::put('registration_uuid', $uuid);
+                $this->nik = $registration->nik ?? $this->nik;
+                $this->full_name = $registration->full_name ?? $this->full_name;
+                $this->place_of_birth = $registration->place_of_birth ?? $this->place_of_birth;
+                $this->date_of_birth = $registration->date_of_birth ? $registration->date_of_birth->format('Y-m-d') : $this->date_of_birth;
+                $this->gender = $registration->gender ?? $this->gender;
+                $this->address = $registration->address ?? $this->address;
+                $this->rt = $registration->rt !== null ? (int) $registration->rt : $this->rt;
+                $this->rw = $registration->rw !== null ? (int) $registration->rw : $this->rw;
+                $this->kelurahan = $registration->kelurahan ?? $this->kelurahan;
+                $this->kecamatan = $registration->kecamatan ?? $this->kecamatan;
+                $this->city = $registration->city ?? $this->city;
+                $this->city_id = $registration->city_id ? (int) $registration->city_id : null;
+                $this->province = $registration->province ?? $this->province;
+                return;
+            }
         }
 
-        $registration = Registration::where('uuid', $uuid)->first();
-        if (!$registration) {
-            return;
+        // Restore draft from cookie if available
+        $draftCookie = $getCookieVal('registration_step1_draft');
+        if ($draftCookie) {
+            $draft = is_string($draftCookie) ? json_decode($draftCookie, true) : (is_array($draftCookie) ? $draftCookie : null);
+            if (is_array($draft)) {
+                $this->nik = $draft['nik'] ?? $this->nik;
+                $this->full_name = $draft['full_name'] ?? $this->full_name;
+                $this->place_of_birth = $draft['place_of_birth'] ?? $this->place_of_birth;
+                $this->date_of_birth = $draft['date_of_birth'] ?? $this->date_of_birth;
+                $this->gender = $draft['gender'] ?? $this->gender;
+                $this->address = $draft['address'] ?? $this->address;
+                $this->rt = isset($draft['rt']) && $draft['rt'] !== '' && $draft['rt'] !== null ? (int) $draft['rt'] : $this->rt;
+                $this->rw = isset($draft['rw']) && $draft['rw'] !== '' && $draft['rw'] !== null ? (int) $draft['rw'] : $this->rw;
+                $this->kelurahan = $draft['kelurahan'] ?? $this->kelurahan;
+                $this->kecamatan = $draft['kecamatan'] ?? $this->kecamatan;
+                $this->city = $draft['city'] ?? $this->city;
+                $this->city_id = isset($draft['city_id']) && $draft['city_id'] ? (int) $draft['city_id'] : null;
+                $this->province = $draft['province'] ?? $this->province;
+            }
+        }
+    }
+
+    public function updated($propertyName): void
+    {
+        if ($propertyName === 'nik') {
+            if (strlen($this->nik) >= 8) {
+                $tglLahir = (int) substr($this->nik, 6, 2);
+                $this->gender = $tglLahir > 40 ? 'Perempuan' : 'Laki-laki';
+            }
         }
 
-        $this->nik = $registration->nik ?? $this->nik;
-        $this->full_name = $registration->full_name ?? $this->full_name;
-        $this->place_of_birth = $registration->place_of_birth ?? $this->place_of_birth;
-        $this->date_of_birth = $registration->date_of_birth ?? $this->date_of_birth;
-        $this->gender = $registration->gender ?? $this->gender;
-        $this->address = $registration->address ?? $this->address;
-        $this->rt = $registration->rt ?? $this->rt;
-        $this->rw = $registration->rw ?? $this->rw;
-        $this->kelurahan = $registration->kelurahan ?? $this->kelurahan;
-        $this->kecamatan = $registration->kecamatan ?? $this->kecamatan;
-        $this->city = $registration->city ?? $this->city;
-        $this->city_id = $registration->city_id ?? null;
-        $this->province = $registration->province ?? $this->province;
-        // load available cities so registrants pick canonical city names
-        $this->cities = City::orderBy('name')->get();
+        $draft = [
+            'nik' => $this->nik,
+            'full_name' => $this->full_name,
+            'place_of_birth' => $this->place_of_birth,
+            'date_of_birth' => $this->date_of_birth,
+            'gender' => $this->gender,
+            'address' => $this->address,
+            'rt' => $this->rt,
+            'rw' => $this->rw,
+            'kelurahan' => $this->kelurahan,
+            'kecamatan' => $this->kecamatan,
+            'city_id' => $this->city_id,
+            'city' => $this->city,
+            'province' => $this->province,
+        ];
+        Cookie::queue('registration_step1_draft', json_encode($draft), 60 * 24 * 7);
     }
 
     public function nextStep(): void
@@ -79,8 +121,8 @@ new #[Layout('layouts.guest')] class extends Component {
             'date_of_birth' => ['required', 'date'],
             'gender' => ['required', 'in:Laki-laki,Perempuan'],
             'address' => ['required', 'string', 'max:500'],
-            'rt' => ['required', 'string', 'max:5'],
-            'rw' => ['required', 'string', 'max:5'],
+            'rt' => ['required', 'integer', 'min:1', 'max:999'],
+            'rw' => ['required', 'integer', 'min:1', 'max:999'],
             'kelurahan' => ['required', 'string', 'max:100'],
             'kecamatan' => ['required', 'string', 'max:100'],
             'city_id' => ['nullable', 'exists:cities,id'],
@@ -89,15 +131,12 @@ new #[Layout('layouts.guest')] class extends Component {
         ]);
 
         // Simpan atau update record registration di database
-        $uuid = Session::get('registration_uuid');
+        $uuid = Session::get('registration_uuid') ?? request()->cookie('registration_uuid');
+        $registration = $uuid ? Registration::where('uuid', $uuid)->first() : null;
 
-        if ($uuid) {
-            $registration = Registration::where('uuid', $uuid)->first();
-        } else {
-            $registration = null;
-        }
-
-        $role = Session::get('registration_role', 'customer');
+        $role = Session::get('registration_role') ?? request()->cookie('registration_role', 'customer');
+        Session::put('registration_role', $role);
+        Cookie::queue('registration_role', $role, 60 * 24 * 7);
 
         // Use selected city_id if provided; also store city name for readability
         $cityId = $validated['city_id'] ?? null;
@@ -117,11 +156,11 @@ new #[Layout('layouts.guest')] class extends Component {
             $registration = Registration::create(array_merge($dataToSave, [
                 'uuid' => Str::uuid()->toString(),
             ]));
-            Session::put('registration_uuid', $registration->uuid);
         }
 
-        // Clear client-side saved draft for step1 (if any)
-        $this->dispatch('clear-registration-step1');
+        Session::put('registration_uuid', $registration->uuid);
+        Cookie::queue('registration_uuid', $registration->uuid, 60 * 24 * 7);
+        Cookie::queue('registration_step1_draft', json_encode($validated), 60 * 24 * 7);
 
         $this->redirect(route('register.step2'), navigate: true);
     }
@@ -329,13 +368,13 @@ new #[Layout('layouts.guest')] class extends Component {
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label for="rt" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">RT <span class="text-red-500">*</span></label>
-                        <input wire:model="rt" id="rt" type="text" placeholder="001"
+                        <input wire:model="rt" id="rt" type="number" min="1" max="999" step="1" inputmode="numeric" placeholder="001"
                             class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                         <x-input-error :messages="$errors->get('rt')" />
                     </div>
                     <div>
                         <label for="rw" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">RW <span class="text-red-500">*</span></label>
-                        <input wire:model="rw" id="rw" type="text" placeholder="002"
+                        <input wire:model="rw" id="rw" type="number" min="1" max="999" step="1" inputmode="numeric" placeholder="002"
                             class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                         <x-input-error :messages="$errors->get('rw')" />
                     </div>

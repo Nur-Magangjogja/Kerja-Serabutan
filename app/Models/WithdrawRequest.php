@@ -14,6 +14,8 @@ class WithdrawRequest extends Model
     protected $fillable = [
         'user_id',
         'amount',
+        'admin_fee',
+        'net_amount',
         'bank_code',
         'account_number',
         'status',
@@ -24,8 +26,23 @@ class WithdrawRequest extends Model
 
     protected $casts = [
         'amount' => 'integer',
+        'admin_fee' => 'integer',
+        'net_amount' => 'integer',
         'processed_at' => 'datetime',
     ];
+
+    public function getEffectiveAdminFeeAttribute(): int
+    {
+        return (int) ($this->admin_fee ?? 0);
+    }
+
+    public function getEffectiveNetAmountAttribute(): int
+    {
+        if ($this->net_amount && $this->net_amount > 0) {
+            return (int) $this->net_amount;
+        }
+        return (int) max(0, $this->amount - $this->effective_admin_fee);
+    }
 
     public const STATUS_PENDING = 'pending';
     public const STATUS_PROCESSING = 'processing';

@@ -66,12 +66,21 @@ class HelpTransactionService
             }
         }
 
-        // 3. Transaksi atomik dengan Pessimistic Locking
+        // 3. Guard: Mitra yang sebelumnya telah membatalkan bantuan ini tidak boleh mengambilnya kembali
+        if ($help->hasCancelledBy($mitra->id)) {
+            throw new \RuntimeException('Anda tidak dapat mengambil bantuan ini karena sebelumnya telah Anda batalkan.');
+        }
+
+        // 4. Transaksi atomik dengan Pessimistic Locking
         DB::transaction(function () use ($help, $mitra, $lat, $lng) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
 
             if (!$lockedHelp || $lockedHelp->mitra_id !== null || $lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA) {
                 throw new \RuntimeException('Bantuan ini sudah diambil oleh Rekan Jasa lain atau tidak tersedia lagi.');
+            }
+
+            if ($lockedHelp->hasCancelledBy($mitra->id)) {
+                throw new \RuntimeException('Anda tidak dapat mengambil bantuan ini karena sebelumnya telah Anda batalkan.');
             }
 
             if ($lockedHelp->scheduled_at && \Illuminate\Support\Carbon::parse($lockedHelp->scheduled_at)->isFuture()) {
@@ -319,7 +328,14 @@ class HelpTransactionService
         DB::transaction(function () use ($help, $customer) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
 
-            if ($lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA) {
+            $cancellableStatuses = [
+                Help::STATUS_MENUNGGU_MITRA,
+                'mencari_mitra',
+                'menunggu_pembayaran',
+                'pending',
+            ];
+
+            if (!in_array($lockedHelp->status, $cancellableStatuses, true)) {
                 throw new \RuntimeException('Bantuan ini tidak dapat dibatalkan secara sepihak karena sudah diambil oleh Rekan Jasa.');
             }
 
@@ -341,8 +357,10 @@ class HelpTransactionService
 
     /**
      * Customer menerima permintaan pembatalan dari mitra.
-     * Model v2: Escrow dikembalikan 100% ke customer, kemudian mitra dikenakan denda.
-     * Model v1: Hanya denda ke mitra (logika lama).
+     * Mitra dikenakan denda penalti (kas admin) dan dilepaskan dari pesanan.
+     * Pesanan dikembalikan ke pool status 'menunggu_mitra'.
+     * Dana escrow customer TETAP DITAHAN di holding (karena menunggu mitra lain).
+     * Jika customer ingin membatalkan pesanan, customer dapat menekan tombol "Batalkan Pesanan" saat status 'menunggu_mitra' untuk menerima refund 100%.
      */
     public function customerAcceptCancel(Help $help, User $customer): void
     {
@@ -363,24 +381,32 @@ class HelpTransactionService
                 throw new \RuntimeException('Status pesanan telah berubah atau pembatalan sudah diproses.');
             }
 
-            if (!$formerMitra && $lockedHelp->mitra_id) {
-                $formerMitra = User::find($lockedHelp->mitra_id);
-            }
+            // CATATAN PENTING ALIRAN DANA ESCROW:
+            // Dana escrow customer TETAP DITAHAN di holding (tidak direfund di sini),
+            // karena pesanan dikembalikan ke pool dengan status 'menunggu_mitra' agar bisa diambil oleh mitra lain.
+            // Jika customer ingin membatalkan pesanan secara penuh dan menarik kembali dananya,
+            // customer dapat menekan tombol "Batalkan Pesanan" saat status 'menunggu_mitra'.
 
-            // Kembalikan escrow ke customer DULU (100%, tanpa potongan)
-            if ($lockedHelp->amount > 0) {
-                $this->refundFromEscrow($lockedHelp, $customer);
-            }
-
-            // Terapkan denda penalti pembatalan ke mitra (dari saldo mitra, bukan dari escrow)
+            // Terapkan denda penalti pembatalan ke mitra yang membatalkan (dipotong dari saldo mitra)
             if ($formerMitra) {
                 $penaltyFee = $this->applyCancellationPenalty($formerMitra, $lockedHelp);
+            }
+
+            // Tambahkan ID mitra yang membatalkan ke daftar cancelled_mitra_ids
+            // agar mitra ini tidak dapat mengambil kembali bantuan ini di masa mendatang
+            $cancelledMitraIds = $lockedHelp->cancelled_mitra_ids ?? [];
+            if (!is_array($cancelledMitraIds)) {
+                $cancelledMitraIds = json_decode((string) $cancelledMitraIds, true) ?? [];
+            }
+            if ($formerMitra && !in_array($formerMitra->id, $cancelledMitraIds, false)) {
+                $cancelledMitraIds[] = $formerMitra->id;
             }
 
             // Reset seluruh state bantuan kembali ke pool
             $lockedHelp->update([
                 'status'                      => Help::STATUS_MENUNGGU_MITRA,
                 'mitra_id'                    => null,
+                'cancelled_mitra_ids'         => $cancelledMitraIds,
                 'partner_cancel_prev_status'  => null,
                 'partner_cancel_reason'       => null,
                 'partner_cancel_requested_at' => null,

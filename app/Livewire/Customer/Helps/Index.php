@@ -103,9 +103,12 @@ class Index extends Component
         }
 
         try {
-            $help->delete();
-            session()->flash('message', 'Permintaan bantuan berhasil dibatalkan.');
+            app(\App\Services\HelpTransactionService::class)->customerCancelHelp($help, auth()->user());
+            session()->flash('message', 'Permintaan bantuan berhasil dibatalkan dan dana Anda telah dikembalikan 100% ke saldo akun.');
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
         } catch (\Throwable $e) {
+            \Log::error('[CustomerIndex] deleteConfirmed error: ' . $e->getMessage());
             session()->flash('error', 'Gagal membatalkan permintaan bantuan.');
         }
 

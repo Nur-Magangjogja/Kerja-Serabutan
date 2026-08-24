@@ -80,6 +80,7 @@ class AllHelps extends Component
 
         $query = Help::where('status', Help::STATUS_MENUNGGU_MITRA)
             ->whereNull('mitra_id')
+            ->availableForMitra($user?->id)
             ->where(function ($q) {
                 $q->whereNull('scheduled_at')
                   ->orWhere('scheduled_at', '<=', now());

@@ -115,8 +115,8 @@
                                 <span class="text-[11px] font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-1.5 py-0.5 rounded-md border border-primary-200/50 dark:border-primary-800/50">+{{ $user->managedCities->count() - 2 }}</span>
                                 @endif
                             </div>
-                            @elseif($user->city)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">{{ $user->city->name }}</span>
+                            @elseif($user->city || $user->city_id)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">{{ $user->city_name ?? (is_object($user->city) ? $user->city->name : $user->city) }}</span>
                             @else
                             <span class="text-xs text-gray-400 dark:text-gray-500 italic">Belum ada kota</span>
                             @endif
@@ -212,9 +212,9 @@
                             </span>
                             @endforeach
                         </div>
-                    @elseif($selectedUser->city)
+                    @elseif($selectedUser->city || $selectedUser->city_id)
                         <span class="inline-flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-semibold bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800">
-                            {{ $selectedUser->city->name }}
+                            {{ $selectedUser->city_name ?? (is_object($selectedUser->city) ? $selectedUser->city->name : $selectedUser->city) }}
                         </span>
                     @else
                         <p class="text-xs text-gray-400 italic">Belum ada kota yang ditugaskan ke admin ini.</p>
@@ -341,6 +341,29 @@
                         </div>
                         @error('managed_city_ids') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
                     </div>
+
+                    {{-- Konfirmasi Kata Sandi Superadmin saat Edit Admin --}}
+                    @if($showEditModal)
+                    <div class="pt-4 border-t border-gray-100 dark:border-gray-700">
+                        <div class="p-3.5 bg-amber-50 dark:bg-amber-900/25 border border-amber-200 dark:border-amber-800 rounded-2xl space-y-2">
+                            <div class="flex items-center gap-2 text-xs font-bold text-amber-900 dark:text-amber-200">
+                                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                <span>Verifikasi Kata Sandi Superadmin</span>
+                            </div>
+                            <p class="text-[11px] text-amber-800/80 dark:text-amber-300/80 leading-relaxed">
+                                Masukkan kata sandi akun Superadmin Anda untuk mengonfirmasi perubahan data atau penugasan wilayah admin ini.
+                            </p>
+                            <div>
+                                <input type="password" wire:model.defer="adminPassword"
+                                    placeholder="Masukkan kata sandi Superadmin Anda"
+                                    class="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                                @error('adminPassword') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1 font-medium">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                 </form>
             </div>
 
@@ -360,26 +383,63 @@
     @endif
 
     {{-- ===== Confirm Delete Modal ===== --}}
-    @if($showConfirmDelete)
+    @if($showConfirmDelete && $userToDelete)
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4" role="dialog" wire:click.self="closeModal">
-        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 rounded-2xl bg-rose-100 dark:bg-rose-950/70 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-100 dark:border-gray-700 space-y-4">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-rose-100 dark:bg-rose-950/70 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 flex-shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                 </div>
                 <div>
-                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Hapus Admin?</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Aksi ini tidak dapat dibatalkan</p>
+                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Konfirmasi Hapus Admin</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Tindakan ini permanen dan tidak dapat dibatalkan</p>
                 </div>
             </div>
-            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-5">Apakah Anda yakin ingin menghapus akun admin ini? Hak akses penugasan kota akan otomatis dicabut.</p>
-            <div class="flex items-center justify-end gap-2.5">
+
+            <!-- Target Admin Summary Card -->
+            <div class="bg-gray-50 dark:bg-gray-750/50 rounded-2xl p-3.5 border border-gray-100 dark:border-gray-700 text-xs space-y-1.5">
+                <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">Nama Admin:</span>
+                    <span class="font-bold text-gray-900 dark:text-white">{{ $userToDelete->name }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">Email:</span>
+                    <span class="font-medium text-gray-800 dark:text-gray-200">{{ $userToDelete->email }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">Kota Dikelola:</span>
+                    <span class="font-semibold text-primary-600 dark:text-primary-400">
+                        {{ $userToDelete->managedCities->pluck('name')->join(', ') ?: ($userToDelete->city_name ?: 'Tidak ada') }}
+                    </span>
+                </div>
+            </div>
+
+            <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                Seluruh hak akses admin ke kota-kota yang ditugaskan akan otomatis dicabut.
+            </p>
+
+            <!-- Superadmin Password Confirmation Input -->
+            <div class="space-y-1.5 pt-1">
+                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
+                    Masukkan Kata Sandi Superadmin Anda <span class="text-rose-500">*</span>
+                </label>
+                <input type="password" wire:model.defer="adminPassword" wire:keydown.enter="deleteUser"
+                    placeholder="Kata sandi Superadmin Anda"
+                    class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition" />
+                @error('adminPassword')
+                    <p class="text-xs text-rose-600 dark:text-rose-400 font-medium mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="flex items-center justify-end gap-2.5 pt-2">
                 <button type="button" wire:click.prevent="closeModal"
-                    class="px-4 py-2 text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                    class="px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer">
                     Batal
                 </button>
-                <button wire:click="deleteUser" class="px-4 py-2 text-xs sm:text-sm font-bold bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition shadow-xs">
-                    Hapus Admin
+                <button wire:click="deleteUser" wire:loading.attr="disabled"
+                    class="px-4 py-2.5 text-xs font-bold bg-rose-600 text-white rounded-xl hover:bg-rose-700 shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60">
+                    <svg wire:loading class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                    <span>Konfirmasi & Hapus Admin</span>
                 </button>
             </div>
         </div>

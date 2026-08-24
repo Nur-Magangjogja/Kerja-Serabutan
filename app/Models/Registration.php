@@ -40,6 +40,9 @@ class Registration extends Model
 
     protected $casts = [
         'date_of_birth' => 'date',
+        'rt' => 'integer',
+        'rw' => 'integer',
+        'city_id' => 'integer',
     ];
 
     /**

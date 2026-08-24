@@ -5,11 +5,13 @@
         $isIdentity = ($active === 'identity');
         $isAppearance = ($active === 'appearance');
         $isHelp = ($active === 'help');
+        $isWithdraw = ($active === 'withdraw');
         $isBanners = ($active === 'banners');
     } else {
         $isIdentity = request()->routeIs('superadmin.settings.identity*');
         $isAppearance = request()->routeIs('superadmin.settings.appearance*');
         $isHelp = request()->routeIs('superadmin.settings.help*');
+        $isWithdraw = request()->routeIs('superadmin.settings.withdraw*');
         $isBanners = request()->routeIs('superadmin.settings.banners*');
     }
 @endphp
@@ -18,7 +20,7 @@
     <!-- Header Title -->
     <div class="mb-4">
         <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Pengaturan</h1>
-        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola seluruh konfigurasi sistem, tema tampilan, biaya platform, dan banner dari satu tempat.</p>
+        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola seluruh konfigurasi sistem, tema tampilan, biaya platform, tarif withdraw, dan banner dari satu tempat.</p>
     </div>
 
     <!-- Sub-navigation Tabs -->
@@ -47,7 +49,16 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c.79 0 1.5.3 2.04.78L20 14v6a1 1 0 01-1 1h-6l-5.22-5.22A4 4 0 1112 8z" />
             </svg>
-            <span>Bantuan & Biaya Admin</span>
+            <span>Biaya Layanan Platform</span>
+        </a>
+
+        <!-- Tab: Biaya & Rekening Withdraw -->
+        <a href="{{ route('superadmin.settings.withdraw') }}" wire:navigate
+            class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold {{ $isWithdraw ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-300/50 dark:hover:bg-gray-700/50' }}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <span>Tarif & Bank Withdraw</span>
         </a>
 
         <!-- Tab: Manajemen Banner -->

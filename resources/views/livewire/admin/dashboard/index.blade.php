@@ -5,11 +5,11 @@
             <h1 class="text-xl font-bold text-gray-900 dark:text-white">Dashboard Admin</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Ringkasan aktivitas dan operasional moderasi di wilayah Anda</p>
         </div>
-        @if(auth()->user() && auth()->user()->city)
+        @if(auth()->user() && (auth()->user()->city_name || auth()->user()->city_id || auth()->user()->city))
             <div class="flex items-center gap-2">
                 <span class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
                     <span class="w-2 h-2 rounded-full bg-blue-500 mr-2 animate-pulse"></span>
-                    {{ auth()->user()->city->name }}
+                    {{ auth()->user()->city_name ?? (is_object(auth()->user()->city) ? auth()->user()->city->name : auth()->user()->city) }}
                 </span>
             </div>
         @endif

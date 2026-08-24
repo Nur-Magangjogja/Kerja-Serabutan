@@ -134,7 +134,7 @@
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nama</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Kota</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status Akun</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status & Aktivitas</th>
                             <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
                         </tr>
                     </thead>
@@ -160,7 +160,7 @@
                                         {{ strtoupper(substr($user->name, 0, 1)) }}
                                     </div>
                                     <div class="min-w-0">
-                                        <a href="{{ route('admin.users.show', $user) }}" class="font-semibold text-gray-800 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 truncate block">
+                                        <a href="{{ route($routePrefix . 'users.show', $user) }}" data-url="{{ route($routePrefix . 'users.show', $user) }}" class="open-user-detail font-semibold text-gray-800 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 truncate block">
                                             {{ $user->name }}
                                         </a>
                                         <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ $user->email }}</p>
@@ -180,24 +180,30 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3.5">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $statusClass }}">
-                                    {{ $user->status === 'blocked' ? 'Diblokir' : ($user->status === 'inactive' ? 'Nonaktif' : 'Aktif') }}
-                                </span>
+                                <div class="space-y-1">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $statusClass }}">
+                                        {{ $user->status === 'blocked' ? 'Diblokir' : ($user->status === 'inactive' ? 'Nonaktif' : 'Aktif') }}
+                                    </span>
+                                    <div class="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400" title="{{ $user->last_activity_at ? 'Aktivitas terbaru: ' . $user->last_activity_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Belum ada riwayat aktivitas bantuan' }}">
+                                        <svg class="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span class="truncate">{{ $user->last_activity_for_humans }}</span>
+                                    </div>
+                                </div>
                             </td>
                             <td class="px-4 py-3.5 text-right whitespace-nowrap">
                                 <div class="flex items-center justify-end gap-1.5">
+                                    <a href="{{ route($routePrefix . 'users.show', $user) }}"
+                                        data-url="{{ route($routePrefix . 'users.show', $user) }}"
+                                        class="open-user-detail inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 border border-primary-100 dark:border-primary-800 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        Detail
+                                    </a>
                                     <a href="{{ route($routePrefix . 'partners.activity', ['search' => $user->email]) }}"
                                         class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                         Aktivitas
                                     </a>
-
-                                    <form method="POST" action="{{ route($routePrefix . 'partners.toggle', $user->id) }}" class="inline confirm-action-form" data-action-type="{{ $user->status === 'blocked' ? 'unblock' : 'block' }}" data-user-name="{{ $user->name }}">
-                                        @csrf
-                                        <button type="submit"
-                                            class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold {{ $user->status === 'blocked' ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-rose-600 text-white hover:bg-rose-700' }} transition-colors">
-                                            {{ $user->status === 'blocked' ? 'Buka Blokir' : 'Blokir' }}
-                                        </button>
-                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -216,83 +222,93 @@
     </div>
 </div>
 
-{{-- Confirmation modal for block/unblock actions --}}
-<div id="confirmActionModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-    <div id="modalBackdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
-    <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md z-10 border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-            <h3 id="confirmActionTitle" class="text-base font-bold text-gray-900 dark:text-white">Konfirmasi Tindakan</h3>
-        </div>
-        <div class="p-6">
-            <p id="confirmActionMessage" class="text-sm text-gray-600 dark:text-gray-300"></p>
-        </div>
-        <div class="px-6 py-3.5 bg-gray-50 dark:bg-gray-700/30 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
-            <button id="confirmCancel" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Batal</button>
-            <button id="confirmProceed" class="px-4 py-2 text-sm font-semibold rounded-lg text-white transition-colors">Lanjutkan</button>
-        </div>
-    </div>
-</div>
-
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const modal = document.getElementById('confirmActionModal');
-        const message = document.getElementById('confirmActionMessage');
-        const title = document.getElementById('confirmActionTitle');
-        const btnCancel = document.getElementById('confirmCancel');
-        const btnProceed = document.getElementById('confirmProceed');
-        const backdrop = document.getElementById('modalBackdrop');
+    (function(){
+        if (window.__adminUserDetailScriptLoaded) return;
+        window.__adminUserDetailScriptLoaded = true;
 
-        let pendingForm = null;
+        var isFetching = false;
+        var currentModal = null;
 
-        function openModal(actionType, userName) {
-            title.textContent = 'Konfirmasi ' + (actionType === 'block' ? 'Blokir' : 'Buka Blokir');
-            message.textContent = (actionType === 'block') ? `Anda yakin ingin memblokir pengguna "${userName}"? Pengguna tidak akan dapat mengakses aplikasi.` : `Anda yakin ingin membuka blokir pengguna "${userName}"? Pengguna akan dapat masuk kembali.`;
-            btnProceed.textContent = (actionType === 'block') ? 'Blokir' : 'Buka Blokir';
-            if (actionType === 'block') {
-                btnProceed.className = 'px-4 py-2 text-sm font-semibold rounded-lg text-white bg-rose-600 hover:bg-rose-700 transition-colors';
-            } else {
-                btnProceed.className = 'px-4 py-2 text-sm font-semibold rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-colors';
+        function closeModal(wrapper){
+            var target = wrapper || currentModal || document.getElementById('user-detail-modal');
+            if (target && target.parentNode) {
+                target.parentNode.removeChild(target);
             }
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeModal() {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
             document.body.style.overflow = '';
-            pendingForm = null;
+            document.removeEventListener('keydown', onKeyDown);
+            currentModal = null;
         }
 
-        document.addEventListener('click', function (e) {
-            const btn = e.target.closest && e.target.closest('button');
-            if (!btn) return;
-            const form = btn.closest && btn.closest('form.confirm-action-form');
-            if (!form) return;
-
-            const type = (btn.getAttribute('type') || 'submit').toLowerCase();
-            if (type !== 'submit') return;
-
-            e.preventDefault();
-            pendingForm = form;
-            const actionType = form.getAttribute('data-action-type') || 'block';
-            const userName = form.getAttribute('data-user-name') || '';
-            openModal(actionType, userName);
-        }, true);
-
-        if (btnCancel) btnCancel.addEventListener('click', closeModal);
-        if (backdrop) backdrop.addEventListener('click', closeModal);
-
-        if (btnProceed) {
-            btnProceed.addEventListener('click', function () {
-                if (!pendingForm) return closeModal();
-                pendingForm.submit();
+        function onKeyDown(e){
+            if (e.key === 'Escape') {
                 closeModal();
-            });
+            }
         }
-    });
+
+        function setupModalListeners(wrapper){
+            if (!wrapper) return;
+            currentModal = wrapper;
+            document.body.style.overflow = 'hidden';
+
+            var closeBtn = wrapper.querySelector('#modal-close-btn');
+            var closeBtn2 = wrapper.querySelector('#modal-close-btn-2');
+            var backdrop = wrapper.querySelector('#modal-backdrop');
+
+            if (closeBtn) closeBtn.addEventListener('click', function(){ closeModal(wrapper); });
+            if (closeBtn2) closeBtn2.addEventListener('click', function(){ closeModal(wrapper); });
+            if (backdrop) backdrop.addEventListener('click', function(){ closeModal(wrapper); });
+            document.addEventListener('keydown', onKeyDown);
+        }
+
+        document.addEventListener('click', function(e){
+            var el = e.target.closest && e.target.closest('.open-user-detail');
+            if (!el) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (isFetching) return;
+
+            var url = el.getAttribute('data-url') || el.getAttribute('href');
+            if (!url) return;
+
+            var existingModal = document.getElementById('user-detail-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            isFetching = true;
+            el.style.opacity = '0.6';
+
+            fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function(res){
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    return res.text();
+                })
+                .then(function(html){
+                    var old = document.getElementById('user-detail-modal');
+                    if (old) old.remove();
+
+                    var div = document.createElement('div');
+                    div.innerHTML = html.trim();
+                    var modal = div.firstElementChild;
+                    if (modal) {
+                        modal.id = 'user-detail-modal';
+                        document.body.appendChild(modal);
+                        setupModalListeners(modal);
+                    }
+                })
+                .catch(function(err){
+                    console.error('Failed to load user detail modal', err);
+                    window.location.href = url;
+                })
+                .finally(function(){
+                    isFetching = false;
+                    el.style.opacity = '';
+                });
+        });
+    })();
 </script>
 @endpush
 @endsection

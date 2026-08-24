@@ -64,15 +64,16 @@
                 <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-500 dark:text-gray-400">Status</span>
                     <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $user->status === 'blocked' ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' }}">
-                        {{ ucfirst($user->status) }}
+                        {{ $user->status === 'blocked' ? 'Diblokir' : ($user->status === 'inactive' ? 'Nonaktif' : 'Aktif') }}
                     </span>
                 </div>
                 <div class="pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <form action="{{ route('admin.partners.toggle', $user->id) }}" method="POST">
+                    <form action="{{ route('admin.partners.toggle', $user->id) }}" method="POST" id="show-block-form">
                         @csrf
-                        <button type="submit"
-                            class="w-full px-4 py-2.5 rounded-lg text-xs font-semibold {{ $user->is_blocked ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-rose-600 text-white hover:bg-rose-700' }} transition-colors">
-                            {{ $user->is_blocked ? 'Buka Blokir Pengguna' : 'Blokir Pengguna' }}
+                        <input type="hidden" name="admin_password" id="show-admin-password-input" value="" />
+                        <button type="button" id="btn-show-block-trigger"
+                            class="w-full px-4 py-2.5 rounded-lg text-xs font-semibold {{ $user->status === 'blocked' ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-rose-600 text-white hover:bg-rose-700' }} transition-colors">
+                            {{ $user->status === 'blocked' ? 'Buka Blokir Pengguna' : 'Blokir Pengguna' }}
                         </button>
                     </form>
                 </div>
@@ -96,4 +97,101 @@
         </div>
     </div>
 </div>
+
+{{-- Confirm Block Modal with password verification --}}
+<div id="show-block-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div id="show-block-backdrop" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md z-10 border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+            <h3 class="text-base font-bold text-gray-900 dark:text-white">Konfirmasi Tindakan</h3>
+            <button id="show-block-close" class="p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">&times;</button>
+        </div>
+        <div class="p-6 space-y-4">
+            <p class="text-sm text-gray-600 dark:text-gray-300">
+                {{ $user->status === 'blocked' ? 'Apakah Anda yakin ingin membuka blokir pengguna "' . $user->name . '"? Pengguna akan dapat masuk kembali.' : 'Apakah Anda yakin ingin memblokir pengguna "' . $user->name . '"? Pengguna tidak akan dapat mengakses aplikasi.' }}
+            </p>
+
+            <div class="p-3.5 bg-amber-50 dark:bg-amber-900/25 border border-amber-200 dark:border-amber-800 rounded-xl space-y-2">
+                <div class="flex items-center gap-2 text-xs font-bold text-amber-900 dark:text-amber-200">
+                    <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span>Verifikasi Kata Sandi Admin</span>
+                </div>
+                <p class="text-[11px] text-amber-800/80 dark:text-amber-300/80 leading-relaxed">
+                    Masukkan kata sandi akun Admin Anda untuk mengonfirmasi perubahan status blokir pengguna ini.
+                </p>
+                <div>
+                    <input type="password" id="showModalPassword"
+                        placeholder="Masukkan kata sandi Admin Anda"
+                        class="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                    <p id="showModalPasswordError" class="text-xs text-rose-600 dark:text-rose-400 mt-1 hidden font-medium"></p>
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-3.5 bg-gray-50 dark:bg-gray-700/30 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
+            <button id="show-block-cancel" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Batal</button>
+            <button id="show-block-confirm" class="px-4 py-2 text-sm font-semibold {{ $user->status === 'blocked' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700' }} text-white rounded-lg transition-colors">
+                {{ $user->status === 'blocked' ? 'Buka Blokir' : 'Blokir' }}
+            </button>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function(){
+        const modal = document.getElementById('show-block-modal');
+        const trigger = document.getElementById('btn-show-block-trigger');
+        const cancelBtn = document.getElementById('show-block-cancel');
+        const closeBtn = document.getElementById('show-block-close');
+        const confirmBtn = document.getElementById('show-block-confirm');
+        const backdrop = document.getElementById('show-block-backdrop');
+        const passwordInput = document.getElementById('showModalPassword');
+        const passwordError = document.getElementById('showModalPasswordError');
+        const form = document.getElementById('show-block-form');
+        const hiddenPassword = document.getElementById('show-admin-password-input');
+
+        function openModal(){
+            if (passwordInput) passwordInput.value = '';
+            if (passwordError) {
+                passwordError.classList.add('hidden');
+                passwordError.textContent = '';
+            }
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => { if (passwordInput) passwordInput.focus(); }, 50);
+        }
+
+        function closeModal(){
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+            if (passwordInput) passwordInput.value = '';
+            if (passwordError) passwordError.classList.add('hidden');
+        }
+
+        if (trigger) trigger.addEventListener('click', openModal);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (backdrop) backdrop.addEventListener('click', closeModal);
+
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function(){
+                const val = passwordInput ? passwordInput.value.trim() : '';
+                if (!val) {
+                    if (passwordError) {
+                        passwordError.textContent = 'Kata sandi Admin wajib dimasukkan untuk mengonfirmasi tindakan ini.';
+                        passwordError.classList.remove('hidden');
+                    }
+                    if (passwordInput) passwordInput.focus();
+                    return;
+                }
+                if (hiddenPassword) hiddenPassword.value = val;
+                if (form) form.submit();
+                closeModal();
+            });
+        }
+    });
+</script>
+@endpush
 @endsection

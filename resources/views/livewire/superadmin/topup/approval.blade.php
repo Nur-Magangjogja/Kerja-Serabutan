@@ -138,7 +138,7 @@
                                         <div class="min-w-0">
                                             <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{{ $transaction->user->name ?? ($transaction->customer_name ?? 'User') }}</p>
                                             <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $transaction->customer_email ?? ($transaction->user->email ?? '—') }}</p>
-                                            <p class="text-[11px] text-gray-400 dark:text-gray-500">{{ $transaction->user->city->name ?? '—' }}</p>
+                                            <p class="text-[11px] text-gray-400 dark:text-gray-500">{{ $transaction->user->city_name ?? (is_object($transaction->user->city ?? null) ? $transaction->user->city->name : ($transaction->user->city ?? '—')) }}</p>
                                         </div>
                                     </div>
                                 </td>
@@ -271,7 +271,7 @@
                         </div>
                         <div>
                             <p class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Kota / Lokasi</p>
-                            <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ $selectedTransaction->user->city->name ?? '—' }}</p>
+                            <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ $selectedTransaction->user->city_name ?? (is_object($selectedTransaction->user->city ?? null) ? $selectedTransaction->user->city->name : ($selectedTransaction->user->city ?? '—')) }}</p>
                         </div>
                         <div>
                             <p class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Nominal Top-Up</p>

@@ -139,9 +139,11 @@
                     <thead>
                         <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">#ID</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mitra</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Jumlah</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Bank / Rekening</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pengguna</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pengajuan</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Biaya Admin</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dana Cair (Net)</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Tujuan Bank</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                             <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
                         </tr>
@@ -168,18 +170,27 @@
                                             <a href="{{ route('admin.users.show', $item->user) }}" class="font-semibold text-gray-800 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 truncate block">
                                                 {{ $item->user->name }}
                                             </a>
-                                            <p class="text-xs text-gray-400 dark:text-gray-500 truncate">ID: {{ $item->user_id }}</p>
+                                            <p class="text-[11px] text-gray-400 dark:text-gray-500">
+                                                <span class="capitalize">{{ $item->user->role }}</span> • ID: {{ $item->user_id }}
+                                            </p>
                                         </div>
                                     </div>
                                 @else
-                                    <span class="text-gray-400">—</span>
+                                    <span class="text-gray-400 dark:text-gray-500">—</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3.5 font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                            <td class="px-4 py-3.5 text-right font-bold text-gray-900 dark:text-white">
                                 Rp {{ number_format($item->amount, 0, ',', '.') }}
                             </td>
-                            <td class="px-4 py-3.5 text-gray-600 dark:text-gray-300 hidden md:table-cell whitespace-nowrap">
-                                <span class="font-semibold text-gray-800 dark:text-gray-200">{{ $item->bank_code }}</span> / {{ $item->account_number }}
+                            <td class="px-4 py-3.5 text-right font-medium {{ $item->effective_admin_fee === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
+                                {{ $item->effective_admin_fee === 0 ? 'Gratis' : 'Rp ' . number_format($item->effective_admin_fee, 0, ',', '.') }}
+                            </td>
+                            <td class="px-4 py-3.5 text-right font-black text-emerald-600 dark:text-emerald-400">
+                                Rp {{ number_format($item->effective_net_amount, 0, ',', '.') }}
+                            </td>
+                            <td class="px-4 py-3.5 text-gray-600 dark:text-gray-300 hidden md:table-cell">
+                                <div class="font-semibold text-gray-800 dark:text-gray-200">{{ $item->bank_code }}</div>
+                                <div class="text-xs text-gray-400 font-mono">{{ $item->account_number }}</div>
                             </td>
                             <td class="px-4 py-3.5 whitespace-nowrap">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $stClass }}">

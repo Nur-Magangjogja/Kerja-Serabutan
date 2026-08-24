@@ -119,39 +119,35 @@
                 </div>
             @endif
 
-            <!-- Form Wrapper with Alpine state & Background scroll-lock -->
             <div x-data="{
                 amount: '{{ old('amount', '') }}',
                 maxBalance: {{ $balance }},
+                minAmount: {{ $minAmount ?? 10000 }},
                 bankCode: '{{ old('bank_code', 'BCA') }}',
                 bankName: 'Bank Central Asia (BCA)',
                 bankCategory: 'Bank',
                 bankIcon: '🏦',
+                selectedBankFee: 0,
+                isPlatformAccount: true,
                 customBankInput: '',
                 openBankModal: false,
                 searchBank: '',
-                banks: [
-                    { code: 'BCA', name: 'Bank Central Asia (BCA)', category: 'Bank', icon: '🏦' },
-                    { code: 'BRI', name: 'Bank Rakyat Indonesia (BRI)', category: 'Bank', icon: '🏦' },
-                    { code: 'BNI', name: 'Bank Negara Indonesia (BNI)', category: 'Bank', icon: '🏦' },
-                    { code: 'MANDIRI', name: 'Bank Mandiri', category: 'Bank', icon: '🏦' },
-                    { code: 'BSI', name: 'Bank Syariah Indonesia (BSI)', category: 'Bank', icon: '🏦' },
-                    { code: 'CIMB', name: 'CIMB Niaga', category: 'Bank', icon: '🏦' },
-                    { code: 'PERMATA', name: 'Bank Permata', category: 'Bank', icon: '🏦' },
-                    { code: 'DANAMON', name: 'Bank Danamon', category: 'Bank', icon: '🏦' },
-                    { code: 'SEABANK', name: 'SeaBank Indonesia', category: 'Bank', icon: '🏦' },
-                    { code: 'JAGO', name: 'Bank Jago', category: 'Bank', icon: '🏦' },
-                    { code: 'GOPAY', name: 'GoPay', category: 'E-Wallet', icon: '📱' },
-                    { code: 'OVO', name: 'OVO', category: 'E-Wallet', icon: '📱' },
-                    { code: 'DANA', name: 'DANA', category: 'E-Wallet', icon: '📱' },
-                    { code: 'SHOPEEPAY', name: 'ShopeePay', category: 'E-Wallet', icon: '📱' },
-                    { code: 'LINKAJA', name: 'LinkAja', category: 'E-Wallet', icon: '📱' },
-                    { code: 'OTHER', name: 'Bank / E-Wallet Lainnya', category: 'Lainnya', icon: '💳' }
-                ],
+                banks: @js($banks ?? \App\Models\AppSetting::getWithdrawBanks()),
+                init() {
+                    const match = this.banks.find(b => b.code === this.bankCode);
+                    if (match) {
+                        this.bankName = match.name;
+                        this.bankCategory = match.category;
+                        this.bankIcon = match.icon;
+                        this.selectedBankFee = Number(match.fee || 0);
+                        this.isPlatformAccount = Boolean(match.is_platform_account);
+                    }
+                },
                 get filteredBanks() {
-                    if (!this.searchBank) return this.banks;
+                    let list = this.banks.filter(b => b.is_active !== false);
+                    if (!this.searchBank) return list;
                     var q = this.searchBank.toLowerCase();
-                    return this.banks.filter(function(b) {
+                    return list.filter(function(b) {
                         return b.name.toLowerCase().includes(q) || b.code.toLowerCase().includes(q) || b.category.toLowerCase().includes(q);
                     });
                 },
@@ -160,6 +156,8 @@
                     this.bankName = item.name;
                     this.bankCategory = item.category;
                     this.bankIcon = item.icon;
+                    this.selectedBankFee = Number(item.fee || 0);
+                    this.isPlatformAccount = Boolean(item.is_platform_account);
                     this.openBankModal = false;
                 },
                 setAmount(val) {
@@ -178,63 +176,61 @@
                 }
             })"
             class="space-y-3.5">
-                
-                <form action="{{ route('mitra.withdraw.request') }}" method="POST" class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 shadow-xs space-y-3.5">
+                <form action="{{ route('mitra.withdraw.request') }}" method="POST" class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 shadow-xs space-y-3">
                     @csrf
                     
-                    <!-- Nominal Penarikan -->
+                    <!-- Input Nominal Penarikan -->
                     <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Nominal Penarikan *</label>
-                            <span class="text-[10px] text-gray-400">Min. Rp 10.000</span>
-                        </div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                            Nominal Penarikan Saldo (Rp) *
+                        </label>
                         <div class="relative">
-                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-bold text-sm">Rp</span>
-                            <input type="number" name="amount" x-model="amount" min="10000" max="{{ $balance }}" required
-                                class="pl-9 w-full px-3 py-2 bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white font-bold text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition" 
-                                placeholder="0" />
-                        </div>
-
-                        <!-- Quick Nominal Chips -->
-                        <div class="flex flex-wrap gap-1.5 mt-2">
-                            @if($balance >= 25000)
-                                <button type="button" @click="setAmount(25000)" class="px-2 py-1 text-[10px] font-bold rounded-lg border border-gray-200 dark:border-gray-600 hover:border-primary-500 bg-gray-50 dark:bg-gray-750 text-gray-700 dark:text-gray-200 transition cursor-pointer">
-                                    Rp 25.000
-                                </button>
-                            @endif
-                            @if($balance >= 50000)
-                                <button type="button" @click="setAmount(50000)" class="px-2 py-1 text-[10px] font-bold rounded-lg border border-gray-200 dark:border-gray-600 hover:border-primary-500 bg-gray-50 dark:bg-gray-750 text-gray-700 dark:text-gray-200 transition cursor-pointer">
-                                    Rp 50.000
-                                </button>
-                            @endif
-                            @if($balance >= 100000)
-                                <button type="button" @click="setAmount(100000)" class="px-2 py-1 text-[10px] font-bold rounded-lg border border-gray-200 dark:border-gray-600 hover:border-primary-500 bg-gray-50 dark:bg-gray-750 text-gray-700 dark:text-gray-200 transition cursor-pointer">
-                                    Rp 100.000
-                                </button>
-                            @endif
-                            @if($balance >= 10000)
-                                <button type="button" @click="setAmount('all')" class="px-2 py-1 text-[10px] font-bold rounded-lg bg-blue-50 dark:bg-blue-900/40 text-primary-700 dark:text-primary-300 border border-blue-200 dark:border-blue-800/60 hover:bg-blue-100 transition cursor-pointer ml-auto">
-                                    ⚡ Tarik Semua
-                                </button>
-                            @endif
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rp</span>
+                            <input type="number" name="amount" x-model="amount" :min="minAmount" max="{{ $balance }}" step="100" required
+                                class="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+                                placeholder="Min. {{ number_format($minAmount ?? 10000, 0, ',', '.') }}" />
                         </div>
                     </div>
 
-                    <!-- Bank Destination Custom Trigger (NO glitchy native select) -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Bank / E-Wallet Tujuan *</label>
-                        
-                        <!-- Hidden form field sent to server -->
-                        <input type="hidden" name="bank_code" :value="bankCode === 'OTHER' && customBankInput ? customBankInput : bankCode">
+                    <!-- Preset Nominal Pills -->
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" @click="setAmount(25000)" :disabled="maxBalance < 25000"
+                            class="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-gray-100 dark:bg-gray-750 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-gray-700/60 transition disabled:opacity-40 cursor-pointer">
+                            25.000
+                        </button>
+                        <button type="button" @click="setAmount(50000)" :disabled="maxBalance < 50000"
+                            class="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-gray-100 dark:bg-gray-750 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-gray-700/60 transition disabled:opacity-40 cursor-pointer">
+                            50.000
+                        </button>
+                        <button type="button" @click="setAmount(100000)" :disabled="maxBalance < 100000"
+                            class="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-gray-100 dark:bg-gray-750 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-gray-700/60 transition disabled:opacity-40 cursor-pointer">
+                            100.000
+                        </button>
+                        <button type="button" @click="setAmount('all')" :disabled="maxBalance < minAmount"
+                            class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-sky-400 border border-primary-200 dark:border-primary-800/60 transition disabled:opacity-40 cursor-pointer">
+                            Semua Saldo
+                        </button>
+                    </div>
 
-                        <!-- Trigger Button -->
+                    <!-- Pilihan Bank / E-Wallet Trigger Button -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Pilih Bank / E-Wallet Tujuan *</label>
+                        <input type="hidden" name="bank_code" :value="bankCode === 'OTHER' ? (customBankInput || 'OTHER') : bankCode" />
+                        
                         <button type="button" @click="openBankModal = true"
-                            class="w-full flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 rounded-xl text-left transition cursor-pointer">
-                            <div class="flex items-center gap-2 min-w-0">
-                                <span class="text-base" x-text="bankIcon"></span>
+                            class="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600 rounded-xl hover:border-primary-400 dark:hover:border-primary-500 transition text-left cursor-pointer">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="text-lg" x-text="bankIcon"></span>
                                 <div class="min-w-0">
-                                    <div class="text-xs font-bold text-gray-900 dark:text-white truncate" x-text="bankName"></div>
-                                    <span class="text-[9px] text-gray-400 uppercase tracking-wider" x-text="bankCategory"></span>
+                                    <div class="text-xs font-bold text-gray-900 dark:text-white truncate flex items-center gap-1.5">
+                                        <span x-text="bankName"></span>
+                                        <template x-if="isPlatformAccount || selectedBankFee === 0">
+                                            <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
+                                                ✨ Bebas Admin
+                                            </span>
+                                        </template>
+                                    </div>
+                                    <span class="text-[10px] text-gray-400 dark:text-gray-500" x-text="selectedBankFee === 0 ? bankCategory + ' • Bebas Biaya (Bank Platform)' : bankCategory + ' • Biaya Transfer: Rp ' + Number(selectedBankFee).toLocaleString('id-ID')"></span>
                                 </div>
                             </div>
                             <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,10 +239,10 @@
                         </button>
                     </div>
 
-                    <!-- Custom Bank Input if 'OTHER' selected -->
-                    <div x-show="bankCode === 'OTHER'" x-cloak>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Nama Bank / Fintech Lainnya *</label>
-                        <input type="text" x-model="customBankInput" placeholder="Contoh: Bank BJB, Bank Nagari, dll"
+                    <!-- Custom Bank input if OTHER -->
+                    <div x-show="bankCode === 'OTHER'" x-cloak class="space-y-1">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Nama Bank / E-Wallet Lainnya *</label>
+                        <input type="text" x-model="customBankInput" placeholder="Ketik nama bank (misal: Bank Nagari, BJB, dll)"
                             class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition" />
                     </div>
 
@@ -273,25 +269,25 @@
                             <span class="font-bold text-gray-900 dark:text-white" x-text="amount ? 'Rp ' + Number(amount).toLocaleString('id-ID') : 'Rp 0'"></span>
                         </div>
                         <div class="flex items-center justify-between text-gray-600 dark:text-gray-400">
-                            <span>Biaya Admin</span>
-                            <span class="font-bold text-emerald-600 dark:text-emerald-400">Gratis (Rp 0)</span>
+                            <span>Biaya Admin (Transfer)</span>
+                            <span class="font-bold" :class="selectedBankFee === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'" x-text="selectedBankFee === 0 ? '✨ Gratis (Rp 0)' : 'Rp ' + Number(selectedBankFee).toLocaleString('id-ID')"></span>
                         </div>
                         <div class="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-1.5 font-bold text-xs text-gray-900 dark:text-white">
-                            <span>Total Diterima</span>
-                            <span class="text-primary-600 dark:text-sky-400" x-text="amount ? 'Rp ' + Number(amount).toLocaleString('id-ID') : 'Rp 0'"></span>
+                            <span>Estimasi Dana Masuk</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 font-black text-sm" x-text="amount ? 'Rp ' + Number(Math.max(0, amount - selectedBankFee)).toLocaleString('id-ID') : 'Rp 0'"></span>
                         </div>
                     </div>
 
                     <!-- Submit Button -->
                     <div class="pt-1">
-                        <button type="submit" @if(!$canWithdraw) disabled @endif
+                        <button type="submit" :disabled="!{{ $canWithdraw ? 'true' : 'false' }} || !amount || amount < minAmount || amount > maxBalance"
                             class="w-full py-2.5 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer text-center">
                             Ajukan Penarikan Dana
                         </button>
                     </div>
                 </form>
 
-                <!-- Bank Selection Modal (Isolated Dialog with Scroll Containment) -->
+                <!-- Bank Selection Modal -->
                 <div x-show="openBankModal" x-cloak 
                     class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overscroll-contain"
                     @click="openBankModal = false"
@@ -305,7 +301,10 @@
                         <!-- Modal Header with Search Filter -->
                         <div class="p-3.5 border-b border-gray-100 dark:border-gray-700 space-y-2">
                             <div class="flex items-center justify-between">
-                                <h3 class="text-xs font-bold text-gray-900 dark:text-white">Pilih Bank / E-Wallet</h3>
+                                <div>
+                                    <h3 class="text-xs font-bold text-gray-900 dark:text-white">Pilih Bank / E-Wallet</h3>
+                                    <p class="text-[10px] text-gray-400">Gunakan bank platform untuk bebas biaya admin</p>
+                                </div>
                                 <button type="button" @click="openBankModal = false" class="p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition cursor-pointer">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -313,7 +312,6 @@
                                 </button>
                             </div>
                             
-                            <!-- Search Input -->
                             <div class="relative">
                                 <input type="text" x-model="searchBank" placeholder="Cari bank atau e-wallet..."
                                     class="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-xs text-gray-900 dark:text-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none">
@@ -323,7 +321,7 @@
                             </div>
                         </div>
 
-                        <!-- Scrollable Bank List (Isolated scroll) -->
+                        <!-- Scrollable Bank List -->
                         <div class="p-3 overflow-y-auto max-h-[50vh] space-y-1 hide-scrollbar overscroll-contain">
                             <template x-for="item in filteredBanks" :key="item.code">
                                 <button type="button" @click="selectBank(item)"
@@ -332,8 +330,19 @@
                                     <div class="flex items-center gap-2.5 min-w-0">
                                         <span class="text-base" x-text="item.icon"></span>
                                         <div class="min-w-0">
-                                            <div class="text-xs font-bold text-gray-900 dark:text-white truncate" x-text="item.name"></div>
-                                            <span class="text-[9px] text-gray-400 uppercase tracking-wider" x-text="item.category"></span>
+                                            <div class="text-xs font-bold text-gray-900 dark:text-white truncate flex items-center gap-1.5">
+                                                <span x-text="item.name"></span>
+                                            </div>
+                                            <div class="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
+                                                <span x-text="item.category"></span>
+                                                <span>•</span>
+                                                <template x-if="item.fee === 0 || item.is_platform_account">
+                                                    <span class="text-emerald-600 dark:text-emerald-400 font-bold">✨ Bebas Biaya</span>
+                                                </template>
+                                                <template x-if="item.fee > 0 && !item.is_platform_account">
+                                                    <span class="text-gray-500">Admin: Rp <span x-text="Number(item.fee).toLocaleString('id-ID')"></span></span>
+                                                </template>
+                                            </div>
                                         </div>
                                     </div>
                                     <div x-show="bankCode === item.code" class="text-primary-600 dark:text-sky-400 font-bold text-xs">

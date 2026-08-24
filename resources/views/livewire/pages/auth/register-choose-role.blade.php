@@ -1,5 +1,5 @@
 <?php
-
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
@@ -12,9 +12,12 @@ new #[Layout('layouts.guest')] class extends Component {
         $role = in_array($role, $allowed) ? $role : 'customer';
 
         Session::put('registration_role', $role);
+        Cookie::queue('registration_role', $role, 60 * 24 * 7);
 
         // Clear any previous registration UUID to start fresh
         Session::forget('registration_uuid');
+        Cookie::queue(Cookie::forget('registration_uuid'));
+        Cookie::queue(Cookie::forget('registration_step1_draft'));
 
         $this->redirect(route('register.step1'), navigate: true);
     }

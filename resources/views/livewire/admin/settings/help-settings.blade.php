@@ -44,7 +44,7 @@
                     </div>
                     <input type="number" wire:model="min_help_nominal" id="min_help_nominal"
                         class="block w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 dark:text-white text-sm font-medium"
-                        placeholder="10000" min="0" step="1000">
+                        placeholder="10000" min="0" step="100">
                 </div>
                 @error('min_help_nominal') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                 <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Nominal terendah yang dapat diminta customer saat membuat bantuan baru.</p>

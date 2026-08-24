@@ -145,6 +145,8 @@ class Index extends Component
             'balance' => $balance,
             'activeTab' => $this->activeTab,
             'unreadChatCount' => $unreadChatCount,
+            'selectedHelp' => $this->selectedHelp,
+            'selectedHelpData' => $this->selectedHelpData,
         ]);
     }
 }

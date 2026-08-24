@@ -166,7 +166,7 @@
                             <!-- Input Nominal -->
                             <div class="relative flex-1 px-3">
                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-base">Rp</span>
-                                <input type="number" wire:model.live="amount" id="amount-input" placeholder="20000" min="20000" step="1000"
+                                <input type="number" wire:model.live="amount" id="amount-input" placeholder="20000" min="20000" step="100"
                                     class="w-full pl-8 pr-2 py-1.5 text-center font-bold text-lg text-gray-900 dark:text-white border-none focus:ring-0 focus:outline-none bg-transparent">
                             </div>
 

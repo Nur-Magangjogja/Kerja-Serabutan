@@ -108,7 +108,9 @@ class AdminWithdrawController extends Controller
     {
         $withdraw->load('user');
         $routeName = request()->route() ? request()->route()->getName() : null;
-        if ($routeName && strpos($routeName, 'superadmin.') === 0) {
+        $isSuperAdmin = (auth()->user() && in_array(auth()->user()->role, ['super_admin', 'superadmin'])) || ($routeName && strpos($routeName, 'superadmin.') === 0);
+
+        if ($isSuperAdmin) {
             return view('superadmin.withdraws._modal', ['withdraw' => $withdraw]);
         }
 

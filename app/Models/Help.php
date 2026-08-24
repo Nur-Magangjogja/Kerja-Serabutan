@@ -31,7 +31,26 @@ class Help extends Model
     public const VALID_TRANSITIONS = [
         self::STATUS_MENUNGGU_MITRA => [
             self::STATUS_TAKEN,
+            'memperoleh_mitra',
             self::STATUS_DIBATALKAN,
+            'cancelled',
+        ],
+        'mencari_mitra' => [
+            self::STATUS_TAKEN,
+            'memperoleh_mitra',
+            self::STATUS_DIBATALKAN,
+            'cancelled',
+        ],
+        'menunggu_pembayaran' => [
+            self::STATUS_MENUNGGU_MITRA,
+            self::STATUS_DIBATALKAN,
+            'cancelled',
+        ],
+        'pending' => [
+            self::STATUS_MENUNGGU_MITRA,
+            self::STATUS_TAKEN,
+            self::STATUS_DIBATALKAN,
+            'cancelled',
         ],
         self::STATUS_TAKEN => [
             self::STATUS_PARTNER_ON_THE_WAY,
@@ -177,6 +196,7 @@ class Help extends Model
         'partner_cancel_reason',
         'partner_cancel_notes',
         'partner_cancel_prev_status',
+        'cancelled_mitra_ids',
         // Kolom model v2 (Commission-Based / Escrow System)
         'model_version',
         'platform_commission_rate',
@@ -208,6 +228,7 @@ class Help extends Model
         'partner_current_lng'        => 'decimal:8',
         'partner_started_moving_at'  => 'datetime',
         'partner_cancel_requested_at'=> 'datetime',
+        'cancelled_mitra_ids'        => 'array',
         // Model v2 casts
         'model_version'              => 'integer',
         'platform_commission_rate'   => 'decimal:2',
@@ -308,6 +329,59 @@ class Help extends Model
     public function scopeCancelled($query)
     {
         return $query->whereIn('status', [self::STATUS_DIBATALKAN, 'cancelled']);
+    }
+
+    /**
+     * Scope untuk menyaring bantuan yang berhak diambil oleh mitra tertentu
+     * (mengecualikan bantuan yang pernah dibatalkan oleh mitra tersebut).
+     */
+    public function scopeAvailableForMitra($query, ?int $mitraId = null)
+    {
+        if (!$mitraId) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($mitraId) {
+            $q->whereNull('cancelled_mitra_ids')
+              ->orWhereJsonDoesntContain('cancelled_mitra_ids', (int) $mitraId);
+        });
+    }
+
+    /**
+     * Cek apakah bantuan ini pernah dibatalkan oleh mitra tertentu.
+     */
+    public function hasCancelledBy(?int $mitraId): bool
+    {
+        if (!$mitraId) {
+            return false;
+        }
+
+        $ids = $this->cancelled_mitra_ids ?? [];
+        if (!is_array($ids)) {
+            $ids = json_decode((string) $ids, true) ?? [];
+        }
+
+        return in_array($mitraId, $ids, false) || in_array((string) $mitraId, $ids, false);
+    }
+
+    /**
+     * Cek apakah bantuan ini berhak diambil oleh mitra tertentu.
+     */
+    public function canBeTakenBy(?User $mitra): bool
+    {
+        if (!$mitra || !$mitra->isMitra()) {
+            return false;
+        }
+
+        if ($this->status !== self::STATUS_MENUNGGU_MITRA || $this->mitra_id !== null) {
+            return false;
+        }
+
+        if ($this->hasCancelledBy($mitra->id)) {
+            return false;
+        }
+
+        return true;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -437,8 +511,15 @@ class Help extends Model
      */
     public function isCustomerCancellable(): bool
     {
-        return $this->status === self::STATUS_MENUNGGU_MITRA;
+        return in_array($this->status, [
+            self::STATUS_MENUNGGU_MITRA,
+            'mencari_mitra',
+            'menunggu_pembayaran',
+            'pending',
+        ]);
     }
+
+
 
     /**
      * Apakah bantuan sedang aktif (belum selesai dan belum dibatalkan).

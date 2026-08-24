@@ -218,6 +218,24 @@
                     Verifikasi KTP
                 </a>
 
+                @php
+                    $pendingDeletionCount = \App\Models\AccountDeletionRequest::where('status', 'pending')->count();
+                @endphp
+                <a href="{{ route('superadmin.account.deletions') }}" wire:navigate
+                    class="flex items-center justify-between px-4 py-2.5 {{ request()->routeIs('superadmin.account.deletions*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Hapus Akun
+                    </div>
+                    @if($pendingDeletionCount > 0)
+                        <span class="px-2 py-0.5 text-xs font-bold rounded-full {{ request()->routeIs('superadmin.account.deletions*') ? 'bg-white text-primary-600' : 'bg-red-500 text-white' }}">
+                            {{ $pendingDeletionCount }}
+                        </span>
+                    @endif
+                </a>
+
                 <div class="pt-4 pb-1">
                     <p class="px-4 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Moderasi & Laporan</p>
                 </div>

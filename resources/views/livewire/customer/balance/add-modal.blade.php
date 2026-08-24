@@ -41,7 +41,7 @@
                         <div class="relative">
                             <span
                                 class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 font-medium">Rp</span>
-                            <input type="number" wire:model.live.debounce.400ms="amount" placeholder="0" min="1" step="1000"
+                            <input type="number" wire:model.live.debounce.400ms="amount" placeholder="0" min="1" step="100"
                                 class="w-full pl-12 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 @error('amount') border-red-500 @enderror" />
                         </div>
                         @error('amount')

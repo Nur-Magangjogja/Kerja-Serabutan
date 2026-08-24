@@ -44,22 +44,35 @@
                         </div>
                     </div>
 
-                    <div class="bg-gray-50 p-4 rounded">
+                    <div class="bg-gray-50 dark:bg-gray-700/60 p-4 rounded-xl space-y-3">
                         <div class="flex items-center justify-between">
                             <div>
-                                <div class="text-sm text-gray-500">Jumlah</div>
-                                <div class="text-2xl font-bold text-gray-900">Rp
-                                    {{ number_format($withdraw->amount, 0, ',', '.') }}
-                                </div>
+                                <div class="text-xs text-gray-500">Nominal Pengajuan</div>
+                                <div class="text-xl font-bold text-gray-900 dark:text-white">Rp {{ number_format($withdraw->amount, 0, ',', '.') }}</div>
                             </div>
-                            <div class="text-sm text-gray-500 text-right">
-                                <div>Bank / Rekening</div>
-                                <div class="font-medium">{{ $withdraw->bank_code }} / {{ $withdraw->account_number }}
+                            <div class="text-right">
+                                <div class="text-xs text-gray-500">Dana Cair ke Pengguna (Net)</div>
+                                <div class="text-xl font-black text-emerald-600 dark:text-emerald-400">Rp {{ number_format($withdraw->effective_net_amount, 0, ',', '.') }}</div>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-gray-200 dark:border-gray-600 grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <span class="text-gray-400">Bank / Rekening:</span>
+                                <div class="font-semibold">{{ $withdraw->bank_code }} • {{ $withdraw->account_number }}</div>
+                            </div>
+                            <div>
+                                <span class="text-gray-400">Biaya Admin Transfer:</span>
+                                <div class="font-semibold {{ $withdraw->effective_admin_fee === 0 ? 'text-emerald-600' : 'text-rose-600' }}">
+                                    {{ $withdraw->effective_admin_fee === 0 ? 'Gratis (Rp 0)' : 'Rp ' . number_format($withdraw->effective_admin_fee, 0, ',', '.') }}
                                 </div>
                             </div>
                         </div>
-                        <div class="text-sm text-gray-500 mt-4">Keterangan</div>
-                        <div class="mt-1">{{ $withdraw->description ?? '-' }}</div>
+                        @if($withdraw->description)
+                        <div class="pt-2 border-t border-gray-200 dark:border-gray-600 text-xs">
+                            <span class="text-gray-400">Penerima / Keterangan:</span>
+                            <div class="font-medium mt-0.5">{{ $withdraw->description }}</div>
+                        </div>
+                        @endif
                     </div>
 
                     <div class="text-sm text-gray-500">Status: <strong>{{ ucfirst($withdraw->status) }}</strong></div>

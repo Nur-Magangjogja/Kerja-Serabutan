@@ -95,6 +95,7 @@ class Index extends Component
         // Statistik bantuan
         $availableHelpsCount = Help::where('status', 'menunggu_mitra')
             ->whereNull('mitra_id')
+            ->availableForMitra($user?->id)
             ->where(function ($q) {
                 $q->whereNull('scheduled_at')
                   ->orWhere('scheduled_at', '<=', now());
@@ -115,6 +116,7 @@ class Index extends Component
         if ($this->activeTab === 'tersedia' || $this->activeTab === 'semua') {
             $helpsQuery = Help::where('status', 'menunggu_mitra')
                 ->whereNull('mitra_id')
+                ->availableForMitra($user?->id)
                 ->where(function ($q) {
                     $q->whereNull('scheduled_at')
                       ->orWhere('scheduled_at', '<=', now());
@@ -150,6 +152,7 @@ class Index extends Component
 
         $recommendedQuery = Help::where('status', 'menunggu_mitra')
             ->whereNull('mitra_id')
+            ->availableForMitra($user?->id)
             ->where(function ($q) {
                 $q->whereNull('scheduled_at')
                   ->orWhere('scheduled_at', '<=', now());
@@ -165,6 +168,7 @@ class Index extends Component
         // Terbaru: order by created_at desc
         $latestQuery = Help::where('status', 'menunggu_mitra')
             ->whereNull('mitra_id')
+            ->availableForMitra($user?->id)
             ->where(function ($q) {
                 $q->whereNull('scheduled_at')
                   ->orWhere('scheduled_at', '<=', now());
@@ -175,6 +179,7 @@ class Index extends Component
         // Terdekat: prioritize user's city
         $nearbyQuery = Help::where('status', 'menunggu_mitra')
             ->whereNull('mitra_id')
+            ->availableForMitra($user?->id)
             ->where(function ($q) {
                 $q->whereNull('scheduled_at')
                   ->orWhere('scheduled_at', '<=', now());

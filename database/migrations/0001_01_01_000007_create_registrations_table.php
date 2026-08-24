@@ -20,8 +20,8 @@ return new class extends Migration
             $table->date('date_of_birth')->nullable();
             $table->enum('gender', ['Laki-laki', 'Perempuan'])->nullable();
             $table->text('address')->nullable();
-            $table->string('rt', 5)->nullable();
-            $table->string('rw', 5)->nullable();
+            $table->unsignedInteger('rt')->nullable();
+            $table->unsignedInteger('rw')->nullable();
             $table->string('kelurahan')->nullable();
             $table->string('kecamatan')->nullable();
             $table->string('city')->nullable();

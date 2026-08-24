@@ -20,6 +20,8 @@ class AdminUserController extends Controller
             ->unique();
 
         $query = User::with('city')
+            ->withMax('helps', 'updated_at')
+            ->withMax('takenHelps', 'updated_at')
             ->withCount('helps')
             ->withCount('partnerReports')
             // load both mitra/customer rating aggregates so we can display correct values per role
@@ -99,12 +101,12 @@ class AdminUserController extends Controller
     {
         $admin = auth()->user();
 
-        $cityIds = City::where('admin_id', $admin->id)->pluck('id');
-
-        // Only restrict access when the admin is linked to one or more cities.
-        // If the admin has no city assignments, allow viewing any user.
-        if ($cityIds->isNotEmpty() && !$cityIds->contains($user->city_id)) {
-            abort(404);
+        // Only restrict access for standard admin with city assignments
+        if ($admin && $admin->role === 'admin') {
+            $cityIds = City::where('admin_id', $admin->id)->pluck('id');
+            if ($cityIds->isNotEmpty() && !$cityIds->contains($user->city_id)) {
+                abort(404);
+            }
         }
 
         // If the request is AJAX, return only the partial HTML suitable for a modal.

@@ -16,11 +16,12 @@ new #[Layout('layouts.guest')] class extends Component {
     public function mount()
     {
         // Cek apakah step 1 dan 2 sudah selesai (via registration record)
-        $uuid = Session::get('registration_uuid');
+        $uuid = Session::get('registration_uuid') ?? request()->cookie('registration_uuid');
         if (!$uuid) {
             $this->redirect(route('register.step1'), navigate: true);
             return;
         }
+        Session::put('registration_uuid', $uuid);
 
         $registration = Registration::where('uuid', $uuid)->first();
         if (!$registration || !$registration->ktp_photo_path) {

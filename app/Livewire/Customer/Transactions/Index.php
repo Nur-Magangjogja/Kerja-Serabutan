@@ -40,6 +40,7 @@ class Index extends Component
 
         $typeLabel = match($type) {
             'topup' => 'Top Up Saldo',
+            'withdraw' => 'Penarikan Saldo (Withdraw)',
             'refund' => 'Pengembalian Dana (Refund)',
             'escrow_lock' => 'Pembayaran Permintaan Bantuan',
             'deduction' => 'Potongan / Penyesuaian Saldo',
@@ -80,6 +81,8 @@ class Index extends Component
 
         if ($this->filterType === 'topup') {
             $query->where('type', 'topup');
+        } elseif ($this->filterType === 'withdraw') {
+            $query->where('type', 'withdraw');
         } elseif ($this->filterType === 'payment') {
             $query->whereIn('type', ['escrow_lock', 'deduction']);
         } elseif ($this->filterType === 'refund') {

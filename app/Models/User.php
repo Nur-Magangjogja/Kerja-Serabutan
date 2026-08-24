@@ -68,6 +68,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'verified' => 'boolean',
             'date_of_birth' => 'date',
+            'rt' => 'integer',
+            'rw' => 'integer',
             'notification_settings' => 'array',
         ];
     }
@@ -136,6 +138,11 @@ class User extends Authenticatable
         return $this->hasOne(UserBalance::class);
     }
 
+    public function userBalance()
+    {
+        return $this->hasOne(UserBalance::class);
+    }
+
     public function withdrawRequests()
     {
         return $this->hasMany(\App\Models\WithdrawRequest::class);
@@ -151,7 +158,7 @@ class User extends Authenticatable
     public function adjustBalance(int $amountDelta): void
     {
         // Use UserBalance helper methods to modify balance and record transactions.
-        $userBalance = $this->balance()->first();
+        $userBalance = $this->userBalance()->first() ?? $this->balance()->first();
         if (!$userBalance) {
             $userBalance = $this->balance()->create(['balance' => 0]);
         }
@@ -174,14 +181,17 @@ class User extends Authenticatable
     public function getBalanceAttribute()
     {
         // Prefer UserBalance row
-        $userBalance = $this->getRelationValue('balance') ?? $this->balance()->first();
+        $userBalance = $this->getRelationValue('userBalance')
+            ?? $this->getRelationValue('balance')
+            ?? $this->userBalance()->first()
+            ?? $this->balance()->first();
+
         if ($userBalance && isset($userBalance->balance)) {
-            // return integer rounded value (Rupiah)
-            return (int) round($userBalance->balance);
+            return (float) $userBalance->balance;
         }
 
         // Fallback to users.balance column if present
-        return isset($this->attributes['balance']) ? (int) $this->attributes['balance'] : 0;
+        return isset($this->attributes['balance']) ? (float) $this->attributes['balance'] : 0.0;
     }
 
     public function transactions()
@@ -226,18 +236,64 @@ class User extends Authenticatable
     }
 
     /**
-     * Return the display name for the city.
-     * Prefer the related City model (if eager-loaded), fallback to users.city attribute.
+     * Waktu aktivitas terakhir pengguna (berdasarkan permintaan/pekerjaan bantuan terbaru).
      */
-    public function getCityNameAttribute()
+    public function getLastActivityAtAttribute(): ?\Carbon\Carbon
+    {
+        $dt1 = $this->helps_max_updated_at ?? null;
+        $dt2 = $this->taken_helps_max_updated_at ?? null;
+
+        if ($dt1 || $dt2) {
+            $c1 = $dt1 ? \Carbon\Carbon::parse($dt1) : null;
+            $c2 = $dt2 ? \Carbon\Carbon::parse($dt2) : null;
+            if ($c1 && $c2) return $c1->max($c2);
+            return $c1 ?: $c2;
+        }
+
+        // Direct database lookup if withMax was not loaded
+        $latestCustomerHelp = $this->helps()->latest('updated_at')->value('updated_at');
+        $latestMitraHelp = $this->takenHelps()->latest('updated_at')->value('updated_at');
+
+        $dates = collect([$latestCustomerHelp, $latestMitraHelp])
+            ->filter()
+            ->map(fn($d) => \Carbon\Carbon::parse($d));
+
+        return $dates->max();
+    }
+
+    /**
+     * Teks waktu relatif aktivitas terakhir (misal: "2 jam yang lalu").
+     */
+    public function getLastActivityForHumansAttribute(): string
+    {
+        $last = $this->last_activity_at;
+        if (!$last) {
+            return 'Belum ada aktivitas';
+        }
+
+        return $last->diffForHumans();
+    }
+
+    /**
+     * Return the display name for the city.
+     * Prefer the related City model (or city_id lookup), fallback to users.city attribute.
+     */
+    public function getCityNameAttribute(): ?string
     {
         $rel = $this->getRelationValue('city');
         if ($rel && isset($rel->name)) {
             return $rel->name;
         }
 
+        if (!empty($this->city_id)) {
+            $cityModel = City::find($this->city_id);
+            if ($cityModel && isset($cityModel->name)) {
+                return $cityModel->name;
+            }
+        }
+
         return isset($this->attributes['city']) && $this->attributes['city'] !== null
-            ? $this->attributes['city']
+            ? (string) $this->attributes['city']
             : null;
     }
 
@@ -361,5 +417,15 @@ class User extends Authenticatable
             $q->where('type', 'customer_to_mitra')
               ->orWhereNull('type');
         })->count();
+    }
+
+    public function accountDeletionRequests()
+    {
+        return $this->hasMany(AccountDeletionRequest::class, 'user_id');
+    }
+
+    public function pendingAccountDeletionRequest()
+    {
+        return $this->hasOne(AccountDeletionRequest::class, 'user_id')->where('status', 'pending');
     }
 }

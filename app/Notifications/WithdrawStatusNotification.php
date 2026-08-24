@@ -29,9 +29,10 @@ class WithdrawStatusNotification extends Notification
             ? 'Penarikan Anda berhasil diproses.'
             : ($status === WithdrawRequest::STATUS_FAILED ? 'Penarikan Anda dibatalkan / gagal.' : 'Status penarikan diperbarui.');
 
+        $rolePrefix = ($notifiable && $notifiable->role === 'customer') ? 'customer.' : 'mitra.';
         $url = $status === WithdrawRequest::STATUS_FAILED
-            ? route('mitra.withdraw.rejected', $this->withdraw->id)
-            : route('mitra.withdraw.success', $this->withdraw->id);
+            ? route($rolePrefix . 'withdraw.rejected', $this->withdraw->id)
+            : route($rolePrefix . 'withdraw.success', $this->withdraw->id);
 
         return [
             'withdraw_id' => $this->withdraw->id,

@@ -179,22 +179,34 @@ try {
     $helpPenalty->refresh();
     echo "7b. Mitra Request Cancel -> Status: " . $helpPenalty->status . " (Expected: partner_cancel_requested)\n";
 
-    // Customer accepts cancel -> Customer refunded 100%, Mitra penalized Rp 5.000 (from current 45.000 -> 40.000)
+    // Customer accepts cancel -> Mitra penalized Rp 5.000 (from 45.000 -> 40.000), Escrow remains locked because Help is back to pool
     $service->customerAcceptCancel($helpPenalty, $customer);
     $custBal->refresh();
     $mitraBal->refresh();
     $helpPenalty->refresh();
 
     echo "7c. After Customer Accepts Cancel:\n";
-    echo "   - Customer Balance (100% Refund): Rp " . number_format($custBal->balance, 0) . " (Expected: 50.000)\n";
+    echo "   - Customer Balance (Escrow Still Held): Rp " . number_format($custBal->balance, 0) . " (Expected: 10.000)\n";
     echo "   - Mitra Balance (Penalized -5.000): Rp " . number_format($mitraBal->balance, 0) . " (Expected: 40.000)\n";
     echo "   - Help Status (Reset to pool): " . $helpPenalty->status . " (Expected: menunggu_mitra)\n";
 
-    assert($custBal->balance == 50000, "Customer balance after cancel accept mismatch");
+    assert($custBal->balance == 10000, "Customer balance should still hold escrow while help is in pool");
     assert($mitraBal->balance == 40000, "Mitra balance after penalty mismatch");
     assert($helpPenalty->status === Help::STATUS_MENUNGGU_MITRA, "Help should be reset to pool");
 
-    echo "\n=== ALL VERIFICATION CHECKS (INCLUDING PENALTY & ESCROW REFUND) PASSED PERFECTLY! ===\n";
+    // 7d. Customer decides to cancel the help while it is in 'menunggu_mitra' -> 100% Escrow Refunded
+    $service->customerCancelHelp($helpPenalty, $customer);
+    $custBal->refresh();
+    $helpPenalty->refresh();
+
+    echo "7d. After Customer Cancels Help from Pool:\n";
+    echo "   - Customer Balance (100% Refunded): Rp " . number_format($custBal->balance, 0) . " (Expected: 50.000)\n";
+    echo "   - Help Status: " . $helpPenalty->status . " (Expected: dibatalkan)\n";
+
+    assert($custBal->balance == 50000, "Customer balance after cancel should be refunded 100%");
+    assert($helpPenalty->status === Help::STATUS_DIBATALKAN, "Help status should be dibatalkan");
+
+    echo "\n=== ALL VERIFICATION CHECKS (INCLUDING ESCROW RETENTION & LATER REFUND) PASSED PERFECTLY! ===\n";
 
 } catch (\Throwable $e) {
     echo "\n[ERROR] " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine() . "\n";

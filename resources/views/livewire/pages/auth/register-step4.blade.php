@@ -5,6 +5,7 @@ use App\Models\User;
 use App\Models\City;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
@@ -22,12 +23,13 @@ new #[Layout('layouts.guest')] class extends Component {
 
     public function mount()
     {
-        // Cek apakah registration UUID ada
-        $uuid = Session::get('registration_uuid');
+        // Cek apakah registration UUID ada (session atau cookie)
+        $uuid = Session::get('registration_uuid') ?? request()->cookie('registration_uuid');
         if (!$uuid) {
             $this->redirect(route('register.step1'), navigate: true);
             return;
         }
+        Session::put('registration_uuid', $uuid);
 
         $registration = Registration::where('uuid', $uuid)->first();
         if (!$registration || !$registration->ktp_photo_path || !$registration->selfie_photo_path) {
@@ -57,10 +59,15 @@ new #[Layout('layouts.guest')] class extends Component {
         $this->step2_data = ['ktp_photo_path' => $registration->ktp_photo_path];
         $this->step3_data = ['selfie_photo_path' => $registration->selfie_photo_path];
         // Prefill email if user previously entered it
-        $this->email = $registration->email ?? $this->email;
+        $this->email = $registration->email ?? (request()->cookie('registration_step4_email') ?? $this->email);
     }
 
-
+    public function updatedEmail($value): void
+    {
+        if (!empty($value)) {
+            Cookie::queue('registration_step4_email', $value, 60 * 24 * 7);
+        }
+    }
 
     public function complete(): void
     {
@@ -71,8 +78,8 @@ new #[Layout('layouts.guest')] class extends Component {
         ]);
 
         // Ambil registration
-        $uuid = Session::get('registration_uuid');
-        $registration = Registration::where('uuid', $uuid)->first();
+        $uuid = Session::get('registration_uuid') ?? request()->cookie('registration_uuid');
+        $registration = $uuid ? Registration::where('uuid', $uuid)->first() : null;
         if (!$registration) {
             $this->redirect(route('register.step1'), navigate: true);
             return;
@@ -82,15 +89,15 @@ new #[Layout('layouts.guest')] class extends Component {
         $userData = [
             'name' => $registration->full_name,
             'email' => $validated['email'],
-            'role' => $registration->role ?? 'customer',
+            'role' => $registration->role ?? (request()->cookie('registration_role') ?? 'customer'),
             'password' => Hash::make($validated['password']),
             'nik' => $registration->nik,
             'place_of_birth' => $registration->place_of_birth,
             'date_of_birth' => $registration->date_of_birth,
             'gender' => $registration->gender,
             'address' => $registration->address,
-            'rt' => $registration->rt,
-            'rw' => $registration->rw,
+            'rt' => $registration->rt !== null ? (int) $registration->rt : null,
+            'rw' => $registration->rw !== null ? (int) $registration->rw : null,
             'kelurahan' => $registration->kelurahan,
             'kecamatan' => $registration->kecamatan,
             'city' => $registration->city,
@@ -134,8 +141,13 @@ new #[Layout('layouts.guest')] class extends Component {
             'password' => Hash::make($validated['password']),
         ]);
 
-        // Hapus UUID session
+        // Hapus UUID session & cookies
         Session::forget('registration_uuid');
+        Session::forget('registration_role');
+        Cookie::queue(Cookie::forget('registration_uuid'));
+        Cookie::queue(Cookie::forget('registration_role'));
+        Cookie::queue(Cookie::forget('registration_step1_draft'));
+        Cookie::queue(Cookie::forget('registration_step4_email'));
 
         // Clear client-side saved draft for step4 (email)
         $this->dispatch('clear-registration-step4');

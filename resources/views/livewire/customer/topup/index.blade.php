@@ -48,7 +48,7 @@
 
             <div class="mb-4">
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Nominal lain</label>
-                <input id="amount" wire:model.defer="amount" name="amount" type="number" min="10000" step="1000"
+                <input id="amount" wire:model.defer="amount" name="amount" type="number" min="10000" step="100"
                     placeholder="Masukkan nominal (mis. 50000)"
                     class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                 @error('amount') <div class="text-xs text-red-600 mt-2">{{ $message }}</div> @enderror

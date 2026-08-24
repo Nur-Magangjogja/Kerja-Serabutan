@@ -69,32 +69,39 @@
             <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-700/60 dark:to-gray-800/60 p-6 rounded-xl border border-blue-100 dark:border-gray-700">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-blue-900 dark:text-blue-300 mb-1">Jumlah Penarikan</p>
+                        <p class="text-sm font-medium text-blue-900 dark:text-blue-300 mb-1">Nominal Pengajuan</p>
                         <p class="text-3xl font-bold text-blue-900 dark:text-white">
                             Rp {{ number_format($withdraw->amount, 0, ',', '.') }}
                         </p>
                     </div>
-                    <div class="flex-shrink-0">
-                        <svg class="w-16 h-16 text-blue-200 dark:text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"></path>
-                            <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"></path>
-                        </svg>
+                    <div class="text-right">
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-0.5">Dana Cair ke Pengguna (Net)</p>
+                        <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                            Rp {{ number_format($withdraw->effective_net_amount, 0, ',', '.') }}
+                        </p>
                     </div>
                 </div>
-                <div class="mt-4 pt-4 border-t border-blue-200 dark:border-gray-700 grid grid-cols-2 gap-4">
+
+                <div class="mt-4 pt-4 border-t border-blue-200 dark:border-gray-700 grid grid-cols-3 gap-3 text-xs">
                     <div>
-                        <p class="text-xs text-blue-700 dark:text-blue-400 mb-1">Bank</p>
-                        <p class="text-sm font-semibold text-blue-900 dark:text-gray-100">{{ $withdraw->bank_code }}</p>
+                        <p class="text-blue-700 dark:text-blue-400 mb-0.5 font-medium">Bank Tujuan</p>
+                        <p class="font-bold text-blue-900 dark:text-gray-100">{{ $withdraw->bank_code }}</p>
                     </div>
                     <div>
-                        <p class="text-xs text-blue-700 dark:text-blue-400 mb-1">No. Rekening</p>
-                        <p class="text-sm font-semibold text-blue-900 dark:text-gray-100">{{ $withdraw->account_number }}</p>
+                        <p class="text-blue-700 dark:text-blue-400 mb-0.5 font-medium">No. Rekening</p>
+                        <p class="font-bold text-blue-900 dark:text-gray-100">{{ $withdraw->account_number }}</p>
+                    </div>
+                    <div>
+                        <p class="text-blue-700 dark:text-blue-400 mb-0.5 font-medium">Biaya Admin Bank</p>
+                        <p class="font-bold {{ $withdraw->effective_admin_fee === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
+                            {{ $withdraw->effective_admin_fee === 0 ? 'Gratis (Rp 0)' : 'Rp ' . number_format($withdraw->effective_admin_fee, 0, ',', '.') }}
+                        </p>
                     </div>
                 </div>
                 @if($withdraw->description)
                 <div class="mt-4 pt-4 border-t border-blue-200 dark:border-gray-700">
-                    <p class="text-xs text-blue-700 dark:text-blue-400 mb-1">Keterangan</p>
-                    <p class="text-sm text-blue-900 dark:text-gray-100">{{ $withdraw->description }}</p>
+                    <p class="text-xs text-blue-700 dark:text-blue-400 mb-1">Keterangan / Penerima</p>
+                    <p class="text-sm font-semibold text-blue-900 dark:text-gray-100">{{ $withdraw->description }}</p>
                 </div>
                 @endif
             </div>
@@ -102,6 +109,16 @@
             @if($withdraw->status === 'pending')
                 <!-- Approval Form -->
                 <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+                    <div class="p-3.5 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-xl text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2.5 mb-5">
+                        <span class="text-base mt-0.5">💳</span>
+                        <div>
+                            <span class="font-bold block">Nominal yang Wajib Ditransfer: Rp {{ number_format($withdraw->effective_net_amount, 0, ',', '.') }}</span>
+                            <span class="text-[11px] block mt-0.5 text-blue-700 dark:text-blue-300">
+                                Transfer dana sebesar Rp {{ number_format($withdraw->effective_net_amount, 0, ',', '.') }} ke rekening {{ $withdraw->bank_code }} • {{ $withdraw->account_number }} ({{ $withdraw->description }}). Biaya transfer bank sebesar Rp {{ number_format($withdraw->effective_admin_fee, 0, ',', '.') }} telah diperhitungkan secara otomatis.
+                            </span>
+                        </div>
+                    </div>
+
                     <h5 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Form Approval</h5>
                     <form action="{{ route('superadmin.withdraws.approve', $withdraw) }}" method="POST">
                         @csrf

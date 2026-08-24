@@ -40,6 +40,7 @@ return new class extends Migration
             $table->string('partner_cancel_reason')->nullable();
             $table->text('partner_cancel_notes')->nullable();
             $table->string('partner_cancel_prev_status')->nullable();
+            $table->json('cancelled_mitra_ids')->nullable();
             $table->timestamp('partner_cancel_requested_at')->nullable();
             $table->decimal('partner_latitude', 10, 7)->nullable();
             $table->decimal('partner_longitude', 10, 7)->nullable();

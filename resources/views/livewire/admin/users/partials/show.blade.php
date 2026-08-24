@@ -1,4 +1,4 @@
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+<div id="user-detail-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" id="modal-backdrop"></div>
 
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full z-10 overflow-hidden border border-gray-100 dark:border-gray-700 max-h-[90vh] flex flex-col">

@@ -33,6 +33,9 @@
                 <button wire:click="setFilter('topup')" class="px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition cursor-pointer {{ $filterType === 'topup' ? 'bg-primary-600 text-white shadow-xs' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-700 hover:bg-gray-50' }}">
                     Top Up
                 </button>
+                <button wire:click="setFilter('withdraw')" class="px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition cursor-pointer {{ $filterType === 'withdraw' ? 'bg-primary-600 text-white shadow-xs' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-700 hover:bg-gray-50' }}">
+                    Tarik Saldo
+                </button>
                 <button wire:click="setFilter('payment')" class="px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition cursor-pointer {{ $filterType === 'payment' ? 'bg-primary-600 text-white shadow-xs' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-700 hover:bg-gray-50' }}">
                     Pembayaran
                 </button>
@@ -55,6 +58,7 @@
 
                             $typeLabel = match($type) {
                                 'topup' => 'Top Up Saldo',
+                                'withdraw' => 'Penarikan Saldo (Withdraw)',
                                 'refund' => 'Pengembalian Dana (Refund)',
                                 'escrow_lock' => 'Pembayaran Bantuan',
                                 'deduction' => 'Potongan Saldo',
@@ -81,6 +85,12 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m0 0l-4-4m4 4l4-4" />
                                                 </svg>
                                             @endif
+                                        </div>
+                                    @elseif($type === 'withdraw')
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                            </svg>
                                         </div>
                                     @elseif($type === 'refund')
                                         <div class="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">

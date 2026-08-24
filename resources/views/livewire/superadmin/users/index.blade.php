@@ -68,7 +68,7 @@
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pengguna</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">No. HP</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">Status & Aktivitas</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Kota</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Terdaftar</th>
                         <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
@@ -104,10 +104,18 @@
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $rc['class'] }}">{{ $rc['label'] }}</span>
                         </td>
                         <td class="px-4 py-3.5 hidden sm:table-cell">
-                            <span class="inline-flex items-center gap-1.5 text-xs font-medium {{ $isActive ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
-                                <span class="w-1.5 h-1.5 rounded-full {{ $isActive ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
-                                {{ isset($user->status) ? ucfirst($user->status) : '—' }}
-                            </span>
+                            <div class="space-y-1">
+                                <span class="inline-flex items-center gap-1.5 text-xs font-medium {{ $isActive ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
+                                    <span class="w-1.5 h-1.5 rounded-full {{ $isActive ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
+                                    {{ isset($user->status) ? ucfirst($user->status) : '—' }}
+                                </span>
+                                <div class="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400" title="{{ $user->last_activity_at ? 'Aktivitas terbaru: ' . $user->last_activity_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Belum ada riwayat aktivitas bantuan' }}">
+                                    <svg class="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span class="truncate">{{ $user->last_activity_for_humans }}</span>
+                                </div>
+                            </div>
                         </td>
                         <td class="px-4 py-3.5 hidden lg:table-cell">
                             @if($user->role === 'admin' && $user->managedCities && $user->managedCities->count() > 0)
@@ -205,6 +213,7 @@
                         ['label' => 'Pekerjaan',          'value' => $selectedUser->occupation ?? '—'],
                         ['label' => 'Agama',              'value' => $selectedUser->religion ?? '—'],
                         ['label' => 'Status Perkawinan',  'value' => $selectedUser->marital_status ?? '—'],
+                        ['label' => 'Aktivitas Terakhir', 'value' => $selectedUser->last_activity_at ? $selectedUser->last_activity_at->translatedFormat('d M Y, H:i') . ' WIB (' . $selectedUser->last_activity_for_humans . ')' : 'Belum ada aktivitas'],
                         ['label' => 'Terdaftar',          'value' => optional($selectedUser->created_at)?->format('d M Y H:i') ?? '—'],
                     ];
                     @endphp
@@ -388,6 +397,29 @@
                         @error('managed_city_ids') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                     </div>
                     @endif
+
+                    {{-- Konfirmasi Kata Sandi Superadmin saat Edit --}}
+                    @if($showEditModal)
+                    <div class="md:col-span-2 pt-4 border-t border-gray-100 dark:border-gray-700">
+                        <div class="p-3.5 bg-amber-50 dark:bg-amber-900/25 border border-amber-200 dark:border-amber-800 rounded-xl space-y-2">
+                            <div class="flex items-center gap-2 text-xs font-bold text-amber-900 dark:text-amber-200">
+                                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                <span>Verifikasi Kata Sandi Superadmin</span>
+                            </div>
+                            <p class="text-[11px] text-amber-800/80 dark:text-amber-300/80 leading-relaxed">
+                                Masukkan kata sandi akun Superadmin Anda untuk mengonfirmasi dan menerapkan perubahan data pengguna ini.
+                            </p>
+                            <div>
+                                <input type="password" wire:model.defer="adminPassword"
+                                    placeholder="Masukkan kata sandi Superadmin Anda"
+                                    class="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                                @error('adminPassword') <p class="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                 </form>
             </div>
 
@@ -408,27 +440,75 @@
     @endif
 
     {{-- ===== Confirm Delete Modal ===== --}}
-    @if($showConfirmDelete)
+    @if($showConfirmDelete && $userToDelete)
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center flex-shrink-0 text-rose-600 dark:text-rose-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                 </div>
                 <div>
-                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Hapus User?</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Aksi ini tidak dapat dibatalkan.</p>
+                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Konfirmasi Hapus User</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Tindakan ini permanen dan tidak dapat dibatalkan.</p>
                 </div>
             </div>
-            <p class="text-sm text-gray-600 dark:text-gray-300 mb-5">Anda yakin ingin menghapus pengguna ini dari sistem?</p>
-            <div class="flex items-center justify-end gap-3">
+
+            <!-- Target User Summary Card -->
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3.5 border border-gray-100 dark:border-gray-600 text-xs space-y-1.5">
+                <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">Nama Pengguna:</span>
+                    <span class="font-bold text-gray-900 dark:text-white">{{ $userToDelete->name }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">Email:</span>
+                    <span class="font-medium text-gray-800 dark:text-gray-200">{{ $userToDelete->email }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">Role:</span>
+                    <span class="font-bold uppercase text-primary-600">{{ $userToDelete->role }}</span>
+                </div>
+                @php
+                    $targetBal = (float) $userToDelete->balance;
+                @endphp
+                <div class="flex justify-between pt-1 border-t border-gray-200/60 dark:border-gray-600">
+                    <span class="text-gray-500 dark:text-gray-400">Sisa Saldo Akun:</span>
+                    <span class="font-bold {{ $targetBal > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300' }}">
+                        Rp {{ number_format($targetBal, 0, ',', '.') }}
+                    </span>
+                </div>
+            </div>
+
+            @if($targetBal > 0)
+                <div class="p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
+                    <svg class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span><strong>Peringatan:</strong> Pengguna ini masih memiliki sisa saldo Rp {{ number_format($targetBal, 0, ',', '.') }}. Pastikan dana telah diselesaikan.</span>
+                </div>
+            @endif
+
+            <!-- Superadmin Password Confirmation Input -->
+            <div class="space-y-1.5 pt-1">
+                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
+                    Masukkan Kata Sandi Superadmin Anda <span class="text-red-500">*</span>
+                </label>
+                <input type="password" wire:model.defer="adminPassword" wire:keydown.enter="deleteUser"
+                    placeholder="Kata sandi Superadmin Anda"
+                    class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition" />
+                @error('adminPassword')
+                    <p class="text-xs text-red-600 dark:text-red-400 font-medium mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-2">
                 <button type="button" wire:click.prevent="closeModal"
-                    class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    class="px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer">
                     Batal
                 </button>
-                <button wire:click="deleteUser"
-                    class="px-4 py-2 text-sm font-semibold bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors">
-                    Hapus
+                <button wire:click="deleteUser" wire:loading.attr="disabled"
+                    class="px-4 py-2.5 text-xs font-bold bg-rose-600 text-white rounded-xl hover:bg-rose-700 shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60">
+                    <svg wire:loading class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                    <span>Konfirmasi & Hapus User</span>
                 </button>
             </div>
         </div>

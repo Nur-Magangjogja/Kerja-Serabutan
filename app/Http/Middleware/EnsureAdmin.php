@@ -20,8 +20,8 @@ class EnsureAdmin
             return redirect()->route('login');
         }
 
-        // Only for admin role (not super_admin)
-        if (auth()->user()->role !== 'admin') {
+        // Allow admin and super_admin
+        if (!in_array(auth()->user()->role, ['admin', 'super_admin', 'superadmin'])) {
             abort(403, 'Unauthorized. Admin access only.');
         }
 
