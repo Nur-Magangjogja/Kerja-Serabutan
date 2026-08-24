@@ -203,13 +203,18 @@ class Index extends Component
 
         $requests = $query->paginate($this->perPage);
 
-        // Counts for tab badges
+        // Counts for tab badges (Single Grouped Query)
+        $rawCounts = AccountDeletionRequest::selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->all();
+
         $counts = [
-            'pending'   => AccountDeletionRequest::where('status', 'pending')->count(),
-            'approved'  => AccountDeletionRequest::where('status', 'approved')->count(),
-            'rejected'  => AccountDeletionRequest::where('status', 'rejected')->count(),
-            'cancelled' => AccountDeletionRequest::where('status', 'cancelled')->count(),
-            'all'       => AccountDeletionRequest::count(),
+            'pending'   => (int) ($rawCounts['pending'] ?? 0),
+            'approved'  => (int) ($rawCounts['approved'] ?? 0),
+            'rejected'  => (int) ($rawCounts['rejected'] ?? 0),
+            'cancelled' => (int) ($rawCounts['cancelled'] ?? 0),
+            'all'       => array_sum($rawCounts),
         ];
 
         return view('livewire.superadmin.account-deletions.index', [

@@ -49,38 +49,65 @@ class Index extends Component
 
     public function updateChartData()
     {
-        // Prepare user registration charts based on selected date/month
-        // Daily - shows days in the selected month
+        // 1. Daily - single grouped query for days in the selected month
         $selectedMonthCarbon = Carbon::parse($this->selectedMonth . '-01');
+        $startOfMonth = $selectedMonthCarbon->copy()->startOfMonth();
+        $endOfMonth = $selectedMonthCarbon->copy()->endOfMonth();
         $daysInMonth = $selectedMonthCarbon->daysInMonth;
+
+        $dailyCounts = User::whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->selectRaw('DATE(created_at) as date, count(*) as total')
+            ->groupBy('date')
+            ->pluck('total', 'date')
+            ->all();
+
         $dailyLabels = [];
         $dailyData = [];
         for ($i = 1; $i <= $daysInMonth; $i++) {
             $date = $selectedMonthCarbon->copy()->day($i);
             $dailyLabels[] = $date->format('d M');
-            $dailyData[] = User::whereDate('created_at', $date->toDateString())->count();
+            $dateKey = $date->toDateString();
+            $dailyData[] = (int) ($dailyCounts[$dateKey] ?? 0);
         }
 
-        // Monthly (12 months of selected year)
-        $months = 12;
+        // 2. Monthly - single grouped query for 12 months of selected year
         $selectedYearCarbon = Carbon::createFromDate($this->selectedYear, 1, 1);
+        $startOfYear = $selectedYearCarbon->copy()->startOfYear();
+        $endOfYear = $selectedYearCarbon->copy()->endOfYear();
+
+        $monthlyCounts = User::whereBetween('created_at', [$startOfYear, $endOfYear])
+            ->selectRaw('MONTH(created_at) as month, count(*) as total')
+            ->groupBy('month')
+            ->pluck('total', 'month')
+            ->all();
+
         $monthlyLabels = [];
         $monthlyData = [];
-        for ($i = 1; $i <= $months; $i++) {
+        for ($i = 1; $i <= 12; $i++) {
             $m = $selectedYearCarbon->copy()->month($i);
             $monthlyLabels[] = $m->format('M Y');
-            $monthlyData[] = User::whereYear('created_at', $m->year)->whereMonth('created_at', $m->month)->count();
+            $monthlyData[] = (int) ($monthlyCounts[$i] ?? 0);
         }
 
-        // Yearly (last 5 years from selected year)
+        // 3. Yearly - single grouped query for last 5 years from selected year
         $years = 5;
         $startYear = Carbon::createFromDate($this->selectedYear, 1, 1)->subYears($years - 1);
+        $startOf5Years = $startYear->copy()->startOfYear();
+        $endOf5Years = Carbon::createFromDate($this->selectedYear, 12, 31)->endOfDay();
+
+        $yearlyCounts = User::whereBetween('created_at', [$startOf5Years, $endOf5Years])
+            ->selectRaw('YEAR(created_at) as year, count(*) as total')
+            ->groupBy('year')
+            ->pluck('total', 'year')
+            ->all();
+
         $yearlyLabels = [];
         $yearlyData = [];
         for ($i = 0; $i < $years; $i++) {
             $y = $startYear->copy()->addYears($i);
-            $yearlyLabels[] = (string) $y->year;
-            $yearlyData[] = User::whereYear('created_at', $y->year)->count();
+            $yearKey = (int) $y->year;
+            $yearlyLabels[] = (string) $yearKey;
+            $yearlyData[] = (int) ($yearlyCounts[$yearKey] ?? 0);
         }
 
         $this->userChart = [

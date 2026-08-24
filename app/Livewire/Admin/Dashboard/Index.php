@@ -74,16 +74,22 @@ class Index extends Component
             ->take(6)
             ->get();
 
-        // 7-day Chart Data
+        // 7-day Chart Data (Single Grouped Query)
+        $startDate = now()->subDays(6)->startOfDay();
+        $countsByDate = (clone $helpQuery)
+            ->where('created_at', '>=', $startDate)
+            ->selectRaw('DATE(created_at) as date, count(*) as total')
+            ->groupBy('date')
+            ->pluck('total', 'date')
+            ->all();
+
         $chartLabels = [];
         $chartData = [];
         for ($i = 6; $i >= 0; $i--) {
             $day = now()->subDays($i);
             $chartLabels[] = $day->format('j M');
-            $dayCount = (clone $helpQuery)
-                ->whereDate('created_at', $day->toDateString())
-                ->count();
-            $chartData[] = $dayCount;
+            $dateKey = $day->toDateString();
+            $chartData[] = (int) ($countsByDate[$dateKey] ?? 0);
         }
 
         return view('livewire.admin.dashboard.index', [

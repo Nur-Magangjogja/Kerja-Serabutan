@@ -313,6 +313,12 @@ class AdminUsers extends Component
             $data['password'] = bcrypt($this->password);
             $user = User::create($data);
 
+            try {
+                \App\Models\UserBalance::firstOrCreate(['user_id' => $user->id], ['balance' => 0.00]);
+            } catch (\Throwable $e) {
+                // ignore
+            }
+
             if ($this->role === 'admin') {
                 $user->managedCities()->sync($this->managed_city_ids ?? []);
             }

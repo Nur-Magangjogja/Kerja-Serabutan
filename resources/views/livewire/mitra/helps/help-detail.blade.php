@@ -526,9 +526,7 @@
         {{-- Penilaian & Ulasan dari Customer --}}
         @if (in_array($help->status, ['completed', 'selesai']))
             @php
-                $customerReview = \App\Models\Rating::where('help_id', $help->id)
-                    ->where('type', 'customer_to_mitra')
-                    ->first();
+                $customerReview = $help->rating;
             @endphp
 
             @if ($customerReview)

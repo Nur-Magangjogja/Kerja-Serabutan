@@ -80,9 +80,9 @@ class AdminUserController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        // Ensure we have a city_name property for display (fallback to lookup by city_id)
+        // Ensure we have a city_name property for display
         foreach ($users as $user) {
-            $user->city_name = optional($user->city)->name ?? optional(City::find($user->city_id))->name;
+            $user->city_name = $user->city?->name ?? $user->city;
 
             // Normalize rating/count fields for the view so the template can show rating for both Mitra and Customer
             if ($user->isMitra()) {

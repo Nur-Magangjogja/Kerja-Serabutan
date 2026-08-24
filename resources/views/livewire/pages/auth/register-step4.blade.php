@@ -115,6 +115,13 @@ new #[Layout('layouts.guest')] class extends Component {
 
         $user = User::create($userData);
 
+        // Inisialisasi saldo user baru
+        try {
+            \App\Models\UserBalance::firstOrCreate(['user_id' => $user->id], ['balance' => 0.00]);
+        } catch (\Throwable $e) {
+            // ignore balance init error
+        }
+
         // Jika nama kota pada registration sesuai dengan record di tabel cities,
         // set relasi city_id agar user otomatis terkait dengan admin kota tersebut.
         try {

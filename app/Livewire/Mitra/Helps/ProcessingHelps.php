@@ -21,6 +21,7 @@ class ProcessingHelps extends Component
     public function loadHelps()
     {
         $this->helps = Help::where('mitra_id', auth()->id())
+            ->with(['user', 'city'])
             ->active()
             ->orderByDesc('taken_at')
             ->get();

@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\BalanceTransaction;
-use Livewire\Livewire;
 
 class UserBalance extends Model
 {
@@ -65,13 +64,6 @@ class UserBalance extends Model
             'status' => 'completed',
         ]);
 
-        // Emit Livewire event so dashboard components can refresh immediately
-        try {
-            Livewire::emit('balance-updated');
-        } catch (\Throwable $e) {
-            // ignore if Livewire not available in this context
-        }
-
         return $this;
     }
 
@@ -102,13 +94,6 @@ class UserBalance extends Model
             'status'       => 'completed',
         ]);
 
-        // Emit Livewire event so dashboard components can refresh immediately
-        try {
-            Livewire::emit('balance-updated');
-        } catch (\Throwable $e) {
-            // ignore if Livewire not available in this context
-        }
-
         return $this;
     }
 
@@ -129,12 +114,6 @@ class UserBalance extends Model
             'order_id'     => $orderId,
             'status'       => 'completed',
         ]);
-
-        try {
-            Livewire::emit('balance-updated');
-        } catch (\Throwable $e) {
-            // ignore if Livewire not available in this context
-        }
 
         return $transaction;
     }
@@ -176,12 +155,6 @@ class UserBalance extends Model
             'status'       => 'completed',
         ]);
 
-        try {
-            Livewire::emit('balance-updated');
-        } catch (\Throwable $e) {
-            // ignore
-        }
-
         return $tx;
     }
 
@@ -211,12 +184,6 @@ class UserBalance extends Model
             'status'       => 'completed',
         ]);
 
-        try {
-            Livewire::emit('balance-updated');
-        } catch (\Throwable $e) {
-            // ignore
-        }
-
         return $this;
     }
 
@@ -245,12 +212,6 @@ class UserBalance extends Model
             'order_id'     => $orderId,
             'status'       => 'completed',
         ]);
-
-        try {
-            Livewire::emit('balance-updated');
-        } catch (\Throwable $e) {
-            // ignore
-        }
 
         return $this;
     }

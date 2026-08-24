@@ -474,12 +474,9 @@
         {{-- Rating Form --}}
         @if(in_array($help->status, ['selesai', 'completed']))
             @php
-                $customerRating = \App\Models\Rating::where('help_id', $help->id)
-                    ->where(function ($q) {
-                        $q->where('rater_id', auth()->id())
-                          ->orWhere('user_id', auth()->id());
-                    })
-                    ->first();
+                $customerRating = $help->ratings->first(function ($r) {
+                    return $r->rater_id == auth()->id() || $r->user_id == auth()->id();
+                });
             @endphp
 
             @if($customerRating)
