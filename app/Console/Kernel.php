@@ -17,6 +17,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\MidtransRecheck::class,
         \App\Console\Commands\BalanceSyncCheck::class,
         \App\Console\Commands\AutoConfirmHelps::class,
+        \App\Console\Commands\AutoCancelExpiredHelps::class,
         \App\Console\Commands\SyncTopupActivities::class,
     ];
 
@@ -35,6 +36,9 @@ class Kernel extends ConsoleKernel
 
         // Auto-confirm helps waiting for customer confirmation after 24 hours
         $schedule->command('helps:auto-confirm')->hourly();
+
+        // Auto-cancel helps that have not been taken within the deadline and refund customer escrow
+        $schedule->command('helps:auto-cancel')->everyFiveMinutes();
     }
 
     /**

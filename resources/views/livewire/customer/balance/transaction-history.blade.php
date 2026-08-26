@@ -44,7 +44,7 @@
                                 @if($transaction->type === 'topup')
                                     Tambah Saldo
                                 @elseif($transaction->type === 'penalty')
-                                    Denda Pembatalan
+                                    Penyesuaian Saldo
                                 @else
                                     Pengurangan Saldo
                                 @endif
@@ -57,12 +57,11 @@
                                         <div class="text-xs text-gray-400">Order: {{ $transaction->order_id }}</div>
                                     @endif
                                 @elseif($transaction->type === 'penalty')
-                                    {{-- penalty: tampilkan deskripsi denda dan keterangan kas administrasi --}}
-                                    <span class="text-red-600 font-medium">
-                                        {{ $transaction->description ?? 'Denda Pelanggaran' }}
+                                    <span class="text-rose-600 font-medium">
+                                        {{ $transaction->description ?? 'Penyesuaian Administrasi' }}
                                     </span>
                                     <div class="text-xs text-gray-400 mt-0.5">
-                                        💼 Denda masuk ke kas administrasi
+                                        💼 Penyesuaian administrasi
                                         @if($transaction->reference_id)
                                             · Bantuan #{{ $transaction->reference_id }}
                                         @endif

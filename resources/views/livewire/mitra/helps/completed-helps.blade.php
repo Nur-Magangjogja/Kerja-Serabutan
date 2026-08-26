@@ -14,7 +14,7 @@
 
                     <div class="text-center flex-1 min-w-0 px-2">
                         <h1 class="text-base font-bold truncate">Riwayat Bantuan</h1>
-                        <p class="text-xs text-white/90 truncate mt-0.5">Bantuan selesai & catatan denda</p>
+                        <p class="text-xs text-white/90 truncate mt-0.5">Bantuan selesai & catatan pembatalan</p>
                     </div>
 
                     <div class="flex items-center gap-2 flex-shrink-0">
@@ -36,7 +36,7 @@
 
                     <div class="bg-white/15 backdrop-blur-md rounded-xl p-2.5 text-center border border-white/20">
                         <div class="text-lg font-extrabold text-white leading-tight">{{ $totalPenaltyCount }}</div>
-                        <div class="text-[10px] text-white/85 mt-0.5">Denda Diterima</div>
+                        <div class="text-[10px] text-white/85 mt-0.5">Pembatalan</div>
                     </div>
                 </div>
             </div>
@@ -55,7 +55,7 @@
                     <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
-                    <span>Denda & Pembatalan ({{ $totalPenaltyCount }})</span>
+                    <span>Pembatalan Tugas ({{ $totalPenaltyCount }})</span>
                 </button>
             </div>
         </div>
@@ -205,7 +205,7 @@
                 @endif
             @endif
 
-            {{-- TAB 2: DENDA & PEMBATALAN --}}
+            {{-- TAB 2: PEMBATALAN TUGAS --}}
             @if($activeTab === 'cancelled')
                 @if(isset($penalties) && $penalties->isEmpty())
                     <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 p-8 text-center mt-2">
@@ -214,8 +214,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200">Tidak Ada Riwayat Denda</h3>
-                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Bagus! Anda belum pernah dikenakan sanksi denda pembatalan bantuan.</p>
+                        <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200">Tidak Ada Riwayat Pembatalan</h3>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Bagus! Anda belum pernah melakukan pembatalan tugas bantuan.</p>
                     </div>
                 @elseif(isset($penalties))
                     <div class="space-y-3">
@@ -244,18 +244,15 @@
                                     </div>
 
                                     <div class="text-right shrink-0">
-                                        <div class="text-sm font-extrabold text-rose-600 dark:text-rose-400">
-                                            - Rp {{ number_format(abs($penalty->amount), 0, ',', '.') }}
-                                        </div>
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-[10px] font-bold mt-1">
-                                            Denda Sanksi
+                                            Pembatalan
                                         </span>
                                     </div>
                                 </div>
 
                                 <div class="bg-rose-50/70 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/30 rounded-xl p-2.5 mt-2">
                                     <p class="text-xs text-rose-800 dark:text-rose-300 leading-relaxed">
-                                        <span class="font-bold">Keterangan:</span> {{ $penalty->description ?? 'Denda dibebankan akibat membatalkan tugas bantuan yang telah diambil.' }}
+                                        <span class="font-bold">Keterangan:</span> {{ $penalty->description ?? 'Catatan pembatalan tugas bantuan yang telah diambil.' }}
                                     </p>
                                 </div>
                             </div>

@@ -46,7 +46,7 @@ class TopupCancelled extends Notification
             ->line('Nominal: Rp ' . number_format($this->transaction->amount, 0, ',', '.'))
             ->line('Alasan Pembatalan: ' . ($this->reason ?: ($this->transaction->rejection_reason ?: 'Bukti pembayaran tidak valid / terindikasi penipuan.')))
             ->line('Saldo akun Anda telah disesuaikan kembali (dikurangi sesuai nominal top-up yang dibatalkan).')
-            ->action('Cek Riwayat Saldo', route('customer.topup.history'))
+            ->action('Cek Riwayat Saldo', route('customer.transactions.index'))
             ->line('Jika Anda merasa ini adalah kekeliruan, silakan hubungi admin atau customer service kami.');
     }
 

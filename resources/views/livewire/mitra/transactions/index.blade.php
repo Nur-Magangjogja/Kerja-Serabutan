@@ -14,7 +14,7 @@
 
                     <div class="text-center flex-1 min-w-0 px-2">
                         <h1 class="text-base font-bold truncate">Riwayat Mutasi Saldo</h1>
-                        <p class="text-xs text-white/90 truncate mt-0.5">Pendapatan, denda, & penarikan saldo</p>
+                        <p class="text-xs text-white/90 truncate mt-0.5">Pendapatan & penarikan saldo</p>
                     </div>
 
                     <div class="flex items-center gap-2 flex-shrink-0">
@@ -34,7 +34,7 @@
                     Pendapatan
                 </button>
                 <button wire:click="setFilter('penalty')" class="px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition cursor-pointer {{ $filterType === 'penalty' ? 'bg-rose-600 text-white shadow-xs' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-700 hover:bg-gray-50' }}">
-                    Denda
+                    Pembatalan
                 </button>
                 <button wire:click="setFilter('withdraw')" class="px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition cursor-pointer {{ $filterType === 'withdraw' ? 'bg-primary-600 text-white shadow-xs' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-700 hover:bg-gray-50' }}">
                     Penarikan
@@ -58,7 +58,7 @@
 
                             $typeLabel = match($type) {
                                 'earning' => 'Pendapatan Bantuan',
-                                'penalty' => 'Denda Pembatalan Bantuan',
+                                'penalty' => 'Penyesuaian Pembatalan',
                                 'withdraw' => 'Penarikan Saldo (Withdraw)',
                                 'topup' => 'Top Up Saldo',
                                 'deduction' => 'Potongan Saldo',
@@ -111,7 +111,7 @@
                                         </h3>
                                         @if($type === 'penalty')
                                             <span class="px-2 py-0.5 bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-[10px] font-bold rounded-full border border-rose-200 dark:border-rose-800/50">
-                                                Denda Sanksi
+                                                Pembatalan
                                             </span>
                                         @elseif($type === 'earning')
                                             <span class="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold rounded-full border border-emerald-200 dark:border-emerald-800/50">
@@ -126,7 +126,7 @@
                                     </div>
                                     <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
                                         @if($type === 'penalty')
-                                            {{ $t->description ?? 'Denda Pelanggaran Pembatalan Bantuan' }}
+                                            {{ $t->description ?? 'Penyesuaian Pembatalan Bantuan' }}
                                         @elseif($type === 'earning')
                                             {{ $t->description ?? ($t->help?->title ? 'Pendapatan: ' . $t->help->title : 'Pendapatan Bantuan #' . $t->reference_id) }}
                                         @elseif($type === 'withdraw')
@@ -144,7 +144,7 @@
                                         {{ $isCredit ? '+' : '-' }} Rp {{ number_format(abs($t->amount), 0, ',', '.') }}
                                     </div>
                                     @if($type === 'penalty')
-                                        <p class="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">Potongan Denda</p>
+                                        <p class="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">Pembatalan</p>
                                     @elseif($type === 'earning')
                                         <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Pendapatan Bersih</p>
                                     @elseif($isPending)
@@ -158,7 +158,7 @@
                                     <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                     </svg>
-                                    <span class="truncate">Denda dibebankan karena membatalkan tugas yang sudah diambil.</span>
+                                    <span class="truncate">Penyesuaian saldo akibat pembatalan tugas bantuan yang telah diambil.</span>
                                 </div>
                             @endif
                         </div>
@@ -175,7 +175,7 @@
                             </svg>
                         </div>
                         <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200">Belum Ada Riwayat Transaksi</h3>
-                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Mutasi pendapatan, denda, dan penarikan akan dicatat di sini</p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Mutasi pendapatan dan penarikan akan dicatat di sini</p>
                     </div>
                 @endif
             </div>
@@ -232,8 +232,8 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                 </svg>
                                 <div>
-                                    <p class="font-bold">Sanksi Denda Pembatalan</p>
-                                    <p class="mt-0.5 text-rose-700/90 dark:text-rose-300/90">Saldo Anda dipotong sebagai sanksi denda administrasi akibat membatalkan tugas bantuan yang telah Anda ambil.</p>
+                                    <p class="font-bold">Penyesuaian Pembatalan Tugas</p>
+                                    <p class="mt-0.5 text-rose-700/90 dark:text-rose-300/90">Saldo Anda disesuaikan akibat pembatalan tugas bantuan yang telah Anda ambil.</p>
                                 </div>
                             </div>
                         @elseif($selectedTransaction['type'] === 'earning')
@@ -266,7 +266,7 @@
                                     Diproses
                                 </span>
                             @elseif($selectedTransaction['type'] === 'penalty')
-                                <span class="font-bold text-rose-600 dark:text-rose-400">Denda Diterapkan</span>
+                                <span class="font-bold text-rose-600 dark:text-rose-400">Diterapkan</span>
                             @elseif(in_array($selectedTransaction['status'] ?? '', ['approved', 'completed']))
                                 <span class="font-semibold text-emerald-600 dark:text-emerald-400">Berhasil</span>
                             @elseif(($selectedTransaction['status'] ?? '') === 'rejected')

@@ -24,6 +24,7 @@ class Create extends Component
     public $description        = '';
     public $equipment_provided = '';
     public $amount             = '';
+    public $minHelpNominal     = 10000;
     public $city_id            = '';
     public $cityQuery          = '';
     public $searchResults      = [];
@@ -47,15 +48,23 @@ class Create extends Component
     public $timezoneLabel  = 'WIB';
     public $timezoneIana   = 'Asia/Jakarta';
 
-    // ─── Confirm modal (model v2: tampilkan komisi + earning) ─────────────────────
+    // ─── Batas Waktu Kadaluwarsa / Auto-Cancel ──────────────────────────────
+    public $expiry_option      = '24_hours'; // '1_hour', '3_hours', '6_hours', '12_hours', '24_hours', '2_days', '3_days', 'custom'
+    public $custom_expiry_date = null;
+    public $custom_expiry_time = null;
+
+    // ─── Confirm modal (model v2: tampilkan komisi + earning + deadline) ────────
     public $showConfirmModal      = false;
     public $confirmAmount         = 0; // Nilai tugas = total yang didebit dari customer
     public $confirmAdminFee       = 0; // Legacy — selalu 0 di model v2
     public $confirmTotal          = 0; // = confirmAmount (Seller-Pays: customer bayar full)
     public $confirmScheduled      = null;
+    public $confirmExpiresAt      = null;
     // Model v2 — transparansi komisi
     public $confirmCommissionRate = 0;  // persentase, contoh: 10
     public $confirmPlatformFee    = 0;  // nominal komisi platform
+    public $confirmFeeType        = 'fixed'; // 'fixed'
+    public $confirmFeeLabel       = 'Rp 2.000'; // e.g. 'Rp 2.000'
     public $confirmMitraEarning   = 0;  // nominal bersih mitra
 
     protected $listeners = [
@@ -76,15 +85,34 @@ class Create extends Component
             abort(403, 'Akses ditolak. Hanya akun Customer yang dapat membuat permintaan bantuan.');
         }
 
-        // Set default nominal yang wajar
-        if (empty($this->amount)) {
-            $this->amount = (int) AppSetting::get('min_help_nominal', 20000);
+        if (auth()->user()->isShadowBanned()) {
+            session()->flash('error', 'Akun Anda saat ini dibatasi dari membuat pekerjaan bantuan baru karena dalam status peninjauan moderasi.');
         }
 
-        // Biarkan kota kosong agar customer dapat memilih sendiri
-        $this->city_id       = '';
-        $this->cityQuery     = '';
-        $this->searchResults = [];
+        $this->minHelpNominal = (int) AppSetting::get('min_help_nominal', 10000);
+
+        // Set default nominal yang wajar
+        if (empty($this->amount) || $this->amount < $this->minHelpNominal) {
+            $this->amount = $this->minHelpNominal;
+        }
+
+        // Otomatis isi kota / kabupaten dari akun Customer
+        $user = auth()->user();
+        if ($user) {
+            if (!empty($user->city_id)) {
+                $this->setCityId($user->city_id);
+            } elseif (!empty($user->city)) {
+                $matchedCity = City::where('name', 'LIKE', '%' . trim($user->city) . '%')->first();
+                if ($matchedCity) {
+                    $this->setCityId($matchedCity->id);
+                }
+            }
+
+            // Otomatis isi alamat lengkap jika sudah ada di profil customer
+            if (empty($this->full_address) && !empty($user->address)) {
+                $this->full_address = $user->address;
+            }
+        }
 
         if (Schema::hasTable('req_provinces')) {
             $this->req_provinces = DB::table('req_provinces')->orderBy('province')->get()->toArray();
@@ -96,7 +124,7 @@ class Create extends Component
      */
     public function adjustAmount(int $delta): void
     {
-        $min = (int) AppSetting::get('min_help_nominal', 20000);
+        $min = (int) ($this->minHelpNominal ?: AppSetting::get('min_help_nominal', 10000));
         $current = (int) ($this->amount ?: 0);
         $new = max($min, min(100000000, $current + $delta));
         $this->amount = $new;
@@ -107,7 +135,7 @@ class Create extends Component
      */
     public function setPresetAmount(int $value): void
     {
-        $min = (int) AppSetting::get('min_help_nominal', 20000);
+        $min = (int) ($this->minHelpNominal ?: AppSetting::get('min_help_nominal', 10000));
         $this->amount = max($min, min(100000000, $value));
     }
 
@@ -270,6 +298,83 @@ class Create extends Component
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // BATAS WAKTU PENCARIAN REKAN JASA / KADALUWARSA OTOMATIS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function setExpiryOption(string $option): void
+    {
+        $this->expiry_option = $option;
+        if ($option === 'custom') {
+            if (!$this->custom_expiry_date) {
+                $this->custom_expiry_date = Carbon::now()->addDay()->format('Y-m-d');
+            }
+            if (!$this->custom_expiry_time) {
+                $this->custom_expiry_time = Carbon::now()->format('H:i');
+            }
+        }
+    }
+
+    public function computeBaseStartTime(): Carbon
+    {
+        $now = Carbon::now();
+        if ($this->scheduled_date) {
+            $dateStr = trim($this->scheduled_date);
+            $timeStr = $this->scheduled_time ? trim($this->scheduled_time) : null;
+            if ($timeStr) {
+                try {
+                    $dt = Carbon::parse($dateStr . ' ' . $timeStr);
+                    return $dt->isPast() ? $now : $dt;
+                } catch (\Throwable $e) {
+                    return Carbon::parse($dateStr . ' 08:00');
+                }
+            }
+            $dt = Carbon::parse($dateStr . ' 08:00');
+            return $dt->isPast() ? $now : $dt;
+        }
+        return $now;
+    }
+
+    public function computeExpiresAt(): Carbon
+    {
+        $base = $this->computeBaseStartTime();
+
+        switch ($this->expiry_option) {
+            case '1_hour':
+                return $base->copy()->addHour();
+            case '6_hours':
+                return $base->copy()->addHours(6);
+            case '24_hours':
+                return $base->copy()->addHours(24);
+            case 'custom':
+                if ($this->custom_expiry_date) {
+                    $dateStr = trim($this->custom_expiry_date);
+                    $timeStr = $this->custom_expiry_time ? trim($this->custom_expiry_time) : '23:59';
+                    try {
+                        return Carbon::parse($dateStr . ' ' . $timeStr);
+                    } catch (\Throwable $e) {
+                        return $base->copy()->addHours(24);
+                    }
+                }
+                return $base->copy()->addHours(24);
+            default:
+                return $base->copy()->addHours(24);
+        }
+    }
+
+    public function getExpiryPreviewProperty(): string
+    {
+        $dt = $this->computeExpiresAt();
+        return $dt->translatedFormat('d M Y, H:i') . ' ' . $this->timezoneLabel;
+    }
+
+    public function getSchedulePreviewProperty(): ?string
+    {
+        if (!$this->scheduled_date) return null;
+        $base = $this->computeBaseStartTime();
+        return $base->translatedFormat('d M Y, H:i') . ' ' . $this->timezoneLabel;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // VALIDATION RULES
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -281,8 +386,8 @@ class Create extends Component
         'city_id'            => 'required|exists:cities,id',
         'location'           => 'nullable|string|max:255',
         'full_address'       => 'nullable|string|max:1000',
-        'latitude'           => 'nullable|numeric|between:-90,90',
-        'longitude'          => 'nullable|numeric|between:-180,180',
+        'latitude'           => 'required|numeric|between:-90,90',
+        'longitude'          => 'required|numeric|between:-180,180',
         'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         'scheduled_date'     => 'nullable|date',
         'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
@@ -297,6 +402,8 @@ class Create extends Component
         'amount.numeric'       => 'Nominal harus berupa angka',
         'amount.min'           => 'Nominal tidak boleh kurang dari nilai minimal yang ditetapkan',
         'amount.max'           => 'Nominal maksimal Rp 100.000.000',
+        'latitude.required'    => 'Titik lokasi pada peta wajib ditentukan. Silakan klik pada peta atau gunakan tombol GPS.',
+        'longitude.required'   => 'Titik lokasi pada peta wajib ditentukan. Silakan klik pada peta atau gunakan tombol GPS.',
         'scheduled_date.date'  => 'Format tanggal tidak valid',
         'scheduled_time.regex' => 'Format waktu tidak valid. Gunakan format 24-jam HH:MM, contoh: 9:30 atau 09:30',
         'photo.image'          => 'File harus berupa gambar (JPG, PNG, JPEG)',
@@ -313,15 +420,22 @@ class Create extends Component
             abort(403, 'Akses ditolak. Hanya akun Customer yang dapat membuat permintaan bantuan.');
         }
 
-        // Model v2: minimum Rp 20.000, tanpa admin_fee (Seller-Pays)
-        $minNominal          = (float) AppSetting::get('min_help_nominal', 20000);
-        $commissionRate      = (float) AppSetting::get('platform_commission_rate', 10);
+        $this->minHelpNominal = (int) AppSetting::get('min_help_nominal', 10000);
+        $minNominal           = (float) $this->minHelpNominal;
 
-        $this->rules['amount']  = 'required|numeric|min:' . $minNominal . '|max:100000000';
-        $this->rules['city_id'] = 'required|exists:cities,id';
-        $this->rules['title']   = 'required|string|max:255';
+        $this->rules['amount']      = 'required|numeric|min:' . $minNominal . '|max:100000000';
+        $this->rules['city_id']     = 'required|exists:cities,id';
+        $this->rules['title']       = 'required|string|max:255';
         $this->rules['description'] = 'required|string';
+        $this->rules['latitude']    = 'required|numeric|between:-90,90';
+        $this->rules['longitude']   = 'required|numeric|between:-180,180';
         
+        if (auth()->user()->isShadowBanned()) {
+            $this->addError('amount', 'Akun Anda saat ini dibatasi dari membuat pesanan bantuan baru karena dalam peninjauan moderasi.');
+            $this->dispatch('scroll-to-first-error');
+            return;
+        }
+
         try {
             $this->validate();
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -353,31 +467,52 @@ class Create extends Component
             return;
         }
 
-        $amount    = (float) $this->amount;
-        $feeAmount = round($amount * $commissionRate / 100, 2);
-        $earning   = $amount - $feeAmount;
+        $amount      = (float) $this->amount;
+        $calc        = AppSetting::calculatePlatformFee($amount);
+        $feeAmount   = $calc['fee_amount'];
+        $commissionRate = $calc['rate'];
+        $totalAmount = $amount + $feeAmount;
+        $earning     = $amount; // Mitra menerima 100% penuh tanpa potongan komisi
 
-        // Validasi saldo customer mencukupi
+        // Validasi saldo customer mencukupi total pembayaran (nominal + biaya layanan platform)
         $customer        = auth()->user();
         $customerBalance = \App\Models\UserBalance::where('user_id', $customer->id)->first();
         $currentBalance  = $customerBalance ? (float) $customerBalance->balance : 0;
 
-        if ($currentBalance < $amount) {
-            $this->addError('amount', 'Saldo tidak mencukupi. Saldo Anda: Rp ' . number_format($currentBalance, 0, ',', '.') . '. Silakan top up terlebih dahulu.');
+        if ($currentBalance < $totalAmount) {
+            $this->addError('amount', 'Saldo tidak mencukupi. Total yang dibutuhkan (termasuk biaya layanan platform): Rp ' . number_format($totalAmount, 0, ',', '.') . '. Saldo Anda: Rp ' . number_format($currentBalance, 0, ',', '.') . '. Silakan top up terlebih dahulu.');
             $this->dispatch('scroll-to-first-error');
             return;
         }
 
-        // Confirm modal data (model v2: Seller-Pays, tidak ada biaya tambahan untuk customer)
+        // Confirm modal data (Customer-Pays: customer membayar imbalan + biaya layanan platform)
         $this->confirmAmount         = $amount;
-        $this->confirmAdminFee       = 0;    // model v2: customer tidak bayar biaya tambahan
-        $this->confirmTotal          = $amount; // customer bayar = amount utuh
+        $this->confirmAdminFee       = $feeAmount;
+        $this->confirmTotal          = $totalAmount;
         $this->confirmCommissionRate = $commissionRate;
         $this->confirmPlatformFee    = $feeAmount;
+        $this->confirmFeeLabel       = $calc['label'];
+        $this->confirmFeeType        = $calc['type'];
         $this->confirmMitraEarning   = $earning;
         $this->confirmScheduled      = $this->scheduled_date
             ? (date('d M Y', strtotime($this->scheduled_date)) . ($this->scheduled_time ? ' Pukul ' . $this->scheduled_time . ' ' . $this->timezoneLabel : ''))
             : null;
+
+        // Validasi dan normalisasi batas waktu pencarian (auto-cancel expiry)
+        $expiresAt = $this->computeExpiresAt();
+        if ($this->expiry_option === 'custom') {
+            if (empty($this->custom_expiry_date)) {
+                $this->addError('custom_expiry_date', 'Silakan pilih tanggal batas waktu pencarian bantuan');
+                $this->dispatch('scroll-to-first-error');
+                return;
+            }
+            if ($expiresAt->lt(Carbon::now()->addMinutes(10))) {
+                $this->addError('custom_expiry_date', 'Batas waktu minimal 10 menit dari sekarang');
+                $this->dispatch('scroll-to-first-error');
+                return;
+            }
+        }
+        $this->confirmExpiresAt = $expiresAt->translatedFormat('d M Y, H:i') . ' ' . $this->timezoneLabel;
 
         $this->showConfirmModal = true;
     }
@@ -388,30 +523,39 @@ class Create extends Component
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // SAVE — Model v2: Escrow Lock + Kalkulasi Komisi
+    // SAVE — Model v2: Escrow Lock + Biaya Layanan Platform dari Customer
     // ─────────────────────────────────────────────────────────────────────────
 
     public function save()
     {
-        // Model v2: minimum Rp 20.000, tanpa admin_fee
-        $minNominal     = (float) AppSetting::get('min_help_nominal', 20000);
-        $commissionRate = (float) AppSetting::get('platform_commission_rate', 10);
+        if (auth()->user()->isShadowBanned()) {
+            $this->addError('amount', 'Akun Anda saat ini dibatasi dari membuat pesanan bantuan baru karena dalam peninjauan moderasi.');
+            return;
+        }
 
-        $this->rules['amount'] = 'required|numeric|min:' . $minNominal . '|max:100000000';
+        $this->minHelpNominal = (int) AppSetting::get('min_help_nominal', 10000);
+        $minNominal           = (float) $this->minHelpNominal;
+
+        $this->rules['amount']      = 'required|numeric|min:' . $minNominal . '|max:100000000';
+        $this->rules['latitude']    = 'required|numeric|between:-90,90';
+        $this->rules['longitude']   = 'required|numeric|between:-180,180';
         $this->validate();
 
-        $userId    = auth()->id();
-        $customer  = auth()->user();
-        $amount    = (float) $this->amount;
-        $feeAmount = round($amount * $commissionRate / 100, 2);
-        $earning   = $amount - $feeAmount;
+        $userId      = auth()->id();
+        $customer    = auth()->user();
+        $amount      = (float) $this->amount;
+        $calc        = AppSetting::calculatePlatformFee($amount);
+        $feeAmount   = $calc['fee_amount'];
+        $commissionRate = $calc['rate'];
+        $totalAmount = $amount + $feeAmount;
+        $earning     = $amount; // Mitra menerima 100% penuh tanpa potongan
 
-        // Validasi saldo customer mencukupi sebelum buat tugas
+        // Validasi saldo customer mencukupi total pembayaran
         $customerBalance = \App\Models\UserBalance::where('user_id', $userId)->first();
         $currentBalance  = $customerBalance ? (float) $customerBalance->balance : 0;
 
-        if ($currentBalance < $amount) {
-            $this->addError('amount', 'Saldo tidak mencukupi. Saldo Anda: Rp ' . number_format($currentBalance, 0, ',', '.') . '. Silakan top up terlebih dahulu.');
+        if ($currentBalance < $totalAmount) {
+            $this->addError('amount', 'Saldo tidak mencukupi. Total yang dibutuhkan: Rp ' . number_format($totalAmount, 0, ',', '.') . '. Saldo Anda: Rp ' . number_format($currentBalance, 0, ',', '.') . '. Silakan top up terlebih dahulu.');
             return;
         }
 
@@ -437,7 +581,13 @@ class Create extends Component
             return;
         }
 
-        DB::transaction(function () use ($userId, $customer, $amount, $commissionRate, $feeAmount, $earning) {
+        $expiresAt = $this->computeExpiresAt();
+        if ($this->expiry_option === 'custom' && $expiresAt->lt(Carbon::now()->addMinutes(5))) {
+            $this->addError('custom_expiry_date', 'Batas waktu pencarian tidak boleh berada di masa lalu');
+            return;
+        }
+
+        DB::transaction(function () use ($userId, $customer, $amount, $commissionRate, $feeAmount, $totalAmount, $earning, $expiresAt) {
             $photoPath   = $this->photo ? $this->photo->store('helps', 'public') : null;
             $orderId     = $this->generateOrderId();
             $scheduledAt = null;
@@ -446,20 +596,21 @@ class Create extends Component
                 $scheduledAt = date('Y-m-d H:i:s', strtotime($this->scheduled_date . ' ' . $time));
             }
 
-            // Model v2: simpan kalkulasi komisi (snapshot) saat tugas dibuat
+            // Simpan data bantuan dengan rincian biaya layanan platform & batas waktu pembatalan otomatis
             $help = Help::create([
                 'user_id'                    => $userId,
                 'order_id'                   => $orderId,
                 'city_id'                    => $this->city_id,
                 'title'                      => $this->title,
                 'amount'                     => $amount,
-                'admin_fee'                  => 0,   // model v2: tidak ada biaya tambahan customer
-                'total_amount'               => $amount,
+                'admin_fee'                  => $feeAmount,
+                'total_amount'               => $totalAmount,
                 'description'                => $this->description,
                 'equipment_provided'         => $this->equipment_provided,
                 'location'                   => $this->location,
                 'full_address'               => $this->full_address,
                 'scheduled_at'               => $scheduledAt,
+                'expires_at'                 => $expiresAt->format('Y-m-d H:i:s'),
                 'latitude'                   => $this->latitude,
                 'longitude'                  => $this->longitude,
                 'photo'                      => $photoPath,
@@ -472,13 +623,13 @@ class Create extends Component
                 'escrow_locked_at'           => now(),
             ]);
 
-            // Escrow Lock: tahan dana customer ke Holding
+            // Escrow Lock: tahan dana total customer (nominal bantuan + biaya layanan) ke Holding
             $customerBalance = \App\Models\UserBalance::firstOrCreate(
                 ['user_id' => $userId],
                 ['balance' => 0]
             );
             $escrowTx = $customerBalance->lockForEscrow(
-                $amount,
+                $totalAmount,
                 $help->id,
                 $help->order_id,
                 "Dana Ditahan untuk Permintaan Bantuan ('{$help->title}')"
@@ -566,8 +717,11 @@ class Create extends Component
 
     public function render()
     {
+        $this->minHelpNominal = (int) AppSetting::get('min_help_nominal', 10000);
+
         return view('livewire.customer.helps.create', [
             'cities' => City::where('is_active', true)->get(),
+            'minHelpNominal' => $this->minHelpNominal,
         ]);
     }
 }

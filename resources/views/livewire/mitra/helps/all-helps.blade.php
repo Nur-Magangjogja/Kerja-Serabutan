@@ -260,15 +260,12 @@
                                     </div>
 
                                     @php
-                                        $commRate = $help->platform_commission_rate ?? 10;
-                                        $feeAmt = $help->admin_fee ?? round($help->amount * $commRate / 100);
-                                        $netEarn = $help->mitra_earnings ?? ($help->amount - $feeAmt);
                                         $cityName = $help->city->name ?? '';
                                         $sched = $help->scheduled_at ? \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') : '';
                                     @endphp
 
                                     <button type="button" 
-                                        onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ $sched }}', {{ $help->distance_km !== null ? $help->distance_km : 'null' }}, '{{ addslashes($cityName) }}', {{ $commRate }}, {{ $feeAmt }}, {{ $netEarn }})"
+                                        onclick="showHelpPreview({{ $help->id }}, '{{ addslashes($help->title) }}', {{ $help->amount }}, '{{ $sched }}', {{ $help->distance_km !== null ? $help->distance_km : 'null' }}, '{{ addslashes($cityName) }}')"
                                         class="px-3.5 py-1.5 bg-primary-50 text-primary-700 hover:bg-primary-100 font-bold rounded-xl transition text-xs flex items-center gap-1 shadow-2xs cursor-pointer">
                                         <span>Lihat Tugas</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -338,19 +335,14 @@
                     <p id="previewTitle" class="text-base font-bold text-gray-900 dark:text-white">-</p>
                 </div>
 
-                <!-- Transparansi Komisi & Pendapatan Bersih -->
-                <div class="bg-slate-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-2xl p-3.5 mb-3.5 space-y-2">
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="text-gray-600 dark:text-gray-400 font-medium">Nilai Tugas:</span>
-                        <span id="previewTaskValue" class="font-bold text-gray-900 dark:text-white">Rp 0</span>
+                <!-- Pendapatan Tugas (100% Penuh untuk Mitra) -->
+                <div class="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-2xl p-4 mb-3.5 flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-emerald-800 dark:text-emerald-300 block">Pendapatan Diterima:</span>
+                        <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">100% Penuh (Tanpa Potongan Komisi)</span>
                     </div>
-                    <div class="flex justify-between items-center text-xs text-rose-600 dark:text-rose-400">
-                        <span id="previewCommissionLabel" class="font-medium">Potongan Platform (10%):</span>
-                        <span id="previewCommissionAmount" class="font-semibold">- Rp 0</span>
-                    </div>
-                    <div class="border-t border-gray-200 dark:border-gray-600 pt-2 flex justify-between items-center">
-                        <span class="text-xs font-bold text-emerald-800 dark:text-emerald-300">Pendapatan Bersih Mitra:</span>
-                        <span id="previewNetAmount" class="text-base font-black text-emerald-600 dark:text-emerald-400">Rp 0</span>
+                    <div id="previewTaskValue" class="text-lg font-black text-emerald-700 dark:text-emerald-300">
+                        Rp 0
                     </div>
                 </div>
 
@@ -403,26 +395,13 @@
         let userMitraLat = @json($mitraLat);
         let userMitraLng = @json($mitraLng);
 
-        window.showHelpPreview = function(helpId, title, amount, scheduled, distanceKm, cityName, commissionRate, feeAmount, netEarning) {
+        window.showHelpPreview = function(helpId, title, amount, scheduled, distanceKm, cityName) {
             currentHelpId = helpId;
             document.getElementById('previewTitle').textContent = title;
             
             const taskVal = Number(amount) || 0;
-            const rate = (commissionRate !== undefined && commissionRate !== null) ? Number(commissionRate) : 10;
-            const fee = (feeAmount !== undefined && feeAmount !== null && feeAmount > 0) ? Number(feeAmount) : Math.round(taskVal * rate / 100);
-            const net = (netEarning !== undefined && netEarning !== null && netEarning > 0) ? Number(netEarning) : (taskVal - fee);
-
             const taskValEl = document.getElementById('previewTaskValue');
             if (taskValEl) taskValEl.textContent = 'Rp ' + taskVal.toLocaleString('id-ID');
-
-            const commLabelEl = document.getElementById('previewCommissionLabel');
-            if (commLabelEl) commLabelEl.textContent = `Potongan Platform (${rate}%):`;
-
-            const commAmtEl = document.getElementById('previewCommissionAmount');
-            if (commAmtEl) commAmtEl.textContent = '- Rp ' + fee.toLocaleString('id-ID');
-
-            const netAmtEl = document.getElementById('previewNetAmount');
-            if (netAmtEl) netAmtEl.textContent = 'Rp ' + net.toLocaleString('id-ID');
             
             const distEl = document.getElementById('previewDistance');
             const warnBox = document.getElementById('previewDistanceWarning');

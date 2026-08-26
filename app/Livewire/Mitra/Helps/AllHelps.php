@@ -48,6 +48,11 @@ class AllHelps extends Component
      */
     public function takeHelp($helpId, $latitude = null, $longitude = null)
     {
+        if (auth()->user()?->isShadowBanned()) {
+            session()->flash('error', 'Akun Anda saat ini dibatasi dari mengambil tugas bantuan karena dalam peninjauan moderasi.');
+            return;
+        }
+
         $help = Help::findOrFail($helpId);
 
         try {
@@ -77,6 +82,30 @@ class AllHelps extends Component
     {
         $user            = auth()->user();
         $locationService = app(LocationTrackingService::class);
+
+        // Jika Mitra terkena shadow ban, jangan tampilkan daftar pekerjaan
+        if ($user && $user->isShadowBanned()) {
+            $emptyPaginator = new \Illuminate\Pagination\LengthAwarePaginator(
+                collect(),
+                0,
+                15,
+                1,
+                ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+            );
+
+            return view('livewire.mitra.helps.all-helps', [
+                'helps'          => $emptyPaginator,
+                'needsCity'      => false,
+                'userCity'       => $user->city_id ? \App\Models\City::find($user->city_id) : null,
+                'distanceRadius' => $this->distanceRadius,
+                'sortBy'         => $this->sortBy,
+                'search'         => $this->search,
+                'mitraLat'       => $this->mitraLat,
+                'mitraLng'       => $this->mitraLng,
+                'activeTask'     => null,
+                'isShadowBanned' => true,
+            ]);
+        }
 
         $query = Help::where('status', Help::STATUS_MENUNGGU_MITRA)
             ->whereNull('mitra_id')

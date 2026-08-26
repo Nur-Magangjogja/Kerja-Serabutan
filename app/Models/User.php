@@ -44,6 +44,15 @@ class User extends Authenticatable
         'ktp_photo',
         'selfie_photo',
         'notification_settings',
+        // Greylist, Shadow Ban, and Warning Fields
+        'is_greylisted',
+        'greylisted_at',
+        'greylist_reason',
+        'is_shadow_banned',
+        'shadow_banned_at',
+        'warning_level',
+        'latest_warning_message',
+        'latest_warning_at',
     ];
 
     /**
@@ -71,7 +80,43 @@ class User extends Authenticatable
             'rt' => 'integer',
             'rw' => 'integer',
             'notification_settings' => 'array',
+            'is_greylisted' => 'boolean',
+            'greylisted_at' => 'datetime',
+            'is_shadow_banned' => 'boolean',
+            'shadow_banned_at' => 'datetime',
+            'warning_level' => 'integer',
+            'latest_warning_at' => 'datetime',
         ];
+    }
+
+    public function greylistLogs()
+    {
+        return $this->hasMany(UserGreylistLog::class, 'user_id')->latest();
+    }
+
+    public function getWarningLevelLabelAttribute(): string
+    {
+        return match ($this->warning_level) {
+            1       => 'SP 1 (Peringatan Ringan)',
+            2       => 'SP 2 (Peringatan Sedang)',
+            3       => 'SP 3 (Peringatan Keras / Terakhir)',
+            default => 'Normal',
+        };
+    }
+
+    public function isShadowBanned(): bool
+    {
+        return (bool) $this->is_shadow_banned;
+    }
+
+    public function isGreylisted(): bool
+    {
+        return (bool) $this->is_greylisted;
+    }
+
+    public function hasWarning(): bool
+    {
+        return $this->warning_level > 0;
     }
 
     // Relationships

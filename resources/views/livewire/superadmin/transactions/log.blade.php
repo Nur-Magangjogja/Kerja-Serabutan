@@ -112,7 +112,7 @@
             <span class="font-bold">Rp {{ number_format($totalEscrow, 0, ',', '.') }}</span>
         </div>
         <div class="bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800/60 rounded-xl px-3.5 py-2 flex items-center gap-1.5 font-medium shadow-xs">
-            <span>⚠️ Denda Pelanggaran:</span>
+            <span>⚠️ Penyesuaian Saldo:</span>
             <span class="font-bold">Rp {{ number_format($totalPenalty, 0, ',', '.') }}</span>
         </div>
         <div class="bg-cyan-50 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/60 rounded-xl px-3.5 py-2 flex items-center gap-1.5 font-medium shadow-xs">
@@ -146,7 +146,7 @@
                     <option value="platform_fee">Komisi Platform (Kas Masuk)</option>
                     <option value="withdraw">Withdraw (Pencairan Mitra)</option>
                     <option value="refund">Refund (Pengembalian 100%)</option>
-                    <option value="penalty">Denda Pembatalan (Penalty)</option>
+                    <option value="penalty">Penyesuaian Pembatalan (Penalty)</option>
                     <option value="deduction">Potongan Biasa (Deduction)</option>
                 </select>
                 <input wire:model="from" type="date"
@@ -248,7 +248,7 @@
                                 @elseif($t->type === 'refund')
                                     ↩️ Refund 100%
                                 @elseif($t->type === 'penalty')
-                                    ⚠️ Denda Pembatalan
+                                    ⚠️ Penyesuaian Pembatalan
                                 @elseif($t->type === 'deduction')
                                     Potongan
                                 @else

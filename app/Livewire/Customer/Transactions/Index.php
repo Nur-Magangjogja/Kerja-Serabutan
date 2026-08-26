@@ -50,7 +50,7 @@ class Index extends Component
         };
 
         $helpTitle = $transaction->help?->title;
-        $orderId = $transaction->order_id ?: ($transaction->help?->order_id ?? null);
+        $orderId = $transaction->request_code ?: ($transaction->order_id ?: ($transaction->help?->order_id ?? null));
 
         $this->selectedTransaction = [
             'id' => $transaction->id,
@@ -60,9 +60,11 @@ class Index extends Component
             'status' => $transaction->status ?? 'completed',
             'amount' => (float) $transaction->amount,
             'description' => $transaction->description,
-            'payment_type' => $transaction->payment_type,
+            'payment_type' => $transaction->payment_type ?: ($transaction->payment_method ? strtoupper($transaction->payment_method) : null),
             'order_id' => $orderId,
             'reference_id' => $transaction->reference_id,
+            'request_code' => $transaction->request_code,
+            'proof_of_payment' => $transaction->proof_of_payment,
             'help_title' => $helpTitle,
             'created_at' => $transaction->created_at ? $transaction->created_at->format('d M Y • H:i') : '-',
             'created_at_human' => $transaction->created_at ? $transaction->created_at->diffForHumans() : '-',

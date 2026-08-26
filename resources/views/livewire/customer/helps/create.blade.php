@@ -129,7 +129,7 @@
                             </span>
                         </label>
                         <input type="text" wire:model="title" id="title-input"
-                            placeholder="Contoh: Butuh Bantuan Makanan untuk Keluarga"
+                            placeholder="Contoh: Butuh Bantuan Kerja Serabutan Kupas Bawang"
                             class="w-full px-4 py-3 text-sm rounded-lg border @error('title') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500">
                         @error('title')
                             <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block flex items-center font-medium">
@@ -159,19 +159,19 @@
                         <!-- Custom Stepper Input (Tanpa Panah Bawaan Browser) -->
                         <div class="flex items-center rounded-xl border @error('amount') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 bg-white dark:bg-gray-800 @enderror p-1.5 shadow-sm transition">
                             <!-- Decrement Button -->
-                            <button type="button" wire:click="adjustAmount(-1000)" title="Kurangi Rp 1.000" class="w-11 h-11 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 text-gray-700 dark:text-gray-200 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
+                            <button type="button" wire:click="adjustAmount(-100)" title="Kurangi Rp 100" class="w-11 h-11 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 text-gray-700 dark:text-gray-200 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
                                 −
                             </button>
 
                             <!-- Input Nominal -->
                             <div class="relative flex-1 px-3">
                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-base">Rp</span>
-                                <input type="number" wire:model.live="amount" id="amount-input" placeholder="20000" min="20000" step="100"
+                                <input type="number" wire:model.live="amount" id="amount-input" placeholder="{{ $minHelpNominal ?? 10000 }}" min="{{ $minHelpNominal ?? 10000 }}" step="100"
                                     class="w-full pl-8 pr-2 py-1.5 text-center font-bold text-lg text-gray-900 dark:text-white border-none focus:ring-0 focus:outline-none bg-transparent">
                             </div>
 
                             <!-- Increment Button -->
-                            <button type="button" wire:click="adjustAmount(1000)" title="Tambah Rp 1.000" class="w-11 h-11 rounded-lg bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-800/60 active:scale-95 text-blue-600 dark:text-blue-400 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
+                            <button type="button" wire:click="adjustAmount(100)" title="Tambah Rp 100" class="w-11 h-11 rounded-lg bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-800/60 active:scale-95 text-blue-600 dark:text-blue-400 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
                                 +
                             </button>
                         </div>
@@ -217,7 +217,7 @@
                                 <svg class="w-3 h-3 mr-1 flex-shrink-0 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                                 </svg>
-                                Minimal Rp 20.000 — Maksimal Rp 100.000.000
+                                Minimal Rp {{ number_format($minHelpNominal ?? 10000, 0, ',', '.') }} 
                             </p>
                         </div>
                         @error('amount')
@@ -228,6 +228,26 @@
                                 {{ $message }}
                             </span>
                         @enderror
+
+                        @php
+                            $feeCalc = \App\Models\AppSetting::calculatePlatformFee((float) ($amount ?: 0));
+                        @endphp
+                        @if((float) ($amount ?: 0) > 0)
+                            <div class="mt-3 p-3 bg-blue-50/70 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900/40 text-xs space-y-1.5">
+                                <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                                    <span>Imbalan Rekan Jasa :</span>
+                                    <span class="font-semibold text-gray-900 dark:text-gray-100">Rp {{ number_format((float)$amount, 0, ',', '.') }}</span>
+                                </div>
+                                <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                                    <span>Biaya Layanan Platform (Tetap) :</span>
+                                    <span class="font-semibold text-primary-600 dark:text-primary-400">+ Rp {{ number_format($feeCalc['fee_amount'], 0, ',', '.') }}</span>
+                                </div>
+                                <div class="flex justify-between font-bold text-gray-900 dark:text-white pt-1.5 border-t border-blue-200/60 dark:border-blue-800/40 text-sm">
+                                    <span>Total Saldo yang Dibutuhkan:</span>
+                                    <span class="text-blue-600 dark:text-blue-400">Rp {{ number_format($feeCalc['total'], 0, ',', '.') }}</span>
+                                </div>
+                            </div>
+                        @endif
                     </div>
 
                     <!-- City -->
@@ -330,18 +350,19 @@
                                     <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
                                     </svg>
-                                    Titik Lokasi Bantuan (Peta Realtime)
+                                    Titik Lokasi Bantuan
+                                    <span class="text-red-500 ml-1">*</span>
                                 </span>
                             </label>
                             <button type="button" onclick="locateUserGPS()" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-800/60 transition shadow-sm active:scale-95 cursor-pointer">
                                 <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.071-7.071l-1.414 1.414M8.343 15.657l-1.414 1.414m12.728 0l-1.414-1.414M8.343 8.343L6.929 6.929M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
-                                Gunakan Lokasi GPS Saya
+                                Gunakan Lokasi GPS
                             </button>
                         </div>
 
                         <!-- Map Container -->
-                        <div class="relative rounded-xl overflow-hidden border border-gray-300 dark:border-gray-700 shadow-inner bg-gray-100 dark:bg-gray-800 mb-2">
+                        <div class="relative rounded-xl overflow-hidden border @error('latitude') border-red-500 ring-2 ring-red-500/30 @else border-gray-300 dark:border-gray-700 @enderror shadow-inner bg-gray-100 dark:bg-gray-800 mb-2">
                             <div wire:ignore id="map" style="height: 280px; min-height: 280px;" class="w-full"></div>
                         </div>
 
@@ -361,11 +382,14 @@
 
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center">
                             <svg class="w-3.5 h-3.5 mr-1 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            Klik pada peta atau geser pin merah untuk menentukan titik lokasi bantuan.
+                            Klik pada peta atau geser pin biru untuk menentukan titik lokasi bantuan.
                         </p>
 
                         @error('latitude')
-                            <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block font-medium">{{ $message }}</span>
+                            <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block font-medium flex items-center">
+                                <svg class="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                                {{ $message }}
+                            </span>
                         @enderror
                     </div>
 
@@ -378,7 +402,7 @@
                                         <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
                                     </svg>
                                     Alamat / Nama Lokasi Bantuan
-                                    <span class="text-xs font-normal text-gray-400 dark:text-gray-500 ml-1">(Otomatis dari Peta)</span>
+                                    <span class="text-xs font-normal text-gray-400 dark:text-gray-500 ml-1">(Otomatis Terisi)</span>
                                 </span>
                                 <span id="reverse-geocode-indicator" class="hidden text-[11px] text-blue-600 dark:text-blue-400 animate-pulse font-normal">
                                     📍 Mendeteksi alamat...
@@ -390,7 +414,7 @@
                                 placeholder="Alamat akan terisi otomatis saat Anda memilih titik peta..."
                                 class="w-full px-4 py-3 text-sm rounded-lg border @error('location') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500">
                         </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Alamat terisi otomatis dari titik peta di atas dan dapat Anda sempurnakan jika perlu.</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Alamat terisi otomatis dari titik peta di atas.</p>
                         @error('location')
                             <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block flex items-center font-medium">
                                 <svg class="w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
@@ -407,7 +431,7 @@
                                     <path fill-rule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
                                 </svg>
                                 Detail Patokan Tempat / Ciri Rumah
-                                <span class="text-gray-400 dark:text-gray-500 text-xs ml-1">(Opsional)</span>
+                                <span class="text-gray-400 dark:text-gray-500 text-xs ml-1"></span>
                             </span>
                         </label>
                         <textarea wire:model="full_address" rows="2"
@@ -417,7 +441,7 @@
                             <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                             </svg>
-                            Tuliskan patokan spesifik atau petunjuk arah agar Rekan Jasa tidak kesulitan mencari rumah/lokasi Anda.
+                            Tuliskan petunjuk arah agar Rekan Jasa tidak kesulitan mencari rumah/lokasi Anda.
                         </p>
                         @error('full_address')
                             <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block flex items-center font-medium">
@@ -436,7 +460,7 @@
                                         <path fill-rule="evenodd" d="M6 2a1 1 0 000 2h8a1 1 0 100-2H6zM4 6a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" clip-rule="evenodd" />
                                     </svg>
                                     Jadwalkan Waktu Bantuan
-                                    <span class="text-gray-400 dark:text-gray-500 text-xs ml-1">(Opsional)</span>
+                                    <span class="text-gray-400 dark:text-gray-500 text-xs ml-1">(Tidak perlu di isi apabila tidak menjadwalkan)</span>
                                 </span>
                             </label>
                             @if ($scheduled_date || $scheduled_time)
@@ -490,6 +514,88 @@
                         </p>
                     </div>
 
+                    <!-- Batas Waktu Batal Otomatis (Kadaluwarsa Pencarian Mitra) -->
+                    <div id="group-expiry" class="p-3 bg-gray-50/80 dark:bg-gray-800/40 rounded-xl border border-gray-200/70 dark:border-gray-700/70">
+                        <div class="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
+                                <span class="flex items-center">
+                                    <svg class="w-3.5 h-3.5 mr-1.5 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Batas Waktu Pencarian Rekan Jasa
+                                    <span class="text-red-500 ml-1">*</span>
+                                </span>
+                            </label>
+                            <span class="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200/60 dark:border-amber-900/40">
+                                Batal Otomatis & Refund 100%
+                            </span>
+                        </div>
+
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                            @if ($scheduled_date)
+                                Dihitung sejak tugas mulai tayang ke mitra pada jadwal (<strong>{{ $this->schedulePreview }}</strong>).
+                            @else
+                                Dihitung sejak tugas ditampilkan.
+                            @endif
+                        </p>
+
+                        <!-- 4 Pilihan Cepat Minimalis (1 Baris Ringkas) -->
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button type="button" wire:click="setExpiryOption('1_hour')"
+                                class="py-2 text-xs font-semibold rounded-lg border transition text-center cursor-pointer {{ $expiry_option === '1_hour' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
+                                1 Jam
+                            </button>
+
+                            <button type="button" wire:click="setExpiryOption('6_hours')"
+                                class="py-2 text-xs font-semibold rounded-lg border transition text-center cursor-pointer {{ $expiry_option === '6_hours' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
+                                6 Jam
+                            </button>
+
+                            <button type="button" wire:click="setExpiryOption('24_hours')"
+                                class="py-2 text-xs font-semibold rounded-lg border transition text-center cursor-pointer {{ $expiry_option === '24_hours' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
+                                24 Jam
+                            </button>
+
+                            <button type="button" wire:click="setExpiryOption('custom')"
+                                class="py-2 text-xs font-semibold rounded-lg border transition text-center cursor-pointer {{ $expiry_option === 'custom' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
+                                Kustom
+                            </button>
+                        </div>
+
+                        <!-- Form Input Kustom jika memilih 'custom' -->
+                        @if ($expiry_option === 'custom')
+                            <div class="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <div>
+                                    <label class="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Tanggal Batas</label>
+                                    <input type="date" wire:model.live="custom_expiry_date" min="{{ date('Y-m-d') }}"
+                                        class="w-full px-2.5 py-1.5 text-xs rounded-lg border @error('custom_expiry_date') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 @enderror bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                                    @error('custom_expiry_date')
+                                        <span class="text-red-500 text-[11px] mt-0.5 block font-medium">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5 flex items-center justify-between">
+                                        <span>Jam</span>
+                                        <span class="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">{{ $timezoneLabel }}</span>
+                                    </label>
+                                    <input type="time" wire:model.live="custom_expiry_time"
+                                        class="w-full px-2.5 py-1.5 text-xs rounded-lg border @error('custom_expiry_time') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 @enderror bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                                    @error('custom_expiry_time')
+                                        <span class="text-red-500 text-[11px] mt-0.5 block font-medium">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Status Ringkasan Batas Waktu -->
+                        <div class="mt-2 flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800/90 p-2 rounded-lg border border-gray-200/70 dark:border-gray-700/60">
+                            <svg class="w-3.5 h-3.5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Batal otomatis jika belum ada mitra: <strong class="text-blue-600 dark:text-blue-400 font-semibold">{{ $this->expiryPreview }}</strong></span>
+                        </div>
+                    </div>
+
                     <!-- Description -->
                     <div id="group-description">
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -529,11 +635,11 @@
                                         d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
                                 </svg>
                                 Peralatan yang Sudah Disediakan
-                                <span class="text-gray-400 dark:text-gray-500 text-xs ml-1">(Opsional)</span>
+                                <span class="text-gray-400 dark:text-gray-500 text-xs ml-1"></span>
                             </span>
                         </label>
                         <textarea wire:model="equipment_provided" rows="3"
-                            placeholder="Contoh: Sudah ada gerobak dorong, ember besar 2 buah, timbangan digital"
+                            placeholder="Contoh: Sudah ada alat alat kebersihan dan ember di rak"
                             class="w-full px-4 py-3 text-sm rounded-lg border border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"></textarea>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 flex items-center">
                             <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -541,7 +647,7 @@
                                     d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
                                     clip-rule="evenodd" />
                             </svg>
-                            Tuliskan alat atau peralatan yang sudah Anda sediakan untuk membantu mitra
+                            Tuliskan alat atau peralatan yang sudah Anda sediakan (Bila ada).
                         </p>
                         @error('equipment_provided')
                             <span class="text-red-500 dark:text-red-400 text-xs mt-1.5 block flex items-center">
@@ -927,23 +1033,23 @@
                 <div class="p-5 pb-6">
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Periksa ringkasan pesanan bantuan sebelum mempublikasikan.</p>
 
-                    <!-- Total -->
-                    <div class="bg-white dark:bg-gray-800/90 border-2 border-blue-200 dark:border-blue-700/60 rounded-2xl p-4 mb-4">
-                        <div class="flex items-center justify-between">
-                            <div class="flex-1">
-                                <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">Total Pembayaran (Escrow)</span>
-                                <div class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">Rp
-                                    {{ number_format($confirmTotal ?? 0, 0, ',', '.') }}</div>
+                    <!-- Breakdown Pembayaran -->
+                    <div class="bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 mb-4 space-y-2.5">
+                        <div class="flex items-center justify-between text-xs sm:text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">Imbalan Rekan Jasa</span>
+                            <span class="font-bold text-gray-900 dark:text-white">Rp {{ number_format($confirmAmount ?? 0, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs sm:text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">Biaya Layanan Platform ({{ $confirmCommissionRate ?? 10 }}%)</span>
+                            <span class="font-bold text-blue-600 dark:text-blue-400">+ Rp {{ number_format($confirmPlatformFee ?? 0, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="border-t border-gray-200 dark:border-gray-700 pt-2.5 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 block">Total Pembayaran</span>
+                                <span class="text-[10px] text-gray-400 dark:text-gray-500">Saldo ditahan aman (Escrow)</span>
                             </div>
-                            <div
-                                class="w-14 h-14 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center flex-shrink-0 text-blue-600 dark:text-blue-400">
-                                <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
-                                    <path
-                                        d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                                    <path fill-rule="evenodd"
-                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
-                                        clip-rule="evenodd" />
-                                </svg>
+                            <div class="text-xl font-extrabold text-primary-600 dark:text-primary-400">
+                                Rp {{ number_format($confirmTotal ?? 0, 0, ',', '.') }}
                             </div>
                         </div>
                     </div>
@@ -1339,7 +1445,7 @@
             try {
                 const data = {
                     title: @this.get('title') || '',
-                    amount: @this.get('amount') || 20000,
+                    amount: @this.get('amount') || {{ $minHelpNominal ?? 10000 }},
                     city_id: @this.get('city_id') || '',
                     cityQuery: @this.get('cityQuery') || '',
                     location: @this.get('location') || '',

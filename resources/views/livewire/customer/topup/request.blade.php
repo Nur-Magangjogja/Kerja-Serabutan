@@ -13,14 +13,8 @@
 
                 <div class="text-center flex-1 min-w-0 px-2">
                     <h1 class="text-base font-bold truncate">Top-Up Saldo</h1>
-                    <p class="text-xs text-white/90 truncate mt-0.5">Isi saldo Anda dengan cepat</p>
+                    <p class="text-xs text-white/90 truncate mt-0.5">Isi saldo via QRIS (Bebas Biaya Admin)</p>
                 </div>
-
-                <a href="{{ route('customer.topup.history') }}" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0" aria-label="Riwayat Top-Up">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </a>
             </div>
         </div>
     </div>
@@ -51,21 +45,21 @@
                 <div class="w-10 h-10 rounded-full {{ $currentStep >= 1 ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400' }} flex items-center justify-center font-bold text-sm mb-1 transition-colors">
                     1
                 </div>
-                <span class="text-xs font-medium {{ $currentStep >= 1 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400' }}">Data</span>
+                <span class="text-xs font-medium {{ $currentStep >= 1 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400' }}">Nominal</span>
             </div>
             <div class="flex-1 h-1 {{ $currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700' }} -mt-5 transition-colors"></div>
             <div class="flex flex-col items-center flex-1">
                 <div class="w-10 h-10 rounded-full {{ $currentStep >= 2 ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400' }} flex items-center justify-center font-bold text-sm mb-1 transition-colors">
                     2
                 </div>
-                <span class="text-xs font-medium {{ $currentStep >= 2 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400' }}">Detail</span>
+                <span class="text-xs font-medium {{ $currentStep >= 2 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400' }}">Konfirmasi</span>
             </div>
             <div class="flex-1 h-1 {{ $currentStep >= 3 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700' }} -mt-5 transition-colors"></div>
             <div class="flex flex-col items-center flex-1">
                 <div class="w-10 h-10 rounded-full {{ $currentStep >= 3 ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400' }} flex items-center justify-center font-bold text-sm mb-1 transition-colors">
                     3
                 </div>
-                <span class="text-xs font-medium {{ $currentStep >= 3 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400' }}">Bayar</span>
+                <span class="text-xs font-medium {{ $currentStep >= 3 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400' }}">Scan QRIS</span>
             </div>
         </div>
 
@@ -130,20 +124,11 @@
 
                     <!-- Email -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email (opsional)</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
                         <input type="email" wire:model="customerEmail"
                             class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400 dark:placeholder-gray-500"
                             placeholder="budi@example.com">
                         @error('customerEmail') <span class="text-xs text-red-600 dark:text-red-400 mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- Catatan -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Catatan (opsional)</label>
-                        <textarea wire:model="customerNotes" rows="3"
-                            class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400 dark:placeholder-gray-500"
-                            placeholder="Tambahkan catatan jika diperlukan..."></textarea>
-                        @error('customerNotes') <span class="text-xs text-red-600 dark:text-red-400 mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
                     <!-- Buttons -->
@@ -157,36 +142,21 @@
                             Lanjutkan →
                         </button>
                     </div>
-                    @if(session('topup_form_data'))
-                        <button type="button" wire:click="resetFormData"
-                            onclick="return confirm('Yakin ingin reset semua data form?')"
-                            class="w-full px-4 py-2 text-xs text-red-600 dark:text-red-400 hover:text-red-700 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 font-medium transition border border-red-200 dark:border-red-900/50 cursor-pointer">
-                            Reset Data
-                        </button>
-                    @endif
                 </form>
             </div>
         @endif
 
-        <!-- Step 2: Detail Pembayaran -->
+        <!-- Step 2: Detail & Konfirmasi -->
         @if ($currentStep === 2)
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <!-- Rincian Pembayaran -->
-                <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-5 text-white">
-                    <h3 class="text-sm font-semibold mb-4 opacity-90">RINCIAN PEMBAYARAN</h3>
+                <div class="bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] p-5 text-white">
+                    <h3 class="text-xs font-bold uppercase tracking-wider mb-4 opacity-90">RINCIAN PEMBAYARAN</h3>
                     <div class="space-y-3">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm opacity-90">Nominal Top-Up</span>
-                            <span class="font-bold text-lg">Rp {{ number_format($amount, 0, ',', '.') }}</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm opacity-90">Biaya Admin</span>
-                            <span class="font-bold">Rp {{ number_format($adminFee, 0, ',', '.') }}</span>
-                        </div>
                         <div class="border-t border-white/20 pt-3 mt-3">
                             <div class="flex justify-between items-center">
-                                <span class="font-semibold">Total Bayar </span>
-                                <span class="font-bold text-2xl">Rp {{ number_format($totalPayment, 0, ',', '.') }}</span>
+                                <span class="font-semibold text-sm">Total Transfer QRIS</span>
+                                <span class="font-extrabold text-2xl">Rp {{ number_format($totalPayment, 0, ',', '.') }}</span>
                             </div>
                         </div>
                     </div>
@@ -199,7 +169,7 @@
                             <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
                             </svg>
-                            Data Pengirim
+                            Data Akun Pemohon
                         </h4>
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between">
@@ -216,20 +186,24 @@
                                     <span class="font-semibold text-gray-900 dark:text-gray-100">{{ $customerEmail }}</span>
                                 </div>
                             @endif
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Metode Bayar:</span>
+                                <span class="font-bold text-primary-600 dark:text-primary-400">QRIS (All Bank & E-Wallet)</span>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Informasi Penting Alert -->
-                    <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-xl p-4 shadow-xs">
+                    <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-xl p-4 shadow-xs">
                         <div class="flex gap-2.5">
-                            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"/>
+                            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                             </svg>
-                            <div class="text-xs text-amber-900 dark:text-amber-200 space-y-1">
-                                <p class="font-bold mb-1 text-amber-900 dark:text-amber-100">Informasi Penting:</p>
-                                <p>• Transfer sesuai nominal total (termasuk kode unik)</p>
-                                <p>• Saldo masuk setelah verifikasi admin</p>
-                                <p>• Maksimal 1x24 jam untuk approval</p>
+                            <div class="text-xs text-blue-900 dark:text-blue-200 space-y-1">
+                                <p class="font-bold mb-1 text-blue-950 dark:text-blue-100">Informasi Pembayaran:</p>
+                                <p>• Pada langkah selanjutnya, scan kode QRIS dan transfer sebesar <strong>Rp {{ number_format($totalPayment, 0, ',', '.') }}</strong>.</p>
+                                <p>• Unggah bukti transfer (screenshot struk berhasil).</p>
+                                <p>• Saldo akan ditambahkan setelah diverifikasi oleh admin.</p>
                             </div>
                         </div>
                     </div>
@@ -242,172 +216,167 @@
                         </button>
                         <button type="button" wire:click="nextStep"
                             class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition shadow-md shadow-blue-500/20 cursor-pointer">
-                            Lanjutkan →
+                            Lanjut ke QRIS →
                         </button>
                     </div>
                 </div>
             </div>
         @endif
 
-        <!-- Step 3: Metode Pembayaran & Upload Bukti -->
+        <!-- Step 3: Scan QRIS & Upload Bukti Pembayaran -->
         @if ($currentStep === 3)
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
-                <!-- Total yang harus dibayar -->
-                <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-4 mb-5 text-center shadow-sm">
-                    <p class="text-xs opacity-90 mb-1">Total Pembayaran</p>
-                    <p class="text-3xl font-bold">Rp {{ number_format($totalPayment, 0, ',', '.') }}</p>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 space-y-5">
+                <!-- Total Amount Banner -->
+                <div class="bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] text-white rounded-2xl p-4 text-center shadow-sm">
+                    <p class="text-xs opacity-90 mb-1">Total yang Harus Ditransfer</p>
+                    <p class="text-3xl font-extrabold tracking-tight">Rp {{ number_format($totalPayment, 0, ',', '.') }}</p>
+                    <span class="inline-block mt-1 px-2 py-0.5 text-[11px] font-bold bg-white/20 rounded-full">
+                        Bebas Biaya Admin (0% Pajak)
+                    </span>
                 </div>
 
-                <form wire:submit.prevent="submitRequest" class="space-y-5">
-                    <!-- QRIS -->
-                    @if($qrisEnabled)
-                        <div>
-                            <h3 class="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-                                <span class="text-lg">📱</span> E-WALLET (QRIS)
-                            </h3>
-                            <div wire:click="selectPaymentMethod('qris')"
-                                class="border-2 {{ $paymentMethod === 'qris' ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/50' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/80 hover:border-blue-300 dark:hover:border-blue-600' }} rounded-xl p-4 cursor-pointer transition">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/40 dark:to-blue-900/40 rounded-xl flex items-center justify-center">
-                                            <span class="text-2xl">💳</span>
-                                        </div>
-                                        <div>
-                                            <p class="font-bold text-gray-900 dark:text-gray-100">QRIS - All E-Wallet</p>
-                                            <p class="text-xs text-gray-600 dark:text-gray-400">GoPay, OVO, Dana, ShopeePay, dll</p>
-                                        </div>
-                                    </div>
-                                    @if($paymentMethod === 'qris')
-                                        <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                            </svg>
-                                        </div>
-                                    @endif
-                                </div>
-                                
-                                @if($paymentMethod === 'qris')
-                                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                        <div class="text-center">
-                                            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Scan QR Code</p>
-                                            @if(file_exists(public_path('images/payment/qris.png')))
-                                                <img src="{{ asset('images/payment/qris.png') }}" 
-                                                    alt="QRIS" 
-                                                    class="w-48 h-48 mx-auto border border-gray-200 dark:border-gray-600 bg-white p-2 rounded-xl">
-                                            @else
-                                                <div class="w-48 h-48 mx-auto border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl flex items-center justify-center bg-gray-50 dark:bg-gray-700">
-                                                    <div class="text-center">
-                                                        <svg class="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
-                                                        </svg>
-                                                        <p class="text-xs text-gray-500 dark:text-gray-400">QR belum tersedia</p>
-                                                    </div>
-                                                </div>
-                                            @endif
-                                        </div>
-                                    </div>
-                                @endif
-                            </div>
+                @if(empty($qrisImage) || !$qrisEnabled)
+                    <!-- Alert QRIS Belum Dikonfigurasi -->
+                    <div class="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl flex items-start gap-3.5 text-amber-900 dark:text-amber-200">
+                        <div class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
                         </div>
-                    @endif
-
-                    <!-- Transfer Bank -->
-                    <div>
-                        <h3 class="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-                            <span class="text-lg">🏦</span> TRANSFER BANK
-                        </h3>
-                        <div class="space-y-2.5">
-                            @foreach($availableBanks as $bank)
-                                <div wire:click="selectPaymentMethod('bank_{{ strtolower($bank['code']) }}')"
-                                    class="border-2 {{ $paymentMethod === 'bank_'.strtolower($bank['code']) ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/50' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/80 hover:border-blue-300 dark:hover:border-blue-600' }} rounded-xl p-3.5 cursor-pointer transition">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 bg-white dark:bg-gray-700 rounded-xl flex items-center justify-center border-2 border-gray-200 dark:border-gray-600 flex-shrink-0">
-                                            <span class="text-xs font-extrabold text-gray-700 dark:text-gray-200">{{ strtoupper($bank['code']) }}</span>
-                                        </div>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="font-bold text-gray-900 dark:text-gray-100 text-sm">{{ $bank['name'] }}</p>
-                                            <p class="text-sm text-gray-700 dark:text-gray-300 font-mono">{{ $bank['account_number'] }}</p>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">a.n. {{ $bank['account_name'] }}</p>
-                                        </div>
-                                        @if($paymentMethod === 'bank_'.strtolower($bank['code']))
-                                            <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                                </svg>
-                                            </div>
-                                        @endif
-                                    </div>
-                                    @if($paymentMethod === 'bank_'.strtolower($bank['code']))
-                                        <button type="button" 
-                                            onclick="navigator.clipboard.writeText('{{ $bank['account_number'] }}'); alert('Nomor rekening disalin!')"
-                                            class="w-full mt-3 px-3 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition cursor-pointer">
-                                            Salin Nomor Rekening
-                                        </button>
-                                    @endif
-                                </div>
-                            @endforeach
+                        <div class="text-xs space-y-1">
+                            <p class="font-bold text-sm text-amber-950 dark:text-amber-100">Metode QRIS Belum Tersedia</p>
+                            <p>Saat ini Super Admin belum mengunggah barcode QRIS untuk pengisian saldo. Pengisian saldo belum dapat diproses secara mandiri. Silakan hubungi admin atau customer service untuk bantuan pengisian saldo manual.</p>
                         </div>
                     </div>
 
-                    @error('paymentMethod') <span class="text-xs text-red-600 dark:text-red-400 block">{{ $message }}</span> @enderror
-
-                    <!-- Upload Bukti Transfer -->
-                    <div>
-                        <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-                            <span>📷</span> Upload Bukti Transfer *
-                        </label>
-                        <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-700/30 rounded-xl p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition relative">
-                            <input type="file" wire:model="proofOfPayment" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" class="hidden" id="proofUpload">
-                            @if ($proofOfPayment)
-                                <label for="proofUpload" class="cursor-pointer block">
-                                    <div class="w-full rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800">
-                                        @php
-                                            $canPreviewTopup = false;
-                                            try {
-                                                $canPreviewTopup = method_exists($proofOfPayment, 'temporaryUrl') && $proofOfPayment->isPreviewable();
-                                            } catch (\Throwable $e) {
-                                                $canPreviewTopup = false;
-                                            }
-                                        @endphp
-                                        @if ($canPreviewTopup)
-                                            <img src="{{ $proofOfPayment->temporaryUrl() }}" alt="Preview" class="w-full h-48 object-cover">
-                                        @else
-                                            <div class="w-full h-48 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 p-2 text-center">
-                                                <span class="text-xs font-semibold">{{ $proofOfPayment->getClientOriginalName() }}</span>
-                                            </div>
-                                        @endif
-                                    </div>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Ketuk untuk mengganti file</p>
-                                </label>
-                            @else
-                                <label for="proofUpload" class="cursor-pointer block">
-                                    <svg class="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                                    </svg>
-                                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">Klik untuk upload</p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">JPG, JPEG, atau PNG (Max 2MB)</p>
-                                </label>
-                            @endif
-                        </div>
-                        @error('proofOfPayment') <span class="text-xs text-red-600 dark:text-red-400 mt-2 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- Buttons -->
                     <div class="flex gap-3 pt-2">
                         <button type="button" wire:click="previousStep"
                             class="px-6 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-600 transition cursor-pointer">
                             ← Kembali
                         </button>
-                        <button type="submit"
-                            class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition shadow-md shadow-blue-500/20 cursor-pointer"
-                            wire:loading.attr="disabled">
-                            <span wire:loading.remove>Kirim Request</span>
-                            <span wire:loading>Mengirim...</span>
+                        <button type="button" disabled
+                            class="flex-1 px-6 py-3 bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-xl font-semibold cursor-not-allowed">
+                            QRIS Belum Tersedia
                         </button>
                     </div>
-                </form>
+                @else
+                    <!-- QRIS Card Display -->
+                    <div class="border-2 border-blue-500/40 dark:border-blue-500/30 bg-blue-50/40 dark:bg-blue-950/20 rounded-2xl p-4 sm:p-5 text-center space-y-3">
+                        <div class="flex items-center justify-center gap-2">
+                            <span class="text-lg">📱</span>
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">
+                                SCAN QRIS PEMBAYARAN
+                            </h3>
+                        </div>
+
+                        @php
+                            $displayQrisUrl = str_starts_with($qrisImage, 'images/') 
+                                ? asset($qrisImage) 
+                                : asset('storage/' . $qrisImage);
+                        @endphp
+
+                        <!-- QR Box Frame -->
+                        <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 inline-block mx-auto max-w-[270px] w-full">
+                            <img src="{{ $displayQrisUrl }}" 
+                                alt="QRIS Barcode" 
+                                class="w-56 h-56 object-contain rounded-xl mx-auto">
+                            
+                            <div class="mt-2.5 pt-2 border-t border-gray-100 text-center">
+                                <p class="text-xs font-bold text-gray-900 truncate">
+                                    {{ $qrisMerchantName ?: 'PT SayaBantu' }}
+                                </p>
+                                @if($qrisNmid)
+                                    <p class="text-[10px] text-gray-500 font-mono mt-0.5">NMID: {{ $qrisNmid }}</p>
+                                @endif
+                            </div>
+
+                            <!-- Tombol Unduh QRIS -->
+                            <div class="mt-3 pt-2 border-t border-gray-100">
+                                <a href="{{ $displayQrisUrl }}" 
+                                   download="QRIS-SayaBantu.png" 
+                                   target="_blank"
+                                   class="inline-flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 text-blue-700 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer border border-blue-200">
+                                    <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                    </svg>
+                                    <span>Unduh Gambar QRIS</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Petunjuk Pembayaran -->
+                        <div class="text-xs text-gray-600 dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 p-3.5 rounded-xl border border-gray-200/80 dark:border-gray-700 text-left space-y-1.5">
+                            <p class="font-bold text-gray-900 dark:text-white">Cara Pembayaran:</p>
+                            <p>1. <strong>Unduh QRIS</strong> dengan tombol di atas (jika bertransaksi di HP yang sama), atau scan langsung barcode menggunakan HP lain.</p>
+                            <p>2. Buka aplikasi m-Banking (BCA, Mandiri, BRI, BNI) atau E-Wallet (GoPay, OVO, DANA, ShopeePay, LinkAja).</p>
+                            <p>3. Pilih menu <strong>Scan QR / Bayar</strong>, lalu pilih gambar QRIS dari <strong>Galeri Foto</strong> HP Anda.</p>
+                            <p>4. Masukkan nominal transfer persis <strong>Rp {{ number_format($totalPayment, 0, ',', '.') }}</strong> dan selesaikan pembayaran.</p>
+                            <p>5. Unggah screenshot / struk bukti transfer pada form di bawah ini.</p>
+                        </div>
+                    </div>
+
+                    <form wire:submit.prevent="submitRequest" class="space-y-4">
+                        <!-- Upload Bukti Transfer -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
+                                <span>📷</span> Upload Bukti Transfer QRIS <span class="text-red-500">*</span>
+                            </label>
+                            <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/60 dark:bg-gray-700/30 rounded-xl p-5 text-center hover:border-blue-400 dark:hover:border-blue-500 transition relative">
+                                <input type="file" wire:model="proofOfPayment" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" class="hidden" id="proofUpload">
+                                
+                                @if ($proofOfPayment)
+                                    <label for="proofUpload" class="cursor-pointer block">
+                                        <div class="w-full rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800">
+                                            @php
+                                                $canPreview = false;
+                                                try {
+                                                    $canPreview = method_exists($proofOfPayment, 'temporaryUrl') && $proofOfPayment->isPreviewable();
+                                                } catch (\Throwable $e) {
+                                                    $canPreview = false;
+                                                }
+                                            @endphp
+                                            @if ($canPreview)
+                                                <img src="{{ $proofOfPayment->temporaryUrl() }}" alt="Preview Bukti" class="w-full max-h-56 object-contain mx-auto p-1">
+                                            @else
+                                                <div class="w-full h-36 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 p-2 text-center">
+                                                    <span class="text-xs font-semibold">{{ $proofOfPayment->getClientOriginalName() }}</span>
+                                                </div>
+                                            @endif
+                                        </div>
+                                        <p class="text-xs text-primary-600 dark:text-primary-400 font-semibold mt-2">Ketuk untuk mengganti file bukti</p>
+                                    </label>
+                                @else
+                                    <label for="proofUpload" class="cursor-pointer block">
+                                        <svg class="w-10 h-10 mx-auto text-gray-400 dark:text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                        </svg>
+                                        <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">Pilih Bukti Pembayaran QRIS</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Format: JPG, JPEG, atau PNG (Maks 2MB)</p>
+                                    </label>
+                                @endif
+                            </div>
+                            @error('proofOfPayment') <span class="text-xs text-red-600 dark:text-red-400 mt-1.5 block">{{ $message }}</span> @enderror
+                            <div wire:loading wire:target="proofOfPayment" class="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                                Memproses unggahan bukti...
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-3 pt-2">
+                            <button type="button" wire:click="previousStep"
+                                class="px-6 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-600 transition cursor-pointer">
+                                ← Kembali
+                            </button>
+                            <button type="submit"
+                                class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl font-semibold transition shadow-md shadow-blue-500/20 cursor-pointer disabled:opacity-50"
+                                wire:loading.attr="disabled">
+                                <span wire:loading.remove>Kirim Bukti Pembayaran</span>
+                                <span wire:loading>Mengirim Request...</span>
+                            </button>
+                        </div>
+                    </form>
+                @endif
             </div>
         @endif
     </div>
 </div>
-

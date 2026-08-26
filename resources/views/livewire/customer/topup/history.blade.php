@@ -89,7 +89,11 @@
                             </div>
                             <div class="text-right">
                                 <p class="text-base font-bold text-gray-900 dark:text-gray-100">Rp {{ number_format($transaction->amount, 0, ',', '.') }}</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">+{{ number_format($transaction->admin_fee, 0, ',', '.') }} admin</p>
+                                @if(($transaction->admin_fee ?? 0) > 0)
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">+{{ number_format($transaction->admin_fee, 0, ',', '.') }} admin</p>
+                                @else
+                                    <p class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">Gratis (0 Fee)</p>
+                                @endif
                             </div>
                         </div>
 
@@ -232,7 +236,11 @@
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500 dark:text-gray-400">Biaya Admin:</span>
-                            <span class="font-medium text-gray-900 dark:text-gray-100">Rp {{ number_format($selectedTransaction->admin_fee, 0, ',', '.') }}</span>
+                            @if(($selectedTransaction->admin_fee ?? 0) > 0)
+                                <span class="font-medium text-gray-900 dark:text-gray-100">Rp {{ number_format($selectedTransaction->admin_fee, 0, ',', '.') }}</span>
+                            @else
+                                <span class="font-bold text-emerald-600 dark:text-emerald-400">Gratis (Rp 0)</span>
+                            @endif
                         </div>
                         <div class="border-t border-gray-200 dark:border-gray-700 pt-3 flex justify-between">
                             <span class="font-bold text-gray-900 dark:text-gray-100">Total Pembayaran:</span>
@@ -243,7 +251,13 @@
                     <!-- Payment Method -->
                     <div>
                         <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Metode Pembayaran:</label>
-                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ ucwords(str_replace(['_', 'bank'], [' ', 'Transfer Bank '], $selectedTransaction->payment_method ?? '-')) }}</p>
+                        <p class="text-sm font-bold text-gray-900 dark:text-gray-100">
+                            @if(strtolower($selectedTransaction->payment_method ?? '') === 'qris')
+                                QRIS (All E-Wallet & Bank)
+                            @else
+                                {{ ucwords(str_replace(['_', 'bank'], [' ', 'Transfer Bank '], $selectedTransaction->payment_method ?? '-')) }}
+                            @endif
+                        </p>
                     </div>
 
                     <!-- Bukti Transfer -->

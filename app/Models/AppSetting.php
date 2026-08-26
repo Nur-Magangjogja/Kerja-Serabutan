@@ -20,6 +20,40 @@ class AppSetting extends Model
         return static::updateOrCreate(['key' => $key], ['value' => is_array($value) ? json_encode($value) : (string) $value]);
     }
 
+    /** Platform Service Fee Helpers (Nilai Pajak Layanan Tetap Rp) */
+    public static function getPlatformServiceFee(): float
+    {
+        $val = static::get('platform_service_fee');
+        if ($val !== null && $val !== '') {
+            return max(0, (float) $val);
+        }
+        $legacyFixed = static::get('platform_fixed_fee');
+        if ($legacyFixed !== null && $legacyFixed !== '') {
+            return max(0, (float) $legacyFixed);
+        }
+        return 2000.0;
+    }
+
+    /** Batas Waktu Pembatalan Otomatis (Jam) */
+    public static function getHelpAutoCancelHours(): int
+    {
+        return max(1, (int) static::get('help_auto_cancel_hours', 24));
+    }
+
+    public static function calculatePlatformFee(float $amount): array
+    {
+        $fee = static::getPlatformServiceFee();
+        $label = 'Rp ' . number_format($fee, 0, ',', '.');
+
+        return [
+            'type'       => 'fixed',
+            'rate'       => 0.0,
+            'fee_amount' => $fee,
+            'label'      => $label,
+            'total'      => $amount + $fee,
+        ];
+    }
+
     /** Default list of banks & e-wallets with BI-FAST and platform account configuration */
     public static function getDefaultWithdrawBanks(): array
     {

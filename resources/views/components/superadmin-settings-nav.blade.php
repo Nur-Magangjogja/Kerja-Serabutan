@@ -24,7 +24,7 @@
     </div>
 
     <!-- Sub-navigation Tabs -->
-    <div class="flex flex-wrap items-center gap-2 p-1.5 bg-gray-200/70 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 max-w-fit shadow-sm">
+    <div class="flex flex-wrap items-center gap-2 p-1.5 bg-gray-200/70 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 max-w-full shadow-sm">
         <!-- Tab: Identitas Aplikasi -->
         <a href="{{ route('superadmin.settings.identity') }}" wire:navigate
             class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold {{ $isIdentity ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-300/50 dark:hover:bg-gray-700/50' }}">

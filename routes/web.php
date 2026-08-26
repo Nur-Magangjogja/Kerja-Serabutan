@@ -132,6 +132,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reports/create', \App\Livewire\Customer\Reports\Create::class)->name('reports.create');
         Route::get('/reports/create/user/{user_id}', \App\Livewire\Customer\Reports\Create::class)->name('reports.create.user');
         Route::get('/reports/create/help/{help_id}', \App\Livewire\Customer\Reports\Create::class)->name('reports.create.help');
+        Route::get('/reports/{report}/chat', [\App\Http\Controllers\Admin\PartnerReportController::class, 'customerChatRoom'])->name('reports.chat');
+        Route::post('/reports/{report}/reply', [\App\Http\Controllers\Admin\PartnerReportController::class, 'replyCustomer'])->name('reports.reply');
     });
 
     // ========================================
@@ -145,6 +147,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/helps', \App\Livewire\Mitra\Helps\AllHelps::class)->name('helps.all');
         Route::get('/helps/completed', \App\Livewire\Mitra\Helps\CompletedHelps::class)->name('helps.completed');
         Route::get('/helps/{id}/detail', \App\Livewire\Mitra\Helps\HelpDetail::class)->name('helps.detail');
+        Route::get('/reports/{report}/chat', [\App\Http\Controllers\Admin\PartnerReportController::class, 'mitraChatRoom'])->name('reports.chat');
+        Route::post('/reports/{report}/reply', [\App\Http\Controllers\Admin\PartnerReportController::class, 'replyMitra'])->name('reports.reply');
 
         // Profile
         Route::get('/profile', \App\Livewire\Mitra\Profile\Index::class)->name('profile');
@@ -205,11 +209,40 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ========================================
     // SHARED ROUTES (Accessible by both)
     // ========================================
-    Route::view('/profile', 'profile')->name('profile');
-    Route::view('/profile/edit', 'profile.edit')->name('profile.edit');
-    Route::view('/profile/settings', 'profile.settings')->name('profile.settings');
-    Route::view('/profile/settings/notifications', 'profile.settings.notifications')->name('profile.settings.notifications');
-    Route::view('/profile/settings/password', 'profile.settings.password')->name('profile.settings.password');
+    Route::get('/profile', function () {
+        if (auth()->user()?->role === 'mitra') {
+            return redirect()->route('mitra.profile');
+        }
+        return view('profile');
+    })->name('profile');
+
+    Route::get('/profile/edit', function () {
+        if (auth()->user()?->role === 'mitra') {
+            return redirect()->route('mitra.profile.edit');
+        }
+        return view('profile.edit');
+    })->name('profile.edit');
+
+    Route::get('/profile/settings', function () {
+        if (auth()->user()?->role === 'mitra') {
+            return redirect()->route('mitra.settings');
+        }
+        return view('profile.settings');
+    })->name('profile.settings');
+
+    Route::get('/profile/settings/notifications', function () {
+        if (auth()->user()?->role === 'mitra') {
+            return redirect()->route('mitra.settings.notifications');
+        }
+        return view('profile.settings.notifications');
+    })->name('profile.settings.notifications');
+
+    Route::get('/profile/settings/password', function () {
+        if (auth()->user()?->role === 'mitra') {
+            return redirect()->route('mitra.settings.password');
+        }
+        return view('profile.settings.password');
+    })->name('profile.settings.password');
 
     Route::put('/profile/password', function (\Illuminate\Http\Request $request) {
         $request->validate([
@@ -269,9 +302,18 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
     Route::post('/partners/reports/{report}/add-note', [\App\Http\Controllers\Admin\PartnerReportController::class, 'addNote'])->name('partners.reports.add-note');
     Route::post('/partners/reports/{report}/resolve', [\App\Http\Controllers\Admin\PartnerReportController::class, 'resolve'])->name('partners.reports.resolve');
     Route::post('/partners/reports/{report}/reopen', [\App\Http\Controllers\Admin\PartnerReportController::class, 'reopen'])->name('partners.reports.reopen');
+    Route::post('/partners/reports/{report}/process-refund', [\App\Http\Controllers\Admin\PartnerReportController::class, 'processRefund'])->name('partners.reports.process-refund');
+    Route::post('/partners/reports/{report}/reject-refund', [\App\Http\Controllers\Admin\PartnerReportController::class, 'rejectRefund'])->name('partners.reports.reject-refund');
+    Route::get('/partners/reports/{report}/chat', [\App\Http\Controllers\Admin\PartnerReportController::class, 'chatRoom'])->name('partners.reports.chat');
+    Route::post('/partners/reports/{report}/send-message', [\App\Http\Controllers\Admin\PartnerReportController::class, 'sendMessage'])->name('partners.reports.send-message');
     Route::get('/partners/blocked', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'index'])->name('partners.blocked');
     Route::post('/partners/blocked/{id}/toggle', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'toggle'])->name('partners.blocked.toggle');
     Route::post('/partners/toggle/{id}', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'toggle'])->name('partners.toggle');
+    Route::get('/partners/greylist', [\App\Http\Controllers\Admin\GreylistController::class, 'index'])->name('partners.greylist');
+    Route::post('/partners/greylist/add', [\App\Http\Controllers\Admin\GreylistController::class, 'add'])->name('partners.greylist.add');
+    Route::post('/partners/greylist/{user}/warning', [\App\Http\Controllers\Admin\GreylistController::class, 'issueWarning'])->name('partners.greylist.warning');
+    Route::post('/partners/greylist/{user}/shadow-ban', [\App\Http\Controllers\Admin\GreylistController::class, 'toggleShadowBan'])->name('partners.greylist.shadow_ban');
+    Route::post('/partners/greylist/{user}/remove', [\App\Http\Controllers\Admin\GreylistController::class, 'remove'])->name('partners.greylist.remove');
     Route::get('/users/{user}', [\App\Http\Controllers\Admin\AdminUserController::class, 'show'])->name('users.show');
 
     Route::view('/settings/appearance', 'superadmin.settings.appearance')->name('settings.appearance');
@@ -310,9 +352,18 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::post('/partners/reports/{report}/add-note', [\App\Http\Controllers\Admin\PartnerReportController::class, 'addNote'])->name('partners.reports.add-note');
     Route::post('/partners/reports/{report}/resolve', [\App\Http\Controllers\Admin\PartnerReportController::class, 'resolve'])->name('partners.reports.resolve');
     Route::post('/partners/reports/{report}/reopen', [\App\Http\Controllers\Admin\PartnerReportController::class, 'reopen'])->name('partners.reports.reopen');
+    Route::post('/partners/reports/{report}/process-refund', [\App\Http\Controllers\Admin\PartnerReportController::class, 'processRefund'])->name('partners.reports.process-refund');
+    Route::post('/partners/reports/{report}/reject-refund', [\App\Http\Controllers\Admin\PartnerReportController::class, 'rejectRefund'])->name('partners.reports.reject-refund');
+    Route::get('/partners/reports/{report}/chat', [\App\Http\Controllers\Admin\PartnerReportController::class, 'chatRoom'])->name('partners.reports.chat');
+    Route::post('/partners/reports/{report}/send-message', [\App\Http\Controllers\Admin\PartnerReportController::class, 'sendMessage'])->name('partners.reports.send-message');
     Route::get('/partners/blocked', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'index'])->name('partners.blocked');
     Route::post('/partners/blocked/{id}/toggle', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'toggle'])->name('partners.blocked.toggle');
     Route::post('/partners/toggle/{id}', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'toggle'])->name('partners.toggle');
+    Route::get('/partners/greylist', [\App\Http\Controllers\Admin\GreylistController::class, 'index'])->name('partners.greylist');
+    Route::post('/partners/greylist/add', [\App\Http\Controllers\Admin\GreylistController::class, 'add'])->name('partners.greylist.add');
+    Route::post('/partners/greylist/{user}/warning', [\App\Http\Controllers\Admin\GreylistController::class, 'issueWarning'])->name('partners.greylist.warning');
+    Route::post('/partners/greylist/{user}/shadow-ban', [\App\Http\Controllers\Admin\GreylistController::class, 'toggleShadowBan'])->name('partners.greylist.shadow_ban');
+    Route::post('/partners/greylist/{user}/remove', [\App\Http\Controllers\Admin\GreylistController::class, 'remove'])->name('partners.greylist.remove');
     Route::get('/topup/approvals', \App\Livewire\Admin\Topup\Approval::class)->name('topup.approvals');
 });
 

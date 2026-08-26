@@ -18,7 +18,11 @@ class AppSettingsSeeder extends Seeder
             'platform_commission_rate'  => '10.00', // 10% komisi platform
             'mitra_cancel_penalty_fee'  => '5000',  // Rp 5.000 denda pembatalan mitra
             'min_withdraw_amount'       => '50000', // Rp 50.000 minimal withdraw
-            'topup_admin_fee'           => '1000',  // Rp 1.000 biaya admin topup
+            'topup_admin_fee'           => '0',      // Bebas biaya admin / 0% pajak topup
+            'topup_qris_image'          => 'images/payment/qris.png',
+            'topup_qris_merchant_name'  => 'PT SayaBantu',
+            'topup_qris_nmid'           => 'ID1020030040050',
+            'topup_qris_enabled'        => '1',
             'contact_email'             => 'support@sayabantu.com',
             'contact_phone'             => '081234567890',
             'default_city'              => 'Sleman',

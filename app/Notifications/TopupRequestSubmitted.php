@@ -45,7 +45,7 @@ class TopupRequestSubmitted extends Notification
             ->line('Nominal: Rp ' . number_format($this->transaction->amount, 0, ',', '.'))
             ->line('Total Pembayaran: Rp ' . number_format($this->transaction->total_payment, 0, ',', '.'))
             ->line('Request Anda akan diverifikasi oleh admin maksimal 1x24 jam.')
-            ->action('Lihat Status', route('customer.topup.history'))
+            ->action('Lihat Status', route('customer.transactions.index'))
             ->line('Terima kasih telah menggunakan layanan kami!');
     }
 

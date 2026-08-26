@@ -24,6 +24,29 @@
             </div>
         </div>
 
+        <!-- Flash Messages -->
+        @if (session()->has('success'))
+            <div class="px-5 pt-4">
+                <div class="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm flex items-center gap-2.5 shadow-xs">
+                    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="font-medium">{{ session('success') }}</span>
+                </div>
+            </div>
+        @endif
+
+        @if (session()->has('error'))
+            <div class="px-5 pt-4">
+                <div class="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-800 dark:text-rose-300 text-xs sm:text-sm flex items-center gap-2.5 shadow-xs">
+                    <svg class="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="font-medium">{{ session('error') }}</span>
+                </div>
+            </div>
+        @endif
+
         <!-- Filter Tabs -->
         <div class="px-5 pt-4">
             <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
@@ -62,7 +85,7 @@
                                 'refund' => 'Pengembalian Dana (Refund)',
                                 'escrow_lock' => 'Pembayaran Bantuan',
                                 'deduction' => 'Potongan Saldo',
-                                'penalty' => 'Denda Pelanggaran',
+                                'penalty' => 'Penyesuaian Administrasi',
                                 default => 'Transaksi Saldo',
                             };
                         @endphp
@@ -136,8 +159,10 @@
                                     </div>
                                     <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
                                         @if($type === 'topup')
-                                            {{ $t->payment_type ? ucfirst($t->payment_type) : 'Top Up Saldo' }}
-                                            @if(!empty($t->order_id))
+                                            {{ $t->payment_method ? strtoupper($t->payment_method) : ($t->payment_type ? ucfirst($t->payment_type) : 'Top Up Saldo') }}
+                                            @if(!empty($t->request_code))
+                                                • {{ $t->request_code }}
+                                            @elseif(!empty($t->order_id))
                                                 • {{ $t->order_id }}
                                             @endif
                                         @elseif($type === 'refund')
@@ -346,6 +371,16 @@
                             <div class="flex justify-between text-sm">
                                 <span class="text-gray-500 dark:text-gray-400">Keterangan</span>
                                 <span class="font-medium text-gray-900 dark:text-gray-100 text-right">{{ $selectedTransaction['description'] }}</span>
+                            </div>
+                        @endif
+
+                        @if(!empty($selectedTransaction['proof_of_payment']))
+                            <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 block mb-1.5">Bukti Transfer QRIS:</span>
+                                <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 max-h-48 bg-white p-1 flex items-center justify-center">
+                                    <img src="{{ asset('storage/' . $selectedTransaction['proof_of_payment']) }}" 
+                                        alt="Bukti Transfer" class="max-w-full max-h-44 object-contain rounded-lg">
+                                </div>
                             </div>
                         @endif
 

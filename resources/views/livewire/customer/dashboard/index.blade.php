@@ -202,6 +202,42 @@
         </div>
     </div>
 
+    {{-- Official Warning / Shadow Ban Alert Banner for Customer --}}
+    @if(auth()->check() && (auth()->user()->warning_level > 0 || auth()->user()->is_shadow_banned))
+        <div class="px-5 mt-4 relative z-10">
+            <div class="p-4 rounded-2xl border shadow-xs {{ auth()->user()->is_shadow_banned ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200' : 'bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200' }}">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-base {{ auth()->user()->is_shadow_banned ? 'bg-rose-500 text-white' : 'bg-amber-500 text-white' }}">
+                        {{ auth()->user()->is_shadow_banned ? '🚫' : '⚠️' }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h4 class="text-xs font-bold">
+                                @if(auth()->user()->is_shadow_banned)
+                                    Akun Dalam Pembatasan Fitur (Shadow Ban)
+                                @else
+                                    Surat Peringatan Resmi (SP {{ auth()->user()->warning_level }})
+                                @endif
+                            </h4>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase {{ auth()->user()->is_shadow_banned ? 'bg-rose-200 text-rose-900' : 'bg-amber-200 text-amber-900' }}">
+                                Moderasi Admin
+                            </span>
+                        </div>
+                        <p class="text-xs mt-1 leading-relaxed opacity-90">
+                            @if(auth()->user()->latest_warning_message)
+                                "{{ auth()->user()->latest_warning_message }}"
+                            @elseif(auth()->user()->is_shadow_banned)
+                                Akun Anda sementara dibatasi dari membuat pekerjaan bantuan baru karena dalam proses peninjauan kepatuhan.
+                            @else
+                                Harap mematuhi syarat & ketentuan platform SayaBantu agar terhindar dari sanksi penangguhan akun.
+                            @endif
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- Quick Action Sub-Nav Grid (Clean Button + Label without outer card) -->
     <div class="px-5 mt-4 sm:mt-5 relative z-10">
         <div class="grid grid-cols-4 gap-2">
@@ -216,7 +252,7 @@
             </a>
 
             <!-- 2. Bantuan Saya -->
-            <a href="{{ route('customer.helps.index', ['statusFilter' => 'selesai']) }}" class="flex flex-col items-center gap-1.5 p-1 transition group cursor-pointer text-center">
+            <a href="{{ route('customer.helps.index') }}" class="flex flex-col items-center gap-1.5 p-1 transition group cursor-pointer text-center">
                 <div class="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md transition">
                     <svg class="w-5 h-5 text-[#0098e7] dark:text-[#38bdf8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

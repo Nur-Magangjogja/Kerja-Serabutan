@@ -257,7 +257,45 @@
             </div>
         </div>
 
-        {{-- Payment note removed - moved to customer view per request --}}
+        {{-- Card Klarifikasi Laporan Aduan / Sengketa Admin --}}
+        @php
+            $mitraReport = \App\Models\PartnerReport::where('reported_help_id', $help->id)
+                ->latest()
+                ->first();
+        @endphp
+        @if($mitraReport)
+            <div class="bg-amber-50 dark:bg-amber-950/40 px-4 py-4 rounded-xl shadow-sm border border-amber-200/80 dark:border-amber-700 mb-3 space-y-3">
+                <div class="flex items-start gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h4 class="text-xs font-bold text-amber-950 dark:text-amber-100">Klarifikasi Laporan Aduan (#{{ $mitraReport->id }})</h4>
+                            <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full {{ $mitraReport->status === 'resolved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-200 text-amber-900' }}">
+                                {{ ucfirst($mitraReport->status) }}
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-amber-900/90 dark:text-amber-300 mt-1">
+                            Customer mengajukan klaim/aduan pada bantuan ini: <em>"{{ $mitraReport->message }}"</em>
+                        </p>
+                    </div>
+                </div>
+
+                {{-- Tombol Buka Ruang Chat Klarifikasi Khusus --}}
+                <div class="pt-2 border-t border-amber-200/60 dark:border-amber-800/60 flex items-center justify-between gap-2 flex-wrap">
+                    <div class="text-[11px] text-amber-800 dark:text-amber-300">
+                        @php $mitraMsgCount = $mitraReport->messages()->count(); @endphp
+                        <span>{{ $mitraMsgCount > 0 ? $mitraMsgCount . ' pesan klarifikasi tersedia' : 'Ruang klarifikasi dengan Admin aktif' }}</span>
+                    </div>
+                    <a href="{{ route('mitra.chat', ['admin' => 1, 'report' => $mitraReport->id]) }}"
+                        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        <span>Buka Ruang Chat Klarifikasi</span>
+                    </a>
+                </div>
+            </div>
+        @endif
 
         {{-- Schedule --}}
         <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3">
@@ -708,16 +746,16 @@
                         Tulis alasan singkat kenapa Anda ingin membatalkan bantuan ini. Customer akan menerima permintaan pembatalan dan dapat menyetujui atau menolak.
                     </p>
 
-                    {{-- Warning Denda Pembatalan --}}
+                    {{-- Catatan Kepatuhan Pembatalan --}}
                     <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-3.5 mb-4 text-left">
                         <div class="flex items-start gap-2.5">
                             <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                             </svg>
                             <div>
-                                <p class="text-xs font-bold text-amber-900 dark:text-amber-200 mb-0.5">Ketentuan Denda Penalti:</p>
+                                <p class="text-xs font-bold text-amber-900 dark:text-amber-200 mb-0.5">Ketentuan Pembatalan Tugas:</p>
                                 <p class="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-                                    Pembatalan tugas yang sudah diambil akan dikenakan denda penalti sebesar <strong>Rp {{ number_format(\App\Models\AppSetting::get('mitra_cancel_penalty_fee', 5000), 0, ',', '.') }}</strong> dari saldo Anda setelah pembatalan disetujui.
+                                    Pembatalan tugas yang sudah diambil dapat dicatat oleh sistem. Pelanggaran berulang dapat menyebabkan akun masuk ke <strong>Daftar Abu-Abu</strong> dan menerima <strong>Surat Peringatan (SP)</strong> dari Admin.
                                 </p>
                             </div>
                         </div>
@@ -1015,8 +1053,8 @@
                             </svg>
                         </div>
                         <div>
-                            <h3 class="font-bold text-base leading-tight">Bukti Selesai Pekerjaan</h3>
-                            <p class="text-xs text-blue-100">Kirim foto hasil kerja ke customer</p>
+                            <h3 class="font-bold text-base leading-tight">Selesaikan Pekerjaan</h3>
+                            <p class="text-xs text-blue-100">Tugas otomatis tuntas & Anda bisa langsung ambil bantuan lain</p>
                         </div>
                     </div>
                     <button wire:click="closeCompletionModal" class="p-1.5 rounded-lg hover:bg-white/20 transition">
@@ -1088,6 +1126,16 @@
                             class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 text-xs focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
                     </div>
 
+                    {{-- Info Box --}}
+                    <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 rounded-xl p-3 flex items-start gap-2.5">
+                        <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        <p class="text-[11px] text-blue-900 dark:text-blue-200 leading-snug">
+                            Setelah foto bukti dikirim, tugas akan <strong>otomatis berstatus Selesai</strong> dan dana saldo langsung masuk ke akun Anda. Anda dapat langsung mengambil pekerjaan berikutnya!
+                        </p>
+                    </div>
+
                     {{-- Action Buttons --}}
                     <div class="flex gap-2.5 pt-2">
                         <button type="button" wire:click="closeCompletionModal"
@@ -1096,7 +1144,7 @@
                         </button>
                         <button type="button" wire:click="submitCompletionProof" wire:loading.attr="disabled"
                             class="flex-1 py-3 px-4 rounded-xl bg-blue-600 text-white font-bold text-xs shadow-md hover:bg-blue-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50">
-                            <span wire:loading.remove wire:target="submitCompletionProof">Kirim Bukti & Selesai</span>
+                            <span wire:loading.remove wire:target="submitCompletionProof">Selesaikan Tugas Sekarang</span>
                             <span wire:loading wire:target="submitCompletionProof" class="inline-flex items-center gap-1">
                                 <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                                 Memproses...

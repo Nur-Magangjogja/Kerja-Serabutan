@@ -203,11 +203,13 @@ class HelpTransactionService
 
     /**
      * Mitra menyelesaikan pekerjaan dan mengunggah foto bukti.
+     * Bantuan langsung otomatis berstatus Selesai, dana saldo dikreditkan ke mitra,
+     * dan mitra dapat segera mengambil pekerjaan bantuan berikutnya.
      */
     public function submitCompletion(Help $help, User $mitra, $proofPhoto, ?string $notes = null): void
     {
         $this->assertMitraAssigned($help, $mitra);
-        $this->assertCanTransition($help, Help::STATUS_WAITING_CONFIRMATION);
+        $this->assertCanTransition($help, Help::STATUS_SELESAI);
 
         $path = $proofPhoto instanceof UploadedFile
             ? $proofPhoto->store('helps/proofs', 'public')
@@ -215,25 +217,30 @@ class HelpTransactionService
 
         DB::transaction(function () use ($help, $path, $notes) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
+            $now = now();
             $data = [
-                'status'           => Help::STATUS_WAITING_CONFIRMATION,
-                'proof_photo'      => $path,
-                'completion_notes' => $notes,
+                'status'               => Help::STATUS_SELESAI,
+                'proof_photo'          => $path,
+                'completion_notes'     => $notes,
+                'service_completed_at' => $lockedHelp->service_completed_at ?? $now,
+                'completed_at'         => $lockedHelp->completed_at ?? $now,
             ];
-            if (!$lockedHelp->service_completed_at) {
-                $data['service_completed_at'] = now();
-            }
             $lockedHelp->update($data);
+
+            // Kreditkan saldo pendapatan mitra seketika
+            $this->creditMitra($lockedHelp);
         });
+
+        $help->refresh();
 
         // Kirim pesan chat dengan foto bukti ke customer
         $this->sendCompletionChat($help, $mitra, $path, $notes);
-        $this->sendStatusNotification($help, Help::STATUS_WAITING_CONFIRMATION, $help->user, $mitra);
+        $this->sendStatusNotification($help, Help::STATUS_SELESAI, $help->user, $mitra);
         $this->logActivity(
             $mitra->id,
             $help->id,
             'help_completed',
-            "Mitra {$mitra->name} menyelesaikan bantuan dan mengunggah foto bukti",
+            "Mitra {$mitra->name} menyelesaikan bantuan dan mengunggah foto bukti (Selesai Otomatis)",
             $path
         );
     }
@@ -353,6 +360,55 @@ class HelpTransactionService
             'help_cancelled',
             "Customer {$customer->name} membatalkan bantuan (Refund dana Rp " . number_format($help->amount, 0, ',', '.') . " ke saldo customer)"
         );
+    }
+
+    /**
+     * Membatalkan bantuan yang kadaluwarsa secara otomatis dan mengembalikan 100% dana escrow ke customer.
+     */
+    public function autoCancelExpiredHelp(Help $help, string $reason = 'Batas waktu pencarian Rekan Jasa telah berakhir'): void
+    {
+        DB::transaction(function () use ($help, $reason) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
+
+            $cancellableStatuses = [
+                Help::STATUS_MENUNGGU_MITRA,
+                'mencari_mitra',
+                'menunggu_pembayaran',
+                'pending',
+            ];
+
+            if (!$lockedHelp || !in_array($lockedHelp->status, $cancellableStatuses, true) || $lockedHelp->mitra_id !== null) {
+                return;
+            }
+
+            $lockedHelp->update([
+                'status'      => Help::STATUS_DIBATALKAN,
+                'admin_notes' => "Dibatalkan otomatis oleh sistem. Alasan: {$reason}",
+            ]);
+
+            // Kembalikan dana escrow 100% ke customer
+            $customer = $lockedHelp->user;
+            if ($customer && $lockedHelp->amount > 0) {
+                $this->refundFromEscrow($lockedHelp, $customer);
+            }
+        });
+
+        if ($help->user) {
+            $this->logActivity(
+                $help->user_id,
+                $help->id,
+                'help_auto_cancelled',
+                "Permintaan bantuan dibatalkan otomatis oleh sistem. Alasan: {$reason}. Dana telah dikembalikan 100% ke saldo akun Anda."
+            );
+
+            try {
+                $help->user->notify(new \App\Notifications\HelpStatusNotification($help, Help::STATUS_MENUNGGU_MITRA, Help::STATUS_DIBATALKAN, $help->user));
+            } catch (\Throwable $e) {
+                // ignore notification delivery error
+            }
+        }
+
+        Log::info('[HelpTransactionService] autoCancelExpiredHelp success', ['help_id' => $help->id]);
     }
 
     /**
@@ -629,7 +685,7 @@ class HelpTransactionService
         $netEarning  = $help->getNetEarning();
         $platformFee = $help->getPlatformFee();
 
-        // 1. Kredit saldo mitra (earning bersih)
+        // 1. Kredit saldo mitra (100% nominal penuh tanpa potongan)
         $mitraBalance = UserBalance::firstOrCreate(
             ['user_id' => $help->mitra_id],
             ['balance' => 0]
@@ -637,7 +693,7 @@ class HelpTransactionService
         $mitraBalance->receiveEarning(
             $netEarning,
             $help->id,
-            "Pendapatan Bantuan '{$help->title}' (Bersih {$help->getCommissionRateLabel()} komisi platform)",
+            "Pendapatan Bantuan '{$help->title}'",
             $help->order_id
         );
 
@@ -647,7 +703,7 @@ class HelpTransactionService
                 'user_id'     => null, // kas platform, bukan milik user
                 'amount'      => $platformFee,
                 'type'        => 'platform_fee',
-                'description' => "Komisi Platform {$help->getCommissionRateLabel()} dari Bantuan '{$help->title}'",
+                'description' => "Biaya Layanan Platform {$help->getCommissionRateLabel()} dari Bantuan '{$help->title}'",
                 'reference_id'=> $help->id,
                 'order_id'    => $help->order_id,
                 'status'      => 'completed',
@@ -666,7 +722,7 @@ class HelpTransactionService
      * MODEL V2: Kembalikan escrow dari Holding ke saldo Customer (Refund 100%).
      *
      * Dipanggil saat tugas dibatalkan. Platform TIDAK memotong komisi apapun.
-     * Dana dikembalikan utuh ke customer.
+     * Dana total dikembalikan utuh ke customer.
      */
     private function refundFromEscrow(Help $help, User $customer): void
     {
@@ -686,8 +742,10 @@ class HelpTransactionService
             ['balance' => 0]
         );
 
+        $refundAmount = (float) ($help->total_amount > 0 ? $help->total_amount : $help->amount);
+
         $customerBalance->refundToCustomer(
-            $help->amount,
+            $refundAmount,
             $help->id,
             $help->order_id,
             "Pengembalian Dana 100% (Bantuan '{$help->title}' Dibatalkan)"
@@ -696,7 +754,7 @@ class HelpTransactionService
         Log::info('[HelpTransactionService] Refund escrow (v2) ke customer', [
             'help_id'     => $help->id,
             'customer_id' => $customer->id,
-            'amount'      => $help->amount,
+            'amount'      => $refundAmount,
         ]);
     }
 
@@ -800,7 +858,7 @@ class HelpTransactionService
             if (!$customer) return;
 
             $notesText = $notes ? "Catatan: \"{$notes}\". " : '';
-            $caption   = "Halo Kak {$customer->name}, pekerjaan '{$help->title}' telah selesai saya kerjakan. {$notesText}Berikut terlampir bukti foto hasil pengerjaan. Mohon periksa dan konfirmasi penyelesaian ya. Terima kasih!";
+            $caption   = "Halo Kak {$customer->name}, pekerjaan '{$help->title}' telah selesai saya kerjakan. {$notesText}Berikut terlampir bukti foto hasil pengerjaan. Tugas ini telah otomatis diselesaikan dan Anda dapat langsung memberikan rating. Terima kasih!";
 
             Chat::create([
                 'help_id'     => $help->id,

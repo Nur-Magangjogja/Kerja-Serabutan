@@ -51,19 +51,19 @@
             </div>
 
             <div>
-                <label for="platform_commission_rate" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Komisi Platform (%)
+                <label for="platform_service_fee" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Biaya Layanan / Pajak Platform Tetap (Rp)
                 </label>
                 <div class="relative rounded-xl shadow-sm">
-                    <input type="number" wire:model="platform_commission_rate" id="platform_commission_rate"
-                        class="block w-full pl-4 pr-10 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 dark:text-white text-sm font-medium"
-                        placeholder="10" min="0" max="100" step="0.5">
-                    <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                        <span class="text-gray-500 dark:text-gray-400 sm:text-sm font-bold">%</span>
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span class="text-gray-500 dark:text-gray-400 sm:text-sm font-medium">Rp</span>
                     </div>
+                    <input type="number" wire:model="platform_service_fee" id="platform_service_fee"
+                        class="block w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 dark:text-white text-sm font-medium"
+                        placeholder="2000" min="0" step="500">
                 </div>
-                @error('platform_commission_rate') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Persentase komisi yang dipotong dari nilai tugas saat pekerjaan selesai (Seller-Pays).</p>
+                @error('platform_service_fee') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Nominal pajak/biaya flat yang dibebankan kepada Customer saat membuat permintaan bantuan.</p>
             </div>
 
             <div class="pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-end">

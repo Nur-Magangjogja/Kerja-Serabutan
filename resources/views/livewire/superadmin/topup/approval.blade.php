@@ -148,12 +148,20 @@
                                 </td>
                                 <td class="px-4 py-3.5">
                                     <p class="text-sm font-bold text-gray-800 dark:text-gray-100">Rp {{ number_format($transaction->amount, 0, ',', '.') }}</p>
-                                    <p class="text-[11px] text-gray-400 dark:text-gray-500">+Rp {{ number_format($transaction->admin_fee, 0, ',', '.') }} admin</p>
+                                    @if(($transaction->admin_fee ?? 0) > 0)
+                                        <p class="text-[11px] text-gray-400 dark:text-gray-500">+Rp {{ number_format($transaction->admin_fee, 0, ',', '.') }} admin</p>
+                                    @else
+                                        <p class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">Bebas Pajak (Rp 0)</p>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-3.5 hidden sm:table-cell">
                                     <p class="text-sm font-bold text-primary-600 dark:text-primary-400">Rp {{ number_format($transaction->total_payment, 0, ',', '.') }}</p>
                                 </td>
-                                <td class="px-4 py-3.5 hidden lg:table-cell text-xs text-gray-600 dark:text-gray-300">{{ $transaction->payment_method ?? 'QRIS' }}</td>
+                                <td class="px-4 py-3.5 hidden lg:table-cell text-xs font-semibold">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
+                                        {{ strtoupper($transaction->payment_method ?? 'QRIS') }}
+                                    </span>
+                                </td>
                                 <td class="px-4 py-3.5">
                                     @if($transaction->status === 'waiting_approval' || $transaction->status === 'pending')
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
@@ -276,10 +284,16 @@
                         <div>
                             <p class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Nominal Top-Up</p>
                             <p class="text-base font-bold text-gray-900 dark:text-white">Rp {{ number_format($selectedTransaction->amount, 0, ',', '.') }}</p>
+                            @if(($selectedTransaction->admin_fee ?? 0) > 0)
+                                <p class="text-[11px] text-gray-400 mt-0.5">Fee: Rp {{ number_format($selectedTransaction->admin_fee, 0, ',', '.') }}</p>
+                            @else
+                                <p class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">Bebas Pajak (Rp 0)</p>
+                            @endif
                         </div>
                         <div>
                             <p class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Total Bayar</p>
                             <p class="text-base font-bold text-primary-600 dark:text-primary-400">Rp {{ number_format($selectedTransaction->total_payment, 0, ',', '.') }}</p>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Via {{ strtoupper($selectedTransaction->payment_method ?? 'QRIS') }}</p>
                         </div>
                         <div>
                             <p class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Status Saat Ini</p>

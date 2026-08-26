@@ -3,99 +3,80 @@
 namespace App\Livewire\SuperAdmin\Settings;
 
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\Attributes\Layout;
 use App\Models\AppSetting;
 use App\Models\Help;
 use App\Models\BalanceTransaction;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 #[Layout('layouts.superadmin')]
 class HelpSettings extends Component
 {
+    use WithFileUploads;
+
     public $min_help_nominal;
-    public $platform_commission_rate;
+    public $platform_service_fee = 2000;
+    public $help_auto_cancel_hours = 24;
     public $admin_fee; // legacy
-    
-    // Top-up admin fee settings
-    public $tier1_limit;
-    public $tier1_fee;
-    public $tier2_limit;
-    public $tier2_fee;
-    public $tier3_percentage;
-    public $tier3_max;
-    // Payment methods for top-up (banks + qris)
-    public $payment_banks = [];
+
+    // QRIS Top-Up Settings (QRIS Tunggal)
+    public $qris_image;
+    public $existing_qris_image;
+    public $qris_merchant_name;
+    public $qris_nmid;
+    public $qris_instructions;
 
     protected function rules()
     {
         return [
             'min_help_nominal' => 'required|numeric|min:0',
-            'platform_commission_rate' => 'required|numeric|min:0|max:100',
+            'platform_service_fee' => 'required|numeric|min:0',
+            'help_auto_cancel_hours' => 'required|integer|min:1|max:168',
             'admin_fee' => 'nullable|numeric|min:0',
-            'tier1_limit' => 'required|numeric|min:0',
-            'tier1_fee' => 'required|numeric|min:0',
-            'tier2_limit' => 'required|numeric|min:0',
-            'tier2_fee' => 'required|numeric|min:0',
-            'tier3_percentage' => 'required|numeric|min:0|max:100',
-            'tier3_max' => 'required|numeric|min:0',
-            'payment_banks' => 'array',
-            'payment_banks.*.code' => 'required|string|max:20',
-            'payment_banks.*.name' => 'required|string|max:100',
-            'payment_banks.*.account_number' => 'nullable|string|max:100',
-            'payment_banks.*.account_name' => 'nullable|string|max:200',
-            'payment_banks.*.enabled' => 'boolean',
+            'qris_image' => 'nullable|image|max:3072|mimes:jpg,jpeg,png,webp',
+            'qris_merchant_name' => 'required|string|max:150',
+            'qris_nmid' => 'nullable|string|max:100',
+            'qris_instructions' => 'nullable|string|max:500',
         ];
     }
 
     protected function messages()
     {
         return [
-            'tier1_limit.required' => 'Batas maksimal Tier 1 tidak boleh kosong.',
-            'tier1_limit.numeric' => 'Batas maksimal Tier 1 harus berupa angka.',
-            'tier1_limit.min' => 'Batas maksimal Tier 1 minimal 0.',
-            'tier1_fee.required' => 'Biaya admin Tier 1 tidak boleh kosong.',
-            'tier1_fee.numeric' => 'Biaya admin Tier 1 harus berupa angka.',
-            'tier1_fee.min' => 'Biaya admin Tier 1 minimal 0.',
-            'tier2_limit.required' => 'Batas maksimal Tier 2 tidak boleh kosong.',
-            'tier2_limit.numeric' => 'Batas maksimal Tier 2 harus berupa angka.',
-            'tier2_limit.min' => 'Batas maksimal Tier 2 minimal 0.',
-            'tier2_fee.required' => 'Biaya admin Tier 2 tidak boleh kosong.',
-            'tier2_fee.numeric' => 'Biaya admin Tier 2 harus berupa angka.',
-            'tier2_fee.min' => 'Biaya admin Tier 2 minimal 0.',
-            'tier3_percentage.required' => 'Persentase biaya admin Tier 3 tidak boleh kosong.',
-            'tier3_percentage.numeric' => 'Persentase biaya admin Tier 3 harus berupa angka.',
-            'tier3_percentage.min' => 'Persentase biaya admin Tier 3 minimal 0%.',
-            'tier3_percentage.max' => 'Persentase biaya admin Tier 3 maksimal 100%.',
-            'tier3_max.required' => 'Biaya maksimal Tier 3 tidak boleh kosong.',
-            'tier3_max.numeric' => 'Biaya maksimal Tier 3 harus berupa angka.',
-            'tier3_max.min' => 'Biaya maksimal Tier 3 minimal 0.',
             'min_help_nominal.required' => 'Nominal minimal bantuan tidak boleh kosong.',
-            'platform_commission_rate.required' => 'Komisi platform tidak boleh kosong.',
+            'min_help_nominal.numeric' => 'Nominal minimal bantuan harus berupa angka.',
+            'platform_service_fee.required' => 'Biaya layanan platform tidak boleh kosong.',
+            'platform_service_fee.numeric' => 'Biaya layanan platform harus berupa angka.',
+            'help_auto_cancel_hours.required' => 'Batas waktu pembatalan otomatis tidak boleh kosong.',
+            'help_auto_cancel_hours.integer' => 'Batas waktu harus berupa bilangan bulat (jam).',
+            'help_auto_cancel_hours.min' => 'Batas waktu minimal 1 jam.',
+            'qris_image.image' => 'File QRIS harus berupa gambar.',
+            'qris_image.max' => 'Ukuran gambar QRIS maksimal 3MB.',
+            'qris_image.mimes' => 'Format gambar QRIS harus JPG, JPEG, PNG, atau WEBP.',
+            'qris_merchant_name.required' => 'Nama Merchant / Akun QRIS wajib diisi.',
         ];
     }
 
     public function mount()
     {
-        $this->min_help_nominal = (int) AppSetting::get('min_help_nominal', 20000);
-        $this->platform_commission_rate = (float) AppSetting::get('platform_commission_rate', 10);
+        $this->min_help_nominal = (int) AppSetting::get('min_help_nominal', 10000);
+        $this->platform_service_fee = (int) AppSetting::getPlatformServiceFee();
+        $this->help_auto_cancel_hours = AppSetting::getHelpAutoCancelHours();
         $this->admin_fee = (float) AppSetting::get('admin_fee', 0);
         
-        // Load top-up fee settings
-        $this->tier1_limit = (int) AppSetting::get('topup_tier1_limit', 50000);
-        $this->tier1_fee = (int) AppSetting::get('topup_tier1_fee', 5000);
-        $this->tier2_limit = (int) AppSetting::get('topup_tier2_limit', 100000);
-        $this->tier2_fee = (int) AppSetting::get('topup_tier2_fee', 7500);
-        $this->tier3_percentage = (float) AppSetting::get('topup_tier3_percentage', 3);
-        $this->tier3_max = (int) AppSetting::get('topup_tier3_max', 15000);
-
-        // Load payment banks config (stored as JSON)
-        $paymentMethods = json_decode((string) AppSetting::get('topup_payment_methods', '{}'), true) ?: [];
-        $this->payment_banks = $paymentMethods['banks'] ?? [
-            ['code' => 'bca', 'name' => 'BCA', 'account_number' => '1234567890', 'account_name' => 'PT sayabantu', 'enabled' => true],
-            ['code' => 'mandiri', 'name' => 'Mandiri', 'account_number' => '0987654321', 'account_name' => 'PT sayabantu', 'enabled' => true],
-            ['code' => 'bni', 'name' => 'BNI', 'account_number' => '5555666677', 'account_name' => 'PT sayabantu', 'enabled' => true],
-            ['code' => 'bri', 'name' => 'BRI', 'account_number' => '8888999900', 'account_name' => 'PT sayabantu', 'enabled' => true],
-        ];
+        // Load QRIS settings (tanpa default asset agar kosong jika belum diisi)
+        $this->existing_qris_image = AppSetting::get('topup_qris_image', null);
+        if ($this->existing_qris_image === 'images/payment/qris.png') {
+            $this->existing_qris_image = null;
+        }
+        $this->qris_merchant_name = AppSetting::get('topup_qris_merchant_name', 'PT SayaBantu');
+        $this->qris_nmid = AppSetting::get('topup_qris_nmid', '');
+        $this->qris_instructions = AppSetting::get(
+            'topup_qris_instructions',
+            'Scan kode QRIS di atas menggunakan aplikasi mobile banking (BCA, Mandiri, BRI, BNI) atau e-wallet (GoPay, OVO, DANA, LinkAja, ShopeePay).'
+        );
     }
 
     public function save()
@@ -103,90 +84,81 @@ class HelpSettings extends Component
         $this->validate();
 
         AppSetting::set('min_help_nominal', (string) $this->min_help_nominal);
-        AppSetting::set('platform_commission_rate', (string) $this->platform_commission_rate);
+        AppSetting::set('platform_service_fee', (string) $this->platform_service_fee);
+        AppSetting::set('platform_fixed_fee', (string) $this->platform_service_fee);
+        AppSetting::set('help_auto_cancel_hours', (string) $this->help_auto_cancel_hours);
+        AppSetting::set('platform_fee_type', 'fixed');
+        AppSetting::set('platform_commission_rate', '0');
         if ($this->admin_fee !== null) {
             AppSetting::set('admin_fee', (string) $this->admin_fee);
         }
-        
-        // Save top-up fee settings
-        AppSetting::set('topup_tier1_limit', (string) $this->tier1_limit);
-        AppSetting::set('topup_tier1_fee', (string) $this->tier1_fee);
-        AppSetting::set('topup_tier2_limit', (string) $this->tier2_limit);
-        AppSetting::set('topup_tier2_fee', (string) $this->tier2_fee);
-        AppSetting::set('topup_tier3_percentage', (string) $this->tier3_percentage);
-        AppSetting::set('topup_tier3_max', (string) $this->tier3_max);
 
-        // Save payment banks
+        // Handle QRIS Image Upload
+        if ($this->qris_image) {
+            // Delete old uploaded image if stored in public storage disk
+            if ($this->existing_qris_image && !str_starts_with($this->existing_qris_image, 'images/') && Storage::disk('public')->exists($this->existing_qris_image)) {
+                Storage::disk('public')->delete($this->existing_qris_image);
+            }
+
+            $path = $this->qris_image->store('payment-qris', 'public');
+            AppSetting::set('topup_qris_image', $path);
+            $this->existing_qris_image = $path;
+            $this->qris_image = null;
+        }
+
+        $isQrisActive = !empty($this->existing_qris_image);
+
+        // Save QRIS Settings
+        AppSetting::set('topup_qris_merchant_name', trim($this->qris_merchant_name));
+        AppSetting::set('topup_qris_nmid', trim((string) $this->qris_nmid));
+        AppSetting::set('topup_qris_instructions', trim((string) $this->qris_instructions));
+        AppSetting::set('topup_qris_enabled', $isQrisActive ? '1' : '0');
+
+        // Zero out any topup tax/fee settings
+        AppSetting::set('topup_tier1_limit', '0');
+        AppSetting::set('topup_tier1_fee', '0');
+        AppSetting::set('topup_tier2_limit', '0');
+        AppSetting::set('topup_tier2_fee', '0');
+        AppSetting::set('topup_tier3_percentage', '0');
+        AppSetting::set('topup_tier3_max', '0');
+        AppSetting::set('topup_admin_fee', '0');
+
+        // Save JSON config for backward-compatibility
         $paymentMethods = [
-            'banks' => array_values(array_map(function($b) {
-                return [
-                    'code' => (string) ($b['code'] ?? ''),
-                    'name' => (string) ($b['name'] ?? ''),
-                    'account_number' => isset($b['account_number']) ? (string) $b['account_number'] : null,
-                    'account_name' => isset($b['account_name']) ? (string) $b['account_name'] : null,
-                    'enabled' => !empty($b['enabled']) ? true : false,
-                ];
-            }, $this->payment_banks ?? [])),
+            'qris' => [
+                'enabled' => $isQrisActive,
+                'image' => $this->existing_qris_image,
+                'merchant_name' => $this->qris_merchant_name,
+                'nmid' => $this->qris_nmid,
+                'instructions' => $this->qris_instructions,
+            ],
+            'banks' => [], // Bank transfer removed
         ];
-
         AppSetting::set('topup_payment_methods', json_encode($paymentMethods));
-        session()->flash('message', 'Pengaturan bantuan dan biaya top-up berhasil disimpan.');
 
-        // Notify frontend to show a transient confirmation modal using app's dispatch helper
-        $this->dispatch('settingsSaved', ['message' => 'Pengaturan bantuan dan biaya top-up berhasil disimpan.']);
+        session()->flash('message', 'Pengaturan layanan bantuan dan metode pembayaran QRIS berhasil disimpan.');
+
+        // Notify frontend
+        $this->dispatch('settingsSaved', ['message' => 'Pengaturan layanan bantuan dan metode pembayaran QRIS berhasil disimpan.']);
     }
 
-    public function addBank($code = '', $name = '')
+    public function removeQrisImage()
     {
-        $code = strtolower(trim($code));
-        $name = trim($name);
-
-        // Pre-fill name if code is provided without name
-        if ($code && !$name) {
-            $presets = [
-                'bca' => 'Bank Central Asia (BCA)',
-                'mandiri' => 'Bank Mandiri',
-                'bni' => 'Bank Negara Indonesia (BNI)',
-                'bri' => 'Bank Rakyat Indonesia (BRI)',
-                'bsi' => 'Bank Syariah Indonesia (BSI)',
-                'cimb' => 'CIMB Niaga',
-                'permata' => 'Bank Permata',
-                'danamon' => 'Bank Danamon',
-                'seabank' => 'SeaBank Indonesia',
-                'jago' => 'Bank Jago',
-            ];
-            $name = $presets[$code] ?? strtoupper($code);
+        if ($this->existing_qris_image && !str_starts_with($this->existing_qris_image, 'images/') && Storage::disk('public')->exists($this->existing_qris_image)) {
+            Storage::disk('public')->delete($this->existing_qris_image);
         }
 
-        $defaultAccountName = '';
-        if (!empty($this->payment_banks)) {
-            // Inherit account_name from the first configured bank for convenience
-            $defaultAccountName = $this->payment_banks[0]['account_name'] ?? '';
-        }
+        AppSetting::set('topup_qris_image', '');
+        $this->existing_qris_image = null;
+        $this->qris_image = null;
 
-        $this->payment_banks[] = [
-            'code' => $code,
-            'name' => $name,
-            'account_number' => '',
-            'account_name' => $defaultAccountName,
-            'enabled' => true
-        ];
-
-        $newIndex = count($this->payment_banks) - 1;
-        $this->dispatch('bankAdded', ['index' => $newIndex]);
-    }
-
-    public function removeBank($index)
-    {
-        if (isset($this->payment_banks[$index])) {
-            unset($this->payment_banks[$index]);
-            $this->payment_banks = array_values($this->payment_banks);
-        }
+        session()->flash('message', 'Gambar QRIS berhasil dihapus. Barcode QRIS saat ini kosong.');
+        $this->dispatch('settingsSaved', ['message' => 'Gambar QRIS berhasil dikosongkan.']);
     }
 
     public function render()
     {
-        // Prepare admin fee revenue chart data: daily (30 days), monthly (12 months), yearly (5 years)
+        // Platform fee from customer help requests
         $adminFeeChart = [
             'daily' => ['labels' => [], 'data' => []],
             'monthly' => ['labels' => [], 'data' => []],
@@ -199,14 +171,10 @@ class HelpSettings extends Component
         for ($i = 0; $i < $days; $i++) {
             $d = $startDay->copy()->addDays($i);
             $label = $d->format('d M');
-            // Sum admin fees from both Help and BalanceTransaction
-            $helpAdminFee = (float) Help::whereDate('created_at', $d->toDateString())->sum('admin_fee');
-            $topupAdminFee = (float) BalanceTransaction::whereDate('created_at', $d->toDateString())
-                ->where('status', 'completed')
-                ->sum('admin_fee');
-            $sum = $helpAdminFee + $topupAdminFee;
+            $helpAdminFee = (float) Help::whereDate('created_at', $d->toDateString())
+                ->sum(\Illuminate\Support\Facades\DB::raw('COALESCE(NULLIF(platform_fee_amount, 0), admin_fee)'));
             $adminFeeChart['daily']['labels'][] = $label;
-            $adminFeeChart['daily']['data'][] = $sum;
+            $adminFeeChart['daily']['data'][] = $helpAdminFee;
         }
 
         // Monthly - last 12 months
@@ -215,17 +183,11 @@ class HelpSettings extends Component
         for ($i = 0; $i < $months; $i++) {
             $m = $startMonth->copy()->addMonths($i);
             $label = $m->format('M Y');
-            // Sum admin fees from both Help and BalanceTransaction
             $helpAdminFee = (float) Help::whereYear('created_at', $m->year)
                 ->whereMonth('created_at', $m->month)
-                ->sum('admin_fee');
-            $topupAdminFee = (float) BalanceTransaction::whereYear('created_at', $m->year)
-                ->whereMonth('created_at', $m->month)
-                ->where('status', 'completed')
-                ->sum('admin_fee');
-            $sum = $helpAdminFee + $topupAdminFee;
+                ->sum(\Illuminate\Support\Facades\DB::raw('COALESCE(NULLIF(platform_fee_amount, 0), admin_fee)'));
             $adminFeeChart['monthly']['labels'][] = $label;
-            $adminFeeChart['monthly']['data'][] = $sum;
+            $adminFeeChart['monthly']['data'][] = $helpAdminFee;
         }
 
         // Yearly - last 5 years
@@ -234,59 +196,32 @@ class HelpSettings extends Component
         for ($i = 0; $i < $years; $i++) {
             $y = $startYear->copy()->addYears($i);
             $label = (string) $y->year;
-            // Sum admin fees from both Help and BalanceTransaction
-            $helpAdminFee = (float) Help::whereYear('created_at', $y->year)->sum('admin_fee');
-            $topupAdminFee = (float) BalanceTransaction::whereYear('created_at', $y->year)
-                ->where('status', 'completed')
-                ->sum('admin_fee');
-            $sum = $helpAdminFee + $topupAdminFee;
+            $helpAdminFee = (float) Help::whereYear('created_at', $y->year)
+                ->sum(\Illuminate\Support\Facades\DB::raw('COALESCE(NULLIF(platform_fee_amount, 0), admin_fee)'));
             $adminFeeChart['yearly']['labels'][] = $label;
-            $adminFeeChart['yearly']['data'][] = $sum;
+            $adminFeeChart['yearly']['data'][] = $helpAdminFee;
         }
 
-        // Summary stats - combine admin fees from Help and BalanceTransaction
-        $helpAdminFeeTotal = (float) Help::sum('admin_fee');
-        $topupAdminFeeTotal = (float) BalanceTransaction::where('status', 'completed')->sum('admin_fee');
-        $totalAll = $helpAdminFeeTotal + $topupAdminFeeTotal;
+        // Summary stats from Customer Help Platform Fees
+        $totalAll = (float) Help::sum(\Illuminate\Support\Facades\DB::raw('COALESCE(NULLIF(platform_fee_amount, 0), admin_fee)'));
         
-        $helpAdminFee30 = (float) Help::whereDate('created_at', '>=', Carbon::today()->subDays(29))->sum('admin_fee');
-        $topupAdminFee30 = (float) BalanceTransaction::whereDate('created_at', '>=', Carbon::today()->subDays(29))
-            ->where('status', 'completed')
-            ->sum('admin_fee');
-        $total30 = $helpAdminFee30 + $topupAdminFee30;
+        $total30 = (float) Help::whereDate('created_at', '>=', Carbon::today()->subDays(29))
+            ->sum(\Illuminate\Support\Facades\DB::raw('COALESCE(NULLIF(platform_fee_amount, 0), admin_fee)'));
         
-        $helpAdminFeeMonth = (float) Help::whereYear('created_at', Carbon::now()->year)
+        $totalMonth = (float) Help::whereYear('created_at', Carbon::now()->year)
             ->whereMonth('created_at', Carbon::now()->month)
-            ->sum('admin_fee');
-        $topupAdminFeeMonth = (float) BalanceTransaction::whereYear('created_at', Carbon::now()->year)
-            ->whereMonth('created_at', Carbon::now()->month)
-            ->where('status', 'completed')
-            ->sum('admin_fee');
-        $totalMonth = $helpAdminFeeMonth + $topupAdminFeeMonth;
+            ->sum(\Illuminate\Support\Facades\DB::raw('COALESCE(NULLIF(platform_fee_amount, 0), admin_fee)'));
         
-        // Count transactions with admin fee
-        $helpsWithFee = (int) Help::where('admin_fee', '>', 0)->count();
-        $topupsWithFee = (int) BalanceTransaction::where('admin_fee', '>', 0)
-            ->where('status', 'completed')
-            ->count();
-        $totalTransactionsWithFee = $helpsWithFee + $topupsWithFee;
-        
-        $avgAdmin = $totalTransactionsWithFee ? ($totalAll / $totalTransactionsWithFee) : 0;
+        $helpsWithFee = (int) Help::whereRaw('COALESCE(NULLIF(platform_fee_amount, 0), admin_fee) > 0')->count();
+        $avgAdmin = $helpsWithFee ? ($totalAll / $helpsWithFee) : 0;
 
-        // Breakdown by source
-        $breakdown = [
-            'help' => [
-                'total' => $helpAdminFeeTotal,
-                'count' => $helpsWithFee,
-                'avg' => $helpsWithFee ? ($helpAdminFeeTotal / $helpsWithFee) : 0,
-            ],
-            'topup' => [
-                'total' => $topupAdminFeeTotal,
-                'count' => $topupsWithFee,
-                'avg' => $topupsWithFee ? ($topupAdminFeeTotal / $topupsWithFee) : 0,
-            ],
-        ];
-
-        return view('livewire.superadmin.settings.help-settings', compact('adminFeeChart', 'totalAll', 'total30', 'totalMonth', 'helpsWithFee', 'avgAdmin', 'breakdown'));
+        return view('livewire.superadmin.settings.help-settings', compact(
+            'adminFeeChart',
+            'totalAll',
+            'total30',
+            'totalMonth',
+            'helpsWithFee',
+            'avgAdmin'
+        ));
     }
 }

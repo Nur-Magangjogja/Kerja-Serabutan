@@ -25,23 +25,27 @@ class TopupRequest extends Component
     public $customerEmail;
     public $customerNotes;
 
-    // Step 2 - Payment detail (calculated)
+    // Step 2 - Payment detail (No Admin Fee / 0% Tax)
     public $adminFee = 0;
     public $totalPayment = 0;
-    // Unique 3-digit code and final transfer amount (includes code)
     public $uniqueCode = null;
     public $uniqueTotal = 0;
 
-    // Step 3 - Payment method
-    public $paymentMethod;
+    // Step 3 - QRIS Payment
+    public $paymentMethod = 'qris';
     public $proofOfPayment;
     public $proofPreview;
+
+    // QRIS Settings
+    public $qrisImage;
+    public $qrisMerchantName;
+    public $qrisNmid;
+    public $qrisInstructions;
+    public $qrisEnabled = true;
 
     // Others
     public $requestCode;
     public $transactionId;
-    public $availableBanks = [];
-    public $qrisEnabled = false;
 
     protected $rules = [
         'amount' => 'required|numeric|min:10000|max:10000000',
@@ -65,6 +69,9 @@ class TopupRequest extends Component
     {
         $user = auth()->user();
         
+        // Load QRIS configuration from AppSetting
+        $this->loadPaymentSettings();
+
         // Load from session if exists
         $sessionData = session('topup_form_data');
         
@@ -75,45 +82,32 @@ class TopupRequest extends Component
             $this->customerPhone = $sessionData['customerPhone'] ?? ($user->phone ?? '');
             $this->customerEmail = $sessionData['customerEmail'] ?? $user->email;
             $this->customerNotes = $sessionData['customerNotes'] ?? null;
-            $this->paymentMethod = $sessionData['paymentMethod'] ?? null;
-            $this->adminFee = $sessionData['adminFee'] ?? 0;
-            $this->totalPayment = $sessionData['totalPayment'] ?? 0;
-            $this->uniqueCode = $sessionData['uniqueCode'] ?? null;
-            $this->uniqueTotal = $sessionData['uniqueTotal'] ?? 0;
+            $this->paymentMethod = 'qris';
+            $this->adminFee = 0;
+            $this->totalPayment = $this->amount ? floatval($this->amount) : 0;
+            $this->uniqueCode = null;
+            $this->uniqueTotal = $this->totalPayment;
         } else {
             $this->customerName = $user->name;
             $this->customerPhone = $user->phone ?? '';
             $this->customerEmail = $user->email;
         }
-
-        $this->loadPaymentSettings();
     }
 
     protected function loadPaymentSettings()
     {
-        // Prefer settings stored in AppSetting under 'topup_payment_methods'
-        $raw = AppSetting::get('topup_payment_methods', '{}');
-        $methods = json_decode((string) $raw, true) ?: [];
-
-        // QRIS settings (optional)
-        $this->qrisEnabled = $methods['qris']['enabled'] ?? true;
-
-        // Banks: ensure fallback defaults if none configured
-        $defaultBanks = [
-            ['code' => 'bca', 'name' => 'BCA', 'account_number' => '1234567890', 'account_name' => 'PT sayabantu', 'enabled' => true],
-            ['code' => 'mandiri', 'name' => 'Mandiri', 'account_number' => '0987654321', 'account_name' => 'PT sayabantu', 'enabled' => true],
-            ['code' => 'bni', 'name' => 'BNI', 'account_number' => '5555666677', 'account_name' => 'PT sayabantu', 'enabled' => true],
-            ['code' => 'bri', 'name' => 'BRI', 'account_number' => '8888999900', 'account_name' => 'PT sayabantu', 'enabled' => true],
-        ];
-
-        $banks = $methods['banks'] ?? $defaultBanks;
-
-        // Normalize banks to include a `value` used as paymentMethod identifier (e.g. bank_bca)
-        $this->availableBanks = collect($banks)
-            ->filter(fn($bank) => $bank['enabled'] ?? false)
-            ->map(fn($bank) => array_merge($bank, ['value' => 'bank_' . ($bank['code'] ?? '')]))
-            ->values()
-            ->toArray();
+        $this->qrisImage = AppSetting::get('topup_qris_image', null);
+        if ($this->qrisImage === 'images/payment/qris.png') {
+            $this->qrisImage = null;
+        }
+        $this->qrisMerchantName = AppSetting::get('topup_qris_merchant_name', 'PT SayaBantu');
+        $this->qrisNmid = AppSetting::get('topup_qris_nmid', '');
+        $this->qrisInstructions = AppSetting::get(
+            'topup_qris_instructions',
+            'Scan kode QRIS di atas menggunakan aplikasi mobile banking (BCA, Mandiri, BRI, BNI) atau e-wallet (GoPay, OVO, DANA, LinkAja, ShopeePay).'
+        );
+        $this->qrisEnabled = !empty($this->qrisImage);
+        $this->paymentMethod = 'qris';
     }
 
     public function setQuickAmount($amount)
@@ -127,32 +121,18 @@ class TopupRequest extends Component
         if (!$this->amount) {
             $this->adminFee = 0;
             $this->totalPayment = 0;
+            $this->uniqueTotal = 0;
             return;
         }
 
         $amount = floatval($this->amount);
 
-        // Load settings from database
-        $tier1_limit = (int) AppSetting::get('topup_tier1_limit', 50000);
-        $tier1_fee = (int) AppSetting::get('topup_tier1_fee', 5000);
-        $tier2_limit = (int) AppSetting::get('topup_tier2_limit', 100000);
-        $tier2_fee = (int) AppSetting::get('topup_tier2_fee', 7500);
-        $tier3_percentage = (float) AppSetting::get('topup_tier3_percentage', 3);
-        $tier3_max = (int) AppSetting::get('topup_tier3_max', 15000);
-
-        // Logika biaya admin berdasarkan tier
-        if ($amount < $tier1_limit) {
-            $this->adminFee = $tier1_fee;
-        } elseif ($amount < $tier2_limit) {
-            $this->adminFee = $tier2_fee;
-        } else {
-            $fee = $amount * ($tier3_percentage / 100);
-            $this->adminFee = min($fee, $tier3_max);
-        }
-
-        $this->totalPayment = $amount + $this->adminFee;
+        // Top-up saldo 100% bebas biaya admin / pajak
+        $this->adminFee = 0;
+        $this->totalPayment = $amount;
         $this->uniqueCode = null;
         $this->uniqueTotal = $this->totalPayment;
+
         $this->saveFormData();
     }
 
@@ -166,10 +146,10 @@ class TopupRequest extends Component
                 'customerPhone' => $this->customerPhone,
                 'customerEmail' => $this->customerEmail,
                 'customerNotes' => $this->customerNotes,
-                'paymentMethod' => $this->paymentMethod,
-                'adminFee' => $this->adminFee,
+                'paymentMethod' => 'qris',
+                'adminFee' => 0,
                 'totalPayment' => $this->totalPayment,
-                'uniqueCode' => $this->uniqueCode,
+                'uniqueCode' => null,
                 'uniqueTotal' => $this->uniqueTotal,
             ]
         ]);
@@ -186,10 +166,11 @@ class TopupRequest extends Component
         $this->customerPhone = $user->phone ?? '';
         $this->customerEmail = $user->email;
         $this->customerNotes = null;
-        $this->paymentMethod = null;
+        $this->paymentMethod = 'qris';
         $this->proofOfPayment = null;
         $this->adminFee = 0;
         $this->totalPayment = 0;
+        $this->uniqueTotal = 0;
         
         session()->flash('success', 'Data form berhasil direset');
     }
@@ -216,34 +197,27 @@ class TopupRequest extends Component
 
     public function selectPaymentMethod($method)
     {
-        $this->paymentMethod = $method;
+        $this->paymentMethod = 'qris';
         $this->saveFormData();
     }
 
     public function submitRequest()
     {
-        // Validate step 3
+        $this->loadPaymentSettings();
+        if (empty($this->qrisImage) || !$this->qrisEnabled) {
+            $this->addError('proofOfPayment', 'Metode pembayaran QRIS sedang tidak tersedia / belum diatur admin. Silakan hubungi customer service.');
+            return;
+        }
+
+        // Validate step 3 proof of payment
         $this->validate([
-            'paymentMethod' => 'required',
             'proofOfPayment' => 'required|image|max:2048|mimes:jpg,jpeg,png',
         ], [
-            'paymentMethod.required' => 'Silakan pilih metode pembayaran',
-            'proofOfPayment.required' => 'Bukti transfer wajib diupload',
+            'proofOfPayment.required' => 'Bukti pembayaran QRIS wajib diupload',
             'proofOfPayment.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
             'proofOfPayment.mimes' => 'Format file harus berupa JPG, JPEG, atau PNG',
             'proofOfPayment.max' => 'Ukuran file maksimal 2MB',
         ]);
-
-        // Verify selected payment method exists
-        $allowed = array_merge(
-            $this->qrisEnabled ? ['qris'] : [],
-            array_map(fn($b) => $b['value'], $this->availableBanks)
-        );
-
-        if (!in_array($this->paymentMethod, $allowed)) {
-            session()->flash('error', 'Metode pembayaran tidak valid');
-            return;
-        }
 
         try {
             // Upload proof of payment
@@ -252,32 +226,38 @@ class TopupRequest extends Component
             // Generate request code
             $this->requestCode = $this->generateRequestCode();
 
-            // Create transaction (total_payment = amount + adminFee)
+            // Create transaction (total_payment = amount, admin_fee = 0)
             $transaction = BalanceTransaction::create([
                 'user_id' => auth()->id(),
                 'amount' => $this->amount,
-                'admin_fee' => $this->adminFee,
-                'total_payment' => $this->totalPayment,
+                'admin_fee' => 0,
+                'total_payment' => $this->amount,
                 'type' => 'topup',
-                'description' => 'Top-up saldo via ' . $this->getPaymentMethodName(),
+                'description' => 'Top-up saldo via QRIS',
                 'status' => 'waiting_approval',
                 'customer_name' => $this->customerName,
                 'customer_phone' => $this->customerPhone,
                 'customer_email' => $this->customerEmail,
-                'payment_method' => $this->paymentMethod,
+                'payment_method' => 'qris',
                 'proof_of_payment' => $proofPath,
                 'request_code' => $this->requestCode,
                 'customer_notes' => $this->customerNotes ?: null,
                 'expired_at' => now()->addHours(24),
             ]);
 
-            $this->transactionId = $transaction->id;
+            // Send notification to customer safely
+            try {
+                auth()->user()->notify(new TopupRequestSubmitted($transaction));
+            } catch (\Throwable $e) {
+                \Log::warning('Topup notification to customer failed: ' . $e->getMessage());
+            }
 
-            // Send notification to customer
-            auth()->user()->notify(new TopupRequestSubmitted($transaction));
-
-            // Send notification to admin based on city
-            $this->notifyAdmins($transaction);
+            // Send notification to admin based on city safely
+            try {
+                $this->notifyAdmins($transaction);
+            } catch (\Throwable $e) {
+                \Log::warning('Topup notification to admin failed: ' . $e->getMessage());
+            }
 
             // Broadcast event to admin approval page (global event)
             $this->dispatch('topupRequestCreated');
@@ -287,11 +267,11 @@ class TopupRequest extends Component
 
             session()->flash('success', 'Request top-up berhasil dikirim! Kode request: ' . $this->requestCode);
 
-            return redirect()->route('customer.topup.history');
+            return $this->redirectRoute('customer.transactions.index', navigate: true);
 
         } catch (\Exception $e) {
             \Log::error('Topup request error: ' . $e->getMessage());
-            session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat memproses top-up: ' . $e->getMessage());
         }
     }
 
@@ -309,29 +289,6 @@ class TopupRequest extends Component
         }
 
         return "TPU-{$date}-" . str_pad($sequence, 3, '0', STR_PAD_LEFT);
-    }
-
-    protected function ensureUniqueSuffix()
-    {
-        $this->uniqueCode = null;
-        $this->uniqueTotal = $this->totalPayment;
-    }
-
-    protected function getPaymentMethodName()
-    {
-        if ($this->paymentMethod === 'qris') {
-            return 'QRIS';
-        }
-
-        if (str_starts_with($this->paymentMethod, 'bank_')) {
-            $code = substr($this->paymentMethod, 5);
-            $bank = collect($this->availableBanks)->first(fn($b) => ($b['code'] ?? '') === $code);
-            if ($bank) {
-                return 'Transfer Bank ' . ($bank['name'] ?? strtoupper($code));
-            }
-        }
-
-        return 'Transfer Bank';
     }
 
     protected function notifyAdmins($transaction)
@@ -361,6 +318,3 @@ class TopupRequest extends Component
         return view('livewire.customer.topup.request');
     }
 }
-
-
-

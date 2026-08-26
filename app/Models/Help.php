@@ -71,14 +71,18 @@ class Help extends Model
         ],
         self::STATUS_PARTNER_ARRIVED => [
             self::STATUS_IN_PROGRESS,
+            self::STATUS_SELESAI,
+            self::STATUS_WAITING_CONFIRMATION,
             self::STATUS_PARTNER_CANCEL_REQUESTED,
             // Alias
             'sedang_diproses',
         ],
         'sedang_diproses' => [
+            self::STATUS_SELESAI,
             self::STATUS_WAITING_CONFIRMATION,
         ],
         self::STATUS_IN_PROGRESS => [
+            self::STATUS_SELESAI,
             self::STATUS_WAITING_CONFIRMATION,
         ],
         self::STATUS_WAITING_CONFIRMATION => [
@@ -188,6 +192,7 @@ class Help extends Model
         'service_started_at',
         'service_completed_at',
         'scheduled_at',
+        'expires_at',
         'partner_initial_lat',
         'partner_initial_lng',
         'partner_current_lat',
@@ -223,6 +228,7 @@ class Help extends Model
         'service_started_at'         => 'datetime',
         'service_completed_at'       => 'datetime',
         'scheduled_at'               => 'datetime',
+        'expires_at'                 => 'datetime',
         'partner_initial_lat'        => 'decimal:8',
         'partner_initial_lng'        => 'decimal:8',
         'partner_current_lat'        => 'decimal:8',
@@ -562,37 +568,42 @@ class Help extends Model
 
     /**
      * Kalkulasi nominal bersih mitra (jika model_version = 2).
-     * Nilai sudah tersimpan di kolom mitra_earning saat tugas dibuat.
+     * Mitra menerima 100% nominal bantuan (tanpa potongan komisi pada mitra).
      */
     public function getNetEarning(): float
     {
         if ($this->isV2Model() && $this->mitra_earning > 0) {
             return (float) $this->mitra_earning;
         }
-        // Fallback untuk data lama
         return (float) $this->amount;
     }
 
     /**
-     * Kalkulasi nominal komisi platform (jika model_version = 2).
+     * Kalkulasi nominal biaya layanan / pajak platform yang dibayar oleh customer.
      */
     public function getPlatformFee(): float
     {
-        if ($this->isV2Model() && $this->platform_fee_amount > 0) {
-            return (float) $this->platform_fee_amount;
+        if ($this->isV2Model()) {
+            if ($this->platform_fee_amount > 0) {
+                return (float) $this->platform_fee_amount;
+            }
+            if ($this->admin_fee > 0) {
+                return (float) $this->admin_fee;
+            }
         }
-        return 0.0;
+        return (float) ($this->admin_fee ?? 0);
     }
 
     /**
-     * Label persentase komisi untuk ditampilkan ke mitra.
-     * Contoh: "10%"
+     * Label biaya layanan platform.
+     * Contoh: "Rp 2.000"
      */
     public function getCommissionRateLabel(): string
     {
-        if ($this->isV2Model()) {
-            return number_format($this->platform_commission_rate ?? 0, 0) . '%';
+        $fee = $this->getPlatformFee();
+        if ($fee > 0) {
+            return 'Rp ' . number_format($fee, 0, ',', '.');
         }
-        return '0%';
+        return 'Rp 0';
     }
 }

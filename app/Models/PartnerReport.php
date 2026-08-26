@@ -19,7 +19,12 @@ class PartnerReport extends Model
         'reported_user_text',
         'title',
         'message',
+        'evidence_photo',
         'status',
+        'refund_status',
+        'refund_amount',
+        'refund_processed_at',
+        'refund_processed_by',
         'report_type',
         'category',
         'admin_notes',
@@ -28,7 +33,9 @@ class PartnerReport extends Model
     ];
 
     protected $casts = [
-        'resolved_at' => 'datetime',
+        'resolved_at'         => 'datetime',
+        'refund_processed_at' => 'datetime',
+        'refund_amount'       => 'decimal:2',
     ];
 
     // Relationships
@@ -55,6 +62,16 @@ class PartnerReport extends Model
     public function resolvedBy()
     {
         return $this->belongsTo(User::class, 'resolved_by');
+    }
+
+    public function refundProcessedBy()
+    {
+        return $this->belongsTo(User::class, 'refund_processed_by');
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(PartnerReportMessage::class, 'partner_report_id')->orderBy('created_at', 'asc');
     }
 
     // Scopes
@@ -124,22 +141,50 @@ class PartnerReport extends Model
         return $this->category === 'dari_mitra';
     }
 
+    public function isRefundRequested(): bool
+    {
+        return $this->refund_status === 'requested';
+    }
+
+    public function isRefundApproved(): bool
+    {
+        return $this->refund_status === 'approved';
+    }
+
+    public function isRefundRejected(): bool
+    {
+        return $this->refund_status === 'rejected';
+    }
+
     // Get report type label
     public function getReportTypeLabelAttribute()
     {
         $types = [
-            'mitra_berperilaku_buruk' => 'Mitra Berperilaku Buruk',
-            'bantuan_fiktif' => 'Bantuan Fiktif',
-            'penipuan' => 'Penipuan',
-            'pelanggaran_aturan' => 'Pelanggaran Aturan',
-            'konten_tidak_pantas' => 'Konten Tidak Pantas',
-            'pelayanan_tidak_sesuai' => 'Pelayanan Tidak Sesuai',
-            'pengguna_spam' => 'Pengguna Spam',
-            'pengguna_kasar' => 'Pengguna Kasar',
-            'data_tidak_valid' => 'Data Tidak Valid',
+            'klaim_refund_pekerjaan_fiktif' => 'Klaim Refund (Pekerjaan Fiktif / Belum Selesai)',
+            'mitra_tidak_selesai'           => 'Rekan Jasa Belum Menyelesaikan Pekerjaan',
+            'mitra_berperilaku_buruk'       => 'Mitra Berperilaku Buruk',
+            'bantuan_fiktif'                => 'Bantuan Fiktif',
+            'penipuan'                      => 'Penipuan / Manipulasi',
+            'pelanggaran_aturan'            => 'Pelanggaran Aturan Layanan',
+            'konten_tidak_pantas'           => 'Konten Tidak Pantas',
+            'pelayanan_tidak_sesuai'        => 'Pelayanan Tidak Sesuai',
+            'pengguna_spam'                 => 'Pengguna Spam',
+            'pengguna_kasar'                => 'Pengguna Kasar',
+            'data_tidak_valid'              => 'Data Tidak Valid',
         ];
 
         return $types[$this->report_type] ?? ucfirst(str_replace('_', ' ', $this->report_type));
+    }
+
+    // Get refund status label
+    public function getRefundStatusLabelAttribute(): string
+    {
+        return match($this->refund_status) {
+            'requested' => 'Pengajuan Refund',
+            'approved'  => 'Refund Disetujui',
+            'rejected'  => 'Refund Ditolak',
+            default     => 'Tidak Ada Refund',
+        };
     }
 
     // Get category label

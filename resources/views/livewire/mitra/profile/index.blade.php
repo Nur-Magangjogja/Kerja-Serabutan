@@ -128,7 +128,7 @@
                     </svg>
                 </x-profile-menu-item>
 
-                <x-profile-menu-item :href="route('mitra.transactions.index')" title="Riwayat Mutasi Saldo" subtitle="Catatan pendapatan, denda, & mutasi saldo" iconBg="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                <x-profile-menu-item :href="route('mitra.transactions.index')" title="Riwayat Mutasi Saldo" subtitle="Catatan pendapatan & mutasi saldo" iconBg="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                     </svg>
