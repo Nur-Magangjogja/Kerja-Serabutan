@@ -126,13 +126,13 @@ class HelpsSeeder extends Seeder
             ],
         ];
 
-        $commissionRate = 10.00; // 10% snapshot komisi v2
+        $fixedPlatformFee = \App\Models\AppSetting::getPlatformServiceFee();
 
         foreach ($helpsData as $index => $data) {
             $catId = $categories[$data['category_name']] ?? (array_values($categories)[0] ?? 1);
             $amount = (float) $data['amount'];
-            $platformFee = round($amount * ($commissionRate / 100), 2);
-            $mitraEarning = round($amount - $platformFee, 2);
+            $platformFee = $fixedPlatformFee;
+            $mitraEarning = $amount; // Mitra menerima 100% penuh dari nilai bantuan
 
             Help::updateOrCreate(
                 [
@@ -145,8 +145,8 @@ class HelpsSeeder extends Seeder
                     'order_id'                 => sprintf('HELP-SLM-%03d', $index + 1),
                     'description'              => $data['description'],
                     'amount'                   => $amount,
-                    'admin_fee'                => 0.00,
-                    'total_amount'             => $amount,
+                    'admin_fee'                => $platformFee,
+                    'total_amount'             => $amount + $platformFee,
                     'location'                 => $data['location'],
                     'full_address'             => $data['full_address'],
                     'latitude'                 => $data['latitude'],
@@ -157,7 +157,7 @@ class HelpsSeeder extends Seeder
                     'completed_at'             => $data['completed_at'],
                     // Model v2 Escrow & Split Payment Snapshot
                     'model_version'            => 2,
-                    'platform_commission_rate' => $commissionRate,
+                    'platform_commission_rate' => 0.00,
                     'platform_fee_amount'      => $platformFee,
                     'mitra_earning'            => $mitraEarning,
                     'escrow_locked_at'         => now()->subDays(3),

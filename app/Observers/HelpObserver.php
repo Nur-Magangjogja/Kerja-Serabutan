@@ -128,7 +128,7 @@ class HelpObserver
                 $userBalance->receiveEarning(
                     $netEarning,
                     $help->id,
-                    "Pendapatan Bantuan '{$help->title}' (Bersih {$help->getCommissionRateLabel()} komisi platform)"
+                    "Pendapatan Bantuan '{$help->title}'"
                 );
 
                 if ($platformFee > 0) {
@@ -136,7 +136,7 @@ class HelpObserver
                         'user_id'      => null, // kas platform
                         'amount'       => $platformFee,
                         'type'         => 'platform_fee',
-                        'description'  => "Komisi Platform {$help->getCommissionRateLabel()} dari Bantuan '{$help->title}'",
+                        'description'  => "Biaya Layanan Platform Rp " . number_format($platformFee, 0, ',', '.') . " dari Bantuan '{$help->title}'",
                         'reference_id' => $help->id,
                         'status'       => 'completed',
                     ]);

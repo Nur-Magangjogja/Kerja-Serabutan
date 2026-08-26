@@ -632,7 +632,7 @@ class Create extends Component
                 $totalAmount,
                 $help->id,
                 $help->order_id,
-                "Dana Ditahan untuk Permintaan Bantuan ('{$help->title}')"
+                "Dana Ditahan untuk Permintaan Bantuan '{$help->title}' (Nilai Jasa: Rp " . number_format($amount, 0, ',', '.') . " + Biaya Layanan Platform: Rp " . number_format($feeAmount, 0, ',', '.') . ")"
             );
             $help->update(['escrow_transaction_id' => $escrowTx->id]);
         });

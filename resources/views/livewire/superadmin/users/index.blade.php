@@ -398,28 +398,6 @@
                     </div>
                     @endif
 
-                    {{-- Konfirmasi Kata Sandi Superadmin saat Edit --}}
-                    @if($showEditModal)
-                    <div class="md:col-span-2 pt-4 border-t border-gray-100 dark:border-gray-700">
-                        <div class="p-3.5 bg-amber-50 dark:bg-amber-900/25 border border-amber-200 dark:border-amber-800 rounded-xl space-y-2">
-                            <div class="flex items-center gap-2 text-xs font-bold text-amber-900 dark:text-amber-200">
-                                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                                <span>Verifikasi Kata Sandi Superadmin</span>
-                            </div>
-                            <p class="text-[11px] text-amber-800/80 dark:text-amber-300/80 leading-relaxed">
-                                Masukkan kata sandi akun Superadmin Anda untuk mengonfirmasi dan menerapkan perubahan data pengguna ini.
-                            </p>
-                            <div>
-                                <input type="password" wire:model.defer="adminPassword"
-                                    placeholder="Masukkan kata sandi Superadmin Anda"
-                                    class="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500" />
-                                @error('adminPassword') <p class="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">{{ $message }}</p> @enderror
-                            </div>
-                        </div>
-                    </div>
-                    @endif
                 </form>
             </div>
 
@@ -487,13 +465,13 @@
                 </div>
             @endif
 
-            <!-- Superadmin Password Confirmation Input -->
+            <!-- Password Confirmation Input -->
             <div class="space-y-1.5 pt-1">
                 <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
-                    Masukkan Kata Sandi Superadmin Anda <span class="text-red-500">*</span>
+                    Masukkan Kata Sandi Akun Anda <span class="text-red-500">*</span>
                 </label>
                 <input type="password" wire:model.defer="adminPassword" wire:keydown.enter="deleteUser"
-                    placeholder="Kata sandi Superadmin Anda"
+                    placeholder="Kata sandi akun Anda"
                     class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition" />
                 @error('adminPassword')
                     <p class="text-xs text-red-600 dark:text-red-400 font-medium mt-1">{{ $message }}</p>

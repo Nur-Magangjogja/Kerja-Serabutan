@@ -42,6 +42,7 @@ class UserBalancesSeeder extends Seeder
             // Escrow lock untuk bantuan yang aktif
             $activeHelps = Help::where('user_id', $customer->id)->whereIn('status', [Help::STATUS_MENUNGGU_MITRA, Help::STATUS_TAKEN])->get();
             foreach ($activeHelps as $h) {
+                $totalEscrow = (float) ($h->amount + $h->platform_fee_amount);
                 $escrowTx = BalanceTransaction::updateOrCreate(
                     [
                         'user_id'      => $customer->id,
@@ -50,8 +51,8 @@ class UserBalancesSeeder extends Seeder
                     ],
                     [
                         'order_id'     => $h->order_id,
-                        'amount'       => $h->amount,
-                        'description'  => "Dana Ditahan untuk Permintaan Bantuan '{$h->title}'",
+                        'amount'       => $totalEscrow,
+                        'description'  => "Dana Ditahan untuk Permintaan Bantuan '{$h->title}' (Nilai Jasa: Rp " . number_format($h->amount, 0, ',', '.') . " + Biaya Layanan: Rp " . number_format($h->platform_fee_amount, 0, ',', '.') . ")",
                         'status'       => 'completed',
                         'processed_at' => now()->subDays(3),
                         'created_at'   => now()->subDays(3),
@@ -69,6 +70,7 @@ class UserBalancesSeeder extends Seeder
         foreach ($completedHelps as $h) {
             // Escrow Lock Customer
             if ($customer) {
+                $totalEscrow = (float) ($h->amount + $h->platform_fee_amount);
                 $escrowTx = BalanceTransaction::updateOrCreate(
                     [
                         'user_id'      => $customer->id,
@@ -77,8 +79,8 @@ class UserBalancesSeeder extends Seeder
                     ],
                     [
                         'order_id'     => $h->order_id,
-                        'amount'       => $h->amount,
-                        'description'  => "Dana Ditahan untuk Permintaan Bantuan '{$h->title}'",
+                        'amount'       => $totalEscrow,
+                        'description'  => "Dana Ditahan untuk Permintaan Bantuan '{$h->title}' (Nilai Jasa: Rp " . number_format($h->amount, 0, ',', '.') . " + Biaya Layanan: Rp " . number_format($h->platform_fee_amount, 0, ',', '.') . ")",
                         'status'       => 'completed',
                         'processed_at' => $h->taken_at ?? now()->subDays(2),
                         'created_at'   => $h->taken_at ?? now()->subDays(2),
@@ -99,7 +101,7 @@ class UserBalancesSeeder extends Seeder
                     [
                         'order_id'     => $h->order_id,
                         'amount'       => $h->mitra_earning,
-                        'description'  => "Pendapatan Bantuan '{$h->title}' (Bersih {$h->getCommissionRateLabel()} komisi platform)",
+                        'description'  => "Pendapatan Bantuan '{$h->title}'",
                         'status'       => 'completed',
                         'processed_at' => $h->completed_at ?? now()->subDays(1),
                         'created_at'   => $h->completed_at ?? now()->subDays(1),
@@ -118,7 +120,7 @@ class UserBalancesSeeder extends Seeder
                     [
                         'order_id'     => $h->order_id,
                         'amount'       => $h->platform_fee_amount,
-                        'description'  => "Komisi Platform {$h->getCommissionRateLabel()} dari Bantuan '{$h->title}'",
+                        'description'  => "Biaya Layanan Platform Rp " . number_format($h->platform_fee_amount, 0, ',', '.') . " dari Bantuan '{$h->title}'",
                         'status'       => 'completed',
                         'processed_at' => $h->completed_at ?? now()->subDays(1),
                         'created_at'   => $h->completed_at ?? now()->subDays(1),

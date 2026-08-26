@@ -44,7 +44,7 @@ class Index extends Component
             'refund' => 'Pengembalian Dana (Refund)',
             'escrow_lock' => 'Pembayaran Permintaan Bantuan',
             'deduction' => 'Potongan / Penyesuaian Saldo',
-            'penalty' => 'Denda Pelanggaran',
+            'penalty' => 'Penyesuaian Administrasi',
             'earning' => 'Pendapatan Bantuan',
             default => 'Transaksi Saldo',
         };

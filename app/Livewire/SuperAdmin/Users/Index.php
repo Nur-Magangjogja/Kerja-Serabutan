@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Models\City;
 use Illuminate\Validation\Rule;
 
-#[Layout('layouts.superadmin')]
 class Index extends Component
 {
     use WithPagination;
@@ -193,21 +192,11 @@ class Index extends Component
 
         if ($this->selectedUser) {
             $rules['password'] = 'nullable|string|min:8';
-            $rules['adminPassword'] = 'required|string';
         } else {
             $rules['password'] = 'required|string|min:8';
         }
 
-        $this->validate($rules, [
-            'adminPassword.required' => 'Kata sandi Superadmin wajib dimasukkan untuk mengonfirmasi perubahan data pengguna.',
-        ]);
-
-        if ($this->selectedUser) {
-            if (!\Illuminate\Support\Facades\Hash::check($this->adminPassword, auth()->user()->password)) {
-                $this->addError('adminPassword', 'Kata sandi Superadmin yang Anda masukkan salah. Perubahan data dibatalkan.');
-                return;
-            }
-        }
+        $this->validate($rules);
 
         $data = [
             'name' => $this->name,
@@ -288,11 +277,11 @@ class Index extends Component
         $this->validate([
             'adminPassword' => ['required', 'string'],
         ], [
-            'adminPassword.required' => 'Kata sandi Superadmin wajib dimasukkan untuk konfirmasi penghapusan.',
+            'adminPassword.required' => 'Kata sandi akun Anda wajib dimasukkan untuk konfirmasi penghapusan.',
         ]);
 
         if (!\Illuminate\Support\Facades\Hash::check($this->adminPassword, auth()->user()->password)) {
-            $this->addError('adminPassword', 'Kata sandi Superadmin salah. Penghapusan akun dibatalkan.');
+            $this->addError('adminPassword', 'Kata sandi yang Anda masukkan salah. Penghapusan akun dibatalkan.');
             return;
         }
 
@@ -337,28 +326,41 @@ class Index extends Component
 
     public function render()
     {
-        $users = User::with(['city', 'managedCities'])
+        $currentUser = auth()->user();
+        $isSuperAdmin = in_array($currentUser->role ?? '', ['super_admin', 'superadmin']);
+
+        $query = User::with(['city', 'managedCities'])
             ->withMax('helps', 'updated_at')
-            ->withMax('takenHelps', 'updated_at')
-            ->when($this->search, function ($query) {
-                $query->where(function ($q) {
-                    $q->where('name', 'like', '%' . $this->search . '%')
+            ->withMax('takenHelps', 'updated_at');
+
+        if (! $isSuperAdmin) {
+            $managedCityIds = $currentUser->managedCities()->pluck('cities.id')->toArray();
+            if (!empty($managedCityIds)) {
+                $query->whereIn('city_id', $managedCityIds);
+            }
+        }
+
+        $users = $query
+            ->when($this->search, function ($q) {
+                $q->where(function ($sub) {
+                    $sub->where('name', 'like', '%' . $this->search . '%')
                         ->orWhere('email', 'like', '%' . $this->search . '%')
                         ->orWhere('phone', 'like', '%' . $this->search . '%');
                 });
             })
-            ->when($this->roleFilter, function ($query) {
-                $query->where('role', $this->roleFilter);
-            }, function ($query) {
+            ->when($this->roleFilter, function ($q) {
+                $q->where('role', $this->roleFilter);
+            }, function ($q) {
                 // default: show only mitra and customer
-                $query->whereIn('role', ['mitra', 'customer']);
+                $q->whereIn('role', ['mitra', 'customer']);
             })
             ->latest()
             ->paginate($this->perPage);
 
         $cities = City::orderBy('name')->get();
+        $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 
-        return view('livewire.superadmin.users.index', compact('users', 'cities'));
+        return view('livewire.superadmin.users.index', compact('users', 'cities'))->layout($layout);
     }
 }
 

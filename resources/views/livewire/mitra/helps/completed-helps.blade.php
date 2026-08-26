@@ -252,7 +252,7 @@
 
                                 <div class="bg-rose-50/70 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/30 rounded-xl p-2.5 mt-2">
                                     <p class="text-xs text-rose-800 dark:text-rose-300 leading-relaxed">
-                                        <span class="font-bold">Keterangan:</span> {{ $penalty->description ?? 'Catatan pembatalan tugas bantuan yang telah diambil.' }}
+                                        <span class="font-bold">Keterangan:</span> {{ $penalty->description ?: 'Pembatalan tugas bantuan sebelum diselesaikan.' }}
                                     </p>
                                 </div>
                             </div>

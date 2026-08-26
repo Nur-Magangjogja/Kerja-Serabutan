@@ -88,7 +88,7 @@ class UserBalance extends Model
             'user_id'      => $this->user_id,
             'amount'       => $amount,
             'type'         => 'penalty',
-            'description'  => $description ?? 'Denda Pelanggaran → Kas Administrasi',
+            'description'  => $description ?? 'Penyesuaian Administrasi',
             'reference_id' => $referenceId,
             'order_id'     => $orderId,
             'status'       => 'completed',

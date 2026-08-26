@@ -100,7 +100,7 @@
             <div class="min-w-0 flex-1">
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Penarikan Dana (Withdraw)</p>
                 <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">Rp {{ number_format($totalWithdraw, 0, ',', '.') }}</p>
-                <p class="text-[10px] text-rose-600 font-medium truncate">Keluar ke rekening bank Mitra</p>
+                <p class="text-[10px] text-rose-600 font-medium truncate">Pencairan Mitra & Customer</p>
             </div>
         </div>
     </div>
@@ -111,9 +111,13 @@
             <span>🔒 Total Escrow Lock:</span>
             <span class="font-bold">Rp {{ number_format($totalEscrow, 0, ',', '.') }}</span>
         </div>
-        <div class="bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800/60 rounded-xl px-3.5 py-2 flex items-center gap-1.5 font-medium shadow-xs">
-            <span>⚠️ Penyesuaian Saldo:</span>
-            <span class="font-bold">Rp {{ number_format($totalPenalty, 0, ',', '.') }}</span>
+        <div class="bg-rose-50 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 rounded-xl px-3.5 py-2 flex items-center gap-1.5 font-medium shadow-xs">
+            <span>🛠️ WD Mitra:</span>
+            <span class="font-bold">Rp {{ number_format($totalWithdrawMitra ?? 0, 0, ',', '.') }}</span>
+        </div>
+        <div class="bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 rounded-xl px-3.5 py-2 flex items-center gap-1.5 font-medium shadow-xs">
+            <span>👤 WD Customer:</span>
+            <span class="font-bold">Rp {{ number_format($totalWithdrawCustomer ?? 0, 0, ',', '.') }}</span>
         </div>
         <div class="bg-cyan-50 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/60 rounded-xl px-3.5 py-2 flex items-center gap-1.5 font-medium shadow-xs">
             <span>↩️ Total Refund:</span>
@@ -144,7 +148,7 @@
                     <option value="escrow_lock">Escrow Lock (Dana Ditahan)</option>
                     <option value="earning">Earning Mitra (Bayaran Masuk)</option>
                     <option value="platform_fee">Komisi Platform (Kas Masuk)</option>
-                    <option value="withdraw">Withdraw (Pencairan Mitra)</option>
+                    <option value="withdraw">Withdraw (Pencairan Mitra & Customer)</option>
                     <option value="refund">Refund (Pengembalian 100%)</option>
                     <option value="penalty">Penyesuaian Pembatalan (Penalty)</option>
                     <option value="deduction">Potongan Biasa (Deduction)</option>

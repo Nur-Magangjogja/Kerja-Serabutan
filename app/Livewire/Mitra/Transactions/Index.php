@@ -41,10 +41,10 @@ class Index extends Component
         $isCredit = in_array($type, ['earning', 'topup', 'refund'], true);
 
         $typeLabel = match($type) {
-            'earning' => 'Pendapatan Bantuan',
-            'penalty' => 'Denda Pembatalan Bantuan',
-            'withdraw' => 'Penarikan Saldo (Withdraw)',
-            'topup' => 'Top Up Saldo',
+            'earning' => 'Pendapatan Bantuan Selesai',
+            'penalty' => 'Penyesuaian Pembatalan Tugas',
+            'withdraw' => 'Penarikan Dana (Withdraw)',
+            'topup' => 'Isi Ulang Saldo',
             'deduction' => 'Potongan Saldo',
             'refund' => 'Pengembalian Dana',
             default => 'Transaksi Saldo',

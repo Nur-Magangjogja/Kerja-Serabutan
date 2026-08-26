@@ -1,22 +1,6 @@
-@extends(in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? 'layouts.superadmin' : 'layouts.admin')
-
-@section('content')
 <div class="space-y-5">
     @php
         $routePrefix = in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? 'superadmin.' : 'admin.';
-        $collection = ($activities instanceof \Illuminate\Pagination\AbstractPaginator) ? collect($activities->items()) : collect($activities);
-        $roleCounts = [
-            'mitra' => $collection->filter(fn($a) => optional($a->user)?->isMitra())->count(),
-            'customer' => $collection->filter(fn($a) => optional($a->user)?->isCustomer())->count(),
-            'other' => $collection->filter(fn($a) => $a->user && !$a->user->isMitra() && !$a->user->isCustomer())->count(),
-        ];
-        $totalOnPage = $collection->count();
-        $topTypes = $collection->groupBy('activity_type')->map(fn($items) => $items->count())->sortDesc()->take(4);
-        $roleMeta = [
-            'mitra' => ['label' => 'Mitra', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'],
-            'customer' => ['label' => 'Customer', 'badge' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'],
-            'other' => ['label' => 'Internal', 'badge' => 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'],
-        ];
 
         $activityMeta = [
             'login' => ['label' => 'Login Berhasil', 'badge' => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'],
@@ -41,210 +25,148 @@
         $formatActivity = function ($type) use ($activityMeta) {
             return $activityMeta[$type]['label'] ?? ucwords(str_replace('_', ' ', $type));
         };
-
-        $detectDevice = function ($userAgent) {
-            if (!$userAgent) return ['label' => 'Unknown Device', 'badge' => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'];
-            $ua = strtolower($userAgent);
-            if (str_contains($ua, 'android') || str_contains($ua, 'iphone') || str_contains($ua, 'ipad')) {
-                return ['label' => 'Mobile Device', 'badge' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'];
-            }
-            if (str_contains($ua, 'windows')) {
-                return ['label' => 'Windows PC', 'badge' => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'];
-            }
-            if (str_contains($ua, 'mac os') || str_contains($ua, 'macintosh')) {
-                return ['label' => 'MacOS Device', 'badge' => 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400'];
-            }
-            if (str_contains($ua, 'linux')) {
-                return ['label' => 'Linux Device', 'badge' => 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400'];
-            }
-            return ['label' => 'Unknown Device', 'badge' => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'];
-        };
     @endphp
+
+    {{-- ===== Flash Notification ===== --}}
+    @if(session('success'))
+        <div class="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 rounded-2xl text-xs flex items-center gap-3 shadow-xs">
+            <svg class="w-5 h-5 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            <span class="font-semibold">{{ session('success') }}</span>
+        </div>
+    @endif
 
     {{-- ===== Page Header ===== --}}
     <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
             <h1 class="text-xl font-bold text-gray-900 dark:text-white">Aktivitas Mitra & Pengguna</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Pantau rekaman audit aktivitas pengguna sistem</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Pantau rekaman audit aktivitas pengguna sistem secara real-time</p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route($routePrefix . 'partners.activity.export.csv', request()->query()) }}"
-                class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm transition">
-                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                CSV
-            </a>
-            <a href="{{ route($routePrefix . 'partners.activity.export.excel', request()->query()) }}"
-                class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-sm transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                Excel
-            </a>
-            <a href="{{ route($routePrefix . 'partners.activity.export.print', request()->query()) }}" target="_blank"
-                class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-rose-600 text-white rounded-lg hover:bg-rose-700 shadow-sm transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                PDF / Print
-            </a>
+            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 px-3 py-1.5 rounded-lg">
+                Total {{ number_format($activities->total()) }} Log Aktivitas
+            </span>
         </div>
     </div>
 
-    {{-- ===== Filter Toolbar ===== --}}
+    {{-- ===== Realtime Filter Toolbar ===== --}}
     <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-4 py-3.5 shadow-sm">
-        <form method="GET" action="{{ route($routePrefix . 'partners.activity') }}" class="flex flex-wrap items-end gap-3">
+        <div class="flex flex-wrap items-end gap-3">
             <div class="relative flex-1 min-w-[200px]">
                 <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Cari Aktivitas</label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Nama/email mitra, deskripsi, atau IP..."
+                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Nama/email mitra, deskripsi, atau IP..."
                         class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
             </div>
 
             <div>
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Jenis Aktivitas</label>
-                <select name="type"
+                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Tipe Aktivitas</label>
+                <select wire:model.live="activityType"
                     class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option value="all">Semua Aktivitas</option>
-                    @foreach ($activityTypes as $type)
-                        <option value="{{ $type }}" @selected(request('type') === $type)>{{ ucfirst($type) }}</option>
+                    <option value="all">Semua Tipe Aktivitas</option>
+                    @foreach($activityMeta as $key => $meta)
+                        <option value="{{ $key }}">{{ $meta['label'] }}</option>
                     @endforeach
                 </select>
             </div>
 
             <div>
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Dari</label>
-                <input type="date" name="start_date" value="{{ request('start_date') }}"
-                    class="py-2 px-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Kota / Wilayah</label>
+                <select wire:model.live="cityId"
+                    class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="all">Semua Kota</option>
+                    @foreach($cities as $city)
+                        <option value="{{ $city->id }}">{{ $city->name }}</option>
+                    @endforeach
+                </select>
             </div>
-
-            <div>
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Sampai</label>
-                <input type="date" name="end_date" value="{{ request('end_date') }}"
-                    class="py-2 px-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
-            </div>
-
-            <div class="flex items-center gap-2">
-                <button type="submit" class="px-4 py-2 text-sm font-semibold bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-                    Filter
-                </button>
-                @if (request()->hasAny(['search', 'type', 'start_date', 'end_date']))
-                <a href="{{ route('admin.partners.activity') }}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                    Reset
-                </a>
-                @endif
-            </div>
-        </form>
+        </div>
     </div>
 
     {{-- ===== Table Card ===== --}}
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-        {{-- Quick Role Chips --}}
-        @if(!$activities->isEmpty())
-        <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-700 flex flex-wrap gap-2 items-center text-xs">
-            <span class="text-gray-400 uppercase tracking-wider font-semibold mr-1">Filter Cepat:</span>
-            <button type="button" data-role-filter-btn data-role-filter="all"
-                class="role-chip px-3 py-1 rounded-full border text-xs font-semibold bg-primary-600 text-white border-primary-600">
-                Semua ({{ $totalOnPage }})
-            </button>
-            <button type="button" data-role-filter-btn data-role-filter="mitra"
-                class="role-chip px-3 py-1 rounded-full border text-xs font-semibold bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100">
-                Mitra ({{ $roleCounts['mitra'] }})
-            </button>
-            <button type="button" data-role-filter-btn data-role-filter="customer"
-                class="role-chip px-3 py-1 rounded-full border text-xs font-semibold bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100">
-                Customer ({{ $roleCounts['customer'] }})
-            </button>
-            <button type="button" data-role-filter-btn data-role-filter="other"
-                class="role-chip px-3 py-1 rounded-full border text-xs font-semibold bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100">
-                Lainnya ({{ $roleCounts['other'] }})
-            </button>
-        </div>
-        @endif
-
         @if ($activities->isEmpty())
-            <div class="px-4 py-16 text-center">
-                <div class="flex flex-col items-center">
-                    <div class="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3">
-                        <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                    </div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Belum ada aktivitas ditemukan</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Coba sesuaikan filter pencarian atau tanggal</p>
+            <div class="p-12 text-center">
+                <div class="w-14 h-14 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                    ⏱️
                 </div>
+                <h3 class="text-sm font-bold text-gray-900 dark:text-white">Tidak Ada Log Aktivitas</h3>
+                <p class="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+                    Belum ada aktivitas yang tercatat sesuai dengan parameter pencarian Anda.
+                </p>
             </div>
         @else
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aktivitas</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Deskripsi</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">IP / Device</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Waktu</th>
-                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Detail</th>
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 font-bold uppercase tracking-wider text-[10px] border-b border-gray-100 dark:border-gray-700">
+                        <tr>
+                            <th class="px-4 py-3">Pengguna</th>
+                            <th class="px-4 py-3">Tipe Aktivitas</th>
+                            <th class="px-4 py-3">Deskripsi & Perangkat</th>
+                            <th class="px-4 py-3">IP Address</th>
+                            <th class="px-4 py-3">Waktu</th>
+                            <th class="px-4 py-3 text-right">Aksi Akun</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">
-                        @foreach ($activities as $a)
-                            @php
-                                $roleKey = optional($a->user)?->isMitra() ? 'mitra' : (optional($a->user)?->isCustomer() ? 'customer' : 'other');
-                                $roleInfo = $roleMeta[$roleKey] ?? $roleMeta['other'];
-                                $meta = $activityMeta[$a->activity_type] ?? ['label' => $formatActivity($a->activity_type), 'badge' => 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'];
-                                $device = $detectDevice($a->user_agent ?? null);
-                            @endphp
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-150" data-role-row data-role="{{ $roleKey }}">
-                                <td class="px-4 py-3.5">
-                                    @if($a->user)
-                                        <div class="flex items-center gap-2.5">
-                                            <div class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                                                {{ strtoupper(substr($a->user->name, 0, 1)) }}
-                                            </div>
-                                            <div class="min-w-0">
-                                                <a href="{{ in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? route('superadmin.users') : route('admin.users.show', $a->user) }}" class="font-semibold text-gray-800 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 truncate block">
-                                                    {{ $a->user->name }}
-                                                </a>
-                                                <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ $a->user->email }}</p>
-                                            </div>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700 text-gray-700 dark:text-gray-200">
+                        @foreach ($activities as $act)
+                            @php $u = $act->user; @endphp
+                            <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition">
+                                <td class="px-4 py-3.5 whitespace-nowrap">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center font-bold text-gray-700 dark:text-gray-200 text-xs shrink-0">
+                                            {{ strtoupper(substr($u?->name ?? '?', 0, 1)) }}
                                         </div>
-                                    @else
-                                        <span class="text-gray-400 dark:text-gray-500">—</span>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3.5">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $roleInfo['badge'] }}">
-                                        {{ $roleInfo['label'] }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3.5">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $meta['badge'] }}">
-                                        {{ $meta['label'] }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3.5 text-gray-600 dark:text-gray-300 hidden md:table-cell">
-                                    <div class="flex items-center gap-2">
-                                        @if($a->photo)
-                                            <a href="{{ asset('storage/' . $a->photo) }}" target="_blank" class="w-8 h-8 rounded-lg overflow-hidden border border-emerald-300 flex-shrink-0 hover:opacity-80 transition shadow-xs" title="Lihat Foto Bukti">
-                                                <img src="{{ asset('storage/' . $a->photo) }}" alt="Foto" class="w-full h-full object-cover">
-                                            </a>
-                                        @endif
-                                        <p class="max-w-xs truncate text-xs" title="{{ $a->description }}">{{ $a->description ?? '—' }}</p>
+                                        <div>
+                                            <p class="font-bold text-gray-900 dark:text-white">{{ $u?->name ?? 'User Terhapus' }}</p>
+                                            <span class="text-[10px] text-gray-400">{{ $u?->email }}</span>
+                                            @if($u?->city)
+                                                <span class="text-[10px] text-gray-400 block">• {{ is_object($u->city) ? $u->city->name : $u->city }}</span>
+                                            @endif
+                                        </div>
                                     </div>
                                 </td>
-                                <td class="px-4 py-3.5 hidden lg:table-cell">
-                                    <p class="font-mono text-xs text-gray-600 dark:text-gray-300">{{ $a->ip_address ?? '-' }}</p>
-                                    <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold {{ $device['badge'] }} mt-0.5">
-                                        {{ $device['label'] }}
+
+                                <td class="px-4 py-3.5 whitespace-nowrap">
+                                    @php $meta = $activityMeta[$act->activity_type] ?? null; @endphp
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold {{ $meta['badge'] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' }}">
+                                        {{ $formatActivity($act->activity_type) }}
                                     </span>
                                 </td>
-                                <td class="px-4 py-3.5 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                                    {{ optional($a->created_at)->diffForHumans() }}
+
+                                <td class="px-4 py-3.5 max-w-xs">
+                                    <p class="text-gray-800 dark:text-gray-200 text-xs line-clamp-2">{{ $act->description }}</p>
+                                    @if($act->user_agent)
+                                        <span class="text-[10px] text-gray-400 line-clamp-1 mt-0.5" title="{{ $act->user_agent }}">
+                                            🌐 {{ $act->user_agent }}
+                                        </span>
+                                    @endif
                                 </td>
-                                <td class="px-4 py-3.5 text-right">
-                                    <a href="{{ route($routePrefix . 'partners.activity', array_merge(request()->query(), ['detail' => $a->id])) }}"
-                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                        Detail
-                                    </a>
+
+                                <td class="px-4 py-3.5 whitespace-nowrap font-mono text-[11px] text-gray-500">
+                                    {{ $act->ip_address ?: '-' }}
+                                </td>
+
+                                <td class="px-4 py-3.5 whitespace-nowrap text-gray-400 text-[11px]">
+                                    {{ $act->created_at->format('d M Y • H:i:s') }}
+                                </td>
+
+                                <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                    @if($u)
+                                        <div class="flex items-center justify-end gap-1.5">
+                                            <button type="button" wire:click="resetSession({{ $u->id }})" wire:confirm="Reset seluruh sesi aktif untuk pengguna ini?"
+                                                class="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-[11px] font-semibold transition cursor-pointer">
+                                                Reset Sesi
+                                            </button>
+                                            <button type="button" wire:click="resetPassword({{ $u->id }})" wire:confirm="Reset password pengguna ini ke default (password123)?"
+                                                class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-lg text-[11px] font-semibold transition cursor-pointer">
+                                                Reset Sandi
+                                            </button>
+                                        </div>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
@@ -252,125 +174,9 @@
                 </table>
             </div>
 
-            @if($activities->hasPages())
-                <div class="px-5 py-3.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
-                    {{ $activities->links() }}
-                </div>
-            @endif
+            <div class="p-4 border-t border-gray-100 dark:border-gray-700">
+                {{ $activities->links() }}
+            </div>
         @endif
     </div>
-
-    {{-- Detail Modal when query 'detail' is present --}}
-    @if(isset($selectedActivity) && $selectedActivity)
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <a href="{{ route($routePrefix . 'partners.activity', request()->except(['detail', 'activity_id'])) }}" class="fixed inset-0 bg-black/50 backdrop-blur-sm"></a>
-        <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full z-10 overflow-hidden border border-gray-100 dark:border-gray-700 flex flex-col max-h-[90vh]">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                <div>
-                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Detail Aktivitas #{{ $selectedActivity->id }}</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ optional($selectedActivity->created_at)->format('d M Y, H:i:s') }} WIB</p>
-                </div>
-                <a href="{{ route($routePrefix . 'partners.activity', request()->except(['detail', 'activity_id'])) }}" class="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </a>
-            </div>
-
-            <div class="p-6 overflow-y-auto space-y-4 text-xs">
-                <div class="bg-gray-50 dark:bg-gray-750 p-4 rounded-xl space-y-2 border border-gray-100 dark:border-gray-700">
-                    <div class="flex justify-between"><span class="text-gray-400">User:</span> <span class="font-semibold text-gray-800 dark:text-gray-200">{{ optional($selectedActivity->user)->name ?? '—' }} ({{ optional($selectedActivity->user)->email ?? '—' }})</span></div>
-                    <div class="flex justify-between"><span class="text-gray-400">Role:</span> <span class="font-semibold text-gray-800 dark:text-gray-200">{{ ucfirst(optional($selectedActivity->user)->role ?? '—') }}</span></div>
-                    <div class="flex justify-between"><span class="text-gray-400">Tipe:</span> <span class="font-semibold text-primary-600 dark:text-primary-400">{{ $formatActivity($selectedActivity->activity_type) }}</span></div>
-                    @if($selectedActivity->help_id)
-                        <div class="flex justify-between"><span class="text-gray-400">Terkait Bantuan:</span> <span class="font-bold text-indigo-600 dark:text-indigo-400">#{{ $selectedActivity->help_id }}</span></div>
-                    @endif
-                    <div class="flex justify-between"><span class="text-gray-400">Deskripsi:</span> <span class="font-medium text-gray-700 dark:text-gray-300 text-right">{{ $selectedActivity->description ?? '—' }}</span></div>
-                    <div class="flex justify-between"><span class="text-gray-400">IP:</span> <span class="font-mono text-gray-700 dark:text-gray-300">{{ $selectedActivity->ip_address ?? '—' }}</span></div>
-                    <div class="flex justify-between"><span class="text-gray-400">User Agent:</span> <span class="text-gray-700 dark:text-gray-300 text-right max-w-xs truncate">{{ $selectedActivity->user_agent ?? '—' }}</span></div>
-                </div>
-
-                @if(isset($suspicious) && is_array($suspicious) && ($suspicious['flag'] ?? false))
-                <div class="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-800 dark:text-rose-300 space-y-1">
-                    <p class="font-bold flex items-center gap-1.5 text-xs">
-                        <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        Peringatan Aktivitas Mencurigakan:
-                    </p>
-                    <ul class="list-disc list-inside text-[11px] space-y-0.5 pl-1">
-                        @foreach($suspicious['reasons'] as $r)
-                            <li>{{ $r }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-                @endif
-
-                @if($selectedActivity->photo)
-                    <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block mb-2 flex items-center gap-1.5">
-                            <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            Foto Bukti Aktivitas / Pengerjaan:
-                        </span>
-                        <a href="{{ asset('storage/' . $selectedActivity->photo) }}" target="_blank" rel="noopener">
-                            <img src="{{ asset('storage/' . $selectedActivity->photo) }}" alt="Foto Bukti" class="w-full max-h-64 object-contain rounded-lg bg-black/5 dark:bg-black/30 border border-gray-200 dark:border-gray-600 hover:opacity-95 transition cursor-pointer">
-                        </a>
-                    </div>
-                @endif
-
-                @if(isset($recentActivities) && !$recentActivities->isEmpty())
-                <div class="space-y-2">
-                    <h4 class="font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Aktivitas 24 Jam Terakhir</h4>
-                    <div class="space-y-1.5">
-                        @foreach($recentActivities as $ra)
-                        <div class="p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between text-xs">
-                            <div>
-                                <span class="font-medium text-gray-800 dark:text-gray-200">{{ $formatActivity($ra->activity_type) }}</span>
-                                <span class="text-gray-400"> · {{ $ra->description ?? '-' }}</span>
-                            </div>
-                            <span class="text-gray-400 whitespace-nowrap">{{ $ra->created_at->diffForHumans() }}</span>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-                @endif
-            </div>
-
-            <div class="px-6 py-3.5 bg-gray-50 dark:bg-gray-700/30 border-t border-gray-100 dark:border-gray-700 flex justify-end">
-                <a href="{{ route($routePrefix . 'partners.activity', request()->except(['detail', 'activity_id'])) }}" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                    Tutup
-                </a>
-            </div>
-        </div>
-    </div>
-    @endif
 </div>
-
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const buttons = document.querySelectorAll('[data-role-filter-btn]');
-        const rows = document.querySelectorAll('[data-role-row]');
-        if (!buttons.length || !rows.length) return;
-
-        const setActiveButton = (current) => {
-            buttons.forEach((btn) => {
-                btn.className = 'role-chip px-3 py-1 rounded-full border text-xs font-semibold bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100';
-            });
-            current.className = 'role-chip px-3 py-1 rounded-full border text-xs font-semibold bg-primary-600 text-white border-primary-600';
-        };
-
-        const applyRoleFilter = (role) => {
-            rows.forEach((row) => {
-                const shouldShow = role === 'all' || row.dataset.role === role;
-                row.classList.toggle('hidden', !shouldShow);
-            });
-        };
-
-        buttons.forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const role = btn.dataset.roleFilter || 'all';
-                setActiveButton(btn);
-                applyRoleFilter(role);
-            });
-        });
-    });
-</script>
-@endpush
-@endsection

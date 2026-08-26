@@ -15,8 +15,9 @@ class AppSettingsSeeder extends Seeder
         $settings = [
             'app_name'                  => 'SayaBantu',
             'app_tagline'               => 'Platform Layanan & Bantuan Serabutan Terpercaya',
-            'platform_commission_rate'  => '10.00', // 10% komisi platform
-            'mitra_cancel_penalty_fee'  => '5000',  // Rp 5.000 denda pembatalan mitra
+            'min_help_nominal'          => '10000', // Rp 10.000 minimal bantuan
+            'platform_service_fee'      => '2000',  // Rp 2.000 biaya layanan tetap platform
+            'help_auto_cancel_hours'    => '24',    // 24 jam batas auto cancel
             'min_withdraw_amount'       => '50000', // Rp 50.000 minimal withdraw
             'topup_admin_fee'           => '0',      // Bebas biaya admin / 0% pajak topup
             'topup_qris_image'          => 'images/payment/qris.png',

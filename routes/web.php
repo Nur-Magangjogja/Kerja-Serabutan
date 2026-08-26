@@ -75,16 +75,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Balance & Transactions
         Route::get('/transactions', \App\Livewire\Customer\Transactions\Index::class)->name('transactions.index');
 
-        // Top Up Saldo - New approval system
+        // Top Up Saldo - Approval system
         Route::get('/topup/request', \App\Livewire\Customer\Topup\TopupRequest::class)->name('topup.request');
         Route::get('/topup/history', \App\Livewire\Customer\Topup\History::class)->name('topup.history');
 
-        // Withdraw (Customer) - form & history
-        Route::get('/withdraw', [\App\Http\Controllers\WithdrawController::class, 'showForm'])->name('withdraw.form');
-        Route::post('/withdraw', [\App\Http\Controllers\WithdrawController::class, 'requestWithdraw'])->name('withdraw.request');
-        Route::get('/withdraw/history', [\App\Http\Controllers\WithdrawController::class, 'withdrawHistory'])->name('withdraw.history');
-        Route::get('/withdraw/success/{withdraw}', [\App\Http\Controllers\WithdrawController::class, 'showSuccess'])->name('withdraw.success');
-        Route::get('/withdraw/rejected/{withdraw}', [\App\Http\Controllers\WithdrawController::class, 'showRejected'])->name('withdraw.rejected');
+        // Withdraw (Customer) - Full Livewire 3
+        Route::get('/withdraw', \App\Livewire\Customer\Withdraw\WithdrawForm::class)->name('withdraw.form');
+        Route::get('/withdraw/history', \App\Livewire\Customer\Withdraw\WithdrawHistory::class)->name('withdraw.history');
 
         // Top Up Saldo (Old Midtrans - kept for backward compatibility)
         Route::get('/top-up', \App\Livewire\Customer\Topup\Index::class)->name('topup');
@@ -115,7 +112,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ]);
         })->name('customer.helps.tracking');
 
-        // Lightweight JSON endpoint to fetch help details (used by JS fallback in preview modals)
+        // Lightweight JSON endpoint to fetch help details
         Route::get('/helps/{id}/json', function ($id) {
             $help = \App\Models\Help::with(['city','mitra','user'])->find($id);
             if (! $help) return response()->json(['error' => 'Not found'], 404);
@@ -132,8 +129,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reports/create', \App\Livewire\Customer\Reports\Create::class)->name('reports.create');
         Route::get('/reports/create/user/{user_id}', \App\Livewire\Customer\Reports\Create::class)->name('reports.create.user');
         Route::get('/reports/create/help/{help_id}', \App\Livewire\Customer\Reports\Create::class)->name('reports.create.help');
-        Route::get('/reports/{report}/chat', [\App\Http\Controllers\Admin\PartnerReportController::class, 'customerChatRoom'])->name('reports.chat');
-        Route::post('/reports/{report}/reply', [\App\Http\Controllers\Admin\PartnerReportController::class, 'replyCustomer'])->name('reports.reply');
     });
 
     // ========================================
@@ -147,8 +142,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/helps', \App\Livewire\Mitra\Helps\AllHelps::class)->name('helps.all');
         Route::get('/helps/completed', \App\Livewire\Mitra\Helps\CompletedHelps::class)->name('helps.completed');
         Route::get('/helps/{id}/detail', \App\Livewire\Mitra\Helps\HelpDetail::class)->name('helps.detail');
-        Route::get('/reports/{report}/chat', [\App\Http\Controllers\Admin\PartnerReportController::class, 'mitraChatRoom'])->name('reports.chat');
-        Route::post('/reports/{report}/reply', [\App\Http\Controllers\Admin\PartnerReportController::class, 'replyMitra'])->name('reports.reply');
 
         // Profile
         Route::get('/profile', \App\Livewire\Mitra\Profile\Index::class)->name('profile');
@@ -174,12 +167,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reports/create', \App\Livewire\Mitra\Reports\Create::class)->name('reports.create');
         Route::get('/reports/create/user/{user_id}', \App\Livewire\Mitra\Reports\Create::class)->name('reports.create.user');
         Route::get('/reports/create/help/{help_id}', \App\Livewire\Mitra\Reports\Create::class)->name('reports.create.help');
-        Route::get('/reports/{report}', function (\App\Models\PartnerReport $report) {
-            if ($report->reporter_id !== auth()->id()) {
-                abort(403);
-            }
-            return view('livewire.mitra.reports.show', ['report' => $report]);
-        })->name('reports.show');
 
         // Processing helps (in-progress)
         Route::get('/helps/processing', \App\Livewire\Mitra\Helps\ProcessingHelps::class)->name('helps.processing');
@@ -198,12 +185,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Balance & Transactions (Mitra)
         Route::get('/transactions', \App\Livewire\Mitra\Transactions\Index::class)->name('transactions.index');
 
-        // Withdraw (Mitra) - form & history
-        Route::get('/withdraw', [\App\Http\Controllers\WithdrawController::class, 'showForm'])->name('withdraw.form');
-        Route::post('/withdraw', [\App\Http\Controllers\WithdrawController::class, 'requestWithdraw'])->name('withdraw.request');
-        Route::get('/withdraw/history', [\App\Http\Controllers\WithdrawController::class, 'withdrawHistory'])->name('withdraw.history');
-        Route::get('/withdraw/success/{withdraw}', [\App\Http\Controllers\WithdrawController::class, 'showSuccess'])->name('withdraw.success');
-        Route::get('/withdraw/rejected/{withdraw}', [\App\Http\Controllers\WithdrawController::class, 'showRejected'])->name('withdraw.rejected');
+        // Withdraw (Mitra) - Full Livewire 3
+        Route::get('/withdraw', \App\Livewire\Mitra\Withdraw\WithdrawForm::class)->name('withdraw.form');
+        Route::get('/withdraw/history', \App\Livewire\Mitra\Withdraw\WithdrawHistory::class)->name('withdraw.history');
     });
 
     // ========================================
@@ -257,13 +241,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return back()->with('status', 'Password updated successfully!');
     })->name('profile.password.update');
 
-    // Account Deletion Requests (Permintaan Hapus Akun ke Superadmin)
+    // Account Deletion Requests
     Route::post('/profile/account-deletion-request', [\App\Http\Controllers\AccountDeletionRequestController::class, 'requestDeletion'])->name('profile.deletion.request');
     Route::post('/profile/account-deletion-cancel', [\App\Http\Controllers\AccountDeletionRequestController::class, 'cancelDeletion'])->name('profile.deletion.cancel');
 });
 
 // ========================================
-// SUPER ADMIN ROUTES
+// SUPER ADMIN ROUTES (Full Livewire 3)
 // ========================================
 Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->name('superadmin.')->group(function () {
     Route::get('/dashboard', \App\Livewire\SuperAdmin\Dashboard\Index::class)->name('dashboard');
@@ -282,39 +266,18 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
     Route::get('/topup/approvals', \App\Livewire\SuperAdmin\Topup\Approval::class)->name('topup.approvals');
     Route::get('/verifications', \App\Livewire\Admin\Verifications\Index::class)->name('verifications');
     Route::get('/admin-users', \App\Livewire\SuperAdmin\Users\AdminUsers::class)->name('admin.users');
-    Route::get('/withdraws', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'index'])->name('withdraws.index');
-    Route::get('/withdraws/{withdraw}/modal', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'modal'])->name('withdraws.modal');
-    Route::get('/withdraws/{withdraw}', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'show'])->name('withdraws.show');
-    Route::post('/withdraws/{withdraw}/approve', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'approve'])->name('withdraws.approve');
-    Route::post('/withdraws/{withdraw}/reject', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'reject'])->name('withdraws.reject');
 
-    // Moderasi & Laporan Mitra (Super Admin - Skala Nasional Seluruh Kota)
-    Route::get('/partners/activity', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'index'])->name('partners.activity');
-    Route::get('/partners/activity/export/csv', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'exportCsv'])->name('partners.activity.export.csv');
-    Route::get('/partners/activity/export/excel', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'exportExcel'])->name('partners.activity.export.excel');
-    Route::get('/partners/activity/export/print', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'exportPrint'])->name('partners.activity.export.print');
-    Route::post('/partners/activity/{user}/reset-sessions', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'resetSessions'])->name('partners.activity.reset_sessions');
-    Route::post('/partners/activity/{user}/reset-password', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'resetPassword'])->name('partners.activity.reset_password');
-    Route::get('/partners/report', [\App\Http\Controllers\Admin\PartnerReportController::class, 'index'])->name('partners.report');
-    Route::get('/partners/reports', [\App\Http\Controllers\Admin\PartnerReportController::class, 'reportsIndex'])->name('partners.reports');
-    Route::get('/partners/reports/{report}', [\App\Http\Controllers\Admin\PartnerReportController::class, 'show'])->name('partners.reports.show');
-    Route::post('/partners/reports/{report}/status', [\App\Http\Controllers\Admin\PartnerReportController::class, 'updateStatus'])->name('partners.reports.update');
-    Route::post('/partners/reports/{report}/add-note', [\App\Http\Controllers\Admin\PartnerReportController::class, 'addNote'])->name('partners.reports.add-note');
-    Route::post('/partners/reports/{report}/resolve', [\App\Http\Controllers\Admin\PartnerReportController::class, 'resolve'])->name('partners.reports.resolve');
-    Route::post('/partners/reports/{report}/reopen', [\App\Http\Controllers\Admin\PartnerReportController::class, 'reopen'])->name('partners.reports.reopen');
-    Route::post('/partners/reports/{report}/process-refund', [\App\Http\Controllers\Admin\PartnerReportController::class, 'processRefund'])->name('partners.reports.process-refund');
-    Route::post('/partners/reports/{report}/reject-refund', [\App\Http\Controllers\Admin\PartnerReportController::class, 'rejectRefund'])->name('partners.reports.reject-refund');
-    Route::get('/partners/reports/{report}/chat', [\App\Http\Controllers\Admin\PartnerReportController::class, 'chatRoom'])->name('partners.reports.chat');
-    Route::post('/partners/reports/{report}/send-message', [\App\Http\Controllers\Admin\PartnerReportController::class, 'sendMessage'])->name('partners.reports.send-message');
-    Route::get('/partners/blocked', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'index'])->name('partners.blocked');
-    Route::post('/partners/blocked/{id}/toggle', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'toggle'])->name('partners.blocked.toggle');
-    Route::post('/partners/toggle/{id}', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'toggle'])->name('partners.toggle');
-    Route::get('/partners/greylist', [\App\Http\Controllers\Admin\GreylistController::class, 'index'])->name('partners.greylist');
-    Route::post('/partners/greylist/add', [\App\Http\Controllers\Admin\GreylistController::class, 'add'])->name('partners.greylist.add');
-    Route::post('/partners/greylist/{user}/warning', [\App\Http\Controllers\Admin\GreylistController::class, 'issueWarning'])->name('partners.greylist.warning');
-    Route::post('/partners/greylist/{user}/shadow-ban', [\App\Http\Controllers\Admin\GreylistController::class, 'toggleShadowBan'])->name('partners.greylist.shadow_ban');
-    Route::post('/partners/greylist/{user}/remove', [\App\Http\Controllers\Admin\GreylistController::class, 'remove'])->name('partners.greylist.remove');
-    Route::get('/users/{user}', [\App\Http\Controllers\Admin\AdminUserController::class, 'show'])->name('users.show');
+    // Withdraw Management (Full Livewire)
+    Route::get('/withdraws', \App\Livewire\Admin\Withdraws\Index::class)->name('withdraws.index');
+
+    // Moderasi & Laporan Mitra (Full Livewire)
+    Route::get('/partners/activity', \App\Livewire\Admin\Partners\Activity::class)->name('partners.activity');
+    Route::get('/partners/report', \App\Livewire\Admin\Partners\Reports\Index::class)->name('partners.report');
+    Route::get('/partners/reports', \App\Livewire\Admin\Partners\Reports\Index::class)->name('partners.reports');
+    Route::get('/partners/reports/{report}', \App\Livewire\Admin\Partners\Reports\Show::class)->name('partners.reports.show');
+    Route::get('/partners/reports/{report}/chat', \App\Livewire\Admin\Partners\Reports\Chat::class)->name('partners.reports.chat');
+    Route::get('/partners/blocked', \App\Livewire\Admin\Partners\Blocked::class)->name('partners.blocked');
+    Route::get('/partners/greylist', \App\Livewire\Admin\Partners\Greylist::class)->name('partners.greylist');
 
     Route::view('/settings/appearance', 'superadmin.settings.appearance')->name('settings.appearance');
     Route::get('/settings', function () {
@@ -323,7 +286,7 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
 });
 
 // ========================================
-// ADMIN ROUTES
+// ADMIN ROUTES (Full Livewire 3)
 // ========================================
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', \App\Livewire\Admin\Dashboard\Index::class)->name('dashboard');
@@ -332,38 +295,19 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/helps', \App\Livewire\Admin\Helps\Index::class)->name('helps');
     Route::get('/helps/approved', \App\Livewire\Admin\Helps\Approved::class)->name('helps.approved');
     Route::get('/verifications', \App\Livewire\Admin\Verifications\Index::class)->name('verifications');
-    Route::get('/withdraws', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'index'])->name('withdraws.index');
-    Route::get('/withdraws/{withdraw}/modal', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'modal'])->name('withdraws.modal');
-    Route::get('/withdraws/{withdraw}', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'show'])->name('withdraws.show');
-    Route::post('/withdraws/{withdraw}/approve', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'approve'])->name('withdraws.approve');
-    Route::post('/withdraws/{withdraw}/reject', [\App\Http\Controllers\Admin\AdminWithdrawController::class, 'reject'])->name('withdraws.reject');
-    Route::get('/users', [\App\Http\Controllers\Admin\AdminUserController::class, 'index'])->name('users.index');
-    Route::get('/users/{user}', [\App\Http\Controllers\Admin\AdminUserController::class, 'show'])->name('users.show');
-    Route::get('/partners/activity', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'index'])->name('partners.activity');
-    Route::get('/partners/activity/export/csv', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'exportCsv'])->name('partners.activity.export.csv');
-    Route::get('/partners/activity/export/excel', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'exportExcel'])->name('partners.activity.export.excel');
-    Route::get('/partners/activity/export/print', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'exportPrint'])->name('partners.activity.export.print');
-    Route::post('/partners/activity/{user}/reset-sessions', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'resetSessions'])->name('partners.activity.reset_sessions');
-    Route::post('/partners/activity/{user}/reset-password', [\App\Http\Controllers\Admin\PartnerActivityController::class, 'resetPassword'])->name('partners.activity.reset_password');
-    Route::get('/partners/report', [\App\Http\Controllers\Admin\PartnerReportController::class, 'index'])->name('partners.report');
-    Route::get('/partners/reports', [\App\Http\Controllers\Admin\PartnerReportController::class, 'reportsIndex'])->name('partners.reports');
-    Route::get('/partners/reports/{report}', [\App\Http\Controllers\Admin\PartnerReportController::class, 'show'])->name('partners.reports.show');
-    Route::post('/partners/reports/{report}/status', [\App\Http\Controllers\Admin\PartnerReportController::class, 'updateStatus'])->name('partners.reports.update');
-    Route::post('/partners/reports/{report}/add-note', [\App\Http\Controllers\Admin\PartnerReportController::class, 'addNote'])->name('partners.reports.add-note');
-    Route::post('/partners/reports/{report}/resolve', [\App\Http\Controllers\Admin\PartnerReportController::class, 'resolve'])->name('partners.reports.resolve');
-    Route::post('/partners/reports/{report}/reopen', [\App\Http\Controllers\Admin\PartnerReportController::class, 'reopen'])->name('partners.reports.reopen');
-    Route::post('/partners/reports/{report}/process-refund', [\App\Http\Controllers\Admin\PartnerReportController::class, 'processRefund'])->name('partners.reports.process-refund');
-    Route::post('/partners/reports/{report}/reject-refund', [\App\Http\Controllers\Admin\PartnerReportController::class, 'rejectRefund'])->name('partners.reports.reject-refund');
-    Route::get('/partners/reports/{report}/chat', [\App\Http\Controllers\Admin\PartnerReportController::class, 'chatRoom'])->name('partners.reports.chat');
-    Route::post('/partners/reports/{report}/send-message', [\App\Http\Controllers\Admin\PartnerReportController::class, 'sendMessage'])->name('partners.reports.send-message');
-    Route::get('/partners/blocked', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'index'])->name('partners.blocked');
-    Route::post('/partners/blocked/{id}/toggle', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'toggle'])->name('partners.blocked.toggle');
-    Route::post('/partners/toggle/{id}', [\App\Http\Controllers\Admin\BlockedPartnerController::class, 'toggle'])->name('partners.toggle');
-    Route::get('/partners/greylist', [\App\Http\Controllers\Admin\GreylistController::class, 'index'])->name('partners.greylist');
-    Route::post('/partners/greylist/add', [\App\Http\Controllers\Admin\GreylistController::class, 'add'])->name('partners.greylist.add');
-    Route::post('/partners/greylist/{user}/warning', [\App\Http\Controllers\Admin\GreylistController::class, 'issueWarning'])->name('partners.greylist.warning');
-    Route::post('/partners/greylist/{user}/shadow-ban', [\App\Http\Controllers\Admin\GreylistController::class, 'toggleShadowBan'])->name('partners.greylist.shadow_ban');
-    Route::post('/partners/greylist/{user}/remove', [\App\Http\Controllers\Admin\GreylistController::class, 'remove'])->name('partners.greylist.remove');
+    Route::get('/users', \App\Livewire\SuperAdmin\Users\Index::class)->name('users.index');
+
+    // Withdraw Management (Full Livewire)
+    Route::get('/withdraws', \App\Livewire\Admin\Withdraws\Index::class)->name('withdraws.index');
+
+    // Moderasi & Laporan Mitra (Full Livewire)
+    Route::get('/partners/activity', \App\Livewire\Admin\Partners\Activity::class)->name('partners.activity');
+    Route::get('/partners/report', \App\Livewire\Admin\Partners\Reports\Index::class)->name('partners.report');
+    Route::get('/partners/reports', \App\Livewire\Admin\Partners\Reports\Index::class)->name('partners.reports');
+    Route::get('/partners/reports/{report}', \App\Livewire\Admin\Partners\Reports\Show::class)->name('partners.reports.show');
+    Route::get('/partners/reports/{report}/chat', \App\Livewire\Admin\Partners\Reports\Chat::class)->name('partners.reports.chat');
+    Route::get('/partners/blocked', \App\Livewire\Admin\Partners\Blocked::class)->name('partners.blocked');
+    Route::get('/partners/greylist', \App\Livewire\Admin\Partners\Greylist::class)->name('partners.greylist');
     Route::get('/topup/approvals', \App\Livewire\Admin\Topup\Approval::class)->name('topup.approvals');
 });
 

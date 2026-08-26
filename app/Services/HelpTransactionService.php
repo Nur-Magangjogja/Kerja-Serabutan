@@ -440,13 +440,7 @@ class HelpTransactionService
             // CATATAN PENTING ALIRAN DANA ESCROW:
             // Dana escrow customer TETAP DITAHAN di holding (tidak direfund di sini),
             // karena pesanan dikembalikan ke pool dengan status 'menunggu_mitra' agar bisa diambil oleh mitra lain.
-            // Jika customer ingin membatalkan pesanan secara penuh dan menarik kembali dananya,
-            // customer dapat menekan tombol "Batalkan Pesanan" saat status 'menunggu_mitra'.
-
-            // Terapkan denda penalti pembatalan ke mitra yang membatalkan (dipotong dari saldo mitra)
-            if ($formerMitra) {
-                $penaltyFee = $this->applyCancellationPenalty($formerMitra, $lockedHelp);
-            }
+            // Tidak ada pemotongan denda saldo lagi (sanksi pelanggaran dikelola melalui Daftar Abu-Abu & Surat Peringatan Admin).
 
             // Tambahkan ID mitra yang membatalkan ke daftar cancelled_mitra_ids
             // agar mitra ini tidak dapat mengambil kembali bantuan ini di masa mendatang
@@ -493,20 +487,19 @@ class HelpTransactionService
                 Log::warning('[HelpTransactionService] Failed to notify former mitra on cancel accepted: ' . $e->getMessage());
             }
 
-            $this->sendCancellationResolvedChat($help, $formerMitra, $customer, 'accepted', $penaltyFee);
+            $this->sendCancellationResolvedChat($help, $formerMitra, $customer, 'accepted');
         }
 
         $this->logActivity(
             $customer->id,
             $help->id,
             'cancel_accepted',
-            "Customer {$customer->name} menyetujui pembatalan bantuan. Mitra dikenakan denda Rp " . number_format($penaltyFee, 0, ',', '.') . ". Pesanan dikembalikan ke pool."
+            "Customer {$customer->name} menyetujui pembatalan bantuan. Pesanan dikembalikan ke pencarian mitra."
         );
 
         Log::info('[HelpTransactionService] customerAcceptCancel success', [
             'help_id'     => $help->id,
             'mitra_id'    => $formerMitra?->id,
-            'penalty_fee' => $penaltyFee,
             'model_v2'    => $help->isV2Model(),
         ]);
     }
@@ -801,7 +794,7 @@ class HelpTransactionService
         // bukan 'deduction', sehingga jelas ini adalah denda → kas administrasi.
         $userBalance->applyPenalty(
             $penaltyFee,
-            "Denda Pembatalan Bantuan ('{$help->title}') → Kas Administrasi",
+            "Pembatalan Tugas Bantuan ('{$help->title}') • Catatan Kepatuhan",
             $help->id,
             $help->order_id
         );
@@ -923,16 +916,13 @@ class HelpTransactionService
         }
     }
 
-    private function sendCancellationResolvedChat(Help $help, ?User $mitra, ?User $customer, string $action, float $penaltyFee = 0): void
+    private function sendCancellationResolvedChat(Help $help, ?User $mitra, ?User $customer, string $action): void
     {
         try {
             if (!$mitra || !$customer) return;
 
             if ($action === 'accepted') {
-                $penaltyText = $penaltyFee > 0
-                    ? " Rekan Jasa dikenakan denda penalti pembatalan sebesar Rp " . number_format($penaltyFee, 0, ',', '.') . "."
-                    : "";
-                $message = "Permintaan pembatalan untuk bantuan '{$help->title}' telah disetujui oleh Customer.{$penaltyText} Pesanan ini telah dikembalikan ke pencarian Rekan Jasa lain.";
+                $message = "Permintaan pembatalan untuk bantuan '{$help->title}' telah disetujui oleh Customer. Pesanan ini telah dikembalikan ke pencarian Rekan Jasa lain.";
             } else {
                 $message = "Halo Rekan Jasa {$mitra->name}, permintaan pembatalan Anda untuk bantuan '{$help->title}' ditolak oleh Customer. Mohon untuk melanjutkan pengerjaan bantuan ini.";
             }

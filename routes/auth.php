@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Auth\VerifyEmailController;
-use App\Livewire\Auth\AdminLogin;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;

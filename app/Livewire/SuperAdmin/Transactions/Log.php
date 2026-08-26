@@ -290,6 +290,8 @@ class Log extends Component
         
         $totalTopup       = (float) $summaryQuery->clone()->where('type', 'topup')->where('status', 'completed')->sum('amount');
         $totalWithdraw    = (float) $summaryQuery->clone()->where('type', 'withdraw')->where('status', 'completed')->sum('amount');
+        $totalWithdrawCustomer = (float) $summaryQuery->clone()->where('type', 'withdraw')->where('status', 'completed')->whereHas('user', fn($q) => $q->where('role', 'customer'))->sum('amount');
+        $totalWithdrawMitra    = (float) $summaryQuery->clone()->where('type', 'withdraw')->where('status', 'completed')->whereHas('user', fn($q) => $q->where('role', 'mitra'))->sum('amount');
         $totalPlatformFee = (float) $summaryQuery->clone()->where('type', 'platform_fee')->where('status', 'completed')->sum('amount');
         $totalEarning     = (float) $summaryQuery->clone()->where('type', 'earning')->where('status', 'completed')->sum('amount');
         $totalPenalty     = (float) $summaryQuery->clone()->where('type', 'penalty')->where('status', 'completed')->sum('amount');
@@ -298,15 +300,17 @@ class Log extends Component
         $totalTransactions = $summaryQuery->clone()->count();
 
         return view('livewire.superadmin.transactions.log', [
-            'transactions'     => $transactions,
-            'totalTopup'       => $totalTopup,
-            'totalWithdraw'    => $totalWithdraw,
-            'totalPlatformFee' => $totalPlatformFee,
-            'totalEarning'     => $totalEarning,
-            'totalPenalty'     => $totalPenalty,
-            'totalEscrow'      => $totalEscrow,
-            'totalRefund'      => $totalRefund,
-            'totalTransactions'=> $totalTransactions,
+            'transactions'          => $transactions,
+            'totalTopup'            => $totalTopup,
+            'totalWithdraw'         => $totalWithdraw,
+            'totalWithdrawCustomer' => $totalWithdrawCustomer,
+            'totalWithdrawMitra'    => $totalWithdrawMitra,
+            'totalPlatformFee'      => $totalPlatformFee,
+            'totalEarning'          => $totalEarning,
+            'totalPenalty'          => $totalPenalty,
+            'totalEscrow'           => $totalEscrow,
+            'totalRefund'           => $totalRefund,
+            'totalTransactions'     => $totalTransactions,
         ]);
     }
 }
