@@ -287,7 +287,6 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', \App\Livewire\Admin\Dashboard\Index::class)->name('dashboard');
     Route::view('/settings/appearance', 'livewire.admin.settings.appearance')->name('settings.appearance');
-    Route::get('/settings/help', \App\Livewire\Admin\Settings\HelpSettings::class)->name('settings.help');
     Route::get('/helps', \App\Livewire\Admin\Helps\Index::class)->name('helps');
     Route::get('/helps/approved', \App\Livewire\Admin\Helps\Approved::class)->name('helps.approved');
     Route::get('/verifications', \App\Livewire\Admin\Verifications\Index::class)->name('verifications');
