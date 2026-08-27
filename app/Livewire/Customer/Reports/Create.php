@@ -101,18 +101,48 @@ class Create extends Component
         }
     }
 
+    public function getIsRefundEligibleProperty(): bool
+    {
+        if (!$this->help_id) {
+            return false;
+        }
+
+        $help = Help::find($this->help_id);
+        if (!$help) {
+            return false;
+        }
+
+        // Jika status selesai, garansi refund aktif hanya dalam 1x24 jam sejak completed_at
+        if (in_array($help->status, ['completed', 'selesai'])) {
+            if (!$help->completed_at) {
+                return false;
+            }
+            return \Carbon\Carbon::parse($help->completed_at)->addHours(24)->isFuture();
+        }
+
+        // Jika status masih dalam pengerjaan / aktif
+        return in_array($help->status, ['in_progress', 'active', 'sedang_diproses', 'taken', 'menunggu_mitra']);
+    }
+
     public function updatedHelpId($value)
     {
         $this->reported_help_id = $value;
         $this->loadHelpDetails();
+        if (!$this->isRefundEligible) {
+            $this->is_refund_request = false;
+        }
     }
 
     public function updatedReportType($value)
     {
         if (in_array($value, ['klaim_refund_pekerjaan_fiktif', 'mitra_tidak_selesai'])) {
-            $this->is_refund_request = true;
-            if (empty($this->title) || str_starts_with($this->title, 'Klaim Pengembalian Dana')) {
-                $this->title = 'Klaim Pengembalian Dana (Refund) - Bantuan #' . ($this->help_id ?? '');
+            if ($this->isRefundEligible) {
+                $this->is_refund_request = true;
+                if (empty($this->title) || str_starts_with($this->title, 'Klaim Pengembalian Dana')) {
+                    $this->title = 'Klaim Pengembalian Dana (Refund) - Bantuan #' . ($this->help_id ?? '');
+                }
+            } else {
+                $this->is_refund_request = false;
             }
         }
     }
@@ -159,11 +189,32 @@ class Create extends Component
             $evidencePath = $this->evidence_photo->store('reports/evidence', 'public');
         }
 
-        // Tentukan apakah laporan ini merupakan pengajuan refund
-        $isRefund = $this->is_refund_request || in_array($this->report_type, ['klaim_refund_pekerjaan_fiktif', 'mitra_tidak_selesai']);
+        // Tentukan apakah laporan ini merupakan pengajuan refund (hanya jika memenuhi syarat masa garansi 1x24 jam)
+        $isRefund = $this->isRefundEligible && ($this->is_refund_request || in_array($this->report_type, ['klaim_refund_pekerjaan_fiktif', 'mitra_tidak_selesai']));
         $refundAmount = 0;
         if ($isRefund && $help) {
             $refundAmount = (float) ($help->total_amount > 0 ? $help->total_amount : $help->amount);
+        }
+
+        // Hidden anti-spam: Jika user sudah memiliki laporan aduan yang masih pending/diperiksa admin untuk bantuan ini
+        // atau baru saja mengirim aduan dalam 5 menit terakhir, serap pengiriman secara senyap tanpa membuat duplikat di database
+        $existingPendingReport = PartnerReport::where('reporter_id', auth()->id())
+            ->whereIn('status', ['pending', 'investigating', 'under_review', 'proses'])
+            ->where(function ($q) {
+                if ($this->reported_help_id) {
+                    $q->where('reported_help_id', $this->reported_help_id);
+                } else {
+                    $q->where('created_at', '>=', now()->subMinutes(5));
+                }
+            })
+            ->first();
+
+        if ($existingPendingReport) {
+            session()->flash('message', 'Laporan aduan dan klaim Anda berhasil dikirim! Tim manajemen admin akan segera meninjau transaksi dan bukti laporan.');
+            if ($this->help_id) {
+                return redirect()->route('customer.helps.detail', ['id' => $this->help_id]);
+            }
+            return redirect()->route('customer.helps.history');
         }
 
         $report = PartnerReport::create([
@@ -181,6 +232,21 @@ class Create extends Component
             'refund_status'      => $isRefund ? 'requested' : 'none',
             'refund_amount'      => $refundAmount,
         ]);
+
+        \App\Models\ActivityLog::record(
+            auth()->user(),
+            'report_created',
+            "Customer " . auth()->user()->name . " mengajukan laporan aduan: '{$this->title}'" . ($isRefund ? " (Klaim Refund Rp " . number_format($refundAmount, 0, ',', '.') . ")" : ""),
+            [
+                'report_id'        => $report->id,
+                'target_user_id'   => $this->reported_user_id,
+                'help_id'          => $this->reported_help_id,
+                'report_type'      => $this->report_type,
+                'is_refund'        => $isRefund,
+                'refund_amount'    => $refundAmount,
+                'reason'           => $this->message,
+            ]
+        );
 
         session()->flash('message', 'Laporan aduan dan klaim Anda berhasil dikirim! Tim manajemen admin akan segera meninjau transaksi dan bukti laporan.');
         if ($this->help_id) {

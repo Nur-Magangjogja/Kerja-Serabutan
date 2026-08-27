@@ -106,6 +106,19 @@ class Greylist extends Component
             'message' => "User dimasukkan ke Daftar Abu-Abu oleh Admin {$admin->name}. " . ($this->addApplyShadowBan ? '[Shadow Ban Aktif]' : ''),
         ]);
 
+        \App\Models\ActivityLog::record(
+            $admin,
+            'greylist_add',
+            "Admin {$admin->name} memasukkan akun {$user->name} ({$user->role}) ke Daftar Abu-Abu (SP {$this->addWarningLevel}). Alasan: {$this->addReason}",
+            [
+                'target_user_id' => $user->id,
+                'role'           => $user->role,
+                'warning_level'  => (int) $this->addWarningLevel,
+                'reason'         => $this->addReason,
+                'is_shadow_banned' => (bool) $this->addApplyShadowBan,
+            ]
+        );
+
         $this->showAddModal = false;
         session()->flash('success', "User {$user->name} berhasil dimasukkan ke Daftar Abu-Abu.");
     }
@@ -170,6 +183,19 @@ class Greylist extends Component
             'message' => $this->warningMessage,
         ]);
 
+        \App\Models\ActivityLog::record(
+            $admin,
+            'warning_issued',
+            "Admin {$admin->name} menerbitkan Surat Peringatan SP {$this->newWarningLevel} untuk akun {$user->name} ({$user->role}). Alasan: {$this->warningReason}",
+            [
+                'target_user_id' => $user->id,
+                'role'           => $user->role,
+                'warning_level'  => (int) $this->newWarningLevel,
+                'reason'         => $this->warningReason,
+                'message'        => $this->warningMessage,
+            ]
+        );
+
         $this->showWarningModal = false;
         session()->flash('success', "Surat Peringatan SP {$this->newWarningLevel} berhasil diterbitkan untuk {$user->name}.");
     }
@@ -196,6 +222,17 @@ class Greylist extends Component
                 ? "Akun {$user->name} dikenakan Shadow Ban (pembatasan akses tugas bantuan)."
                 : "Shadow Ban pada akun {$user->name} telah dicabut.",
         ]);
+
+        \App\Models\ActivityLog::record(
+            $admin,
+            $newStatus ? 'shadow_ban_enabled' : 'shadow_ban_disabled',
+            "Admin {$admin->name} " . ($newStatus ? "mengaktifkan status Shadow Ban" : "mencabut status Shadow Ban") . " pada akun {$user->name} ({$user->role}).",
+            [
+                'target_user_id'   => $user->id,
+                'role'             => $user->role,
+                'is_shadow_banned' => $newStatus,
+            ]
+        );
 
         session()->flash('success', $newStatus
             ? "Shadow Ban berhasil diaktifkan untuk {$user->name}."
@@ -227,6 +264,16 @@ class Greylist extends Component
             'reason' => 'Dipulihkan oleh Admin',
             'message' => "Akun {$user->name} telah dipulihkan dan dihapus dari Daftar Abu-Abu.",
         ]);
+
+        \App\Models\ActivityLog::record(
+            $admin,
+            'greylist_remove',
+            "Admin {$admin->name} memulihkan akun {$user->name} ({$user->role}) dan menghapusnya dari Daftar Abu-Abu.",
+            [
+                'target_user_id' => $user->id,
+                'role'           => $user->role,
+            ]
+        );
 
         session()->flash('success', "Akun {$user->name} telah dipulihkan dan status normal kembali.");
     }

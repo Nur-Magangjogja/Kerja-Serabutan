@@ -7,6 +7,7 @@ use App\Models\BalanceTransaction;
 use App\Models\Chat;
 use App\Models\Help;
 use App\Models\PartnerActivity;
+use App\Models\PartnerReport;
 use App\Models\User;
 use App\Models\UserBalance;
 use App\Notifications\ChatMessageNotification;
@@ -981,18 +982,91 @@ class HelpTransactionService
         }
     }
 
-    private function logActivity(int $userId, int $helpId, string $type, string $description, ?string $photo = null): void
+    /**
+     * Memproses persetujuan refund dari laporan aduan.
+     * Mengembalikan dana escrow 100% ke saldo dompet customer.
+     */
+    public function processReportRefund(PartnerReport $report, User $admin, ?string $adminNotes = null): void
     {
-        try {
-            PartnerActivity::create([
-                'user_id'       => $userId,
-                'help_id'       => $helpId,
-                'activity_type' => $type,
-                'description'   => $description,
-                'photo'         => $photo,
+        DB::transaction(function () use ($report, $admin, $adminNotes) {
+            $customer = $report->reporter ?? User::find($report->reporter_id);
+            if (!$customer) {
+                throw new \Exception('Data pelapor (Customer) tidak ditemukan.');
+            }
+
+            $help = $report->reportedHelp ?? ($report->reported_help_id ? Help::find($report->reported_help_id) : null);
+
+            // Hitung nominal refund
+            $refundAmount = (float) $report->refund_amount;
+            if ($refundAmount <= 0 && $help) {
+                $refundAmount = (float) ($help->total_amount > 0 ? $help->total_amount : $help->amount);
+            }
+
+            if ($refundAmount <= 0) {
+                throw new \Exception('Nominal refund tidak valid atau bernilai 0.');
+            }
+
+            // Kembalikan dana ke saldo customer
+            $customerBalance = UserBalance::firstOrCreate(
+                ['user_id' => $customer->id],
+                ['balance' => 0]
+            );
+
+            $customerBalance->refundToCustomer(
+                $refundAmount,
+                $help?->id,
+                $help?->order_id,
+                "Pengembalian Dana Refund (Laporan #{$report->id}: '{$report->title}')"
+            );
+
+            $notesEntry = $adminNotes ? "[Refund Disetujui]: " . trim($adminNotes) : "[Refund Disetujui oleh {$admin->name}]";
+            $updatedNotes = $report->admin_notes ? $report->admin_notes . "\n" . $notesEntry : $notesEntry;
+
+            $report->update([
+                'refund_status'       => 'approved',
+                'refund_amount'       => $refundAmount,
+                'refund_processed_at' => now(),
+                'refund_processed_by' => $admin->id,
+                'status'              => 'resolved',
+                'resolved_at'         => now(),
+                'resolved_by'         => $admin->id,
+                'admin_notes'         => $updatedNotes,
             ]);
-        } catch (\Throwable $e) {
-            Log::warning('[HelpTransactionService] Failed to log PartnerActivity: ' . $e->getMessage());
-        }
+
+            // Jika bantuan terkait belum selesai/batal, set status bantuan menjadi dibatalkan
+            if ($help && in_array($help->status, ['in_progress', 'active', 'sedang_diproses', 'pending', 'menunggu_mitra'])) {
+                $help->update(['status' => Help::STATUS_DIBATALKAN]);
+            }
+
+            Log::info('[HelpTransactionService] Refund laporan disetujui', [
+                'report_id'     => $report->id,
+                'customer_id'   => $customer->id,
+                'refund_amount' => $refundAmount,
+                'admin_id'      => $admin->id,
+            ]);
+        });
+    }
+
+    /**
+     * Menolak permohonan refund pada laporan aduan dengan alasan resmi.
+     */
+    public function rejectReportRefund(PartnerReport $report, User $admin, string $reason): void
+    {
+        DB::transaction(function () use ($report, $admin, $reason) {
+            $notesEntry = "[Refund Ditolak]: " . trim($reason);
+            $updatedNotes = $report->admin_notes ? $report->admin_notes . "\n" . $notesEntry : $notesEntry;
+
+            $report->update([
+                'refund_status'       => 'rejected',
+                'admin_notes'         => $updatedNotes,
+            ]);
+
+            Log::info('[HelpTransactionService] Refund laporan ditolak', [
+                'report_id' => $report->id,
+                'admin_id'  => $admin->id,
+                'reason'    => $reason,
+            ]);
+        });
     }
 }
+

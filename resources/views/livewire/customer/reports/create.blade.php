@@ -113,12 +113,41 @@
             </div>
 
             <!-- Checkbox Klaim Pengembalian Dana (Refund) -->
-            <div class="p-3 bg-blue-50/60 dark:bg-blue-950/30 rounded-xl border border-blue-200/70 dark:border-blue-900/40">
-                <label class="flex items-start gap-2.5 cursor-pointer">
-                    <input type="checkbox" wire:model="is_refund_request" class="mt-0.5 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                    <div class="text-xs">
-                        <span class="font-bold text-blue-950 dark:text-blue-200 block">Ajukan Pengembalian Dana 100% (Refund)</span>
-                        <span class="text-blue-800/80 dark:text-blue-300">Centang opsi ini jika Anda meminta dana pesanan dikembalikan utuh ke saldo akun Anda karena mitra tidak mengerjakan tugas atau melanggar kesepakatan.</span>
+            @php
+                $isEligible = $this->isRefundEligible;
+            @endphp
+            <div class="p-3.5 rounded-2xl border transition {{ $isEligible ? 'bg-blue-50/60 dark:bg-blue-950/30 border-blue-200/70 dark:border-blue-900/40' : 'bg-gray-100/70 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 opacity-90' }}">
+                <label class="flex items-start gap-2.5 {{ $isEligible ? 'cursor-pointer' : 'cursor-not-allowed' }}">
+                    <input type="checkbox" wire:model="is_refund_request" {{ $isEligible ? '' : 'disabled' }}
+                        class="mt-0.5 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <div class="text-xs space-y-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-bold {{ $isEligible ? 'text-blue-950 dark:text-blue-200' : 'text-gray-600 dark:text-gray-400' }}">
+                                Ajukan Pengembalian Dana 100% (Refund)
+                            </span>
+                            @if (!$help_id)
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                                    Pilih Bantuan Terlebih Dahulu
+                                </span>
+                            @elseif (!$isEligible)
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                    🔒 Garansi 1x24 Jam Sudah Habis
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                    🛡️ Garansi Aktif
+                                </span>
+                            @endif
+                        </div>
+                        @if (!$isEligible && $selectedHelp && in_array($selectedHelp->status, ['completed', 'selesai']))
+                            <p class="text-rose-600 dark:text-rose-400 font-medium text-[11px]">
+                                Masa garansi asuransi pengembalian dana 1x24 jam untuk bantuan ini telah berakhir (Waktu Selesai: {{ $selectedHelp->completed_at ? $selectedHelp->completed_at->format('d M Y, H:i') : '-' }} WIB). Anda tetap dapat mengirimkan laporan aduan untuk peninjauan admin, namun opsi klaim refund 100% sudah dinonaktifkan.
+                            </p>
+                        @else
+                            <span class="text-blue-800/80 dark:text-blue-300 block">
+                                Centang opsi ini jika Anda meminta dana pesanan dikembalikan utuh ke saldo akun Anda karena mitra tidak mengerjakan tugas atau melanggar kesepakatan.
+                            </span>
+                        @endif
                     </div>
                 </label>
             </div>

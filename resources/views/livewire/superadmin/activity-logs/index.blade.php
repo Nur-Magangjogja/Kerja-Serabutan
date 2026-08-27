@@ -14,6 +14,12 @@
         'withdraw_rejected' => ['label' => 'Pencairan Ditolak', 'class' => 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-800', 'icon' => '❌'],
         'partner_blocked'   => ['label' => 'Pengguna Diblokir', 'class' => 'bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-200', 'icon' => '🔒'],
         'partner_unblocked' => ['label' => 'Buka Blokir', 'class' => 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200', 'icon' => '🔓'],
+        'greylist_add'      => ['label' => 'Masuk Daftar Abu-Abu', 'class' => 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300', 'icon' => '📋'],
+        'warning_issued'    => ['label' => 'Terbit Surat Peringatan (SP)', 'class' => 'bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-300', 'icon' => '⚠️'],
+        'shadow_ban_enabled'=> ['label' => 'Shadow Ban Diaktifkan', 'class' => 'bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300', 'icon' => '🚫'],
+        'shadow_ban_disabled'=> ['label' => 'Shadow Ban Dicabut', 'class' => 'bg-teal-100 text-teal-900 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-300', 'icon' => '🔓'],
+        'greylist_remove'   => ['label' => 'Pulihkan dari Abu-Abu', 'class' => 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300', 'icon' => '🛡️'],
+        'report_created'    => ['label' => 'Laporan Aduan Dibuat', 'class' => 'bg-purple-50 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800', 'icon' => '📢'],
         'help_created'      => ['label' => 'Bantuan Dibuat', 'class' => 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 border border-sky-200 dark:border-sky-800', 'icon' => '📝'],
         'service_completed' => ['label' => 'Pekerjaan Selesai', 'class' => 'bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300 border border-green-200 dark:border-green-800', 'icon' => '✅'],
     ];
@@ -240,55 +246,173 @@
         @endif
     </div>
 
-    {{-- ===== Modal Preview Data Payload Properties ===== --}}
+    {{-- ===== Modal Detail Informasi Nyata Aktivitas ===== --}}
     @if($showPropertiesModal && $selectedLog)
+        @php
+            $props = $selectedLog->properties ?? [];
+            $reason = $props['reason'] ?? ($props['alasan'] ?? ($props['note'] ?? ($props['message'] ?? null)));
+            $targetRole = $props['role'] ?? ($targetUser?->role ?? null);
+            $actionLabel = ucwords(str_replace(['_', '-'], ' ', $selectedLog->action));
+        @endphp
         <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div class="fixed inset-0 bg-gray-900/60 dark:bg-black/80 backdrop-blur-xs transition-opacity" wire:click="closePropertiesModal"></div>
 
             <div class="flex min-h-full items-center justify-center p-4">
-                <div class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 shadow-2xl transition-all sm:w-full sm:max-w-lg border border-gray-100 dark:border-gray-700 p-5 space-y-3">
-                    <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
-                        <div>
-                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">
-                                Detail Data Payload (#{{ $selectedLog->id }})
-                            </h3>
-                            <p class="text-xs text-gray-400">
-                                Aksi: <strong class="text-primary-600 dark:text-primary-400">{{ $selectedLog->action }}</strong> • {{ $selectedLog->created_at->format('d M Y H:i:s') }}
-                            </p>
+                <div class="relative transform overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-2xl transition-all sm:w-full sm:max-w-lg border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-150">
+                    {{-- Modal Header --}}
+                    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-gray-750">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-primary-100 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-sm">
+                                📋
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-sm font-extrabold text-gray-900 dark:text-white">Detail Riwayat Aktivitas</h3>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
+                                        #{{ $selectedLog->id }}
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                    {{ $selectedLog->created_at->translatedFormat('d F Y, H:i:s') }} ({{ $selectedLog->created_at->diffForHumans() }})
+                                </p>
+                            </div>
                         </div>
-                        <button type="button" wire:click="closePropertiesModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <button type="button" wire:click="closePropertiesModal" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex items-center justify-center transition cursor-pointer">
+                            ✕
                         </button>
                     </div>
 
-                    <div>
-                        <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Deskripsi:</p>
-                        <p class="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-750 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700">
-                            {{ $selectedLog->description }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Properties (JSON Payload):</p>
-                        <pre class="bg-gray-900 text-gray-100 p-3 rounded-xl text-[11px] overflow-x-auto font-mono max-h-60">{{ json_encode($selectedLog->properties, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</pre>
-                    </div>
-
-                    @if($selectedLog->user_agent)
-                        <div>
-                            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">User Agent:</p>
-                            <p class="text-[11px] text-gray-500 font-mono bg-gray-50 dark:bg-gray-750 p-2 rounded border border-gray-100 dark:border-gray-700">
-                                {{ $selectedLog->user_agent }}
-                            </p>
+                    {{-- Modal Body --}}
+                    <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                        {{-- Ringkasan Aksi & Pelaku --}}
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="p-3 bg-gray-50 dark:bg-gray-700/40 rounded-2xl border border-gray-100 dark:border-gray-700">
+                                <span class="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">Tindakan / Aksi</span>
+                                <p class="text-xs font-bold text-gray-900 dark:text-white">{{ $actionLabel }}</p>
+                                <span class="text-[10px] text-gray-500 dark:text-gray-400 font-mono">{{ $selectedLog->action }}</span>
+                            </div>
+                            <div class="p-3 bg-gray-50 dark:bg-gray-700/40 rounded-2xl border border-gray-100 dark:border-gray-700">
+                                <span class="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">Pelaku Tindakan</span>
+                                <p class="text-xs font-bold text-gray-900 dark:text-white">{{ $selectedLog->user->name ?? 'Sistem / Anonim' }}</p>
+                                <span class="text-[10px] text-primary-600 dark:text-primary-400 font-semibold">{{ ucfirst(str_replace('_', ' ', $selectedLog->user->role ?? 'System')) }}</span>
+                            </div>
                         </div>
-                    @endif
 
-                    <div class="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-700">
+                        {{-- Deskripsi Aktivitas --}}
+                        <div>
+                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">Keterangan Aktivitas:</span>
+                            <div class="p-3 bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 rounded-2xl text-xs text-gray-800 dark:text-gray-200 leading-relaxed">
+                                {{ $selectedLog->description ?: 'Tidak ada deskripsi detail' }}
+                            </div>
+                        </div>
+
+                        {{-- Info Pengguna Target (Jika Ada) --}}
+                        @if($targetUser || !empty($props['target_user_id']))
+                            <div class="p-3.5 bg-rose-50/60 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/50 rounded-2xl space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[11px] font-extrabold text-rose-800 dark:text-rose-300 uppercase tracking-wider">
+                                        👤 Pengguna yang Ditargetkan
+                                    </span>
+                                    @if($targetRole)
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {{ $targetRole === 'mitra' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800' }}">
+                                            {{ $targetRole === 'mitra' ? '🛵 Mitra' : '👤 Customer' }}
+                                        </span>
+                                    @endif
+                                </div>
+                                @if($targetUser)
+                                    <div class="flex items-center gap-2.5 pt-1">
+                                        <div class="w-8 h-8 rounded-full bg-rose-200 dark:bg-rose-900 text-rose-800 dark:text-rose-200 flex items-center justify-center font-bold text-xs shrink-0">
+                                            {{ strtoupper(substr($targetUser->name, 0, 1)) }}
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-bold text-gray-900 dark:text-white">{{ $targetUser->name }}</p>
+                                            <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ $targetUser->email }} • {{ $targetUser->phone ?: '-' }} • {{ $targetUser->city_name ?: 'Semua Wilayah' }}</p>
+                                        </div>
+                                    </div>
+                                @else
+                                    <p class="text-xs text-gray-700 dark:text-gray-300">
+                                        ID Pengguna Target: <strong class="font-mono">#{{ $props['target_user_id'] }}</strong>
+                                    </p>
+                                @endif
+                            </div>
+                        @endif
+
+                        {{-- Info Pesanan / Bantuan Target (Jika Ada) --}}
+                        @if($targetHelp || !empty($props['help_id']))
+                            <div class="p-3.5 bg-amber-50/60 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50 rounded-2xl space-y-1.5">
+                                <span class="text-[11px] font-extrabold text-amber-800 dark:text-amber-300 uppercase tracking-wider block">
+                                    📦 Tugas / Bantuan Terkait
+                                </span>
+                                @if($targetHelp)
+                                    <p class="text-xs font-bold text-gray-900 dark:text-white">{{ $targetHelp->title }}</p>
+                                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Order ID: <strong class="font-mono">{{ $targetHelp->order_id ?: '#'.$targetHelp->id }}</strong> • Nominal: <span class="font-bold text-emerald-600">Rp {{ number_format($targetHelp->amount, 0, ',', '.') }}</span></p>
+                                @else
+                                    <p class="text-xs text-gray-700 dark:text-gray-300">
+                                        ID Bantuan: <strong class="font-mono">#{{ $props['help_id'] ?? $props['reference_id'] }}</strong>
+                                    </p>
+                                @endif
+                            </div>
+                        @endif
+
+                        {{-- Alasan / Catatan Aksi (Jika Ada) --}}
+                        @if($reason)
+                            <div class="p-3.5 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600 rounded-2xl">
+                                <span class="text-[10px] font-bold uppercase text-gray-500 dark:text-gray-400 block mb-1">📝 Alasan / Catatan Aksi:</span>
+                                <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 italic">"{{ $reason }}"</p>
+                            </div>
+                        @endif
+
+                        {{-- Detail Perangkat & Jaringan --}}
+                        <div class="p-3.5 bg-gray-50 dark:bg-gray-700/40 rounded-2xl border border-gray-100 dark:border-gray-700 space-y-2">
+                            <span class="text-[10px] font-bold uppercase text-gray-400 block">🌐 Informasi Perangkat & Akses</span>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                    <span class="text-[10px] text-gray-400 block">Perangkat & OS:</span>
+                                    <span class="font-semibold text-gray-800 dark:text-gray-200">{{ $parsedAgent['os'] ?? 'Unknown' }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-gray-400 block">Browser:</span>
+                                    <span class="font-semibold text-gray-800 dark:text-gray-200">{{ $parsedAgent['browser'] ?? 'Unknown' }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-gray-400 block">Tipe Akses:</span>
+                                    <span class="font-semibold text-gray-800 dark:text-gray-200">{{ $parsedAgent['device'] ?? 'Desktop' }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-gray-400 block">Alamat IP:</span>
+                                    <span class="font-mono text-gray-800 dark:text-gray-200 font-semibold">{{ $selectedLog->ip_address ?: '127.0.0.1' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Toggle Lihat Data Teknis / JSON Asli --}}
+                        @if(!empty($props))
+                            <div class="pt-1">
+                                <button type="button" wire:click="toggleRawJson"
+                                    class="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 font-semibold flex items-center gap-1 cursor-pointer">
+                                    <span>{{ $showRawJson ? '▼ Sembunyikan Data Teknis (JSON)' : '▶ Lihat Data Teknis Asli (JSON Debug)' }}</span>
+                                </button>
+                                @if($showRawJson)
+                                    <div class="mt-2 space-y-2 animate-in fade-in duration-100">
+                                        <pre class="bg-gray-900 text-emerald-400 p-3 rounded-2xl text-[11px] overflow-x-auto font-mono max-h-48 border border-gray-800">{{ json_encode($props, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</pre>
+                                        @if($selectedLog->user_agent)
+                                            <p class="text-[10px] text-gray-400 font-mono bg-gray-900 text-gray-300 p-2 rounded-xl border border-gray-800 break-all">
+                                                {{ $selectedLog->user_agent }}
+                                            </p>
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- Modal Footer --}}
+                    <div class="px-6 py-4 bg-gray-50 dark:bg-gray-750 border-t border-gray-100 dark:border-gray-700 flex justify-end">
                         <button type="button" wire:click="closePropertiesModal"
-                            class="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-xl text-xs transition cursor-pointer">
+                            class="px-5 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold rounded-xl text-xs transition cursor-pointer">
                             Tutup
                         </button>
                     </div>
-                </div>
             </div>
         </div>
     @endif

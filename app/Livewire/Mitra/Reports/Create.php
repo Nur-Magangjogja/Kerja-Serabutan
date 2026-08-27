@@ -65,15 +65,6 @@ class Create extends Component
 
     public function mount($user_id = null, $help_id = null)
     {
-        // If the current user already has a recent report that's not closed/resolved,
-        // redirect them to its status page instead of showing the create form.
-        // Allow forcing the create form with ?new=1 in the URL.
-        if (auth()->check() && request()->query('new') !== '1') {
-            $latest = PartnerReport::where('reporter_id', auth()->id())->latest()->first();
-            if ($latest && !in_array($latest->status, ['resolved', 'closed', 'rejected'])) {
-                return redirect()->route('mitra.reports.show', ['report' => $latest->id]);
-            }
-        }
         // Handle route parameters
         if (request()->route('user_id')) {
             $this->reported_user_id = request()->route('user_id');
@@ -129,6 +120,27 @@ class Create extends Component
             }
         }
 
+        // Hidden anti-spam: Jika mitra sudah memiliki laporan aduan yang masih pending/diperiksa admin untuk bantuan ini
+        // atau baru saja mengirim aduan dalam 5 menit terakhir, serap pengiriman secara senyap tanpa membuat duplikat di database
+        $existingPendingReport = PartnerReport::where('reporter_id', auth()->id())
+            ->whereIn('status', ['pending', 'investigating', 'under_review', 'proses'])
+            ->where(function ($q) {
+                if ($this->reported_help_id) {
+                    $q->where('reported_help_id', $this->reported_help_id);
+                } else {
+                    $q->where('created_at', '>=', now()->subMinutes(5));
+                }
+            })
+            ->first();
+
+        if ($existingPendingReport) {
+            session()->flash('message', 'Laporan aduan berhasil dikirim. Admin akan meninjau laporan Anda.');
+            if ($this->reported_help_id) {
+                return redirect()->route('mitra.helps.detail', ['id' => $this->reported_help_id]);
+            }
+            return redirect()->route('mitra.dashboard');
+        }
+
         $report = PartnerReport::create([
             'reporter_id' => auth()->id(),
             'reported_user_id' => $this->reported_user_id,
@@ -141,6 +153,19 @@ class Create extends Component
             'category' => 'dari_mitra',
             'status' => 'pending',
         ]);
+
+        \App\Models\ActivityLog::record(
+            auth()->user(),
+            'report_created',
+            "Mitra " . auth()->user()->name . " mengajukan laporan aduan: '{$this->title}'",
+            [
+                'report_id'        => $report->id,
+                'target_user_id'   => $this->reported_user_id,
+                'help_id'          => $this->reported_help_id,
+                'report_type'      => $this->report_type,
+                'reason'           => $this->message,
+            ]
+        );
 
         session()->flash('message', 'Laporan aduan berhasil dikirim. Admin akan meninjau laporan Anda.');
         if ($this->reported_help_id) {
