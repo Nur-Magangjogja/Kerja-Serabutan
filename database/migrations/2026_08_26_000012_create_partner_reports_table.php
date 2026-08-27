@@ -14,14 +14,9 @@ return new class extends Migration
         Schema::create('partner_reports', function (Blueprint $table) {
             $table->id();
             $table->foreignId('reporter_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('reported_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('help_id')->nullable()->constrained('helps')->nullOnDelete();
-            $table->unsignedBigInteger('reported_partner_id')->nullable()->index();
-            $table->unsignedBigInteger('reported_customer_id')->nullable()->index();
             $table->unsignedBigInteger('reported_help_id')->nullable()->index();
-            $table->string('reported_partner_text')->nullable();
-            $table->string('reported_customer_text')->nullable();
             $table->string('reported_help_text')->nullable();
             $table->string('reported_user_text')->nullable();
             $table->string('report_type')->nullable();

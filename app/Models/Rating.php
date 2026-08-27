@@ -8,8 +8,6 @@ class Rating extends Model
 {
     protected $fillable = [
         'help_id',
-        'user_id',
-        'mitra_id',
         'rater_id',
         'ratee_id',
         'type',
@@ -27,25 +25,13 @@ class Rating extends Model
         return $this->belongsTo(Help::class);
     }
 
-    // Legacy: customer who gave the rating
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    // Legacy: mitra who received the rating
-    public function mitra()
-    {
-        return $this->belongsTo(User::class, 'mitra_id');
-    }
-
-    // New: who gives the rating (can be customer or mitra)
+    // Who gives the rating (can be customer or mitra)
     public function rater()
     {
         return $this->belongsTo(User::class, 'rater_id');
     }
 
-    // New: who receives the rating (can be customer or mitra)
+    // Who receives the rating (can be customer or mitra)
     public function ratee()
     {
         return $this->belongsTo(User::class, 'ratee_id');
@@ -80,10 +66,7 @@ class Rating extends Model
         $query = self::where('help_id', $helpId);
         
         if ($raterId) {
-            $query->where(function ($q) use ($raterId) {
-                $q->where('rater_id', $raterId)
-                  ->orWhere('user_id', $raterId);
-            });
+            $query->where('rater_id', $raterId);
         }
 
         if ($type) {

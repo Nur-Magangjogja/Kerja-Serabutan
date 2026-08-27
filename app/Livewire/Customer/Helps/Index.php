@@ -272,10 +272,8 @@ class Index extends Component
         }
 
         $ratingRecord = Rating::updateOrCreate(
-            ['help_id' => $helpId, 'user_id' => auth()->id()],
+            ['help_id' => $helpId, 'rater_id' => auth()->id()],
             [
-                'mitra_id' => $help->mitra_id,
-                'rater_id' => auth()->id(),
                 'ratee_id' => $help->mitra_id,
                 'type'     => 'customer_to_mitra',
                 'rating'   => $this->pendingRating,

@@ -153,7 +153,7 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <h2 class="font-bold text-base text-gray-900 dark:text-white truncate leading-snug">{{ $help->title }}</h2>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium truncate mt-0.5">{{ optional($help->category)->name ?? 'Bantuan Tugas' }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium truncate mt-0.5">Bantuan Tugas</p>
                 </div>
             </div>
 

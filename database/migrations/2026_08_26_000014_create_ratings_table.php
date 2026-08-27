@@ -14,11 +14,9 @@ return new class extends Migration
         Schema::create('ratings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('help_id')->constrained('helps')->cascadeOnDelete();
-            $table->foreignId('rater_id')->nullable()->constrained('users')->cascadeOnDelete();
-            $table->foreignId('ratee_id')->nullable()->constrained('users')->cascadeOnDelete();
+            $table->foreignId('rater_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('ratee_id')->constrained('users')->cascadeOnDelete();
             $table->enum('type', ['customer_to_mitra', 'mitra_to_customer'])->default('customer_to_mitra');
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('mitra_id')->constrained('users')->cascadeOnDelete();
             $table->unsignedTinyInteger('rating');
             $table->text('review')->nullable();
             $table->timestamps();
@@ -26,8 +24,6 @@ return new class extends Migration
             $table->index('help_id');
             $table->index('rater_id');
             $table->index('ratee_id');
-            $table->index('user_id');
-            $table->index('mitra_id');
         });
     }
 

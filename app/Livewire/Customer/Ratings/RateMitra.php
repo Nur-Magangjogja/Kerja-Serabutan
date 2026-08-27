@@ -85,8 +85,6 @@ class RateMitra extends Component
             'type'     => 'customer_to_mitra',
             'rating'   => $this->rating,
             'review'   => $this->review,
-            'user_id'  => auth()->id(),
-            'mitra_id' => $this->help->mitra_id,
         ]);
 
         $this->userRating = $ratingRecord;

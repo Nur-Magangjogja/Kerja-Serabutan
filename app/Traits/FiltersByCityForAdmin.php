@@ -2,6 +2,16 @@
 
 namespace App\Traits;
 
+/**
+ * Trait FiltersByCityForAdmin
+ * 
+ * Mengelola batasan akses data berdasarkan kota untuk pengguna dengan role 'admin'.
+ * 
+ * Mekanisme Pembatasan:
+ * 1. Setiap admin dibatasi ruang lingkup datanya berdasarkan kolom `users.city_id`.
+ * 2. Super Admin memiliki akses global ke seluruh kota tanpa filter.
+ * 3. Tabel pivot `admin_city` disediakan untuk skenario relasi multi-kota jika dibutuhkan di masa mendatang.
+ */
 trait FiltersByCityForAdmin
 {
     /**

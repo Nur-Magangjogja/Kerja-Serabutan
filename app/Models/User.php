@@ -149,7 +149,7 @@ class User extends Authenticatable
 
     public function ratings()
     {
-        return $this->hasMany(Rating::class, 'mitra_id');
+        return $this->hasMany(Rating::class, 'ratee_id');
     }
 
     // Ratings received as customer (from mitra)
@@ -161,7 +161,7 @@ class User extends Authenticatable
     // Ratings received as mitra (from customer)  
     public function mitraRatings()
     {
-        return $this->hasMany(Rating::class, 'mitra_id')
+        return $this->hasMany(Rating::class, 'ratee_id')
             ->where(function ($q) {
                 $q->where('type', 'customer_to_mitra')
                   ->orWhereNull('type');
@@ -173,10 +173,6 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\PartnerReport::class);
     }
 
-    public function logs()
-    {
-        return $this->hasMany(Log::class);
-    }
 
     public function balance()
     {
@@ -235,8 +231,7 @@ class User extends Authenticatable
             return (float) $userBalance->balance;
         }
 
-        // Fallback to users.balance column if present
-        return isset($this->attributes['balance']) ? (float) $this->attributes['balance'] : 0.0;
+        return 0.0;
     }
 
     public function transactions()
@@ -386,26 +381,18 @@ class User extends Authenticatable
     // Customer Rating Methods
     public function getCustomerAverageRatingAttribute()
     {
-        $avg = Rating::where(function ($q) {
-            $q->where('ratee_id', $this->id)
-              ->orWhere(function ($q2) {
-                  $q2->where('user_id', $this->id)
-                     ->where('type', 'mitra_to_customer');
-              });
-        })->where('type', 'mitra_to_customer')->avg('rating');
+        $avg = Rating::where('ratee_id', $this->id)
+            ->where('type', 'mitra_to_customer')
+            ->avg('rating');
 
         return $avg ? round((float) $avg, 1) : 0;
     }
 
     public function getCustomerRatingCountAttribute()
     {
-        return Rating::where(function ($q) {
-            $q->where('ratee_id', $this->id)
-              ->orWhere(function ($q2) {
-                  $q2->where('user_id', $this->id)
-                     ->where('type', 'mitra_to_customer');
-              });
-        })->where('type', 'mitra_to_customer')->count();
+        return Rating::where('ratee_id', $this->id)
+            ->where('type', 'mitra_to_customer')
+            ->count();
     }
 
     public function getCustomerRatingBadgeAttribute()
@@ -442,35 +429,23 @@ class User extends Authenticatable
     // Mitra Rating Methods
     public function getMitraAverageRatingAttribute()
     {
-        $avg = Rating::where(function ($q) {
-            $q->where('ratee_id', $this->id)
-              ->orWhere('mitra_id', $this->id);
-        })->where(function ($q) {
-            $q->where('type', 'customer_to_mitra')
-              ->orWhereNull('type');
-        })->avg('rating');
+        $avg = Rating::where('ratee_id', $this->id)
+            ->where(function ($q) {
+                $q->where('type', 'customer_to_mitra')
+                  ->orWhereNull('type');
+            })->avg('rating');
 
         return $avg ? round((float) $avg, 1) : 0;
     }
 
     public function getMitraRatingCountAttribute()
     {
-        return Rating::where(function ($q) {
-            $q->where('ratee_id', $this->id)
-              ->orWhere('mitra_id', $this->id);
-        })->where(function ($q) {
-            $q->where('type', 'customer_to_mitra')
-              ->orWhereNull('type');
-        })->count();
+        return Rating::where('ratee_id', $this->id)
+            ->where(function ($q) {
+                $q->where('type', 'customer_to_mitra')
+                  ->orWhereNull('type');
+            })->count();
     }
 
-    public function accountDeletionRequests()
-    {
-        return $this->hasMany(AccountDeletionRequest::class, 'user_id');
-    }
 
-    public function pendingAccountDeletionRequest()
-    {
-        return $this->hasOne(AccountDeletionRequest::class, 'user_id')->where('status', 'pending');
-    }
 }

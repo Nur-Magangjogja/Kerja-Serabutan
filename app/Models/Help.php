@@ -163,7 +163,6 @@ class Help extends Model
     protected $fillable = [
         'user_id',
         'city_id',
-        'category_id',
         'title',
         'amount',
         'admin_fee',
@@ -264,10 +263,6 @@ class Help extends Model
         return $this->belongsTo(City::class);
     }
 
-    public function category()
-    {
-        return $this->belongsTo(Category::class, 'category_id');
-    }
 
     public function mitra()
     {

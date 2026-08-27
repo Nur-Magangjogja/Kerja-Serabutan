@@ -130,7 +130,6 @@ class Create extends Component
         }
 
         $report = PartnerReport::create([
-            'user_id' => $this->reported_user_id, // legacy column (may be null now)
             'reporter_id' => auth()->id(),
             'reported_user_id' => $this->reported_user_id,
             'reported_help_id' => $this->reported_help_id,

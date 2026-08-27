@@ -107,9 +107,6 @@ class RateCustomer extends Component
             'type' => 'mitra_to_customer',
             'rating' => $this->rating,
             'review' => $this->review,
-            // Keep legacy columns for backward compatibility
-            'user_id' => $this->help->user_id,
-            'mitra_id' => auth()->id(),
         ]);
 
         session()->flash('success', 'Rating berhasil diberikan!');

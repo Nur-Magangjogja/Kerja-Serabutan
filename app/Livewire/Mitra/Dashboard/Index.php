@@ -146,9 +146,6 @@ class Index extends Component
 
         // Additional curated lists for dashboard sections
         $relations = ['user', 'city'];
-        if (Schema::hasColumn('helps', 'category_id')) {
-            $relations[] = 'category';
-        }
 
         $recommendedQuery = Help::where('status', 'menunggu_mitra')
             ->whereNull('mitra_id')

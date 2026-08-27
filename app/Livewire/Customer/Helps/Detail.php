@@ -176,8 +176,6 @@ class Detail extends Component
 
         $ratingRecord = Rating::create([
             'help_id'  => $this->help->id,
-            'user_id'  => auth()->id(),
-            'mitra_id' => $this->help->mitra_id,
             'rater_id' => auth()->id(),
             'ratee_id' => $this->help->mitra_id,
             'type'     => 'customer_to_mitra',

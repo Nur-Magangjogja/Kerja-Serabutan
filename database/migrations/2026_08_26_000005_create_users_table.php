@@ -23,7 +23,6 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
-            $table->unsignedBigInteger('balance')->default(0);
             $table->foreignId('city_id')->nullable()->constrained('cities')->nullOnDelete();
             $table->string('ktp_path')->nullable();
             $table->string('ktp_photo')->nullable();

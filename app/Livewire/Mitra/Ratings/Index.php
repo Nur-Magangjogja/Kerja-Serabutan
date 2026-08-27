@@ -20,17 +20,11 @@ class Index extends Component
     {
         $mitraId = auth()->id();
 
-        $baseQuery = Rating::with(['rater', 'user', 'help'])
-            ->where(function ($q) use ($mitraId) {
-                $q->where(function ($sq) use ($mitraId) {
-                    $sq->where('ratee_id', $mitraId)
-                       ->where('type', 'customer_to_mitra');
-                })->orWhere(function ($sq) use ($mitraId) {
-                    $sq->where('mitra_id', $mitraId)
-                       ->where(function ($tsq) {
-                           $tsq->whereNull('type')->orWhere('type', 'customer_to_mitra');
-                       });
-                });
+        $baseQuery = Rating::with(['rater', 'help'])
+            ->where('ratee_id', $mitraId)
+            ->where(function ($q) {
+                $q->where('type', 'customer_to_mitra')
+                  ->orWhereNull('type');
             });
 
         $ratings = (clone $baseQuery)->latest()->paginate($this->perPage);

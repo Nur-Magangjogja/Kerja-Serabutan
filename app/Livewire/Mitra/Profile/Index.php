@@ -17,8 +17,12 @@ class Index extends Component
         // Get mitra statistics
         $totalHelped = Help::where('mitra_id', $user->id)->count();
         $completedHelps = Help::where('mitra_id', $user->id)->where('status', 'selesai')->count();
-        $averageRating = Rating::where('mitra_id', $user->id)->avg('rating') ?? 0;
-        $totalRatings = Rating::where('mitra_id', $user->id)->count();
+        $averageRating = Rating::where('ratee_id', $user->id)->where(function($q) {
+            $q->where('type', 'customer_to_mitra')->orWhereNull('type');
+        })->avg('rating') ?? 0;
+        $totalRatings = Rating::where('ratee_id', $user->id)->where(function($q) {
+            $q->where('type', 'customer_to_mitra')->orWhereNull('type');
+        })->count();
 
         return view('livewire.mitra.profile.index', [
             'user' => $user,

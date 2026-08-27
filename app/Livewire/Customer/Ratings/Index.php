@@ -21,11 +21,8 @@ class Index extends Component
         $userId = auth()->id();
 
         // Customer's given ratings to mitras
-        $baseQuery = Rating::with(['mitra', 'ratee', 'help'])
-            ->where(function ($q) use ($userId) {
-                $q->where('rater_id', $userId)
-                    ->orWhere('user_id', $userId);
-            })
+        $baseQuery = Rating::with(['ratee', 'help'])
+            ->where('rater_id', $userId)
             ->where(function ($q) {
                 $q->where('type', 'customer_to_mitra')
                     ->orWhereNull('type');

@@ -241,9 +241,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return back()->with('status', 'Password updated successfully!');
     })->name('profile.password.update');
 
-    // Account Deletion Requests
-    Route::post('/profile/account-deletion-request', [\App\Http\Controllers\AccountDeletionRequestController::class, 'requestDeletion'])->name('profile.deletion.request');
-    Route::post('/profile/account-deletion-cancel', [\App\Http\Controllers\AccountDeletionRequestController::class, 'cancelDeletion'])->name('profile.deletion.cancel');
 });
 
 // ========================================
@@ -252,7 +249,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->name('superadmin.')->group(function () {
     Route::get('/dashboard', \App\Livewire\SuperAdmin\Dashboard\Index::class)->name('dashboard');
     Route::get('/users', \App\Livewire\SuperAdmin\Users\Index::class)->name('users');
-    Route::get('/account-deletions', \App\Livewire\SuperAdmin\AccountDeletions\Index::class)->name('account.deletions');
     Route::get('/cities', \App\Livewire\SuperAdmin\Cities\Index::class)->name('cities');
     Route::get('/notifications', \App\Livewire\SuperAdmin\Notifications\Index::class)->name('notifications.index');
     Route::get('/activity-logs', \App\Livewire\SuperAdmin\ActivityLogs\Index::class)->name('activity.logs');

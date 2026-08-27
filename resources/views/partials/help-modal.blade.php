@@ -38,8 +38,6 @@
                         </svg>
                         <span id="help-modal-city">-</span>
                     </div>
-
-                    <div id="help-modal-category" class="ml-auto text-xs text-gray-500">-</div>
                 </div>
 
                 <div id="help-modal-location" class="text-xs text-gray-500">-</div>
@@ -135,8 +133,6 @@
                 // City
                 document.getElementById('help-modal-city').textContent = (help.city && help.city.name) ? help.city.name : '-';
 
-                // Category
-                document.getElementById('help-modal-category').textContent = (help.category && help.category.name) ? help.category.name : '';
 
                 // Location
                 document.getElementById('help-modal-location').textContent = help.location ? ('Lokasi: ' + help.location) : '';

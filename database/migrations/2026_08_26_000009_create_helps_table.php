@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('order_id')->nullable()->unique();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('mitra_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('category_id')->nullable()->constrained('categories')->nullOnDelete();
             $table->foreignId('city_id')->nullable()->constrained('cities')->nullOnDelete();
             $table->string('title');
             $table->text('description');

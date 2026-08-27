@@ -4,7 +4,6 @@ namespace App\Livewire\SuperAdmin\Dashboard;
 
 use App\Models\User;
 use App\Models\City;
-use App\Models\Category;
 use App\Models\Help;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
@@ -125,7 +124,6 @@ class Index extends Component
             'total_mitras' => User::where('role', 'mitra')->count(),
             'total_admins' => User::whereIn('role', ['admin', 'super_admin'])->count(),
             'total_cities' => City::count(),
-            'total_categories' => Category::count(),
             'pending_helps' => Help::whereIn('status', ['pending', 'menunggu_mitra'])->count(),
             'active_helps' => Help::whereIn('status', ['active', 'memperoleh_mitra', 'sedang_diproses', 'taken', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'waiting_customer_confirmation'])->count(),
             'completed_helps' => Help::whereIn('status', ['selesai', 'completed'])->count(),

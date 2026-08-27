@@ -25,14 +25,6 @@ return new class extends Migration
             $table->index('action');
         });
 
-        Schema::create('logs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('action');
-            $table->string('ip_address')->nullable();
-            $table->text('user_agent')->nullable();
-            $table->timestamps();
-        });
     }
 
     /**
@@ -40,7 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('logs');
         Schema::dropIfExists('activity_logs');
     }
 };
