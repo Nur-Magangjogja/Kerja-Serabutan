@@ -44,20 +44,16 @@ class LoginForm extends Form
         if (!Auth::attempt($credentials, $this->remember)) {
             RateLimiter::hit($this->throttleKey(), 60);
 
-            // Log failed login attempt for partner reporting (if user exists)
+            // Log failed login attempt for system activity log
             try {
                 $found = User::where('email', $loginInput)->orWhere('name', $loginInput)->first();
-                if ($found) {
-                    PartnerActivity::create([
-                        'user_id' => $found->id,
-                        'activity_type' => 'login_failed',
-                        'description' => 'Gagal login (kredensial salah)',
-                        'ip_address' => request()->ip(),
-                        'user_agent' => request()->header('User-Agent'),
-                    ]);
-                }
+                \App\Models\ActivityLog::record(
+                    $found,
+                    'login_failed',
+                    "Percobaan login gagal untuk akun: {$loginInput} (kredensial salah)"
+                );
             } catch (\Throwable $e) {
-                \Log::warning('Failed to record login_failed PartnerActivity: ' . $e->getMessage());
+                // ignore
             }
 
             throw ValidationException::withMessages([
@@ -101,20 +97,15 @@ class LoginForm extends Form
 
         RateLimiter::clear($this->throttleKey());
 
-        // Record successful login activity for mitra users
+        // Record successful login activity to system ActivityLog (all roles)
         try {
-            if ($user && $user->role === 'mitra') {
-                PartnerActivity::create([
-                    'user_id' => $user->id,
-                    'activity_type' => 'login',
-                    'description' => 'Login berhasil',
-                    'ip_address' => request()->ip(),
-                    'user_agent' => request()->header('User-Agent'),
-                ]);
-            }
+            \App\Models\ActivityLog::record(
+                $user,
+                'login',
+                "User {$user->name} ({$user->role}) berhasil login ke sistem"
+            );
         } catch (\Throwable $e) {
             // allow login to proceed even if activity logging fails
-            \Log::warning('Failed to record PartnerActivity on login: ' . $e->getMessage());
         }
     }
 

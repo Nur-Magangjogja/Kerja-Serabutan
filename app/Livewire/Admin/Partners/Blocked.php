@@ -30,15 +30,25 @@ class Blocked extends Component
         $newStatus = ($user->status === 'blocked') ? 'active' : 'blocked';
         $user->update(['status' => $newStatus]);
 
+        $actionText = ($newStatus === 'blocked') ? 'partner_blocked' : 'partner_unblocked';
+        $descText = ($newStatus === 'blocked')
+            ? "Admin " . (auth()->user()->name ?? 'Admin') . " memblokir akun {$user->name} ({$user->email})"
+            : "Admin " . (auth()->user()->name ?? 'Admin') . " membuka blokir akun {$user->name} ({$user->email})";
+
         PartnerActivity::create([
             'user_id' => $user->id,
-            'activity_type' => ($newStatus === 'blocked') ? 'partner_blocked' : 'partner_unblocked',
-            'description' => ($newStatus === 'blocked')
-                ? "Akun {$user->name} diblokir oleh Admin " . auth()->user()->name
-                : "Blokir akun {$user->name} dibuka oleh Admin " . auth()->user()->name,
+            'activity_type' => $actionText,
+            'description' => $descText,
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
         ]);
+
+        \App\Models\ActivityLog::record(
+            auth()->user(),
+            $actionText,
+            $descText,
+            ['target_user_id' => $user->id, 'role' => $user->role]
+        );
 
         session()->flash('success', ($newStatus === 'blocked')
             ? "Akun {$user->name} berhasil diblokir."

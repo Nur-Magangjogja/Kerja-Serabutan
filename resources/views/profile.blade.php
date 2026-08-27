@@ -170,13 +170,7 @@
                 ->count();
 
             // Total ulasan yang diberikan customer kepada mitra
-            $reviewsGivenCount = \App\Models\Rating::where(function ($q) use ($user) {
-                $q->where('rater_id', $user->id)
-                  ->orWhere(function ($q2) use ($user) {
-                      $q2->where('user_id', $user->id)
-                         ->where('type', 'customer_to_mitra');
-                  });
-            })->count();
+            $reviewsGivenCount = \App\Models\Rating::where('rater_id', $user->id)->count();
         @endphp
 
         <div class="max-w-md mx-auto">

@@ -55,11 +55,48 @@ class ActivityLog extends Model
     public function scopeDateRange($query, $from, $to)
     {
         if ($from) {
-            $query->where('created_at', '>=', $from);
+            $query->whereDate('created_at', '>=', $from);
         }
         if ($to) {
-            $query->where('created_at', '<=', $to);
+            $query->whereDate('created_at', '<=', $to);
         }
         return $query;
+    }
+
+    /**
+     * Record a system-wide activity log.
+     *
+     * @param mixed $user User model, user id, or null (fallback to auth)
+     * @param string $action Action key (e.g. login, topup_approval, ktp_verified)
+     * @param string|null $description Human readable description
+     * @param mixed $properties Additional json metadata/payload
+     * @param string|null $ip
+     * @param string|null $userAgent
+     * @return static|null
+     */
+    public static function record($user, string $action, ?string $description = null, $properties = null, ?string $ip = null, ?string $userAgent = null)
+    {
+        $userId = null;
+        if (is_object($user) && isset($user->id)) {
+            $userId = $user->id;
+        } elseif (is_numeric($user)) {
+            $userId = (int) $user;
+        } elseif (auth()->check()) {
+            $userId = auth()->id();
+        }
+
+        try {
+            return self::create([
+                'user_id'     => $userId,
+                'action'      => $action,
+                'description' => $description,
+                'properties'  => $properties,
+                'ip_address'  => $ip ?? (function_exists('request') && request() ? request()->ip() : null),
+                'user_agent'  => $userAgent ?? (function_exists('request') && request() ? request()->header('User-Agent') : null),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[ActivityLog::record] Failed: ' . $e->getMessage());
+            return null;
+        }
     }
 }

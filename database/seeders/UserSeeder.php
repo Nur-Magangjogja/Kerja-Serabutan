@@ -25,7 +25,7 @@ class UserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'superadmin@sayabantu.com'],
             [
-                'name'              => 'Bambang Pratama',
+                'name'              => 'Super Admin',
                 'password'          => Hash::make('password'),
                 'role'              => 'super_admin',
                 'nik'               => '3404011205850001',

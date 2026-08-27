@@ -28,10 +28,7 @@ class RateMitra extends Component
         }
 
         $this->userRating = Rating::where('help_id', $this->help->id)
-            ->where(function ($q) {
-                $q->where('rater_id', auth()->id())
-                  ->orWhere('user_id', auth()->id());
-            })
+            ->where('rater_id', auth()->id())
             ->first();
 
         $this->alreadyRated = (bool) $this->userRating;

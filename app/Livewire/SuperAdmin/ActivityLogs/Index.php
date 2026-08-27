@@ -5,7 +5,7 @@ namespace App\Livewire\SuperAdmin\ActivityLogs;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
-use App\Models\PartnerActivity;
+use App\Models\ActivityLog;
 use App\Models\User;
 
 #[Layout('layouts.superadmin')]
@@ -14,16 +14,23 @@ class Index extends Component
     use WithPagination;
 
     public $search = '';
-    public $roleFilter = 'all';
+    public $roleFilter = 'all'; // all, super_admin, admin, customer, mitra
     public $actionFilter = 'all';
     public $dateFrom = '';
     public $dateTo = '';
     public $perPage = 20;
 
+    // Modal Properties Detail
+    public $selectedLogId = null;
+    public $selectedLog = null;
+    public $showPropertiesModal = false;
+
     protected $queryString = [
-        'search' => ['except' => ''],
-        'roleFilter' => ['except' => 'all'],
+        'search'       => ['except' => ''],
+        'roleFilter'   => ['except' => 'all'],
         'actionFilter' => ['except' => 'all'],
+        'dateFrom'     => ['except' => ''],
+        'dateTo'       => ['except' => ''],
     ];
 
     public function updatingSearch()
@@ -57,19 +64,36 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function showProperties($logId)
+    {
+        $this->selectedLogId = $logId;
+        $this->selectedLog = ActivityLog::with('user')->find($logId);
+        $this->showPropertiesModal = true;
+    }
+
+    public function closePropertiesModal()
+    {
+        $this->showPropertiesModal = false;
+        $this->selectedLogId = null;
+        $this->selectedLog = null;
+    }
+
     public function render()
     {
-        $query = PartnerActivity::with('user')
+        $query = ActivityLog::with('user')
             ->orderBy('created_at', 'desc');
 
         // Search filter
         if ($this->search) {
-            $query->where(function ($q) {
-                $q->where('description', 'like', '%' . $this->search . '%')
-                  ->orWhere('action', 'like', '%' . $this->search . '%')
-                  ->orWhereHas('user', function ($userQuery) {
-                      $userQuery->where('name', 'like', '%' . $this->search . '%')
-                                ->orWhere('email', 'like', '%' . $this->search . '%');
+            $s = trim($this->search);
+            $query->where(function ($q) use ($s) {
+                $q->where('description', 'like', "%{$s}%")
+                  ->orWhere('action', 'like', "%{$s}%")
+                  ->orWhere('ip_address', 'like', "%{$s}%")
+                  ->orWhereHas('user', function ($userQuery) use ($s) {
+                      $userQuery->where('name', 'like', "%{$s}%")
+                                ->orWhere('email', 'like', "%{$s}%")
+                                ->orWhere('phone', 'like', "%{$s}%");
                   });
             });
         }
@@ -81,7 +105,7 @@ class Index extends Component
 
         // Action filter
         if ($this->actionFilter !== 'all') {
-            $query->where('activity_type', $this->actionFilter);
+            $query->where('action', $this->actionFilter);
         }
 
         // Date range filter
@@ -94,25 +118,25 @@ class Index extends Component
 
         $logs = $query->paginate($this->perPage);
 
-        // Get unique activity types for filter dropdown
-        $actions = PartnerActivity::select('activity_type')
+        // Get unique actions for filter dropdown
+        $actions = ActivityLog::select('action')
             ->distinct()
-            ->orderBy('activity_type')
-            ->pluck('activity_type');
+            ->orderBy('action')
+            ->pluck('action');
 
-        // Statistics
+        // Comprehensive system-wide statistics (Superadmin, Admin, Customer, Mitra)
         $stats = [
-            'total_logs' => PartnerActivity::count(),
-            'today_logs' => PartnerActivity::whereDate('created_at', today())->count(),
-            'admin_logs' => PartnerActivity::whereHas('user', function ($q) { $q->where('role', 'admin'); })->count(),
-            'customer_logs' => PartnerActivity::whereHas('user', function ($q) { $q->where('role', 'customer'); })->count(),
-            'mitra_logs' => PartnerActivity::whereHas('user', function ($q) { $q->where('role', 'mitra'); })->count(),
+            'total_logs'    => ActivityLog::count(),
+            'today_logs'    => ActivityLog::whereDate('created_at', today())->count(),
+            'admin_logs'    => ActivityLog::whereHas('user', fn($q) => $q->whereIn('role', ['admin', 'super_admin']))->count(),
+            'customer_logs' => ActivityLog::whereHas('user', fn($q) => $q->where('role', 'customer'))->count(),
+            'mitra_logs'    => ActivityLog::whereHas('user', fn($q) => $q->where('role', 'mitra'))->count(),
         ];
 
         return view('livewire.superadmin.activity-logs.index', [
-            'logs' => $logs,
+            'logs'    => $logs,
             'actions' => $actions,
-            'stats' => $stats,
+            'stats'   => $stats,
         ]);
     }
 }

@@ -482,7 +482,7 @@ class Index extends Component
             ->with([
                 'city',
                 'mitra',
-                'rating' => fn($q) => $q->where('user_id', $user->id),
+                'rating' => fn($q) => $q->where('rater_id', $user->id),
             ])
             ->withCount('chatMessages');
 

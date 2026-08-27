@@ -106,34 +106,21 @@ class Index extends Component
             // do not block admin action if user update fails
         }
 
+        // Catat ke log aktivitas sistem
+        \App\Models\ActivityLog::record(
+            auth()->user(),
+            'ktp_verified',
+            "Admin " . (auth()->user()->name ?? 'Admin') . " menyetujui verifikasi KTP untuk pendaftar {$reg->name} ({$reg->email})",
+            ['registration_id' => $reg->id, 'email' => $reg->email]
+        );
+
         session()->flash('message', 'Registrasi berhasil disetujui.');
         $this->closeModal();
     }
 
     public function rejectKtp($id)
     {
-        $reg = Registration::find($id);
-        if (!$reg) {
-            session()->flash('message', 'Registrasi tidak ditemukan');
-            return;
-        }
-        $reg->update(['status' => 'rejected']);
-
-        try {
-            if (!empty($reg->email)) {
-                $user = User::where('email', $reg->email)->first();
-                if ($user) {
-                    $user->verified = false;
-                    $user->status = 'inactive';
-                    $user->save();
-                }
-            }
-        } catch (\Exception $e) {
-            // ignore
-        }
-
-        session()->flash('message', 'Registrasi ditolak.');
-        $this->closeModal();
+        $this->openRejectModal($id);
     }
 
     public function confirmReject()
@@ -172,6 +159,14 @@ class Index extends Component
         } catch (\Exception $e) {
             // ignore
         }
+
+        // Catat ke log aktivitas sistem
+        \App\Models\ActivityLog::record(
+            auth()->user(),
+            'ktp_rejected',
+            "Admin " . (auth()->user()->name ?? 'Admin') . " menolak verifikasi KTP untuk {$reg->name} ({$reg->email}). Alasan: " . ($this->rejectReason ?: 'Tidak ada keterangan'),
+            ['registration_id' => $reg->id, 'email' => $reg->email, 'reason' => $this->rejectReason]
+        );
 
         session()->flash('message', 'Registrasi ditolak. Alasan penolakan disimpan.');
         $this->cancelReject();
