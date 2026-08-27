@@ -4,6 +4,7 @@ namespace App\Livewire\Mitra\Withdraw;
 
 use App\Models\AppSetting;
 use App\Models\BalanceTransaction;
+use App\Models\UserBalance;
 use App\Models\WithdrawRequest;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -16,42 +17,70 @@ class WithdrawForm extends Component
     public $accountName = '';
     public $notes = '';
 
+    public function mount()
+    {
+        $banks = collect(AppSetting::getWithdrawBanks())->filter(fn($b) => ($b['is_active'] ?? true) !== false);
+        if ($banks->isNotEmpty() && !$banks->contains('code', $this->bankCode)) {
+            $this->bankCode = $banks->first()['code'] ?? 'BCA';
+        }
+    }
+
     public function submit()
     {
         $user = auth()->user();
-        $balance = (float) ($user->balance?->balance ?? 0);
-        $minAmount = (float) (AppSetting::where('key', 'withdraw_min_amount')->value('value') ?? 10000);
-        $adminFee = (float) (AppSetting::where('key', 'withdraw_admin_fee')->value('value') ?? 2500);
+        $balance = (float) ($user->balance ?? 0);
+        $minAmount = (float) AppSetting::getWithdrawMinAmount();
 
         $this->validate([
-            'amount' => ['required', 'numeric', 'min:' . $minAmount, 'max:' . $balance],
+            'amount' => [
+                'required',
+                'numeric',
+                'min:' . $minAmount,
+                'max:' . $balance,
+                function ($attribute, $value, $fail) {
+                    if ((int) $value % 100 !== 0) {
+                        $fail('Nominal pencairan harus berupa kelipatan 100 atau 1.000 rupiah (contoh: 10.000, 25.000, 50.000).');
+                    }
+                },
+            ],
             'bankCode' => ['required', 'string'],
             'accountNumber' => ['required', 'string', 'min:5', 'max:30'],
             'accountName' => ['required', 'string', 'min:3', 'max:100'],
         ], [
+            'amount.required' => 'Nominal penarikan wajib diisi.',
+            'amount.numeric' => 'Nominal harus berupa angka.',
             'amount.min' => 'Jumlah penarikan minimal Rp ' . number_format($minAmount, 0, ',', '.'),
             'amount.max' => 'Saldo dompet Anda tidak mencukupi (Saldo: Rp ' . number_format($balance, 0, ',', '.') . ')',
-            'accountNumber.required' => 'Nomor rekening wajib diisi.',
+            'bankCode.required' => 'Silakan pilih bank atau e-wallet tujuan.',
+            'accountNumber.required' => 'Nomor rekening atau nomor HP e-wallet wajib diisi.',
             'accountName.required' => 'Nama pemilik rekening wajib diisi.',
         ]);
 
+        if ($user->hasPendingOrProcessingWithdraws()) {
+            $this->addError('amount', 'Anda masih memiliki permintaan pencairan dana yang sedang diproses. Mohon tunggu hingga proses selesai.');
+            return;
+        }
+
         $amountVal = (float) $this->amount;
-        $netAmount = max(0, $amountVal - $adminFee);
+        $feeCalc = AppSetting::calculateWithdrawFee($this->bankCode, (int) $amountVal);
+        $adminFee = (float) $feeCalc['fee'];
+        $netAmount = (float) $feeCalc['net_amount'];
 
         DB::transaction(function () use ($user, $amountVal, $adminFee, $netAmount) {
-            // Deduct balance
-            $user->balance->decrement('balance', $amountVal);
+            // Deduct balance from UserBalance record
+            $userBalance = UserBalance::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
+            $userBalance->decrement('balance', $amountVal);
 
             $withdraw = WithdrawRequest::create([
                 'user_id' => $user->id,
                 'amount' => $amountVal,
                 'admin_fee' => $adminFee,
                 'net_amount' => $netAmount,
-                'bank_code' => $this->bankCode,
+                'bank_code' => strtoupper($this->bankCode),
                 'account_number' => $this->accountNumber,
                 'account_name' => $this->accountName,
                 'status' => 'pending',
-                'description' => $this->notes,
+                'description' => $this->notes ?: ('A/N: ' . $this->accountName),
             ]);
 
             BalanceTransaction::create([
@@ -74,17 +103,22 @@ class WithdrawForm extends Component
     public function render()
     {
         $user = auth()->user();
-        $balance = (float) ($user->balance?->balance ?? 0);
-        $minAmount = (float) (AppSetting::where('key', 'withdraw_min_amount')->value('value') ?? 10000);
-        $adminFee = (float) (AppSetting::where('key', 'withdraw_admin_fee')->value('value') ?? 2500);
+        $balance = (float) ($user->balance ?? 0);
+        $banks = collect(AppSetting::getWithdrawBanks())->filter(fn($b) => ($b['is_active'] ?? true) !== false)->values();
+        $minAmount = (float) AppSetting::getWithdrawMinAmount();
         $amountVal = (float) ($this->amount ?: 0);
-        $netAmount = max(0, $amountVal - $adminFee);
+        $feeCalc = AppSetting::calculateWithdrawFee($this->bankCode ?: 'BCA', (int) $amountVal);
+        $adminFee = (float) $feeCalc['fee'];
+        $netAmount = (float) $feeCalc['net_amount'];
 
         return view('livewire.mitra.withdraw.withdraw-form', [
             'balance' => $balance,
+            'banks' => $banks,
             'minAmount' => $minAmount,
             'adminFee' => $adminFee,
             'netAmount' => $netAmount,
+            'isPlatform' => $feeCalc['is_platform_account'],
+            'selectedBankName' => $feeCalc['bank_name'],
         ])->layout('layouts.app');
     }
 }

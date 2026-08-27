@@ -87,9 +87,17 @@
                             {{ $transaction->type === 'topup' ? '+' : '-' }} Rp
                             {{ number_format($transaction->amount, 0, ',', '.') }}
                         </div>
-                        <div
-                            class="text-xs px-2 py-1 rounded-full {{ $transaction->status === 'completed' ? 'bg-green-100 text-green-700' : ($transaction->status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700') }} mt-1">
-                            {{ ucfirst($transaction->status) }}
+                        @php
+                            $statusBadge = match($transaction->status) {
+                                'completed', 'approved', 'success' => ['bg' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300', 'label' => 'Berhasil'],
+                                'waiting_approval', 'pending' => ['bg' => 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300', 'label' => 'Pending'],
+                                'cancelled' => ['bg' => 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300', 'label' => 'Dibatalkan'],
+                                'rejected' => ['bg' => 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300', 'label' => 'Ditolak'],
+                                default => ['bg' => 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300', 'label' => ucfirst($transaction->status)],
+                            };
+                        @endphp
+                        <div class="text-xs px-2 py-0.5 rounded-full {{ $statusBadge['bg'] }} font-semibold mt-1 inline-block">
+                            {{ $statusBadge['label'] }}
                         </div>
                     </div>
                 </div>
@@ -97,7 +105,7 @@
         </div>
 
         <!-- View All Link -->
-        <a href="{{ route('balance.history') ?? '#' }}"
+        <a href="{{ \Illuminate\Support\Facades\Route::has('transactions.index') ? route('transactions.index') : '#' }}"
             class="block text-center text-primary-600 text-sm font-semibold mt-4 hover:text-primary-700">
             Lihat Semua Transaksi →
         </a>

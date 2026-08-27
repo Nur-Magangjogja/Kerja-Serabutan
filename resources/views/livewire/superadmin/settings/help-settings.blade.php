@@ -319,27 +319,6 @@
                             Nominal pajak / biaya layanan flat yang dibebankan kepada <strong>Customer saat membuat permintaan bantuan</strong>. Mitra menerima 100% nominal bantuan penuh tanpa potongan.
                         </p>
                     </div>
-
-                    <!-- Batas Waktu Pembatalan Otomatis -->
-                    <div class="lg:col-span-2 pt-4 border-t border-gray-100 dark:border-gray-700">
-                        <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Batas Waktu Pembatalan Otomatis Tanpa Rekan Jasa (Jam)</label>
-                        <div class="relative max-w-sm">
-                            <input type="number" wire:model="help_auto_cancel_hours" placeholder="24" min="1" max="168"
-                                class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all pr-14" />
-                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">Jam</span>
-                        </div>
-                        @error('help_auto_cancel_hours')
-                            <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs">
-                                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                </svg>
-                                {{ $message }}
-                            </div>
-                        @enderror
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            Jika dalam kurun waktu ini permintaan bantuan belum diambil oleh Rekan Jasa manapun, sistem akan secara otomatis membatalkan permintaan dan mengembalikan <strong>100% dana saldo</strong> ke akun Customer.
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>

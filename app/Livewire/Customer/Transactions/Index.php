@@ -65,6 +65,7 @@ class Index extends Component
             'reference_id' => $transaction->reference_id,
             'request_code' => $transaction->request_code,
             'proof_of_payment' => $transaction->proof_of_payment,
+            'rejection_reason' => $transaction->rejection_reason ?? $transaction->notes,
             'help_title' => $helpTitle,
             'created_at' => $transaction->created_at ? $transaction->created_at->format('d M Y • H:i') : '-',
             'created_at_human' => $transaction->created_at ? $transaction->created_at->diffForHumans() : '-',

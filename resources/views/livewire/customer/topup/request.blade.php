@@ -73,11 +73,11 @@
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">Rp</span>
                             <input type="number" wire:model.live="amount" wire:change="calculateFees"
-                                class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400 dark:placeholder-gray-500"
-                                placeholder="50000" min="10000" max="10000000">
+                                class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400 dark:placeholder-gray-500 font-semibold"
+                                placeholder="50000" min="100" max="10000000" step="100">
                         </div>
-                        @error('amount') <span class="text-xs text-red-600 dark:text-red-400 mt-1 block">{{ $message }}</span> @enderror
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Min: Rp 10.000 - Max: Rp 10.000.000</p>
+                        @error('amount') <span class="text-xs text-red-600 dark:text-red-400 mt-1 block font-medium">{{ $message }}</span> @enderror
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Minimal Rp. 10.000 - 10.000.000</p>
                     </div>
 
                     <!-- Quick Amount Buttons -->

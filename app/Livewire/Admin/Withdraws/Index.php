@@ -4,6 +4,7 @@ namespace App\Livewire\Admin\Withdraws;
 
 use App\Models\WithdrawRequest;
 use App\Models\BalanceTransaction;
+use App\Models\UserBalance;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -125,8 +126,9 @@ class Index extends Component
         $user = $withdraw->user;
 
         // Refund balance back to user
-        if ($user && $user->balance) {
-            $user->balance->increment('balance', $withdraw->amount);
+        if ($user) {
+            $userBalance = UserBalance::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
+            $userBalance->increment('balance', $withdraw->amount);
         }
 
         $withdraw->update([

@@ -47,17 +47,30 @@ class TopupRequest extends Component
     public $requestCode;
     public $transactionId;
 
-    protected $rules = [
-        'amount' => 'required|numeric|min:10000|max:10000000',
-        'customerName' => 'required|string|max:100',
-        'customerPhone' => 'required|numeric|digits_between:10,15',
-        'customerEmail' => 'nullable|email|max:100',
-        'customerNotes' => 'nullable|string|max:500',
-    ];
+    protected function rules()
+    {
+        return [
+            'amount' => [
+                'required',
+                'numeric',
+                'min:100',
+                'max:10000000',
+                function ($attribute, $value, $fail) {
+                    if ((int) $value % 100 !== 0) {
+                        $fail('Nominal top-up harus berupa kelipatan Rp 100 (contoh: 100, 500, 10.000, 50.000).');
+                    }
+                },
+            ],
+            'customerName' => 'required|string|max:100',
+            'customerPhone' => 'required|numeric|digits_between:10,15',
+            'customerEmail' => 'nullable|email|max:100',
+            'customerNotes' => 'nullable|string|max:500',
+        ];
+    }
 
     protected $messages = [
         'amount.required' => 'Nominal harus diisi',
-        'amount.min' => 'Minimal top-up adalah Rp 10.000',
+        'amount.min' => 'Minimal top-up adalah Rp 100',
         'amount.max' => 'Maksimal top-up adalah Rp 10.000.000',
         'customerName.required' => 'Nama lengkap harus diisi',
         'customerPhone.required' => 'Nomor telepon harus diisi',

@@ -10,11 +10,44 @@ class WithdrawHistory extends Component
 {
     use WithPagination;
 
+    public $filterStatus = 'all'; // all, pending, completed, rejected
+    public $showProofModal = false;
+    public $selectedProofUrl = null;
+    public $selectedWithdrawId = null;
+
+    public function filterByStatus($status)
+    {
+        $this->filterStatus = $status;
+        $this->resetPage();
+    }
+
+    public function viewProof($id, $url)
+    {
+        $this->selectedWithdrawId = $id;
+        $this->selectedProofUrl = $url;
+        $this->showProofModal = true;
+    }
+
+    public function closeProofModal()
+    {
+        $this->showProofModal = false;
+        $this->selectedProofUrl = null;
+        $this->selectedWithdrawId = null;
+    }
+
     public function render()
     {
-        $withdraws = WithdrawRequest::where('user_id', auth()->id())
-            ->latest()
-            ->paginate(10);
+        $query = WithdrawRequest::where('user_id', auth()->id());
+
+        if ($this->filterStatus === 'pending') {
+            $query->where('status', 'pending');
+        } elseif ($this->filterStatus === 'completed') {
+            $query->whereIn('status', ['completed', 'success']);
+        } elseif ($this->filterStatus === 'rejected') {
+            $query->where('status', 'rejected');
+        }
+
+        $withdraws = $query->latest()->paginate(10);
 
         return view('livewire.mitra.withdraw.withdraw-history', [
             'withdraws' => $withdraws,

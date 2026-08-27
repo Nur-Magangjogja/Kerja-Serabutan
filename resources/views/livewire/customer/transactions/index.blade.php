@@ -77,6 +77,7 @@
                             $type = $t->type ?? 'deduction';
                             $isPending = in_array($t->status, ['waiting_approval', 'pending']);
                             $isCancelled = ($t->status === 'cancelled');
+                            $isRejected = ($t->status === 'rejected');
                             $isCredit = in_array($type, ['topup', 'refund', 'earning'], true);
 
                             $typeLabel = match($type) {
@@ -94,7 +95,7 @@
                                 <!-- Icon -->
                                 <div class="flex-shrink-0">
                                     @if($type === 'topup')
-                                        <div class="w-10 h-10 rounded-full flex items-center justify-center {{ $isPending ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400' : ($isCancelled ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400') }}">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center {{ $isPending ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400' : ($isCancelled ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400' : ($isRejected ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400')) }}">
                                             @if($isPending)
                                                 <svg class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -102,6 +103,10 @@
                                             @elseif($isCancelled)
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                </svg>
+                                            @elseif($isRejected)
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                                 </svg>
                                             @else
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,6 +156,10 @@
                                             <span class="px-2 py-0.5 bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 text-[10px] font-bold rounded-full border border-purple-200 dark:border-purple-800/50">
                                                 Dibatalkan
                                             </span>
+                                        @elseif($isRejected)
+                                            <span class="px-2 py-0.5 bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-[10px] font-bold rounded-full border border-rose-200 dark:border-rose-800/50">
+                                                Ditolak
+                                            </span>
                                         @elseif($type === 'refund')
                                             <span class="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold rounded-full border border-emerald-200 dark:border-emerald-800/50">
                                                 Dana Masuk
@@ -176,13 +185,15 @@
 
                                 <!-- Amount -->
                                 <div class="flex-shrink-0 text-right">
-                                    <div class="text-sm font-bold {{ $isCredit ? ($isPending ? 'text-amber-600 dark:text-amber-400' : ($isCancelled ? 'text-purple-600 dark:text-purple-400 line-through' : 'text-emerald-600 dark:text-emerald-400')) : 'text-rose-600 dark:text-rose-400' }}">
+                                    <div class="text-sm font-bold {{ $isCredit ? ($isPending ? 'text-amber-600 dark:text-amber-400' : ($isCancelled ? 'text-purple-600 dark:text-purple-400 line-through' : ($isRejected ? 'text-rose-600 dark:text-rose-400 line-through' : 'text-emerald-600 dark:text-emerald-400'))) : 'text-rose-600 dark:text-rose-400' }}">
                                         {{ $isCredit ? '+' : '-' }} Rp {{ number_format(abs($t->amount), 0, ',', '.') }}
                                     </div>
                                     @if($isPending)
                                         <p class="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Menunggu Verifikasi</p>
                                     @elseif($isCancelled)
                                         <p class="text-[10px] text-purple-600 dark:text-purple-400 font-medium">Dibatalkan</p>
+                                    @elseif($isRejected)
+                                        <p class="text-[10px] text-rose-600 dark:text-rose-400 font-bold">Ditolak Admin</p>
                                     @elseif($type === 'refund')
                                         <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Berhasil Dikembalikan</p>
                                     @endif
@@ -202,6 +213,13 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                     </svg>
                                     <span class="truncate">Top-up telah dibatalkan oleh Admin.</span>
+                                </div>
+                            @elseif($isRejected)
+                                <div class="mt-2.5 p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/60 rounded-xl flex items-center gap-2 text-xs text-rose-800 dark:text-rose-300">
+                                    <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                    <span class="truncate">{{ $t->rejection_reason ? 'Ditolak: ' . $t->rejection_reason : 'Top-up ditolak oleh Admin.' }}</span>
                                 </div>
                             @endif
                         </div>
@@ -230,6 +248,7 @@
         @php
             $isModalPending = in_array($selectedTransaction['status'] ?? '', ['waiting_approval', 'pending']);
             $isModalCancelled = (($selectedTransaction['status'] ?? '') === 'cancelled');
+            $isModalRejected = (($selectedTransaction['status'] ?? '') === 'rejected');
             $isModalCredit = $selectedTransaction['is_credit'] ?? false;
         @endphp
         <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-4" wire:click="closeTransaction">
@@ -246,7 +265,7 @@
                 <div class="pt-4">
                     <!-- Icon Big -->
                     <div class="flex justify-center mb-3">
-                        <div class="w-16 h-16 rounded-full flex items-center justify-center {{ $isModalCredit ? ($isModalPending ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400' : ($isModalCancelled ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400')) : 'bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400' }}">
+                        <div class="w-16 h-16 rounded-full flex items-center justify-center {{ $isModalCredit ? ($isModalPending ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400' : ($isModalCancelled ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400' : ($isModalRejected ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'))) : 'bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400' }}">
                             @if($selectedTransaction['type'] === 'refund')
                                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
@@ -259,6 +278,10 @@
                                 @elseif($isModalCancelled)
                                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                    </svg>
+                                @elseif($isModalRejected)
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 @else
                                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,7 +299,7 @@
                     <!-- Amount -->
                     <div class="text-center mb-4">
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Nominal</p>
-                        <p class="text-2xl font-bold {{ $isModalCredit ? ($isModalPending ? 'text-amber-600 dark:text-amber-400' : ($isModalCancelled ? 'text-purple-600 dark:text-purple-400 line-through' : 'text-emerald-600 dark:text-emerald-400')) : 'text-rose-600 dark:text-rose-400' }}">
+                        <p class="text-2xl font-bold {{ $isModalCredit ? ($isModalPending ? 'text-amber-600 dark:text-amber-400' : ($isModalCancelled ? 'text-purple-600 dark:text-purple-400 line-through' : ($isModalRejected ? 'text-rose-600 dark:text-rose-400 line-through' : 'text-emerald-600 dark:text-emerald-400'))) : 'text-rose-600 dark:text-rose-400' }}">
                             {{ $isModalCredit ? '+' : '-' }} Rp {{ number_format(abs($selectedTransaction['amount']), 0, ',', '.') }}
                         </p>
                         @if($isModalPending)
@@ -297,6 +320,16 @@
                                 <div>
                                     <p class="font-bold">Status: Dibatalkan (Admin / Fraud)</p>
                                     <p class="mt-0.5 text-purple-800/90 dark:text-purple-400/90">Persetujuan transaksi top-up ini telah dibatalkan oleh Admin karena bukti tidak valid atau fiktif. Saldo telah disesuaikan kembali.</p>
+                                </div>
+                            </div>
+                        @elseif($isModalRejected)
+                            <div class="mt-2.5 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl text-left text-xs text-rose-900 dark:text-rose-300 flex items-start gap-2.5">
+                                <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                <div>
+                                    <p class="font-bold">Status: Ditolak oleh Admin</p>
+                                    <p class="mt-0.5 text-rose-800/90 dark:text-rose-400/90">{{ $selectedTransaction['rejection_reason'] ?? 'Permintaan top-up ini ditolak oleh admin karena bukti transfer tidak valid atau belum masuk.' }}</p>
                                 </div>
                             </div>
                         @elseif($selectedTransaction['type'] === 'refund')
@@ -330,10 +363,10 @@
                                 </span>
                             @elseif($isModalCancelled)
                                 <span class="font-bold text-purple-600 dark:text-purple-400">Dibatalkan / Koreksi</span>
+                            @elseif($isModalRejected || ($selectedTransaction['status'] ?? '') === 'rejected')
+                                <span class="font-bold text-rose-600 dark:text-rose-400">Ditolak</span>
                             @elseif(in_array($selectedTransaction['status'] ?? '', ['approved', 'completed']))
                                 <span class="font-semibold text-emerald-600 dark:text-emerald-400">Berhasil</span>
-                            @elseif(($selectedTransaction['status'] ?? '') === 'rejected')
-                                <span class="font-semibold text-rose-600 dark:text-rose-400">Ditolak</span>
                             @else
                                 <span class="font-semibold text-gray-700 dark:text-gray-300">{{ ucfirst($selectedTransaction['status'] ?? 'Selesai') }}</span>
                             @endif
@@ -371,6 +404,13 @@
                             <div class="flex justify-between text-sm">
                                 <span class="text-gray-500 dark:text-gray-400">Keterangan</span>
                                 <span class="font-medium text-gray-900 dark:text-gray-100 text-right">{{ $selectedTransaction['description'] }}</span>
+                            </div>
+                        @endif
+
+                        @if(!empty($selectedTransaction['rejection_reason']))
+                            <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl p-3 text-xs">
+                                <span class="font-bold text-rose-800 dark:text-rose-300 block mb-1">Catatan Alasan Penolakan:</span>
+                                <p class="text-rose-700 dark:text-rose-400">{{ $selectedTransaction['rejection_reason'] }}</p>
                             </div>
                         @endif
 

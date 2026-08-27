@@ -18,7 +18,6 @@ class HelpSettings extends Component
 
     public $min_help_nominal;
     public $platform_service_fee = 2000;
-    public $help_auto_cancel_hours = 24;
     public $admin_fee; // legacy
 
     // QRIS Top-Up Settings (QRIS Tunggal)
@@ -33,7 +32,6 @@ class HelpSettings extends Component
         return [
             'min_help_nominal' => 'required|numeric|min:0',
             'platform_service_fee' => 'required|numeric|min:0',
-            'help_auto_cancel_hours' => 'required|integer|min:1|max:168',
             'admin_fee' => 'nullable|numeric|min:0',
             'qris_image' => 'nullable|image|max:3072|mimes:jpg,jpeg,png,webp',
             'qris_merchant_name' => 'required|string|max:150',
@@ -49,9 +47,6 @@ class HelpSettings extends Component
             'min_help_nominal.numeric' => 'Nominal minimal bantuan harus berupa angka.',
             'platform_service_fee.required' => 'Biaya layanan platform tidak boleh kosong.',
             'platform_service_fee.numeric' => 'Biaya layanan platform harus berupa angka.',
-            'help_auto_cancel_hours.required' => 'Batas waktu pembatalan otomatis tidak boleh kosong.',
-            'help_auto_cancel_hours.integer' => 'Batas waktu harus berupa bilangan bulat (jam).',
-            'help_auto_cancel_hours.min' => 'Batas waktu minimal 1 jam.',
             'qris_image.image' => 'File QRIS harus berupa gambar.',
             'qris_image.max' => 'Ukuran gambar QRIS maksimal 3MB.',
             'qris_image.mimes' => 'Format gambar QRIS harus JPG, JPEG, PNG, atau WEBP.',
@@ -63,7 +58,6 @@ class HelpSettings extends Component
     {
         $this->min_help_nominal = (int) AppSetting::get('min_help_nominal', 10000);
         $this->platform_service_fee = (int) AppSetting::getPlatformServiceFee();
-        $this->help_auto_cancel_hours = AppSetting::getHelpAutoCancelHours();
         $this->admin_fee = (float) AppSetting::get('admin_fee', 0);
         
         // Load QRIS settings (tanpa default asset agar kosong jika belum diisi)
@@ -86,7 +80,6 @@ class HelpSettings extends Component
         AppSetting::set('min_help_nominal', (string) $this->min_help_nominal);
         AppSetting::set('platform_service_fee', (string) $this->platform_service_fee);
         AppSetting::set('platform_fixed_fee', (string) $this->platform_service_fee);
-        AppSetting::set('help_auto_cancel_hours', (string) $this->help_auto_cancel_hours);
         AppSetting::set('platform_fee_type', 'fixed');
         AppSetting::set('platform_commission_rate', '0');
         if ($this->admin_fee !== null) {
