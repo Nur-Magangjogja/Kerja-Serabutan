@@ -143,7 +143,10 @@ class Create extends Component
         ]);
 
         session()->flash('message', 'Laporan aduan berhasil dikirim. Admin akan meninjau laporan Anda.');
-        return redirect()->route('mitra.reports.show', ['report' => $report->id]);
+        if ($this->reported_help_id) {
+            return redirect()->route('mitra.helps.detail', ['id' => $this->reported_help_id]);
+        }
+        return redirect()->route('mitra.dashboard');
     }
 
     public function render()

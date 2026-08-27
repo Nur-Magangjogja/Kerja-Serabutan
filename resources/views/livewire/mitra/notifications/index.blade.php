@@ -157,8 +157,15 @@
                                             <span>Hapus</span>
                                         </button>
 
-                                        <!-- Help Detail Link -->
-                                        @if(isset($data['help_id']))
+                                        {{-- Action Links (Lihat Bantuan hanya untuk tugas yang sudah aktif/diambil, bukan bantuan baru tersedia) --}}
+                                        @if($type === 'chat_message')
+                                            <a href="{{ route('mitra.chat', ['help' => $data['help_id'] ?? null]) }}" class="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                                                <span>Buka Chat</span>
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                                </svg>
+                                            </a>
+                                        @elseif(isset($data['help_id']) && !in_array($type, ['new_help_available', 'help_request']))
                                             <a href="{{ route('mitra.helps.detail', $data['help_id']) }}" class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400">
                                                 <span>Lihat Bantuan</span>
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

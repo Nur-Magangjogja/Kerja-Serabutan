@@ -151,7 +151,7 @@
                                 <p class="text-xs text-gray-500">{{ $rep?->email ?? '-' }}</p>
                             </div>
                             <span class="text-xs font-extrabold text-blue-600 bg-blue-100 dark:bg-blue-900/60 px-2 py-0.5 rounded-md">
-                                Saldo: Rp {{ number_format($rep?->balance?->balance ?? 0, 0, ',', '.') }}
+                                Saldo: Rp {{ number_format($rep?->balance ?? 0, 0, ',', '.') }}
                             </span>
                         </div>
 
@@ -196,7 +196,7 @@
                                 <p class="text-xs text-gray-500">{{ $mitra?->email ?? '-' }}</p>
                             </div>
                             <span class="text-xs font-extrabold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-md">
-                                Saldo: Rp {{ number_format($mitra?->balance?->balance ?? 0, 0, ',', '.') }}
+                                Saldo: Rp {{ number_format($mitra?->balance ?? 0, 0, ',', '.') }}
                             </span>
                         </div>
 

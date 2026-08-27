@@ -161,7 +161,7 @@ class Create extends Component
 
         // Tentukan apakah laporan ini merupakan pengajuan refund
         $isRefund = $this->is_refund_request || in_array($this->report_type, ['klaim_refund_pekerjaan_fiktif', 'mitra_tidak_selesai']);
-        $refundAmount = null;
+        $refundAmount = 0;
         if ($isRefund && $help) {
             $refundAmount = (float) ($help->total_amount > 0 ? $help->total_amount : $help->amount);
         }
@@ -183,7 +183,10 @@ class Create extends Component
         ]);
 
         session()->flash('message', 'Laporan aduan dan klaim Anda berhasil dikirim! Tim manajemen admin akan segera meninjau transaksi dan bukti laporan.');
-        return redirect()->route('customer.helps.detail', ['id' => $this->help_id ?: 1]);
+        if ($this->help_id) {
+            return redirect()->route('customer.helps.detail', ['id' => $this->help_id]);
+        }
+        return redirect()->route('customer.helps.history');
     }
 
     public function render()

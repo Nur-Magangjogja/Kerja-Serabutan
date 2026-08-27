@@ -25,10 +25,10 @@ class Show extends Component
     public function mount(PartnerReport $report)
     {
         $this->report = $report->load([
-            'reporter',
-            'reportedUser',
-            'reportedHelp.user',
-            'reportedHelp.mitra',
+            'reporter.userBalance',
+            'reportedUser.userBalance',
+            'reportedHelp.user.userBalance',
+            'reportedHelp.mitra.userBalance',
             'reportedHelp.city',
             'resolvedBy',
             'refundProcessedBy',
