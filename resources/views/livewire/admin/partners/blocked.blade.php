@@ -11,15 +11,29 @@
         </div>
     @endif
 
+    @if(session('error'))
+        <div class="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-2xl text-xs flex items-center gap-3 shadow-xs">
+            <svg class="w-5 h-5 text-rose-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+            <span class="font-semibold">{{ session('error') }}</span>
+        </div>
+    @endif
+
     {{-- ===== Page Header ===== --}}
     <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
             <h1 class="text-xl font-bold text-gray-900 dark:text-white">Daftar Akun Diblokir</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola dan buka akses blokir akun mitra dan customer secara real-time</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola, blokir pengguna bermasalah, dan buka akses blokir akun mitra & customer</p>
         </div>
-        <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 px-3 py-1.5 rounded-lg">
-            Total {{ number_format($blockedUsers->total()) }} Akun Diblokir
-        </span>
+        <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 px-3 py-2 rounded-xl">
+                Total {{ number_format($blockedUsers->total()) }} Akun Diblokir
+            </span>
+            <button type="button" wire:click="openBlockModal"
+                class="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                <span>➕ Blokir Pengguna (Mitra / Customer)</span>
+            </button>
+        </div>
     </div>
 
     {{-- ===== Realtime Filter Toolbar ===== --}}
@@ -57,7 +71,7 @@
                 </div>
                 <h3 class="text-sm font-bold text-gray-900 dark:text-white">Tidak Ada Akun Diblokir</h3>
                 <p class="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
-                    Saat ini tidak ada user yang berstatus diblokir permanen.
+                    Saat ini tidak ada user yang berstatus diblokir permanen. Anda dapat memblokir akun yang melanggar aturan melalui tombol di atas.
                 </p>
             </div>
         @else
@@ -96,7 +110,7 @@
 
                                 <td class="px-4 py-3.5 whitespace-nowrap">
                                     <p class="text-xs text-gray-800 dark:text-gray-200">{{ $user->phone ?: '-' }}</p>
-                                    <span class="text-[10px] text-gray-400">{{ $user->city?->name ?: '-' }}</span>
+                                    <span class="text-[10px] text-gray-400">{{ $user->city_name ?: '-' }}</span>
                                 </td>
 
                                 <td class="px-4 py-3.5 whitespace-nowrap">
@@ -126,4 +140,129 @@
             </div>
         @endif
     </div>
+
+    {{-- ===== Modal Blokir Pengguna (Mitra & Customer) ===== --}}
+    @if($showBlockModal)
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" wire:click.self="closeBlockModal">
+        <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-150">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-extrabold text-gray-900 dark:text-white">Blokir Pengguna (Mitra / Customer)</h2>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Pilih akun aktif yang akan dinonaktifkan aksesnya</p>
+                    </div>
+                </div>
+                <button wire:click="closeBlockModal" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center transition cursor-pointer">
+                    ✕
+                </button>
+            </div>
+
+            <div class="p-6 max-h-[80vh] overflow-y-auto space-y-4">
+                {{-- Filter Peran Target --}}
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Pilih Kategori Peran Pengguna</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" wire:click="$set('targetRole', 'all')"
+                            class="py-2 px-3 text-xs font-bold rounded-xl border transition cursor-pointer {{ $targetRole === 'all' ? 'bg-primary-50 dark:bg-primary-950/50 border-primary-500 text-primary-700 dark:text-primary-300' : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100' }}">
+                            Semua
+                        </button>
+                        <button type="button" wire:click="$set('targetRole', 'mitra')"
+                            class="py-2 px-3 text-xs font-bold rounded-xl border transition cursor-pointer {{ $targetRole === 'mitra' ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 text-emerald-700 dark:text-emerald-300' : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100' }}">
+                            🛵 Mitra Saja
+                        </button>
+                        <button type="button" wire:click="$set('targetRole', 'customer')"
+                            class="py-2 px-3 text-xs font-bold rounded-xl border transition cursor-pointer {{ $targetRole === 'customer' ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-500 text-blue-700 dark:text-blue-300' : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100' }}">
+                            👤 Customer Saja
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Input Pencarian User --}}
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Cari Akun yang Ingin Diblokir</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                        <input type="text" wire:model.live.debounce.250ms="userSearch"
+                            placeholder="Ketik nama, email, atau nomor HP pengguna..."
+                            class="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-rose-500">
+                    </div>
+                </div>
+
+                {{-- Hasil Daftar Pengguna Aktif --}}
+                <div class="space-y-1.5 max-h-48 overflow-y-auto border border-gray-100 dark:border-gray-700 rounded-2xl p-2 bg-gray-50/50 dark:bg-gray-900/40">
+                    @if($availableUsers->isEmpty())
+                        <div class="py-6 text-center text-xs text-gray-400">
+                            Tidak ditemukan akun aktif yang sesuai pencarian.
+                        </div>
+                    @else
+                        @foreach($availableUsers as $u)
+                            <div wire:click="selectUserForBlock({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ $u->role }}', '{{ addslashes($u->email) }}')"
+                                class="p-2.5 rounded-xl cursor-pointer transition flex items-center justify-between gap-3 {{ $selectedUserId === $u->id ? 'bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800' : 'bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700/60 border border-transparent' }}">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center font-bold text-gray-700 dark:text-gray-200 text-xs shrink-0">
+                                        {{ strtoupper(substr($u->name, 0, 1)) }}
+                                    </div>
+                                    <div class="truncate">
+                                        <div class="flex items-center gap-1.5">
+                                            <p class="text-xs font-bold text-gray-900 dark:text-white truncate">{{ $u->name }}</p>
+                                            <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase {{ $u->role === 'mitra' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' }}">
+                                                {{ $u->role === 'mitra' ? 'Mitra' : 'Customer' }}
+                                            </span>
+                                        </div>
+                                        <p class="text-[10px] text-gray-400 truncate">{{ $u->email }} • {{ $u->city_name ?? 'Semua Kota' }}</p>
+                                    </div>
+                                </div>
+                                <div class="shrink-0">
+                                    @if($selectedUserId === $u->id)
+                                        <span class="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] font-bold">✓</span>
+                                    @else
+                                        <span class="text-[10px] font-bold text-gray-400 hover:text-rose-600">Pilih</span>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    @endif
+                </div>
+                @error('selectedUserId') <p class="text-rose-500 text-[11px] font-medium mt-1">{{ $message }}</p> @enderror
+
+                {{-- Info Pengguna Terpilih --}}
+                @if($selectedUserId)
+                    <div class="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-2xl flex items-center justify-between text-xs">
+                        <div>
+                            <span class="text-[10px] text-rose-500 font-bold block">Akun Terpilih untuk Diblokir:</span>
+                            <span class="font-black text-rose-900 dark:text-rose-200">{{ $selectedUserName }} ({{ ucfirst($selectedUserRole) }})</span>
+                            <span class="text-[11px] text-rose-700/80 dark:text-rose-300/80 block">{{ $selectedUserEmail }}</span>
+                        </div>
+                        <button type="button" wire:click="$set('selectedUserId', null)" class="text-xs text-rose-600 hover:underline font-bold">Ganti</button>
+                    </div>
+                @endif
+
+                {{-- Input Alasan Pemblokiran --}}
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Alasan Pemblokiran Akun <span class="text-rose-500">*</span></label>
+                    <textarea wire:model="blockReason" rows="3"
+                        placeholder="Contoh: Pelanggaran berat kode etik / indikasi akun fiktif / aduan penipuan dari pengguna lain..."
+                        class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-rose-500"></textarea>
+                    @error('blockReason') <p class="text-rose-500 text-[11px] font-medium mt-1">{{ $message }}</p> @enderror
+                </div>
+            </div>
+
+            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/30 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-3">
+                <button type="button" wire:click="closeBlockModal"
+                    class="px-4 py-2.5 text-xs font-bold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer">
+                    Batal
+                </button>
+                <button type="button" wire:click="submitBlockUser"
+                    class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-extrabold transition cursor-pointer shadow-xs flex items-center gap-1.5">
+                    <span>🚫 Konfirmasi Blokir Akun</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>
