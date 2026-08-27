@@ -167,6 +167,23 @@ class Create extends Component
             ]
         );
 
+        // Kirim notifikasi ke Admin regional terkait
+        try {
+            $cityId = auth()->user()->city_id;
+            $admins = \App\Models\User::where('role', 'admin')
+                ->when($cityId, fn($q) => $q->where('city_id', $cityId))
+                ->where('status', 'active')
+                ->get();
+            if ($admins->isEmpty()) {
+                $admins = \App\Models\User::where('role', 'admin')->where('status', 'active')->get();
+            }
+            foreach ($admins as $adm) {
+                $adm->notify(new \App\Notifications\NewReportNotification($report));
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[MitraReport] Gagal mengirim notifikasi ke admin: ' . $e->getMessage());
+        }
+
         session()->flash('message', 'Laporan aduan berhasil dikirim. Admin akan meninjau laporan Anda.');
         if ($this->reported_help_id) {
             return redirect()->route('mitra.helps.detail', ['id' => $this->reported_help_id]);

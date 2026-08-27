@@ -25,13 +25,29 @@ class Dropdown extends Component
             return;
         }
         
-        // Load all notifications (limit to 10 most recent)
-        $this->notifications = $user->notifications()
+        // Load only Top Up and Withdraw notifications for Super Admin Header
+        $query = $user->notifications()
+            ->where(function ($q) {
+                $q->whereIn('type', [
+                    \App\Notifications\NewTopupRequest::class,
+                    \App\Notifications\NewWithdrawNotification::class,
+                    'App\Notifications\NewTopupRequest',
+                    'App\Notifications\NewWithdrawNotification',
+                ])
+                ->orWhere('data->type', 'like', '%topup%')
+                ->orWhere('data->type', 'like', '%withdraw%')
+                ->orWhere('data->category', 'topup')
+                ->orWhere('data->category', 'withdraw');
+            });
+
+        $this->notifications = (clone $query)
             ->take(10)
             ->get();
         
-        // Get unread count
-        $this->unreadCount = $user->unreadNotifications()->count();
+        // Get unread count specifically for topup & withdraw
+        $this->unreadCount = (clone $query)
+            ->whereNull('read_at')
+            ->count();
     }
 
     public function markAsRead($notificationId)

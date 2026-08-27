@@ -306,23 +306,26 @@ class TopupRequest extends Component
 
     protected function notifyAdmins($transaction)
     {
-        // Get admin users based on customer's city
-        $customerCity = auth()->user()->city_id;
+        try {
+            $customerCity = auth()->user()->city_id;
 
-        $admins = User::where('role', 'admin')
-            ->where('city_id', $customerCity)
-            ->where('status', 'active')
-            ->get();
-
-        // If no city-specific admin, notify super admin
-        if ($admins->isEmpty()) {
-            $admins = User::where('role', 'superadmin')
+            $admins = User::where('role', 'admin')
+                ->when($customerCity, fn($q) => $q->where('city_id', $customerCity))
                 ->where('status', 'active')
                 ->get();
-        }
 
-        foreach ($admins as $admin) {
-            $admin->notify(new NewTopupRequest($transaction));
+            if ($admins->isEmpty()) {
+                $admins = User::where('role', 'admin')->where('status', 'active')->get();
+            }
+
+            $superAdmins = User::whereIn('role', ['superadmin', 'super_admin'])->where('status', 'active')->get();
+            $recipients = $admins->merge($superAdmins)->unique('id');
+
+            foreach ($recipients as $recipient) {
+                $recipient->notify(new NewTopupRequest($transaction));
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[TopupRequest] Gagal kirim notifikasi topup: ' . $e->getMessage());
         }
     }
 

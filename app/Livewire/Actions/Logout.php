@@ -12,10 +12,6 @@ class Logout
      */
     public function __invoke(): void
     {
-        if (Auth::check()) {
-            Auth::user()->notifications()->whereNotNull('read_at')->delete();
-        }
-
         Auth::guard('web')->logout();
 
         Session::invalidate();

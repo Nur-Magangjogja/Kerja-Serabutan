@@ -248,6 +248,23 @@ class Create extends Component
             ]
         );
 
+        // Kirim notifikasi ke Admin regional terkait
+        try {
+            $cityId = $help?->city_id ?? auth()->user()->city_id;
+            $admins = \App\Models\User::where('role', 'admin')
+                ->when($cityId, fn($q) => $q->where('city_id', $cityId))
+                ->where('status', 'active')
+                ->get();
+            if ($admins->isEmpty()) {
+                $admins = \App\Models\User::where('role', 'admin')->where('status', 'active')->get();
+            }
+            foreach ($admins as $adm) {
+                $adm->notify(new \App\Notifications\NewReportNotification($report));
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[CustomerReport] Gagal mengirim notifikasi ke admin: ' . $e->getMessage());
+        }
+
         session()->flash('message', 'Laporan aduan dan klaim Anda berhasil dikirim! Tim manajemen admin akan segera meninjau transaksi dan bukti laporan.');
         if ($this->help_id) {
             return redirect()->route('customer.helps.detail', ['id' => $this->help_id]);

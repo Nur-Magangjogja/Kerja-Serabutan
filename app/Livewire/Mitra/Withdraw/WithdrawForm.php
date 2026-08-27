@@ -94,6 +94,26 @@ class WithdrawForm extends Component
                 'status' => 'pending',
                 'description' => "Pencairan penghasilan mitra ke {$this->bankCode} ({$this->accountNumber} a.n {$this->accountName})",
             ]);
+
+            // Kirim notifikasi ke Admin regional & SuperAdmin
+            try {
+                $cityId = $user->city_id;
+                $admins = \App\Models\User::where('role', 'admin')
+                    ->when($cityId, fn($q) => $q->where('city_id', $cityId))
+                    ->where('status', 'active')
+                    ->get();
+                if ($admins->isEmpty()) {
+                    $admins = \App\Models\User::where('role', 'admin')->where('status', 'active')->get();
+                }
+                $superAdmins = \App\Models\User::whereIn('role', ['superadmin', 'super_admin'])->where('status', 'active')->get();
+                $recipients = $admins->merge($superAdmins)->unique('id');
+
+                foreach ($recipients as $recipient) {
+                    $recipient->notify(new \App\Notifications\NewWithdrawNotification($withdraw));
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('[MitraWithdraw] Gagal kirim notifikasi withdraw: ' . $e->getMessage());
+            }
         });
 
         session()->flash('success', 'Permintaan pencairan dana berhasil diajukan dan sedang diproses oleh admin.');

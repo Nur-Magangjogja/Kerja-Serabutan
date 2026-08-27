@@ -141,6 +141,23 @@ new #[Layout('layouts.guest')] class extends Component {
 
         event(new Registered($user));
 
+        // Kirim notifikasi ke Admin regional terkait untuk Verifikasi KTP
+        try {
+            $cityId = $user->city_id;
+            $admins = User::where('role', 'admin')
+                ->when($cityId, fn($q) => $q->where('city_id', $cityId))
+                ->where('status', 'active')
+                ->get();
+            if ($admins->isEmpty()) {
+                $admins = User::where('role', 'admin')->where('status', 'active')->get();
+            }
+            foreach ($admins as $adm) {
+                $adm->notify(new \App\Notifications\NewKtpVerificationNotification($user));
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[Registration] Gagal kirim notifikasi verifikasi KTP ke admin: ' . $e->getMessage());
+        }
+
         // Tandai registration menunggu verifikasi admin
         $registration->update([
             'status' => 'pending_verification',

@@ -323,52 +323,7 @@
                         </div>
 
                         <!-- Notifications -->
-                        <div x-data="{ open: false }" class="relative">
-                            <button @click.prevent="open = !open" class="p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600" aria-haspopup="true" :aria-expanded="open">
-                                <svg class="w-5 h-5 text-gray-600 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                                </svg>
-                                @php
-                                    $notes = collect($notifications ?? []);
-                                    $unread = $notes->where('read', false)->count();
-                                @endphp
-                                @if($unread)
-                                    <span class="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">{{ $unread }}</span>
-                                @endif
-                            </button>
-
-                            <div x-show="open" x-cloak class="origin-top-right absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden z-50">
-                                <div class="p-3 border-b border-gray-100 dark:border-gray-700 text-sm font-semibold text-gray-800 dark:text-gray-100">Notifikasi</div>
-                                <div class="max-h-64 overflow-auto">
-                                    @if($notes->isEmpty())
-                                        <div class="p-4 text-sm text-gray-500 dark:text-gray-400">Tidak ada notifikasi.</div>
-                                    @else
-                                        @foreach($notes->take(20) as $note)
-                                            <a href="{{ $note['link'] ?? '#' }}" class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                                                <div class="flex-shrink-0">
-                                                    <div class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300"> 
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1"/></svg>
-                                                    </div>
-                                                </div>
-                                                <div class="flex-1">
-                                                    <div class="text-sm text-gray-800 dark:text-gray-200">{{ $note['title'] ?? ($note['message'] ?? 'Notifikasi') }}</div>
-                                                    @if(!empty($note['time']))
-                                                        <div class="text-xs text-gray-400 dark:text-gray-400 mt-1">{{ $note['time'] }}</div>
-                                                    @endif
-                                                </div>
-                                            </a>
-                                        @endforeach
-                                    @endif
-                                </div>
-                                <div class="p-2 border-t border-gray-100 dark:border-gray-700 text-center">
-                                    @if(Route::has('admin.notifications.index'))
-                                        <a href="{{ route('admin.notifications.index') }}" class="text-sm text-primary-600 dark:text-primary-400 hover:underline">Lihat semua</a>
-                                    @else
-                                        <a href="#" class="text-sm text-primary-600 dark:text-primary-400 hover:underline">Lihat semua</a>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
+                        <livewire:admin.notifications.dropdown />
 
                         <!-- User Profile -->
                         <div class="flex items-center gap-2 sm:gap-3">
