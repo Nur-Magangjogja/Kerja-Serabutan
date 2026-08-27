@@ -8,8 +8,8 @@
             'partner_started_moving' => ['label' => 'Mitra Menuju Lokasi', 'badge' => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800', 'icon' => '🛵'],
             'partner_on_the_way'     => ['label' => 'Mitra Menuju Lokasi', 'badge' => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800', 'icon' => '🛵'],
             'partner_arrived'        => ['label' => 'Mitra Tiba di Lokasi', 'badge' => 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800', 'icon' => '📍'],
-            'service_started'        => ['label' => 'Pekerjaan Dimulai', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', 'icon' => '⚡'],
-            'help_started'           => ['label' => 'Pekerjaan Dimulai', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', 'icon' => '⚡'],
+            'service_started'        => ['label' => 'Pelayanan Dalam Proses', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', 'icon' => '⚡'],
+            'help_started'           => ['label' => 'Pelayanan Dalam Proses', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', 'icon' => '⚡'],
             'service_completed'      => ['label' => 'Pekerjaan Selesai & Kirim Bukti', 'badge' => 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700', 'icon' => '📸'],
             'help_completed'         => ['label' => 'Pekerjaan Selesai & Kirim Bukti', 'badge' => 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700', 'icon' => '📸'],
             'confirm_completion'     => ['label' => 'Customer Konfirmasi Selesai', 'badge' => 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700', 'icon' => '✅'],
@@ -19,8 +19,6 @@
             'request_partner_cancel' => ['label' => 'Pengajuan Batal oleh Mitra', 'badge' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800', 'icon' => '⚠️'],
             'auto_complete'          => ['label' => 'Auto-Konfirmasi Selesai', 'badge' => 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800', 'icon' => '🤖'],
             'help_reviewed'          => ['label' => 'Ulasan & Rating Diberikan', 'badge' => 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800', 'icon' => '⭐'],
-            'login'                  => ['label' => 'Login Berhasil', 'badge' => 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300', 'icon' => '🔑'],
-            'profile_updated'        => ['label' => 'Profil Diperbarui', 'badge' => 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300', 'icon' => '👤'],
         ];
 
         $formatActivity = function ($type) use ($activityMeta) {
@@ -139,18 +137,6 @@
                 </select>
             </div>
 
-            {{-- Filter Tipe Aktivitas Pekerjaan --}}
-            <div>
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Tipe Aksi Pekerjaan</label>
-                <select wire:model.live="activityType"
-                    class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option value="all">Semua Aksi Pekerjaan</option>
-                    @foreach($activityMeta as $key => $meta)
-                        <option value="{{ $key }}">{{ $meta['icon'] }} {{ $meta['label'] }}</option>
-                    @endforeach
-                </select>
-            </div>
-
             {{-- Filter Kota --}}
             <div>
                 <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Kota / Wilayah</label>
@@ -206,7 +192,7 @@
                             <th class="px-4 py-3">Aksi Pekerjaan</th>
                             <th class="px-4 py-3">Tugas Jasa Bantuan</th>
                             <th class="px-4 py-3">Keterangan & Bukti</th>
-                            <th class="px-4 py-3 text-right">Detail & Aksi</th>
+                            <th class="px-4 py-3 text-right">Detail</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700 text-gray-700 dark:text-gray-200">
@@ -305,31 +291,18 @@
                                     @endif
                                 </td>
 
-                                {{-- Detail & Aksi Akun --}}
+                                {{-- Detail Bantuan --}}
                                 <td class="px-4 py-3.5 text-right whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-1.5">
-                                        @if($help)
-                                            <button type="button" wire:click="showHelpDetails({{ $help->id }})"
-                                                class="px-2.5 py-1 bg-primary-50 hover:bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 rounded-lg text-[11px] font-semibold transition cursor-pointer flex items-center gap-1"
-                                                title="Lihat Detail Bantuan">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                                <span>Detail Bantuan</span>
-                                            </button>
-                                        @endif
-
-                                        @if($u)
-                                            <button type="button" wire:click="resetSession({{ $u->id }})" wire:confirm="Reset seluruh sesi aktif untuk {{ $u->name }}?"
-                                                class="px-2 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-[10px] font-semibold transition cursor-pointer"
-                                                title="Reset Sesi Login Pengguna">
-                                                Sesi
-                                            </button>
-                                            <button type="button" wire:click="resetPassword({{ $u->id }})" wire:confirm="Reset password {{ $u->name }} ke default (password123)?"
-                                                class="px-2 py-1 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-lg text-[10px] font-semibold transition cursor-pointer"
-                                                title="Reset Sandi ke Default">
-                                                Sandi
-                                            </button>
-                                        @endif
-                                    </div>
+                                    @if($help)
+                                        <button type="button" wire:click="showHelpDetails({{ $help->id }})"
+                                            class="px-2.5 py-1 bg-primary-50 hover:bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 rounded-lg text-[11px] font-semibold transition cursor-pointer inline-flex items-center gap-1"
+                                            title="Lihat Detail Bantuan">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>Detail Bantuan</span>
+                                        </button>
+                                    @else
+                                        <span class="text-gray-400 text-xs">-</span>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach

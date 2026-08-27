@@ -193,6 +193,7 @@ class HelpTransactionService
         });
 
         $this->sendStatusNotification($help, Help::STATUS_IN_PROGRESS, $help->user, $mitra);
+        $this->sendServiceStartedChat($help, $mitra);
         $this->logActivity(
             $mitra->id,
             $help->id,
@@ -841,6 +842,30 @@ class HelpTransactionService
             $customer->notify(new ChatMessageNotification($help->id, $message, $mitra->id, $mitra->name));
         } catch (\Throwable $e) {
             Log::warning('[HelpTransactionService] Failed to send welcome chat: ' . $e->getMessage());
+        }
+    }
+
+    private function sendServiceStartedChat(Help $help, User $mitra): void
+    {
+        try {
+            $customer = $help->user ?? User::find($help->user_id);
+            if (!$customer || !$mitra) return;
+
+            $greeting = $customer->name ? "Halo Kak {$customer->name}" : "Halo Kak";
+            $message  = "{$greeting}, saya ({$mitra->name}) telah mulai mengerjakan permohonan bantuan Anda '{$help->title}'. Pelayanan saat ini dalam proses pengerjaan. Jika ada instruksi atau hal yang perlu dikoordinasikan, silakan infokan di chat ini ya!";
+
+            Chat::create([
+                'help_id'     => $help->id,
+                'mitra_id'    => $mitra->id,
+                'customer_id' => $customer->id,
+                'message'     => $message,
+                'sender_type' => 'mitra',
+                'read_at'     => null,
+            ]);
+
+            $customer->notify(new ChatMessageNotification($help->id, $message, $mitra->id, $mitra->name));
+        } catch (\Throwable $e) {
+            Log::warning('[HelpTransactionService] Failed to send service started chat: ' . $e->getMessage());
         }
     }
 

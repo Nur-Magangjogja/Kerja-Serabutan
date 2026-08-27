@@ -400,7 +400,7 @@ class Help extends Model
             'taken', 'memperoleh_mitra'   => 'Rekan Jasa Mengambil Pesanan',
             'partner_on_the_way'           => 'Rekan Jasa Menuju Lokasi',
             'partner_arrived'              => 'Rekan Jasa Tiba di Lokasi',
-            'in_progress', 'sedang_diproses' => 'Sedang Dikerjakan',
+            'in_progress', 'sedang_diproses' => 'Pelayanan Dalam Proses',
             'waiting_customer_confirmation'=> 'Menunggu Konfirmasi Anda',
             'selesai', 'completed'         => 'Selesai',
             'dibatalkan', 'cancelled'      => 'Dibatalkan',
@@ -481,7 +481,7 @@ class Help extends Model
             1 => 'Mencari Mitra',
             2 => 'Pesanan Diambil',
             3 => 'Menuju Lokasi',
-            4 => 'Sedang Dikerjakan',
+            4 => 'Pelayanan Dalam Proses',
             5 => 'Menunggu Konfirmasi',
             default => 'Diproses',
         };
