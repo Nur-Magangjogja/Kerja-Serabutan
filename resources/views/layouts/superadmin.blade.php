@@ -78,8 +78,25 @@
             // Execute immediately on page load
             window.applyTheme();
 
+            function scrollToActiveSidebarItem() {
+                requestAnimationFrame(function() {
+                    try {
+                        var nav = document.getElementById('superadmin-sidebar-nav') || document.querySelector('aside nav');
+                        if (!nav) return;
+                        var activeLink = nav.querySelector('a.bg-primary-600, a.text-white');
+                        if (activeLink) {
+                            activeLink.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+                        }
+                    } catch(e) {}
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', scrollToActiveSidebarItem);
             document.addEventListener('livewire:navigating', function() { if (window.applyTheme) window.applyTheme(); });
-            document.addEventListener('livewire:navigated', function() { if (window.applyTheme) window.applyTheme(); });
+            document.addEventListener('livewire:navigated', function() { 
+                if (window.applyTheme) window.applyTheme(); 
+                scrollToActiveSidebarItem();
+            });
         })();
     </script>
 
@@ -172,7 +189,7 @@
             </div>
 
             <!-- Scrollable Navigation -->
-            <nav class="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-1.5 custom-scrollbar min-h-0">
+            <nav id="superadmin-sidebar-nav" class="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-1.5 custom-scrollbar min-h-0">
                 <a href="{{ route('superadmin.dashboard') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.dashboard') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -223,20 +240,20 @@
                     <p class="px-4 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Moderasi & Laporan</p>
                 </div>
 
-                <a href="{{ route('superadmin.partners.report') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.partners.report*') || request()->routeIs('superadmin.partners.reports*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
-                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    Laporan Aduan
-                </a>
-
                 <a href="{{ route('superadmin.partners.activity') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.partners.activity*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                     Aktivitas Mitra & Customer
+                </a>
+
+                <a href="{{ route('superadmin.partners.report') }}" wire:navigate
+                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.partners.report*') || request()->routeIs('superadmin.partners.reports*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    Manajemen Laporan Aduan
                 </a>
 
                 <a href="{{ route('superadmin.partners.greylist') }}" wire:navigate
@@ -256,16 +273,8 @@
                 </a>
 
                 <div class="pt-4 pb-1">
-                    <p class="px-4 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Keuangan & Logs</p>
+                    <p class="px-4 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Manajemen Keuangan</p>
                 </div>
-
-                <a href="{{ route('superadmin.transactions.log') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.transactions.log') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
-                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    Financial Report
-                </a>
 
                 <a href="{{ route('superadmin.withdraws.index') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.withdraws.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
@@ -280,9 +289,21 @@
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Approval Top-Up
+                    Manajemen Top-Up
                 </a>
 
+                <div class="pt-4 pb-1">
+                    <p class="px-4 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Report & Logs</p>
+                </div>
+
+                <a href="{{ route('superadmin.transactions.log') }}" wire:navigate
+                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.transactions.log') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Financial Report
+                </a>
+                
                 <a href="{{ route('superadmin.activity.logs') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.activity.logs*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
