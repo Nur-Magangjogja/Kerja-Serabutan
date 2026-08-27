@@ -52,10 +52,6 @@
                                 </svg>
                                 <span>{{ $help->city->name ?? '-' }}</span>
                             </div>
-
-                            @if($help->category)
-                                <div class="ml-auto text-xs text-gray-500">{{ $help->category->name }}</div>
-                            @endif
                         </div>
 
                         @if($help->location)

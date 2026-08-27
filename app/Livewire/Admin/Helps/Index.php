@@ -62,7 +62,7 @@ class Index extends Component
     public function render()
     {
         $query = Help::query()
-            ->with(['customer', 'mitra', 'category', 'city'])
+            ->with(['customer', 'mitra', 'city'])
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('title', 'like', '%' . $this->search . '%')
@@ -94,7 +94,7 @@ class Index extends Component
         $pendingHelps = (clone $statsQuery)->whereIn('status', ['pending', 'menunggu_mitra'])->count();
         $completedHelps = (clone $statsQuery)->whereIn('status', ['completed', 'selesai'])->count();
 
-        $selectedHelp = $this->selectedHelpId ? Help::with(['customer', 'mitra', 'category', 'city', 'rating'])->find($this->selectedHelpId) : null;
+        $selectedHelp = $this->selectedHelpId ? Help::with(['customer', 'mitra', 'city', 'rating'])->find($this->selectedHelpId) : null;
         $helpActivities = $this->selectedHelpId ? \App\Models\PartnerActivity::with('user')->where('help_id', $this->selectedHelpId)->orderBy('created_at', 'asc')->get() : collect();
 
         return view('livewire.admin.helps.index', compact('helps', 'totalHelps', 'pendingHelps', 'completedHelps', 'selectedHelp', 'helpActivities'));

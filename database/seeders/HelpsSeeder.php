@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Category;
 use App\Models\City;
 use App\Models\Help;
 use App\Models\User;
@@ -36,15 +35,11 @@ class HelpsSeeder extends Seeder
             return;
         }
 
-        // Daftar kategori
-        $categories = Category::pluck('id', 'name')->toArray();
-
         $helpsData = [
             [
                 'title'         => 'Bantu Pindahan & Angkat Barang Kos Dekat Kampus UNY/UGM',
                 'description'   => 'Butuh bantuan 1 orang untuk membantu angkut kasur busa, 2 kardus buku, kipas angin, dan meja lipat dari kos lama ke kos baru berjarak 800 meter. Kos lama di lantai 2. Waktu fleksibel siang ini.',
                 'amount'        => 80000,
-                'category_name' => 'Angkut & Pindahan Kost',
                 'location'      => 'Caturtunggal, Kec. Depok, Sleman',
                 'full_address'  => 'Jl. Karangmalang Blok A No. 14, Caturtunggal, Kec. Depok, Kabupaten Sleman, D.I. Yogyakarta 55281',
                 'latitude'      => -7.7712000,
@@ -58,7 +53,6 @@ class HelpsSeeder extends Seeder
                 'title'         => 'Pembersihan Halaman Rumah & Potong Rumput Rimbun',
                 'description'   => 'Halaman depan dan samping rumah (luas sekitar 4x6 meter) rumputnya sudah cukup tinggi dan banyak daun kering. Butuh bantuan untuk memotong rumput, mencabuti ilalang, dan memasukkan sampah ke dalam karung.',
                 'amount'        => 75000,
-                'category_name' => 'Kebersihan & Taman',
                 'location'      => 'Sinduadi, Kec. Mlati, Sleman',
                 'full_address'  => 'Jl. Selokan Mataram No. 27, Pogung Dalangan, Sinduadi, Kec. Mlati, Kabupaten Sleman, D.I. Yogyakarta 55284',
                 'latitude'      => -7.7610000,
@@ -72,7 +66,6 @@ class HelpsSeeder extends Seeder
                 'title'         => 'Perbaikan Pompa Air Macet & Ganti Sambungan Pipa Paralon',
                 'description'   => 'Pompa air Shimizu di rumah berdengung tapi air tidak naik ke toren. Kemungkinan perlu dipancing atau sambungan pipa hisap bocor. Butuh mitra yang paham teknis pompa air ringan.',
                 'amount'        => 90000,
-                'category_name' => 'Pertukangan & Teknisi',
                 'location'      => 'Sardonoharjo, Kec. Ngaglik, Sleman',
                 'full_address'  => 'Jl. Kaliurang KM 10 No. 52, Gentan, Sardonoharjo, Kec. Ngaglik, Kabupaten Sleman, D.I. Yogyakarta 55581',
                 'latitude'      => -7.7085000,
@@ -86,7 +79,6 @@ class HelpsSeeder extends Seeder
                 'title'         => 'Bantu Rakit Meja Belajar & Lemari Pakaian Minimalis',
                 'description'   => 'Baru beli meja kerja dan lemari pakaian knock-down dari marketplace tapi kesulitan merakitnya sendiri. Buku panduan dan baut lengkap tersedia. Butuh bantuan merakit sampai selesai dan kokoh.',
                 'amount'        => 60000,
-                'category_name' => 'Rumah Tangga',
                 'location'      => 'Banyuraden, Kec. Gamping, Sleman',
                 'full_address'  => 'Jl. Ringroad Barat No. 108, Banyuraden, Kec. Gamping, Kabupaten Sleman, D.I. Yogyakarta 55293',
                 'latitude'      => -7.7942000,
@@ -100,7 +92,6 @@ class HelpsSeeder extends Seeder
                 'title'         => 'Antar Berkas Dokumen Mendesak ke Kantor Pemda Sleman',
                 'description'   => 'Butuh kurir lokal cepat untuk mengantarkan map dokumen penting dari daerah Caturtunggal langsung ke Kantor Dinas Kependudukan Pemda Sleman sebelum jam tutup kantor siang ini.',
                 'amount'        => 45000,
-                'category_name' => 'Antar Jemput & Kurir',
                 'location'      => 'Tridadi, Kec. Sleman, Sleman',
                 'full_address'  => 'Jl. Magelang KM 10, Beran Lor, Tridadi, Kec. Sleman, Kabupaten Sleman, D.I. Yogyakarta 55511',
                 'latitude'      => -7.6985000,
@@ -114,7 +105,6 @@ class HelpsSeeder extends Seeder
                 'title'         => 'Jasa Cuci & Kuras Tandon Air Rumah Tangga (1000 Liter)',
                 'description'   => 'Tandon air di atas dak rumah sudah berlumut karena 6 bulan belum dibersihkan. Butuh bantuan menguras dan menyikat bagian dalam tandon kapasitas 1000 liter. Tangga dan kran pembuangan tersedia.',
                 'amount'        => 100000,
-                'category_name' => 'Kebersihan & Taman',
                 'location'      => 'Purwomartani, Kec. Kalasan, Sleman',
                 'full_address'  => 'Jl. Candi Sambisari No. 18, Purwomartani, Kec. Kalasan, Kabupaten Sleman, D.I. Yogyakarta 55571',
                 'latitude'      => -7.7650000,
@@ -129,7 +119,6 @@ class HelpsSeeder extends Seeder
         $fixedPlatformFee = \App\Models\AppSetting::getPlatformServiceFee();
 
         foreach ($helpsData as $index => $data) {
-            $catId = $categories[$data['category_name']] ?? (array_values($categories)[0] ?? 1);
             $amount = (float) $data['amount'];
             $platformFee = $fixedPlatformFee;
             $mitraEarning = $amount; // Mitra menerima 100% penuh dari nilai bantuan
@@ -141,7 +130,6 @@ class HelpsSeeder extends Seeder
                 ],
                 [
                     'city_id'                  => $slemanCityId,
-                    'category_id'              => $catId,
                     'order_id'                 => sprintf('HELP-SLM-%03d', $index + 1),
                     'description'              => $data['description'],
                     'amount'                   => $amount,

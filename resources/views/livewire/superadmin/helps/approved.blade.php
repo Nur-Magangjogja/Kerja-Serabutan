@@ -21,7 +21,6 @@
                     <th class="px-3 py-2">Judul</th>
                     <th class="px-3 py-2">Customer</th>
                     <th class="px-3 py-2">Kota</th>
-                    <th class="px-3 py-2">Kategori</th>
                     <th class="px-3 py-2">Jumlah</th>
                     <th class="px-3 py-2">Tanggal</th>
                     <th class="px-3 py-2">Aksi</th>
@@ -34,7 +33,6 @@
                         <td class="px-3 py-2 font-medium text-gray-900 dark:text-white">{{ $help->title }}</td>
                         <td class="px-3 py-2">{{ $help->customer->name ?? '-' }}</td>
                         <td class="px-3 py-2">{{ $help->city->name ?? '-' }}</td>
-                        <td class="px-3 py-2">{{ $help->category->name ?? '-' }}</td>
                         <td class="px-3 py-2 font-semibold text-emerald-600">Rp {{ number_format($help->amount ?? 0,0,',','.') }}</td>
                         <td class="px-3 py-2 text-gray-500">{{ $help->created_at?->format('Y-m-d') }}</td>
                         <td class="px-3 py-2">
@@ -43,7 +41,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="px-3 py-6 text-center text-gray-500">Tidak ada bantuan disetujui.</td>
+                        <td colspan="7" class="px-3 py-6 text-center text-gray-500">Tidak ada bantuan disetujui.</td>
                     </tr>
                 @endforelse
             </tbody>

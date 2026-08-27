@@ -34,7 +34,6 @@
                         <th class="px-4 py-3">Judul</th>
                         <th class="px-4 py-3">Customer</th>
                         <th class="px-4 py-3 hidden md:table-cell">Kota</th>
-                        <th class="px-4 py-3 hidden sm:table-cell">Kategori</th>
                         <th class="px-4 py-3 text-right">Jumlah</th>
                         <th class="px-4 py-3 hidden lg:table-cell">Tanggal</th>
                         <th class="px-4 py-3 text-right">Aksi</th>
@@ -47,11 +46,6 @@
                             <td class="px-4 py-3.5 font-medium text-gray-900 dark:text-white">{{ $help->title }}</td>
                             <td class="px-4 py-3.5 text-gray-700 dark:text-gray-300">{{ $help->customer->name ?? '-' }}</td>
                             <td class="px-4 py-3.5 text-gray-600 dark:text-gray-300 hidden md:table-cell">{{ $help->city->name ?? '-' }}</td>
-                            <td class="px-4 py-3.5 hidden sm:table-cell">
-                                <span class="inline-block px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
-                                    {{ $help->category->name ?? '-' }}
-                                </span>
-                            </td>
                             <td class="px-4 py-3.5 font-bold text-gray-900 dark:text-white text-right whitespace-nowrap">
                                 Rp {{ number_format($help->amount ?? 0, 0, ',', '.') }}
                             </td>

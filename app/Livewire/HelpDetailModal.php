@@ -18,7 +18,7 @@ class HelpDetailModal extends Component
     public function openModal($id)
     {
         $this->helpId = $id;
-        $this->help = Help::with(['user', 'city', 'category', 'ratings'])->find($id);
+        $this->help = Help::with(['user', 'city', 'ratings'])->find($id);
 
         if ($this->help) {
             $this->open = true;

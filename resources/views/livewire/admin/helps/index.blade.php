@@ -118,11 +118,6 @@
                             <td class="px-4 py-3.5">
                                 <div class="font-semibold text-gray-900 dark:text-white">{{ $help->title }}</div>
                                 <div class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">{{ Str::limit($help->description, 50) }}</div>
-                                @if($help->category)
-                                    <span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
-                                        {{ $help->category->name }}
-                                    </span>
-                                @endif
                             </td>
                             <td class="px-4 py-3.5">
                                 <div class="font-medium text-gray-800 dark:text-gray-200">{{ $help->customer->name ?? $help->user->name ?? '-' }}</div>
