@@ -11,6 +11,7 @@ use Livewire\Volt\Component;
 new #[Layout('layouts.guest')] class extends Component {
     public string $nik = '';
     public string $full_name = '';
+    public string $phone = '';
     public string $place_of_birth = '';
     public string $date_of_birth = '';
     public string $gender = '';
@@ -48,6 +49,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 Session::put('registration_uuid', $uuid);
                 $this->nik = $registration->nik ?? $this->nik;
                 $this->full_name = $registration->full_name ?? $this->full_name;
+                $this->phone = $registration->phone ?? $this->phone;
                 $this->place_of_birth = $registration->place_of_birth ?? $this->place_of_birth;
                 $this->date_of_birth = $registration->date_of_birth ? $registration->date_of_birth->format('Y-m-d') : $this->date_of_birth;
                 $this->gender = $registration->gender ?? $this->gender;
@@ -59,6 +61,17 @@ new #[Layout('layouts.guest')] class extends Component {
                 $this->city = $registration->city ?? $this->city;
                 $this->city_id = $registration->city_id ? (int) $registration->city_id : null;
                 $this->province = $registration->province ?? $this->province;
+
+                if ($this->city) {
+                    $this->cityQuery = $this->city . ($this->province ? " — {$this->province}" : '');
+                } elseif ($this->city_id) {
+                    $c = City::find($this->city_id);
+                    if ($c) {
+                        $this->city = $c->name;
+                        $this->province = $c->province;
+                        $this->cityQuery = $c->name . ($c->province ? " — {$c->province}" : '');
+                    }
+                }
                 return;
             }
         }
@@ -70,6 +83,7 @@ new #[Layout('layouts.guest')] class extends Component {
             if (is_array($draft)) {
                 $this->nik = $draft['nik'] ?? $this->nik;
                 $this->full_name = $draft['full_name'] ?? $this->full_name;
+                $this->phone = $draft['phone'] ?? $this->phone;
                 $this->place_of_birth = $draft['place_of_birth'] ?? $this->place_of_birth;
                 $this->date_of_birth = $draft['date_of_birth'] ?? $this->date_of_birth;
                 $this->gender = $draft['gender'] ?? $this->gender;
@@ -81,6 +95,19 @@ new #[Layout('layouts.guest')] class extends Component {
                 $this->city = $draft['city'] ?? $this->city;
                 $this->city_id = isset($draft['city_id']) && $draft['city_id'] ? (int) $draft['city_id'] : null;
                 $this->province = $draft['province'] ?? $this->province;
+
+                if (!empty($draft['cityQuery'])) {
+                    $this->cityQuery = $draft['cityQuery'];
+                } elseif ($this->city) {
+                    $this->cityQuery = $this->city . ($this->province ? " — {$this->province}" : '');
+                } elseif ($this->city_id) {
+                    $c = City::find($this->city_id);
+                    if ($c) {
+                        $this->city = $c->name;
+                        $this->province = $c->province;
+                        $this->cityQuery = $c->name . ($c->province ? " — {$c->province}" : '');
+                    }
+                }
             }
         }
     }
@@ -97,6 +124,7 @@ new #[Layout('layouts.guest')] class extends Component {
         $draft = [
             'nik' => $this->nik,
             'full_name' => $this->full_name,
+            'phone' => $this->phone,
             'place_of_birth' => $this->place_of_birth,
             'date_of_birth' => $this->date_of_birth,
             'gender' => $this->gender,
@@ -107,6 +135,7 @@ new #[Layout('layouts.guest')] class extends Component {
             'kecamatan' => $this->kecamatan,
             'city_id' => $this->city_id,
             'city' => $this->city,
+            'cityQuery' => $this->cityQuery,
             'province' => $this->province,
         ];
         Cookie::queue('registration_step1_draft', json_encode($draft), 60 * 24 * 7);
@@ -117,6 +146,7 @@ new #[Layout('layouts.guest')] class extends Component {
         $validated = $this->validate([
             'nik' => ['required', 'string', 'size:16', 'regex:/^[0-9]+$/'],
             'full_name' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'min:9', 'max:20', 'regex:/^[0-9+\s\-]+$/'],
             'place_of_birth' => ['required', 'string', 'max:100'],
             'date_of_birth' => ['required', 'date'],
             'gender' => ['required', 'in:Laki-laki,Perempuan'],
@@ -128,6 +158,11 @@ new #[Layout('layouts.guest')] class extends Component {
             'city_id' => ['nullable', 'exists:cities,id'],
             'city' => ['nullable', 'string', 'max:100'],
             'province' => ['required', 'string', 'max:100'],
+        ], [
+            'phone.required' => 'Nomor HP/WhatsApp wajib diisi.',
+            'phone.min' => 'Nomor HP minimal 9 karakter.',
+            'phone.max' => 'Nomor HP maksimal 20 karakter.',
+            'phone.regex' => 'Format nomor HP tidak valid.',
         ]);
 
         // Simpan atau update record registration di database
@@ -274,6 +309,7 @@ new #[Layout('layouts.guest')] class extends Component {
             $this->cityQuery = $city->name . ' — ' . $city->province;
         }
         $this->searchResults = [];
+        $this->updated('city_id');
     }
 }; ?>
 
@@ -320,6 +356,22 @@ new #[Layout('layouts.guest')] class extends Component {
                     <x-input-error :messages="$errors->get('full_name')" />
                 </div>
 
+                <!-- Nomor Telepon / WhatsApp -->
+                <div>
+                    <label for="phone" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Nomor HP / WhatsApp <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                        </div>
+                        <input wire:model="phone" id="phone" type="tel" placeholder="Contoh: 081234567890"
+                            class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                    </div>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Nomor aktif untuk koordinasi bantuan dan akun.</p>
+                    <x-input-error :messages="$errors->get('phone')" />
+                </div>
+
                 <!-- Tempat & Tanggal Lahir -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -340,47 +392,43 @@ new #[Layout('layouts.guest')] class extends Component {
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Jenis Kelamin <span class="text-red-500">*</span></label>
                     <div class="grid grid-cols-2 gap-3">
-                        <label
-                            class="flex items-center px-4 py-3 rounded-xl cursor-pointer border-2 transition bg-gray-50/50 dark:bg-gray-900"
-                            :class="$wire.gender === 'Laki-laki' ? 'border-primary-500 bg-primary-50/30 dark:bg-primary-950/30' : 'border-gray-200 dark:border-gray-700'">
-                            <input wire:model="gender" type="radio" value="Laki-laki" class="w-4 h-4 text-primary-500 focus:ring-primary-500">
-                            <span class="ml-2 text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200">Laki-laki</span>
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 cursor-pointer hover:border-primary-500 transition">
+                            <input wire:model="gender" type="radio" value="Laki-laki" name="gender" class="text-primary-600 focus:ring-primary-500">
+                            <span class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200">Laki-laki</span>
                         </label>
-                        <label
-                            class="flex items-center px-4 py-3 rounded-xl cursor-pointer border-2 transition bg-gray-50/50 dark:bg-gray-900"
-                            :class="$wire.gender === 'Perempuan' ? 'border-primary-500 bg-primary-50/30 dark:bg-primary-950/30' : 'border-gray-200 dark:border-gray-700'">
-                            <input wire:model="gender" type="radio" value="Perempuan" class="w-4 h-4 text-primary-500 focus:ring-primary-500">
-                            <span class="ml-2 text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200">Perempuan</span>
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 cursor-pointer hover:border-primary-500 transition">
+                            <input wire:model="gender" type="radio" value="Perempuan" name="gender" class="text-primary-600 focus:ring-primary-500">
+                            <span class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200">Perempuan</span>
                         </label>
                     </div>
                     <x-input-error :messages="$errors->get('gender')" />
                 </div>
 
-                <!-- Alamat -->
+                <!-- Alamat KTP -->
                 <div>
-                    <label for="address" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Alamat <span class="text-red-500">*</span></label>
-                    <textarea wire:model="address" id="address" rows="3" placeholder="Alamat lengkap sesuai KTP"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm"></textarea>
+                    <label for="address" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Alamat KTP <span class="text-red-500">*</span></label>
+                    <textarea wire:model="address" id="address" rows="2" placeholder="Nama Jalan, No. Rumah, dsb."
+                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm resize-none"></textarea>
                     <x-input-error :messages="$errors->get('address')" />
                 </div>
 
-                <!-- RT/RW -->
+                <!-- RT & RW -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label for="rt" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">RT <span class="text-red-500">*</span></label>
-                        <input wire:model="rt" id="rt" type="number" min="1" max="999" step="1" inputmode="numeric" placeholder="001"
+                        <input wire:model="rt" id="rt" type="number" min="1" max="999" placeholder="Contoh: 01"
                             class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                         <x-input-error :messages="$errors->get('rt')" />
                     </div>
                     <div>
                         <label for="rw" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">RW <span class="text-red-500">*</span></label>
-                        <input wire:model="rw" id="rw" type="number" min="1" max="999" step="1" inputmode="numeric" placeholder="002"
+                        <input wire:model="rw" id="rw" type="number" min="1" max="999" placeholder="Contoh: 05"
                             class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                         <x-input-error :messages="$errors->get('rw')" />
                     </div>
                 </div>
 
-                <!-- Kelurahan/Desa -->
+                <!-- Kelurahan -->
                 <div>
                     <label for="kelurahan" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Kelurahan/Desa <span class="text-red-500">*</span></label>
                     <input wire:model="kelurahan" id="kelurahan" type="text" placeholder="Nama Kelurahan/Desa"
@@ -395,56 +443,6 @@ new #[Layout('layouts.guest')] class extends Component {
                         class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                     <x-input-error :messages="$errors->get('kecamatan')" />
                 </div>
-
-                <script>
-                    (function () {
-                        const prefix = 'registration_step1_';
-                        const fields = ['nik', 'full_name', 'place_of_birth', 'date_of_birth', 'gender', 'address', 'rt', 'rw', 'kelurahan', 'kecamatan', 'city_id', 'city', 'province'];
-
-                        // Load saved draft from localStorage into inputs
-                        window.addEventListener('DOMContentLoaded', () => {
-                            try {
-                                fields.forEach(name => {
-                                    const val = localStorage.getItem(prefix + name);
-                                    if (val !== null) {
-                                        const el = document.getElementById(name);
-                                        if (el) {
-                                            if (el.type === 'radio') {
-                                                const radio = document.querySelector(`input[name="${name}"][value="${val}"]`);
-                                                if (radio) radio.checked = true;
-                                            } else {
-                                                el.value = val;
-                                            }
-                                            el.dispatchEvent(new Event('input', { bubbles: true }));
-                                        }
-                                    }
-                                });
-                            } catch (e) { }
-                        });
-
-                        // Save input changes
-                        fields.forEach(name => {
-                            const el = document.getElementById(name);
-                            if (el) {
-                                el.addEventListener('input', (ev) => {
-                                    try {
-                                        const val = ev.target.type === 'radio' ? (ev.target.checked ? ev.target.value : null) : ev.target.value;
-                                        if (val !== null) localStorage.setItem(prefix + name, val);
-                                    } catch (e) { }
-                                });
-                            }
-                        });
-
-                        // Clear saved draft when Livewire triggers event
-                        document.addEventListener('livewire:load', function () {
-                            if (window.Livewire) {
-                                window.Livewire.on('clear-registration-step1', () => {
-                                    try { fields.forEach(name => localStorage.removeItem(prefix + name)); } catch (e) { }
-                                });
-                            }
-                        });
-                    })();
-                </script>
 
                 <!-- Kota/Kabupaten (realtime search) -->
                 <div>

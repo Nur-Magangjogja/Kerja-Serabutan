@@ -191,25 +191,25 @@
 
     {{-- ===== Detail Modal ===== --}}
     @if($showModal && $selected)
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" wire:click="closeModal">
-        <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-4xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700" wire:click.stop>
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto" role="dialog" aria-modal="true" wire:click="closeModal">
+        <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-4xl shadow-2xl my-auto max-h-[92vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700" wire:click.stop>
             {{-- Header --}}
-            <div class="flex items-center justify-between px-6 py-4.5 border-b border-gray-100 dark:border-gray-700">
-                <div class="flex items-center gap-3.5">
-                    <div class="w-12 h-12 rounded-2xl bg-primary-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+            <div class="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
+                <div class="flex items-center gap-3 min-w-0 flex-1 pr-2">
+                    <div class="w-11 h-11 rounded-2xl bg-primary-600 flex items-center justify-center text-white font-bold text-base shadow-sm flex-shrink-0">
                         {{ strtoupper(substr($selected->full_name ?? ($selected->name ?? 'U'), 0, 1)) }}
                     </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ $selected->full_name ?? ($selected->name ?? '—') }}</h3>
-                            <span class="px-2 py-0.5 rounded text-[11px] font-bold {{ ($selected->role === 'mitra') ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300' }}">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate max-w-xs">{{ $selected->full_name ?? ($selected->name ?? '—') }}</h3>
+                            <span class="px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold {{ ($selected->role === 'mitra') ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300' }}">
                                 {{ ucfirst($selected->role ?? 'customer') }}
                             </span>
                         </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ $selected->email ?? '—' }} • ID Registrasi: #{{ $selected->id }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ $selected->email ?? '—' }} • ID Registrasi: #{{ $selected->id }}</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-shrink-0">
                     @if(($selected->status ?? '') === 'approved')
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">Terverifikasi</span>
                     @elseif(($selected->status ?? '') === 'rejected')
@@ -217,72 +217,70 @@
                     @else
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">Menunggu</span>
                     @endif
-                    <button type="button" wire:click="closeModal" class="p-2 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                    <button type="button" wire:click="closeModal" class="p-2 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
             </div>
 
             {{-- Body --}}
-            <div class="p-6 overflow-y-auto flex-1 space-y-6">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
                     {{-- Info Pribadi Section --}}
-                    <div class="lg:col-span-2 space-y-4">
-                        <div class="bg-gray-50/70 dark:bg-gray-750/50 rounded-2xl p-4.5 border border-gray-100 dark:border-gray-700/80">
-                            <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3.5">Informasi Pribadi KTP</h4>
-                            <div class="grid grid-cols-2 gap-3.5">
-                                <div><p class="text-[11px] text-gray-400 dark:text-gray-500">NIK (Nomor Induk Kependudukan)</p><p class="text-sm font-mono font-bold text-gray-900 dark:text-gray-100 mt-0.5">{{ $selected->nik ?? '—' }}</p></div>
-                                <div><p class="text-[11px] text-gray-400 dark:text-gray-500">Nama Lengkap</p><p class="text-sm font-bold text-gray-900 dark:text-gray-100 mt-0.5">{{ $selected->full_name ?? '—' }}</p></div>
-                                <div><p class="text-[11px] text-gray-400 dark:text-gray-500">Tempat Lahir</p><p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{{ $selected->place_of_birth ?? '—' }}</p></div>
-                                <div><p class="text-[11px] text-gray-400 dark:text-gray-500">Tanggal Lahir</p><p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{{ $selected->date_of_birth ? $selected->date_of_birth->format('d M Y') : '—' }}</p></div>
-                                <div><p class="text-[11px] text-gray-400 dark:text-gray-500">Jenis Kelamin</p><p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{{ $selected->gender ?? '—' }}</p></div>
-                                <div><p class="text-[11px] text-gray-400 dark:text-gray-500">Agama</p><p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{{ $selected->religion ?? '—' }}</p></div>
-                                <div><p class="text-[11px] text-gray-400 dark:text-gray-500">Status Pernikahan</p><p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{{ $selected->marital_status ?? '—' }}</p></div>
-                                <div><p class="text-[11px] text-gray-400 dark:text-gray-500">Pekerjaan</p><p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{{ $selected->occupation ?? '—' }}</p></div>
+                    <div class="lg:col-span-2 space-y-4 min-w-0">
+                        <div class="bg-gray-50/70 dark:bg-gray-750/50 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-700/80">
+                            <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Informasi Identitas KTP</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                <div class="min-w-0"><p class="text-[11px] text-gray-400 dark:text-gray-500">NIK (Nomor Induk Kependudukan)</p><p class="text-sm font-mono font-bold text-gray-900 dark:text-gray-100 mt-0.5 break-all">{{ $selected->nik ?? '—' }}</p></div>
+                                <div class="min-w-0"><p class="text-[11px] text-gray-400 dark:text-gray-500">Nama Lengkap</p><p class="text-sm font-bold text-gray-900 dark:text-gray-100 mt-0.5 break-words">{{ $selected->full_name ?? '—' }}</p></div>
+                                <div class="min-w-0"><p class="text-[11px] text-gray-400 dark:text-gray-500">No. HP / WhatsApp</p><p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5 break-words">{{ $selected->phone ?? '—' }}</p></div>
+                                <div class="min-w-0"><p class="text-[11px] text-gray-400 dark:text-gray-500">Jenis Kelamin</p><p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{{ $selected->gender ?? '—' }}</p></div>
+                                <div class="min-w-0"><p class="text-[11px] text-gray-400 dark:text-gray-500">Tempat Lahir</p><p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5 break-words">{{ $selected->place_of_birth ?? '—' }}</p></div>
+                                <div class="min-w-0"><p class="text-[11px] text-gray-400 dark:text-gray-500">Tanggal Lahir</p><p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{{ $selected->date_of_birth ? $selected->date_of_birth->format('d M Y') : '—' }}</p></div>
                             </div>
                         </div>
 
-                        <div class="bg-gray-50/70 dark:bg-gray-750/50 rounded-2xl p-4.5 border border-gray-100 dark:border-gray-700/80">
-                            <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Alamat Lengkap KTP</h4>
-                            <p class="text-sm font-medium text-gray-800 dark:text-gray-200 mb-2.5">{{ $selected->address ?? '—' }}</p>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600"><span class="text-gray-400 block text-[10px]">RT / RW</span> <span class="font-semibold text-gray-800 dark:text-gray-200">{{ $selected->rt ?? '-' }}/{{ $selected->rw ?? '-' }}</span></div>
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600"><span class="text-gray-400 block text-[10px]">Kelurahan</span> <span class="font-semibold text-gray-800 dark:text-gray-200">{{ $selected->kelurahan ?? '-' }}</span></div>
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600"><span class="text-gray-400 block text-[10px]">Kecamatan</span> <span class="font-semibold text-gray-800 dark:text-gray-200">{{ $selected->kecamatan ?? '-' }}</span></div>
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600"><span class="text-gray-400 block text-[10px]">Kota / Kab</span> <span class="font-semibold text-gray-800 dark:text-gray-200">{{ $selected->city ?? '-' }}</span></div>
+                        <div class="bg-gray-50/70 dark:bg-gray-750/50 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-700/80">
+                            <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5">Alamat Lengkap KTP</h4>
+                            <p class="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3 break-words">{{ $selected->address ?? '—' }}</p>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">RT / RW</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->rt ?? '-' }}/{{ $selected->rw ?? '-' }}</span></div>
+                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Kelurahan</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->kelurahan ?? '-' }}</span></div>
+                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Kecamatan</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->kecamatan ?? '-' }}</span></div>
+                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Kota / Kab</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->city ?? '-' }}</span></div>
                             </div>
                         </div>
                     </div>
 
                     {{-- Dokumen Section --}}
-                    <div class="space-y-4">
+                    <div class="space-y-4 min-w-0">
                         <div class="bg-gray-50/70 dark:bg-gray-750/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-700/80">
                             <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5">Foto Selfie Verifikasi</h4>
                             @if(!empty($selected->selfie_url))
-                                <a href="{{ $selected->selfie_url }}" target="_blank" class="block rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 group shadow-xs">
-                                    <img src="{{ $selected->selfie_url }}" alt="Selfie" class="w-full h-44 object-cover group-hover:scale-105 transition duration-300" />
+                                <a href="{{ $selected->selfie_url }}" target="_blank" class="block rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 group shadow-xs aspect-4/3 bg-gray-100 dark:bg-gray-700">
+                                    <img src="{{ $selected->selfie_url }}" alt="Selfie" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
                                 </a>
-                                <div class="mt-2 flex items-center justify-between text-xs">
+                                <div class="mt-2.5 flex items-center justify-between text-xs">
                                     <a href="{{ $selected->selfie_url }}" target="_blank" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline">Buka foto asli</a>
                                     <a href="{{ $selected->selfie_url }}" download class="text-gray-500 dark:text-gray-400 hover:underline">Unduh berkas</a>
                                 </div>
                             @else
-                                <div class="w-full h-44 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-xs text-gray-400">Tidak ada foto selfie</div>
+                                <div class="w-full aspect-4/3 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-xs text-gray-400">Tidak ada foto selfie</div>
                             @endif
                         </div>
 
                         <div class="bg-gray-50/70 dark:bg-gray-750/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-700/80">
                             <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5">Foto KTP Fisik</h4>
                             @if(!empty($selected->ktp_url))
-                                <a href="{{ $selected->ktp_url }}" target="_blank" class="block rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 group bg-white dark:bg-gray-900 shadow-xs">
-                                    <img src="{{ $selected->ktp_url }}" alt="KTP" class="w-full h-44 object-contain group-hover:scale-105 transition duration-300 p-1" />
+                                <a href="{{ $selected->ktp_url }}" target="_blank" class="block rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 group bg-white dark:bg-gray-900 shadow-xs aspect-video">
+                                    <img src="{{ $selected->ktp_url }}" alt="KTP" class="w-full h-full object-contain group-hover:scale-105 transition duration-300 p-1" />
                                 </a>
-                                <div class="mt-2 flex items-center justify-between text-xs">
+                                <div class="mt-2.5 flex items-center justify-between text-xs">
                                     <a href="{{ $selected->ktp_url }}" target="_blank" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline">Buka foto asli</a>
                                     <a href="{{ $selected->ktp_url }}" download class="text-gray-500 dark:text-gray-400 hover:underline">Unduh berkas</a>
                                 </div>
                             @else
-                                <div class="w-full h-44 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-xs text-gray-400">Tidak ada foto KTP</div>
+                                <div class="w-full aspect-video bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-xs text-gray-400">Tidak ada foto KTP</div>
                             @endif
                         </div>
                     </div>
@@ -296,25 +294,25 @@
                         class="w-full px-3 py-2 text-xs sm:text-sm border border-rose-200 dark:border-rose-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-500"></textarea>
                     @error('rejectReason') <p class="text-xs text-rose-600">{{ $message }}</p> @enderror
                     <div class="flex justify-end gap-2">
-                        <button type="button" wire:click="cancelReject" class="px-3.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700">Batal</button>
-                        <button type="button" wire:click="confirmReject" class="px-3.5 py-1.5 text-xs font-bold bg-rose-600 text-white rounded-xl hover:bg-rose-700 shadow-xs">Konfirmasi Tolak</button>
+                        <button type="button" wire:click="cancelReject" class="px-3.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">Batal</button>
+                        <button type="button" wire:click="confirmReject" class="px-3.5 py-1.5 text-xs font-bold bg-rose-600 text-white rounded-xl hover:bg-rose-700 shadow-xs cursor-pointer">Konfirmasi Tolak</button>
                     </div>
                 </div>
                 @endif
             </div>
 
             {{-- Footer --}}
-            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-750/30 flex items-center justify-between gap-3">
-                <span class="text-xs text-gray-400 dark:text-gray-500">Pastikan data sesuai dengan dokumen KTP sebelum menyetujui</span>
-                <div class="flex items-center gap-2">
-                    <button type="button" wire:click="closeModal" class="px-4 py-2 text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+            <div class="px-5 sm:px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-750/30 flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0">
+                <span class="text-xs text-gray-400 dark:text-gray-500 text-center sm:text-left">Pastikan data sesuai dengan dokumen KTP sebelum menyetujui</span>
+                <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <button type="button" wire:click="closeModal" class="px-4 py-2 text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer">
                         Tutup
                     </button>
                     @if(($selected->status ?? '') !== 'approved')
-                        <button type="button" wire:click="openRejectModal({{ $selected->id }})" class="px-4 py-2 text-xs sm:text-sm font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-xs transition">
+                        <button type="button" wire:click="openRejectModal({{ $selected->id }})" class="px-4 py-2 text-xs sm:text-sm font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-xs transition cursor-pointer">
                             Tolak
                         </button>
-                        <button type="button" wire:click="approveKtp({{ $selected->id }})" class="px-4 py-2 text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition">
+                        <button type="button" wire:click="approveKtp({{ $selected->id }})" class="px-4 py-2 text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition cursor-pointer">
                             Setujui & Verifikasi
                         </button>
                     @endif

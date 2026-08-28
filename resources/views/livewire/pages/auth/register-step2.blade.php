@@ -173,10 +173,8 @@ new #[Layout('layouts.guest')] class extends Component {
                 <div class="bg-gray-50/70 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-4">
                     <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Contoh Foto KTP yang Baik:</p>
                     <div class="bg-white dark:bg-gray-800 rounded-xl p-3 border-2 border-emerald-500/70 dark:border-emerald-600/70">
-                        <div class="aspect-video bg-gray-100 dark:bg-gray-700/80 rounded-lg flex items-center justify-center">
-                            <svg class="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                            </svg>
+                        <div class="aspect-video bg-gray-100 dark:bg-gray-700/80 rounded-lg overflow-hidden flex items-center justify-center">
+                            <img src="{{ asset('images/Sample-Ktp.png') }}" alt="Contoh Foto KTP yang Baik" class="w-full h-full object-cover">
                         </div>
                         <p class="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-2 text-center flex items-center justify-center gap-1">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -331,7 +331,8 @@ class Index extends Component
 
         $query = User::with(['city', 'managedCities'])
             ->withMax('helps', 'updated_at')
-            ->withMax('takenHelps', 'updated_at');
+            ->withMax('takenHelps', 'updated_at')
+            ->where('verified', true);
 
         if (! $isSuperAdmin) {
             $managedCityIds = $currentUser->managedCities()->pluck('cities.id')->toArray();

@@ -104,6 +104,11 @@ class User extends Authenticatable
         };
     }
 
+    public function getIsVerifiedAttribute(): bool
+    {
+        return (bool) ($this->verified ?? false);
+    }
+
     public function isShadowBanned(): bool
     {
         return (bool) $this->is_shadow_banned;

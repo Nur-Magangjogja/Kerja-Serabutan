@@ -175,7 +175,10 @@ class Index extends Component
 
     public function render()
     {
-        $query = Registration::query();
+        // Only include completed registrations waiting for or with decision (exclude in-progress/drafts)
+        $query = Registration::query()
+            ->whereIn('status', ['pending_verification', 'pending', 'approved', 'rejected']);
+
         $authUser = auth()->user();
         $isSuperAdmin = $authUser && in_array($authUser->role, ['super_admin', 'superadmin']);
 

@@ -81,11 +81,23 @@ new #[Layout('layouts.guest')] class extends Component {
         </div>
     </div>
 
-    <!-- Action Button -->
-    <div class="pt-2">
+    <!-- Action Buttons -->
+    <div class="pt-2 space-y-2.5">
         <a href="{{ route('login') }}" wire:navigate
             class="w-full inline-flex items-center justify-center bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs sm:text-sm py-3.5 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
-            Masuk ke Halaman Login
+            Kembali ke Halaman Login
         </a>
     </div>
+
+    <!-- Prevent browser back to expired registration form -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                history.pushState(null, document.title, location.href);
+                window.addEventListener('popstate', function () {
+                    window.location.href = '{{ route('login') }}';
+                });
+            } catch (e) {}
+        });
+    </script>
 </div>

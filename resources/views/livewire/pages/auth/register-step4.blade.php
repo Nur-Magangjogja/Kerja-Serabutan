@@ -41,6 +41,7 @@ new #[Layout('layouts.guest')] class extends Component {
         $this->step1_data = $registration->only([
             'nik',
             'full_name',
+            'phone',
             'place_of_birth',
             'date_of_birth',
             'gender',
@@ -50,10 +51,7 @@ new #[Layout('layouts.guest')] class extends Component {
             'kelurahan',
             'kecamatan',
             'city',
-            'province',
-            'religion',
-            'marital_status',
-            'occupation'
+            'province'
         ]);
 
         $this->step2_data = ['ktp_photo_path' => $registration->ktp_photo_path];
@@ -89,6 +87,7 @@ new #[Layout('layouts.guest')] class extends Component {
         $userData = [
             'name' => $registration->full_name,
             'email' => $validated['email'],
+            'phone' => $registration->phone,
             'role' => $registration->role ?? (request()->cookie('registration_role') ?? 'customer'),
             'password' => Hash::make($validated['password']),
             'nik' => $registration->nik,
@@ -102,9 +101,6 @@ new #[Layout('layouts.guest')] class extends Component {
             'kecamatan' => $registration->kecamatan,
             'city' => $registration->city,
             'province' => $registration->province,
-            'religion' => $registration->religion,
-            'marital_status' => $registration->marital_status,
-            'occupation' => $registration->occupation,
             'ktp_photo' => $registration->ktp_photo_path,
             'selfie_photo' => $registration->selfie_photo_path,
         ];
@@ -235,6 +231,10 @@ new #[Layout('layouts.guest')] class extends Component {
                 <div class="flex justify-between">
                     <span class="text-gray-500 dark:text-gray-400">Nama Lengkap:</span>
                     <span class="font-semibold text-gray-900 dark:text-white">{{ $step1_data['full_name'] }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">No. HP / WhatsApp:</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ $step1_data['phone'] ?? '—' }}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-500 dark:text-gray-400">Tempat, Tanggal Lahir:</span>

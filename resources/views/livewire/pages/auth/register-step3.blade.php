@@ -193,10 +193,8 @@ new #[Layout('layouts.guest')] class extends Component {
                     <div class="grid grid-cols-2 gap-3">
                         <!-- Good Example -->
                         <div class="bg-white dark:bg-gray-800 rounded-xl p-3 border-2 border-emerald-500/70 dark:border-emerald-600/70">
-                            <div class="aspect-square bg-emerald-50 dark:bg-emerald-950/40 rounded-lg flex items-center justify-center mb-2">
-                                <svg class="w-10 h-10 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                </svg>
+                            <div class="aspect-square bg-emerald-50 dark:bg-emerald-950/40 rounded-lg overflow-hidden flex items-center justify-center mb-2">
+                                <img src="{{ asset('images/Sample-Ktp-Person-Valid.png') }}" alt="Contoh Selfie KTP Benar" class="w-full h-full object-cover">
                             </div>
                             <p class="text-xs text-emerald-600 dark:text-emerald-400 font-bold text-center">✓ Benar</p>
                             <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-0.5">Wajah & KTP jelas</p>
@@ -204,10 +202,8 @@ new #[Layout('layouts.guest')] class extends Component {
 
                         <!-- Bad Example -->
                         <div class="bg-white dark:bg-gray-800 rounded-xl p-3 border-2 border-red-500/70 dark:border-red-600/70">
-                            <div class="aspect-square bg-red-50 dark:bg-red-950/40 rounded-lg flex items-center justify-center mb-2">
-                                <svg class="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
+                            <div class="aspect-square bg-red-50 dark:bg-red-950/40 rounded-lg overflow-hidden flex items-center justify-center mb-2">
+                                <img src="{{ asset('images/Sample-Ktp-Person-Failed.png') }}" alt="Contoh Selfie KTP Salah" class="w-full h-full object-cover">
                             </div>
                             <p class="text-xs text-red-600 dark:text-red-400 font-bold text-center">✗ Salah</p>
                             <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-0.5">Buram atau gelap</p>

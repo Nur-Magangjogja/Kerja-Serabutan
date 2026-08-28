@@ -210,9 +210,6 @@
                         ['label' => 'Status',             'value' => $selectedUser->status ? ucfirst($selectedUser->status) : '—'],
                         ['label' => 'Verifikasi',         'value' => $selectedUser->verified ? 'Terverifikasi' : 'Belum Terverifikasi'],
                         ['label' => 'Kota',               'value' => $selectedUser->city_name ?? '—'],
-                        ['label' => 'Pekerjaan',          'value' => $selectedUser->occupation ?? '—'],
-                        ['label' => 'Agama',              'value' => $selectedUser->religion ?? '—'],
-                        ['label' => 'Status Perkawinan',  'value' => $selectedUser->marital_status ?? '—'],
                         ['label' => 'Aktivitas Terakhir', 'value' => $selectedUser->last_activity_at ? $selectedUser->last_activity_at->translatedFormat('d M Y, H:i') . ' WIB (' . $selectedUser->last_activity_for_humans . ')' : 'Belum ada aktivitas'],
                         ['label' => 'Terdaftar',          'value' => optional($selectedUser->created_at)?->format('d M Y H:i') ?? '—'],
                     ];
@@ -362,12 +359,6 @@
                             <input type="date" wire:model.defer="date_of_birth"
                                 class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                             @error('date_of_birth') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Pekerjaan</label>
-                            <input type="text" wire:model.defer="occupation"
-                                class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                         </div>
 
                         <div class="md:col-span-2">

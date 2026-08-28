@@ -16,6 +16,7 @@ class Registration extends Model
         'role',
         'nik',
         'full_name',
+        'phone',
         'place_of_birth',
         'date_of_birth',
         'gender',

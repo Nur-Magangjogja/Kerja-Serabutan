@@ -27,9 +27,6 @@ return new class extends Migration
             $table->string('city')->nullable();
             $table->foreignId('city_id')->nullable()->constrained('cities')->nullOnDelete();
             $table->string('province')->nullable();
-            $table->string('religion')->nullable();
-            $table->string('marital_status')->nullable();
-            $table->string('occupation')->nullable();
             $table->string('ktp_photo_path')->nullable();
             $table->string('selfie_photo_path')->nullable();
             $table->enum('role', ['customer', 'mitra'])->default('customer');

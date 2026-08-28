@@ -42,46 +42,50 @@
 
 <body class="font-sans antialiased bg-gray-50 dark:bg-gray-950 min-h-screen text-gray-800 dark:text-gray-100 flex flex-col justify-start">
     <div class="w-full max-w-lg mx-auto flex flex-col min-h-screen">
-        <!-- Modern Clean Solid Header -->
-        <header class="relative bg-primary-600 dark:bg-gray-900 border-b border-primary-700/50 dark:border-gray-800 text-white px-6 pt-7 pb-8 sm:pb-9 shadow-sm">
-            <div class="relative z-10 max-w-md mx-auto">
-                <div class="flex items-center justify-between gap-3 mb-2.5">
+        <!-- Header Section -->
+        <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+            <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
+
+            <div class="relative z-10">
+                <div class="flex items-center justify-between text-white">
                     <!-- Back Button -->
-                    <button onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{{ route('login') }}'; }" 
-                        aria-label="Kembali" 
-                        class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/15 transition-all shadow-xs flex-shrink-0 cursor-pointer group">
-                        <svg class="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
+                    @if(request()->routeIs('registration.success'))
+                        <a href="{{ route('login') }}" wire:navigate aria-label="Kembali ke Login" 
+                            class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0 text-white flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </a>
+                    @else
+                        <button onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{{ route('login') }}'; }" 
+                            aria-label="Kembali" 
+                            class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0 text-white">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                    @endif
 
                     <!-- Brand Centerpiece -->
-                    <a href="{{ route('home') }}" wire:navigate class="flex items-center gap-2.5 group min-w-0">
-                        <div class="w-9 h-9 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center p-1.5 shadow-inner group-hover:scale-105 transition-transform flex-shrink-0">
+                    <div class="text-center flex-1 min-w-0 px-2">
+                        <a href="{{ route('home') }}" wire:navigate class="inline-flex items-center justify-center gap-2 group">
                             @if ($siteLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($siteLogo))
-                                <img src="{{ asset('storage/' . $siteLogo) }}" alt="{{ $siteName }}" class="w-full h-full object-contain" />
-                            @else
-                                <svg class="w-5 h-5 text-sky-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
+                                <div class="w-7 h-7 rounded-lg bg-white/15 p-1 flex items-center justify-center shadow-inner">
+                                    <img src="{{ asset('storage/' . $siteLogo) }}" alt="{{ $siteName }}" class="w-full h-full object-contain" />
+                                </div>
                             @endif
-                        </div>
-                        <x-brand-title as="h1" size="xl" theme="light" withDot="true" class="truncate" />
-                    </a>
+                            <x-brand-title as="h1" size="xl" theme="light" withDot="true" class="truncate font-bold text-white" />
+                        </a>
+                        <p class="text-xs text-white/90 truncate mt-0.5">
+                            {{ $siteTagline }}
+                        </p>
+                    </div>
 
-                    <!-- Right Action placeholder / Login Link -->
-                    <a href="{{ route('login') }}" wire:navigate 
-                        class="text-xs font-semibold text-white/95 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-xl border border-white/15 transition shadow-xs flex-shrink-0">
-                        Masuk
-                    </a>
+                    <!-- Right spacer for balanced centering -->
+                    <div class="w-9 flex-shrink-0"></div>
                 </div>
-
-                <!-- Tagline Subtitle -->
-                <p class="text-center text-xs text-blue-100 dark:text-gray-400 font-medium tracking-wide">
-                    {{ $siteTagline }}
-                </p>
             </div>
-        </header>
+        </div>
 
         <!-- Main Content Card with Distinct Separation & Generous Spacing -->
         <main class="flex-1 px-4 sm:px-6 pt-5 sm:pt-6 pb-12 sm:pb-16 relative z-20">
