@@ -480,62 +480,67 @@
             @endphp
 
             @if($existingReport)
-                <div class="bg-purple-50 dark:bg-purple-950/40 mt-2 p-4 rounded-2xl border border-purple-200 dark:border-purple-800/60 shadow-xs space-y-3">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex items-start gap-2.5">
-                            <div class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <div class="bg-gradient-to-br from-purple-50 to-indigo-50/50 dark:from-purple-950/50 dark:to-indigo-950/30 mt-2.5 p-4 rounded-2xl border border-purple-200 dark:border-purple-800/70 shadow-xs space-y-3">
+                    <div class="flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-purple-500/20">
+                            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+                                <h4 class="text-xs sm:text-sm font-bold text-purple-950 dark:text-purple-100">Laporan Aduan (#{{ $existingReport->id }})</h4>
+                                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full {{ $existingReport->status === 'resolved' ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300' }}">
+                                    {{ $existingReport->refund_status === 'approved' ? 'Refund Disetujui' : ucfirst($existingReport->status) }}
+                                </span>
                             </div>
-                            <div class="flex-1">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <h4 class="text-xs font-bold text-purple-950 dark:text-purple-100">Laporan Aduan (#{{ $existingReport->id }})</h4>
-                                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full {{ $existingReport->status === 'resolved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
-                                        {{ $existingReport->refund_status === 'approved' ? 'Refund Disetujui' : ucfirst($existingReport->status) }}
-                                    </span>
-                                </div>
-                                <p class="text-[11px] text-purple-900/80 dark:text-purple-300 mt-1 leading-relaxed">
-                                    {{ $existingReport->message }}
-                                </p>
-                            </div>
+                            <p class="text-xs text-purple-900/85 dark:text-purple-300/90 leading-relaxed break-words">
+                                {{ $existingReport->message }}
+                            </p>
                         </div>
                     </div>
 
                     {{-- Tombol Buka Ruang Chat Dukungan Khusus --}}
-                    <div class="pt-2 border-t border-purple-200/60 dark:border-purple-800/60 flex items-center justify-between gap-2 flex-wrap">
-                        <div class="text-[11px] text-purple-800 dark:text-purple-300">
+                    <div class="pt-2.5 border-t border-purple-200/60 dark:border-purple-800/60 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                        <div class="text-[11px] text-purple-800 dark:text-purple-300 w-full sm:w-auto text-center sm:text-left">
                             @php $msgCount = $existingReport->messages()->count(); @endphp
                             <span>{{ $msgCount > 0 ? $msgCount . ' pesan klarifikasi tersedia' : 'Ruang obrolan dengan tim Admin aktif' }}</span>
                         </div>
                         <a href="{{ route('customer.chat', ['admin' => 1, 'report' => $existingReport->id]) }}"
-                            class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+                            class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                             <span>Buka Ruang Chat Admin</span>
                         </a>
                     </div>
                 </div>
             @elseif($isWithin24H)
-                <div class="bg-amber-50/90 dark:bg-amber-950/40 mt-2 p-4 rounded-2xl border border-amber-200/80 dark:border-amber-800/60 shadow-xs">
-                    <div class="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
-                        <div class="flex items-start gap-2.5">
-                            <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                            </div>
-                            <div>
-                                <h4 class="text-xs font-bold text-amber-950 dark:text-amber-100 flex items-center gap-1.5">
-                                    <span>Garansi Perlindungan Layanan 1x24 Jam</span>
-                                    <span class="text-[10px] bg-amber-200/80 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 px-1.5 py-0.5 rounded-md font-semibold">Aktif</span>
-                                </h4>
-                                <p class="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5 leading-relaxed">
-                                    Jika mitra berbohong, tidak menyelesaikan tugas, atau melanggar aturan, Anda dapat mengajukan laporan refund sebelum: <strong>{{ \Carbon\Carbon::parse($help->completed_at)->addHours(24)->translatedFormat('d M Y, H:i') }} WIB</strong>.
-                                </p>
-                            </div>
+                <div class="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-yellow-950/30 mt-2.5 p-4 rounded-2xl border border-amber-200 dark:border-amber-800/70 shadow-xs space-y-3">
+                    <div class="flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-amber-500/20">
+                            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
                         </div>
-                        <a href="{{ route('customer.reports.create', ['help_id' => $help->id, 'user_id' => $help->mitra_id, 'type' => 'klaim_refund_pekerjaan_fiktif']) }}" 
-                           class="w-full sm:w-auto px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold whitespace-nowrap transition shadow-xs flex-shrink-0 flex items-center justify-center gap-1.5 cursor-pointer">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                            Laporkan / Ajukan Refund
-                        </a>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+                                <h4 class="text-xs sm:text-sm font-bold text-amber-950 dark:text-amber-100">
+                                    Garansi Perlindungan Layanan 1x24 Jam
+                                </h4>
+                                <span class="text-[10px] bg-amber-200/90 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 px-2 py-0.5 rounded-full font-bold shadow-2xs">
+                                    Aktif
+                                </span>
+                            </div>
+                            <p class="text-xs text-amber-900/85 dark:text-amber-300/90 leading-relaxed">
+                                Jika mitra berbohong, tidak menyelesaikan tugas, atau melanggar aturan, Anda dapat mengajukan laporan refund sebelum: <strong class="font-bold text-amber-950 dark:text-amber-200">{{ \Carbon\Carbon::parse($help->completed_at)->addHours(24)->translatedFormat('d M Y, H:i') }} WIB</strong>.
+                            </p>
+                        </div>
                     </div>
+
+                    <a href="{{ route('customer.reports.create', ['help_id' => $help->id, 'user_id' => $help->mitra_id, 'type' => 'klaim_refund_pekerjaan_fiktif']) }}" 
+                       class="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <span>Laporkan / Ajukan Refund</span>
+                    </a>
                 </div>
             @endif
         @endif

@@ -807,8 +807,38 @@ class HelpTransactionService
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // CHAT & NOTIFICATION HELPERS
+    // ACTIVITY LOG & NOTIFICATION HELPERS
     // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Catat aktivitas mitra / customer ke PartnerActivity & ActivityLog.
+     */
+    private function logActivity($userId, $helpId, string $activityType, ?string $description = null, ?string $photo = null): void
+    {
+        try {
+            \App\Models\PartnerActivity::create([
+                'user_id'       => $userId,
+                'help_id'       => $helpId,
+                'activity_type' => $activityType,
+                'description'   => $description,
+                'photo'         => $photo,
+                'ip_address'    => function_exists('request') ? request()?->ip() : null,
+                'user_agent'    => function_exists('request') ? request()?->header('User-Agent') : null,
+            ]);
+
+            \App\Models\ActivityLog::record(
+                $userId,
+                $activityType,
+                $description ?? "Aktivitas bantuan #{$helpId}"
+            );
+        } catch (\Throwable $e) {
+            Log::warning('[HelpTransactionService] logActivity failed: ' . $e->getMessage(), [
+                'user_id'       => $userId,
+                'help_id'       => $helpId,
+                'activity_type' => $activityType,
+            ]);
+        }
+    }
 
     private function notifyHelpTaken(Help $help, User $mitra): void
     {

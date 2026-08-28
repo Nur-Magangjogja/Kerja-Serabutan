@@ -157,28 +157,15 @@
                 </div>
             </div>
 
-            {{-- Commission & Earnings Breakdown (Full Width) --}}
-            @if($help->isV2Model())
-                <div class="bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/70 rounded-xl p-3.5 space-y-2 mb-3">
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="text-gray-500 dark:text-gray-400 font-medium">Nilai Tugas:</span>
-                        <span class="font-bold text-gray-900 dark:text-gray-100">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
-                    </div>
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="text-rose-600 dark:text-rose-400 font-medium">Potongan Komisi ({{ $help->getCommissionRateLabel() }}):</span>
-                        <span class="font-semibold text-rose-600 dark:text-rose-400">- Rp {{ number_format($help->getPlatformFee(), 0, ',', '.') }}</span>
-                    </div>
-                    <div class="border-t border-gray-200 dark:border-gray-600/80 pt-2 flex justify-between items-center">
-                        <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Pendapatan Bersih:</span>
-                        <span class="text-base font-extrabold text-emerald-600 dark:text-emerald-400">Rp {{ number_format($help->getNetEarning(), 0, ',', '.') }}</span>
-                    </div>
+            {{-- Earnings Display (Clean & Transparent) --}}
+            <div class="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded-2xl p-3.5 mb-3 flex items-center justify-between shadow-2xs">
+                <div>
+                    <span class="text-xs font-bold text-emerald-900 dark:text-emerald-200 block">Upah Bersih Diterima:</span>
                 </div>
-            @else
-                <div class="bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 mb-3 flex items-center justify-between">
-                    <span class="text-xs text-gray-600 dark:text-gray-400 font-medium">Nilai Tugas:</span>
-                    <span class="text-base font-bold text-blue-600 dark:text-blue-400">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
+                <div class="text-lg sm:text-xl font-black text-emerald-700 dark:text-emerald-300">
+                    Rp {{ number_format($help->getNetEarning(), 0, ',', '.') }}
                 </div>
-            @endif
+            </div>
 
             {{-- Order ID Row (Full Width & Overflow-Safe) --}}
             <div class="pt-2.5 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between gap-2">

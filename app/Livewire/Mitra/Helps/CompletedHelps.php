@@ -4,6 +4,7 @@ namespace App\Livewire\Mitra\Helps;
 
 use App\Models\Help;
 use App\Models\BalanceTransaction;
+use App\Models\PartnerActivity;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
@@ -46,20 +47,32 @@ class CompletedHelps extends Component
         $totalCompletedAmount = (clone $completedHelpsQuery)->sum('amount');
         $uniqueCustomersCount = (clone $completedHelpsQuery)->distinct('user_id')->count('user_id');
 
-        $penaltyQuery = BalanceTransaction::where('user_id', $user->id)->where('type', 'penalty');
+        $penaltyQuery = PartnerActivity::where('user_id', $user->id)
+            ->whereIn('activity_type', [
+                'cancel_requested',
+                'cancel_accepted',
+                'partner_request_cancel',
+                'help_cancelled',
+                'partner_cancel'
+            ]);
         $totalPenaltyCount = (clone $penaltyQuery)->count();
-        $totalPenaltyAmount = (clone $penaltyQuery)->sum('amount');
+        $totalPenaltyAmount = BalanceTransaction::where('user_id', $user->id)->where('type', 'penalty')->sum('amount');
 
         // 2. Tab Query
         if ($this->activeTab === 'cancelled') {
-            $penaltiesQuery = BalanceTransaction::with(['help.user', 'help.city'])
+            $penaltiesQuery = PartnerActivity::with(['help.user', 'help.city'])
                 ->where('user_id', $user->id)
-                ->where('type', 'penalty');
+                ->whereIn('activity_type', [
+                    'cancel_requested',
+                    'cancel_accepted',
+                    'partner_request_cancel',
+                    'help_cancelled',
+                    'partner_cancel'
+                ]);
 
             if ($this->search) {
                 $penaltiesQuery->where(function ($q) {
                     $q->where('description', 'like', '%' . $this->search . '%')
-                        ->orWhere('order_id', 'like', '%' . $this->search . '%')
                         ->orWhereHas('help', function ($h) {
                             $h->where('title', 'like', '%' . $this->search . '%');
                         });

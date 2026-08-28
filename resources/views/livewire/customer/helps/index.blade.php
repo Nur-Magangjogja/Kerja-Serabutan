@@ -76,9 +76,10 @@
             <div class="space-y-3.5 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="statusFilter">
                 @forelse($helps as $help)
                     @if($statusFilter === 'selesai')
-                        {{-- COMPLETED CARD (with expandable accordion & rating info) --}}
+                        {{-- COMPLETED / CANCELLED CARD (with expandable accordion & rating info) --}}
                         @php
                             $rating = $help->rating;
+                            $isCancelled = in_array($help->status, ['dibatalkan', 'cancelled']);
                         @endphp
                         <div x-data="{ open: false }" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs hover:shadow-md transition">
                             <div class="p-4">
@@ -103,30 +104,42 @@
                                     <div class="text-right flex-shrink-0">
                                         <div class="text-sm font-bold text-primary-600 dark:text-sky-400">Rp {{ number_format($help->amount ?? 0, 0, ',', '.') }}</div>
                                         <div class="flex flex-col items-end gap-1 mt-1">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
-                                                <svg class="w-2.5 h-2.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                                </svg>
-                                                Selesai
-                                            </span>
-                                            @if($rating)
-                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-[10px] font-bold border border-amber-200 dark:border-amber-800/40">
-                                                    <svg class="w-3 h-3 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                            @if($isCancelled)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-[10px] font-bold border border-rose-200 dark:border-rose-800/50">
+                                                    <svg class="w-2.5 h-2.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
                                                     </svg>
-                                                    <span>{{ number_format($rating->rating, 1) }}</span>
+                                                    Dibatalkan
+                                                </span>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-[10px] font-medium">
+                                                    Refund 100%
                                                 </span>
                                             @else
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-[10px] font-medium">
-                                                    Belum dinilai
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
+                                                    <svg class="w-2.5 h-2.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                    </svg>
+                                                    Selesai
                                                 </span>
+                                                @if($rating)
+                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-[10px] font-bold border border-amber-200 dark:border-amber-800/40">
+                                                        <svg class="w-3 h-3 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                                        </svg>
+                                                        <span>{{ number_format($rating->rating, 1) }}</span>
+                                                    </span>
+                                                @else
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-[10px] font-medium">
+                                                        Belum dinilai
+                                                    </span>
+                                                @endif
                                             @endif
                                         </div>
                                     </div>
                                 </div>
 
                                 <button @click="open = !open" class="w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 text-primary-600 dark:text-sky-400 transition cursor-pointer">
-                                    <span x-text="open ? 'Sembunyikan Detail' : 'Lihat Detail & Penilaian'"></span>
+                                    <span x-text="open ? 'Sembunyikan Detail' : '{{ $isCancelled ? 'Lihat Detail Pembatalan' : 'Lihat Detail & Penilaian' }}'"></span>
                                     <svg :class="open ? 'rotate-180' : ''" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                     </svg>
@@ -134,6 +147,20 @@
                             </div>
 
                             <div x-show="open" x-cloak x-transition class="px-4 pb-4 border-t border-gray-100 dark:border-gray-700/60 pt-3.5 space-y-3">
+                                @if($isCancelled)
+                                    <div class="bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/60 rounded-xl p-3 space-y-1">
+                                        <div class="flex items-center gap-1.5 text-xs font-bold text-rose-800 dark:text-rose-300">
+                                            <svg class="w-4 h-4 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <span>Permintaan Bantuan Telah Dibatalkan</span>
+                                        </div>
+                                        <p class="text-[11px] text-rose-700 dark:text-rose-300/90 leading-relaxed">
+                                            Permintaan bantuan ini telah dibatalkan (dibatalkan oleh pemesan atau batas waktu pencarian mitra telah berakhir). Dana pembayaran sebesar <strong>Rp {{ number_format($help->total_amount > 0 ? $help->total_amount : $help->amount, 0, ',', '.') }}</strong> telah dikembalikan utuh (100%) ke saldo dompet Anda.
+                                        </p>
+                                    </div>
+                                @endif
+
                                 @if($help->description)
                                     <div>
                                         <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Deskripsi</h4>
@@ -158,30 +185,32 @@
                                     @endif
                                 </div>
 
-                                {{-- Rating Section --}}
-                                @if($rating)
-                                    <div class="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 rounded-xl p-3">
-                                        <div class="flex items-center justify-between gap-2 mb-1.5">
-                                            <span class="text-xs font-bold text-gray-800 dark:text-gray-100">Penilaian Anda untuk Mitra:</span>
-                                            <div class="flex items-center gap-1">
-                                                @for($i = 1; $i <= 5; $i++)
-                                                    <svg class="w-3.5 h-3.5 {{ $i <= $rating->rating ? 'text-yellow-400 fill-current' : 'text-gray-300 dark:text-gray-600' }}" viewBox="0 0 20 20">
-                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                    </svg>
-                                                @endfor
-                                                <span class="text-xs font-bold text-amber-600 dark:text-amber-400 ml-1">{{ $rating->rating }}.0</span>
+                                {{-- Rating Section (Only for completed with Mitra) --}}
+                                @if(!$isCancelled)
+                                    @if($rating)
+                                        <div class="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 rounded-xl p-3">
+                                            <div class="flex items-center justify-between gap-2 mb-1.5">
+                                                <span class="text-xs font-bold text-gray-800 dark:text-gray-100">Penilaian Anda untuk Mitra:</span>
+                                                <div class="flex items-center gap-1">
+                                                    @for($i = 1; $i <= 5; $i++)
+                                                        <svg class="w-3.5 h-3.5 {{ $i <= $rating->rating ? 'text-yellow-400 fill-current' : 'text-gray-300 dark:text-gray-600' }}" viewBox="0 0 20 20">
+                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                        </svg>
+                                                    @endfor
+                                                    <span class="text-xs font-bold text-amber-600 dark:text-amber-400 ml-1">{{ $rating->rating }}.0</span>
+                                                </div>
                                             </div>
+                                            @if($rating->review)
+                                                <p class="text-xs text-gray-700 dark:text-gray-300 italic">"{{ $rating->review }}"</p>
+                                            @endif
                                         </div>
-                                        @if($rating->review)
-                                            <p class="text-xs text-gray-700 dark:text-gray-300 italic">"{{ $rating->review }}"</p>
-                                        @endif
-                                    </div>
-                                @elseif($help->mitra)
-                                    <div class="pt-2">
-                                        <a href="{{ route('customer.helps.detail', $help->id) }}" class="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition shadow-xs">
-                                            <span>⭐ Beri Penilaian untuk Mitra</span>
-                                        </a>
-                                    </div>
+                                    @elseif($help->mitra)
+                                        <div class="pt-2">
+                                            <a href="{{ route('customer.helps.detail', $help->id) }}" class="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition shadow-xs">
+                                                <span>⭐ Beri Penilaian untuk Mitra</span>
+                                            </a>
+                                        </div>
+                                    @endif
                                 @endif
 
                                 <div class="pt-1 flex items-center justify-end">

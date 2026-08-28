@@ -556,65 +556,146 @@
         });
     </script>
 
-    <!-- Modal Preview Bantuan (Bottom Sheet Style) -->
-    <div id="helpPreviewModal" class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 hidden pb-16">
-        <div class="bg-white rounded-t-3xl w-full max-w-md shadow-2xl max-h-[75vh] overflow-y-auto" onclick="event.stopPropagation()">
+    <!-- Modal Preview Bantuan (Centered Modern Dialog - No Bottom Nav Clash) -->
+    <div id="helpPreviewModal" class="fixed inset-0 z-[60] flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs hidden" onclick="closePreviewModal()">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
+            
             <!-- Modal Header -->
-            <div class="sticky top-0 bg-white border-b px-5 py-4 rounded-t-3xl">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-bold text-gray-900">Preview Bantuan</h3>
-                    <button type="button" onclick="closePreviewModal()" class="p-2 hover:bg-gray-100 rounded-full transition">
-                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+            <div class="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700/80 px-5 py-4 flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-primary-50 dark:bg-primary-950/60 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-sm">
+                        📋
+                    </div>
+                    <div>
+                        <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-tight">Detail Permintaan Bantuan</h3>
+                        <p class="text-[11px] text-gray-400 dark:text-gray-500">Periksa detail tugas sebelum mengambil</p>
+                    </div>
                 </div>
+                <button type="button" onclick="closePreviewModal()" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
 
-            <!-- Modal Content -->
-            <div class="p-5 pb-6">
-                <div class="mb-4">
-                    <p class="text-xs text-gray-600 font-semibold mb-1">Judul Bantuan</p>
-                    <p id="previewTitle" class="text-base font-bold text-gray-900">-</p>
+            <!-- Modal Content (Scrollable) -->
+            <div class="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1 min-h-0 text-gray-800 dark:text-gray-200">
+                
+                <!-- Judul & Badges -->
+                <div class="bg-gray-50 dark:bg-gray-750/60 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4">
+                    <div class="flex items-center gap-1.5 flex-wrap mb-2">
+                        <span id="previewScheduledBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                            ⚡ Butuh Cepat
+                        </span>
+                        <span id="previewDistanceBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            📍 Terverifikasi
+                        </span>
+                    </div>
+                    <h4 id="previewTitle" class="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white leading-snug">
+                        -
+                    </h4>
                 </div>
 
-                <div class="mb-4">
-                    <p class="text-xs text-gray-600 font-semibold mb-1">Nominal untuk Mitra</p>
-                    <div id="previewAmount" class="inline-block bg-green-100 text-green-700 px-3 py-1.5 rounded-lg font-bold text-sm">
-                        💰 Rp 0
+                <!-- Pendapatan Tugas (100% Penuh untuk Mitra) -->
+                <div class="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-2xl p-4 flex items-center justify-between shadow-2xs">
+                    <div>
+                        <span class="text-xs font-bold text-emerald-900 dark:text-emerald-200 block">Upah Bersih untuk Anda:</span>
+                        <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">100% Penuh (Tanpa Potongan Komisi)</span>
+                    </div>
+                    <div id="previewAmount" class="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300 tracking-tight">
+                        Rp 0
                     </div>
                 </div>
 
-                <div class="mb-4">
-                    <p class="text-xs text-gray-600 font-semibold mb-1">Jadwal Permintaan</p>
-                    <div id="previewScheduled" class="text-sm text-gray-700">-</div>
+                <!-- Pemohon Bantuan (Customer Card) -->
+                <div class="flex items-center gap-3 p-3.5 bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl">
+                    <div id="previewCustomerAvatarContainer" class="w-10 h-10 rounded-full overflow-hidden bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 font-bold flex items-center justify-center flex-shrink-0 text-sm">
+                        <span id="previewCustomerInitial">U</span>
+                        <img id="previewCustomerAvatarImg" src="" alt="avatar" class="w-full h-full object-cover hidden">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[11px] text-gray-400 dark:text-gray-500 font-medium">Pemohon Bantuan</p>
+                        <p id="previewCustomerName" class="text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-100 truncate">Pengguna</p>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <p class="text-[10px] text-gray-400 dark:text-gray-500">Waktu Buat</p>
+                        <p id="previewCreatedAt" class="text-[11px] font-semibold text-gray-600 dark:text-gray-300">-</p>
+                    </div>
                 </div>
 
-                <!-- Notice -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                    <p class="text-xs font-semibold text-blue-800 mb-1">🔒 Informasi Terbatas</p>
-                    <p class="text-xs text-blue-700">
-                        Deskripsi, alamat lengkap, lokasi di peta, foto, dan kontak customer akan ditampilkan setelah Anda mengambil bantuan ini.
-                    </p>
+                <!-- Deskripsi Pekerjaan Lengkap -->
+                <div class="space-y-1.5">
+                    <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800 dark:text-gray-200">
+                        <span class="text-primary-500">📝</span>
+                        <span>Rincian & Deskripsi Pekerjaan:</span>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-3.5">
+                        <p id="previewDescription" class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line font-normal">
+                            -
+                        </p>
+                    </div>
                 </div>
+
+                <!-- Peralatan Kerja (Equipment) -->
+                <div class="space-y-1.5">
+                    <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800 dark:text-gray-200">
+                        <span class="text-amber-500">🧰</span>
+                        <span>Peralatan Kerja:</span>
+                    </div>
+                    <div id="previewEquipmentBox" class="bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 rounded-2xl p-3.5">
+                        <p id="previewEquipment" class="text-xs text-amber-900 dark:text-amber-200 leading-relaxed font-medium">
+                            -
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Wilayah / Patokan Lokasi -->
+                <div class="space-y-1.5">
+                    <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800 dark:text-gray-200">
+                        <span class="text-rose-500">📍</span>
+                        <span>Area & Patokan Lokasi:</span>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-3.5 space-y-1.5">
+                        <p id="previewLocation" class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                            -
+                        </p>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                            <span>Rute navigasi GPS & live tracking akan aktif otomatis begitu Anda mengambil tugas ini.</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Foto Objek / Tugas (Jika ada) -->
+                <div id="previewPhotoSection" class="hidden space-y-1.5">
+                    <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800 dark:text-gray-200">
+                        <span class="text-sky-500">📷</span>
+                        <span>Foto Objek / Tempat Pekerjaan:</span>
+                    </div>
+                    <div class="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-black/5 dark:bg-black/20 max-h-56">
+                        <img id="previewPhotoImg" src="" alt="Foto Bantuan" class="w-full h-full max-h-56 object-contain mx-auto">
+                    </div>
+                </div>
+
             </div>
 
             <!-- Sticky footer -->
-            <div class="sticky bottom-0 bg-white border-t pt-4 px-5 pb-5">
-                <div class="flex gap-3">
-                    <button type="button" onclick="closePreviewModal()" class="flex-1 bg-gray-100 text-gray-700 px-4 py-2.5 rounded-xl font-bold hover:bg-gray-200 transition">
-                        Batal
+            <div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700/80 p-3.5 sm:p-4 flex gap-2.5 flex-shrink-0">
+                <button type="button" onclick="closePreviewModal()" class="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-3 rounded-xl font-bold text-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-pointer">
+                    Batal
+                </button>
+                @if(!empty($activeTask))
+                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" class="flex-[1.6] bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center text-center">
+                        Selesaikan Tugas Aktif
+                    </a>
+                @else
+                    <button type="button" id="previewTakeBtn" onclick="takeHelpFromModal()" class="flex-[1.6] bg-gradient-to-r from-primary-600 to-blue-700 text-white py-3 rounded-xl font-bold text-xs hover:brightness-105 shadow-md transition active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span>Ambil Bantuan</span>
                     </button>
-                    @if(!empty($activeTask))
-                        <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl font-bold transition flex items-center justify-center text-center text-xs shadow-sm">
-                            Selesaikan Tugas Aktif
-                        </a>
-                    @else
-                        <button type="button" id="previewTakeBtn" onclick="takeHelpFromModal()" class="flex-1 bg-primary-500 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-primary-600 transition">
-                            Ambil Bantuan
-                        </button>
-                    @endif
-                </div>
+                @endif
             </div>
         </div>
     </div>
@@ -622,23 +703,81 @@
     <script>
         let currentHelpId = null;
 
-        function showHelpPreview(helpId, title, amount, scheduled) {
-            currentHelpId = helpId;
-            document.getElementById('previewTitle').textContent = title;
-            document.getElementById('previewAmount').textContent = '💰 Rp ' + amount.toLocaleString('id-ID');
-            const schedEl = document.getElementById('previewScheduled');
-            if (schedEl) {
-                if (scheduled && scheduled.length) {
-                    schedEl.textContent = scheduled;
+        function showHelpPreview(data) {
+            if (!data) return;
+            if (typeof data === 'number' || typeof data === 'string') {
+                data = { id: data, title: arguments[1] || '-', amount: arguments[2] || 0, scheduled_at: arguments[3] || null };
+            }
+            currentHelpId = data.id;
+
+            // Judul
+            document.getElementById('previewTitle').textContent = data.title || '-';
+
+            // Nominal
+            const taskVal = Number(data.amount) || 0;
+            const taskValEl = document.getElementById('previewAmount');
+            if (taskValEl) taskValEl.textContent = 'Rp ' + taskVal.toLocaleString('id-ID');
+
+            // Jadwal
+            const schedBadge = document.getElementById('previewScheduledBadge');
+            if (schedBadge) {
+                if (data.scheduled_at) {
+                    schedBadge.textContent = '📅 ' + data.scheduled_at;
+                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800';
                 } else {
-                    // fallback: fetch latest help data
-                    fetch('/helps/' + helpId + '/json', { credentials: 'same-origin' })
-                        .then(r => r.ok ? r.json() : Promise.reject(r))
-                        .then(data => {
-                            schedEl.textContent = data.scheduled_at ? new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(data.scheduled_at)) : '-';
-                        }).catch(() => { schedEl.textContent = '-'; });
+                    schedBadge.textContent = '⚡ Butuh Cepat';
+                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800';
                 }
             }
+
+            // Customer
+            document.getElementById('previewCustomerName').textContent = data.customer_name || 'Pemohon Bantuan';
+            document.getElementById('previewCreatedAt').textContent = data.created_at_human || '-';
+            const initialEl = document.getElementById('previewCustomerInitial');
+            const avatarImg = document.getElementById('previewCustomerAvatarImg');
+            if (data.customer_avatar) {
+                avatarImg.src = data.customer_avatar;
+                avatarImg.classList.remove('hidden');
+                initialEl.classList.add('hidden');
+            } else {
+                avatarImg.classList.add('hidden');
+                initialEl.classList.remove('hidden');
+                initialEl.textContent = (data.customer_name || 'U').charAt(0).toUpperCase();
+            }
+
+            // Deskripsi Pekerjaan
+            document.getElementById('previewDescription').textContent = data.description || 'Tidak ada deskripsi tambahan.';
+
+            // Peralatan
+            const equipEl = document.getElementById('previewEquipment');
+            const equipBox = document.getElementById('previewEquipmentBox');
+            if (data.equipment_provided && data.equipment_provided.trim().length > 0) {
+                equipEl.textContent = '✓ Disediakan Pemesan: ' + data.equipment_provided;
+                equipBox.className = 'bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-900/50 rounded-2xl p-3.5';
+                equipEl.className = 'text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed font-medium';
+            } else {
+                equipEl.textContent = 'Peralatan dibawa mandiri oleh Mitra / tidak ada peralatan khusus yang disediakan oleh pemesan.';
+                equipBox.className = 'bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-3.5';
+                equipEl.className = 'text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-normal';
+            }
+
+            // Lokasi
+            let locStr = '';
+            if (data.location) locStr += data.location;
+            if (data.city_name) locStr += (locStr ? ' • ' : '') + data.city_name;
+            if (data.province_name) locStr += ', ' + data.province_name;
+            document.getElementById('previewLocation').textContent = locStr || 'Wilayah Belum Ditentukan';
+
+            // Foto Pekerjaan
+            const photoSection = document.getElementById('previewPhotoSection');
+            const photoImg = document.getElementById('previewPhotoImg');
+            if (data.photo_url) {
+                photoImg.src = data.photo_url;
+                photoSection.classList.remove('hidden');
+            } else {
+                photoSection.classList.add('hidden');
+            }
+
             document.getElementById('helpPreviewModal').classList.remove('hidden');
         }
 

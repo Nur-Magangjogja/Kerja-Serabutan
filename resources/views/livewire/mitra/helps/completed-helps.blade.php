@@ -233,10 +233,10 @@
                                                 {{ $penalty->help?->title ?? 'Pembatalan Bantuan' }}
                                             </h3>
                                             <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-                                                @if($penalty->order_id)
-                                                    Order: <span class="font-mono">{{ $penalty->order_id }}</span> • 
-                                                @elseif($penalty->reference_id)
-                                                    ID: #{{ $penalty->reference_id }} • 
+                                                @if($penalty->help?->order_id)
+                                                    Order: <span class="font-mono">{{ $penalty->help->order_id }}</span> • 
+                                                @elseif($penalty->help_id ?? $penalty->reference_id)
+                                                    ID: #{{ $penalty->help_id ?? $penalty->reference_id }} • 
                                                 @endif
                                                 {{ $penalty->created_at ? $penalty->created_at->format('d M Y • H:i') : '-' }}
                                             </p>
@@ -245,7 +245,7 @@
 
                                     <div class="text-right shrink-0">
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-[10px] font-bold mt-1">
-                                            Pembatalan
+                                            {{ $penalty->activity_type === 'cancel_requested' ? 'Pengajuan Batal' : 'Dibatalkan' }}
                                         </span>
                                     </div>
                                 </div>
