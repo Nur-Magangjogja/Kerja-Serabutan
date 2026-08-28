@@ -281,13 +281,30 @@
         <main class="flex-1 min-h-screen min-w-0 flex flex-col w-full lg:ml-64"
               :class="{ 'lg:ml-64': sidebarOpenDesktop, 'lg:!ml-0': !sidebarOpenDesktop }">
             <!-- Topbar -->
-            <header class="sticky top-0 z-30 border-b w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-xs">
+            @php
+                $currentMenuName = match(true) {
+                    request()->routeIs('admin.dashboard') => 'Dashboard',
+                    request()->routeIs('admin.verifications.*') || request()->routeIs('admin.verifications') => 'Verifikasi Akun Mitra',
+                    request()->routeIs('admin.ktp-ocr.*') || request()->routeIs('admin.ktp-ocr') => 'OCR KTP & Verifikasi',
+                    request()->routeIs('admin.partners.reports*') || request()->routeIs('admin.reports.*') => 'Laporan Aduan',
+                    request()->routeIs('admin.withdraws.*') => 'Manajemen Withdraw',
+                    request()->routeIs('admin.topup.approvals*') => 'Manajemen Top-Up',
+                    request()->routeIs('admin.settings.*') => 'Pengaturan',
+                    request()->routeIs('admin.notifications.*') => 'Notifikasi Admin',
+                    default => (View::hasSection('page-title') ? trim(View::getSection('page-title')) : ($title ?? 'Dashboard')),
+                };
+            @endphp
+            <header x-data="{ isScrolled: false }"
+                    x-init="isScrolled = (window.pageYOffset > 10 || document.documentElement.scrollTop > 10)"
+                    @scroll.window.passive="isScrolled = (window.pageYOffset > 10 || document.documentElement.scrollTop > 10)"
+                    class="sticky top-0 z-30 border-b w-full transition-all duration-300"
+                    :class="isScrolled ? 'bg-white/20 dark:bg-gray-800/40 backdrop-blur-md border-gray-200/50 dark:border-gray-700/60 shadow-xs' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'">
                 <div class="px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
                         <!-- Menu Toggle Button (Always visible on all screens: Desktop, Tablet & Mobile) -->
                         <button @click="toggleSidebar()" 
                                 type="button" 
-                                class="inline-flex items-center justify-center p-2 rounded-xl bg-gray-100 dark:bg-gray-700/80 text-gray-600 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all flex-shrink-0 cursor-pointer" 
+                                class="inline-flex items-center justify-center p-2 rounded-xl bg-gray-100/80 dark:bg-gray-700/60 border border-gray-200/60 dark:border-gray-600/60 text-gray-600 dark:text-gray-200 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all flex-shrink-0 cursor-pointer" 
                                 title="Toggle Menu Sidebar"
                                 aria-label="Toggle Menu Sidebar">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -295,28 +312,20 @@
                             </svg>
                         </button>
 
-                        <div class="hidden sm:flex items-center text-xs text-gray-400 dark:text-gray-400 gap-2">
-                            <span>Admin</span>
-                            <svg class="w-3 h-3 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                            <span class="font-medium text-gray-700 dark:text-gray-200">@yield('page-title', 'Dashboard')</span>
-                        </div>
-
-                        <div class="min-w-0">
-                            @hasSection('page-title')
-                                <div>
-                                    <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white truncate">@yield('page-title')</h2>
-                                    @hasSection('page-description')
-                                        <div class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">@yield('page-description')</div>
-                                    @endif
-                                </div>
-                            @endif
+                        <!-- Single Breadcrumb Line Format -->
+                        <div class="flex items-center gap-2 min-w-0 text-sm font-bold truncate">
+                            <span class="text-gray-400 dark:text-gray-400 flex-shrink-0">Admin</span>
+                            <svg class="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                            <span class="text-gray-900 dark:text-white truncate">{{ $currentMenuName }}</span>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                         <!-- Quick actions (Refresh) -->
                         <div class="hidden sm:flex items-center gap-2">
-                            <button onclick="location.reload()" class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600">
+                            <button onclick="location.reload()" class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100/80 dark:bg-gray-700/60 border border-gray-200/60 dark:border-gray-600/60 text-xs font-semibold text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200/80 dark:hover:bg-gray-600/80 transition cursor-pointer">
                                 <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6"/></svg>
                                 <span class="hidden md:inline">Refresh</span>
                             </button>
@@ -327,10 +336,10 @@
 
                         <!-- User Profile -->
                         <div class="flex items-center gap-2 sm:gap-3">
-                            <div class="w-9 h-9 rounded-full bg-primary-600 text-white flex items-center justify-center font-semibold text-sm">{{ strtoupper(substr(auth()->user()->name ?? 'A',0,1)) }}</div>
+                            <div class="w-9 h-9 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">{{ strtoupper(substr(auth()->user()->name ?? 'A',0,1)) }}</div>
                             <div class="hidden sm:block">
-                                <div class="text-sm font-medium text-gray-800 dark:text-gray-200 max-w-[120px] truncate">{{ auth()->user()->name ?? 'Admin' }}</div>
-                                <div class="text-xs text-gray-400 dark:text-gray-400">Admin</div>
+                                <div class="text-sm font-bold text-gray-800 dark:text-gray-200 max-w-[120px] truncate">{{ auth()->user()->name ?? 'Admin' }}</div>
+                                <div class="text-[11px] text-gray-400 dark:text-gray-400">Admin</div>
                             </div>
                         </div>
                     </div>

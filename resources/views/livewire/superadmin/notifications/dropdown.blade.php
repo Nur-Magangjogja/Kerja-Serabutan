@@ -1,16 +1,16 @@
 <div class="relative" x-data="{ open: false }" wire:poll.15s="loadNotifications">
-    <!-- Notification Button -->
+    <!-- Notification Bell Button -->
     <button 
         @click="open = !open"
-        class="relative p-2 text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700/80 rounded-lg transition cursor-pointer"
+        class="relative p-2 rounded-xl bg-gray-100/80 dark:bg-gray-700/60 border border-gray-200/60 dark:border-gray-600/60 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 focus:outline-none focus:ring-2 focus:ring-primary-500 transition cursor-pointer text-gray-600 dark:text-gray-200"
         type="button"
         aria-label="Notifikasi Keuangan Super Admin">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         @if($unreadCount > 0)
-            <span class="absolute top-1 right-1 flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse shadow-xs">
+            <span class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-extrabold leading-none text-white bg-red-600 rounded-full shadow-xs animate-pulse">
                 {{ $unreadCount > 9 ? '9+' : $unreadCount }}
             </span>
         @endif
@@ -26,7 +26,7 @@
         x-transition:leave="transition ease-in duration-100"
         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
         x-transition:leave-end="opacity-0 scale-95 translate-y-1"
-        class="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden"
+        class="origin-top-right absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200/80 dark:border-gray-700 z-50 overflow-hidden"
         x-cloak>
         
         <!-- Header -->

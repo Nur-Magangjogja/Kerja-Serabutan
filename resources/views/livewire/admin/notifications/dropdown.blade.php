@@ -2,7 +2,7 @@
     <!-- Notification Bell Button -->
     <button 
         @click="open = !open"
-        class="relative p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer text-gray-600 dark:text-gray-200"
+        class="relative p-2 rounded-xl bg-gray-100/80 dark:bg-gray-700/60 border border-gray-200/60 dark:border-gray-600/60 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 focus:outline-none focus:ring-2 focus:ring-primary-500 transition cursor-pointer text-gray-600 dark:text-gray-200"
         type="button"
         aria-label="Notifikasi Admin">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,11 +26,11 @@
         x-transition:leave="transition ease-in duration-100"
         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
         x-transition:leave-end="opacity-0 scale-95 translate-y-1"
-        class="origin-top-right absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden"
+        class="origin-top-right absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200/80 dark:border-gray-700 z-50 overflow-hidden"
         x-cloak>
         
         <!-- Header -->
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/90">
+        <div class="flex items-center justify-between px-4 py-3.5 border-b border-gray-200/80 dark:border-gray-700 bg-gray-50/90 dark:bg-gray-800/90">
             <div class="flex items-center gap-2">
                 <span class="text-sm font-bold text-gray-900 dark:text-white">🔔 Notifikasi Admin</span>
                 @if($unreadCount > 0)

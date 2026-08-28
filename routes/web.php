@@ -191,38 +191,73 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // ========================================
-    // SHARED ROUTES (Accessible by both)
+    // PROFILE & SETTINGS ROUTES (Role-Guarded)
     // ========================================
     Route::get('/profile', function () {
-        if (auth()->user()?->role === 'mitra') {
+        $user = auth()->user();
+        if ($user?->role === 'super_admin') {
+            return redirect()->route('superadmin.dashboard');
+        }
+        if ($user?->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+        if ($user?->role === 'mitra') {
             return redirect()->route('mitra.profile');
         }
         return view('profile');
     })->name('profile');
 
     Route::get('/profile/edit', function () {
-        if (auth()->user()?->role === 'mitra') {
+        $user = auth()->user();
+        if ($user?->role === 'super_admin') {
+            return redirect()->route('superadmin.dashboard');
+        }
+        if ($user?->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+        if ($user?->role === 'mitra') {
             return redirect()->route('mitra.profile.edit');
         }
         return view('profile.edit');
     })->name('profile.edit');
 
     Route::get('/profile/settings', function () {
-        if (auth()->user()?->role === 'mitra') {
+        $user = auth()->user();
+        if ($user?->role === 'super_admin') {
+            return redirect()->route('superadmin.settings.appearance');
+        }
+        if ($user?->role === 'admin') {
+            return redirect()->route('admin.settings.appearance');
+        }
+        if ($user?->role === 'mitra') {
             return redirect()->route('mitra.settings');
         }
         return view('profile.settings');
     })->name('profile.settings');
 
     Route::get('/profile/settings/notifications', function () {
-        if (auth()->user()?->role === 'mitra') {
+        $user = auth()->user();
+        if ($user?->role === 'super_admin') {
+            return redirect()->route('superadmin.notifications.index');
+        }
+        if ($user?->role === 'admin') {
+            return redirect()->route('admin.notifications.index');
+        }
+        if ($user?->role === 'mitra') {
             return redirect()->route('mitra.settings.notifications');
         }
         return view('profile.settings.notifications');
     })->name('profile.settings.notifications');
 
     Route::get('/profile/settings/password', function () {
-        if (auth()->user()?->role === 'mitra') {
+        $user = auth()->user();
+        if ($user?->role === 'super_admin') {
+            return redirect()->route('superadmin.settings.appearance');
+        }
+        if ($user?->role === 'admin') {
+            return redirect()->route('admin.settings.appearance');
+        }
+        if ($user?->role === 'mitra') {
             return redirect()->route('mitra.settings.password');
         }
         return view('profile.settings.password');
