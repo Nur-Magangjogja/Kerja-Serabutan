@@ -251,7 +251,22 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         (function () {
-            let chart = null;
+            // Use a global registry so chart instances survive Livewire re-renders
+            if (!window._adminCharts) window._adminCharts = {};
+
+            function destroyChart(id) {
+                if (window._adminCharts[id]) {
+                    try { window._adminCharts[id].destroy(); } catch (e) {}
+                    delete window._adminCharts[id];
+                }
+                // Also destroy via Chart.js registry to handle any orphans
+                if (typeof Chart !== 'undefined') {
+                    const existing = Chart.getChart(id);
+                    if (existing) {
+                        try { existing.destroy(); } catch (e) {}
+                    }
+                }
+            }
 
             function waitForChart(callback, maxAttempts = 50) {
                 if (typeof Chart !== 'undefined') {
@@ -274,6 +289,9 @@
                 const ctx = document.getElementById('activityChart');
                 if (!ctx) return;
 
+                // Always destroy any previous instance before creating a new one
+                destroyChart('activityChart');
+
                 const isDark = document.documentElement.classList.contains('dark');
                 const data = {
                     labels: @json($chartLabels),
@@ -289,8 +307,7 @@
                     }]
                 };
 
-                if (chart) chart.destroy();
-                chart = new Chart(ctx.getContext('2d'), {
+                window._adminCharts['activityChart'] = new Chart(ctx.getContext('2d'), {
                     type: 'line',
                     data: data,
                     options: {
@@ -317,6 +334,11 @@
                 waitForChart(initAdminChart);
             }
 
+            // Destroy chart before Livewire navigates away to prevent canvas reuse errors
+            document.addEventListener('livewire:navigating', function () {
+                destroyChart('activityChart');
+            });
+
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', safeInit);
             } else {
@@ -325,8 +347,10 @@
             document.addEventListener('livewire:navigated', safeInit);
 
             window.addEventListener('theme-changed', function(e) {
+                const chart = window._adminCharts['activityChart'];
+                if (!chart) return;
                 const dark = e.detail?.isDark ?? document.documentElement.classList.contains('dark');
-                if (chart && chart.options && chart.options.scales) {
+                if (chart.options && chart.options.scales) {
                     chart.options.scales.x.ticks.color = dark ? '#9ca3af' : '#6b7280';
                     chart.options.scales.y.ticks.color = dark ? '#9ca3af' : '#6b7280';
                     chart.options.scales.y.grid.color = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
