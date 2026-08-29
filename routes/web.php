@@ -309,6 +309,7 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
     Route::get('/partners/reports/{report}/chat', \App\Livewire\Admin\Partners\Reports\Chat::class)->name('partners.reports.chat');
     Route::get('/partners/blocked', \App\Livewire\Admin\Partners\Blocked::class)->name('partners.blocked');
     Route::get('/partners/greylist', \App\Livewire\Admin\Partners\Greylist::class)->name('partners.greylist');
+    Route::get('/disputes', \App\Livewire\Admin\Disputes\Index::class)->name('disputes.index');
 
     Route::view('/settings/appearance', 'superadmin.settings.appearance')->name('settings.appearance');
     Route::get('/settings', function () {
@@ -338,6 +339,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/partners/reports/{report}/chat', \App\Livewire\Admin\Partners\Reports\Chat::class)->name('partners.reports.chat');
     Route::get('/partners/blocked', \App\Livewire\Admin\Partners\Blocked::class)->name('partners.blocked');
     Route::get('/partners/greylist', \App\Livewire\Admin\Partners\Greylist::class)->name('partners.greylist');
+    Route::get('/disputes', \App\Livewire\Admin\Disputes\Index::class)->name('disputes.index');
     Route::get('/topup/approvals', \App\Livewire\Admin\Topup\Approval::class)->name('topup.approvals');
 });
 

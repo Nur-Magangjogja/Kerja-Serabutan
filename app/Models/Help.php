@@ -335,6 +335,16 @@ class Help extends Model
         return $this->belongsTo(BalanceTransaction::class, 'escrow_transaction_id');
     }
 
+    public function dispatches()
+    {
+        return $this->hasMany(HelpDispatch::class);
+    }
+
+    public function activeDispatch()
+    {
+        return $this->hasOne(HelpDispatch::class)->where('status', HelpDispatch::STATUS_OFFERED)->latestOfMany();
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // QUERY SCOPES
     // ─────────────────────────────────────────────────────────────────────────
