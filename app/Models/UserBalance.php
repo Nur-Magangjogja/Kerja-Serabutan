@@ -124,17 +124,8 @@ class UserBalance extends Model
 
     /**
      * Tahan dana customer ke Holding (Escrow Lock).
-     *
-     * Dipanggil saat customer membuat tugas baru (model v2).
-     * Mengurangi saldo customer dan mencatat transaksi bertipe 'escrow_lock'.
-     *
-     * @param  float       $amount       Nominal tugas yang ditahan
-     * @param  mixed|null  $referenceId  ID bantuan
-     * @param  string|null $orderId      Order ID bantuan
-     * @param  string|null $description  Deskripsi
-     * @return BalanceTransaction        Transaksi escrow yang dibuat
      */
-    public function lockForEscrow(float $amount, $referenceId = null, $orderId = null, ?string $description = null): BalanceTransaction
+    public function lockForEscrow(float $amount, $referenceId = null, $orderId = null, ?string $description = null, ?string $idempotencyKey = null): BalanceTransaction
     {
         if ($this->balance < $amount) {
             throw new \RuntimeException(
@@ -146,13 +137,16 @@ class UserBalance extends Model
         $this->decrement('balance', $amount);
 
         $tx = BalanceTransaction::create([
-            'user_id'      => $this->user_id,
-            'amount'       => $amount,
-            'type'         => 'escrow_lock',
-            'description'  => $description ?? 'Dana Ditahan untuk Permintaan Bantuan',
-            'reference_id' => $referenceId,
-            'order_id'     => $orderId,
-            'status'       => 'completed',
+            'idempotency_key' => $idempotencyKey ?? ($referenceId ? "help:{$referenceId}:escrow_lock:{$this->user_id}" : null),
+            'user_id'         => $this->user_id,
+            'amount'          => $amount,
+            'direction'       => 'debit',
+            'type'            => 'escrow_lock',
+            'description'     => $description ?? 'Dana Ditahan untuk Permintaan Bantuan',
+            'reference_id'    => $referenceId,
+            'reference_type'  => $referenceId ? 'help' : null,
+            'order_id'        => $orderId,
+            'status'          => 'completed',
         ]);
 
         return $tx;
@@ -160,28 +154,22 @@ class UserBalance extends Model
 
     /**
      * Terima pendapatan bersih dari Holding ke saldo Mitra (Earning).
-     *
-     * Dipanggil saat tugas selesai dikonfirmasi (model v2).
-     * Menambah saldo mitra dengan nominal BERSIH (setelah potong komisi platform).
-     *
-     * @param  float       $netAmount    Nominal bersih setelah potong komisi
-     * @param  mixed|null  $referenceId  ID bantuan
-     * @param  string|null $description  Deskripsi
-     * @param  string|null $orderId      Order ID bantuan
-     * @return $this
      */
-    public function receiveEarning(float $netAmount, $referenceId = null, ?string $description = null, $orderId = null): self
+    public function receiveEarning(float $netAmount, $referenceId = null, ?string $description = null, $orderId = null, ?string $idempotencyKey = null): self
     {
         $this->increment('balance', $netAmount);
 
         BalanceTransaction::create([
-            'user_id'      => $this->user_id,
-            'amount'       => $netAmount,
-            'type'         => 'earning',
-            'description'  => $description ?? 'Pendapatan Bantuan (Bersih setelah Komisi Platform)',
-            'reference_id' => $referenceId,
-            'order_id'     => $orderId,
-            'status'       => 'completed',
+            'idempotency_key' => $idempotencyKey ?? ($referenceId ? "help:{$referenceId}:earning:{$this->user_id}" : null),
+            'user_id'         => $this->user_id,
+            'amount'          => $netAmount,
+            'direction'       => 'credit',
+            'type'            => 'earning',
+            'description'     => $description ?? 'Pendapatan Bantuan (Bersih setelah Komisi Platform)',
+            'reference_id'    => $referenceId,
+            'reference_type'  => $referenceId ? 'help' : null,
+            'order_id'        => $orderId,
+            'status'          => 'completed',
         ]);
 
         return $this;
@@ -189,28 +177,22 @@ class UserBalance extends Model
 
     /**
      * Kembalikan dana dari Holding ke saldo Customer (Refund 100%).
-     *
-     * Dipanggil saat tugas dibatalkan (customer cancel atau accept cancel mitra).
-     * Platform TIDAK memotong komisi apapun dari transaksi yang gagal/batal.
-     *
-     * @param  float       $amount       Nominal yang dikembalikan (harus = escrow amount)
-     * @param  mixed|null  $referenceId  ID bantuan
-     * @param  string|null $orderId      Order ID bantuan
-     * @param  string|null $description  Deskripsi
-     * @return $this
      */
-    public function refundToCustomer(float $amount, $referenceId = null, $orderId = null, ?string $description = null): self
+    public function refundToCustomer(float $amount, $referenceId = null, $orderId = null, ?string $description = null, ?string $idempotencyKey = null): self
     {
         $this->increment('balance', $amount);
 
         BalanceTransaction::create([
-            'user_id'      => $this->user_id,
-            'amount'       => $amount,
-            'type'         => 'refund',
-            'description'  => $description ?? 'Pengembalian Dana 100% (Bantuan Dibatalkan)',
-            'reference_id' => $referenceId,
-            'order_id'     => $orderId,
-            'status'       => 'completed',
+            'idempotency_key' => $idempotencyKey ?? ($referenceId ? "help:{$referenceId}:refund:{$this->user_id}" : null),
+            'user_id'         => $this->user_id,
+            'amount'          => $amount,
+            'direction'       => 'credit',
+            'type'            => 'refund',
+            'description'     => $description ?? 'Pengembalian Dana (Bantuan Dibatalkan / Sengketa)',
+            'reference_id'    => $referenceId,
+            'reference_type'  => $referenceId ? 'help' : null,
+            'order_id'        => $orderId,
+            'status'          => 'completed',
         ]);
 
         return $this;

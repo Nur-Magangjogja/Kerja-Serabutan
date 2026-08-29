@@ -139,6 +139,158 @@
         </div>
     </div>
 
+    <!-- Online & Matching Status Control Card (Tahap 2) -->
+    <div class="px-5 mt-4 relative z-10"
+         x-data="{
+             matchingStatus: '{{ $onlineState?->matching_status ?? 'offline' }}',
+             isGettingLocation: false,
+             triggerAction(action) {
+                 this.isGettingLocation = true;
+                 if (navigator.geolocation) {
+                     navigator.geolocation.getCurrentPosition(
+                         (pos) => {
+                             this.isGettingLocation = false;
+                             if (action === 'startSearching') {
+                                 $wire.startSearching(pos.coords.latitude, pos.coords.longitude);
+                             } else if (action === 'goOnline') {
+                                 $wire.toggleOnline(pos.coords.latitude, pos.coords.longitude);
+                             }
+                         },
+                         (err) => {
+                             this.isGettingLocation = false;
+                             if (action === 'startSearching') $wire.startSearching();
+                             if (action === 'goOnline') $wire.toggleOnline();
+                         },
+                         { timeout: 5000, maximumAge: 30000 }
+                     );
+                 } else {
+                     this.isGettingLocation = false;
+                     if (action === 'startSearching') $wire.startSearching();
+                     if (action === 'goOnline') $wire.toggleOnline();
+                 }
+             },
+             pingHeartbeat() {
+                 if (this.matchingStatus !== 'offline') {
+                     if (navigator.geolocation) {
+                         navigator.geolocation.getCurrentPosition(
+                             (pos) => { $wire.heartbeat(pos.coords.latitude, pos.coords.longitude); },
+                             () => { $wire.heartbeat(); },
+                             { timeout: 5000, maximumAge: 30000 }
+                         );
+                     } else {
+                         $wire.heartbeat();
+                     }
+                 }
+             }
+         }"
+         x-init="
+             setInterval(() => { pingHeartbeat(); }, 25000);
+         ">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    @if(($onlineState?->matching_status ?? 'offline') === 'searching')
+                        <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400">
+                            <span class="absolute w-3 h-3 bg-emerald-500 rounded-full animate-ping"></span>
+                            <span class="relative w-3 h-3 bg-emerald-600 rounded-full"></span>
+                        </div>
+                    @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
+                        <div class="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                            <span class="w-3 h-3 bg-sky-500 rounded-full"></span>
+                        </div>
+                    @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
+                        <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400">
+                            <span class="absolute w-3 h-3 bg-amber-500 rounded-full animate-ping"></span>
+                            <span class="relative w-3 h-3 bg-amber-600 rounded-full"></span>
+                        </div>
+                    @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
+                        <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        </div>
+                    @else
+                        <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-400 flex items-center justify-center">
+                            <span class="w-3 h-3 bg-gray-400 rounded-full"></span>
+                        </div>
+                    @endif
+
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-xs font-bold text-gray-900 dark:text-white">
+                                @if(($onlineState?->matching_status ?? 'offline') === 'searching')
+                                    Mencari Order
+                                @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
+                                    Online (Standby)
+                                @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
+                                    Menunggu Respon Tawaran
+                                @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
+                                    Sedang Bertugas
+                                @else
+                                    Offline (Tidak Aktif)
+                                @endif
+                            </h3>
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full
+                                @if(($onlineState?->matching_status ?? 'offline') === 'searching') bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300
+                                @elseif(($onlineState?->matching_status ?? 'offline') === 'online') bg-sky-100 text-sky-800 dark:bg-sky-900/60 dark:text-sky-300
+                                @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending') bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300
+                                @elseif(($onlineState?->matching_status ?? 'offline') === 'busy') bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300
+                                @else bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400
+                                @endif">
+                                {{ strtoupper($onlineState?->matching_status ?? 'offline') }}
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                            @if(($onlineState?->matching_status ?? 'offline') === 'searching')
+                                Menerima penawaran otomatis matching engine
+                            @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
+                                Terhubung, klik "Cari Order" untuk matching
+                            @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
+                                Ada tawaran order yang sedang diarahkan ke Anda
+                            @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
+                                Selesaikan bantuan aktif untuk mencari order lagi
+                            @else
+                                Aktifkan status untuk mulai menerima bantuan
+                            @endif
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                    @if(($onlineState?->matching_status ?? 'offline') === 'searching')
+                        <button wire:click="stopSearching"
+                                wire:loading.attr="disabled"
+                                class="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-xl text-xs font-bold hover:bg-amber-100 transition cursor-pointer">
+                            Jeda Cari
+                        </button>
+                        <button wire:click="goOffline"
+                                wire:loading.attr="disabled"
+                                class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-200 transition cursor-pointer">
+                            Offline
+                        </button>
+                    @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
+                        <button @click="triggerAction('startSearching')"
+                                :disabled="isGettingLocation"
+                                class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1">
+                            <span x-show="!isGettingLocation">Cari Order</span>
+                            <span x-show="isGettingLocation" x-cloak>GPS...</span>
+                        </button>
+                        <button wire:click="goOffline"
+                                wire:loading.attr="disabled"
+                                class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-200 transition cursor-pointer">
+                            Offline
+                        </button>
+                    @elseif(($onlineState?->matching_status ?? 'offline') === 'offline')
+                        <button @click="triggerAction('goOnline')"
+                                :disabled="isGettingLocation"
+                                class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5">
+                            <span x-show="!isGettingLocation">Aktifkan Online</span>
+                            <span x-show="isGettingLocation" x-cloak>Memuat GPS...</span>
+                        </button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Official Warning / Shadow Ban Alert Banner for Mitra --}}
     @if(auth()->check() && (auth()->user()->warning_level > 0 || auth()->user()->is_shadow_banned))
         <div class="px-5 mt-4 relative z-10">

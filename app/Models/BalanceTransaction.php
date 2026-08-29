@@ -11,13 +11,16 @@ class BalanceTransaction extends Model
     use HasFactory;
 
     protected $fillable = [
+        'idempotency_key',
         'user_id',
         'amount',
+        'direction',
         'admin_fee',
         'total_payment',
         'type',
         'description',
         'reference_id',
+        'reference_type',
         'order_id',
         'status',
         'processed_at',

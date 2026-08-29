@@ -545,25 +545,68 @@
             @endif
         @endif
 
-        {{-- Fallback Confirmation Button for legacy records --}}
-        @if($help->status === 'waiting_customer_confirmation')
-            <div class="bg-white dark:bg-gray-800 mt-2 px-5 py-5 border border-amber-200/80 dark:border-amber-500/30 rounded-2xl shadow-xs">
-                <div class="flex items-start gap-3 mb-4">
-                    <div class="w-11 h-11 rounded-xl bg-amber-500 flex items-center justify-center flex-shrink-0 text-white shadow-xs">
+        {{-- Status Pembekuan Sengketa (Disputed Freeze) --}}
+        @if($help->isDisputed())
+            <div class="bg-gradient-to-br from-rose-50 to-red-100/60 dark:from-rose-950/60 dark:to-red-950/40 mt-2 px-5 py-5 border border-rose-300 dark:border-rose-800 rounded-2xl shadow-xs space-y-3">
+                <div class="flex items-start gap-3">
+                    <div class="w-11 h-11 rounded-xl bg-rose-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Konfirmasi Penyelesaian Pesanan</h3>
-                        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">Mitra telah menyelesaikan pekerjaan dan mengirimkan bukti hasil jasa. Silakan periksa bukti foto dan lakukan konfirmasi.</p>
+                        <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+                            <h3 class="font-bold text-sm text-rose-950 dark:text-rose-100">Pesanan Dalam Proses Sengketa / Mediasi</h3>
+                            <span class="text-[10px] font-extrabold bg-rose-200 text-rose-800 dark:bg-rose-900/80 dark:text-rose-200 px-2.5 py-0.5 rounded-full">
+                                Escrow Dibekukan
+                            </span>
+                        </div>
+                        <p class="text-xs text-rose-900/85 dark:text-rose-300 leading-relaxed">
+                            Dana pembayaran sebesar <strong>Rp {{ number_format($help->total_amount ?: $help->amount, 0, ',', '.') }}</strong> saat ini dibekukan oleh sistem dan sedang dalam pemeriksaan Admin Wilayah.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-white/80 dark:bg-gray-800/80 rounded-xl border border-rose-200 dark:border-rose-900/60 text-xs text-gray-700 dark:text-gray-300">
+                    <span class="font-bold block text-rose-950 dark:text-rose-200 mb-1">Alasan Komplain Anda:</span>
+                    <p class="italic">"{{ $help->dispute_reason }}"</p>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5">Diajukan pada: {{ $help->disputed_at ? $help->disputed_at->translatedFormat('d M Y, H:i') : '-' }} WIB</p>
+                </div>
+            </div>
+        @endif
+
+        {{-- Konfirmasi Penyelesaian & Countdown 24 Jam (Waiting Customer Confirmation) --}}
+        @if($help->status === 'waiting_customer_confirmation' && !$help->isDisputed())
+            @php
+                $remainingMin = $help->confirmation_remaining_minutes ?? 0;
+                $remHours = floor($remainingMin / 60);
+                $remMins = $remainingMin % 60;
+            @endphp
+            <div class="bg-white dark:bg-gray-800 mt-2 px-5 py-5 border border-blue-200/80 dark:border-blue-500/30 rounded-2xl shadow-xs">
+                <div class="flex items-start gap-3 mb-3">
+                    <div class="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 text-white shadow-xs">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+                            <h3 class="font-bold text-sm text-gray-900 dark:text-white">Menunggu Konfirmasi Anda</h3>
+                            <span class="text-[11px] font-bold bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200 px-2.5 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/></svg>
+                                Sisa: {{ $remHours }}j {{ $remMins }}m
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                            Mitra telah menyelesaikan pekerjaan. Mohon periksa hasil pengerjaan di bawah. Jika tidak ada konfirmasi dalam 24 jam, sistem akan menyelesaikan pesanan secara otomatis.
+                        </p>
                     </div>
                 </div>
 
                 @if($help->proof_photo)
                     <div class="mb-4 p-3 bg-slate-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-700">
                         <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block mb-1.5 flex items-center gap-1">
-                            <svg class="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                             Foto Bukti Hasil Pengerjaan:
                         </span>
                         <a href="{{ asset('storage/' . $help->proof_photo) }}" target="_blank" rel="noopener">
@@ -575,14 +618,26 @@
                     </div>
                 @endif
 
-                <button wire:click="confirmCompletion" 
-                        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl transition shadow-md flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    Konfirmasi Pesanan Selesai
-                </button>
-                <p class="text-[11px] text-center text-gray-500 dark:text-gray-400 mt-2">Dengan mengonfirmasi, pesanan dinyatakan tuntas dan dana diteruskan ke mitra</p>
+                <div class="space-y-2">
+                    <button wire:click="confirmCompletion" 
+                            wire:loading.attr="disabled"
+                            class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl transition shadow-sm flex items-center justify-center gap-2 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Konfirmasi Selesai & Teruskan Dana
+                    </button>
+
+                    <button wire:click="openDisputeModal" 
+                            type="button"
+                            class="w-full bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer text-xs">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        Ajukan Komplain / Sengketa
+                    </button>
+                </div>
+                <p class="text-[11px] text-center text-gray-500 dark:text-gray-400 mt-2">Batas waktu auto-konfirmasi: {{ $help->confirmation_deadline_at ? $help->confirmation_deadline_at->translatedFormat('d M Y, H:i') : '-' }} WIB</p>
             </div>
         @endif
 
@@ -980,6 +1035,61 @@
             </div>
         </div>
     </div>
+
+    {{-- Modal Ajukan Komplain / Sengketa --}}
+    @if($showDisputeModal)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
+             wire:click.self="closeDisputeModal">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-base text-gray-900 dark:text-white">Ajukan Komplain / Sengketa</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Pembekuan dana escrow & mediasi admin</p>
+                        </div>
+                    </div>
+                    <button wire:click="closeDisputeModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div class="mb-4 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                    Pengajuan komplain akan <strong>membekukan dana pembayaran (escrow freeze)</strong> secara seketika dan meneruskan bukti pengerjaan ke Admin Wilayah untuk mediasi.
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Jelaskan Masalah / Ketidaksesuaian *</label>
+                    <textarea wire:model="disputeReason"
+                              rows="4"
+                              placeholder="Jelaskan secara detail alasan komplain (contoh: pekerjaan belum tuntas, hasil tidak sesuai kesepakatan, mitra tidak hadir, dsb)..."
+                              class="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-rose-500"></textarea>
+                    @error('disputeReason')
+                        <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button wire:click="closeDisputeModal"
+                            type="button"
+                            class="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl transition">
+                        Batal
+                    </button>
+                    <button wire:click="submitDispute"
+                            wire:loading.attr="disabled"
+                            type="button"
+                            class="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5">
+                        <span wire:loading.remove wire:target="submitDispute">Kirim Komplain</span>
+                        <span wire:loading wire:target="submitDispute">Mengirim...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Modal Styles --}}
     <style>

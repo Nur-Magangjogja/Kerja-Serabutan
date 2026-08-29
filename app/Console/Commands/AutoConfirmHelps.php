@@ -2,48 +2,48 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\Help;
-use Carbon\Carbon;
+use App\Services\HelpTransactionService;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class AutoConfirmHelps extends Command
 {
     protected $signature = 'helps:auto-confirm';
-    protected $description = 'Auto-confirm helps that waited for customer confirmation for more than 24 hours.';
+    protected $description = 'Auto-confirm helps that waited for customer confirmation past their 24-hour deadline and release escrow funds.';
 
-    public function handle()
+    public function handle(HelpTransactionService $transactionService): int
     {
-        $cutoff = Carbon::now()->subHours(24);
+        $this->info("Scanning for helps ready to be auto-confirmed (24-hour deadline passed)...");
 
-        $helps = Help::where('status', 'waiting_customer_confirmation')
-            ->where(function ($q) use ($cutoff) {
-                $q->whereNotNull('service_completed_at')->where('service_completed_at', '<=', $cutoff)
-                  ->orWhere('updated_at', '<=', $cutoff);
-            })
-            ->get();
+        $totalConfirmed = 0;
+        $totalFailed    = 0;
 
-        $this->info('Found ' . $helps->count() . ' helps to auto-confirm.');
-
-        foreach ($helps as $help) {
-            try {
-                $old = $help->status;
-                $help->update([
-                    'status' => 'selesai',
-                    'completed_at' => $help->completed_at ?? now(),
-                ]);
-
-                // Notify mitra that the help was auto-confirmed
-                try {
-                    $help->mitra?->notify(new \App\Notifications\HelpStatusNotification($help, $old, 'selesai', $help->mitra));
-                } catch (\Throwable $e) {
-                    // ignore notification errors
+        Help::where('status', Help::STATUS_WAITING_CONFIRMATION)
+            ->where('escrow_status', Help::ESCROW_STATUS_HELD)
+            ->whereNotNull('confirmation_deadline_at')
+            ->where('confirmation_deadline_at', '<=', now())
+            ->chunkById(100, function ($helps) use ($transactionService, &$totalConfirmed, &$totalFailed) {
+                foreach ($helps as $help) {
+                    try {
+                        $success = $transactionService->autoConfirmExpiredConfirmation($help);
+                        if ($success) {
+                            $totalConfirmed++;
+                            $this->info("  [✓] Auto-confirmed & released escrow for Help #{$help->id} (Order: {$help->order_id})");
+                        } else {
+                            $this->line("  [-] Skipped Help #{$help->id} (Preconditions not met in lock)");
+                        }
+                    } catch (\Throwable $e) {
+                        $totalFailed++;
+                        $this->error("  [✗] Failed to auto-confirm Help #{$help->id}: " . $e->getMessage());
+                        Log::error("[AutoConfirmHelps] Error processing Help #{$help->id}: " . $e->getMessage(), [
+                            'exception' => $e,
+                        ]);
+                    }
                 }
+            });
 
-                $this->info('Auto-confirmed help #' . $help->id);
-            } catch (\Throwable $e) {
-                $this->error('Failed to auto-confirm help #' . $help->id . ': ' . $e->getMessage());
-            }
-        }
+        $this->info("Completed: {$totalConfirmed} confirmed, {$totalFailed} errors.");
 
         return 0;
     }

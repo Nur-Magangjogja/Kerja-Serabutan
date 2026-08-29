@@ -23,6 +23,32 @@ class Help extends Model
     public const STATUS_DIBATALKAN                  = 'dibatalkan';
     public const STATUS_PARTNER_CANCEL_REQUESTED    = 'partner_cancel_requested';
 
+    // Escrow Statuses
+    public const ESCROW_STATUS_UNINITIALIZED        = 'uninitialized';
+    public const ESCROW_STATUS_HELD                 = 'held';
+    public const ESCROW_STATUS_RELEASED             = 'released';
+    public const ESCROW_STATUS_REFUNDED             = 'refunded';
+    public const ESCROW_STATUS_PARTIAL_REFUND       = 'partial_refund';
+    public const ESCROW_STATUS_DISPUTED_FREEZE      = 'disputed_freeze';
+
+    // Payment Statuses
+    public const PAYMENT_STATUS_UNPAID              = 'unpaid';
+    public const PAYMENT_STATUS_PAID                = 'paid';
+    public const PAYMENT_STATUS_PARTIALLY_REFUNDED  = 'partially_refunded';
+    public const PAYMENT_STATUS_REFUNDED            = 'refunded';
+    public const PAYMENT_STATUS_FAILED              = 'failed';
+
+    // Rating Statuses
+    public const RATING_STATUS_PENDING              = 'pending';
+    public const RATING_STATUS_RATED                = 'rated';
+
+    // Dispatch Modes
+    public const DISPATCH_MODE_SEEKING              = 'seeking';
+    public const DISPATCH_MODE_OFFERED              = 'offered';
+    public const DISPATCH_MODE_POOL                 = 'pool';
+    public const DISPATCH_MODE_ASSIGNED             = 'assigned';
+    public const DISPATCH_MODE_CLOSED               = 'closed';
+
     /**
      * Transisi status yang diizinkan.
      * Key: status saat ini
@@ -177,9 +203,21 @@ class Help extends Model
         'latitude',
         'longitude',
         'status',
+        'escrow_status',
+        'payment_status',
+        'rating_status',
+        'dispatch_mode',
         'mitra_id',
         'taken_at',
         'completed_at',
+        'confirmation_deadline_at',
+        'auto_confirmed_at',
+        'assigned_at',
+        'pool_opened_at',
+        'disputed_at',
+        'dispute_reason',
+        'dispute_resolved_at',
+        'dispute_resolved_by',
         'admin_notes',
         'order_id',
         'voucher_code',
@@ -214,6 +252,12 @@ class Help extends Model
     protected $casts = [
         'taken_at'                   => 'datetime',
         'completed_at'               => 'datetime',
+        'confirmation_deadline_at'   => 'datetime',
+        'auto_confirmed_at'          => 'datetime',
+        'assigned_at'                => 'datetime',
+        'pool_opened_at'             => 'datetime',
+        'disputed_at'                => 'datetime',
+        'dispute_resolved_at'        => 'datetime',
         'amount'                     => 'decimal:2',
         'admin_fee'                  => 'decimal:2',
         'total_amount'               => 'decimal:2',
@@ -601,4 +645,54 @@ class Help extends Model
         }
         return 'Rp 0';
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ESCROW, DISPUTE & RATING HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function disputeResolvedBy()
+    {
+        return $this->belongsTo(User::class, 'dispute_resolved_by');
+    }
+
+    public function isEscrowHeld(): bool
+    {
+        return $this->escrow_status === self::ESCROW_STATUS_HELD;
+    }
+
+    public function isEscrowReleased(): bool
+    {
+        return $this->escrow_status === self::ESCROW_STATUS_RELEASED;
+    }
+
+    public function isDisputed(): bool
+    {
+        return $this->escrow_status === self::ESCROW_STATUS_DISPUTED_FREEZE;
+    }
+
+    public function isAutoConfirmable(): bool
+    {
+        return $this->status === self::STATUS_WAITING_CONFIRMATION
+            && $this->isEscrowHeld()
+            && !$this->isDisputed()
+            && $this->confirmation_deadline_at !== null
+            && $this->confirmation_deadline_at->isPast();
+    }
+
+    public function canBeRated(): bool
+    {
+        return $this->rating_status === self::RATING_STATUS_PENDING
+            && in_array($this->escrow_status, [self::ESCROW_STATUS_RELEASED, self::ESCROW_STATUS_REFUNDED, self::ESCROW_STATUS_PARTIAL_REFUND], true)
+            && in_array($this->status, [self::STATUS_SELESAI, self::STATUS_DIBATALKAN], true)
+            && !$this->isDisputed();
+    }
+
+    public function getConfirmationRemainingMinutesAttribute(): ?int
+    {
+        if (!$this->confirmation_deadline_at) {
+            return null;
+        }
+        return (int) max(0, now()->diffInMinutes($this->confirmation_deadline_at, false));
+    }
 }
+

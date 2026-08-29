@@ -89,10 +89,14 @@ class HelpTransactionService
             }
 
             $lockedHelp->update([
-                'mitra_id' => $mitra->id,
-                'status'   => Help::STATUS_TAKEN,
-                'taken_at' => now(),
+                'mitra_id'      => $mitra->id,
+                'status'        => Help::STATUS_TAKEN,
+                'dispatch_mode' => Help::DISPATCH_MODE_ASSIGNED,
+                'taken_at'      => now(),
             ]);
+
+            // Ubah status online mitra menjadi BUSY
+            app(PartnerOnlineService::class)->setBusy($mitra->id, $lockedHelp->id);
 
             // Set koordinat awal mitra
             if ($lat && $lng) {
@@ -205,13 +209,13 @@ class HelpTransactionService
 
     /**
      * Mitra menyelesaikan pekerjaan dan mengunggah foto bukti.
-     * Bantuan langsung otomatis berstatus Selesai, dana saldo dikreditkan ke mitra,
-     * dan mitra dapat segera mengambil pekerjaan bantuan berikutnya.
+     * Status beralih ke waiting_customer_confirmation dengan window konfirmasi 24 jam.
+     * Dana escrow TETAP DITAHAN (held) sampai dikonfirmasi atau auto-confirm.
      */
     public function submitCompletion(Help $help, User $mitra, $proofPhoto, ?string $notes = null): void
     {
         $this->assertMitraAssigned($help, $mitra);
-        $this->assertCanTransition($help, Help::STATUS_SELESAI);
+        $this->assertCanTransition($help, Help::STATUS_WAITING_CONFIRMATION);
 
         $path = $proofPhoto instanceof UploadedFile
             ? $proofPhoto->store('helps/proofs', 'public')
@@ -221,28 +225,27 @@ class HelpTransactionService
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
             $now = now();
             $data = [
-                'status'               => Help::STATUS_SELESAI,
-                'proof_photo'          => $path,
-                'completion_notes'     => $notes,
-                'service_completed_at' => $lockedHelp->service_completed_at ?? $now,
-                'completed_at'         => $lockedHelp->completed_at ?? $now,
+                'status'                   => Help::STATUS_WAITING_CONFIRMATION,
+                'escrow_status'            => Help::ESCROW_STATUS_HELD,
+                'dispatch_mode'            => Help::DISPATCH_MODE_ASSIGNED,
+                'proof_photo'              => $path,
+                'completion_notes'         => $notes,
+                'service_completed_at'     => $lockedHelp->service_completed_at ?? $now,
+                'confirmation_deadline_at' => $now->copy()->addHours(24),
             ];
             $lockedHelp->update($data);
-
-            // Kreditkan saldo pendapatan mitra seketika
-            $this->creditMitra($lockedHelp);
         });
 
         $help->refresh();
 
         // Kirim pesan chat dengan foto bukti ke customer
         $this->sendCompletionChat($help, $mitra, $path, $notes);
-        $this->sendStatusNotification($help, Help::STATUS_SELESAI, $help->user, $mitra);
+        $this->sendStatusNotification($help, Help::STATUS_WAITING_CONFIRMATION, $help->user, $mitra);
         $this->logActivity(
             $mitra->id,
             $help->id,
-            'help_completed',
-            "Mitra {$mitra->name} menyelesaikan bantuan dan mengunggah foto bukti (Selesai Otomatis)",
+            'help_completed_waiting_confirmation',
+            "Mitra {$mitra->name} menyelesaikan bantuan dan mengunggah foto bukti (Menunggu Konfirmasi Customer / 24 Jam)",
             $path
         );
     }
@@ -284,11 +287,12 @@ class HelpTransactionService
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // CUSTOMER ACTIONS
+    // CUSTOMER ACTIONS & ESCROW RELEASE
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
      * Customer mengkonfirmasi bahwa pekerjaan selesai.
+     * Melepaskan dana escrow ke saldo mitra (atomic & idempotent).
      */
     public function customerConfirmCompletion(Help $help, User $customer): void
     {
@@ -302,26 +306,291 @@ class HelpTransactionService
                 throw new \RuntimeException('Pesanan bantuan ini sudah diselesaikan sebelumnya.');
             }
 
-            $lockedHelp->update([
-                'status'       => Help::STATUS_SELESAI,
-                'completed_at' => now(),
-            ]);
+            if ($lockedHelp->escrow_status === Help::ESCROW_STATUS_DISPUTED_FREEZE) {
+                throw new \RuntimeException('Pesanan ini sedang dalam proses sengketa/mediasi.');
+            }
 
-            // Kreditkan pembayaran ke saldo mitra (dengan idempotency lock)
-            $this->creditMitra($lockedHelp);
+            // Kreditkan pembayaran ke saldo mitra (atomic release)
+            $this->releaseEscrowToMitra($lockedHelp, 'customer_confirm');
         });
+
+        $help->refresh();
 
         // Kirim pesan chat penutup dari Customer ke Mitra
         $this->sendConfirmationChat($help, $customer, $help->mitra);
+        $this->sendStatusNotification($help, Help::STATUS_SELESAI, $help->mitra, $customer);
         $this->logActivity(
             $customer->id,
             $help->id,
             'help_confirmed',
-            "Customer {$customer->name} mengonfirmasi bantuan telah selesai",
+            "Customer {$customer->name} mengonfirmasi bantuan telah selesai (Dana diteruskan ke Mitra)",
             $help->proof_photo
         );
 
         Log::info('[HelpTransactionService] customerConfirmCompletion success', ['help_id' => $help->id]);
+    }
+
+    /**
+     * Auto-confirm pesanan yang telah melewati batas waktu 24 jam tanpa konfirmasi manual/dispute.
+     * Re-evaluasi kondisi secara ketat di dalam lock.
+     */
+    public function autoConfirmExpiredConfirmation(Help $help): bool
+    {
+        $executed = false;
+
+        DB::transaction(function () use ($help, &$executed) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
+
+            if (!$lockedHelp) {
+                return;
+            }
+
+            // Re-evaluasi kondisi di dalam lock
+            if (
+                $lockedHelp->escrow_status !== Help::ESCROW_STATUS_HELD ||
+                $lockedHelp->status !== Help::STATUS_WAITING_CONFIRMATION ||
+                $lockedHelp->disputed_at !== null ||
+                !$lockedHelp->confirmation_deadline_at ||
+                $lockedHelp->confirmation_deadline_at->isFuture()
+            ) {
+                return;
+            }
+
+            $this->releaseEscrowToMitra($lockedHelp, 'auto_confirm');
+            $executed = true;
+        });
+
+        if ($executed) {
+            $help->refresh();
+            $this->sendStatusNotification($help, Help::STATUS_SELESAI, $help->mitra, null);
+            $this->logActivity(
+                $help->user_id,
+                $help->id,
+                'help_auto_confirmed',
+                "Pesanan dikonfirmasi selesai otomatis oleh sistem setelah batas waktu 24 jam berakhir."
+            );
+            Log::info('[HelpTransactionService] autoConfirmExpiredConfirmation success', ['help_id' => $help->id]);
+        }
+
+        return $executed;
+    }
+
+    /**
+     * Customer mengajukan sengketa / komplain atas pekerjaan mitra.
+     * Membekukan dana escrow (disputed_freeze) dan mencatat laporan PartnerReport.
+     */
+    public function raiseDispute(Help $help, User $customer, string $reason): PartnerReport
+    {
+        $this->assertCustomerOwns($help, $customer);
+
+        $report = DB::transaction(function () use ($help, $customer, $reason) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
+
+            if ($lockedHelp->escrow_status !== Help::ESCROW_STATUS_HELD) {
+                throw new \RuntimeException('Dana bantuan tidak dalam status holding.');
+            }
+
+            if ($lockedHelp->status !== Help::STATUS_WAITING_CONFIRMATION) {
+                throw new \RuntimeException('Sengketa hanya dapat diajukan saat pesanan menunggu konfirmasi.');
+            }
+
+            if ($lockedHelp->disputed_at !== null || $lockedHelp->escrow_status === Help::ESCROW_STATUS_DISPUTED_FREEZE) {
+                throw new \RuntimeException('Sengketa untuk pesanan ini sudah diajukan sebelumnya.');
+            }
+
+            $lockedHelp->update([
+                'escrow_status'  => Help::ESCROW_STATUS_DISPUTED_FREEZE,
+                'disputed_at'    => now(),
+                'dispute_reason' => $reason,
+            ]);
+
+            $refundAmt = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
+
+            $partnerReport = PartnerReport::create([
+                'reporter_id'      => $customer->id,
+                'reported_id'      => $lockedHelp->mitra_id,
+                'reported_help_id' => $lockedHelp->id,
+                'report_type'      => 'dispute',
+                'title'            => "Sengketa Bantuan #{$lockedHelp->id}: {$lockedHelp->title}",
+                'message'          => $reason,
+                'refund_amount'    => $refundAmt,
+                'refund_status'    => 'requested',
+                'status'           => 'pending',
+            ]);
+
+            return $partnerReport;
+        });
+
+        $help->refresh();
+
+        // Notifikasi ke Mitra
+        if ($help->mitra) {
+            try {
+                $help->mitra->notify(new HelpStatusNotification(
+                    $help,
+                    Help::STATUS_WAITING_CONFIRMATION,
+                    'disputed',
+                    $customer
+                ));
+            } catch (\Throwable $e) {
+                Log::warning('[HelpTransactionService] Failed to notify mitra of dispute: ' . $e->getMessage());
+            }
+        }
+
+        $this->logActivity(
+            $customer->id,
+            $help->id,
+            'dispute_raised',
+            "Customer {$customer->name} mengajukan sengketa/komplain. Dana escrow dibekukan (Freeze)."
+        );
+
+        return $report;
+    }
+
+    /**
+     * Admin menyelesaikan sengketa dengan Full Release, Full Refund, atau Partial Split.
+     */
+    public function resolveDispute(Help $help, User $admin, string $resolutionType, array $splitData = []): void
+    {
+        DB::transaction(function () use ($help, $admin, $resolutionType, $splitData) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
+
+            if ($lockedHelp->escrow_status !== Help::ESCROW_STATUS_DISPUTED_FREEZE) {
+                throw new \RuntimeException('Pesanan ini tidak berada dalam status pembekuan sengketa (disputed_freeze).');
+            }
+
+            $grossAmount = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
+
+            if ($resolutionType === 'full_release') {
+                $this->releaseEscrowToMitra($lockedHelp, 'admin_dispute_release');
+                $lockedHelp->update([
+                    'dispute_resolved_at' => now(),
+                    'dispute_resolved_by' => $admin->id,
+                ]);
+            } elseif ($resolutionType === 'full_refund') {
+                $customer = $lockedHelp->user ?? User::find($lockedHelp->user_id);
+                if (!$customer) {
+                    throw new \RuntimeException('Customer tidak ditemukan.');
+                }
+
+                $customerBalance = UserBalance::firstOrCreate(
+                    ['user_id' => $customer->id],
+                    ['balance' => 0]
+                );
+
+                $customerBalance->refundToCustomer(
+                    $grossAmount,
+                    $lockedHelp->id,
+                    $lockedHelp->order_id,
+                    "Refund 100% Sengketa Bantuan '{$lockedHelp->title}'",
+                    "help:{$lockedHelp->id}:refund:{$customer->id}"
+                );
+
+                $lockedHelp->update([
+                    'status'              => Help::STATUS_DIBATALKAN,
+                    'escrow_status'       => Help::ESCROW_STATUS_REFUNDED,
+                    'payment_status'      => Help::PAYMENT_STATUS_REFUNDED,
+                    'dispatch_mode'       => Help::DISPATCH_MODE_CLOSED,
+                    'dispute_resolved_at' => now(),
+                    'dispute_resolved_by' => $admin->id,
+                ]);
+            } elseif ($resolutionType === 'partial_split') {
+                $partnerAmount  = (float) ($splitData['partner_amount'] ?? 0);
+                $platformFee    = (float) ($splitData['platform_fee'] ?? 0);
+                $customerRefund = (float) ($splitData['customer_refund'] ?? 0);
+
+                if (abs(($partnerAmount + $platformFee + $customerRefund) - $grossAmount) > 0.01) {
+                    throw new \RuntimeException("Total partial split (Rp " . number_format($partnerAmount + $platformFee + $customerRefund, 0) . ") tidak sama dengan nilai gross (Rp " . number_format($grossAmount, 0) . ").");
+                }
+
+                // 1. Credit Mitra
+                if ($partnerAmount > 0 && $lockedHelp->mitra_id) {
+                    $mitraBalance = UserBalance::firstOrCreate(
+                        ['user_id' => $lockedHelp->mitra_id],
+                        ['balance' => 0]
+                    );
+                    $mitraBalance->receiveEarning(
+                        $partnerAmount,
+                        $lockedHelp->id,
+                        "Pendapatan Parsial Penyelesaian Sengketa '{$lockedHelp->title}'",
+                        $lockedHelp->order_id,
+                        "help:{$lockedHelp->id}:dispute_earning:{$lockedHelp->mitra_id}"
+                    );
+                }
+
+                // 2. Refund Customer
+                if ($customerRefund > 0) {
+                    $customer = $lockedHelp->user ?? User::find($lockedHelp->user_id);
+                    if ($customer) {
+                        $custBal = UserBalance::firstOrCreate(
+                            ['user_id' => $customer->id],
+                            ['balance' => 0]
+                        );
+                        $custBal->refundToCustomer(
+                            $customerRefund,
+                            $lockedHelp->id,
+                            $lockedHelp->order_id,
+                            "Refund Parsial Penyelesaian Sengketa '{$lockedHelp->title}'",
+                            "help:{$lockedHelp->id}:dispute_refund:{$customer->id}"
+                        );
+                    }
+                }
+
+                // 3. Platform Fee
+                if ($platformFee > 0) {
+                    BalanceTransaction::create([
+                        'idempotency_key' => "help:{$lockedHelp->id}:dispute_fee",
+                        'user_id'         => null,
+                        'amount'          => $platformFee,
+                        'direction'       => 'credit',
+                        'type'            => 'platform_fee',
+                        'description'     => "Biaya Platform Penyelesaian Sengketa Bantuan '{$lockedHelp->title}'",
+                        'reference_id'    => $lockedHelp->id,
+                        'reference_type'  => 'help',
+                        'order_id'        => $lockedHelp->order_id,
+                        'status'          => 'completed',
+                    ]);
+                }
+
+                $lockedHelp->update([
+                    'status'              => Help::STATUS_SELESAI,
+                    'escrow_status'       => Help::ESCROW_STATUS_PARTIAL_REFUND,
+                    'payment_status'      => Help::PAYMENT_STATUS_PARTIALLY_REFUNDED,
+                    'dispatch_mode'       => Help::DISPATCH_MODE_CLOSED,
+                    'rating_status'       => Help::RATING_STATUS_PENDING,
+                    'dispute_resolved_at' => now(),
+                    'dispute_resolved_by' => $admin->id,
+                ]);
+            } else {
+                throw new \InvalidArgumentException("Tipe resolusi sengketa '{$resolutionType}' tidak valid.");
+            }
+
+            // Update status PartnerReport jika ada
+            PartnerReport::where('reported_help_id', $lockedHelp->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status'              => 'resolved',
+                    'resolved_at'         => now(),
+                    'resolved_by'         => $admin->id,
+                    'refund_status'       => $resolutionType === 'full_release' ? 'rejected' : 'approved',
+                    'refund_processed_at' => now(),
+                    'refund_processed_by' => $admin->id,
+                ]);
+
+            // Lepaskan status BUSY mitra jika ada
+            if ($lockedHelp->mitra_id) {
+                app(PartnerOnlineService::class)->releaseBusy($lockedHelp->mitra_id, $lockedHelp->id);
+            }
+        });
+
+        $help->refresh();
+        $this->logActivity(
+            $admin->id,
+            $help->id,
+            'dispute_resolved',
+            "Admin {$admin->name} menyelesaikan sengketa dengan resolusi: {$resolutionType}"
+        );
+        Log::info('[HelpTransactionService] resolveDispute success', ['help_id' => $help->id, 'resolution' => $resolutionType]);
     }
 
     /**
@@ -348,7 +617,12 @@ class HelpTransactionService
                 throw new \RuntimeException('Bantuan ini tidak dapat dibatalkan secara sepihak karena sudah diambil oleh Rekan Jasa.');
             }
 
-            $lockedHelp->update(['status' => Help::STATUS_DIBATALKAN]);
+            $lockedHelp->update([
+                'status'         => Help::STATUS_DIBATALKAN,
+                'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
+                'escrow_status'  => Help::ESCROW_STATUS_REFUNDED,
+                'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
+            ]);
 
             // Kembalikan escrow ke customer (refund 100%)
             if ($lockedHelp->amount > 0) {
@@ -384,8 +658,11 @@ class HelpTransactionService
             }
 
             $lockedHelp->update([
-                'status'      => Help::STATUS_DIBATALKAN,
-                'admin_notes' => "Dibatalkan otomatis oleh sistem. Alasan: {$reason}",
+                'status'         => Help::STATUS_DIBATALKAN,
+                'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
+                'escrow_status'  => Help::ESCROW_STATUS_REFUNDED,
+                'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
+                'admin_notes'    => "Dibatalkan otomatis oleh sistem. Alasan: {$reason}",
             ]);
 
             // Kembalikan dana escrow 100% ke customer
@@ -610,107 +887,90 @@ class HelpTransactionService
     }
 
     /**
-     * Kredit saldo mitra saat bantuan selesai dikonfirmasi.
-     *
-     * Backward-compatible:
-     * - Model v2 (isV2Model): gunakan splitPaymentFromEscrow() — split earning + platform_fee
-     * - Model v1 (data lama): gunakan logika lama (topup penuh ke mitra)
+     * Melepaskan dana escrow ke saldo mitra dan kas platform secara atomik & idempotent.
+     * Mengubah status order menjadi selesai, escrow_status released, payment_status paid, dispatch_mode closed.
      */
-    private function creditMitra(Help $help): void
+    private function releaseEscrowToMitra(Help $lockedHelp, string $triggeredBy = 'customer_confirm'): void
     {
-        if (!$help->mitra_id || $help->amount <= 0) {
+        if (!$lockedHelp->mitra_id || $lockedHelp->amount <= 0) {
             return;
         }
 
-        if ($help->isV2Model()) {
-            $this->splitPaymentFromEscrow($help);
-            return;
-        }
+        $netEarning  = $lockedHelp->getNetEarning();
+        $platformFee = $lockedHelp->getPlatformFee();
 
-        // ── MODEL V1 (logika lama — backward compatible) ──────────────────────
-        $alreadyCredited = BalanceTransaction::where('user_id', $help->mitra_id)
-            ->where('reference_id', $help->id)
-            ->where('type', 'topup')
+        // 1. Catat Earning Mitra (Idempotent)
+        $alreadyCredited = BalanceTransaction::where('user_id', $lockedHelp->mitra_id)
+            ->where('reference_id', $lockedHelp->id)
+            ->whereIn('type', ['earning', 'topup'])
             ->exists();
 
-        if ($alreadyCredited) {
-            Log::info('[HelpTransactionService] Mitra sudah dikreditkan (v1) untuk help ' . $help->id . ', skip.');
-            return;
+        if (!$alreadyCredited) {
+            $mitraBalance = UserBalance::firstOrCreate(
+                ['user_id' => $lockedHelp->mitra_id],
+                ['balance' => 0]
+            );
+
+            $mitraBalance->receiveEarning(
+                $netEarning,
+                $lockedHelp->id,
+                "Pendapatan Bantuan '{$lockedHelp->title}'",
+                $lockedHelp->order_id,
+                "help:{$lockedHelp->id}:earning:{$lockedHelp->mitra_id}"
+            );
         }
 
-        $userBalance = UserBalance::firstOrCreate(
-            ['user_id' => $help->mitra_id],
-            ['balance' => 0]
-        );
+        // 2. Catat Platform Fee (Idempotent)
+        if ($platformFee > 0) {
+            $alreadyFee = BalanceTransaction::where('reference_id', $lockedHelp->id)
+                ->where('type', 'platform_fee')
+                ->exists();
 
-        $userBalance->addBalance(
-            $help->amount,
-            'Pendapatan Bantuan (' . $help->title . ')',
-            $help->id
-        );
+            if (!$alreadyFee) {
+                BalanceTransaction::create([
+                    'idempotency_key' => "help:{$lockedHelp->id}:platform_fee",
+                    'user_id'         => null,
+                    'amount'          => $platformFee,
+                    'direction'       => 'credit',
+                    'type'            => 'platform_fee',
+                    'description'     => "Biaya Layanan Platform {$lockedHelp->getCommissionRateLabel()} dari Bantuan '{$lockedHelp->title}'",
+                    'reference_id'    => $lockedHelp->id,
+                    'reference_type'  => 'help',
+                    'order_id'        => $lockedHelp->order_id,
+                    'status'          => 'completed',
+                ]);
+            }
+        }
 
-        Log::info('[HelpTransactionService] Mitra dikreditkan (v1)', [
-            'help_id'  => $help->id,
-            'mitra_id' => $help->mitra_id,
-            'amount'   => $help->amount,
+        // 3. Update Status Order
+        $lockedHelp->update([
+            'status'            => Help::STATUS_SELESAI,
+            'escrow_status'     => Help::ESCROW_STATUS_RELEASED,
+            'payment_status'    => Help::PAYMENT_STATUS_PAID,
+            'rating_status'     => Help::RATING_STATUS_PENDING,
+            'dispatch_mode'     => Help::DISPATCH_MODE_CLOSED,
+            'completed_at'      => $lockedHelp->completed_at ?? now(),
+            'auto_confirmed_at' => ($triggeredBy === 'auto_confirm') ? now() : null,
+        ]);
+
+        // Lepaskan status BUSY mitra
+        app(PartnerOnlineService::class)->releaseBusy($lockedHelp->mitra_id, $lockedHelp->id);
+
+        Log::info('[HelpTransactionService] releaseEscrowToMitra selesai', [
+            'help_id'      => $lockedHelp->id,
+            'mitra_id'     => $lockedHelp->mitra_id,
+            'net_earning'  => $netEarning,
+            'platform_fee' => $platformFee,
+            'triggered_by' => $triggeredBy,
         ]);
     }
 
     /**
-     * MODEL V2: Pecah dana dari Holding ke Mitra + Platform (Split Payment).
-     *
-     * Dilakukan secara atomik dalam DB::transaction yang sudah ada (dipanggil dari dalam transaksi).
-     * Platform tidak memotong dari saldo mitra — potongan sudah dihitung dari nilai tugas.
-     *
-     * Alur: Holding (Rp 50.000) → Earning Mitra (Rp 45.000) + Platform Fee (Rp 5.000)
+     * Kredit saldo mitra (wrapper kompatibilitas ke releaseEscrowToMitra).
      */
-    private function splitPaymentFromEscrow(Help $help): void
+    private function creditMitra(Help $help): void
     {
-        // Idempotency: cek sudah pernah di-split
-        $alreadySplit = BalanceTransaction::where('user_id', $help->mitra_id)
-            ->where('reference_id', $help->id)
-            ->whereIn('type', ['earning', 'topup']) // topup = v1 compat
-            ->exists();
-
-        if ($alreadySplit) {
-            Log::info('[HelpTransactionService] Split payment sudah dilakukan untuk help ' . $help->id . ', skip.');
-            return;
-        }
-
-        $netEarning  = $help->getNetEarning();
-        $platformFee = $help->getPlatformFee();
-
-        // 1. Kredit saldo mitra (100% nominal penuh tanpa potongan)
-        $mitraBalance = UserBalance::firstOrCreate(
-            ['user_id' => $help->mitra_id],
-            ['balance' => 0]
-        );
-        $mitraBalance->receiveEarning(
-            $netEarning,
-            $help->id,
-            "Pendapatan Bantuan '{$help->title}'",
-            $help->order_id
-        );
-
-        // 2. Catat Platform Fee ke ledger (tidak masuk ke saldo user manapun — kas platform)
-        if ($platformFee > 0) {
-            BalanceTransaction::create([
-                'user_id'     => null, // kas platform, bukan milik user
-                'amount'      => $platformFee,
-                'type'        => 'platform_fee',
-                'description' => "Biaya Layanan Platform {$help->getCommissionRateLabel()} dari Bantuan '{$help->title}'",
-                'reference_id'=> $help->id,
-                'order_id'    => $help->order_id,
-                'status'      => 'completed',
-            ]);
-        }
-
-        Log::info('[HelpTransactionService] Split payment (v2) selesai', [
-            'help_id'      => $help->id,
-            'mitra_id'     => $help->mitra_id,
-            'net_earning'  => $netEarning,
-            'platform_fee' => $platformFee,
-        ]);
+        $this->releaseEscrowToMitra($help, 'manual_credit');
     }
 
     /**
@@ -743,7 +1003,8 @@ class HelpTransactionService
             $refundAmount,
             $help->id,
             $help->order_id,
-            "Pengembalian Dana 100% (Bantuan '{$help->title}' Dibatalkan)"
+            "Pengembalian Dana 100% (Bantuan '{$help->title}' Dibatalkan)",
+            "help:{$help->id}:refund:{$customer->id}"
         );
 
         Log::info('[HelpTransactionService] Refund escrow (v2) ke customer', [
@@ -751,6 +1012,10 @@ class HelpTransactionService
             'customer_id' => $customer->id,
             'amount'      => $refundAmount,
         ]);
+
+        if ($help->mitra_id) {
+            app(PartnerOnlineService::class)->releaseBusy($help->mitra_id, $help->id);
+        }
     }
 
     /**

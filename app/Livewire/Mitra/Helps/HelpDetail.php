@@ -196,8 +196,8 @@ class HelpDetail extends Component
             $this->reset(['proof_photo', 'completion_notes']);
             $this->loadHelp();
 
-            $this->dispatch('show-status-notification', message: 'Pekerjaan berhasil diselesaikan! Dana saldo telah masuk ke akun Anda.');
-            session()->flash('message', 'Pekerjaan berhasil diselesaikan! Dana saldo telah masuk ke akun Anda dan Anda dapat langsung mengambil pekerjaan lainnya.');
+            $this->dispatch('show-status-notification', message: 'Bukti pengerjaan terkirim! Menunggu konfirmasi customer (maks. 24 jam).');
+            session()->flash('message', 'Bukti pengerjaan berhasil dikirim! Menunggu konfirmasi customer (maks. 24 jam). Dana akan diteruskan ke saldo Anda setelah dikonfirmasi atau otomatis selesai.');
         } catch (\RuntimeException $e) {
             session()->flash('error', $e->getMessage());
         } catch (\Throwable $e) {

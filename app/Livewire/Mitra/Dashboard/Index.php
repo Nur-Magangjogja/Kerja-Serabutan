@@ -3,9 +3,13 @@
 namespace App\Livewire\Mitra\Dashboard;
 
 use App\Models\Help;
+use App\Models\PartnerOnlineState;
 use App\Models\UserBalance;
+use App\Services\HelpTransactionService;
 use App\Services\LocationTrackingService;
+use App\Services\PartnerOnlineService;
 use App\Notifications\HelpTakenNotification;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
 use Livewire\Attributes\On;
@@ -18,6 +22,93 @@ class Index extends Component
     use WithPagination;
 
     public $activeTab = 'tersedia'; // tersedia, semua, diproses, selesai
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ONLINE / SEARCHING STATE ACTIONS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function toggleOnline($lat = null, $lng = null)
+    {
+        $service = app(PartnerOnlineService::class);
+        $user    = auth()->user();
+        $state   = $service->getOrCreateState($user->id);
+
+        try {
+            if ($state->matching_status === PartnerOnlineState::STATUS_OFFLINE) {
+                $service->goOnline($user, $lat ? (float) $lat : null, $lng ? (float) $lng : null);
+                $this->dispatch('show-status-notification', message: 'Status Anda sekarang ONLINE (Standby).');
+            } else {
+                $service->goOffline($user);
+                $this->dispatch('show-status-notification', message: 'Status Anda sekarang OFFLINE.');
+            }
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[MitraDashboard] toggleOnline error: ' . $e->getMessage());
+            session()->flash('error', 'Gagal memperbarui status online.');
+        }
+    }
+
+    public function startSearching($lat = null, $lng = null)
+    {
+        $service = app(PartnerOnlineService::class);
+        $user    = auth()->user();
+
+        try {
+            $service->startSearching($user, $lat ? (float) $lat : null, $lng ? (float) $lng : null);
+            $this->dispatch('show-status-notification', message: 'Mode pencarian aktif! Anda akan menerima tawaran otomatis saat ada customer.');
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[MitraDashboard] startSearching error: ' . $e->getMessage());
+            session()->flash('error', 'Gagal memulai pencarian order.');
+        }
+    }
+
+    public function stopSearching()
+    {
+        $service = app(PartnerOnlineService::class);
+        $user    = auth()->user();
+
+        try {
+            $service->stopSearching($user);
+            $this->dispatch('show-status-notification', message: 'Pencarian dihentikan. Status kembali ke Online (Standby).');
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[MitraDashboard] stopSearching error: ' . $e->getMessage());
+            session()->flash('error', 'Gagal menghentikan pencarian.');
+        }
+    }
+
+    public function goOffline()
+    {
+        $service = app(PartnerOnlineService::class);
+        $user    = auth()->user();
+
+        try {
+            $service->goOffline($user);
+            $this->dispatch('show-status-notification', message: 'Status Anda sekarang OFFLINE.');
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[MitraDashboard] goOffline error: ' . $e->getMessage());
+            session()->flash('error', 'Gagal mengubah status ke offline.');
+        }
+    }
+
+    public function heartbeat($lat = null, $lng = null)
+    {
+        if (!auth()->check()) {
+            return;
+        }
+
+        app(PartnerOnlineService::class)->heartbeat(
+            auth()->user(),
+            $lat ? (float) $lat : null,
+            $lng ? (float) $lng : null
+        );
+    }
 
     public function mount()
     {
@@ -203,6 +294,8 @@ class Index extends Component
         // Active task checking
         $activeTask = $user ? Help::where('mitra_id', $user->id)->active()->first() : null;
 
+        $onlineState = $user ? app(PartnerOnlineService::class)->getOrCreateState($user->id) : null;
+
         return view('livewire.mitra.dashboard.index', [
             'helps' => $helps,
             'balance' => $balance,
@@ -215,6 +308,7 @@ class Index extends Component
             'nearbyHelps' => $nearbyHelps,
             'unreadChatCount' => $unreadChatCount,
             'activeTask' => $activeTask,
+            'onlineState' => $onlineState,
         ]);
     }
 }

@@ -452,5 +452,8 @@ class User extends Authenticatable
             })->count();
     }
 
-
+    public function onlineState()
+    {
+        return $this->hasOne(PartnerOnlineState::class, 'user_id');
+    }
 }

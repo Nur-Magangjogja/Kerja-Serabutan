@@ -18,6 +18,8 @@ class Detail extends Component
     public $showMapModal               = false;
     public $showRatingForm             = false;
     public $showPartnerCancelModal     = false;
+    public $showDisputeModal           = false;
+    public $disputeReason              = '';
 
     // Rating
     public $rating = 0;
@@ -143,6 +145,42 @@ class Detail extends Component
         }
     }
 
+    public function openDisputeModal()
+    {
+        $this->disputeReason = '';
+        $this->showDisputeModal = true;
+    }
+
+    public function closeDisputeModal()
+    {
+        $this->showDisputeModal = false;
+        $this->disputeReason = '';
+    }
+
+    public function submitDispute()
+    {
+        $this->validate([
+            'disputeReason' => 'required|string|min:10|max:1000',
+        ], [
+            'disputeReason.required' => 'Alasan komplain wajib diisi.',
+            'disputeReason.min'      => 'Alasan komplain minimal 10 karakter.',
+            'disputeReason.max'      => 'Alasan komplain maksimal 1000 karakter.',
+        ]);
+
+        try {
+            app(HelpTransactionService::class)->raiseDispute($this->help, auth()->user(), $this->disputeReason);
+            $this->showDisputeModal = false;
+            $this->disputeReason = '';
+            $this->loadHelp();
+            session()->flash('warning', 'Komplain Anda telah dicatat dan diteruskan ke Admin Wilayah. Dana escrow telah dibekukan.');
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[CustomerHelpDetail] submitDispute error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat mengajukan sengketa.');
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // RATING
     // ─────────────────────────────────────────────────────────────────────────
@@ -164,8 +202,8 @@ class Detail extends Component
             'review.max'      => 'Review maksimal 500 karakter',
         ]);
 
-        if (!in_array($this->help->status, ['selesai', 'completed'])) {
-            session()->flash('error', 'Rating hanya bisa diberikan untuk pesanan yang sudah selesai.');
+        if (!$this->help->canBeRated()) {
+            session()->flash('error', 'Rating belum dapat diberikan atau pesanan sedang dalam proses sengketa.');
             return;
         }
 
@@ -174,14 +212,20 @@ class Detail extends Component
             return;
         }
 
-        $ratingRecord = Rating::create([
-            'help_id'  => $this->help->id,
-            'rater_id' => auth()->id(),
-            'ratee_id' => $this->help->mitra_id,
-            'type'     => 'customer_to_mitra',
-            'rating'   => $this->rating,
-            'review'   => $this->review,
-        ]);
+        $ratingRecord = \Illuminate\Support\Facades\DB::transaction(function () {
+            $record = Rating::create([
+                'help_id'  => $this->help->id,
+                'rater_id' => auth()->id(),
+                'ratee_id' => $this->help->mitra_id,
+                'type'     => 'customer_to_mitra',
+                'rating'   => $this->rating,
+                'review'   => $this->review,
+            ]);
+
+            $this->help->update(['rating_status' => Help::RATING_STATUS_RATED]);
+
+            return $record;
+        });
 
         // Notifikasi ke mitra
         if ($this->help->mitra) {
