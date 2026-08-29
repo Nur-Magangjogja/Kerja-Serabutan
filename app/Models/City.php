@@ -55,5 +55,9 @@ class City extends Model
         return $this->hasMany(District::class);
     }
 
+    public function capacity()
+    {
+        return $this->hasOne(CityCapacity::class);
+    }
 }
 

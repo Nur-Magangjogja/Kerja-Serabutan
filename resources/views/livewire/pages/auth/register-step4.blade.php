@@ -131,6 +131,14 @@ new #[Layout('layouts.guest')] class extends Component {
                     $user->save();
                 }
             }
+
+            // Tracking waiting list jika pendaftar adalah mitra di kota berstatus closed
+            if ($user->role === 'mitra' && $user->city_id) {
+                $cityCap = \App\Models\CityCapacity::where('city_id', $user->city_id)->first();
+                if ($cityCap && $cityCap->isClosed()) {
+                    $cityCap->increment('waiting_list_count');
+                }
+            }
         } catch (\Exception $e) {
             // jika terjadi error mapping city, jangan ganggu proses pendaftaran
         }

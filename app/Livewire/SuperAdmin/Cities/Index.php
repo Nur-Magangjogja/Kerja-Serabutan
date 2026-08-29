@@ -49,6 +49,14 @@ class Index extends Component
     public $deletingProvinceName = null;
     public $filterProvinceId = null;
 
+    // Capacity & Supply-Demand Management
+    public $showCapacityModal = false;
+    public $capacityCityId = null;
+    public $capacityCityName = null;
+    public $overrideStatus = 'open';
+    public $overrideHours = 24;
+    public $overrideNotes = '';
+
     public function updatedSearch()
     {
         $this->resetPage();
@@ -311,11 +319,56 @@ class Index extends Component
         $this->chartMitraData = [];
     }
 
+    public function evaluateCityCapacity($cityId)
+    {
+        $city = City::findOrFail($cityId);
+        app(\App\Services\SupplyDemandService::class)->evaluateCapacity($city);
+        session()->flash('message', "Kapasitas & metrik kota {$city->name} berhasil diperbarui.");
+    }
+
+    public function openCapacityModal($cityId)
+    {
+        $city = City::with('capacity')->findOrFail($cityId);
+        $this->capacityCityId   = $city->id;
+        $this->capacityCityName = $city->name;
+        $this->overrideStatus   = $city->capacity?->admin_override_status ?? $city->capacity?->capacity_status ?? 'open';
+        $this->overrideHours    = 24;
+        $this->overrideNotes    = $city->capacity?->admin_override_notes ?? '';
+        $this->showCapacityModal = true;
+    }
+
+    public function saveCapacityOverride()
+    {
+        if (!$this->capacityCityId) return;
+
+        $city = City::findOrFail($this->capacityCityId);
+        $until = $this->overrideHours > 0 ? now()->addHours($this->overrideHours) : null;
+
+        app(\App\Services\SupplyDemandService::class)->setAdminOverride(
+            $city,
+            auth()->user(),
+            $this->overrideStatus,
+            $until,
+            $this->overrideNotes
+        );
+
+        $this->showCapacityModal = false;
+        session()->flash('message', "Override kapasitas untuk {$city->name} berhasil disimpan.");
+    }
+
+    public function clearCapacityOverride($cityId)
+    {
+        $city = City::findOrFail($cityId);
+        app(\App\Services\SupplyDemandService::class)->clearAdminOverride($city);
+        session()->flash('message', "Override kapasitas {$city->name} berhasil dihapus (kembali ke auto-manage).");
+    }
+
     public function render()
     {
         $loadDistricts = Schema::hasTable('districts');
 
         $citiesQuery = City::query()
+            ->with('capacity')
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('name', 'like', '%' . $this->search . '%')
