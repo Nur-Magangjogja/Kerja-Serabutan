@@ -199,11 +199,13 @@ class PartnerOnlineService
     /**
      * Matching Engine menetapkan tawaran aktif ke mitra (Atomic Lock).
      * Transisi: SEARCHING -> OFFER_PENDING.
-     * Syarat: Status wajib 'searching' DAN heartbeat masih segar (<= 60s).
+     * Syarat: Status wajib 'searching' DAN heartbeat masih segar.
      */
-    public function setOfferPending(int $mitraId, int $helpId, int $heartbeatTtlSeconds = self::DEFAULT_HEARTBEAT_TTL): bool
+    public function setOfferPending(int $mitraId, int $helpId, ?int $heartbeatTtlSeconds = null): bool
     {
-        return DB::transaction(function () use ($mitraId, $helpId, $heartbeatTtlSeconds) {
+        $ttl = $heartbeatTtlSeconds ?? \App\Models\AppSetting::getHeartbeatTtlSeconds();
+
+        return DB::transaction(function () use ($mitraId, $helpId, $ttl) {
             $state = PartnerOnlineState::where('user_id', $mitraId)->lockForUpdate()->first();
 
             if (!$state) {
@@ -215,7 +217,7 @@ class PartnerOnlineService
                 return false;
             }
 
-            if (!$state->isHeartbeatFresh($heartbeatTtlSeconds)) {
+            if (!$state->isHeartbeatFresh($ttl)) {
                 Log::warning("[PartnerOnlineService] Cannot set offer_pending: Mitra #{$mitraId} heartbeat is stale.");
                 return false;
             }
@@ -233,9 +235,11 @@ class PartnerOnlineService
      * Mengembalikan status mitra jika penawaran ditolak / timeout (Atomic Lock).
      * Transisi: OFFER_PENDING -> SEARCHING (jika heartbeat segar) atau ONLINE (jika heartbeat stale).
      */
-    public function revertFromOfferPending(int $mitraId, int $helpId, int $heartbeatTtlSeconds = self::DEFAULT_HEARTBEAT_TTL): void
+    public function revertFromOfferPending(int $mitraId, int $helpId, ?int $heartbeatTtlSeconds = null): void
     {
-        DB::transaction(function () use ($mitraId, $helpId, $heartbeatTtlSeconds) {
+        $ttl = $heartbeatTtlSeconds ?? \App\Models\AppSetting::getHeartbeatTtlSeconds();
+
+        DB::transaction(function () use ($mitraId, $helpId, $ttl) {
             $state = PartnerOnlineState::where('user_id', $mitraId)->lockForUpdate()->first();
 
             if (!$state || $state->matching_status !== PartnerOnlineState::STATUS_OFFER_PENDING || $state->current_help_id != $helpId) {
@@ -244,7 +248,7 @@ class PartnerOnlineService
 
             $state->current_help_id = null;
 
-            if ($state->isHeartbeatFresh($heartbeatTtlSeconds)) {
+            if ($state->isHeartbeatFresh($ttl)) {
                 $state->matching_status = PartnerOnlineState::STATUS_SEARCHING;
             } else {
                 $state->matching_status = PartnerOnlineState::STATUS_ONLINE;
@@ -321,9 +325,10 @@ class PartnerOnlineService
      * Housekeeping untuk mendemotasi mitra 'searching' yang heartbeat-nya mati (stale) menjadi 'online'.
      * Guard: TIDAK PERNAH menyentuh mitra berstatus 'busy' atau 'offline'.
      */
-    public function cleanupStaleStates(int $heartbeatTtlSeconds = self::DEFAULT_HEARTBEAT_TTL): int
+    public function cleanupStaleStates(?int $heartbeatTtlSeconds = null): int
     {
-        $cutoff = now()->subSeconds($heartbeatTtlSeconds);
+        $ttl    = $heartbeatTtlSeconds ?? \App\Models\AppSetting::getHeartbeatTtlSeconds();
+        $cutoff = now()->subSeconds($ttl);
 
         return DB::transaction(function () use ($cutoff) {
             $staleStates = PartnerOnlineState::where('matching_status', PartnerOnlineState::STATUS_SEARCHING)

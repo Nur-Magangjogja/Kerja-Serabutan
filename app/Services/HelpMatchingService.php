@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Jobs\HandleOfferExpiry;
+use App\Models\AppSetting;
 use App\Models\Help;
 use App\Models\HelpDispatch;
 use App\Models\PartnerOnlineState;
@@ -15,12 +16,6 @@ use Illuminate\Support\Facades\Log;
 
 class HelpMatchingService
 {
-    public const OFFER_TTL_SECONDS          = 45;
-    public const MAX_SEQUENTIAL_CANDIDATES  = 5;
-    public const MAX_RADIUS_KM              = 15.0;
-    public const BAYESIAN_PRIOR_RATING      = 4.5;
-    public const BAYESIAN_CONFIDENCE_WEIGHT = 5.0;
-
     protected PartnerOnlineService $onlineService;
 
     public function __construct(PartnerOnlineService $onlineService)
@@ -65,8 +60,8 @@ class HelpMatchingService
         $count = (float) $ratings->count();
         $sum   = (float) $ratings->sum('rating');
 
-        $C = self::BAYESIAN_CONFIDENCE_WEIGHT;
-        $m = self::BAYESIAN_PRIOR_RATING;
+        $C = (float) AppSetting::getRatingMinVotes();
+        $m = (float) AppSetting::getNeutralRatingPrior();
 
         $bayesianAvg = ($C * $m + $sum) / ($C + $count);
 
@@ -92,7 +87,7 @@ class HelpMatchingService
     }
 
     /**
-     * Hitung skor fairness berdasarkan durasi tunggu / waktu sejak tugas terakhir (skala 0.0 - 1.0, cap 60 menit).
+     * Hitung skor fairness berdasarkan durasi tunggu / waktu sejak tugas terakhir (skala 0.0 - 1.0, cap dinamis).
      */
     public function calculateFairnessScore(PartnerOnlineState $state): float
     {
@@ -102,18 +97,21 @@ class HelpMatchingService
             return 0.5;
         }
 
+        $capMinutes = (float) AppSetting::getMaxFairnessBoostMinutes();
         $minutesElapsed = max(0, $referenceTime->diffInMinutes(now()));
 
-        return min(1.0, $minutesElapsed / 60.0);
+        return min(1.0, $minutesElapsed / max(1.0, $capMinutes));
     }
 
     /**
-     * Hitung skor komposit mitra untuk order bantuan tertentu.
-     * Formula v2.3.4: Score = (0.35 * Dist) + (0.30 * Rating) + (0.25 * Rel) + (0.10 * Fair)
+     * Hitung skor komposit mitra untuk order bantuan tertentu berdasarkan bobot AppSetting.
      */
     public function calculatePartnerCompositeScore(Help $help, User $mitra, PartnerOnlineState $state): array
     {
-        // 1. Distance Score (35%)
+        $maxRadius = AppSetting::getMaxMatchingRadiusKm();
+        $weights   = AppSetting::getMatchingWeights();
+
+        // 1. Distance Score
         $helpLat  = (float) ($help->latitude ?? 0);
         $helpLng  = (float) ($help->longitude ?? 0);
         $mitraLat = (float) ($state->latitude ?? $mitra->latitude ?? 0);
@@ -121,26 +119,26 @@ class HelpMatchingService
 
         if ($helpLat != 0 && $helpLng != 0 && $mitraLat != 0 && $mitraLng != 0) {
             $distKm = $this->calculateDistance($helpLat, $helpLng, $mitraLat, $mitraLng);
-            $distScore = max(0.0, 1.0 - min($distKm / self::MAX_RADIUS_KM, 1.0));
+            $distScore = max(0.0, 1.0 - min($distKm / max(0.1, $maxRadius), 1.0));
         } else {
             $distKm = 0.0;
             $distScore = 0.8; // Default jika lokasi belum lengkap
         }
 
-        // 2. Rating Bayesian Score (30%)
+        // 2. Rating Bayesian Score
         $ratingScore = $this->calculateBayesianRatingScore($mitra);
 
-        // 3. Reliability Score (25%)
+        // 3. Reliability Score
         $reliabilityScore = $this->calculateReliabilityScore($mitra);
 
-        // 4. Fairness Score (10%)
+        // 4. Fairness Score
         $fairnessScore = $this->calculateFairnessScore($state);
 
-        // Total Score
-        $totalScore = (0.35 * $distScore) +
-                      (0.30 * $ratingScore) +
-                      (0.25 * $reliabilityScore) +
-                      (0.10 * $fairnessScore);
+        // Total Score dynamically weighted
+        $totalScore = ($weights['distance'] * $distScore) +
+                      ($weights['rating'] * $ratingScore) +
+                      ($weights['reliability'] * $reliabilityScore) +
+                      ($weights['fairness'] * $fairnessScore);
 
         return [
             'total_score'       => round($totalScore, 4),
@@ -154,12 +152,14 @@ class HelpMatchingService
     }
 
     /**
-     * Dapatkan daftar kandidat mitra terurut (Top 5) untuk order tertentu.
+     * Dapatkan daftar kandidat mitra terurut (Top N) untuk order tertentu.
      */
     public function getRankedCandidates(Help $help, array $excludeMitraIds = []): Collection
     {
-        // Cari mitra di kota yang sama dengan status 'searching' dan heartbeat segar (<= 60s)
-        $eligibleStates = PartnerOnlineState::eligibleForMatching(60)
+        $ttl = AppSetting::getHeartbeatTtlSeconds();
+
+        // Cari mitra di kota yang sama dengan status 'searching' dan heartbeat segar
+        $eligibleStates = PartnerOnlineState::eligibleForMatching($ttl)
             ->whereHas('user', function ($q) use ($help, $excludeMitraIds) {
                 $q->where('role', 'mitra')
                   ->where('is_shadow_banned', false)
@@ -205,7 +205,7 @@ class HelpMatchingService
 
     /**
      * Memulai proses pencocokan otomatis (Matching Engine) untuk bantuan baru.
-     * Mengurutkan Top 5 mitra dan mengirim tawaran ke Rank 1.
+     * Mengurutkan Top N mitra dan mengirim tawaran ke Rank 1.
      */
     public function initiateMatching(Help $help): bool
     {
@@ -217,8 +217,9 @@ class HelpMatchingService
             return false;
         }
 
-        // Ambil Top 5 kandidat
-        $topCandidates = $candidates->take(self::MAX_SEQUENTIAL_CANDIDATES);
+        // Ambil Top N kandidat dari AppSetting
+        $maxCandidates = AppSetting::getMaxDispatchCandidates();
+        $topCandidates = $candidates->take($maxCandidates);
 
         Log::info("[HelpMatchingService] Found {$topCandidates->count()} candidates for Help #{$help->id}. Initiating Rank 1 dispatch.");
 
@@ -240,16 +241,18 @@ class HelpMatchingService
 
         $candidate = $candidates->get($candidateIndex);
         $mitra     = $candidate->user;
+        $ttl       = AppSetting::getHeartbeatTtlSeconds();
 
         // Coba kunci status mitra menjadi OFFER_PENDING
-        $locked = $this->onlineService->setOfferPending($mitra->id, $help->id, 60);
+        $locked = $this->onlineService->setOfferPending($mitra->id, $help->id, $ttl);
 
         if (!$locked) {
             Log::warning("[HelpMatchingService] Failed to lock Mitra #{$mitra->id} at Rank {$rank}. Skipping to next rank.");
             return $this->dispatchOfferToCandidate($help, $candidates, $rank + 1, $round);
         }
 
-        $expiresAt = now()->addSeconds(self::OFFER_TTL_SECONDS);
+        $timeoutSec = AppSetting::getOfferTimeoutSeconds();
+        $expiresAt  = now()->addSeconds($timeoutSec);
 
         // Buat record HelpDispatch
         $dispatch = DB::transaction(function () use ($help, $mitra, $round, $rank, $expiresAt, $candidate) {
@@ -272,7 +275,7 @@ class HelpMatchingService
             return $record;
         });
 
-        // Jadwalkan job kadaluarsa tawaran (45 detik)
+        // Jadwalkan job kadaluarsa tawaran
         HandleOfferExpiry::dispatch($dispatch->id)
             ->delay($expiresAt);
 
@@ -428,7 +431,8 @@ class HelpMatchingService
             return;
         }
 
-        if ($nextRank > self::MAX_SEQUENTIAL_CANDIDATES) {
+        $maxCandidates = AppSetting::getMaxDispatchCandidates();
+        if ($nextRank > $maxCandidates) {
             Log::info("[HelpMatchingService] Reached max sequential ranks for Help #{$helpId}. Opening Pool.");
             $this->fallbackToOpenPool($help);
             return;
@@ -450,9 +454,10 @@ class HelpMatchingService
 
         $nextCandidate = $candidates->first();
         $mitra         = $nextCandidate->user;
+        $ttl           = AppSetting::getHeartbeatTtlSeconds();
 
         // Kunci status online mitra
-        $locked = $this->onlineService->setOfferPending($mitra->id, $help->id, 60);
+        $locked = $this->onlineService->setOfferPending($mitra->id, $help->id, $ttl);
 
         if (!$locked) {
             Log::warning("[HelpMatchingService] Failed to lock Mitra #{$mitra->id} at Rank {$nextRank}. Advancing.");
@@ -460,7 +465,8 @@ class HelpMatchingService
             return;
         }
 
-        $expiresAt = now()->addSeconds(self::OFFER_TTL_SECONDS);
+        $timeoutSec = AppSetting::getOfferTimeoutSeconds();
+        $expiresAt  = now()->addSeconds($timeoutSec);
 
         $dispatch = DB::transaction(function () use ($help, $mitra, $round, $nextRank, $expiresAt, $nextCandidate) {
             $record = HelpDispatch::create([

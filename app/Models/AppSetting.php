@@ -136,4 +136,91 @@ class AppSetting extends Model
             'fee_mode' => static::getWithdrawFeeMode(),
         ];
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TAHAP 4: TYPED MATCHING & FAIRNESS CONFIGURATION
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public static function getOfferTimeoutSeconds(): int
+    {
+        $val = (int) static::get('offer_timeout_seconds', 45);
+        return max(15, min(120, $val));
+    }
+
+    public static function getMaxDispatchCandidates(): int
+    {
+        $val = (int) static::get('max_dispatch_candidates', 5);
+        return max(1, min(30, $val));
+    }
+
+    public static function getHeartbeatTtlSeconds(): int
+    {
+        $val = (int) static::get('heartbeat_ttl_seconds', 60);
+        return max(30, min(300, $val));
+    }
+
+    public static function getMaxMatchingRadiusKm(): float
+    {
+        $val = (float) static::get('max_matching_radius_km', 15.0);
+        return max(1.0, min(100.0, $val));
+    }
+
+    public static function getNeutralRatingPrior(): float
+    {
+        $val = (float) static::get('neutral_rating_prior', 4.5);
+        return max(3.0, min(5.0, $val));
+    }
+
+    public static function getRatingMinVotes(): int
+    {
+        $val = (int) static::get('rating_min_votes', 5);
+        return max(1, min(50, $val));
+    }
+
+    public static function getMatchingWeights(): array
+    {
+        $wDist = (float) static::get('weight_distance', 0.35);
+        $wRate = (float) static::get('weight_rating', 0.30);
+        $wRel  = (float) static::get('weight_reliability', 0.25);
+        $wFair = (float) static::get('weight_fairness', 0.10);
+
+        // Normalize if total sum deviates from 1.0
+        $sum = $wDist + $wRate + $wRel + $wFair;
+        if ($sum <= 0) {
+            return [
+                'distance'    => 0.35,
+                'rating'      => 0.30,
+                'reliability' => 0.25,
+                'fairness'    => 0.10,
+            ];
+        }
+
+        return [
+            'distance'    => round($wDist / $sum, 4),
+            'rating'      => round($wRate / $sum, 4),
+            'reliability' => round($wRel / $sum, 4),
+            'fairness'    => round($wFair / $sum, 4),
+        ];
+    }
+
+    public static function getMaxFairnessBoostMinutes(): float
+    {
+        $val = (float) static::get('max_fairness_boost_minutes', 60.0);
+        return max(10.0, min(240.0, $val));
+    }
+
+    public static function getCapacityHighDemandMin(): float
+    {
+        return (float) static::get('capacity_high_demand_min', 15.0);
+    }
+
+    public static function getCapacityLowDemandMin(): float
+    {
+        return (float) static::get('capacity_low_demand_min', 5.0);
+    }
+
+    public static function getCapacityOversupplyUtil(): float
+    {
+        return (float) static::get('capacity_oversupply_util', 30.0);
+    }
 }

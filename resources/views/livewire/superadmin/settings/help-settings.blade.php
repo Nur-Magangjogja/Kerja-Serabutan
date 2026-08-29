@@ -323,7 +323,111 @@
             </div>
         </div>
 
-        <!-- 2. Pengaturan Metode Pembayaran Top-Up (QRIS Tunggal) -->
+        <!-- 2. Kalibrasi Algoritma Matching & Keadilan (Fairness Engine) -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="border-b border-gray-200 dark:border-gray-700 px-4 sm:px-8 py-5 bg-gray-50/80 dark:bg-gray-900/60 flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Kalibrasi Matching Engine & Keadilan (Fairness)
+                    </h2>
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                        Konfigurasi parameter pencocokan otomatis, timeout penawaran, prior rating Bayesian, dan bobot distribusi order.
+                    </p>
+                </div>
+            </div>
+
+            <div class="p-4 sm:p-8 space-y-6">
+                <!-- Row 1: Parameter Teknis -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Timeout Penawaran (Detik)</label>
+                        <input type="number" wire:model="offer_timeout_seconds" min="15" max="120"
+                               class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        <p class="text-[11px] text-gray-400 mt-1">Batas waktu respon mitra (15 - 120s).</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Maks. Kandidat Top N</label>
+                        <input type="number" wire:model="max_dispatch_candidates" min="1" max="30"
+                               class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        <p class="text-[11px] text-gray-400 mt-1">Batas tawaran sebelum pool terbuka.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Batas Heartbeat Segar (Detik)</label>
+                        <input type="number" wire:model="heartbeat_ttl_seconds" min="30" max="300"
+                               class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        <p class="text-[11px] text-gray-400 mt-1">TTL eligibility matching (30 - 300s).</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Radius Maksimal (KM)</label>
+                        <input type="number" step="0.5" wire:model="max_matching_radius_km" min="1" max="100"
+                               class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        <p class="text-[11px] text-gray-400 mt-1">Jangkauan radius pencocokan.</p>
+                    </div>
+                </div>
+
+                <!-- Row 2: Prior Bayesian & Fairness Cap -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Prior Rating Netral Mitra Baru</label>
+                        <input type="number" step="0.1" wire:model="neutral_rating_prior" min="3.0" max="5.0"
+                               class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        <p class="text-[11px] text-gray-400 mt-1">Nilai $m$ Bayesian (default 4.5).</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Bobot Keyakinan Review ($C$)</label>
+                        <input type="number" wire:model="rating_min_votes" min="1" max="50"
+                               class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        <p class="text-[11px] text-gray-400 mt-1">Jumlah ulasan ekuivalen prior.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Cap Waktu Tunggu Fairness (Menit)</label>
+                        <input type="number" wire:model="max_fairness_boost_minutes" min="10" max="240"
+                               class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        <p class="text-[11px] text-gray-400 mt-1">Batas maksimal skor keadilan (10-240m).</p>
+                    </div>
+                </div>
+
+                <!-- Row 3: Bobot Formula Skoring Komposit -->
+                <div class="pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Bobot Formula Skoring (Total = 1.0 / 100%)</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div class="bg-gray-50 dark:bg-gray-900/60 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">1. Jarak (Distance)</span>
+                            <input type="number" step="0.05" min="0" max="1" wire:model="weight_distance"
+                                   class="w-full mt-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-900/60 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">2. Rating Bayesian</span>
+                            <input type="number" step="0.05" min="0" max="1" wire:model="weight_rating"
+                                   class="w-full mt-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-900/60 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">3. Keandalan (Reliability)</span>
+                            <input type="number" step="0.05" min="0" max="1" wire:model="weight_reliability"
+                                   class="w-full mt-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-900/60 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">4. Keadilan (Fairness)</span>
+                            <input type="number" step="0.05" min="0" max="1" wire:model="weight_fairness"
+                                   class="w-full mt-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Pengaturan Metode Pembayaran Top-Up (QRIS Tunggal) -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="border-b border-gray-200 dark:border-gray-700 px-4 sm:px-8 py-5 bg-gray-50/80 dark:bg-gray-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
