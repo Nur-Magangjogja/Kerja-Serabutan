@@ -143,8 +143,14 @@ class AppSetting extends Model
 
     public static function getOfferTimeoutSeconds(): int
     {
-        $val = (int) static::get('offer_timeout_seconds', 45);
-        return max(15, min(120, $val));
+        $val = (int) static::get('offer_timeout_seconds', 180);
+        return max(15, min(600, $val));
+    }
+
+    public static function getMaxConsecutiveDeclines(): int
+    {
+        $val = (int) static::get('max_consecutive_declines', 2);
+        return max(1, min(10, $val));
     }
 
     public static function getMaxDispatchCandidates(): int
@@ -207,6 +213,29 @@ class AppSetting extends Model
     {
         $val = (float) static::get('max_fairness_boost_minutes', 60.0);
         return max(10.0, min(240.0, $val));
+    }
+
+    public static function isNewbieBoostEnabled(): bool
+    {
+        return (bool) static::get('newbie_boost_enabled', true);
+    }
+
+    public static function getNewbieBoostDays(): int
+    {
+        $val = (int) static::get('newbie_boost_days', 7);
+        return max(1, min(30, $val));
+    }
+
+    public static function getNewbieOrderThreshold(): int
+    {
+        $val = (int) static::get('newbie_order_threshold', 3);
+        return max(1, min(20, $val));
+    }
+
+    public static function getNewbieMinFairnessScore(): float
+    {
+        $val = (float) static::get('newbie_min_fairness_score', 0.50);
+        return max(0.1, min(1.0, $val));
     }
 
     public static function getCapacityHighDemandMin(): float

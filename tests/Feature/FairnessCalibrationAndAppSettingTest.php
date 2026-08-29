@@ -79,7 +79,7 @@ class FairnessCalibrationAndAppSettingTest extends TestCase
 
     public function test_typed_app_setting_getters_return_valid_defaults()
     {
-        $this->assertEquals(45, AppSetting::getOfferTimeoutSeconds());
+        $this->assertEquals(180, AppSetting::getOfferTimeoutSeconds());
         $this->assertEquals(5, AppSetting::getMaxDispatchCandidates());
         $this->assertEquals(60, AppSetting::getHeartbeatTtlSeconds());
         $this->assertEquals(15.0, AppSetting::getMaxMatchingRadiusKm());
@@ -112,14 +112,14 @@ class FairnessCalibrationAndAppSettingTest extends TestCase
         $this->assertEquals(1, AppSetting::getRatingMinVotes());
 
         // Set overflow value -> should be clamped to MAX
-        AppSetting::set('offer_timeout_seconds', 500);
+        AppSetting::set('offer_timeout_seconds', 999);
         AppSetting::set('max_dispatch_candidates', 100);
         AppSetting::set('heartbeat_ttl_seconds', 1000);
         AppSetting::set('max_matching_radius_km', 500.0);
         AppSetting::set('neutral_rating_prior', 6.0);
         AppSetting::set('rating_min_votes', 100);
 
-        $this->assertEquals(120, AppSetting::getOfferTimeoutSeconds());
+        $this->assertEquals(600, AppSetting::getOfferTimeoutSeconds());
         $this->assertEquals(30, AppSetting::getMaxDispatchCandidates());
         $this->assertEquals(300, AppSetting::getHeartbeatTtlSeconds());
         $this->assertEquals(100.0, AppSetting::getMaxMatchingRadiusKm());
@@ -189,5 +189,30 @@ class FairnessCalibrationAndAppSettingTest extends TestCase
         $this->assertEquals(90, AppSetting::getHeartbeatTtlSeconds());
         $this->assertEquals(20.0, AppSetting::getMaxMatchingRadiusKm());
         $this->assertEquals(4.8, AppSetting::getNeutralRatingPrior());
+    }
+
+    public function test_newbie_boost_grants_minimum_fairness_baseline_for_new_partners()
+    {
+        // 1. Create a newly registered partner (created 1 day ago) who just activated searching (0 min waiting)
+        $newMitra = User::factory()->create([
+            'role'       => 'mitra',
+            'city_id'    => $this->city->id,
+            'created_at' => now()->subDay(),
+        ]);
+        $stateNew = PartnerOnlineState::create([
+            'user_id'         => $newMitra->id,
+            'matching_status' => PartnerOnlineState::STATUS_SEARCHING,
+            'searching_since' => now(), // 0 minutes waiting
+            'last_seen_at'    => now(),
+        ]);
+
+        // 2. Calculate fairness score -> should get at least 0.50 (50% baseline) via Newbie Boost
+        $fairnessScore = $this->matchingService->calculateFairnessScore($stateNew, $newMitra);
+        $this->assertGreaterThanOrEqual(0.50, $fairnessScore);
+
+        // 3. Disable newbie boost via AppSetting -> should now be near 0.0 (0 minutes waiting)
+        AppSetting::set('newbie_boost_enabled', false);
+        $fairnessScoreDisabled = $this->matchingService->calculateFairnessScore($stateNew, $newMitra);
+        $this->assertEqualsWithDelta(0.0, $fairnessScoreDisabled, 0.01);
     }
 }

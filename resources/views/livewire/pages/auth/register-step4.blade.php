@@ -118,6 +118,8 @@ new #[Layout('layouts.guest')] class extends Component {
             // ignore balance init error
         }
 
+        $isWaitingList = false;
+
         // Jika nama kota pada registration sesuai dengan record di tabel cities,
         // set relasi city_id agar user otomatis terkait dengan admin kota tersebut.
         try {
@@ -137,6 +139,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 $cityCap = \App\Models\CityCapacity::where('city_id', $user->city_id)->first();
                 if ($cityCap && $cityCap->isClosed()) {
                     $cityCap->increment('waiting_list_count');
+                    $isWaitingList = true;
                 }
             }
         } catch (\Exception $e) {
@@ -162,10 +165,11 @@ new #[Layout('layouts.guest')] class extends Component {
             \Illuminate\Support\Facades\Log::warning('[Registration] Gagal kirim notifikasi verifikasi KTP ke admin: ' . $e->getMessage());
         }
 
-        // Tandai registration menunggu verifikasi admin
+        // Tandai registration menunggu verifikasi admin atau antrean waiting list
+        $regStatus = $isWaitingList ? 'waiting_list' : 'pending_verification';
         $registration->update([
-            'status' => 'pending_verification',
-            'email' => $validated['email'],
+            'status'   => $regStatus,
+            'email'    => $validated['email'],
             'password' => Hash::make($validated['password']),
         ]);
 

@@ -9,6 +9,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('helps:auto-confirm')->everyMinute();
+Schedule::command('helps:auto-cancel')->everyFiveMinutes();
 Schedule::command('partners:clean-stale-states --ttl=60')->everyMinute();
 Schedule::command('city:evaluate-capacities')->hourly();
 

@@ -48,15 +48,24 @@ class Index extends Component
     public function approveHelp($id)
     {
         $help = Help::findOrFail($id);
-        $help->update(['status' => 'active']);
+        $help->update(['status' => Help::STATUS_MENUNGGU_MITRA]);
         session()->flash('message', 'Bantuan berhasil disetujui');
     }
 
     public function rejectHelp($id)
     {
         $help = Help::findOrFail($id);
-        $help->update(['status' => 'rejected']);
-        session()->flash('message', 'Bantuan ditolak');
+        if ($help->escrow_status === Help::ESCROW_STATUS_HELD) {
+            app(\App\Services\HelpTransactionService::class)->autoCancelExpiredHelp($help, 'Ditolak oleh Admin Regional');
+        } else {
+            $help->update([
+                'status'         => Help::STATUS_DIBATALKAN,
+                'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
+                'escrow_status'  => Help::ESCROW_STATUS_REFUNDED,
+                'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
+            ]);
+        }
+        session()->flash('message', 'Bantuan ditolak dan dana escrow dikembalikan 100% ke saldo pemohon.');
     }
 
     public function render()

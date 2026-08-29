@@ -89,6 +89,7 @@
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nama Kota</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Provinsi</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pengguna</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kapasitas</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Dibuat</th>
                         <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
@@ -118,6 +119,40 @@
                             </span>
                         </td>
                         <td class="px-4 py-3.5">
+                            @if($city->capacity)
+                                @php
+                                    $effStatus = $city->capacity->getEffectiveStatus();
+                                @endphp
+                                <div class="flex flex-col gap-0.5">
+                                    <div class="flex items-center gap-1">
+                                        @if($effStatus === 'open')
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                                                OPEN
+                                            </span>
+                                        @elseif($effStatus === 'limited')
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
+                                                LIMITED
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300">
+                                                CLOSED
+                                            </span>
+                                        @endif
+                                        @if($city->capacity->admin_override_status)
+                                            <span class="text-[9px] font-bold px-1 py-0.2 bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 rounded" title="Admin Override Aktif">Override</span>
+                                        @endif
+                                    </div>
+                                    <p class="text-[10px] text-gray-400 mt-0.5">
+                                        {{ $city->capacity->searching_now }} cari • {{ $city->capacity->busy_now }} sibuk • {{ number_format($city->capacity->partner_utilization_rate, 0) }}% util
+                                    </p>
+                                </div>
+                            @else
+                                <button wire:click="evaluateCityCapacity({{ $city->id }})" class="text-[11px] text-primary-600 hover:underline">
+                                    Hitung Metrik
+                                </button>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3.5">
                             <button wire:click="toggleStatus({{ $city->id }})"
                                 class="inline-flex items-center gap-1.5 text-xs font-medium transition-colors
                                 {{ $city->is_active ? 'text-emerald-700 dark:text-emerald-400 hover:text-emerald-800' : 'text-rose-600 dark:text-rose-400 hover:text-rose-700' }}">
@@ -128,6 +163,10 @@
                         <td class="px-4 py-3.5 text-xs text-gray-500 dark:text-gray-400 hidden md:table-cell whitespace-nowrap">{{ $city->created_at->format('d M Y') }}</td>
                         <td class="px-4 py-3.5">
                             <div class="flex items-center justify-center gap-1">
+                                <button wire:click="openCapacityModal({{ $city->id }})" title="Kelola Kapasitas & Override"
+                                    class="p-1.5 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                </button>
                                 <button wire:click="openDetailModal({{ $city->id }})" title="Detail"
                                     class="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -365,6 +404,64 @@
                     Tutup
                 </button>
             </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ===== Capacity Override Modal (Tahap 5) ===== --}}
+    @if($showCapacityModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                <div>
+                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Kelola Kapasitas: {{ $capacityCityName }}</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Override manual status pendaftaran dan supply mitra</p>
+                </div>
+                <button type="button" wire:click="$set('showCapacityModal', false)" class="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form wire:submit.prevent="saveCapacityOverride" class="px-6 py-5 space-y-4">
+                <div>
+                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Status Override</label>
+                    <select wire:model="overrideStatus"
+                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <option value="open">OPEN (Pendaftaran Mitra Terbuka Bebas)</option>
+                        <option value="limited">LIMITED (Kapasitas Terbatas)</option>
+                        <option value="closed">CLOSED (Pendaftaran Ditutup / Masuk Antrean)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Durasi Override (Jam)</label>
+                    <input type="number" wire:model="overrideHours" min="0" max="720"
+                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <p class="text-[11px] text-gray-400 mt-1">Isi 0 untuk berlaku tanpa batas waktu (sampai dihapus).</p>
+                </div>
+
+                <div>
+                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Catatan / Alasan Override</label>
+                    <textarea wire:model="overrideNotes" rows="2" placeholder="Contoh: Event festival kota, butuh supply mitra tambahan..."
+                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
+                </div>
+
+                <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <button type="button" wire:click="clearCapacityOverride({{ $capacityCityId }})"
+                        class="px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors">
+                        Hapus Override (Auto)
+                    </button>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" wire:click="$set('showCapacityModal', false)"
+                            class="px-3.5 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            Batal
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-xs font-bold bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-xs">
+                            Simpan Override
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
     @endif

@@ -433,6 +433,10 @@ class Help extends Model
             return false;
         }
 
+        if ($this->dispatch_mode && $this->dispatch_mode !== self::DISPATCH_MODE_POOL) {
+            return false;
+        }
+
         if ($this->hasCancelledBy($mitra->id)) {
             return false;
         }

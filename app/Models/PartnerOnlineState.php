@@ -19,6 +19,7 @@ class PartnerOnlineState extends Model
         'user_id',
         'matching_status',
         'current_help_id',
+        'consecutive_declines',
         'last_seen_at',
         'searching_since',
         'last_completed_at',
@@ -27,11 +28,12 @@ class PartnerOnlineState extends Model
     ];
 
     protected $casts = [
-        'last_seen_at'      => 'datetime',
-        'searching_since'   => 'datetime',
-        'last_completed_at' => 'datetime',
-        'latitude'          => 'decimal:8',
-        'longitude'         => 'decimal:8',
+        'consecutive_declines' => 'integer',
+        'last_seen_at'         => 'datetime',
+        'searching_since'      => 'datetime',
+        'last_completed_at'    => 'datetime',
+        'latitude'             => 'decimal:8',
+        'longitude'            => 'decimal:8',
     ];
 
     // ─────────────────────────────────────────────────────────────────────────

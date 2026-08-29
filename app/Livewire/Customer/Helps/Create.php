@@ -587,7 +587,7 @@ class Create extends Component
             return;
         }
 
-        DB::transaction(function () use ($userId, $customer, $amount, $commissionRate, $feeAmount, $totalAmount, $earning, $expiresAt) {
+        $createdHelp = DB::transaction(function () use ($userId, $customer, $amount, $commissionRate, $feeAmount, $totalAmount, $earning, $expiresAt) {
             $photoPath   = $this->photo ? $this->photo->store('helps', 'public') : null;
             $orderId     = $this->generateOrderId();
             $scheduledAt = null;
@@ -615,6 +615,11 @@ class Create extends Component
                 'longitude'                  => $this->longitude,
                 'photo'                      => $photoPath,
                 'status'                     => Help::STATUS_MENUNGGU_MITRA,
+                // Status Arsitektur v2.3.4
+                'payment_status'             => Help::PAYMENT_STATUS_PAID,
+                'escrow_status'              => Help::ESCROW_STATUS_HELD,
+                'dispatch_mode'              => Help::DISPATCH_MODE_SEEKING,
+                'rating_status'              => Help::RATING_STATUS_PENDING,
                 // Kolom model v2
                 'model_version'              => 2,
                 'platform_commission_rate'   => $commissionRate,
@@ -635,10 +640,23 @@ class Create extends Component
                 "Dana Ditahan untuk Permintaan Bantuan '{$help->title}' (Nilai Jasa: Rp " . number_format($amount, 0, ',', '.') . " + Biaya Layanan Platform: Rp " . number_format($feeAmount, 0, ',', '.') . ")"
             );
             $help->update(['escrow_transaction_id' => $escrowTx->id]);
+
+            return $help;
         });
 
+        // POST-COMMIT: Picu Sequential Matching Engine jika order siap dicocokkan
+        if ($createdHelp) {
+            try {
+                app(\App\Services\HelpMatchingService::class)->initiateMatching($createdHelp);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('[Customer/Helps/Create] Gagal initiate matching: ' . $e->getMessage(), [
+                    'help_id' => $createdHelp->id,
+                ]);
+            }
+        }
+
         $this->dispatch('draft-cleared');
-        session()->flash('message', 'Permintaan bantuan berhasil dibuat! Menunggu Rekan Jasa tersedia.');
+        session()->flash('message', 'Permintaan bantuan berhasil dibuat! Sistem sedang mencari Rekan Jasa terdekat untuk Anda.');
         return redirect()->route('customer.helps.index');
     }
 

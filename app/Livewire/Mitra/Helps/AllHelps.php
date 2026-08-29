@@ -55,6 +55,12 @@ class AllHelps extends Component
 
         $help = Help::findOrFail($helpId);
 
+        // Guard: manual takeHelp hanya diizinkan jika order sudah berstatus Open Pool
+        if ($help->dispatch_mode && $help->dispatch_mode !== Help::DISPATCH_MODE_POOL) {
+            session()->flash('error', 'Pesanan ini sedang dalam penawaran sequential khusus dan belum dibuka untuk pool umum.');
+            return;
+        }
+
         try {
             app(HelpTransactionService::class)->takeHelp(
                 $help,
@@ -107,7 +113,12 @@ class AllHelps extends Component
             ]);
         }
 
+        // Pool Terbuka: hanya bantuan yang berstatus menunggu_mitra DAN dispatch_mode = 'pool'
         $query = Help::where('status', Help::STATUS_MENUNGGU_MITRA)
+            ->where(function ($q) {
+                $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
+                  ->orWhereNull('dispatch_mode');
+            })
             ->whereNull('mitra_id')
             ->availableForMitra($user?->id)
             ->where(function ($q) {
@@ -146,10 +157,11 @@ class AllHelps extends Component
             return $help;
         });
 
-        // Filter batas maksimal jangkauan radius 60 km (jika GPS terdeteksi)
+        // Filter batas maksimal jangkauan radius dinamis dari AppSetting (jika GPS terdeteksi)
+        $maxAppRadiusKm = \App\Models\AppSetting::getMaxMatchingRadiusKm();
         if ($this->mitraLat && $this->mitraLng) {
-            $allHelps = $allHelps->filter(function ($h) {
-                return $h->distance_km === null || $h->distance_km <= 60;
+            $allHelps = $allHelps->filter(function ($h) use ($maxAppRadiusKm) {
+                return $h->distance_km === null || $h->distance_km <= $maxAppRadiusKm;
             });
         }
 

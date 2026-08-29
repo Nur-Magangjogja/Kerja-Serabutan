@@ -57,9 +57,9 @@ class RateMitra extends Component
 
         $this->validate();
 
-        if (!in_array($this->help->status, ['completed', 'selesai'])) {
-            session()->flash('error', 'Hanya bisa memberi rating untuk bantuan yang sudah selesai.');
-            $this->dispatch('notify', ['type' => 'error', 'message' => 'Hanya bisa memberi rating untuk bantuan yang sudah selesai.']);
+        if (!$this->help->canBeRated()) {
+            session()->flash('error', 'Rating belum dapat diberikan (pesanan belum selesai, dana escrow belum diselesaikan, atau sedang dalam sengketa).');
+            $this->dispatch('notify', ['type' => 'error', 'message' => 'Rating belum dapat diberikan untuk pesanan ini.']);
             return;
         }
 
@@ -75,14 +75,19 @@ class RateMitra extends Component
             return;
         }
 
-        $ratingRecord = Rating::create([
-            'help_id'  => $this->help->id,
-            'rater_id' => auth()->id(),
-            'ratee_id' => $this->help->mitra_id,
-            'type'     => 'customer_to_mitra',
-            'rating'   => $this->rating,
-            'review'   => $this->review,
-        ]);
+        $ratingRecord = \Illuminate\Support\Facades\DB::transaction(function () {
+            $record = Rating::create([
+                'help_id'  => $this->help->id,
+                'rater_id' => auth()->id(),
+                'ratee_id' => $this->help->mitra_id,
+                'type'     => 'customer_to_mitra',
+                'rating'   => $this->rating,
+                'review'   => $this->review,
+            ]);
+
+            $this->help->update(['rating_status' => Help::RATING_STATUS_RATED]);
+            return $record;
+        });
 
         $this->userRating = $ratingRecord;
         $this->alreadyRated = true;

@@ -87,20 +87,36 @@ class HelpMatchingService
     }
 
     /**
-     * Hitung skor fairness berdasarkan durasi tunggu / waktu sejak tugas terakhir (skala 0.0 - 1.0, cap dinamis).
+     * Hitung skor fairness berdasarkan durasi tunggu / waktu sejak tugas terakhir (skala 0.0 - 1.0, cap dinamis)
+     * dan memberikan Newbie Boost untuk akun mitra baru.
      */
-    public function calculateFairnessScore(PartnerOnlineState $state): float
+    public function calculateFairnessScore(PartnerOnlineState $state, ?User $mitra = null): float
     {
         $referenceTime = $state->last_completed_at ?? $state->searching_since ?? $state->last_seen_at;
 
         if (!$referenceTime) {
-            return 0.5;
+            $baseScore = 0.5;
+        } else {
+            $capMinutes = (float) AppSetting::getMaxFairnessBoostMinutes();
+            $minutesElapsed = max(0, $referenceTime->diffInMinutes(now()));
+            $baseScore = min(1.0, $minutesElapsed / max(1.0, $capMinutes));
         }
 
-        $capMinutes = (float) AppSetting::getMaxFairnessBoostMinutes();
-        $minutesElapsed = max(0, $referenceTime->diffInMinutes(now()));
+        // Newbie Boost: Berikan baseline fairness minimal bagi mitra baru yang terdaftar <= 7 hari atau < 3 order
+        if ($mitra && AppSetting::isNewbieBoostEnabled()) {
+            $boostDays = AppSetting::getNewbieBoostDays();
+            $threshold = AppSetting::getNewbieOrderThreshold();
+            $minScore  = AppSetting::getNewbieMinFairnessScore();
 
-        return min(1.0, $minutesElapsed / max(1.0, $capMinutes));
+            $isNewAccount = $mitra->created_at && $mitra->created_at->diffInDays(now()) <= $boostDays;
+            $completedCount = Help::where('mitra_id', $mitra->id)->where('status', Help::STATUS_SELESAI)->count();
+
+            if ($isNewAccount || $completedCount < $threshold) {
+                $baseScore = max($baseScore, $minScore);
+            }
+        }
+
+        return $baseScore;
     }
 
     /**
@@ -131,8 +147,8 @@ class HelpMatchingService
         // 3. Reliability Score
         $reliabilityScore = $this->calculateReliabilityScore($mitra);
 
-        // 4. Fairness Score
-        $fairnessScore = $this->calculateFairnessScore($state);
+        // 4. Fairness Score (dengan Newbie Boost)
+        $fairnessScore = $this->calculateFairnessScore($state, $mitra);
 
         // Total Score dynamically weighted
         $totalScore = ($weights['distance'] * $distScore) +
@@ -299,7 +315,7 @@ class HelpMatchingService
      * Memproses penerimaan tawaran oleh mitra (Accept Offer).
      * Atomic Lock: Menjamin maksimal 1 mitra yang berhasil mengambil order (No Double Assignment).
      */
-    public function acceptOffer(int $dispatchId, User $mitra): bool
+    public function acceptOffer(int $dispatchId, User $mitra): Help
     {
         return DB::transaction(function () use ($dispatchId, $mitra) {
             $dispatch = HelpDispatch::where('id', $dispatchId)->lockForUpdate()->firstOrFail();
@@ -315,7 +331,7 @@ class HelpMatchingService
             if ($dispatch->expires_at && $dispatch->expires_at->isPast()) {
                 $dispatch->update(['status' => HelpDispatch::STATUS_EXPIRED, 'responded_at' => now()]);
                 $this->onlineService->revertFromOfferPending($mitra->id, $dispatch->help_id);
-                throw new \RuntimeException('Waktu respon penawaran (45 detik) telah habis.');
+                throw new \RuntimeException('Waktu respon penawaran telah habis.');
             }
 
             $lockedHelp = Help::where('id', $dispatch->help_id)->lockForUpdate()->firstOrFail();
@@ -345,7 +361,7 @@ class HelpMatchingService
             $this->onlineService->setBusy($mitra->id, $lockedHelp->id);
 
             Log::info("[HelpMatchingService] Mitra #{$mitra->id} ACCEPTED Dispatch #{$dispatch->id} for Help #{$lockedHelp->id}.");
-            return true;
+            return $lockedHelp;
         });
     }
 

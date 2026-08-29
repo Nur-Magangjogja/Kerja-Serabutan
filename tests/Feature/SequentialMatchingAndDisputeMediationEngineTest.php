@@ -178,7 +178,7 @@ class SequentialMatchingAndDisputeMediationEngineTest extends TestCase
 
         // Mitra 1 accepts offer
         $accepted = $this->matchingService->acceptOffer($dispatch->id, $this->mitra1);
-        $this->assertTrue($accepted);
+        $this->assertInstanceOf(Help::class, $accepted);
 
         $dispatch->refresh();
         $help->refresh();
@@ -268,5 +268,81 @@ class SequentialMatchingAndDisputeMediationEngineTest extends TestCase
         $help->refresh();
         $this->assertEquals(Help::DISPATCH_MODE_POOL, $help->dispatch_mode);
         $this->assertNotNull($help->pool_opened_at);
+    }
+
+    public function test_partner_cancellation_accepted_releases_busy_mode_and_allows_searching_again()
+    {
+        // 1. Mitra 1 accepts help -> becomes BUSY
+        $this->onlineService->startSearching($this->mitra1, -7.7960, 110.3700);
+        $help = $this->createHelp();
+        $this->matchingService->initiateMatching($help);
+        $dispatch = HelpDispatch::where('help_id', $help->id)->where('rank', 1)->first();
+        $this->matchingService->acceptOffer($dispatch->id, $this->mitra1);
+        $help->refresh();
+
+        $state1 = PartnerOnlineState::where('user_id', $this->mitra1->id)->first();
+        $this->assertEquals(PartnerOnlineState::STATUS_BUSY, $state1->matching_status);
+
+        // 2. Mitra 1 requests cancellation
+        $txService = app(\App\Services\HelpTransactionService::class);
+        $txService->requestPartnerCancel($help, $this->mitra1, 'Motor mogok di jalan');
+
+        $help->refresh();
+        $this->assertEquals(Help::STATUS_PARTNER_CANCEL_REQUESTED, $help->status);
+
+        // 3. Customer accepts cancellation
+        $txService->customerAcceptCancel($help, $this->customer);
+
+        // 4. Verify Help is returned to pool
+        $help->refresh();
+        $this->assertEquals(Help::STATUS_MENUNGGU_MITRA, $help->status);
+        $this->assertEquals(Help::DISPATCH_MODE_POOL, $help->dispatch_mode);
+        $this->assertNull($help->mitra_id);
+
+        // 5. Verify Mitra 1 is NO LONGER BUSY and can immediately search for new orders
+        $state1->refresh();
+        $this->assertNotEquals(PartnerOnlineState::STATUS_BUSY, $state1->matching_status);
+        $this->assertNull($state1->current_help_id);
+
+        // Mitra 1 starts searching again -> should succeed without any runtime exception
+        $searching = $this->onlineService->startSearching($this->mitra1, -7.7960, 110.3700);
+        $this->assertTrue($searching);
+
+        $state1->refresh();
+        $this->assertEquals(PartnerOnlineState::STATUS_SEARCHING, $state1->matching_status);
+    }
+
+    public function test_two_consecutive_rejections_or_timeouts_demotes_mitra_to_online_standby()
+    {
+        // 1. Mitra 1 starts searching
+        $this->onlineService->startSearching($this->mitra1, -7.7960, 110.3700);
+
+        // Order 1: Mitra 1 rejects offer (Decline 1)
+        $help1 = $this->createHelp();
+        $this->matchingService->initiateMatching($help1);
+        $dispatch1 = HelpDispatch::where('help_id', $help1->id)->where('rank', 1)->first();
+        $this->matchingService->rejectOffer($dispatch1->id, $this->mitra1);
+
+        $state1 = PartnerOnlineState::where('user_id', $this->mitra1->id)->first();
+        // Masih searching setelah 1x tolak
+        $this->assertEquals(PartnerOnlineState::STATUS_SEARCHING, $state1->matching_status);
+        $this->assertEquals(1, $state1->consecutive_declines);
+
+        // Order 2: Mitra 1 ignores offer until expiry (Decline 2)
+        $help2 = $this->createHelp();
+        $this->matchingService->initiateMatching($help2);
+        $dispatch2 = HelpDispatch::where('help_id', $help2->id)->where('rank', 1)->first();
+        $this->matchingService->handleExpiry($dispatch2->id, force: true);
+
+        $state1->refresh();
+        // Demosi ke ONLINE (Standby) dan reset timer antrean setelah 2x tolak/abaikan
+        $this->assertEquals(PartnerOnlineState::STATUS_ONLINE, $state1->matching_status);
+        $this->assertNull($state1->searching_since);
+        $this->assertEquals(0, $state1->consecutive_declines);
+
+        // Mitra harus menekan tombol Cari Order lagi secara sadar
+        $this->onlineService->startSearching($this->mitra1, -7.7960, 110.3700);
+        $state1->refresh();
+        $this->assertEquals(PartnerOnlineState::STATUS_SEARCHING, $state1->matching_status);
     }
 }

@@ -51,8 +51,9 @@ class ProcessingHelps extends Component
         try {
             // Gunakan service untuk validasi transisi dan kirim notifikasi
             $help->update([
-                'status'               => Help::STATUS_WAITING_CONFIRMATION,
-                'service_completed_at' => $help->service_completed_at ?? now(),
+                'status'                   => Help::STATUS_WAITING_CONFIRMATION,
+                'service_completed_at'     => $help->service_completed_at ?? now(),
+                'confirmation_deadline_at' => now()->addHours(24),
             ]);
 
             $this->dispatch('help-completed');

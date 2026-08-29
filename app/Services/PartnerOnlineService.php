@@ -16,7 +16,7 @@ class PartnerOnlineService
      */
     public function getOrCreateState(int $userId): PartnerOnlineState
     {
-        return PartnerOnlineState::firstOrCreate(
+        $state = PartnerOnlineState::firstOrCreate(
             ['user_id' => $userId],
             [
                 'matching_status' => PartnerOnlineState::STATUS_OFFLINE,
@@ -24,6 +24,17 @@ class PartnerOnlineService
                 'searching_since' => null,
             ]
         );
+
+        // Self-Healing Guard: Jika status BUSY tapi tidak memiliki active task di DB, pulihkan ke ONLINE/SEARCHING
+        if ($state->matching_status === PartnerOnlineState::STATUS_BUSY) {
+            $hasActiveTask = \App\Models\Help::where('mitra_id', $userId)->active()->exists();
+            if (!$hasActiveTask) {
+                $this->releaseBusy($userId, $state->current_help_id ?? 0);
+                $state->refresh();
+            }
+        }
+
+        return $state;
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -46,9 +57,17 @@ class PartnerOnlineService
                 ]);
             }
 
-            // Jika sedang dalam penugasan atau tawaran, tolak perubahan manual
-            if (in_array($state->matching_status, [PartnerOnlineState::STATUS_OFFER_PENDING, PartnerOnlineState::STATUS_BUSY])) {
-                throw new \RuntimeException('Tidak dapat mengubah status saat sedang menerima tawaran atau mengerjakan bantuan.');
+            // Jika status BUSY tapi tidak ada active task, pulihkan otomatis
+            if ($state->matching_status === PartnerOnlineState::STATUS_BUSY) {
+                $hasActiveTask = \App\Models\Help::where('mitra_id', $mitra->id)->active()->exists();
+                if (!$hasActiveTask) {
+                    $state->matching_status = PartnerOnlineState::STATUS_ONLINE;
+                    $state->current_help_id = null;
+                } else {
+                    throw new \RuntimeException('Tidak dapat mengubah status saat sedang mengerjakan bantuan.');
+                }
+            } elseif ($state->matching_status === PartnerOnlineState::STATUS_OFFER_PENDING) {
+                throw new \RuntimeException('Tidak dapat mengubah status saat sedang menerima tawaran.');
             }
 
             $state->matching_status = PartnerOnlineState::STATUS_ONLINE;
@@ -83,13 +102,23 @@ class PartnerOnlineService
                 ]);
             }
 
-            if (in_array($state->matching_status, [PartnerOnlineState::STATUS_OFFER_PENDING, PartnerOnlineState::STATUS_BUSY])) {
-                throw new \RuntimeException('Tidak dapat mencari order baru saat sedang menerima tawaran atau mengerjakan bantuan.');
+            // Jika status BUSY tapi tidak ada active task, pulihkan otomatis
+            if ($state->matching_status === PartnerOnlineState::STATUS_BUSY) {
+                $hasActiveTask = \App\Models\Help::where('mitra_id', $mitra->id)->active()->exists();
+                if (!$hasActiveTask) {
+                    $state->matching_status = PartnerOnlineState::STATUS_ONLINE;
+                    $state->current_help_id = null;
+                } else {
+                    throw new \RuntimeException('Tidak dapat mencari order baru saat sedang mengerjakan bantuan.');
+                }
+            } elseif ($state->matching_status === PartnerOnlineState::STATUS_OFFER_PENDING) {
+                throw new \RuntimeException('Tidak dapat mencari order baru saat sedang menerima tawaran.');
             }
 
-            $state->matching_status = PartnerOnlineState::STATUS_SEARCHING;
-            $state->searching_since = now();
-            $state->last_seen_at    = now();
+            $state->matching_status      = PartnerOnlineState::STATUS_SEARCHING;
+            $state->searching_since      = now();
+            $state->last_seen_at         = now();
+            $state->consecutive_declines = 0;
 
             if ($lat !== null && $lng !== null) {
                 $state->latitude  = $lat;
@@ -121,9 +150,10 @@ class PartnerOnlineService
             }
 
             if ($state->matching_status === PartnerOnlineState::STATUS_SEARCHING) {
-                $state->matching_status = PartnerOnlineState::STATUS_ONLINE;
-                $state->searching_since = null;
-                $state->last_seen_at    = now();
+                $state->matching_status      = PartnerOnlineState::STATUS_ONLINE;
+                $state->searching_since      = null;
+                $state->last_seen_at         = now();
+                $state->consecutive_declines = 0;
                 $state->save();
             }
 
@@ -149,8 +179,9 @@ class PartnerOnlineService
                 throw new \RuntimeException('Tidak dapat offline saat sedang menerima tawaran atau mengerjakan bantuan.');
             }
 
-            $state->matching_status = PartnerOnlineState::STATUS_OFFLINE;
-            $state->searching_since = null;
+            $state->matching_status      = PartnerOnlineState::STATUS_OFFLINE;
+            $state->searching_since      = null;
+            $state->consecutive_declines = 0;
             $state->save();
 
             Log::info("[PartnerOnlineService] Mitra #{$mitra->id} is now OFFLINE.");
@@ -233,7 +264,7 @@ class PartnerOnlineService
 
     /**
      * Mengembalikan status mitra jika penawaran ditolak / timeout (Atomic Lock).
-     * Transisi: OFFER_PENDING -> SEARCHING (jika heartbeat segar) atau ONLINE (jika heartbeat stale).
+     * Anti-Abuse: Jika menolak/mengabaikan >= 2 kali berturut-turut, demosi ke ONLINE (Standby).
      */
     public function revertFromOfferPending(int $mitraId, int $helpId, ?int $heartbeatTtlSeconds = null): void
     {
@@ -248,15 +279,28 @@ class PartnerOnlineService
 
             $state->current_help_id = null;
 
-            if ($state->isHeartbeatFresh($ttl)) {
-                $state->matching_status = PartnerOnlineState::STATUS_SEARCHING;
+            // Anti-Abuse: Hitung akumulasi penolakan / pengabaian tawaran berturut-turut
+            $maxDeclines = \App\Models\AppSetting::getMaxConsecutiveDeclines();
+            $newDeclines = ($state->consecutive_declines ?? 0) + 1;
+
+            if ($newDeclines >= $maxDeclines) {
+                // Demosi ke Standby (ONLINE) agar mitra harus menekan tombol "Cari Order" kembali secara sadar
+                $state->matching_status      = PartnerOnlineState::STATUS_ONLINE;
+                $state->searching_since      = null;
+                $state->consecutive_declines = 0;
+                Log::info("[PartnerOnlineService] Mitra #{$mitraId} reached {$newDeclines} consecutive declines -> demoted to ONLINE Standby.");
             } else {
-                $state->matching_status = PartnerOnlineState::STATUS_ONLINE;
-                $state->searching_since = null;
+                $state->consecutive_declines = $newDeclines;
+                if ($state->isHeartbeatFresh($ttl)) {
+                    $state->matching_status = PartnerOnlineState::STATUS_SEARCHING;
+                } else {
+                    $state->matching_status = PartnerOnlineState::STATUS_ONLINE;
+                    $state->searching_since = null;
+                }
             }
 
             $state->save();
-            Log::info("[PartnerOnlineService] Mitra #{$mitraId} reverted from OFFER_PENDING -> '{$state->matching_status}'.");
+            Log::info("[PartnerOnlineService] Mitra #{$mitraId} reverted from OFFER_PENDING -> '{$state->matching_status}' (Declines: {$newDeclines}/{$maxDeclines}).");
         });
     }
 
@@ -275,9 +319,10 @@ class PartnerOnlineService
                 ]);
             }
 
-            $state->matching_status = PartnerOnlineState::STATUS_BUSY;
-            $state->current_help_id = $helpId;
-            $state->searching_since = null;
+            $state->matching_status      = PartnerOnlineState::STATUS_BUSY;
+            $state->current_help_id      = $helpId;
+            $state->searching_since      = null;
+            $state->consecutive_declines = 0;
             $state->save();
 
             Log::info("[PartnerOnlineService] Mitra #{$mitraId} state -> BUSY for Help #{$helpId}.");

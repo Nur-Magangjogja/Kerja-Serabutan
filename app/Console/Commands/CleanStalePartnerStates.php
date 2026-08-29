@@ -38,6 +38,20 @@ class CleanStalePartnerStates extends Command
             $this->info("No stale partner states found.");
         }
 
+        // Clean & advance any expired help dispatches
+        $expiredDispatches = \App\Models\HelpDispatch::where('status', \App\Models\HelpDispatch::STATUS_OFFERED)
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now())
+            ->get();
+
+        if ($expiredDispatches->isNotEmpty()) {
+            $matchingService = app(\App\Services\HelpMatchingService::class);
+            foreach ($expiredDispatches as $d) {
+                $matchingService->handleExpiry($d->id, true);
+            }
+            $this->warn("Processed and advanced {$expiredDispatches->count()} expired offer dispatch(es).");
+        }
+
         return Command::SUCCESS;
     }
 }

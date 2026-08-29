@@ -53,6 +53,11 @@ class HelpTransactionService
         // 1. Guard: Mitra tidak boleh mengambil tugas baru jika masih memiliki tugas aktif
         $this->assertMitraHasNoActiveTask($mitra);
 
+        // 2. Guard: Order hanya boleh diambil dari open pool jika dispatch_mode sudah 'pool'
+        if ($help->dispatch_mode && $help->dispatch_mode !== Help::DISPATCH_MODE_POOL) {
+            throw new \RuntimeException('Pesanan ini sedang dalam penawaran sequential khusus dan belum dibuka untuk pool umum.');
+        }
+
         // 2. Guard: Batas radius jangkauan maksimal 60 km
         $mitraLat = $lat ?? ($mitra->latitude ? (float) $mitra->latitude : null);
         $mitraLng = $lng ?? ($mitra->longitude ? (float) $mitra->longitude : null);
@@ -734,6 +739,7 @@ class HelpTransactionService
             // Reset seluruh state bantuan kembali ke pool
             $lockedHelp->update([
                 'status'                      => Help::STATUS_MENUNGGU_MITRA,
+                'dispatch_mode'               => Help::DISPATCH_MODE_POOL,
                 'mitra_id'                    => null,
                 'cancelled_mitra_ids'         => $cancelledMitraIds,
                 'partner_cancel_prev_status'  => null,
@@ -751,6 +757,11 @@ class HelpTransactionService
                 'proof_photo'                 => null,
                 'completion_notes'            => null,
             ]);
+
+            // Lepaskan status BUSY mantan mitra agar dapat mencari order kembali
+            if ($formerMitra) {
+                app(PartnerOnlineService::class)->releaseBusy($formerMitra->id, $lockedHelp->id);
+            }
         });
 
         // Notifikasi dan Chat ke Mitra Lama
