@@ -241,19 +241,19 @@ class HelpDetail extends Component
                 $this->partnerCancelReason ?: null
             );
 
-            $this->showPartnerCancelModal      = false;
-            $this->showPartnerCancelStatusModal = true;
-            $this->partnerCancelStatus          = 'pending';
-            $this->loadHelp();
+            $this->showPartnerCancelModal       = false;
+            $this->showPartnerCancelStatusModal = false;
+            $this->partnerCancelStatus          = null;
 
-            session()->flash('message', 'Permintaan pembatalan telah dikirim ke customer. Menunggu konfirmasi.');
+            session()->flash('message', 'Pembatalan berhasil. Tugas telah dilepaskan dan dikembalikan ke sistem pencarian untuk Rekan Jasa lain.');
+            return redirect()->route('mitra.helps.find');
         } catch (\RuntimeException $e) {
             $this->showPartnerCancelModal = false;
             session()->flash('error', $e->getMessage());
         } catch (\Throwable $e) {
             $this->showPartnerCancelModal = false;
             Log::error('[MitraHelpDetail] requestPartnerCancel error: ' . $e->getMessage());
-            session()->flash('error', 'Terjadi kesalahan saat mengajukan pembatalan.');
+            session()->flash('error', 'Terjadi kesalahan saat membatalkan tugas.');
         }
     }
 

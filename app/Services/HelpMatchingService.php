@@ -175,12 +175,18 @@ class HelpMatchingService
     {
         $ttl = AppSetting::getHeartbeatTtlSeconds();
 
+        $cancelledIds = $help->cancelled_mitra_ids ?? [];
+        if (!is_array($cancelledIds)) {
+            $cancelledIds = json_decode((string) $cancelledIds, true) ?? [];
+        }
+        $excludeIds = array_unique(array_merge($excludeMitraIds, $cancelledIds));
+
         // Cari mitra di kota yang sama dengan status 'searching' dan heartbeat segar
         $eligibleStates = PartnerOnlineState::eligibleForMatching($ttl)
-            ->whereHas('user', function ($q) use ($help, $excludeMitraIds) {
+            ->whereHas('user', function ($q) use ($help, $excludeIds) {
                 $q->where('role', 'mitra')
                   ->where('is_shadow_banned', false)
-                  ->whereNotIn('id', $excludeMitraIds);
+                  ->whereNotIn('id', $excludeIds);
 
                 if ($help->city_id) {
                     $q->where('city_id', $help->city_id);
@@ -396,6 +402,7 @@ class HelpMatchingService
 
         if ($dispatchData) {
             Log::info("[HelpMatchingService] Mitra #{$mitra->id} REJECTED Dispatch #{$dispatchId}. Advancing to Rank " . ($dispatchData['rank'] + 1));
+            app(\App\Services\PartnerDisciplineService::class)->recordPartnerDecline($mitra, Help::find($dispatchData['help_id']), $reason);
             $this->dispatchNextCandidate($dispatchData['help_id'], $dispatchData['round'], $dispatchData['rank'] + 1);
         }
     }
@@ -425,14 +432,19 @@ class HelpMatchingService
             $this->onlineService->revertFromOfferPending($dispatch->mitra_id, $dispatch->help_id);
 
             return [
-                'help_id' => $dispatch->help_id,
-                'round'   => $dispatch->round,
-                'rank'    => $dispatch->rank,
+                'help_id'  => $dispatch->help_id,
+                'mitra_id' => $dispatch->mitra_id,
+                'round'    => $dispatch->round,
+                'rank'     => $dispatch->rank,
             ];
         });
 
         if ($dispatchData) {
             Log::info("[HelpMatchingService] Dispatch #{$dispatchId} EXPIRED. Advancing to Rank " . ($dispatchData['rank'] + 1));
+            $mitra = User::find($dispatchData['mitra_id']);
+            if ($mitra) {
+                app(\App\Services\PartnerDisciplineService::class)->recordPartnerDecline($mitra, Help::find($dispatchData['help_id']), 'Tawaran waktu habis / tidak direspon');
+            }
             $this->dispatchNextCandidate($dispatchData['help_id'], $dispatchData['round'], $dispatchData['rank'] + 1);
         }
     }

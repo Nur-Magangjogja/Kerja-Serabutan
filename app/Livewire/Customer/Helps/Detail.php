@@ -17,7 +17,6 @@ class Detail extends Component
     public $showCancelConfirm          = false;
     public $showMapModal               = false;
     public $showRatingForm             = false;
-    public $showPartnerCancelModal     = false;
     public $showDisputeModal           = false;
     public $disputeReason              = '';
 
@@ -126,34 +125,6 @@ class Detail extends Component
         } catch (\Throwable $e) {
             Log::error('[CustomerHelpDetail] confirmCompletion error: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat mengkonfirmasi pesanan.');
-        }
-    }
-
-    public function acceptPartnerCancellation()
-    {
-        try {
-            app(HelpTransactionService::class)->customerAcceptCancel($this->help, auth()->user());
-            $this->loadHelp();
-            session()->flash('success', 'Permintaan pembatalan diterima. Pesanan Anda telah dikembalikan ke daftar pencarian untuk Rekan Jasa lain.');
-        } catch (\RuntimeException $e) {
-            session()->flash('error', $e->getMessage());
-        } catch (\Throwable $e) {
-            Log::error('[CustomerHelpDetail] acceptPartnerCancellation error: ' . $e->getMessage());
-            session()->flash('error', 'Terjadi kesalahan.');
-        }
-    }
-
-    public function rejectPartnerCancellation()
-    {
-        try {
-            app(HelpTransactionService::class)->customerRejectCancel($this->help, auth()->user());
-            $this->loadHelp();
-            session()->flash('success', 'Permintaan pembatalan ditolak. Silakan lanjutkan pekerjaan.');
-        } catch (\RuntimeException $e) {
-            session()->flash('error', $e->getMessage());
-        } catch (\Throwable $e) {
-            Log::error('[CustomerHelpDetail] rejectPartnerCancellation error: ' . $e->getMessage());
-            session()->flash('error', 'Terjadi kesalahan.');
         }
     }
 

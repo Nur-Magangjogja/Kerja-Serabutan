@@ -326,35 +326,6 @@
                                 </div>
                             </div>
 
-                            <!-- Partner Cancellation Alert Box (FULL WIDTH) -->
-                            @if($help->status === 'partner_cancel_requested')
-                                <div class="p-3.5 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800/60 space-y-2.5">
-                                    <div class="flex items-start gap-2.5">
-                                        <div class="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                            </svg>
-                                        </div>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-xs font-bold text-amber-900 dark:text-amber-200">Mitra Mengajukan Pembatalan</p>
-                                            @if($help->partner_cancel_reason)
-                                                <p class="text-xs text-amber-800 dark:text-amber-300 italic mt-0.5 leading-snug">"{{ $help->partner_cancel_reason }}"</p>
-                                            @endif
-                                        </div>
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-2 pt-0.5">
-                                        <button wire:click="acceptPartnerCancellation({{ $help->id }})" wire:loading.attr="disabled"
-                                            class="w-full py-2 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer text-center">
-                                            Terima & Cari Mitra Lain
-                                        </button>
-                                        <button wire:click="rejectPartnerCancellation({{ $help->id }})" wire:loading.attr="disabled"
-                                            class="w-full py-2 px-2.5 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-bold transition cursor-pointer text-center">
-                                            Tolak Pembatalan
-                                        </button>
-                                    </div>
-                                </div>
-                            @endif
-
                             <!-- Action Buttons Footer -->
                             <div class="flex items-center justify-end gap-2 pt-1">
                                 @if($statusFilter === 'menunggu_mitra' || $help->status === 'menunggu_mitra')

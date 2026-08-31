@@ -283,23 +283,22 @@ class SequentialMatchingAndDisputeMediationEngineTest extends TestCase
         $state1 = PartnerOnlineState::where('user_id', $this->mitra1->id)->first();
         $this->assertEquals(PartnerOnlineState::STATUS_BUSY, $state1->matching_status);
 
-        // 2. Mitra 1 requests cancellation
+        // 2. Mitra 1 cancels the help (Instant Cancellation, no customer confirmation required)
         $txService = app(\App\Services\HelpTransactionService::class);
         $txService->requestPartnerCancel($help, $this->mitra1, 'Motor mogok di jalan');
 
-        $help->refresh();
-        $this->assertEquals(Help::STATUS_PARTNER_CANCEL_REQUESTED, $help->status);
-
-        // 3. Customer accepts cancellation
-        $txService->customerAcceptCancel($help, $this->customer);
-
-        // 4. Verify Help is returned to pool
+        // 3. Verify Help is immediately released, redispatched, and returned to pool (since no other mitra available)
         $help->refresh();
         $this->assertEquals(Help::STATUS_MENUNGGU_MITRA, $help->status);
         $this->assertEquals(Help::DISPATCH_MODE_POOL, $help->dispatch_mode);
         $this->assertNull($help->mitra_id);
+        $this->assertContains($this->mitra1->id, $help->cancelled_mitra_ids);
 
-        // 5. Verify Mitra 1 is NO LONGER BUSY and can immediately search for new orders
+        // 4. Verify Mitra 1 entered Greylist
+        $this->mitra1->refresh();
+        $this->assertTrue((bool) $this->mitra1->is_greylisted);
+
+        // 5. Verify Mitra 1 is NO LONGER BUSY and can search for new orders
         $state1->refresh();
         $this->assertNotEquals(PartnerOnlineState::STATUS_BUSY, $state1->matching_status);
         $this->assertNull($state1->current_help_id);
@@ -540,5 +539,74 @@ class SequentialMatchingAndDisputeMediationEngineTest extends TestCase
         $this->assertNotNull($log);
         $this->assertEquals('greylist_add', $log->action);
         $this->assertStringContainsString('1 bintang 3x berturut-turut', $log->reason);
+    }
+
+    public function test_partner_cancelling_taken_order_automatically_enters_greylist()
+    {
+        $txService = app(\App\Services\HelpTransactionService::class);
+
+        // 1. Mitra mengambil bantuan
+        $help = $this->createHelp();
+        $help->update([
+            'mitra_id' => $this->mitra1->id,
+            'status'   => Help::STATUS_TAKEN,
+        ]);
+
+        $this->assertFalse((bool) $this->mitra1->is_greylisted);
+
+        // 2. Mitra mengajukan pembatalan
+        $txService->requestPartnerCancel($help, $this->mitra1, 'Kendaraan tiba-tiba mogok');
+
+        $this->mitra1->refresh();
+
+        // 3. Verifikasi mitra otomatis masuk Daftar Abu-Abu
+        $this->assertTrue((bool) $this->mitra1->is_greylisted);
+        $this->assertStringContainsString('pembatalan tugas bantuan', $this->mitra1->greylist_reason);
+
+        $log = \App\Models\UserGreylistLog::where('user_id', $this->mitra1->id)->latest()->first();
+        $this->assertNotNull($log);
+        $this->assertEquals('greylist_add', $log->action);
+        $this->assertStringContainsString('Kendaraan tiba-tiba mogok', $log->reason);
+    }
+
+    public function test_partner_rejecting_offers_escalates_sp1_sp2_sp3_every_3_declines()
+    {
+        $disciplineService = app(\App\Services\PartnerDisciplineService::class);
+
+        $this->assertEquals(0, (int) $this->mitra1->warning_level);
+
+        // Simulasikan 9x penolakan tawaran dispatch
+        for ($i = 1; $i <= 9; $i++) {
+            $help = $this->createHelp();
+            HelpDispatch::create([
+                'help_id'    => $help->id,
+                'mitra_id'   => $this->mitra1->id,
+                'round'      => 1,
+                'rank'       => 1,
+                'status'     => HelpDispatch::STATUS_REJECTED,
+                'offered_at' => now(),
+                'expires_at' => now()->addMinutes(3),
+            ]);
+
+            $disciplineService->recordPartnerDecline($this->mitra1, $help, 'Menolak tawaran #' . $i);
+            $this->mitra1->refresh();
+
+            if ($i < 3) {
+                $this->assertEquals(0, (int) $this->mitra1->warning_level);
+            } elseif ($i >= 3 && $i < 6) {
+                // 3x penolakan -> SP 1
+                $this->assertEquals(1, (int) $this->mitra1->warning_level);
+                $this->assertTrue((bool) $this->mitra1->is_greylisted);
+                $this->assertStringContainsString('SP 1', $this->mitra1->latest_warning_message);
+            } elseif ($i >= 6 && $i < 9) {
+                // 6x penolakan -> SP 2
+                $this->assertEquals(2, (int) $this->mitra1->warning_level);
+                $this->assertStringContainsString('SP 2', $this->mitra1->latest_warning_message);
+            } elseif ($i >= 9) {
+                // 9x penolakan -> SP 3
+                $this->assertEquals(3, (int) $this->mitra1->warning_level);
+                $this->assertStringContainsString('SP 3', $this->mitra1->latest_warning_message);
+            }
+        }
     }
 }

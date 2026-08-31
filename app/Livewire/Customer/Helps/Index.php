@@ -207,46 +207,7 @@ class Index extends Component
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // PARTNER CANCELLATION (dari daftar, bukan detail)
-    // ─────────────────────────────────────────────────────────────────────────
 
-    public function acceptPartnerCancellation($helpId)
-    {
-        $help = Help::find($helpId);
-        if (!$help || $help->user_id !== auth()->id()) {
-            session()->flash('error', 'Permintaan tidak ditemukan atau Anda tidak memiliki izin.');
-            return;
-        }
-
-        try {
-            app(HelpTransactionService::class)->customerAcceptCancel($help, auth()->user());
-            session()->flash('message', 'Pembatalan diterima. Bantuan telah dikembalikan ke daftar pencarian untuk Rekan Jasa lain.');
-        } catch (\RuntimeException $e) {
-            session()->flash('error', $e->getMessage());
-        } catch (\Throwable $e) {
-            Log::error('[CustomerIndex] acceptPartnerCancellation error: ' . $e->getMessage());
-            session()->flash('error', 'Terjadi kesalahan.');
-        }
-    }
-
-    public function rejectPartnerCancellation($helpId)
-    {
-        $help = Help::find($helpId);
-        if (!$help || $help->user_id !== auth()->id()) {
-            session()->flash('error', 'Permintaan tidak ditemukan atau Anda tidak memiliki izin.');
-            return;
-        }
-
-        try {
-            app(HelpTransactionService::class)->customerRejectCancel($help, auth()->user());
-            session()->flash('message', 'Permintaan pembatalan ditolak. Rekan Jasa diminta untuk melanjutkan pekerjaan.');
-        } catch (\RuntimeException $e) {
-            session()->flash('error', $e->getMessage());
-        } catch (\Throwable $e) {
-            Log::error('[CustomerIndex] rejectPartnerCancellation error: ' . $e->getMessage());
-            session()->flash('error', 'Terjadi kesalahan.');
-        }
-    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // RATING

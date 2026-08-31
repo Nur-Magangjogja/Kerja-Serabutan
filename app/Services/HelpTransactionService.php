@@ -273,39 +273,94 @@ class HelpTransactionService
     }
 
     /**
-     * Mitra mengajukan permintaan pembatalan.
+     * Mitra membatalkan tugas bantuan yang telah diambil (Langsung dibatalkan tanpa perlu konfirmasi customer).
+     * Bantuan seketika dikembalikan ke sistem pencarian (Matching sequential / pop-up -> fallback pool jika tidak ada mitra).
      */
     public function requestPartnerCancel(Help $help, User $mitra, ?string $reason = null): void
     {
         $this->assertMitraAssigned($help, $mitra);
-        $this->assertCanTransition($help, Help::STATUS_PARTNER_CANCEL_REQUESTED);
 
-        $prevStatus = $help->status;
+        DB::transaction(function () use ($help, $mitra, $reason) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
 
-        DB::transaction(function () use ($help, $prevStatus, $reason) {
-            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
-
-            if ($lockedHelp->status === Help::STATUS_PARTNER_CANCEL_REQUESTED) {
-                throw new \RuntimeException('Permintaan pembatalan sudah diajukan sebelumnya.');
+            if ($lockedHelp->mitra_id !== $mitra->id) {
+                throw new \RuntimeException('Anda bukan mitra yang ditugaskan untuk bantuan ini.');
             }
 
+            if (in_array($lockedHelp->status, [Help::STATUS_SELESAI, Help::STATUS_DIBATALKAN])) {
+                throw new \RuntimeException('Pesanan ini sudah selesai atau telah dibatalkan.');
+            }
+
+            // Tambahkan mitra ke daftar cancelled_mitra_ids agar tidak mendapat order ini lagi
+            $cancelledMitraIds = $lockedHelp->cancelled_mitra_ids ?? [];
+            if (!is_array($cancelledMitraIds)) {
+                $cancelledMitraIds = json_decode((string) $cancelledMitraIds, true) ?? [];
+            }
+            if (!in_array($mitra->id, $cancelledMitraIds, false)) {
+                $cancelledMitraIds[] = $mitra->id;
+            }
+
+            // Reset status bantuan kembali ke pencarian mitra
             $lockedHelp->update([
-                'partner_cancel_prev_status'  => $prevStatus,
-                'status'                      => Help::STATUS_PARTNER_CANCEL_REQUESTED,
-                'partner_cancel_requested_at' => now(),
+                'status'                      => Help::STATUS_MENUNGGU_MITRA,
+                'dispatch_mode'               => Help::DISPATCH_MODE_SEEKING,
+                'mitra_id'                    => null,
+                'cancelled_mitra_ids'         => $cancelledMitraIds,
+                'partner_cancel_prev_status'  => null,
                 'partner_cancel_reason'       => $reason,
+                'partner_cancel_requested_at' => now(),
+                'partner_current_lat'         => null,
+                'partner_current_lng'         => null,
+                'partner_initial_lat'         => null,
+                'partner_initial_lng'         => null,
+                'partner_started_at'          => null,
+                'partner_arrived_at'          => null,
+                'service_started_at'          => null,
+                'service_completed_at'        => null,
+                'taken_at'                    => null,
+                'proof_photo'                 => null,
+                'completion_notes'            => null,
             ]);
+
+            // Lepaskan status BUSY mitra yang membatalkan
+            app(PartnerOnlineService::class)->releaseBusy($mitra->id, $lockedHelp->id);
         });
 
-        // Kirim pesan chat otomatis ke customer bahwa mitra mengajukan pembatalan
-        $this->sendCancellationRequestChat($help, $mitra, $reason);
-        $this->sendStatusNotification($help, Help::STATUS_PARTNER_CANCEL_REQUESTED, $help->user, $mitra);
+        $help->refresh();
+
+        // 1. Masukkan mitra ke Daftar Abu-Abu dan evaluasi eskalasi SP
+        app(\App\Services\PartnerDisciplineService::class)->recordPartnerCancellation($mitra, $help, $reason);
+
+        // 2. Kirim pesan notifikasi chat di dalam order
+        $this->sendCancellationResolvedChat($help, $mitra, $help->user, 'partner_cancelled_redispatched');
+
+        // 3. Notifikasi ke Customer bahwa mitra membatalkan dan sistem mencari mitra baru
+        if ($help->user) {
+            try {
+                $help->user->notify(new HelpStatusNotification(
+                    $help,
+                    Help::STATUS_MENUNGGU_MITRA,
+                    'partner_cancelled_redispatched',
+                    $mitra
+                ));
+            } catch (\Throwable $e) {
+                Log::warning('[HelpTransactionService] Failed to notify customer of partner cancellation: ' . $e->getMessage());
+            }
+        }
+
         $this->logActivity(
             $mitra->id,
             $help->id,
-            'cancel_requested',
-            "Mitra {$mitra->name} mengajukan pembatalan bantuan. Alasan: " . ($reason ?: 'Tidak disebutkan')
+            'partner_cancel_executed',
+            "Mitra {$mitra->name} membatalkan pengerjaan bantuan. Alasan: " . ($reason ?: 'Tidak disebutkan') . ". Bantuan otomatis dikembalikan ke sistem pencarian."
         );
+
+        // 4. Picu pencarian ulang otomatis (Matching Sequential / Pop-up -> Pool jika tidak ada mitra)
+        try {
+            app(\App\Services\HelpMatchingService::class)->initiateMatching($help);
+        } catch (\Throwable $e) {
+            Log::warning('[HelpTransactionService] Failed to initiate rematching after partner cancel: ' . $e->getMessage());
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1336,7 +1391,10 @@ class HelpTransactionService
         try {
             if (!$mitra || !$customer) return;
 
-            if ($action === 'accepted') {
+            if ($action === 'partner_cancelled_redispatched') {
+                $reasonText = $help->partner_cancel_reason ? " (Alasan: {$help->partner_cancel_reason})" : "";
+                $message = "Sistem SayaBantu: Rekan Jasa {$mitra->name} telah membatalkan penugasan bantuan ini{$reasonText}. Sistem saat ini sedang otomatis mencari Rekan Jasa pengganti untuk Anda.";
+            } elseif ($action === 'accepted') {
                 $message = "Permintaan pembatalan untuk bantuan '{$help->title}' telah disetujui oleh Customer. Pesanan ini telah dikembalikan ke pencarian Rekan Jasa lain.";
             } else {
                 $message = "Halo Rekan Jasa {$mitra->name}, permintaan pembatalan Anda untuk bantuan '{$help->title}' ditolak oleh Customer. Mohon untuk melanjutkan pengerjaan bantuan ini.";
