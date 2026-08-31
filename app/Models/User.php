@@ -178,6 +178,18 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\PartnerReport::class);
     }
 
+    public function partnerActivities()
+    {
+        return $this->hasMany(\App\Models\PartnerActivity::class, 'user_id');
+    }
+
+    public function latestPartnerActivity()
+    {
+        return $this->hasOne(\App\Models\PartnerActivity::class, 'user_id')->latestOfMany();
+    }
+
+
+
 
     public function balance()
     {

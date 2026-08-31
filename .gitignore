@@ -23,3 +23,9 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /scratch/*
+/storage/*
+!/storage/app/
+!/storage/framework/
+!/storage/logs/
+/scripts/
+/tests/

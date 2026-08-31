@@ -1,4 +1,4 @@
-<div class="space-y-5">
+<div class="space-y-6">
     @php
         $routePrefix = in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? 'superadmin.' : 'admin.';
 
@@ -12,17 +12,28 @@
             'help_started'           => ['label' => 'Pelayanan Dalam Proses', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', 'icon' => '⚡'],
             'service_completed'      => ['label' => 'Pekerjaan Selesai & Kirim Bukti', 'badge' => 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700', 'icon' => '📸'],
             'help_completed'         => ['label' => 'Pekerjaan Selesai & Kirim Bukti', 'badge' => 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700', 'icon' => '📸'],
+            'help_completed_waiting_confirmation' => ['label' => 'Menunggu Konfirmasi Customer', 'badge' => 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700', 'icon' => '⏳'],
             'confirm_completion'     => ['label' => 'Customer Konfirmasi Selesai', 'badge' => 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700', 'icon' => '✅'],
             'help_confirmed'         => ['label' => 'Customer Konfirmasi Selesai', 'badge' => 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700', 'icon' => '✅'],
             'cancel_help'            => ['label' => 'Bantuan Dibatalkan', 'badge' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800', 'icon' => '❌'],
             'help_cancelled'         => ['label' => 'Bantuan Dibatalkan', 'badge' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800', 'icon' => '❌'],
-            'request_partner_cancel' => ['label' => 'Pengajuan Batal oleh Mitra', 'badge' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800', 'icon' => '⚠️'],
+            'partner_cancel_executed' => ['label' => 'Batal oleh Mitra (Rematch)', 'badge' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800', 'icon' => '⚠️'],
+            'request_partner_cancel' => ['label' => 'Batal oleh Mitra', 'badge' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800', 'icon' => '⚠️'],
+            'dispute_raised'         => ['label' => 'Pengajuan Sengketa / Komplain', 'badge' => 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700', 'icon' => '🚨'],
+            'warranty_claim_escrow_clawback' => ['label' => 'Klaim Garansi 1x24 Jam', 'badge' => 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700', 'icon' => '🛡️'],
             'auto_complete'          => ['label' => 'Auto-Konfirmasi Selesai', 'badge' => 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800', 'icon' => '🤖'],
+            'help_auto_confirmed'    => ['label' => 'Auto-Konfirmasi Selesai', 'badge' => 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800', 'icon' => '🤖'],
             'help_reviewed'          => ['label' => 'Ulasan & Rating Diberikan', 'badge' => 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800', 'icon' => '⭐'],
         ];
 
         $formatActivity = function ($type) use ($activityMeta) {
             return $activityMeta[$type]['label'] ?? ucwords(str_replace('_', ' ', $type));
+        };
+        $getBadge = function ($type) use ($activityMeta) {
+            return $activityMeta[$type]['badge'] ?? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600';
+        };
+        $getIcon = function ($type) use ($activityMeta) {
+            return $activityMeta[$type]['icon'] ?? '📌';
         };
     @endphp
 
@@ -40,385 +51,556 @@
         </div>
     @endif
 
-    {{-- ===== Page Header ===== --}}
-    <div class="flex items-center justify-between flex-wrap gap-3">
+    {{-- ===== 1. Page Header & Summary Badges ===== --}}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200/80 dark:border-gray-700 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-            <h1 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <span>⚡ Aktivitas Mitra & Customer</span>
-            </h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                Pantau seluruh rekam jejak pekerjaan jasa bantuan antara Mitra dan Customer secara real-time
-            </p>
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        Aktivitas Mitra & Customer
+                    </h1>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                        Pantau seluruh rekam jejak aksi pekerjaan jasa bantuan antara Mitra dan Customer secara real-time
+                    </p>
+                </div>
+            </div>
         </div>
-        <div class="flex items-center gap-2">
-            <span class="text-xs font-semibold text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Total {{ number_format($activities->total()) }} Aktivitas Pekerjaan
+
+        {{-- Quick Stat Pill --}}
+        <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs font-semibold text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-2xs">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Total: <strong>{{ number_format($stats['total']) }}</strong> Log Terdata</span>
             </span>
         </div>
     </div>
 
-    {{-- ===== Summary Cards ===== --}}
+    {{-- ===== 2. Summary Metric Cards ===== --}}
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3.5 shadow-sm flex items-center gap-3">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-700 p-4 shadow-xs flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold shrink-0">
                 📋
             </div>
             <div class="min-w-0">
-                <p class="text-[11px] text-gray-500 dark:text-gray-400">Total Log</p>
-                <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">{{ number_format($stats['total']) }}</p>
+                <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Log</p>
+                <p class="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white">{{ number_format($stats['total']) }}</p>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3.5 shadow-sm flex items-center gap-3">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-700 p-4 shadow-xs flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
                 📅
             </div>
             <div class="min-w-0">
-                <p class="text-[11px] text-gray-500 dark:text-gray-400">Hari Ini</p>
-                <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">{{ number_format($stats['today']) }}</p>
+                <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hari Ini</p>
+                <p class="text-base sm:text-lg font-extrabold text-emerald-600 dark:text-emerald-400">{{ number_format($stats['today']) }}</p>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3.5 shadow-sm flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-700 p-4 shadow-xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold shrink-0">
                 👤
             </div>
             <div class="min-w-0">
-                <p class="text-[11px] text-gray-500 dark:text-gray-400">Dari Customer</p>
-                <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">{{ number_format($stats['customer_acts']) }}</p>
+                <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dari Customer</p>
+                <p class="text-base sm:text-lg font-extrabold text-sky-600 dark:text-sky-400">{{ number_format($stats['customer_acts']) }}</p>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3.5 shadow-sm flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold shrink-0">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-700 p-4 shadow-xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold shrink-0">
                 🛵
             </div>
             <div class="min-w-0">
-                <p class="text-[11px] text-gray-500 dark:text-gray-400">Dari Mitra</p>
-                <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">{{ number_format($stats['mitra_acts']) }}</p>
+                <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dari Mitra</p>
+                <p class="text-base sm:text-lg font-extrabold text-purple-600 dark:text-purple-400">{{ number_format($stats['mitra_acts']) }}</p>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3.5 shadow-sm flex items-center gap-3 col-span-2 sm:col-span-1">
-            <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold shrink-0">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-700 p-4 shadow-xs flex items-center gap-3 col-span-2 sm:col-span-1">
+            <div class="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-900/40 text-teal-600 dark:text-teal-400 flex items-center justify-center font-bold shrink-0">
                 ✅
             </div>
             <div class="min-w-0">
-                <p class="text-[11px] text-gray-500 dark:text-gray-400">Pekerjaan Selesai</p>
-                <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">{{ number_format($stats['completed_jobs']) }}</p>
+                <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pekerjaan Selesai</p>
+                <p class="text-base sm:text-lg font-extrabold text-teal-600 dark:text-teal-400">{{ number_format($stats['completed_jobs']) }}</p>
             </div>
         </div>
     </div>
 
-    {{-- ===== Realtime Filter Toolbar ===== --}}
-    <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-4 py-4 shadow-sm">
-        <div class="flex flex-wrap items-end gap-3">
-            {{-- Search --}}
-            <div class="relative flex-1 min-w-[220px]">
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Cari Pekerjaan / Pengguna</label>
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    </div>
-                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Order ID, judul bantuan, customer, mitra, IP..."
-                        class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                </div>
-            </div>
+    {{-- ===== 3. MAIN NAVIGATION TABS (DIREKTORI PENGGUNA VS DAFTAR AKTIVITAS) ===== --}}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-gray-200 dark:border-gray-700 pb-3">
+        <div class="inline-flex bg-gray-200/70 dark:bg-gray-800 p-1.5 rounded-2xl gap-1.5 w-full sm:w-auto">
+            
+            {{-- Tab 1: Menu Direktori Pengguna (Pelaku Aksi - Terurut Aktivitas Terakhir) --}}
+            <button type="button" wire:click="setTab('directory')"
+                class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer {{ $tab === 'directory' ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span>Direktori Pelaku Aksi</span>
+            </button>
 
-            {{-- Filter Role Pelaku --}}
-            <div>
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Pelaku Aksi</label>
-                <select wire:model.live="roleFilter"
-                    class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option value="all">Semua (Customer & Mitra)</option>
-                    <option value="customer">Hanya Customer</option>
-                    <option value="mitra">Hanya Mitra</option>
-                </select>
-            </div>
-
-            {{-- Filter Kota --}}
-            <div>
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Kota / Wilayah</label>
-                <select wire:model.live="cityId"
-                    class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option value="all">Semua Kota</option>
-                    @foreach($cities as $city)
-                        <option value="{{ $city->id }}">{{ $city->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            {{-- Date Range --}}
-            <div>
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Dari Tanggal</label>
-                <input type="date" wire:model.live="dateFrom"
-                    class="py-2 px-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
-            </div>
-            <div>
-                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Sampai Tanggal</label>
-                <input type="date" wire:model.live="dateTo"
-                    class="py-2 px-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
-            </div>
-
-            {{-- Reset --}}
-            <button wire:click="clearFilters"
-                class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                Reset
+            {{-- Tab 2: Seluruh Aliran Log Aktivitas (Streams) --}}
+            <button type="button" wire:click="setTab('streams')"
+                class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer {{ $tab === 'streams' ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                <span>Daftar Seluruh Aktivitas</span>
+                @if($selectedUserId)
+                    <span class="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></span>
+                @endif
             </button>
         </div>
+
+        <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+            <span>Mode Aktif:</span>
+            <strong class="text-gray-900 dark:text-white">{{ $tab === 'directory' ? 'Direktori Pengguna (Terurut Terakhir Aktif)' : 'Log Aliran Aktivitas' }}</strong>
+        </div>
     </div>
 
-    {{-- ===== Table Card ===== --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-        @if ($activities->isEmpty())
-            <div class="p-12 text-center">
-                <div class="w-14 h-14 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
-                    ⏱️
-                </div>
-                <h3 class="text-sm font-bold text-gray-900 dark:text-white">Tidak Ada Aktivitas Pekerjaan Ditemukan</h3>
-                <p class="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
-                    Belum ada rekaman aktivitas pekerjaan bantuan antara Mitra dan Customer yang sesuai dengan filter pencarian Anda.
+
+    {{-- ═════════════════════════════════════════════════════════════════════ --}}
+    {{-- TAB 1: MENU DIREKTORI PENGGUNA (PELAKU AKSI - TERURUT AKTIVITAS TERAKHIR) --}}
+    {{-- ═════════════════════════════════════════════════════════════════════ --}}
+    @if($tab === 'directory')
+    <div class="space-y-5 animate-fade-in">
+        
+        {{-- Search & Role Filter Header --}}
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-gray-200/80 dark:border-gray-700 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+                <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Menu Direktori Pengguna (Pelaku Aksi)
+                </h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Daftar pengguna otomatis diurutkan berdasarkan <strong>waktu terakhir kali melakukan aktivitas</strong>
                 </p>
             </div>
-        @else
+
+            <div class="flex items-center gap-3 flex-wrap">
+                {{-- Pencarian User --}}
+                <div class="relative flex-1 sm:w-64">
+                    <input wire:model.live.debounce.300ms="userSearch" type="text" placeholder="Cari nama, email, no HP..."
+                        class="w-full pl-9 pr-4 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+
+                {{-- Filter Role Pelaku --}}
+                <div class="inline-flex bg-gray-100 dark:bg-gray-700/60 p-1 rounded-xl gap-1">
+                    <button type="button" wire:click="$set('userRoleFilter', 'all')"
+                        class="px-3 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer {{ $userRoleFilter === 'all' ? 'bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-xs' : 'text-gray-600 dark:text-gray-400' }}">
+                        Semua
+                    </button>
+                    <button type="button" wire:click="$set('userRoleFilter', 'customer')"
+                        class="px-3 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer {{ $userRoleFilter === 'customer' ? 'bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-xs' : 'text-gray-600 dark:text-gray-400' }}">
+                        Customer
+                    </button>
+                    <button type="button" wire:click="$set('userRoleFilter', 'mitra')"
+                        class="px-3 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer {{ $userRoleFilter === 'mitra' ? 'bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-xs' : 'text-gray-600 dark:text-gray-400' }}">
+                        Mitra
+                    </button>
+                </div>
+
+                {{-- Filter Kota (Jika SuperAdmin) --}}
+                @if(count($cities) > 1)
+                <div>
+                    <select wire:model.live="userCityId"
+                        class="py-1.5 pl-3 pr-8 text-xs font-semibold rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                        <option value="all">Semua Kota</option>
+                        @foreach($cities as $city)
+                            <option value="{{ $city->id }}">{{ $city->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
+            </div>
+        </div>
+
+        {{-- Users Grid Cards --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @forelse($users as $u)
+            @php
+                $isMitra = $u->role === 'mitra';
+                $lastAct = $u->latestPartnerActivity;
+                $hasAct = !empty($u->last_activity_at);
+            @endphp
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200/80 dark:border-gray-700 shadow-xs hover:shadow-md transition flex flex-col justify-between space-y-4">
+                
+                {{-- User Profile Header --}}
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        @if($u->selfie_photo)
+                            <img src="{{ asset('storage/' . $u->selfie_photo) }}" alt="{{ $u->name }}" class="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shrink-0">
+                        @else
+                            <div class="w-12 h-12 rounded-xl {{ $isMitra ? 'bg-purple-600 text-white' : 'bg-primary-600 text-white' }} flex items-center justify-center font-bold text-sm shrink-0">
+                                {{ strtoupper(substr($u->name, 0, 2)) }}
+                            </div>
+                        @endif
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-white truncate" title="{{ $u->name }}">{{ $u->name }}</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $u->email }}</p>
+                            @if(!empty($u->city))
+                                <span class="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5">
+                                    <span>📍</span> {{ is_object($u->city) ? $u->city->name : $u->city }}
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 {{ $isMitra ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' }}">
+                        {{ ucfirst($u->role) }}
+                    </span>
+                </div>
+
+                {{-- Last Activity Box --}}
+                <div class="bg-gray-50 dark:bg-gray-900/60 rounded-xl p-3.5 space-y-2 border border-gray-100 dark:border-gray-700/60 text-xs">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aktivitas Terakhir:</span>
+                        @if($hasAct)
+                            <span class="text-[11px] font-semibold text-primary-600 dark:text-primary-400">
+                                {{ \Carbon\Carbon::parse($u->last_activity_at)->diffForHumans() }}
+                            </span>
+                        @else
+                            <span class="text-[11px] text-gray-400 italic">Belum ada</span>
+                        @endif
+                    </div>
+
+                    @if($lastAct)
+                        <div class="pt-1">
+                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold {{ $getBadge($lastAct->activity_type) }}">
+                                <span>{{ $getIcon($lastAct->activity_type) }}</span>
+                                <span>{{ $formatActivity($lastAct->activity_type) }}</span>
+                            </span>
+                            @if($lastAct->description)
+                                <p class="text-[11px] text-gray-600 dark:text-gray-300 line-clamp-2 mt-1.5" title="{{ $lastAct->description }}">
+                                    {{ $lastAct->description }}
+                                </p>
+                            @endif
+                        </div>
+                    @else
+                        <p class="text-[11px] text-gray-400 italic">Pengguna ini belum memiliki rekam aktivitas di sistem.</p>
+                    @endif
+
+                    <div class="pt-2 border-t border-gray-200/60 dark:border-gray-700/60 flex items-center justify-between text-[11px]">
+                        <span class="text-gray-500 dark:text-gray-400">Total Aktivitas:</span>
+                        <span class="font-extrabold text-gray-900 dark:text-white">{{ number_format($u->total_activities ?? 0) }} kali</span>
+                    </div>
+                </div>
+
+                {{-- Action Button --}}
+                <button type="button" wire:click="filterByUser({{ $u->id }}, '{{ addslashes($u->name) }}')"
+                    class="w-full py-2.5 px-4 rounded-xl bg-primary-50 dark:bg-primary-950/50 hover:bg-primary-600 text-primary-700 dark:text-primary-300 hover:text-white font-bold text-xs transition flex items-center justify-center gap-2 border border-primary-200 dark:border-primary-800/60 hover:border-primary-600 cursor-pointer shadow-2xs">
+                    <span>Lihat Log Aktivitas Pengguna</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </button>
+
+            </div>
+            @empty
+            <div class="col-span-full bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border border-gray-200 dark:border-gray-700">
+                <p class="text-sm font-semibold text-gray-500 dark:text-gray-400">Tidak ada pengguna yang cocok dengan pencarian.</p>
+            </div>
+            @endforelse
+        </div>
+
+        {{-- Users Pagination --}}
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200/80 dark:border-gray-700 shadow-xs">
+            {{ $users->links('vendor.pagination.superadmin') }}
+        </div>
+
+    </div>
+    @endif
+
+
+    {{-- ═════════════════════════════════════════════════════════════════════ --}}
+    {{-- TAB 2: DAFTAR SELURUH LOG ALIRAN AKTIVITAS (STREAMS) --}}
+    {{-- ═════════════════════════════════════════════════════════════════════ --}}
+    @if($tab === 'streams')
+    <div class="space-y-4 animate-fade-in">
+
+        {{-- Filter Box & Active User Banner --}}
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-700 shadow-xs overflow-hidden">
+            
+            {{-- Active User Filter Banner --}}
+            @if($selectedUserId)
+            <div class="bg-primary-50 dark:bg-primary-950/60 border-b border-primary-100 dark:border-primary-800/80 px-5 py-3 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2 text-xs font-semibold text-primary-900 dark:text-primary-200">
+                    <span class="w-2.5 h-2.5 rounded-full bg-primary-600 animate-pulse"></span>
+                    <span>Menampilkan aktivitas khusus untuk pelaku: <strong>{{ $selectedUserName ?? 'User #' . $selectedUserId }}</strong></span>
+                </div>
+                <button type="button" wire:click="clearUserFilter"
+                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-bold hover:bg-rose-50 cursor-pointer shadow-2xs">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    <span>Hapus Filter Pengguna</span>
+                </button>
+            </div>
+            @endif
+
+            {{-- Filter Bar --}}
+            <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-gray-700/80">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+                    
+                    {{-- Search --}}
+                    <div class="relative lg:col-span-2">
+                        <input wire:model.live.debounce.300ms="search" type="text" placeholder="Cari judul bantuan, pelaku, IP, deskripsi..."
+                            class="w-full pl-9 pr-4 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500">
+                        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+
+                    {{-- Role Filter --}}
+                    <div>
+                        <select wire:model.live="roleFilter"
+                            class="w-full py-2 pl-3 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                            <option value="all">Semua Pelaku</option>
+                            <option value="customer">Customer</option>
+                            <option value="mitra">Mitra</option>
+                        </select>
+                    </div>
+
+                    {{-- Activity Type Filter --}}
+                    <div>
+                        <select wire:model.live="activityTypeFilter"
+                            class="w-full py-2 pl-3 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                            <option value="all">Semua Tipe Aksi</option>
+                            <option value="help_created">Bantuan Dibuat</option>
+                            <option value="take_help">Tugas Diambil Mitra</option>
+                            <option value="partner_on_the_way">Mitra Menuju Lokasi</option>
+                            <option value="partner_arrived">Mitra Tiba di Lokasi</option>
+                            <option value="help_started">Pelayanan Dimulai</option>
+                            <option value="help_completed">Pekerjaan Selesai</option>
+                            <option value="help_confirmed">Customer Konfirmasi</option>
+                            <option value="cancel_help">Bantuan Dibatalkan</option>
+                            <option value="partner_cancel_executed">Batal oleh Mitra</option>
+                            <option value="dispute_raised">Sengketa / Komplain</option>
+                        </select>
+                    </div>
+
+                    {{-- City Filter --}}
+                    <div>
+                        <select wire:model.live="cityId"
+                            class="w-full py-2 pl-3 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                            <option value="all">Semua Kota</option>
+                            @foreach($cities as $c)
+                                <option value="{{ $c->id }}">{{ $c->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Per Page --}}
+                    <div>
+                        <select wire:model.live="perPage"
+                            class="w-full py-2 pl-3 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                            <option value="15">15 / halaman</option>
+                            <option value="30">30 / halaman</option>
+                            <option value="50">50 / halaman</option>
+                            <option value="100">100 / halaman</option>
+                        </select>
+                    </div>
+
+                </div>
+            </div>
+
+            {{-- Activity Streams Table --}}
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
-                    <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 font-bold uppercase tracking-wider text-[10px] border-b border-gray-100 dark:border-gray-700">
-                        <tr>
-                            <th class="px-4 py-3">Waktu & IP</th>
-                            <th class="px-4 py-3">Pelaku Aksi</th>
-                            <th class="px-4 py-3">Aksi Pekerjaan</th>
-                            <th class="px-4 py-3">Tugas Jasa Bantuan</th>
-                            <th class="px-4 py-3">Keterangan & Bukti</th>
-                            <th class="px-4 py-3 text-right">Detail</th>
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold">
+                            <th class="px-4 py-3 text-left">Waktu</th>
+                            <th class="px-4 py-3 text-left">Pelaku Aksi</th>
+                            <th class="px-4 py-3 text-left">Jenis Aktivitas</th>
+                            <th class="px-4 py-3 text-left">Keterangan / Detail</th>
+                            <th class="px-4 py-3 text-left hidden lg:table-cell">Bantuan Terkait</th>
+                            <th class="px-4 py-3 text-left hidden xl:table-cell">Info Teknis</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700 text-gray-700 dark:text-gray-200">
-                        @foreach ($activities as $act)
-                            @php
-                                $u = $act->user;
-                                $help = $act->help;
-                                $meta = $activityMeta[$act->activity_type] ?? null;
-                                $isMitra = ($u?->role === 'mitra');
-                            @endphp
-                            <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition">
-                                {{-- Waktu & IP --}}
-                                <td class="px-4 py-3.5 whitespace-nowrap">
-                                    <p class="font-semibold text-gray-900 dark:text-white text-xs">{{ $act->created_at->format('d M Y') }}</p>
-                                    <p class="text-[11px] text-gray-500 dark:text-gray-400 font-mono">{{ $act->created_at->format('H:i:s') }} WIB</p>
-                                    <span class="inline-block font-mono text-[10px] text-gray-400 mt-0.5">
-                                        🌐 {{ $act->ip_address ?: '127.0.0.1' }}
-                                    </span>
-                                </td>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                        @forelse($activities as $act)
+                        @php
+                            $userRole = $act->user->role ?? '-';
+                            $isUserMitra = $userRole === 'mitra';
+                        @endphp
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
+                            
+                            {{-- Waktu --}}
+                            <td class="px-4 py-3.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                <div>{{ optional($act->created_at)->translatedFormat('d M Y, H:i') }}</div>
+                                <span class="text-[10px] text-gray-400">{{ optional($act->created_at)->diffForHumans() }}</span>
+                            </td>
 
-                                {{-- Pelaku Aksi (Customer / Mitra) --}}
-                                <td class="px-4 py-3.5 whitespace-nowrap">
-                                    <div class="flex items-center gap-2.5">
-                                        <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 {{ $isMitra ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 border border-amber-300' : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-300' }}">
-                                            {{ strtoupper(substr($u?->name ?? '?', 0, 1)) }}
-                                        </div>
-                                        <div class="min-w-0">
-                                            <div class="flex items-center gap-1.5">
-                                                <p class="font-bold text-gray-900 dark:text-white text-xs truncate">{{ $u?->name ?? 'User Terhapus' }}</p>
-                                                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase {{ $isMitra ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200' }}">
-                                                    {{ $u?->role ?? 'User' }}
-                                                </span>
-                                            </div>
-                                            <p class="text-[11px] text-gray-400 truncate">{{ $u?->email }}</p>
-                                            @if($u?->city)
-                                                <span class="text-[10px] text-gray-400 block truncate">📍 {{ is_object($u->city) ? $u->city->name : $u->city }}</span>
+                            {{-- Pelaku Aksi --}}
+                            <td class="px-4 py-3.5">
+                                @if($act->user)
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-7 h-7 rounded-full {{ $isUserMitra ? 'bg-purple-600 text-white' : 'bg-primary-600 text-white' }} font-bold text-xs flex items-center justify-center shrink-0">
+                                        {{ strtoupper(substr($act->user->name, 0, 1)) }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <button type="button" wire:click="filterByUser({{ $act->user->id }}, '{{ addslashes($act->user->name) }}')"
+                                            class="font-bold text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400 text-left truncate block cursor-pointer">
+                                            {{ $act->user->name }}
+                                        </button>
+                                        <div class="flex items-center gap-1.5 mt-0.5">
+                                            <span class="px-1.5 py-0.2 rounded text-[10px] font-bold {{ $isUserMitra ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' }}">
+                                                {{ ucfirst($userRole) }}
+                                            </span>
+                                            @if(!empty($act->user->city))
+                                                <span class="text-[10px] text-gray-400 truncate">{{ is_object($act->user->city) ? $act->user->city->name : $act->user->city }}</span>
                                             @endif
                                         </div>
                                     </div>
-                                </td>
+                                </div>
+                                @else
+                                <span class="text-gray-400">—</span>
+                                @endif
+                            </td>
 
-                                {{-- Aksi Pekerjaan --}}
-                                <td class="px-4 py-3.5 whitespace-nowrap">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold {{ $meta['badge'] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' }}">
-                                        <span>{{ $meta['icon'] ?? '⚡' }}</span>
-                                        <span>{{ $formatActivity($act->activity_type) }}</span>
+                            {{-- Jenis Aktivitas --}}
+                            <td class="px-4 py-3.5 whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold {{ $getBadge($act->activity_type) }}">
+                                    <span>{{ $getIcon($act->activity_type) }}</span>
+                                    <span>{{ $formatActivity($act->activity_type) }}</span>
+                                </span>
+                            </td>
+
+                            {{-- Keterangan / Detail --}}
+                            <td class="px-4 py-3.5">
+                                <p class="text-xs text-gray-800 dark:text-gray-200 line-clamp-2 max-w-sm">
+                                    {{ $act->description ?? 'Tidak ada keterangan tambahan.' }}
+                                </p>
+                                @if($act->photo)
+                                    <a href="{{ asset('storage/' . $act->photo) }}" target="_blank"
+                                        class="inline-flex items-center gap-1 mt-1 text-[11px] font-semibold text-primary-600 dark:text-primary-400 hover:underline">
+                                        <span>📷 Lihat Foto Bukti</span>
+                                    </a>
+                                @endif
+                            </td>
+
+                            {{-- Bantuan Terkait --}}
+                            <td class="px-4 py-3.5 hidden lg:table-cell">
+                                @if($act->help)
+                                <div>
+                                    <button type="button" wire:click="showHelpDetails({{ $act->help->id }})"
+                                        class="font-bold text-primary-600 dark:text-primary-400 hover:underline text-left truncate block cursor-pointer">
+                                        {{ $act->help->title }}
+                                    </button>
+                                    <span class="text-[10px] text-gray-400 block mt-0.5">
+                                        #{{ $act->help->id }} &bull; Rp {{ number_format($act->help->price ?? $act->help->amount ?? 0, 0, ',', '.') }}
                                     </span>
-                                </td>
+                                </div>
+                                @else
+                                <span class="text-gray-400">—</span>
+                                @endif
+                            </td>
 
-                                {{-- Tugas Jasa Bantuan --}}
-                                <td class="px-4 py-3.5 max-w-xs">
-                                    @if($help)
-                                        <div class="space-y-1">
-                                            <div class="flex items-center gap-1.5">
-                                                <span class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                                                    {{ $help->order_id ?: ('#HELP-' . $help->id) }}
-                                                </span>
-                                                <span class="font-bold text-gray-900 dark:text-white text-xs truncate" title="{{ $help->title }}">
-                                                    {{ $help->title }}
-                                                </span>
-                                            </div>
+                            {{-- Info Teknis --}}
+                            <td class="px-4 py-3.5 hidden xl:table-cell text-gray-400">
+                                @if($act->ip_address)
+                                    <span class="font-mono text-[10px] block">{{ $act->ip_address }}</span>
+                                @else
+                                    <span class="text-[10px]">—</span>
+                                @endif
+                            </td>
 
-                                            <div class="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                                                <span>Tarif: <strong class="text-emerald-600 dark:text-emerald-400">Rp {{ number_format($help->amount ?? 0, 0, ',', '.') }}</strong></span>
-                                                <span>•</span>
-                                                <span>Status: <strong class="capitalize">{{ $help->status }}</strong></span>
-                                            </div>
-
-                                            <div class="text-[10px] text-gray-400 truncate">
-                                                <span>Customer: {{ $help->customer->name ?? $help->user->name ?? '-' }}</span>
-                                                @if($help->mitra)
-                                                    <span> • Mitra: {{ $help->mitra->name }}</span>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    @else
-                                        <span class="text-gray-400 italic text-[11px]">Tidak terhubung dengan ID bantuan spesifik</span>
-                                    @endif
-                                </td>
-
-                                {{-- Keterangan & Bukti Foto --}}
-                                <td class="px-4 py-3.5 max-w-xs">
-                                    <p class="text-gray-800 dark:text-gray-200 text-xs leading-relaxed line-clamp-2">
-                                        {{ $act->description }}
-                                    </p>
-
-                                    @php
-                                        $photoToShow = $act->photo ?: ($help?->proof_photo ?: null);
-                                    @endphp
-                                    @if($photoToShow)
-                                        <div class="mt-1.5 flex items-center gap-1.5">
-                                            <a href="{{ asset('storage/' . $photoToShow) }}" target="_blank" class="inline-flex items-center gap-1 text-[10px] text-primary-600 dark:text-primary-400 hover:underline font-semibold bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 rounded border border-primary-200 dark:border-primary-800">
-                                                <span>📷 Lihat Bukti Foto</span>
-                                            </a>
-                                        </div>
-                                    @endif
-                                </td>
-
-                                {{-- Detail Bantuan --}}
-                                <td class="px-4 py-3.5 text-right whitespace-nowrap">
-                                    @if($help)
-                                        <button type="button" wire:click="showHelpDetails({{ $help->id }})"
-                                            class="px-2.5 py-1 bg-primary-50 hover:bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 rounded-lg text-[11px] font-semibold transition cursor-pointer inline-flex items-center gap-1"
-                                            title="Lihat Detail Bantuan">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                            <span>Detail Bantuan</span>
-                                        </button>
-                                    @else
-                                        <span class="text-gray-400 text-xs">-</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="6" class="px-4 py-16 text-center text-gray-500 dark:text-gray-400">
+                                Tidak ada log aktivitas yang sesuai dengan filter.
+                            </td>
+                        </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
 
-            <div class="p-4 border-t border-gray-100 dark:border-gray-700">
-                {{ $activities->links() }}
+            {{-- Table Pagination --}}
+            <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
+                {{ $activities->links('vendor.pagination.superadmin') }}
             </div>
-        @endif
+
+        </div>
+
     </div>
+    @endif
 
-    {{-- ===== Modal Detail Bantuan Interaktif ===== --}}
+
+    {{-- ===== MODAL DETAIL BANTUAN ===== --}}
     @if($showHelpModal && $selectedHelp)
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="fixed inset-0 bg-gray-900/60 dark:bg-black/80 backdrop-blur-xs transition-opacity" wire:click="closeHelpDetails"></div>
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+        <div class="bg-white dark:bg-gray-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700 space-y-4">
+            
+            <div class="flex items-start justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-3">
+                <div>
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300">
+                        Bantuan #{{ $selectedHelp->id }}
+                    </span>
+                    <h3 class="text-base font-bold text-gray-900 dark:text-white mt-1">
+                        {{ $selectedHelp->title }}
+                    </h3>
+                </div>
+                <button type="button" wire:click="closeHelpDetails" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
 
-            <div class="flex min-h-full items-center justify-center p-4">
-                <div class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 shadow-2xl transition-all sm:w-full sm:max-w-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
-                    {{-- Modal Header --}}
-                    <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
-                        <div>
-                            <span class="font-mono text-xs font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/40 px-2 py-0.5 rounded border border-primary-200 dark:border-primary-800">
-                                {{ $selectedHelp->order_id ?: ('#HELP-' . $selectedHelp->id) }}
-                            </span>
-                            <h3 class="text-base font-bold text-gray-900 dark:text-white mt-1">
-                                {{ $selectedHelp->title }}
-                            </h3>
-                        </div>
-                        <button type="button" wire:click="closeHelpDetails" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </button>
+            <div class="space-y-3 text-xs">
+                <div class="grid grid-cols-2 gap-2 bg-gray-50 dark:bg-gray-700/40 p-3 rounded-xl">
+                    <div>
+                        <span class="text-gray-400 block text-[10px]">Customer:</span>
+                        <strong class="text-gray-900 dark:text-white">{{ $selectedHelp->customer->name ?? '-' }}</strong>
                     </div>
-
-                    {{-- Modal Body Grid --}}
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                        {{-- Ringkasan Customer & Mitra --}}
-                        <div class="bg-gray-50 dark:bg-gray-750 p-3.5 rounded-xl border border-gray-100 dark:border-gray-700 space-y-2">
-                            <h4 class="font-bold text-gray-900 dark:text-white uppercase tracking-wider text-[10px]">Pihak Terkait</h4>
-                            <div>
-                                <p class="text-gray-500">Customer (Pembuat):</p>
-                                <p class="font-bold text-gray-800 dark:text-gray-200">{{ $selectedHelp->customer->name ?? $selectedHelp->user->name ?? '-' }} ({{ $selectedHelp->customer->phone ?? '-' }})</p>
-                            </div>
-                            <div>
-                                <p class="text-gray-500">Mitra (Pelaksana):</p>
-                                <p class="font-bold text-gray-800 dark:text-gray-200">{{ $selectedHelp->mitra->name ?? 'Belum ada mitra' }} {{ $selectedHelp->mitra ? ('(' . $selectedHelp->mitra->phone . ')') : '' }}</p>
-                            </div>
-                        </div>
-
-                        {{-- Ringkasan Biaya & Status --}}
-                        <div class="bg-gray-50 dark:bg-gray-750 p-3.5 rounded-xl border border-gray-100 dark:border-gray-700 space-y-2">
-                            <h4 class="font-bold text-gray-900 dark:text-white uppercase tracking-wider text-[10px]">Status & Pembayaran</h4>
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-500">Status Tugas:</span>
-                                <span class="px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
-                                    {{ $selectedHelp->status }}
-                                </span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-500">Nilai Bantuan:</span>
-                                <span class="font-bold text-emerald-600 text-sm">Rp {{ number_format($selectedHelp->amount ?? 0, 0, ',', '.') }}</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-500">Kota / Wilayah:</span>
-                                <span class="font-semibold text-gray-800 dark:text-gray-200">{{ $selectedHelp->city->name ?? '-' }}</span>
-                            </div>
-                        </div>
+                    <div>
+                        <span class="text-gray-400 block text-[10px]">Mitra Bertugas:</span>
+                        <strong class="text-gray-900 dark:text-white">{{ $selectedHelp->mitra->name ?? 'Belum ada' }}</strong>
                     </div>
-
-                    {{-- Deskripsi & Alamat --}}
-                    <div class="space-y-2 text-xs">
-                        <div>
-                            <p class="font-semibold text-gray-700 dark:text-gray-300">Deskripsi Bantuan:</p>
-                            <p class="text-gray-600 dark:text-gray-400 mt-0.5 bg-gray-50 dark:bg-gray-750 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700">
-                                {{ $selectedHelp->description ?: 'Tidak ada deskripsi detail' }}
-                            </p>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-700 dark:text-gray-300">Alamat Lengkap:</p>
-                            <p class="text-gray-600 dark:text-gray-400 mt-0.5 bg-gray-50 dark:bg-gray-750 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700">
-                                📍 {{ $selectedHelp->full_address ?: ($selectedHelp->location ?: 'Alamat tidak dicantumkan') }}
-                            </p>
-                        </div>
+                    <div class="pt-2 border-t border-gray-200/50 dark:border-gray-600/50">
+                        <span class="text-gray-400 block text-[10px]">Biaya Jasa:</span>
+                        <strong class="text-emerald-600 dark:text-emerald-400">Rp {{ number_format($selectedHelp->price ?? $selectedHelp->amount ?? 0, 0, ',', '.') }}</strong>
                     </div>
-
-                    {{-- Bukti Foto Pengerjaan --}}
-                    @if($selectedHelp->proof_photo || $selectedHelp->photo)
-                        <div class="space-y-1.5 text-xs">
-                            <p class="font-semibold text-gray-700 dark:text-gray-300">Foto & Bukti Pengerjaan:</p>
-                            <div class="flex items-center gap-3">
-                                @if($selectedHelp->photo)
-                                    <div class="text-center">
-                                        <img src="{{ asset('storage/' . $selectedHelp->photo) }}" alt="Foto Bantuan" class="w-24 h-24 object-cover rounded-xl border border-gray-200 dark:border-gray-700 shadow-xs">
-                                        <span class="text-[10px] text-gray-400 block mt-1">Foto Permintaan</span>
-                                    </div>
-                                @endif
-                                @if($selectedHelp->proof_photo)
-                                    <div class="text-center">
-                                        <img src="{{ asset('storage/' . $selectedHelp->proof_photo) }}" alt="Bukti Selesai" class="w-24 h-24 object-cover rounded-xl border border-emerald-300 dark:border-emerald-700 shadow-xs">
-                                        <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block mt-1">Bukti Selesai Mitra</span>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-                    @endif
-
-                    {{-- Modal Footer --}}
-                    <div class="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-700">
-                        <button type="button" wire:click="closeHelpDetails"
-                            class="px-5 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-xl text-xs transition cursor-pointer">
-                            Tutup
-                        </button>
+                    <div class="pt-2 border-t border-gray-200/50 dark:border-gray-600/50">
+                        <span class="text-gray-400 block text-[10px]">Status:</span>
+                        <strong class="text-gray-900 dark:text-white">{{ strtoupper($selectedHelp->status) }}</strong>
                     </div>
                 </div>
+
+                <div>
+                    <span class="text-gray-400 block text-[10px]">Lokasi / Alamat:</span>
+                    <p class="text-gray-700 dark:text-gray-300 mt-0.5">{{ $selectedHelp->full_address ?? $selectedHelp->location ?? '-' }}</p>
+                </div>
+
+                @if($selectedHelp->description)
+                <div>
+                    <span class="text-gray-400 block text-[10px]">Deskripsi Pekerjaan:</span>
+                    <p class="text-gray-700 dark:text-gray-300 mt-0.5 line-clamp-3">{{ $selectedHelp->description }}</p>
+                </div>
+                @endif
             </div>
+
+            <div class="pt-2">
+                <button type="button" wire:click="closeHelpDetails"
+                    class="w-full py-2.5 px-4 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 font-bold text-xs text-gray-800 dark:text-gray-200 transition cursor-pointer">
+                    Tutup
+                </button>
+            </div>
+
         </div>
+    </div>
     @endif
+
 </div>
