@@ -46,8 +46,8 @@
                         <span class="text-xs {{ $filterType === 'topup' ? 'opacity-100 scale-110' : 'opacity-70 group-hover:scale-110' }} transition-transform">💳</span>
                         <span>Top Up</span>
                     </button>
-                    <button wire:click="setFilter('penalty')" class="group py-2 px-2 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 {{ $filterType === 'penalty' ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-md shadow-rose-500/25 ring-2 ring-rose-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span class="text-xs {{ $filterType === 'penalty' ? 'opacity-100 scale-110' : 'opacity-70 group-hover:scale-110' }} transition-transform">⚠️</span>
+                    <button wire:click="setFilter('cancellation')" class="group py-2 px-2 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 {{ ($filterType === 'cancellation' || $filterType === 'penalty') ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-md shadow-rose-500/25 ring-2 ring-rose-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
+                        <span class="text-xs {{ ($filterType === 'cancellation' || $filterType === 'penalty') ? 'opacity-100 scale-110' : 'opacity-70 group-hover:scale-110' }} transition-transform">⚠️</span>
                         <span>Pembatalan</span>
                     </button>
                 </div>
@@ -67,7 +67,7 @@
 
                             $typeLabel = match($type) {
                                 'earning' => 'Pendapatan Bantuan',
-                                'penalty' => 'Penyesuaian Pembatalan',
+                                'cancellation', 'penalty' => 'Pembatalan Tugas',
                                 'withdraw' => 'Penarikan Saldo (Withdraw)',
                                 'topup' => 'Top Up Saldo',
                                 'deduction' => 'Potongan Saldo',
@@ -91,7 +91,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m0 0l-4-4m4 4l4-4" />
                                             </svg>
                                         </div>
-                                    @elseif($type === 'penalty')
+                                    @elseif($type === 'cancellation' || $type === 'penalty')
                                         <div class="w-11 h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br from-rose-100 to-red-50 dark:from-rose-950/80 dark:to-red-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/50 shadow-2xs group-hover:scale-105 transition-transform">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
@@ -124,7 +124,7 @@
                                         <h3 class="font-bold text-gray-900 dark:text-gray-100 text-sm group-hover:text-primary-600 dark:group-hover:text-sky-400 transition-colors">
                                             {{ $typeLabel }}
                                         </h3>
-                                        @if($type === 'penalty')
+                                        @if($type === 'cancellation' || $type === 'penalty')
                                             <span class="px-2 py-0.2 bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-[10px] font-bold rounded-full border border-rose-200 dark:border-rose-800/50">
                                                 Pembatalan
                                             </span>
@@ -140,8 +140,8 @@
                                         @endif
                                     </div>
                                     <p class="text-xs text-gray-500 dark:text-gray-400 truncate font-medium">
-                                        @if($type === 'penalty')
-                                            {{ $t->description ?? 'Penyesuaian Pembatalan Bantuan' }}
+                                        @if($type === 'cancellation' || $type === 'penalty')
+                                            {{ $t->description ?? 'Pembatalan Tugas Bantuan' }}
                                         @elseif($type === 'earning')
                                             {{ $t->description ?? ($t->help?->title ? 'Pendapatan: ' . $t->help->title : 'Pendapatan Bantuan #' . $t->reference_id) }}
                                         @elseif($type === 'withdraw')
@@ -164,7 +164,7 @@
                                         <div class="text-sm sm:text-base font-black tracking-tight {{ $isCredit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
                                             {{ $isCredit ? '+' : '-' }}Rp {{ number_format(abs($t->amount), 0, ',', '.') }}
                                         </div>
-                                        @if($type === 'penalty')
+                                        @if($type === 'cancellation' || $type === 'penalty')
                                             <p class="text-[10px] text-rose-600 dark:text-rose-400 font-bold">Pembatalan</p>
                                         @elseif($type === 'earning')
                                             <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Pendapatan Bersih</p>
@@ -180,12 +180,12 @@
                                 </div>
                             </div>
 
-                            @if($type === 'penalty')
+                            @if($type === 'cancellation' || $type === 'penalty')
                                 <div class="mt-3 p-2.5 bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/60 rounded-xl flex items-center gap-2 text-xs text-rose-800 dark:text-rose-300">
                                     <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                     </svg>
-                                    <span class="truncate font-medium">Penyesuaian saldo akibat pembatalan tugas bantuan yang telah diambil.</span>
+                                    <span class="truncate font-medium">Catatan riwayat pembatalan tugas bantuan.</span>
                                 </div>
                             @endif
                         </div>
@@ -241,8 +241,8 @@
                 <div class="pt-4">
                     <!-- Icon Big Receipt -->
                     <div class="flex justify-center mb-3">
-                        <div class="w-16 h-16 rounded-3xl flex items-center justify-center shadow-inner {{ $selectedTransaction['type'] === 'penalty' ? 'bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400' : ($isModalCredit ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400' : 'bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400') }}">
-                            @if($selectedTransaction['type'] === 'penalty')
+                        <div class="w-16 h-16 rounded-3xl flex items-center justify-center shadow-inner {{ in_array($selectedTransaction['type'], ['cancellation', 'penalty']) ? 'bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400' : ($isModalCredit ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400' : 'bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400') }}">
+                            @if(in_array($selectedTransaction['type'], ['cancellation', 'penalty']))
                                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                 </svg>
@@ -264,14 +264,14 @@
                         <p class="text-2xl sm:text-3xl font-black tracking-tight {{ $isModalCredit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
                             {{ $isModalCredit ? '+' : '-' }}Rp {{ number_format(abs($selectedTransaction['amount']), 0, ',', '.') }}
                         </p>
-                        @if($selectedTransaction['type'] === 'penalty')
+                        @if(in_array($selectedTransaction['type'], ['cancellation', 'penalty']))
                             <div class="mt-2.5 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-2xl text-left text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2.5">
                                 <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                 </svg>
                                 <div>
-                                    <p class="font-bold">Penyesuaian Pembatalan Tugas</p>
-                                    <p class="mt-0.5 text-rose-700/90 dark:text-rose-300/90">Saldo Anda disesuaikan akibat pembatalan tugas bantuan yang telah Anda ambil.</p>
+                                    <p class="font-bold">Pembatalan Tugas Bantuan</p>
+                                    <p class="mt-0.5 text-rose-700/90 dark:text-rose-300/90">Catatan riwayat pembatalan tugas bantuan.</p>
                                 </div>
                             </div>
                         @elseif($selectedTransaction['type'] === 'earning')
@@ -303,8 +303,8 @@
                                     <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                                     Diproses
                                 </span>
-                            @elseif($selectedTransaction['type'] === 'penalty')
-                                <span class="font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-800/50">Diterapkan</span>
+                            @elseif(in_array($selectedTransaction['type'], ['cancellation', 'penalty']))
+                                <span class="font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-800/50">Dibatalkan</span>
                             @elseif(in_array($selectedTransaction['status'] ?? '', ['approved', 'completed']))
                                 <span class="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">Berhasil</span>
                             @elseif(($selectedTransaction['status'] ?? '') === 'rejected')

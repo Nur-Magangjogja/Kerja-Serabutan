@@ -296,4 +296,92 @@ class OrderCreationToMitraOfferFlowTest extends TestCase
         $help->refresh();
         $this->assertEquals(Help::DISPATCH_MODE_POOL, $help->dispatch_mode);
     }
+
+    public function test_mitra_waiting_40_minutes_wins_over_mitra_who_restarted_searching_1_minute_ago()
+    {
+        // Mitra 1 has been searching for 40 minutes
+        $this->onlineService->startSearching($this->mitra1, -7.7956, 110.3695);
+        $state1 = PartnerOnlineState::where('user_id', $this->mitra1->id)->first();
+        $state1->update(['searching_since' => now()->subMinutes(40)]);
+
+        // Mitra 2 completed an order 1 hour ago, but restarted searching only 1 minute ago
+        $this->onlineService->startSearching($this->mitra2, -7.7956, 110.3695);
+        $state2 = PartnerOnlineState::where('user_id', $this->mitra2->id)->first();
+        $state2->update([
+            'last_completed_at' => now()->subMinutes(60),
+            'searching_since'   => now()->subMinute(),
+        ]);
+
+        $score1 = $this->matchingService->calculateFairnessScore($state1, $this->mitra1);
+        $score2 = $this->matchingService->calculateFairnessScore($state2, $this->mitra2);
+
+        // Mitra 1 (40 min) must have a significantly higher fairness score than Mitra 2 (1 min)
+        $this->assertGreaterThan($score2, $score1);
+        $this->assertEqualsWithDelta(40.0 / 60.0, $score1, 0.05); // ~0.67
+        $this->assertEqualsWithDelta(0.50, $score2, 0.05); // 0.50 newbie boost baseline (still lower than 40 mins)
+    }
+
+    public function test_taking_pool_help_automatically_resolves_pending_sequential_offer_so_it_does_not_get_stuck()
+    {
+        // 1. Mitra 1 is in searching state and receives an offer for Help Sequential
+        $this->onlineService->startSearching($this->mitra1, -7.7960, 110.3700);
+
+        $helpSequential = Help::create([
+            'user_id'             => $this->customer->id,
+            'city_id'             => $this->city->id,
+            'title'               => 'Bantuan Sequential Dispatched',
+            'description'         => 'Order Sequential',
+            'amount'              => 50000,
+            'admin_fee'           => 5000,
+            'total_amount'        => 55000,
+            'status'              => Help::STATUS_MENUNGGU_MITRA,
+            'payment_status'      => Help::PAYMENT_STATUS_PAID,
+            'escrow_status'       => Help::ESCROW_STATUS_HELD,
+            'dispatch_mode'       => Help::DISPATCH_MODE_OFFERED,
+            'latitude'            => -7.7956,
+            'longitude'           => 110.3695,
+        ]);
+
+        $this->matchingService->initiateMatching($helpSequential);
+        $dispatchSeq = HelpDispatch::where('help_id', $helpSequential->id)->where('mitra_id', $this->mitra1->id)->first();
+        $this->assertNotNull($dispatchSeq);
+        $this->assertEquals(HelpDispatch::STATUS_OFFERED, $dispatchSeq->status);
+
+        // 2. An open pool order exists
+        $helpPool = Help::create([
+            'user_id'             => $this->customer->id,
+            'city_id'             => $this->city->id,
+            'title'               => 'Bantuan Open Pool',
+            'description'         => 'Order Pool',
+            'amount'              => 35000,
+            'admin_fee'           => 3500,
+            'total_amount'        => 38500,
+            'status'              => Help::STATUS_MENUNGGU_MITRA,
+            'payment_status'      => Help::PAYMENT_STATUS_PAID,
+            'escrow_status'       => Help::ESCROW_STATUS_HELD,
+            'dispatch_mode'       => Help::DISPATCH_MODE_POOL,
+        ]);
+
+        // 3. Mitra 1 takes the Help from open pool
+        $transactionService = app(\App\Services\HelpTransactionService::class);
+        $transactionService->takeHelp($helpPool, $this->mitra1);
+
+        // 4. Verify Mitra 1 is now assigned to Help Pool and BUSY
+        $helpPool->refresh();
+        $this->assertEquals($this->mitra1->id, $helpPool->mitra_id);
+        $this->assertEquals(Help::STATUS_TAKEN, $helpPool->status);
+
+        // 5. Verify the previous sequential offer for Help Sequential is NOT stuck, but automatically rejected and advanced!
+        $dispatchSeq->refresh();
+        $this->assertEquals(HelpDispatch::STATUS_REJECTED, $dispatchSeq->status);
+
+        // Help Sequential has automatically fallen back to pool (since no other candidate) without waiting 45s
+        $helpSequential->refresh();
+        $this->assertEquals(Help::DISPATCH_MODE_POOL, $helpSequential->dispatch_mode);
+
+        // 6. Mitra 1 dashboard does NOT have activeOffer popup stuck
+        $this->actingAs($this->mitra1);
+        $component = Livewire::test(MitraDashboard::class);
+        $this->assertNull($component->viewData('activeOffer'));
+    }
 }

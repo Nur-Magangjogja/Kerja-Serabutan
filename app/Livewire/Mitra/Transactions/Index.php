@@ -14,7 +14,7 @@ class Index extends Component
 
     protected $paginationTheme = 'tailwind';
 
-    public $filterType = 'all'; // 'all', 'earning', 'penalty', 'withdraw', 'topup'
+    public $filterType = 'all'; // 'all', 'earning', 'cancellation', 'withdraw', 'topup'
     public $selectedTransaction = null;
 
     protected $listeners = [
@@ -42,7 +42,7 @@ class Index extends Component
 
         $typeLabel = match($type) {
             'earning' => 'Pendapatan Bantuan Selesai',
-            'penalty' => 'Penyesuaian Pembatalan Tugas',
+            'cancellation', 'penalty' => 'Pembatalan Tugas',
             'withdraw' => 'Penarikan Dana (Withdraw)',
             'topup' => 'Isi Ulang Saldo',
             'deduction' => 'Potongan Saldo',
@@ -82,8 +82,8 @@ class Index extends Component
 
         if ($this->filterType === 'earning') {
             $query->where('type', 'earning');
-        } elseif ($this->filterType === 'penalty') {
-            $query->where('type', 'penalty');
+        } elseif ($this->filterType === 'cancellation' || $this->filterType === 'penalty') {
+            $query->whereIn('type', ['cancellation', 'penalty']);
         } elseif ($this->filterType === 'withdraw') {
             $query->where('type', 'withdraw');
         } elseif ($this->filterType === 'topup') {

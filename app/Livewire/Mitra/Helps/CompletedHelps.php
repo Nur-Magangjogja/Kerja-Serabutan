@@ -47,7 +47,7 @@ class CompletedHelps extends Component
         $totalCompletedAmount = (clone $completedHelpsQuery)->sum('amount');
         $uniqueCustomersCount = (clone $completedHelpsQuery)->distinct('user_id')->count('user_id');
 
-        $penaltyQuery = PartnerActivity::where('user_id', $user->id)
+        $cancellationQuery = PartnerActivity::where('user_id', $user->id)
             ->whereIn('activity_type', [
                 'cancel_requested',
                 'cancel_accepted',
@@ -55,12 +55,11 @@ class CompletedHelps extends Component
                 'help_cancelled',
                 'partner_cancel'
             ]);
-        $totalPenaltyCount = (clone $penaltyQuery)->count();
-        $totalPenaltyAmount = BalanceTransaction::where('user_id', $user->id)->where('type', 'penalty')->sum('amount');
+        $totalCancelledCount = (clone $cancellationQuery)->count();
 
         // 2. Tab Query
         if ($this->activeTab === 'cancelled') {
-            $penaltiesQuery = PartnerActivity::with(['help.user', 'help.city'])
+            $cancelledActivitiesQuery = PartnerActivity::with(['help.user', 'help.city'])
                 ->where('user_id', $user->id)
                 ->whereIn('activity_type', [
                     'cancel_requested',
@@ -71,7 +70,7 @@ class CompletedHelps extends Component
                 ]);
 
             if ($this->search) {
-                $penaltiesQuery->where(function ($q) {
+                $cancelledActivitiesQuery->where(function ($q) {
                     $q->where('description', 'like', '%' . $this->search . '%')
                         ->orWhereHas('help', function ($h) {
                             $h->where('title', 'like', '%' . $this->search . '%');
@@ -79,7 +78,7 @@ class CompletedHelps extends Component
                 });
             }
 
-            $penalties = $penaltiesQuery->latest()->paginate(10);
+            $cancelledActivities = $cancelledActivitiesQuery->latest()->paginate(10);
             $helps = null;
         } else {
             $helpsQuery = Help::with(['user', 'city', 'rating'])
@@ -103,17 +102,16 @@ class CompletedHelps extends Component
             }
 
             $helps = $helpsQuery->paginate(10);
-            $penalties = null;
+            $cancelledActivities = null;
         }
 
         return view('livewire.mitra.helps.completed-helps', [
             'helps'                => $helps,
-            'penalties'            => $penalties,
+            'cancelledActivities'  => $cancelledActivities,
             'totalCompletedCount'  => $totalCompletedCount,
             'totalCompletedAmount' => $totalCompletedAmount,
             'uniqueCustomersCount' => $uniqueCustomersCount,
-            'totalPenaltyCount'    => $totalPenaltyCount,
-            'totalPenaltyAmount'   => $totalPenaltyAmount,
+            'totalCancelledCount'  => $totalCancelledCount,
         ]);
     }
 }

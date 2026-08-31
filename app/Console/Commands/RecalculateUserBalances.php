@@ -32,7 +32,7 @@ class RecalculateUserBalances extends Command
                     ->whereRaw("LOWER(TRIM(COALESCE(status, ''))) = 'completed'")
                     ->sum('amount');
 
-                // Debit (mengurangi saldo user): deduction, penalty, escrow_lock, withdraw, pg_fee_*
+                // Debit (mengurangi saldo user): deduction, cancellation, escrow_lock, withdraw, pg_fee_*
                 $debits = BalanceTransaction::where('user_id', $user->id)
                     ->whereIn('type', BalanceTransaction::debitTypes())
                     ->whereRaw("LOWER(TRIM(COALESCE(status, ''))) = 'completed'")

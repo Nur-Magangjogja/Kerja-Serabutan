@@ -212,6 +212,9 @@ class Index extends Component
             'confirmation_deadline_at' => now()->addHours(24),
         ]);
 
+        // Lepaskan status BUSY mitra agar dapat langsung mencari pesanan baru
+        app(\App\Services\PartnerOnlineService::class)->releaseBusy(auth()->id(), $help->id);
+
         session()->flash('message', 'Pekerjaan telah ditandai selesai! Menunggu konfirmasi customer (maks. 24 jam). Dana akan otomatis diteruskan jika tidak ada komplain.');
         $this->setTab('diproses');
     }
@@ -365,9 +368,17 @@ class Index extends Component
 
         $onlineState = $user ? app(PartnerOnlineService::class)->getOrCreateState($user->id) : null;
 
-        // Active Offer Checking (jika mitra sedang berstatus OFFER_PENDING)
+        // Active Offer Checking (jika mitra sedang berstatus OFFER_PENDING dan tidak memiliki tugas aktif)
         $activeOffer = null;
-        if ($onlineState && $onlineState->matching_status === PartnerOnlineState::STATUS_OFFER_PENDING && $onlineState->current_help_id) {
+        if ($activeTask) {
+            // Jika mitra sedang mengerjakan tugas aktif, pastikan tawaran sequential lain tidak menggantung
+            $staleDispatches = \App\Models\HelpDispatch::where('mitra_id', $user->id)
+                ->where('status', \App\Models\HelpDispatch::STATUS_OFFERED)
+                ->get();
+            foreach ($staleDispatches as $stale) {
+                app(\App\Services\HelpMatchingService::class)->rejectOffer($stale->id, $user, 'Mitra sedang sibuk mengerjakan tugas aktif');
+            }
+        } elseif ($onlineState && $onlineState->matching_status === PartnerOnlineState::STATUS_OFFER_PENDING && $onlineState->current_help_id) {
             $activeOffer = \App\Models\HelpDispatch::with('help.user', 'help.city')
                 ->where('help_id', $onlineState->current_help_id)
                 ->where('mitra_id', $user->id)

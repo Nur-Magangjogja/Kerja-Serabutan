@@ -68,33 +68,37 @@ class UserBalance extends Model
     }
 
     /**
-     * Menerapkan denda (penalty) kepada pengguna akibat pelanggaran.
+     * Menerapkan pencatatan pembatalan tugas pengguna.
      *
-     * Berbeda dari deductBalance(), transaksi ini bertipe 'penalty' agar
-     * jelas bahwa ini adalah denda — bukan potongan biasa.
-     * Uang denda ini masuk ke kas administrasi sistem.
-     *
-     * @param  float       $amount       Nominal denda
-     * @param  string|null $description  Keterangan denda (misal: "Denda Pembatalan Bantuan")
+     * @param  float       $amount       Nominal transaksi
+     * @param  string|null $description  Keterangan (misal: "Pembatalan Tugas Bantuan")
      * @param  mixed|null  $referenceId  ID bantuan / referensi terkait
      * @param  string|null $orderId      Order ID bantuan
      * @return $this
      */
-    public function applyPenalty($amount, $description = null, $referenceId = null, $orderId = null)
+    public function applyCancellation($amount, $description = null, $referenceId = null, $orderId = null)
     {
         $this->decrement('balance', $amount);
 
         BalanceTransaction::create([
             'user_id'      => $this->user_id,
             'amount'       => $amount,
-            'type'         => 'penalty',
-            'description'  => $description ?? 'Penyesuaian Administrasi',
+            'type'         => 'cancellation',
+            'description'  => $description ?? 'Pembatalan Tugas Bantuan',
             'reference_id' => $referenceId,
             'order_id'     => $orderId,
             'status'       => 'completed',
         ]);
 
         return $this;
+    }
+
+    /**
+     * Alias backward-compatibility untuk applyCancellation.
+     */
+    public function applyPenalty($amount, $description = null, $referenceId = null, $orderId = null)
+    {
+        return $this->applyCancellation($amount, $description, $referenceId, $orderId);
     }
 
     /**

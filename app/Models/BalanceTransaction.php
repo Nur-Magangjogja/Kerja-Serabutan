@@ -77,9 +77,14 @@ class BalanceTransaction extends Model
         return $query->where('type', 'deduction');
     }
 
+    public function scopeCancellation($query)
+    {
+        return $query->whereIn('type', ['cancellation', 'penalty']);
+    }
+
     public function scopePenalty($query)
     {
-        return $query->where('type', 'penalty');
+        return $query->whereIn('type', ['cancellation', 'penalty']);
     }
 
     public function scopeEscrowLock($query)
@@ -108,7 +113,7 @@ class BalanceTransaction extends Model
      */
     public static function debitTypes(): array
     {
-        return ['deduction', 'penalty', 'escrow_lock', 'withdraw', 'pg_fee_topup', 'pg_fee_withdraw'];
+        return ['deduction', 'cancellation', 'penalty', 'escrow_lock', 'withdraw', 'pg_fee_topup', 'pg_fee_withdraw'];
     }
 
     /**
@@ -124,7 +129,7 @@ class BalanceTransaction extends Model
      */
     public static function platformIncomeTypes(): array
     {
-        return ['platform_fee', 'penalty'];
+        return ['platform_fee', 'cancellation', 'penalty'];
     }
 
     /**

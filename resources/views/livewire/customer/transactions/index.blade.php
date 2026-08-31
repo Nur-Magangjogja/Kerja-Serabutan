@@ -95,7 +95,7 @@
                                 'refund' => 'Pengembalian Dana (Refund)',
                                 'escrow_lock' => 'Pembayaran Bantuan',
                                 'deduction' => 'Potongan Saldo',
-                                'penalty' => 'Penyesuaian Administrasi',
+                                'cancellation', 'penalty' => 'Pembatalan Tugas',
                                 default => 'Transaksi Saldo',
                             };
                         @endphp

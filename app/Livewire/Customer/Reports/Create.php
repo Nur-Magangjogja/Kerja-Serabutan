@@ -112,7 +112,26 @@ class Create extends Component
             return false;
         }
 
-        // Jika status selesai, garansi refund aktif hanya dalam 1x24 jam sejak completed_at
+        // 1. Pastikan customer adalah pemilik permohonan bantuan
+        if ($help->user_id !== auth()->id()) {
+            return false;
+        }
+
+        // 2. Jika sengketa bantuan ini sudah pernah diputuskan oleh Admin secara final, TIDAK BISA klaim refund lagi
+        if ($help->dispute_resolved_at !== null) {
+            return false;
+        }
+
+        // 3. Cek jika sudah pernah ada transaksi refund untuk pesanan ini di dompet
+        $alreadyRefunded = \App\Models\BalanceTransaction::where('user_id', auth()->id())
+            ->where('reference_id', $help->id)
+            ->where('type', 'refund')
+            ->exists();
+        if ($alreadyRefunded) {
+            return false;
+        }
+
+        // 4. Jika bantuan berstatus SELESAI: klaim garansi 1x24 jam aktif selama dalam 24 jam sejak completed_at
         if (in_array($help->status, ['completed', 'selesai'])) {
             if (!$help->completed_at) {
                 return false;
@@ -120,8 +139,8 @@ class Create extends Component
             return \Carbon\Carbon::parse($help->completed_at)->addHours(24)->isFuture();
         }
 
-        // Jika status masih dalam pengerjaan / aktif
-        return in_array($help->status, ['in_progress', 'active', 'sedang_diproses', 'taken', 'menunggu_mitra']);
+        // 5. Jika bantuan sedang menunggu konfirmasi atau sedang dalam proses pengerjaan
+        return in_array($help->status, ['waiting_customer_confirmation', 'waiting_confirmation', 'konfirmasi_selesai', 'in_progress', 'active', 'sedang_diproses', 'taken', 'menunggu_mitra']);
     }
 
     public function updatedHelpId($value)
@@ -194,6 +213,26 @@ class Create extends Component
         $refundAmount = 0;
         if ($isRefund && $help) {
             $refundAmount = (float) ($help->total_amount > 0 ? $help->total_amount : $help->amount);
+        }
+
+        // Jika klaim garansi refund diajukan pada pesanan bantuan, jalankan penarikan dana mitra ke escrow holding
+        if ($isRefund && $help) {
+            try {
+                $report = app(\App\Services\HelpTransactionService::class)->claimWarrantyAndClawbackEscrow(
+                    $help,
+                    auth()->user(),
+                    $this->message,
+                    $evidencePath,
+                    $this->report_type
+                );
+
+                session()->flash('message', 'Klaim garansi pengembalian dana 1x24 jam berhasil diajukan! Dana telah ditarik kembali ke Escrow Holding untuk penahanan sementara dan Admin Wilayah akan segera memediasi.');
+                return redirect()->route('customer.helps.detail', ['id' => $this->help_id]);
+            } catch (\Throwable $e) {
+                Log::error('[CustomerReportsCreate] claimWarranty error: ' . $e->getMessage());
+                session()->flash('error', 'Gagal memproses klaim garansi: ' . $e->getMessage());
+                return;
+            }
         }
 
         // Hidden anti-spam: Jika user sudah memiliki laporan aduan yang masih pending/diperiksa admin untuk bantuan ini

@@ -30,14 +30,13 @@ use Illuminate\Support\Facades\Log;
  * 3. Notifikasi dan pesan chat dikirim secara otomatis ke ruang obrolan (chat)
  *    pada setiap fase (ambil tugas, pembatalan mitra, persetujuan/penolakan batal,
  *    penyelesaian tugas, dan konfirmasi customer).
- * 4. Pembatalan oleh mitra yang disetujui dikenakan denda penalti.
- * 5. Idempotency guard pada kredit dan denda saldo untuk menjamin keadilan 2 belah pihak.
+ * 4. Pembatalan oleh mitra yang disetujui melepaskan mitra dari tugas dan mengembalikan pesanan ke antrean.
+ * 5. Idempotency guard pada pencairan dan refund saldo untuk menjamin keadilan 2 belah pihak.
  *
  * Model v2 (Commission-Based / Escrow — berlaku untuk helps dengan model_version = 2):
  * - Escrow Lock: Dana customer ditahan ke Holding saat tugas dibuat.
  * - Split Payment: Saat selesai, Holding dibagi: Earning (mitra) + Platform Fee (kas).
  * - Refund: Jika batal, Holding dikembalikan 100% ke customer (tanpa potongan).
- * - Penalty: Denda mitra tetap dari saldo mitra sendiri (bukan dari escrow).
  */
 class HelpTransactionService
 {
@@ -123,7 +122,22 @@ class HelpTransactionService
             $help->refresh();
         });
 
-        // 3. Notifikasi, Pesan Chat Sambutan, & Audit Log
+        // 5. Otomatis batalkan penawaran pop-up aktif lain yang sedang menggantung dan teruskan ke kandidat berikutnya
+        $pendingDispatches = \App\Models\HelpDispatch::where('mitra_id', $mitra->id)
+            ->where('status', \App\Models\HelpDispatch::STATUS_OFFERED)
+            ->get();
+
+        foreach ($pendingDispatches as $pDispatch) {
+            if ($pDispatch->help_id !== $help->id) {
+                app(\App\Services\HelpMatchingService::class)->rejectOffer(
+                    $pDispatch->id,
+                    $mitra,
+                    'Mitra telah mengambil bantuan lain dari pool umum'
+                );
+            }
+        }
+
+        // 6. Notifikasi, Pesan Chat Sambutan, & Audit Log
         $this->notifyHelpTaken($help, $mitra);
         $this->sendWelcomeChat($help, $mitra);
         $this->logActivity(
@@ -226,7 +240,7 @@ class HelpTransactionService
             ? $proofPhoto->store('helps/proofs', 'public')
             : $proofPhoto;
 
-        DB::transaction(function () use ($help, $path, $notes) {
+        DB::transaction(function () use ($help, $path, $notes, $mitra) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
             $now = now();
             $data = [
@@ -239,6 +253,9 @@ class HelpTransactionService
                 'confirmation_deadline_at' => $now->copy()->addHours(24),
             ];
             $lockedHelp->update($data);
+
+            // Lepaskan status BUSY mitra agar mitra dapat langsung mencari / mengambil tugas bantuan baru
+            app(PartnerOnlineService::class)->releaseBusy($mitra->id, $lockedHelp->id);
         });
 
         $help->refresh();
@@ -391,12 +408,16 @@ class HelpTransactionService
         $report = DB::transaction(function () use ($help, $customer, $reason) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
 
-            if ($lockedHelp->escrow_status !== Help::ESCROW_STATUS_HELD) {
-                throw new \RuntimeException('Dana bantuan tidak dalam status holding.');
+            if ($lockedHelp->dispute_resolved_at !== null) {
+                throw new \RuntimeException('Sengketa untuk pesanan ini telah diputuskan oleh Admin secara final dan tidak dapat diajukan kembali.');
             }
 
-            if ($lockedHelp->status !== Help::STATUS_WAITING_CONFIRMATION) {
-                throw new \RuntimeException('Sengketa hanya dapat diajukan saat pesanan menunggu konfirmasi.');
+            if ($lockedHelp->escrow_status !== Help::ESCROW_STATUS_HELD) {
+                throw new \RuntimeException('Dana bantuan tidak berada dalam status holding (telah dicairkan atau telah dibatalkan). Sengketa pembekuan tidak dapat diajukan.');
+            }
+
+            if (!in_array($lockedHelp->status, [Help::STATUS_WAITING_CONFIRMATION, 'waiting_customer_confirmation', 'konfirmasi_selesai'])) {
+                throw new \RuntimeException('Sengketa hanya dapat diajukan saat pesanan menunggu konfirmasi penyelesaian.');
             }
 
             if ($lockedHelp->disputed_at !== null || $lockedHelp->escrow_status === Help::ESCROW_STATUS_DISPUTED_FREEZE) {
@@ -447,6 +468,122 @@ class HelpTransactionService
             $help->id,
             'dispute_raised',
             "Customer {$customer->name} mengajukan sengketa/komplain. Dana escrow dibekukan (Freeze)."
+        );
+
+        return $report;
+    }
+
+    /**
+     * Customer mengajukan klaim garansi 1x24 jam pasca-konfirmasi pada bantuan yang telah selesai.
+     * Menarik kembali (clawback) earning mitra ke dalam escrow holding (disputed_freeze) dan mencatat PartnerReport.
+     */
+    public function claimWarrantyAndClawbackEscrow(
+        Help $help,
+        User $customer,
+        string $reason,
+        ?string $evidencePath = null,
+        string $reportType = 'klaim_refund_pekerjaan_fiktif'
+    ): PartnerReport {
+        $this->assertCustomerOwns($help, $customer);
+
+        $report = DB::transaction(function () use ($help, $customer, $reason, $evidencePath, $reportType) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
+
+            if ($lockedHelp->dispute_resolved_at !== null) {
+                throw new \RuntimeException('Sengketa untuk pesanan ini telah diputuskan oleh Admin secara final dan tidak dapat diajukan kembali.');
+            }
+
+            // Pastikan garansi 1x24 jam belum kadaluarsa jika pesanan telah selesai
+            if (in_array($lockedHelp->status, [Help::STATUS_SELESAI, 'completed'])) {
+                if (!$lockedHelp->completed_at || \Carbon\Carbon::parse($lockedHelp->completed_at)->addHours(24)->isPast()) {
+                    throw new \RuntimeException('Masa garansi asuransi 1x24 jam untuk pesanan ini telah berakhir.');
+                }
+            }
+
+            // Cek jika sudah pernah direfund
+            $alreadyRefunded = BalanceTransaction::where('user_id', $customer->id)
+                ->where('reference_id', $lockedHelp->id)
+                ->where('type', 'refund')
+                ->exists();
+            if ($alreadyRefunded) {
+                throw new \RuntimeException('Dana bantuan ini sudah pernah dikembalikan (refund) sebelumnya.');
+            }
+
+            // 1. Jika dana sudah pernah dicairkan ke Mitra (escrow released), tarik kembali (clawback) dana earning mitra ke escrow holding
+            if ($lockedHelp->escrow_status === Help::ESCROW_STATUS_RELEASED && $lockedHelp->mitra_id) {
+                $netEarning = (float) $lockedHelp->getNetEarning();
+                $mitraBalance = UserBalance::firstOrCreate(
+                    ['user_id' => $lockedHelp->mitra_id],
+                    ['balance' => 0]
+                );
+
+                $mitraBalance->decrement('balance', $netEarning);
+
+                BalanceTransaction::create([
+                    'idempotency_key' => "help:{$lockedHelp->id}:escrow_clawback:{$lockedHelp->mitra_id}:" . now()->timestamp,
+                    'user_id'         => $lockedHelp->mitra_id,
+                    'amount'          => $netEarning,
+                    'direction'       => 'debit',
+                    'type'            => 'deduction',
+                    'description'     => "Penahanan Kembali Dana Bantuan '{$lockedHelp->title}' untuk Mediasi Klaim Garansi 1x24 Jam",
+                    'reference_id'    => $lockedHelp->id,
+                    'reference_type'  => 'help',
+                    'order_id'        => $lockedHelp->order_id,
+                    'status'          => 'completed',
+                ]);
+            }
+
+            // 2. Ubah status pesanan menjadi disputed freeze & waiting confirmation
+            $lockedHelp->update([
+                'status'         => Help::STATUS_WAITING_CONFIRMATION,
+                'escrow_status'  => Help::ESCROW_STATUS_DISPUTED_FREEZE,
+                'disputed_at'    => now(),
+                'dispute_reason' => $reason,
+            ]);
+
+            $refundAmt = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
+
+            // 3. Buat PartnerReport
+            $partnerReport = PartnerReport::create([
+                'reporter_id'        => $customer->id,
+                'reported_user_id'   => $lockedHelp->mitra_id,
+                'reported_help_id'   => $lockedHelp->id,
+                'reported_help_text' => $lockedHelp->title,
+                'reported_user_text' => $lockedHelp->mitra?->name,
+                'title'              => "Klaim Garansi 1x24 Jam: Bantuan #{$lockedHelp->id} - {$lockedHelp->title}",
+                'message'            => $reason,
+                'evidence_photo'     => $evidencePath,
+                'report_type'        => $reportType,
+                'category'           => 'dari_customer',
+                'status'             => 'pending',
+                'refund_status'      => 'requested',
+                'refund_amount'      => $refundAmt,
+            ]);
+
+            return $partnerReport;
+        });
+
+        $help->refresh();
+
+        // Notifikasi ke Mitra
+        if ($help->mitra) {
+            try {
+                $help->mitra->notify(new HelpStatusNotification(
+                    $help,
+                    Help::STATUS_WAITING_CONFIRMATION,
+                    'disputed',
+                    $customer
+                ));
+            } catch (\Throwable $e) {
+                Log::warning('[HelpTransactionService] Failed to notify mitra of warranty claim: ' . $e->getMessage());
+            }
+        }
+
+        $this->logActivity(
+            $customer->id,
+            $help->id,
+            'warranty_claim_escrow_clawback',
+            "Customer {$customer->name} mengajukan klaim garansi 1x24 jam. Dana earning mitra ditarik kembali ke Escrow Holding untuk mediasi Admin."
         );
 
         return $report;
@@ -697,7 +834,7 @@ class HelpTransactionService
 
     /**
      * Customer menerima permintaan pembatalan dari mitra.
-     * Mitra dikenakan denda penalti (kas admin) dan dilepaskan dari pesanan.
+     * Mitra dilepaskan dari pesanan dan status kembali online.
      * Pesanan dikembalikan ke pool status 'menunggu_mitra'.
      * Dana escrow customer TETAP DITAHAN di holding (karena menunggu mitra lain).
      * Jika customer ingin membatalkan pesanan, customer dapat menekan tombol "Batalkan Pesanan" saat status 'menunggu_mitra' untuk menerima refund 100%.
@@ -712,9 +849,8 @@ class HelpTransactionService
 
         $mitraId = $help->mitra_id;
         $formerMitra = $help->mitra ?: ($mitraId ? User::find($mitraId) : null);
-        $penaltyFee  = 0;
 
-        DB::transaction(function () use ($help, &$formerMitra, $customer, &$penaltyFee) {
+        DB::transaction(function () use ($help, &$formerMitra, $customer) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
 
             if ($lockedHelp->status !== Help::STATUS_PARTNER_CANCEL_REQUESTED) {
@@ -857,16 +993,7 @@ class HelpTransactionService
     private function assertMitraHasNoActiveTask(User $mitra): void
     {
         $hasActive = Help::where('mitra_id', $mitra->id)
-            ->whereIn('status', [
-                Help::STATUS_TAKEN,
-                'memperoleh_mitra',
-                Help::STATUS_PARTNER_ON_THE_WAY,
-                Help::STATUS_PARTNER_ARRIVED,
-                Help::STATUS_IN_PROGRESS,
-                'sedang_diproses',
-                Help::STATUS_WAITING_CONFIRMATION,
-                Help::STATUS_PARTNER_CANCEL_REQUESTED,
-            ])
+            ->active()
             ->exists();
 
         if ($hasActive) {
@@ -910,24 +1037,33 @@ class HelpTransactionService
         $netEarning  = $lockedHelp->getNetEarning();
         $platformFee = $lockedHelp->getPlatformFee();
 
-        // 1. Catat Earning Mitra (Idempotent)
-        $alreadyCredited = BalanceTransaction::where('user_id', $lockedHelp->mitra_id)
+        // 1. Catat Earning Mitra (Idempotent & Recredit-aware jika pernah ditarik clawback)
+        $totalEarned = (float) BalanceTransaction::where('user_id', $lockedHelp->mitra_id)
             ->where('reference_id', $lockedHelp->id)
-            ->whereIn('type', ['earning', 'topup'])
-            ->exists();
+            ->where('type', 'earning')
+            ->where('status', 'completed')
+            ->sum('amount');
 
-        if (!$alreadyCredited) {
+        $totalClawedBack = (float) BalanceTransaction::where('user_id', $lockedHelp->mitra_id)
+            ->where('reference_id', $lockedHelp->id)
+            ->where('type', 'deduction')
+            ->where('status', 'completed')
+            ->sum('amount');
+
+        if ($totalEarned <= $totalClawedBack) {
             $mitraBalance = UserBalance::firstOrCreate(
                 ['user_id' => $lockedHelp->mitra_id],
                 ['balance' => 0]
             );
+
+            $idSuffix = $totalClawedBack > 0 ? ":recredit_" . now()->timestamp : "";
 
             $mitraBalance->receiveEarning(
                 $netEarning,
                 $lockedHelp->id,
                 "Pendapatan Bantuan '{$lockedHelp->title}'",
                 $lockedHelp->order_id,
-                "help:{$lockedHelp->id}:earning:{$lockedHelp->mitra_id}"
+                "help:{$lockedHelp->id}:earning:{$lockedHelp->mitra_id}{$idSuffix}"
             );
         }
 
@@ -1027,59 +1163,6 @@ class HelpTransactionService
         if ($help->mitra_id) {
             app(PartnerOnlineService::class)->releaseBusy($help->mitra_id, $help->id);
         }
-    }
-
-    /**
-     * Menerapkan denda penalti pembatalan ke saldo mitra.
-     *
-     * Denda dicatat sebagai tipe 'penalty' (bukan 'deduction') agar jelas
-     * bahwa ini adalah sanksi atas pelanggaran dan uangnya masuk ke kas administrasi.
-     */
-    private function applyCancellationPenalty(User $mitra, Help $help): float
-    {
-        $penaltyFee = (float) AppSetting::get('mitra_cancel_penalty_fee', 5000);
-        if ($penaltyFee <= 0) {
-            $penaltyFee = 5000;
-        }
-
-        // Idempotency: pastikan denda hanya dikenakan 1 kali per help
-        // Cek pada tipe 'penalty' (tipe khusus denda pembatalan)
-        $alreadyPenalized = BalanceTransaction::where('user_id', $mitra->id)
-            ->where('reference_id', $help->id)
-            ->where('type', 'penalty')
-            ->exists();
-
-        // Backward compat: cek juga denda lama yang masih bertipe 'deduction'
-        if (!$alreadyPenalized) {
-            $alreadyPenalized = BalanceTransaction::where('user_id', $mitra->id)
-                ->where('reference_id', $help->id)
-                ->where('type', 'deduction')
-                ->where('description', 'like', '%Denda%')
-                ->exists();
-        }
-
-        if ($alreadyPenalized) {
-            Log::info("[HelpTransactionService] Denda sudah pernah diterapkan untuk mitra {$mitra->id} pada help {$help->id}");
-            return $penaltyFee;
-        }
-
-        $userBalance = UserBalance::firstOrCreate(
-            ['user_id' => $mitra->id],
-            ['balance' => 0]
-        );
-
-        // Gunakan applyPenalty() agar tercatat sebagai tipe 'penalty',
-        // bukan 'deduction', sehingga jelas ini adalah denda → kas administrasi.
-        $userBalance->applyPenalty(
-            $penaltyFee,
-            "Pembatalan Tugas Bantuan ('{$help->title}') • Catatan Kepatuhan",
-            $help->id,
-            $help->order_id
-        );
-
-        Log::info("[HelpTransactionService] Denda pembatalan Rp {$penaltyFee} (penalty) dipotong dari mitra {$mitra->id} untuk help {$help->id}");
-
-        return $penaltyFee;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1302,6 +1385,29 @@ class HelpTransactionService
 
             $help = $report->reportedHelp ?? ($report->reported_help_id ? Help::find($report->reported_help_id) : null);
 
+            if ($help) {
+                $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
+                if ($lockedHelp) {
+                    // Cek jika dana escrow bantuan sudah pernah dirilis ke Mitra
+                    if ($lockedHelp->escrow_status === Help::ESCROW_STATUS_RELEASED) {
+                        throw new \Exception('Dana escrow untuk bantuan ini telah dicairkan ke Mitra. Refund otomatis tidak dapat diproses.');
+                    }
+                    // Cek jika sengketa telah diputuskan sebelumnya secara final
+                    if ($lockedHelp->dispute_resolved_at !== null) {
+                        throw new \Exception('Sengketa pada pesanan ini telah diputuskan secara final oleh Admin sebelumnya. Tidak dapat memproses refund baru.');
+                    }
+                }
+
+                // Cek idempotensi refund: jangan sampai bantuan yang sama direfund 2x
+                $alreadyRefunded = BalanceTransaction::where('user_id', $customer->id)
+                    ->where('reference_id', $help->id)
+                    ->where('type', 'refund')
+                    ->exists();
+                if ($alreadyRefunded) {
+                    throw new \Exception('Dana bantuan ini sudah pernah dikembalikan (refund) ke customer sebelumnya.');
+                }
+            }
+
             // Hitung nominal refund
             $refundAmount = (float) $report->refund_amount;
             if ($refundAmount <= 0 && $help) {
@@ -1322,7 +1428,8 @@ class HelpTransactionService
                 $refundAmount,
                 $help?->id,
                 $help?->order_id,
-                "Pengembalian Dana Refund (Laporan #{$report->id}: '{$report->title}')"
+                "Pengembalian Dana Refund (Laporan #{$report->id}: '{$report->title}')",
+                "report:{$report->id}:refund:{$customer->id}"
             );
 
             $notesEntry = $adminNotes ? "[Refund Disetujui]: " . trim($adminNotes) : "[Refund Disetujui oleh {$admin->name}]";
@@ -1339,9 +1446,14 @@ class HelpTransactionService
                 'admin_notes'         => $updatedNotes,
             ]);
 
-            // Jika bantuan terkait belum selesai/batal, set status bantuan menjadi dibatalkan
-            if ($help && in_array($help->status, ['in_progress', 'active', 'sedang_diproses', 'pending', 'menunggu_mitra'])) {
-                $help->update(['status' => Help::STATUS_DIBATALKAN]);
+            // Jika bantuan terkait belum dibatalkan, set status bantuan menjadi dibatalkan & escrow refunded
+            if ($help) {
+                $help->update([
+                    'status'        => Help::STATUS_DIBATALKAN,
+                    'escrow_status' => Help::ESCROW_STATUS_REFUNDED,
+                    'payment_status'=> Help::PAYMENT_STATUS_REFUNDED,
+                    'dispatch_mode' => Help::DISPATCH_MODE_CLOSED,
+                ]);
             }
 
             Log::info('[HelpTransactionService] Refund laporan disetujui', [
@@ -1355,19 +1467,44 @@ class HelpTransactionService
 
     /**
      * Menolak permohonan refund pada laporan aduan dengan alasan resmi.
+     * Penolakan komplain customer berarti kemenangan bagi mitra: dana escrow dicairkan ke mitra & order diselesaikan.
      */
     public function rejectReportRefund(PartnerReport $report, User $admin, string $reason): void
     {
         DB::transaction(function () use ($report, $admin, $reason) {
-            $notesEntry = "[Refund Ditolak]: " . trim($reason);
+            $notesEntry = "[Refund/Komplain Ditolak]: " . trim($reason);
             $updatedNotes = $report->admin_notes ? $report->admin_notes . "\n" . $notesEntry : $notesEntry;
 
             $report->update([
                 'refund_status'       => 'rejected',
+                'status'              => 'resolved',
+                'resolved_at'         => now(),
+                'resolved_by'         => $admin->id,
                 'admin_notes'         => $updatedNotes,
             ]);
 
-            Log::info('[HelpTransactionService] Refund laporan ditolak', [
+            // Jika laporan ini terkait pesanan bantuan yang sedang dibekukan / ditahan,
+            // penolakan komplain customer berarti kemenangan bagi mitra: cairkan dana escrow ke Mitra & selesaikan order!
+            $help = $report->reportedHelp;
+            if ($help) {
+                $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
+                if ($lockedHelp && in_array($lockedHelp->escrow_status, [Help::ESCROW_STATUS_DISPUTED_FREEZE, Help::ESCROW_STATUS_HELD])) {
+                    if ($lockedHelp->mitra_id) {
+                        $this->releaseEscrowToMitra($lockedHelp, 'admin_dispute_release');
+                    }
+                    $lockedHelp->update([
+                        'status'              => Help::STATUS_SELESAI,
+                        'escrow_status'       => Help::ESCROW_STATUS_RELEASED,
+                        'payment_status'      => Help::PAYMENT_STATUS_PAID,
+                        'rating_status'       => Help::RATING_STATUS_PENDING,
+                        'dispatch_mode'       => Help::DISPATCH_MODE_CLOSED,
+                        'dispute_resolved_at' => now(),
+                        'dispute_resolved_by' => $admin->id,
+                    ]);
+                }
+            }
+
+            Log::info('[HelpTransactionService] Refund laporan ditolak & dana diteruskan ke Mitra', [
                 'report_id' => $report->id,
                 'admin_id'  => $admin->id,
                 'reason'    => $reason,

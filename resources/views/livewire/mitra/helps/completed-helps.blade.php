@@ -35,7 +35,7 @@
                     </div>
 
                     <div class="bg-white/15 backdrop-blur-md rounded-xl p-2.5 text-center border border-white/20">
-                        <div class="text-lg font-extrabold text-white leading-tight">{{ $totalPenaltyCount }}</div>
+                        <div class="text-lg font-extrabold text-white leading-tight">{{ $totalCancelledCount }}</div>
                         <div class="text-[10px] text-white/85 mt-0.5">Pembatalan</div>
                     </div>
                 </div>
@@ -55,7 +55,7 @@
                     <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
-                    <span>Pembatalan Tugas ({{ $totalPenaltyCount }})</span>
+                    <span>Pembatalan Tugas ({{ $totalCancelledCount }})</span>
                 </button>
             </div>
         </div>
@@ -217,9 +217,9 @@
                         <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200">Tidak Ada Riwayat Pembatalan</h3>
                         <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Bagus! Anda belum pernah melakukan pembatalan tugas bantuan.</p>
                     </div>
-                @elseif(isset($penalties))
+                @elseif(isset($cancelledActivities))
                     <div class="space-y-3">
-                        @foreach($penalties as $penalty)
+                        @foreach($cancelledActivities as $activity)
                             <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 border-l-4 border-l-rose-500 p-4 shadow-xs">
                                 <div class="flex items-start justify-between gap-3 mb-2">
                                     <div class="flex items-start gap-2.5 min-w-0 flex-1">
@@ -230,36 +230,36 @@
                                         </div>
                                         <div class="min-w-0 flex-1">
                                             <h3 class="font-bold text-gray-900 dark:text-gray-100 text-sm truncate">
-                                                {{ $penalty->help?->title ?? 'Pembatalan Bantuan' }}
+                                                {{ $activity->help?->title ?? 'Pembatalan Bantuan' }}
                                             </h3>
                                             <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-                                                @if($penalty->help?->order_id)
-                                                    Order: <span class="font-mono">{{ $penalty->help->order_id }}</span> • 
-                                                @elseif($penalty->help_id ?? $penalty->reference_id)
-                                                    ID: #{{ $penalty->help_id ?? $penalty->reference_id }} • 
+                                                @if($activity->help?->order_id)
+                                                    Order: <span class="font-mono">{{ $activity->help->order_id }}</span> • 
+                                                @elseif($activity->help_id ?? $activity->reference_id)
+                                                    ID: #{{ $activity->help_id ?? $activity->reference_id }} • 
                                                 @endif
-                                                {{ $penalty->created_at ? $penalty->created_at->format('d M Y • H:i') : '-' }}
+                                                {{ $activity->created_at ? $activity->created_at->format('d M Y • H:i') : '-' }}
                                             </p>
                                         </div>
                                     </div>
 
                                     <div class="text-right shrink-0">
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-[10px] font-bold mt-1">
-                                            {{ $penalty->activity_type === 'cancel_requested' ? 'Pengajuan Batal' : 'Dibatalkan' }}
+                                            {{ $activity->activity_type === 'cancel_requested' ? 'Pengajuan Batal' : 'Dibatalkan' }}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div class="bg-rose-50/70 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/30 rounded-xl p-2.5 mt-2">
                                     <p class="text-xs text-rose-800 dark:text-rose-300 leading-relaxed">
-                                        <span class="font-bold">Keterangan:</span> {{ $penalty->description ?: 'Pembatalan tugas bantuan sebelum diselesaikan.' }}
+                                        <span class="font-bold">Keterangan:</span> {{ $activity->description ?: 'Pembatalan tugas bantuan sebelum diselesaikan.' }}
                                     </p>
                                 </div>
                             </div>
                         @endforeach
 
                         <div class="mt-4">
-                            {{ $penalties->links() }}
+                            {{ $cancelledActivities->links() }}
                         </div>
                     </div>
                 @endif

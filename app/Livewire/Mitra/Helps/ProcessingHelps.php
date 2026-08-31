@@ -22,7 +22,16 @@ class ProcessingHelps extends Component
     {
         $this->helps = Help::where('mitra_id', auth()->id())
             ->with(['user', 'city'])
-            ->active()
+            ->whereIn('status', [
+                Help::STATUS_TAKEN,
+                'memperoleh_mitra',
+                Help::STATUS_PARTNER_ON_THE_WAY,
+                Help::STATUS_PARTNER_ARRIVED,
+                Help::STATUS_IN_PROGRESS,
+                'sedang_diproses',
+                Help::STATUS_WAITING_CONFIRMATION,
+                Help::STATUS_PARTNER_CANCEL_REQUESTED,
+            ])
             ->orderByDesc('taken_at')
             ->get();
     }
@@ -56,8 +65,11 @@ class ProcessingHelps extends Component
                 'confirmation_deadline_at' => now()->addHours(24),
             ]);
 
+            // Lepaskan status BUSY mitra agar mitra dapat langsung mencari pesanan baru
+            app(\App\Services\PartnerOnlineService::class)->releaseBusy(auth()->id(), $help->id);
+
             $this->dispatch('help-completed');
-            session()->flash('success', 'Menunggu konfirmasi dari customer');
+            session()->flash('success', 'Pekerjaan ditandai selesai! Menunggu konfirmasi customer. Anda kini dapat mencari bantuan baru.');
             $this->loadHelps();
         } catch (\Throwable $e) {
             Log::error('[ProcessingHelps] completeHelp error: ' . $e->getMessage(), ['help_id' => $helpId]);

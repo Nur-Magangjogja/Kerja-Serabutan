@@ -294,7 +294,7 @@ class Log extends Component
         $totalWithdrawMitra    = (float) $summaryQuery->clone()->where('type', 'withdraw')->where('status', 'completed')->whereHas('user', fn($q) => $q->where('role', 'mitra'))->sum('amount');
         $totalPlatformFee = (float) $summaryQuery->clone()->where('type', 'platform_fee')->where('status', 'completed')->sum('amount');
         $totalEarning     = (float) $summaryQuery->clone()->where('type', 'earning')->where('status', 'completed')->sum('amount');
-        $totalPenalty     = (float) $summaryQuery->clone()->where('type', 'penalty')->where('status', 'completed')->sum('amount');
+        $totalCancellation = (float) $summaryQuery->clone()->whereIn('type', ['cancellation', 'penalty'])->where('status', 'completed')->sum('amount');
         $totalEscrow      = (float) $summaryQuery->clone()->where('type', 'escrow_lock')->where('status', 'completed')->sum('amount');
         $totalRefund      = (float) $summaryQuery->clone()->where('type', 'refund')->where('status', 'completed')->sum('amount');
         $totalTransactions = $summaryQuery->clone()->count();
@@ -307,7 +307,8 @@ class Log extends Component
             'totalWithdrawMitra'    => $totalWithdrawMitra,
             'totalPlatformFee'      => $totalPlatformFee,
             'totalEarning'          => $totalEarning,
-            'totalPenalty'          => $totalPenalty,
+            'totalCancellation'     => $totalCancellation,
+            'totalPenalty'          => $totalCancellation,
             'totalEscrow'           => $totalEscrow,
             'totalRefund'           => $totalRefund,
             'totalTransactions'     => $totalTransactions,

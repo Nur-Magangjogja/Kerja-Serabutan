@@ -150,7 +150,7 @@
                     <option value="platform_fee">Komisi Platform (Kas Masuk)</option>
                     <option value="withdraw">Withdraw (Pencairan Mitra & Customer)</option>
                     <option value="refund">Refund (Pengembalian 100%)</option>
-                    <option value="penalty">Penyesuaian Pembatalan (Penalty)</option>
+                    <option value="cancellation">Pembatalan Tugas (Cancellation)</option>
                     <option value="deduction">Potongan Biasa (Deduction)</option>
                 </select>
                 <input wire:model="from" type="date"
@@ -198,7 +198,7 @@
                         'platform_fee' => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60',
                         'withdraw'     => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60',
                         'refund'       => 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800/60',
-                        'penalty'      => 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700/60',
+                        'cancellation', 'penalty' => 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700/60',
                         'deduction'    => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60',
                         default        => 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600',
                     };
@@ -251,8 +251,8 @@
                                     ↑ Withdraw
                                 @elseif($t->type === 'refund')
                                     ↩️ Refund 100%
-                                @elseif($t->type === 'penalty')
-                                    ⚠️ Penyesuaian Pembatalan
+                                @elseif($t->type === 'cancellation' || $t->type === 'penalty')
+                                    ⚠️ Pembatalan Tugas
                                 @elseif($t->type === 'deduction')
                                     Potongan
                                 @else

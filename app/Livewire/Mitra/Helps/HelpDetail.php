@@ -85,6 +85,18 @@ class HelpDetail extends Component
         $this->help->refresh();
         $this->help->load(['user', 'city', 'rating']);
 
+        // Auto-confirm jika batas waktu 24 jam telah terlewati tanpa komplain/sengketa
+        if (
+            $this->help->status === Help::STATUS_WAITING_CONFIRMATION &&
+            $this->help->escrow_status === Help::ESCROW_STATUS_HELD &&
+            $this->help->disputed_at === null &&
+            $this->help->confirmation_deadline_at &&
+            $this->help->confirmation_deadline_at->isPast()
+        ) {
+            app(\App\Services\HelpTransactionService::class)->autoConfirmExpiredConfirmation($this->help);
+            $this->help->refresh();
+        }
+
         $newStatus = $this->help->status;
         $newFlag   = $this->help->partner_cancel_prev_status;
 

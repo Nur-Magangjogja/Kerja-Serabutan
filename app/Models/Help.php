@@ -360,7 +360,7 @@ class Help extends Model
                      });
     }
 
-    /** Bantuan yang sedang aktif dikerjakan. */
+    /** Bantuan yang sedang aktif dikerjakan oleh mitra. */
     public function scopeActive($query)
     {
         return $query->whereIn('status', [
@@ -370,9 +370,14 @@ class Help extends Model
             self::STATUS_PARTNER_ARRIVED,
             self::STATUS_IN_PROGRESS,
             'sedang_diproses',
-            self::STATUS_WAITING_CONFIRMATION,
             self::STATUS_PARTNER_CANCEL_REQUESTED,
         ]);
+    }
+
+    /** Bantuan yang telah diselesaikan mitra dan sedang menunggu konfirmasi customer (1x24 jam). */
+    public function scopeWaitingConfirmation($query)
+    {
+        return $query->where('status', self::STATUS_WAITING_CONFIRMATION);
     }
 
     /** Bantuan yang sudah selesai. */

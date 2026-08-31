@@ -32,7 +32,7 @@ return new class extends Migration
                 'service_fee',
                 'earning',
                 'deduction',
-                'penalty',
+                'cancellation',
                 'escrow_lock',
                 'platform_fee',
                 'pg_fee_topup',

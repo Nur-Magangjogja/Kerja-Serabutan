@@ -33,12 +33,13 @@ class UserGreylistLog extends Model
     public function getActionLabelAttribute(): string
     {
         return match ($this->action) {
-            'greylist_add'        => 'Masuk Daftar Abu-Abu',
-            'greylist_remove'     => 'Dihapus dari Daftar Abu-Abu',
-            'warning_issued'      => 'Diberikan Surat Peringatan (SP ' . $this->warning_level . ')',
-            'shadow_ban_enabled'  => 'Shadow Ban Diaktifkan',
-            'shadow_ban_disabled' => 'Shadow Ban Dinonaktifkan',
-            default               => ucfirst($this->action),
+            'greylist_add'             => 'Masuk Daftar Abu-Abu',
+            'greylist_remove'          => 'Dihapus dari Daftar Abu-Abu',
+            'auto_greylist_low_rating' => 'Otomatis Masuk Daftar Abu-Abu (3x Bintang 1)',
+            'warning_issued'           => 'Diberikan Surat Peringatan (SP ' . $this->warning_level . ')',
+            'shadow_ban_enabled'       => 'Shadow Ban Diaktifkan',
+            'shadow_ban_disabled'      => 'Shadow Ban Dinonaktifkan',
+            default                    => ucfirst($this->action),
         };
     }
 }

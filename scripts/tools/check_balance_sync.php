@@ -12,7 +12,7 @@ $rows = DB::table('balance_transactions')
     ->select(
         'user_id',
         DB::raw("SUM(CASE WHEN type IN ('topup', 'earning', 'refund') THEN amount ELSE 0 END) as credits"),
-        DB::raw("SUM(CASE WHEN type IN ('deduction', 'penalty', 'escrow_lock', 'withdraw', 'pg_fee_topup', 'pg_fee_withdraw') THEN amount ELSE 0 END) as debits")
+        DB::raw("SUM(CASE WHEN type IN ('deduction', 'cancellation', 'penalty', 'escrow_lock', 'withdraw', 'pg_fee_topup', 'pg_fee_withdraw') THEN amount ELSE 0 END) as debits")
     )
     ->whereNotNull('user_id')
     ->whereRaw("LOWER(TRIM(COALESCE(status,''))) = 'completed'")

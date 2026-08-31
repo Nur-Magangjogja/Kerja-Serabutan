@@ -87,15 +87,16 @@ class HelpMatchingService
     }
 
     /**
-     * Hitung skor fairness berdasarkan durasi tunggu / waktu sejak tugas terakhir (skala 0.0 - 1.0, cap dinamis)
+     * Hitung skor fairness berdasarkan durasi tunggu / waktu antrean pencarian (skala 0.0 - 1.0, cap dinamis)
      * dan memberikan Newbie Boost untuk akun mitra baru.
      */
     public function calculateFairnessScore(PartnerOnlineState $state, ?User $mitra = null): float
     {
-        $referenceTime = $state->last_completed_at ?? $state->searching_since ?? $state->last_seen_at;
+        // 1. Prioritaskan searching_since karena mitra sedang aktif mengantre mencari order
+        $referenceTime = $state->searching_since ?? $state->last_completed_at ?? $state->last_seen_at;
 
         if (!$referenceTime) {
-            $baseScore = 0.5;
+            $baseScore = 0.0;
         } else {
             $capMinutes = (float) AppSetting::getMaxFairnessBoostMinutes();
             $minutesElapsed = max(0, $referenceTime->diffInMinutes(now()));

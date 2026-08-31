@@ -324,4 +324,70 @@ class EscrowAndTransactionEngineTest extends TestCase
             'review'   => 'Duplikat rating',
         ]);
     }
+
+    public function test_mitra_can_search_and_take_new_help_while_previous_help_is_waiting_customer_confirmation_and_escrow_held()
+    {
+        $onlineService = app(\App\Services\PartnerOnlineService::class);
+
+        // 1. Mitra is working on Help 1
+        $help1 = $this->createAssignedHelp(50000, 5000);
+        $onlineService->setBusy($this->mitra->id, $help1->id);
+
+        $state = $onlineService->getOrCreateState($this->mitra->id);
+        $this->assertEquals(\App\Models\PartnerOnlineState::STATUS_BUSY, $state->matching_status);
+
+        // 2. Mitra finishes work & submits completion
+        $file = UploadedFile::fake()->image('proof.jpg');
+        $this->service->submitCompletion($help1, $this->mitra, $file, 'Pekerjaan pertama beres.');
+
+        $help1->refresh();
+        $this->assertEquals(Help::STATUS_WAITING_CONFIRMATION, $help1->status);
+        $this->assertEquals(Help::ESCROW_STATUS_HELD, $help1->escrow_status);
+
+        // Uang masih ditahan di escrow (belum masuk ke saldo mitra)
+        $mitraBalance = UserBalance::where('user_id', $this->mitra->id)->first();
+        $this->assertEquals(0, (float) ($mitraBalance ? $mitraBalance->balance : 0));
+
+        // Status mitra telah terbebas dari BUSY
+        $state->refresh();
+        $this->assertEquals(\App\Models\PartnerOnlineState::STATUS_ONLINE, $state->matching_status);
+
+        // 3. Mitra DAPAT mengaktifkan mode mencari order lagi (Start Searching)
+        $canSearch = $onlineService->startSearching($this->mitra, -7.7956, 110.3695);
+        $this->assertTrue($canSearch);
+        $state->refresh();
+        $this->assertEquals(\App\Models\PartnerOnlineState::STATUS_SEARCHING, $state->matching_status);
+
+        // 4. Mitra juga dapat mengambil Help 2 dari pool tanpa terblokir
+        $help2 = Help::create([
+            'user_id'             => $this->customer->id,
+            'city_id'             => $this->city->id,
+            'title'               => 'Bantuan Kedua',
+            'description'         => 'Order kedua',
+            'amount'              => 40000,
+            'admin_fee'           => 4000,
+            'total_amount'        => 44000,
+            'status'              => Help::STATUS_MENUNGGU_MITRA,
+            'payment_status'      => Help::PAYMENT_STATUS_PAID,
+            'escrow_status'       => Help::ESCROW_STATUS_HELD,
+            'dispatch_mode'       => Help::DISPATCH_MODE_POOL,
+        ]);
+
+        $this->service->takeHelp($help2, $this->mitra);
+        $help2->refresh();
+        $this->assertEquals($this->mitra->id, $help2->mitra_id);
+        $this->assertEquals(Help::STATUS_TAKEN, $help2->status);
+
+        // 5. Ketika batas 24 jam untuk Help 1 terlewati, Help 1 di-auto-confirm dan uangnya cair ke mitra
+        $help1->update(['confirmation_deadline_at' => now()->subHour()]);
+        $autoConfirmed = $this->service->autoConfirmExpiredConfirmation($help1);
+        $this->assertTrue($autoConfirmed);
+
+        $help1->refresh();
+        $this->assertEquals(Help::STATUS_SELESAI, $help1->status);
+        // Saldo Help 1 (50.000) berhasil masuk ke saldo mitra
+        $mitraBalance = UserBalance::where('user_id', $this->mitra->id)->first();
+        $this->assertNotNull($mitraBalance);
+        $this->assertEquals(50000, (float) $mitraBalance->balance);
+    }
 }

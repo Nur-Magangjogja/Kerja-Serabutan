@@ -573,10 +573,7 @@
                     <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5">Diajukan pada: {{ $help->disputed_at ? $help->disputed_at->translatedFormat('d M Y, H:i') : '-' }} WIB</p>
                 </div>
             </div>
-        @endif
-
-        {{-- Konfirmasi Penyelesaian & Countdown 24 Jam (Waiting Customer Confirmation) --}}
-        @if($help->status === 'waiting_customer_confirmation' && !$help->isDisputed())
+        @elseif(in_array($help->status, ['waiting_customer_confirmation', 'waiting_confirmation', 'konfirmasi_selesai']))
             @php
                 $remainingMin = $help->confirmation_remaining_minutes ?? 0;
                 $remHours = floor($remainingMin / 60);
@@ -1035,6 +1032,7 @@
             </div>
         </div>
     </div>
+    @endif
 
     {{-- Modal Ajukan Komplain / Sengketa --}}
     @if($showDisputeModal)
@@ -1117,7 +1115,6 @@
             animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
     </style>
-    @endif
 </div>
 
 {{-- Leaflet Maps Script - Load once, pushed to head --}}

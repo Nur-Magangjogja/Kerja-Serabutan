@@ -49,6 +49,18 @@ class Detail extends Component
             abort(403, 'Unauthorized access');
         }
 
+        // Auto-confirm jika batas waktu 24 jam telah terlewati tanpa komplain/sengketa
+        if (
+            $this->help->status === Help::STATUS_WAITING_CONFIRMATION &&
+            $this->help->escrow_status === Help::ESCROW_STATUS_HELD &&
+            $this->help->disputed_at === null &&
+            $this->help->confirmation_deadline_at &&
+            $this->help->confirmation_deadline_at->isPast()
+        ) {
+            app(HelpTransactionService::class)->autoConfirmExpiredConfirmation($this->help);
+            $this->help->refresh();
+        }
+
         // Kirim data tracking ke frontend bila map terbuka
         if ($this->showMapModal && in_array($this->help->status, ['taken', 'partner_on_the_way', 'partner_arrived'])) {
             $this->dispatch('tracking-data-updated', [
@@ -147,6 +159,16 @@ class Detail extends Component
 
     public function openDisputeModal()
     {
+        if ($this->help->dispute_resolved_at !== null) {
+            session()->flash('error', 'Sengketa untuk pesanan ini telah diputuskan oleh Admin secara final.');
+            return;
+        }
+
+        if ($this->help->escrow_status !== \App\Models\Help::ESCROW_STATUS_HELD) {
+            session()->flash('error', 'Dana bantuan tidak berada dalam status holding (telah dicairkan atau telah dibatalkan).');
+            return;
+        }
+
         $this->disputeReason = '';
         $this->showDisputeModal = true;
     }

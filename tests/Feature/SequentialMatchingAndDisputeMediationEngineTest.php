@@ -345,4 +345,200 @@ class SequentialMatchingAndDisputeMediationEngineTest extends TestCase
         $state1->refresh();
         $this->assertEquals(PartnerOnlineState::STATUS_SEARCHING, $state1->matching_status);
     }
+
+    public function test_customer_cannot_raise_dispute_or_claim_refund_after_dispute_resolved_or_escrow_released()
+    {
+        $txService = app(\App\Services\HelpTransactionService::class);
+
+        // 1. Buat pesanan dan proses sampai menunggu konfirmasi
+        $help = $this->createHelp(100000, 10000);
+        $help->update([
+            'mitra_id'      => $this->mitra1->id,
+            'status'        => Help::STATUS_WAITING_CONFIRMATION,
+            'escrow_status' => Help::ESCROW_STATUS_HELD,
+        ]);
+
+        // 2. Customer mengajukan sengketa
+        $report = $txService->raiseDispute($help, $this->customer, 'Pekerjaan belum rapi');
+        $help->refresh();
+        $this->assertEquals(Help::ESCROW_STATUS_DISPUTED_FREEZE, $help->escrow_status);
+
+        // 3. Admin menyelesaikan sengketa dengan Full Release ke Mitra
+        $txService->resolveDispute($help, $this->admin, 'full_release');
+        $help->refresh();
+        $this->assertEquals(Help::STATUS_SELESAI, $help->status);
+        $this->assertEquals(Help::ESCROW_STATUS_RELEASED, $help->escrow_status);
+        $this->assertNotNull($help->dispute_resolved_at);
+
+        // 4. Pastikan customer TIDAK BISA mengajukan sengketa kedua pada pesanan yang sudah diputuskan
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Sengketa untuk pesanan ini telah diputuskan oleh Admin secara final');
+        $txService->raiseDispute($help, $this->customer, 'Saya masih tidak puas');
+    }
+
+    public function test_process_report_refund_blocks_double_refund_on_released_help()
+    {
+        $txService = app(\App\Services\HelpTransactionService::class);
+
+        // Buat pesanan yang sudah selesai & dirilis ke Mitra
+        $help = $this->createHelp(100000, 10000);
+        $help->update([
+            'mitra_id'            => $this->mitra1->id,
+            'status'              => Help::STATUS_SELESAI,
+            'escrow_status'       => Help::ESCROW_STATUS_RELEASED,
+            'dispute_resolved_at' => now(),
+            'dispute_resolved_by' => $this->admin->id,
+        ]);
+
+        // Buat laporan manual
+        $report = \App\Models\PartnerReport::create([
+            'reporter_id'      => $this->customer->id,
+            'reported_user_id' => $this->mitra1->id,
+            'reported_help_id' => $help->id,
+            'report_type'      => 'klaim_refund_pekerjaan_fiktif',
+            'title'            => 'Klaim Refund Ulang',
+            'message'          => 'Ingin refund lagi setelah sengketa selesai',
+            'refund_status'    => 'requested',
+            'refund_amount'    => 110000,
+            'status'           => 'pending',
+        ]);
+
+        // Pastikan Admin ditolak jika mencoba memproses refund pada bantuan yang dananya sudah dicairkan ke Mitra
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Dana escrow untuk bantuan ini telah dicairkan ke Mitra');
+        $txService->processReportRefund($report, $this->admin, 'Coba refund');
+    }
+
+    public function test_customer_can_claim_1x24_warranty_on_completed_order_and_claws_back_mitra_escrow()
+    {
+        $txService = app(\App\Services\HelpTransactionService::class);
+
+        // 1. Mitra mengambil pesanan Rp 100.000 (net earning 90.000)
+        $help = $this->createHelp(90000, 10000);
+        $help->update([
+            'mitra_id'      => $this->mitra1->id,
+            'status'        => Help::STATUS_WAITING_CONFIRMATION,
+            'escrow_status' => Help::ESCROW_STATUS_HELD,
+        ]);
+
+        // Customer mengonfirmasi pesanan selesai
+        $txService->customerConfirmCompletion($help, $this->customer);
+        $help->refresh();
+        $this->assertEquals(Help::STATUS_SELESAI, $help->status);
+        $this->assertEquals(Help::ESCROW_STATUS_RELEASED, $help->escrow_status);
+
+        $mitraBalance = UserBalance::where('user_id', $this->mitra1->id)->first();
+        $this->assertEquals(90000, $mitraBalance->balance);
+
+        // 2. Customer baru sadar ada masalah, mengajukan klaim garansi 1x24 jam
+        $report = $txService->claimWarrantyAndClawbackEscrow(
+            $help,
+            $this->customer,
+            'Pekerjaan ternyata fiktif setelah saya cek 2 jam kemudian'
+        );
+
+        // Verifikasi dana earning mitra ditarik kembali (clawback)
+        $mitraBalance->refresh();
+        $this->assertEquals(0, $mitraBalance->balance);
+
+        // Verifikasi status bantuan kembali ke disputed_freeze
+        $help->refresh();
+        $this->assertEquals(Help::STATUS_WAITING_CONFIRMATION, $help->status);
+        $this->assertEquals(Help::ESCROW_STATUS_DISPUTED_FREEZE, $help->escrow_status);
+
+        // Verifikasi tiket laporan PartnerReport dibuat
+        $this->assertEquals('pending', $report->status);
+        $this->assertEquals('requested', $report->refund_status);
+
+        // 3. Admin memediasi dan memutuskan Full Release ke Mitra
+        $txService->resolveDispute($help, $this->admin, 'full_release');
+
+        // Verifikasi dana dikreditkan kembali ke Mitra
+        $mitraBalance->refresh();
+        $this->assertEquals(90000, $mitraBalance->balance);
+
+        $help->refresh();
+        $this->assertEquals(Help::STATUS_SELESAI, $help->status);
+        $this->assertEquals(Help::ESCROW_STATUS_RELEASED, $help->escrow_status);
+        $this->assertNotNull($help->dispute_resolved_at);
+    }
+
+    public function test_customer_cannot_claim_warranty_after_24_hours()
+    {
+        $txService = app(\App\Services\HelpTransactionService::class);
+
+        // Pesanan yang diselesaikan 25 jam yang lalu
+        $help = $this->createHelp(90000, 10000);
+        $help->update([
+            'mitra_id'      => $this->mitra1->id,
+            'status'        => Help::STATUS_SELESAI,
+            'escrow_status' => Help::ESCROW_STATUS_RELEASED,
+            'completed_at'  => now()->subHours(25),
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Masa garansi asuransi 1x24 jam untuk pesanan ini telah berakhir');
+        $txService->claimWarrantyAndClawbackEscrow($help, $this->customer, 'Klaim terlambat');
+    }
+
+    public function test_three_consecutive_1_star_ratings_automatically_flags_mitra_to_greylist()
+    {
+        // 1. Buat 3 pesanan terpisah untuk Mitra 1
+        $help1 = $this->createHelp();
+        $help1->update(['mitra_id' => $this->mitra1->id, 'status' => Help::STATUS_SELESAI]);
+
+        $help2 = $this->createHelp();
+        $help2->update(['mitra_id' => $this->mitra1->id, 'status' => Help::STATUS_SELESAI]);
+
+        $help3 = $this->createHelp();
+        $help3->update(['mitra_id' => $this->mitra1->id, 'status' => Help::STATUS_SELESAI]);
+
+        $this->assertFalse((bool) $this->mitra1->is_greylisted);
+
+        // Rating 1: 1 Bintang
+        Rating::create([
+            'help_id'  => $help1->id,
+            'rater_id' => $this->customer->id,
+            'ratee_id' => $this->mitra1->id,
+            'type'     => 'customer_to_mitra',
+            'rating'   => 1,
+            'review'   => 'Kurang memuaskan 1',
+        ]);
+        $this->mitra1->refresh();
+        $this->assertFalse((bool) $this->mitra1->is_greylisted);
+
+        // Rating 2: 1 Bintang
+        Rating::create([
+            'help_id'  => $help2->id,
+            'rater_id' => $this->customer->id,
+            'ratee_id' => $this->mitra1->id,
+            'type'     => 'customer_to_mitra',
+            'rating'   => 1,
+            'review'   => 'Kurang memuaskan 2',
+        ]);
+        $this->mitra1->refresh();
+        $this->assertFalse((bool) $this->mitra1->is_greylisted);
+
+        // Rating 3: 1 Bintang (Memicu 3x berturut-turut)
+        Rating::create([
+            'help_id'  => $help3->id,
+            'rater_id' => $this->customer->id,
+            'ratee_id' => $this->mitra1->id,
+            'type'     => 'customer_to_mitra',
+            'rating'   => 1,
+            'review'   => 'Kurang memuaskan 3',
+        ]);
+        $this->mitra1->refresh();
+
+        // Verifikasi Mitra sekarang masuk ke Daftar Abu-Abu (Greylist)
+        $this->assertTrue((bool) $this->mitra1->is_greylisted);
+        $this->assertStringContainsString('1 bintang', $this->mitra1->greylist_reason);
+        $this->assertNotNull($this->mitra1->greylisted_at);
+
+        // Verifikasi log UserGreylistLog tercatat
+        $log = \App\Models\UserGreylistLog::where('user_id', $this->mitra1->id)->latest()->first();
+        $this->assertNotNull($log);
+        $this->assertEquals('greylist_add', $log->action);
+        $this->assertStringContainsString('1 bintang 3x berturut-turut', $log->reason);
+    }
 }
