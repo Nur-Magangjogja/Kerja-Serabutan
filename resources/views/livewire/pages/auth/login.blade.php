@@ -11,7 +11,7 @@ new #[Layout('layouts.blank')] class extends Component {
 
     public function mount(): void
     {
-        // If already authenticated, redirect directly to dashboard
+        // If already authenticated, redirect directly to dashboard or onboarding step 1
         if (Auth::check()) {
             $user = Auth::user();
             if ($user->role === 'super_admin') {
@@ -19,6 +19,9 @@ new #[Layout('layouts.blank')] class extends Component {
                 return;
             } elseif ($user->role === 'admin') {
                 $this->redirect(route('admin.dashboard', absolute: false), navigate: false);
+                return;
+            } elseif ($user->status === 'inactive' && (empty($user->nik) || empty($user->ktp_photo))) {
+                $this->redirect(route('register.step1', absolute: false), navigate: false);
                 return;
             } elseif ($user->role === 'mitra') {
                 $this->redirect(route('mitra.dashboard', absolute: false), navigate: false);
@@ -43,11 +46,13 @@ new #[Layout('layouts.blank')] class extends Component {
 
         $user = Auth::user();
 
-        // Redirect based on user role
+        // Redirect based on user role and onboarding status
         if ($user->role === 'super_admin') {
             $redirect = route('superadmin.dashboard', absolute: false);
         } elseif ($user->role === 'admin') {
             $redirect = route('admin.dashboard', absolute: false);
+        } elseif ($user->status === 'inactive' && (empty($user->nik) || empty($user->ktp_photo))) {
+            $redirect = route('register.step1', absolute: false);
         } elseif ($user->role === 'mitra') {
             $redirect = route('mitra.dashboard', absolute: false);
         } elseif ($user->role === 'customer') {

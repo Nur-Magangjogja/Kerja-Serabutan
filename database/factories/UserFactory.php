@@ -27,6 +27,11 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
+            'role' => 'customer',
+            'status' => 'active',
+            'verified' => true,
+            'nik' => '3201012345678901',
+            'ktp_photo' => 'ktp/default.jpg',
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
@@ -39,6 +44,23 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+            'status' => 'inactive',
+            'verified' => false,
+            'nik' => null,
+            'ktp_photo' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is inactive and onboarding is incomplete.
+     */
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'inactive',
+            'verified' => false,
+            'nik' => null,
+            'ktp_photo' => null,
         ]);
     }
 }

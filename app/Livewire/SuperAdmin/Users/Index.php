@@ -181,10 +181,12 @@ class Index extends Component
             'city_id' => 'nullable|exists:cities,id',
             'managed_city_ids' => 'nullable|array',
             'managed_city_ids.*' => 'exists:cities,id',
-            'nik' => 'nullable|string|max:50',
-            'address' => 'nullable|string|max:1000',
+            'nik' => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::unique('users', 'nik')->ignore($this->selectedUser?->id)],
             'rt' => 'nullable|integer|min:1|max:999',
             'rw' => 'nullable|integer|min:1|max:999',
+            'kelurahan' => 'nullable|string|max:100',
+            'kecamatan' => 'nullable|string|max:100',
+            'province' => 'nullable|string|max:100',
             'date_of_birth' => 'nullable|date',
             'gender' => 'nullable|in:Laki-laki,Perempuan',
             'occupation' => 'nullable|string|max:150',
@@ -198,6 +200,17 @@ class Index extends Component
 
         $this->validate($rules);
 
+        $cityName = null;
+        if ($this->city_id) {
+            $cityRec = City::find($this->city_id);
+            if ($cityRec) {
+                $cityName = $cityRec->name;
+                if (empty($this->province)) {
+                    $this->province = $cityRec->province;
+                }
+            }
+        }
+
         $data = [
             'name' => $this->name,
             'email' => $this->email,
@@ -206,7 +219,7 @@ class Index extends Component
             'status' => $this->status,
             'verified' => $this->verified,
             'city_id' => $this->city_id,
-            'address' => $this->address,
+            'city' => $cityName ?? ($this->selectedUser?->city),
             'nik' => $this->nik,
             'place_of_birth' => $this->place_of_birth,
             'date_of_birth' => $this->date_of_birth,

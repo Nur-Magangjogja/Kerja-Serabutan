@@ -6,29 +6,14 @@ use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
 Route::middleware('guest')->group(function () {
+    // 1. Direct Quick Register with Email, Name, Password & Role
     Volt::route('register', 'pages.auth.register')
         ->name('register');
 
-    // Choose role before starting registration
-    Volt::route('register/choose-role', 'pages.auth.register-choose-role')
-        ->name('register.choose-role');
-
-    // Multi-step Registration Routes
-    Volt::route('register/step1', 'pages.auth.register-step1')
-        ->name('register.step1');
-
-    Volt::route('register/step2', 'pages.auth.register-step2')
-        ->name('register.step2');
-
-    Volt::route('register/step3', 'pages.auth.register-step3')
-        ->name('register.step3');
-
-    Volt::route('register/step4', 'pages.auth.register-step4')
-        ->name('register.step4');
-
-    // Registration Success Page (masih guest karena baru register)
-    Volt::route('registration/success', 'pages.auth.registration-success')
-        ->name('registration.success');
+    // Backward compatibility redirect for old choose-role link
+    Route::get('register/choose-role', function () {
+        return redirect()->route('register');
+    })->name('register.choose-role');
 
     Volt::route('login', 'pages.auth.login')
         ->name('login');
@@ -45,13 +30,32 @@ Route::middleware('guest')->group(function () {
         ->name('password.reset');
 });
 
+// Registration Success Page (Accessible by guest and auth)
+Volt::route('registration/success', 'pages.auth.registration-success')
+    ->name('registration.success');
+
+// Email Verification Link Handler (dapat dibuka langsung dari aplikasi email)
+Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+    ->middleware(['throttle:6,1'])
+    ->name('verification.verify');
+
 Route::middleware('auth')->group(function () {
+    // 2. Email Verification Notice (Halaman tunggu verifikasi)
     Volt::route('verify-email', 'pages.auth.verify-email')
         ->name('verification.notice');
 
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
+    // 3. Multi-Step Onboarding & Identity (KTP) Verification Routes (Step 1 - 4)
+    Volt::route('register/step1', 'pages.auth.register-step1')
+        ->name('register.step1');
+
+    Volt::route('register/step2', 'pages.auth.register-step2')
+        ->name('register.step2');
+
+    Volt::route('register/step3', 'pages.auth.register-step3')
+        ->name('register.step3');
+
+    Volt::route('register/step4', 'pages.auth.register-step4')
+        ->name('register.step4');
 
     Volt::route('confirm-password', 'pages.auth.confirm-password')
         ->name('password.confirm');

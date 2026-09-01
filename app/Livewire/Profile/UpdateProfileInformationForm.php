@@ -10,8 +10,13 @@ class UpdateProfileInformationForm extends Component
     public $name;
     public $email;
     public $phone;
-    public $address;
+    public $rt;
+    public $rw;
+    public $kelurahan;
+    public $kecamatan;
     public $city_id;
+    public $city;
+    public $province;
     public string $cityQuery = '';
     public array $searchResults = [];
 
@@ -19,8 +24,13 @@ class UpdateProfileInformationForm extends Component
         'name' => ['required', 'string', 'max:255'],
         'email' => ['required', 'email', 'max:255'],
         'phone' => ['required', 'string', 'min:9', 'max:20', 'regex:/^[0-9+\s\-]+$/'],
-        'city_id' => ['required', 'exists:cities,id'],
-        'address' => ['required', 'string', 'max:500'],
+        'rt' => ['required', 'integer', 'min:1', 'max:999'],
+        'rw' => ['required', 'integer', 'min:1', 'max:999'],
+        'kelurahan' => ['required', 'string', 'max:100'],
+        'kecamatan' => ['required', 'string', 'max:100'],
+        'city_id' => ['nullable', 'exists:cities,id'],
+        'city' => ['required', 'string', 'max:100'],
+        'province' => ['required', 'string', 'max:100'],
     ];
 
     protected $messages = [
@@ -31,9 +41,14 @@ class UpdateProfileInformationForm extends Component
         'phone.min' => 'Nomor HP minimal 9 digit.',
         'phone.max' => 'Nomor HP maksimal 20 digit.',
         'phone.regex' => 'Format nomor HP tidak valid.',
-        'city_id.required' => 'Kota/Kabupaten wajib dipilih dari hasil pencarian.',
-        'city_id.exists' => 'Kota/Kabupaten yang dipilih tidak valid.',
-        'address.required' => 'Alamat lengkap wajib diisi.',
+        'rt.required' => 'Nomor RT wajib diisi.',
+        'rt.integer' => 'Nomor RT harus berupa angka.',
+        'rw.required' => 'Nomor RW wajib diisi.',
+        'rw.integer' => 'Nomor RW harus berupa angka.',
+        'kelurahan.required' => 'Kelurahan / Desa wajib diisi.',
+        'kecamatan.required' => 'Kecamatan wajib diisi.',
+        'city.required' => 'Kota / Kabupaten wajib diisi.',
+        'province.required' => 'Provinsi wajib diisi.',
     ];
 
     public function mount()
@@ -42,13 +57,20 @@ class UpdateProfileInformationForm extends Component
         $this->name = $user->name;
         $this->email = $user->email;
         $this->phone = $user->phone;
-        $this->address = $user->address;
+        $this->rt = $user->rt;
+        $this->rw = $user->rw;
+        $this->kelurahan = $user->kelurahan;
+        $this->kecamatan = $user->kecamatan;
         $this->city_id = $user->city_id;
+        $this->city = $user->city;
+        $this->province = $user->province;
 
         if ($this->city_id) {
             $cityRec = \App\Models\City::find($this->city_id);
             if ($cityRec) {
                 $this->cityQuery = $cityRec->name . ($cityRec->province ? " — {$cityRec->province}" : '');
+                $this->city = $cityRec->name;
+                $this->province = $cityRec->province ?? $this->province;
             }
         } elseif (!empty($user->city)) {
             $this->cityQuery = $user->city;
@@ -60,6 +82,7 @@ class UpdateProfileInformationForm extends Component
         $q = trim((string) $value);
         if (empty($q) || strlen($q) < 2) {
             $this->searchResults = [];
+            $this->city = $q;
             return;
         }
 
@@ -81,8 +104,12 @@ class UpdateProfileInformationForm extends Component
         $city = \App\Models\City::find($id);
         if ($city) {
             $this->cityQuery = $city->name . ($city->province ? " — {$city->province}" : '');
+            $this->city = $city->name;
+            $this->province = $city->province;
         }
         $this->searchResults = [];
+        $this->resetErrorBag('city');
+        $this->resetErrorBag('province');
         $this->resetErrorBag('city_id');
     }
 
@@ -90,11 +117,17 @@ class UpdateProfileInformationForm extends Component
     {
         $this->city_id = null;
         $this->cityQuery = '';
+        $this->city = '';
         $this->searchResults = [];
     }
 
     public function updateProfileInformation()
     {
+        // If user manually typed city query without selecting from dropdown
+        if (empty($this->city) && !empty($this->cityQuery)) {
+            $this->city = $this->cityQuery;
+        }
+
         $this->validate();
 
         $user = Auth::user();
@@ -108,19 +141,27 @@ class UpdateProfileInformationForm extends Component
             return;
         }
 
-        $cityName = null;
+        $cityName = $this->city;
+        $provinceName = $this->province;
         if ($this->city_id) {
             $cityRec = \App\Models\City::find($this->city_id);
-            $cityName = $cityRec?->name;
+            if ($cityRec) {
+                $cityName = $cityRec->name;
+                $provinceName = $cityRec->province ?: $provinceName;
+            }
         }
 
         $user->update([
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
-            'address' => $this->address,
+            'rt' => $this->rt,
+            'rw' => $this->rw,
+            'kelurahan' => $this->kelurahan,
+            'kecamatan' => $this->kecamatan,
             'city_id' => $this->city_id,
-            'city' => $cityName ?? $user->city,
+            'city' => $cityName,
+            'province' => $provinceName,
         ]);
 
         session()->flash('message', 'Profil Anda berhasil diperbarui!');
@@ -131,3 +172,4 @@ class UpdateProfileInformationForm extends Component
         return view('livewire.profile.update-profile-information-form');
     }
 }
+

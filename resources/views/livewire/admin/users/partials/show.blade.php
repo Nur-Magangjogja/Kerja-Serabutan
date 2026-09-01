@@ -51,9 +51,8 @@
                     <h4 class="font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider mb-2">Data KTP</h4>
                     <div><span class="text-gray-400">NIK:</span> <span class="font-mono font-bold text-gray-800 dark:text-gray-100">{{ $user->nik ?? '—' }}</span></div>
                     <div><span class="text-gray-400">Nama di KTP:</span> <span class="font-semibold text-gray-800 dark:text-gray-100">{{ $user->full_name ?? $user->name ?? '—' }}</span></div>
-                    <div><span class="text-gray-400">Tempat, Tgl Lahir:</span> <span class="font-medium text-gray-800 dark:text-gray-200">{{ $user->place_of_birth ?? '-' }}, {{ $user->date_of_birth ? $user->date_of_birth->format('d M Y') : '-' }}</span></div>
                     <div><span class="text-gray-400">Jenis Kelamin:</span> <span class="font-medium text-gray-800 dark:text-gray-200">{{ $user->gender ?? '—' }}</span></div>
-                    <div><span class="text-gray-400">Alamat:</span> <span class="font-medium text-gray-800 dark:text-gray-200">{{ $user->address ?? '—' }}</span></div>
+                    <div><span class="text-gray-400">Alamat KTP:</span> <span class="font-medium text-gray-800 dark:text-gray-200">{{ $user->full_address }}</span></div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">

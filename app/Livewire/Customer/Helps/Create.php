@@ -109,8 +109,12 @@ class Create extends Component
             }
 
             // Otomatis isi alamat lengkap jika sudah ada di profil customer
-            if (empty($this->full_address) && !empty($user->address)) {
-                $this->full_address = $user->address;
+            if (empty($this->full_address)) {
+                if (!empty($user->full_address) && $user->full_address !== '—') {
+                    $this->full_address = $user->full_address;
+                } elseif (!empty($user->address)) {
+                    $this->full_address = $user->address;
+                }
             }
         }
 

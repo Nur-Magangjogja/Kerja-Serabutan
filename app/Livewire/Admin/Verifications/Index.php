@@ -4,6 +4,7 @@ namespace App\Livewire\Admin\Verifications;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Url;
 use App\Models\Registration;
 use App\Models\User;
 use App\Models\City;
@@ -12,10 +13,19 @@ class Index extends Component
 {
     use WithPagination;
 
+    #[Url(history: true)]
     public $perPage = 10;
+
+    #[Url(history: true)]
     public $search = '';
+
+    #[Url(history: true)]
     public $statusFilter = '';
+
+    #[Url(history: true)]
     public $roleFilter = '';
+
+    #[Url(history: true)]
     public $cityFilter = '';
 
     public $showModal = false;
@@ -96,7 +106,20 @@ class Index extends Component
                 if ($user) {
                     $user->verified = true;
                     $user->status = 'active';
-                    if (array_key_exists('email_verified_at', $user->getAttributes())) {
+                    if (empty($user->nik) && !empty($reg->nik)) $user->nik = $reg->nik;
+                    if (empty($user->ktp_photo) && !empty($reg->ktp_photo_path)) $user->ktp_photo = $reg->ktp_photo_path;
+                    if (empty($user->ktp_path) && !empty($reg->ktp_photo_path)) $user->ktp_path = $reg->ktp_photo_path;
+                    if (empty($user->selfie_photo) && !empty($reg->selfie_photo_path)) $user->selfie_photo = $reg->selfie_photo_path;
+                    if (empty($user->city_id) && !empty($reg->city_id)) $user->city_id = $reg->city_id;
+                    if (empty($user->city) && !empty($reg->city)) $user->city = $reg->city;
+                    if (empty($user->rt) && !empty($reg->rt)) $user->rt = $reg->rt;
+                    if (empty($user->rw) && !empty($reg->rw)) $user->rw = $reg->rw;
+                    if (empty($user->kelurahan) && !empty($reg->kelurahan)) $user->kelurahan = $reg->kelurahan;
+                    if (empty($user->kecamatan) && !empty($reg->kecamatan)) $user->kecamatan = $reg->kecamatan;
+                    if (empty($user->province) && !empty($reg->province)) $user->province = $reg->province;
+                    if (empty($user->gender) && !empty($reg->gender)) $user->gender = $reg->gender;
+                    if (empty($user->phone) && !empty($reg->phone)) $user->phone = $reg->phone;
+                    if (array_key_exists('email_verified_at', $user->getAttributes()) && empty($user->email_verified_at)) {
                         $user->email_verified_at = now();
                     }
                     $user->save();

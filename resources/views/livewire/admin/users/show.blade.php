@@ -50,9 +50,15 @@
                     <p class="text-xs text-gray-400 dark:text-gray-500">Waktu Registrasi</p>
                     <p class="font-medium text-gray-800 dark:text-gray-200 mt-0.5">{{ optional($user->created_at)->format('d M Y, H:i') ?? '—' }} WIB</p>
                 </div>
-                <div class="md:col-span-2 p-3 bg-gray-50 dark:bg-gray-700/40 rounded-lg">
-                    <p class="text-xs text-gray-400 dark:text-gray-500">Alamat</p>
-                    <p class="font-medium text-gray-800 dark:text-gray-200 mt-0.5">{{ $user->address ?? '—' }}</p>
+                <div class="md:col-span-2 p-3.5 bg-gray-50 dark:bg-gray-700/40 rounded-lg space-y-2">
+                    <p class="text-xs text-gray-400 dark:text-gray-500 font-semibold">Alamat Lengkap</p>
+                    <p class="font-medium text-gray-800 dark:text-gray-200 text-sm">{{ $user->full_address }}</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+                        <div class="bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-100 dark:border-gray-700"><span class="text-gray-400 block text-[10px]">RT / RW</span><span class="font-semibold text-gray-800 dark:text-gray-200">RT {{ $user->rt ? sprintf('%02d', (int)$user->rt) : '-' }}/RW {{ $user->rw ? sprintf('%02d', (int)$user->rw) : '-' }}</span></div>
+                        <div class="bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-100 dark:border-gray-700"><span class="text-gray-400 block text-[10px]">Kelurahan</span><span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $user->kelurahan ?? '-' }}</span></div>
+                        <div class="bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-100 dark:border-gray-700"><span class="text-gray-400 block text-[10px]">Kecamatan</span><span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $user->kecamatan ?? '-' }}</span></div>
+                        <div class="bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-100 dark:border-gray-700"><span class="text-gray-400 block text-[10px]">Provinsi</span><span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $user->province ?? '-' }}</span></div>
+                    </div>
                 </div>
             </div>
         </div>

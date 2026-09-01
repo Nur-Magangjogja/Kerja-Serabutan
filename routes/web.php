@@ -5,6 +5,19 @@ use Illuminate\Support\Facades\Route;
 // Landing / Login route - Unified entrance
 Route::get('/', function () {
     if (auth()->check()) {
+        $user = auth()->user();
+        if (in_array($user->role, ['admin', 'super_admin'])) {
+            return redirect()->route('dashboard');
+        }
+        if (!$user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
+        if (empty($user->nik) || (empty($user->ktp_photo) && empty($user->ktp_path))) {
+            return redirect()->route('register.step1');
+        }
+        if ($user->status !== 'active' || !$user->verified) {
+            return redirect()->route('registration.success');
+        }
         return redirect()->route('dashboard');
     }
     return redirect()->route('login');
@@ -13,6 +26,19 @@ Route::get('/', function () {
 // Alias welcome page
 Route::get('/welcome', function () {
     if (auth()->check()) {
+        $user = auth()->user();
+        if (in_array($user->role, ['admin', 'super_admin'])) {
+            return redirect()->route('dashboard');
+        }
+        if (!$user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
+        if (empty($user->nik) || (empty($user->ktp_photo) && empty($user->ktp_path))) {
+            return redirect()->route('register.step1');
+        }
+        if ($user->status !== 'active' || !$user->verified) {
+            return redirect()->route('registration.success');
+        }
         return redirect()->route('dashboard');
     }
     return redirect()->route('login');
@@ -21,8 +47,8 @@ Route::get('/welcome', function () {
 // Rejected registration page (public)
 Route::get('/rejected/{registration}', [\App\Http\Controllers\Auth\RejectedController::class, 'show'])->name('auth.rejected');
 
-// Authenticated routes
-Route::middleware(['auth', 'verified'])->group(function () {
+// Authenticated and fully approved routes (Protected against unverified / incomplete / unvalidated users)
+Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     // Main Dashboard route - redirects based on role
     Route::get('/dashboard', function () {
         $user = auth()->user();

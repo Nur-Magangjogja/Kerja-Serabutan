@@ -80,11 +80,43 @@ class LoginForm extends Form
             // ignore lookup errors
         }
 
-        // Only block non-privileged users who are pending or inactive
+        // Jika belum verifikasi email
+        if (!$user->hasVerifiedEmail()) {
+            if ($user->created_at && $user->created_at->diffInSeconds(now()) >= 600) {
+                User::purgeExpiredUnverified($user->email);
+                Auth::logout();
+                throw ValidationException::withMessages([
+                    'form.email' => 'Batas waktu verifikasi email (10 menit) telah kedaluwarsa. Akun otomatis dihapus, silakan lakukan pendaftaran baru.',
+                ]);
+            }
+
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'form.email' => 'Alamat email Anda belum diverifikasi. Silakan periksa inbox/spam email Anda dalam batas waktu 10 menit.',
+            ]);
+        }
+
+        // Cek jika akun inactive yang belum menyelesaikan form data diri & KTP
+        if (!$isPrivileged && $user->status === 'inactive' && (empty($user->nik) || empty($user->ktp_photo))) {
+            // Cek jika sudah lewat 1x24 jam
+            if ($user->created_at && $user->created_at->diffInHours(now()) >= 24) {
+                User::purgeExpiredInactive($user->email);
+                Auth::logout();
+                throw ValidationException::withMessages([
+                    'form.email' => 'Batas waktu penyelesaian formulir pendaftaran (1x24 jam) telah kedaluwarsa. Akun otomatis dihapus, silakan lakukan pendaftaran baru.',
+                ]);
+            }
+
+            // Jika masih dalam batas 1x24 jam, izinkan login untuk melanjutkan pengisian form di Step 1
+            RateLimiter::clear($this->throttleKey());
+            return;
+        }
+
+        // Blokir user non-privileged yang statusnya pending atau inactive (yang sudah mengirimkan data KTP dan menunggu persetujuan admin)
         if (!$isPrivileged && ($user->status === 'pending' || $user->status === 'inactive')) {
             Auth::logout();
             throw ValidationException::withMessages([
-                'form.email' => 'Akun Anda masih menunggu verifikasi dari admin. Silakan tunggu hingga akun Anda disetujui.',
+                'form.email' => 'Akun Anda masih menunggu verifikasi KTP dari admin. Silakan tunggu hingga akun Anda disetujui.',
             ]);
         }
 

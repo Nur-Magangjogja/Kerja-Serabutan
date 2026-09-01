@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // New alias: use 'customer' everywhere going forward
             'customer' => \App\Http\Middleware\EnsureCustomer::class,
             'mitra' => \App\Http\Middleware\EnsureMitra::class,
+            'approved' => \App\Http\Middleware\EnsureAccountApproved::class,
         ]);
 
         // Exclude Midtrans webhook from CSRF verification

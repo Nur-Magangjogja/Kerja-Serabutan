@@ -224,7 +224,7 @@ class AdminUsers extends Component
             'city_id' => 'nullable|exists:cities,id',
             'managed_city_ids' => 'nullable|array',
             'managed_city_ids.*' => 'exists:cities,id',
-            'nik' => 'nullable|string|max:50',
+            'nik' => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::unique('users', 'nik')->ignore($this->selectedUser?->id)],
             'address' => 'nullable|string|max:1000',
             'rt' => 'nullable|integer|min:1|max:999',
             'rw' => 'nullable|integer|min:1|max:999',

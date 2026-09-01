@@ -4,10 +4,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
 new #[Layout('layouts.guest')] class extends Component {
-    public function continueToDashboard(): void
-    {
-        $this->redirect(route('dashboard'), navigate: true);
-    }
+    //
 }; ?>
 
 <div class="space-y-6 text-center py-2">

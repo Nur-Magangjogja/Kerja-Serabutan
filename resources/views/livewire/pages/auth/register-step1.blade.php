@@ -12,10 +12,7 @@ new #[Layout('layouts.guest')] class extends Component {
     public string $nik = '';
     public string $full_name = '';
     public string $phone = '';
-    public string $place_of_birth = '';
-    public string $date_of_birth = '';
     public string $gender = '';
-    public string $address = '';
     public $rt = null;
     public $rw = null;
     public string $kelurahan = '';
@@ -50,10 +47,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 $this->nik = $registration->nik ?? $this->nik;
                 $this->full_name = $registration->full_name ?? $this->full_name;
                 $this->phone = $registration->phone ?? $this->phone;
-                $this->place_of_birth = $registration->place_of_birth ?? $this->place_of_birth;
-                $this->date_of_birth = $registration->date_of_birth ? $registration->date_of_birth->format('Y-m-d') : $this->date_of_birth;
                 $this->gender = $registration->gender ?? $this->gender;
-                $this->address = $registration->address ?? $this->address;
                 $this->rt = $registration->rt !== null ? (int) $registration->rt : $this->rt;
                 $this->rw = $registration->rw !== null ? (int) $registration->rw : $this->rw;
                 $this->kelurahan = $registration->kelurahan ?? $this->kelurahan;
@@ -72,7 +66,39 @@ new #[Layout('layouts.guest')] class extends Component {
                         $this->cityQuery = $c->name . ($c->province ? " — {$c->province}" : '');
                     }
                 }
+            }
+        }
+
+        // Pre-fill from authenticated user if available
+        if (\Illuminate\Support\Facades\Auth::check()) {
+            $user = \Illuminate\Support\Facades\Auth::user();
+
+            // Pastikan email sudah terverifikasi sebelum mengisi form Step 1
+            if ($user && !$user->hasVerifiedEmail()) {
+                $this->redirect(route('verification.notice'), navigate: true);
                 return;
+            }
+
+            // Cek jika batas waktu 1x24 jam untuk pengisian form telah kedaluwarsa
+            if ($user && $user->status === 'inactive' && (empty($user->nik) || empty($user->ktp_photo))) {
+                if ($user->created_at && $user->created_at->diffInHours(now()) >= 24) {
+                    \App\Models\User::purgeExpiredInactive($user->email);
+                    \Illuminate\Support\Facades\Auth::logout();
+                    request()->session()->invalidate();
+                    Session::flash('error', 'Batas waktu penyelesaian formulir pendaftaran (1x24 jam) telah kedaluwarsa. Akun otomatis dihapus, silakan lakukan pendaftaran baru.');
+                    $this->redirect(route('register'), navigate: true);
+                    return;
+                }
+            }
+
+            if (empty($this->full_name) && !empty($user->name)) {
+                $this->full_name = $user->name;
+            }
+            if (empty($this->phone) && !empty($user->phone)) {
+                $this->phone = $user->phone;
+            }
+            if (empty($this->nik) && !empty($user->nik)) {
+                $this->nik = $user->nik;
             }
         }
 
@@ -84,10 +110,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 $this->nik = $draft['nik'] ?? $this->nik;
                 $this->full_name = $draft['full_name'] ?? $this->full_name;
                 $this->phone = $draft['phone'] ?? $this->phone;
-                $this->place_of_birth = $draft['place_of_birth'] ?? $this->place_of_birth;
-                $this->date_of_birth = $draft['date_of_birth'] ?? $this->date_of_birth;
                 $this->gender = $draft['gender'] ?? $this->gender;
-                $this->address = $draft['address'] ?? $this->address;
                 $this->rt = isset($draft['rt']) && $draft['rt'] !== '' && $draft['rt'] !== null ? (int) $draft['rt'] : $this->rt;
                 $this->rw = isset($draft['rw']) && $draft['rw'] !== '' && $draft['rw'] !== null ? (int) $draft['rw'] : $this->rw;
                 $this->kelurahan = $draft['kelurahan'] ?? $this->kelurahan;
@@ -115,9 +138,15 @@ new #[Layout('layouts.guest')] class extends Component {
     public function updated($propertyName): void
     {
         if ($propertyName === 'nik') {
+            $this->nik = trim($this->nik);
             if (strlen($this->nik) >= 8) {
                 $tglLahir = (int) substr($this->nik, 6, 2);
                 $this->gender = $tglLahir > 40 ? 'Perempuan' : 'Laki-laki';
+            }
+            if (strlen($this->nik) === 16) {
+                $this->validateOnly('nik', [
+                    'nik' => $this->getNikRules(),
+                ], $this->getValidationMessages());
             }
         }
 
@@ -125,10 +154,7 @@ new #[Layout('layouts.guest')] class extends Component {
             'nik' => $this->nik,
             'full_name' => $this->full_name,
             'phone' => $this->phone,
-            'place_of_birth' => $this->place_of_birth,
-            'date_of_birth' => $this->date_of_birth,
             'gender' => $this->gender,
-            'address' => $this->address,
             'rt' => $this->rt,
             'rw' => $this->rw,
             'kelurahan' => $this->kelurahan,
@@ -141,35 +167,119 @@ new #[Layout('layouts.guest')] class extends Component {
         Cookie::queue('registration_step1_draft', json_encode($draft), 60 * 24 * 7);
     }
 
-    public function nextStep(): void
+    protected function getNikRules(): array
     {
-        $validated = $this->validate([
-            'nik' => ['required', 'string', 'size:16', 'regex:/^[0-9]+$/'],
-            'full_name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'min:9', 'max:20', 'regex:/^[0-9+\s\-]+$/'],
-            'place_of_birth' => ['required', 'string', 'max:100'],
-            'date_of_birth' => ['required', 'date'],
-            'gender' => ['required', 'in:Laki-laki,Perempuan'],
-            'address' => ['required', 'string', 'max:500'],
-            'rt' => ['required', 'integer', 'min:1', 'max:999'],
-            'rw' => ['required', 'integer', 'min:1', 'max:999'],
-            'kelurahan' => ['required', 'string', 'max:100'],
-            'kecamatan' => ['required', 'string', 'max:100'],
-            'city_id' => ['nullable', 'exists:cities,id'],
-            'city' => ['nullable', 'string', 'max:100'],
-            'province' => ['required', 'string', 'max:100'],
-        ], [
-            'phone.required' => 'Nomor HP/WhatsApp wajib diisi.',
+        $authUser = \Illuminate\Support\Facades\Auth::user();
+        $authId = $authUser?->id;
+        $authEmail = $authUser?->email;
+        $uuid = Session::get('registration_uuid') ?? request()->cookie('registration_uuid');
+
+        return [
+            'required',
+            'string',
+            'size:16',
+            'regex:/^[0-9]+$/',
+            \Illuminate\Validation\Rule::unique('users', 'nik')->ignore($authId),
+            function ($attribute, $value, $fail) use ($authEmail, $uuid) {
+                $query = Registration::where('nik', $value)
+                    ->where('status', '!=', 'rejected');
+                if ($authEmail) {
+                    $query->where('email', '!=', $authEmail);
+                }
+                if ($uuid) {
+                    $query->where('uuid', '!=', $uuid);
+                }
+                if ($query->exists()) {
+                    $fail('Nomor NIK ini sudah terdaftar pada pengajuan akun lain.');
+                }
+            },
+        ];
+    }
+
+    protected function getValidationMessages(): array
+    {
+        return [
+            'nik.required' => 'Nomor NIK KTP wajib diisi.',
+            'nik.size' => 'Nomor NIK harus berjumlah tepat 16 digit angka.',
+            'nik.regex' => 'Nomor NIK hanya boleh berisi angka.',
+            'nik.unique' => 'Nomor NIK ini sudah terdaftar di sistem. Setiap pengguna hanya dapat memiliki 1 akun.',
+            'full_name.required' => 'Nama lengkap sesuai KTP wajib diisi.',
+            'full_name.min' => 'Nama lengkap minimal 3 karakter.',
+            'phone.required' => 'Nomor HP / WhatsApp wajib diisi.',
             'phone.min' => 'Nomor HP minimal 9 karakter.',
             'phone.max' => 'Nomor HP maksimal 20 karakter.',
-            'phone.regex' => 'Format nomor HP tidak valid.',
-        ]);
+            'phone.regex' => 'Format nomor HP tidak valid (gunakan angka).',
+            'gender.required' => 'Jenis kelamin wajib dipilih.',
+            'gender.in' => 'Pilihan jenis kelamin tidak valid.',
+            'rt.required' => 'Nomor RT wajib diisi.',
+            'rt.integer' => 'Nomor RT harus berupa angka (contoh: 01 atau 1).',
+            'rt.min' => 'Nomor RT minimal 1.',
+            'rw.required' => 'Nomor RW wajib diisi.',
+            'rw.integer' => 'Nomor RW harus berupa angka (contoh: 05 atau 5).',
+            'rw.min' => 'Nomor RW minimal 1.',
+            'kelurahan.required' => 'Nama Kelurahan / Desa wajib diisi.',
+            'kelurahan.min' => 'Nama Kelurahan / Desa minimal 2 karakter.',
+            'kecamatan.required' => 'Nama Kecamatan wajib diisi.',
+            'kecamatan.min' => 'Nama Kecamatan minimal 2 karakter.',
+            'city_id.required' => 'Kota / Kabupaten wajib dipilih dari daftar pencarian.',
+            'city_id.exists' => 'Kota yang dipilih tidak valid dalam sistem.',
+            'city.required' => 'Nama Kota / Kabupaten wajib diisi.',
+            'city.min' => 'Nama Kota / Kabupaten minimal 2 karakter.',
+            'province.required' => 'Nama Provinsi wajib diisi.',
+            'province.min' => 'Nama Provinsi minimal 2 karakter.',
+        ];
+    }
+
+    public function nextStep(): void
+    {
+        // Auto-match city jika pengguna telah mengetik di input kota tetapi belum mengklik opsi dropdown
+        if (empty($this->city_id) && !empty($this->cityQuery)) {
+            $rawQuery = trim(explode('—', $this->cityQuery)[0]);
+            $matched = City::whereRaw('LOWER(name) = ?', [strtolower($rawQuery)])
+                ->orWhere('name', 'like', "%{$rawQuery}%")
+                ->first();
+            if ($matched) {
+                $this->city_id = $matched->id;
+                $this->city = $matched->name;
+                if (empty($this->province) && !empty($matched->province)) {
+                    $this->province = $matched->province;
+                }
+            }
+        }
+
+        try {
+            $hasCities = !empty($this->cities) && count($this->cities) > 0;
+            $rules = [
+                'nik' => $this->getNikRules(),
+                'full_name' => ['required', 'string', 'min:3', 'max:255'],
+                'phone' => ['required', 'string', 'min:9', 'max:20', 'regex:/^[0-9+\s\-]+$/'],
+                'gender' => ['required', 'in:Laki-laki,Perempuan'],
+                'rt' => ['required', 'integer', 'min:1', 'max:999'],
+                'rw' => ['required', 'integer', 'min:1', 'max:999'],
+                'kelurahan' => ['required', 'string', 'min:2', 'max:100'],
+                'kecamatan' => ['required', 'string', 'min:2', 'max:100'],
+                'province' => ['required', 'string', 'min:2', 'max:100'],
+            ];
+
+            if ($hasCities) {
+                $rules['city_id'] = ['required', 'exists:cities,id'];
+            } else {
+                $rules['city'] = ['required', 'string', 'min:2', 'max:100'];
+            }
+
+            $validated = $this->validate($rules, $this->getValidationMessages());
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->dispatch('scroll-to-error-alert');
+            throw $e;
+        }
 
         // Simpan atau update record registration di database
         $uuid = Session::get('registration_uuid') ?? request()->cookie('registration_uuid');
         $registration = $uuid ? Registration::where('uuid', $uuid)->first() : null;
 
-        $role = Session::get('registration_role') ?? request()->cookie('registration_role', 'customer');
+        $authUser = \Illuminate\Support\Facades\Auth::user();
+        $role = $authUser ? $authUser->role : (Session::get('registration_role') ?? request()->cookie('registration_role', 'customer'));
+        $email = $authUser ? $authUser->email : null;
         Session::put('registration_role', $role);
         Cookie::queue('registration_role', $role, 60 * 24 * 7);
 
@@ -183,7 +293,7 @@ new #[Layout('layouts.guest')] class extends Component {
             }
         }
 
-        $dataToSave = $validated + ['status' => 'in_progress', 'role' => $role, 'city_id' => $cityId, 'city' => $cityName];
+        $dataToSave = $validated + ['status' => 'in_progress', 'role' => $role, 'email' => $email, 'city_id' => $cityId, 'city' => $cityName];
 
         if ($registration) {
             $registration->update($dataToSave);
@@ -191,6 +301,22 @@ new #[Layout('layouts.guest')] class extends Component {
             $registration = Registration::create(array_merge($dataToSave, [
                 'uuid' => Str::uuid()->toString(),
             ]));
+        }
+
+        if ($authUser) {
+            $authUser->update([
+                'nik' => $validated['nik'],
+                'name' => $validated['full_name'],
+                'phone' => $validated['phone'],
+                'gender' => $validated['gender'],
+                'rt' => $validated['rt'],
+                'rw' => $validated['rw'],
+                'kelurahan' => $validated['kelurahan'],
+                'kecamatan' => $validated['kecamatan'],
+                'city_id' => $cityId,
+                'city' => $cityName,
+                'province' => $validated['province'],
+            ]);
         }
 
         Session::put('registration_uuid', $registration->uuid);
@@ -313,7 +439,17 @@ new #[Layout('layouts.guest')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-5">
+<div class="space-y-5"
+     x-data
+     x-on:scroll-to-error-alert.window="
+         $nextTick(() => {
+             const el = document.getElementById('step1-error-alert') || document.querySelector('.text-red-500, [aria-invalid=true]');
+             if (el) {
+                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                 if (typeof el.focus === 'function') el.focus();
+             }
+         })
+     ">
     <!-- Step Header -->
     <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
         <div>
@@ -334,8 +470,32 @@ new #[Layout('layouts.guest')] class extends Component {
     </div>
 
     <form wire:submit="nextStep" class="space-y-4">
+        <!-- Error Alert Summary Box -->
+        @if ($errors->any())
+            <div id="step1-error-alert" 
+                 tabindex="-1"
+                 class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border-2 border-rose-400 dark:border-rose-700 text-rose-800 dark:text-rose-200 shadow-md focus:outline-none transition-all">
+                <div class="flex items-start gap-3">
+                    <div class="p-2 bg-rose-100 dark:bg-rose-900/80 rounded-xl text-rose-600 dark:text-rose-300 shrink-0 mt-0.5 shadow-xs">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-sm font-bold text-rose-900 dark:text-rose-100">Periksa Kembali Formulir Pendaftaran</h3>
+                        <p class="text-xs text-rose-700 dark:text-rose-300 mt-0.5">Semua kolom wajib diisi dengan benar sebelum melanjutkan ke Langkah 2:</p>
+                        <ul class="mt-2 space-y-1 text-xs list-disc list-inside text-rose-700 dark:text-rose-300 font-medium">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <div>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Lengkapi data diri Anda sesuai dengan dokumen KTP yang sah.</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Lengkapi seluruh data diri Anda sesuai dengan dokumen KTP yang sah.</p>
 
             <div class="space-y-4">
                 <!-- NIK -->
@@ -343,16 +503,16 @@ new #[Layout('layouts.guest')] class extends Component {
                     <label for="nik" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">NIK <span class="text-red-500">*</span></label>
                     <input wire:model.live.debounce.500ms="nik" id="nik" type="text" maxlength="16" placeholder="16 digit NIK"
                         oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                        class="w-full px-4 py-3 rounded-xl border @error('nik') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                     <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">{{ strlen($nik) }}/16 digit</p>
                     <x-input-error :messages="$errors->get('nik')" />
                 </div>
 
                 <!-- Nama Lengkap -->
                 <div>
-                    <label for="full_name" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Nama Lengkap <span class="text-red-500">*</span></label>
-                    <input wire:model="full_name" id="full_name" type="text" placeholder="Sesuai KTP"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                    <label for="full_name" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Nama Lengkap Sesuai KTP <span class="text-red-500">*</span></label>
+                    <input wire:model="full_name" id="full_name" type="text" placeholder="Contoh: Budi Santoso"
+                        class="w-full px-4 py-3 rounded-xl border @error('full_name') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                     <x-input-error :messages="$errors->get('full_name')" />
                 </div>
 
@@ -366,50 +526,32 @@ new #[Layout('layouts.guest')] class extends Component {
                             </svg>
                         </div>
                         <input wire:model="phone" id="phone" type="tel" placeholder="Contoh: 081234567890"
-                            class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                            class="w-full pl-10 pr-4 py-3 rounded-xl border @error('phone') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                     </div>
                     <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Nomor aktif untuk koordinasi bantuan dan akun.</p>
                     <x-input-error :messages="$errors->get('phone')" />
-                </div>
-
-                <!-- Tempat & Tanggal Lahir -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label for="place_of_birth" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Tempat Lahir <span class="text-red-500">*</span></label>
-                        <input wire:model="place_of_birth" id="place_of_birth" type="text" placeholder="Kota"
-                            class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
-                        <x-input-error :messages="$errors->get('place_of_birth')" />
-                    </div>
-                    <div>
-                        <label for="date_of_birth" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Tanggal Lahir <span class="text-red-500">*</span></label>
-                        <input wire:model="date_of_birth" id="date_of_birth" type="date"
-                            class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
-                        <x-input-error :messages="$errors->get('date_of_birth')" />
-                    </div>
                 </div>
 
                 <!-- Jenis Kelamin -->
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Jenis Kelamin <span class="text-red-500">*</span></label>
                     <div class="grid grid-cols-2 gap-3">
-                        <label class="flex items-center gap-2.5 p-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 cursor-pointer hover:border-primary-500 transition">
-                            <input wire:model="gender" type="radio" value="Laki-laki" name="gender" class="text-primary-600 focus:ring-primary-500">
-                            <span class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200">Laki-laki</span>
+                        <label class="flex items-center gap-3 p-3.5 rounded-xl border @if($gender === 'Laki-laki') border-primary-500 bg-primary-50/50 dark:bg-primary-950/40 ring-1 ring-primary-500 @elseif($errors->has('gender')) border-rose-400 bg-rose-50/20 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @endif cursor-pointer hover:border-primary-400 transition">
+                            <input wire:model.live="gender" type="radio" value="Laki-laki" name="gender" class="text-primary-600 focus:ring-primary-500">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">👨</span>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">Laki-laki</span>
+                            </div>
                         </label>
-                        <label class="flex items-center gap-2.5 p-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 cursor-pointer hover:border-primary-500 transition">
-                            <input wire:model="gender" type="radio" value="Perempuan" name="gender" class="text-primary-600 focus:ring-primary-500">
-                            <span class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200">Perempuan</span>
+                        <label class="flex items-center gap-3 p-3.5 rounded-xl border @if($gender === 'Perempuan') border-primary-500 bg-primary-50/50 dark:bg-primary-950/40 ring-1 ring-primary-500 @elseif($errors->has('gender')) border-rose-400 bg-rose-50/20 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @endif cursor-pointer hover:border-primary-400 transition">
+                            <input wire:model.live="gender" type="radio" value="Perempuan" name="gender" class="text-primary-600 focus:ring-primary-500">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">👩</span>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">Perempuan</span>
+                            </div>
                         </label>
                     </div>
                     <x-input-error :messages="$errors->get('gender')" />
-                </div>
-
-                <!-- Alamat KTP -->
-                <div>
-                    <label for="address" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Alamat KTP <span class="text-red-500">*</span></label>
-                    <textarea wire:model="address" id="address" rows="2" placeholder="Nama Jalan, No. Rumah, dsb."
-                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm resize-none"></textarea>
-                    <x-input-error :messages="$errors->get('address')" />
                 </div>
 
                 <!-- RT & RW -->
@@ -417,22 +559,22 @@ new #[Layout('layouts.guest')] class extends Component {
                     <div>
                         <label for="rt" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">RT <span class="text-red-500">*</span></label>
                         <input wire:model="rt" id="rt" type="number" min="1" max="999" placeholder="Contoh: 01"
-                            class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                            class="w-full px-4 py-3 rounded-xl border @error('rt') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                         <x-input-error :messages="$errors->get('rt')" />
                     </div>
                     <div>
                         <label for="rw" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">RW <span class="text-red-500">*</span></label>
                         <input wire:model="rw" id="rw" type="number" min="1" max="999" placeholder="Contoh: 05"
-                            class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                            class="w-full px-4 py-3 rounded-xl border @error('rw') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                         <x-input-error :messages="$errors->get('rw')" />
                     </div>
                 </div>
 
                 <!-- Kelurahan -->
                 <div>
-                    <label for="kelurahan" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Kelurahan/Desa <span class="text-red-500">*</span></label>
-                    <input wire:model="kelurahan" id="kelurahan" type="text" placeholder="Nama Kelurahan/Desa"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                    <label for="kelurahan" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Kelurahan / Desa <span class="text-red-500">*</span></label>
+                    <input wire:model="kelurahan" id="kelurahan" type="text" placeholder="Nama Kelurahan / Desa"
+                        class="w-full px-4 py-3 rounded-xl border @error('kelurahan') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                     <x-input-error :messages="$errors->get('kelurahan')" />
                 </div>
 
@@ -440,18 +582,18 @@ new #[Layout('layouts.guest')] class extends Component {
                 <div>
                     <label for="kecamatan" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Kecamatan <span class="text-red-500">*</span></label>
                     <input wire:model="kecamatan" id="kecamatan" type="text" placeholder="Nama Kecamatan"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                        class="w-full px-4 py-3 rounded-xl border @error('kecamatan') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                     <x-input-error :messages="$errors->get('kecamatan')" />
                 </div>
 
                 <!-- Kota/Kabupaten (realtime search) -->
                 <div>
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Kota/Kabupaten <span class="text-red-500">*</span></label>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Kota / Kabupaten <span class="text-red-500">*</span></label>
                     @if(isset($cities) && count($cities) > 0)
                         <div class="relative">
                             <input type="text" wire:model.live.debounce.300ms="cityQuery" id="city-search-input"
                                 placeholder="Ketik nama Kota/Kabupaten..."
-                                class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm" autocomplete="off">
+                                class="w-full px-4 py-3 rounded-xl border @error('city_id') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm" autocomplete="off">
 
                             <input type="hidden" wire:model="city_id" id="city_id">
 
@@ -481,7 +623,7 @@ new #[Layout('layouts.guest')] class extends Component {
                         <x-input-error :messages="$errors->get('city_id')" />
                     @else
                         <input wire:model="city" id="city" type="text" placeholder="Ketik nama Kota/Kabupaten"
-                            class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                            class="w-full px-4 py-3 rounded-xl border @error('city') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Daftar kota belum tersedia. Ketik nama kota secara manual.</p>
                         <x-input-error :messages="$errors->get('city')" />
                     @endif
@@ -491,7 +633,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 <div>
                     <label for="province" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Provinsi <span class="text-red-500">*</span></label>
                     <input wire:model="province" id="province" type="text" placeholder="Nama Provinsi"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                        class="w-full px-4 py-3 rounded-xl border @error('province') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                     <x-input-error :messages="$errors->get('province')" />
                 </div>
             </div>
@@ -500,15 +642,17 @@ new #[Layout('layouts.guest')] class extends Component {
             <div class="pt-6 pb-2">
                 <button type="submit" wire:loading.attr="disabled"
                     class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs sm:text-sm py-3.5 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2">
-                    <span wire:loading.remove>Lanjutkan ke Langkah 2</span>
-                    <span wire:loading class="flex items-center gap-2">
-                        <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Memproses...
-                    </span>
+                    <svg wire:loading wire:target="nextStep" class="animate-spin h-4 w-4 text-white shrink-0" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span wire:loading.remove wire:target="nextStep">Lanjutkan ke Langkah 2</span>
+                    <span wire:loading wire:target="nextStep">Memproses Data...</span>
+                    <svg wire:loading.remove wire:target="nextStep" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
                 </button>
             </div>
-        </form>
+        </div>
+    </form>
 </div>

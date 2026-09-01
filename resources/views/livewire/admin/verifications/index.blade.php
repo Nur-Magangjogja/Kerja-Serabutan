@@ -1,4 +1,4 @@
-<div>
+<div wire:poll.20s>
     {{-- ===== Page Header ===== --}}
     <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div>
@@ -235,19 +235,18 @@
                                 <div class="min-w-0"><p class="text-[11px] text-gray-400 dark:text-gray-500">Nama Lengkap</p><p class="text-sm font-bold text-gray-900 dark:text-gray-100 mt-0.5 break-words">{{ $selected->full_name ?? '—' }}</p></div>
                                 <div class="min-w-0"><p class="text-[11px] text-gray-400 dark:text-gray-500">No. HP / WhatsApp</p><p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5 break-words">{{ $selected->phone ?? '—' }}</p></div>
                                 <div class="min-w-0"><p class="text-[11px] text-gray-400 dark:text-gray-500">Jenis Kelamin</p><p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{{ $selected->gender ?? '—' }}</p></div>
-                                <div class="min-w-0"><p class="text-[11px] text-gray-400 dark:text-gray-500">Tempat Lahir</p><p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5 break-words">{{ $selected->place_of_birth ?? '—' }}</p></div>
-                                <div class="min-w-0"><p class="text-[11px] text-gray-400 dark:text-gray-500">Tanggal Lahir</p><p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{{ $selected->date_of_birth ? $selected->date_of_birth->format('d M Y') : '—' }}</p></div>
                             </div>
                         </div>
 
                         <div class="bg-gray-50/70 dark:bg-gray-750/50 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-700/80">
                             <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5">Alamat Lengkap KTP</h4>
-                            <p class="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3 break-words">{{ $selected->address ?? '—' }}</p>
-                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">RT / RW</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->rt ?? '-' }}/{{ $selected->rw ?? '-' }}</span></div>
+                            <p class="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3 break-words">{{ $selected->full_address }}</p>
+                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">RT / RW</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">RT {{ $selected->rt ? sprintf('%02d', (int)$selected->rt) : '-' }}/RW {{ $selected->rw ? sprintf('%02d', (int)$selected->rw) : '-' }}</span></div>
                                 <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Kelurahan</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->kelurahan ?? '-' }}</span></div>
                                 <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Kecamatan</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->kecamatan ?? '-' }}</span></div>
                                 <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Kota / Kab</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->city ?? '-' }}</span></div>
+                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Provinsi</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->province ?? '-' }}</span></div>
                             </div>
                         </div>
                     </div>

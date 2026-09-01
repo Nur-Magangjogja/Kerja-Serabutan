@@ -203,8 +203,6 @@
                         ['label' => 'Email',              'value' => $selectedUser->email],
                         ['label' => 'No. HP',             'value' => $selectedUser->phone ?? '—'],
                         ['label' => 'NIK',                'value' => $selectedUser->nik ?? '—'],
-                        ['label' => 'Tempat Lahir',       'value' => $selectedUser->place_of_birth ?? '—'],
-                        ['label' => 'Tanggal Lahir',      'value' => optional($selectedUser->date_of_birth)?->format('d M Y') ?? '—'],
                         ['label' => 'Jenis Kelamin',      'value' => $selectedUser->gender ? ucfirst($selectedUser->gender) : '—'],
                         ['label' => 'Role',               'value' => ['super_admin'=>'Super Admin','admin'=>'Admin','mitra'=>'Mitra','customer'=>'Customer'][$selectedUser->role] ?? ucfirst($selectedUser->role)],
                         ['label' => 'Status',             'value' => $selectedUser->status ? ucfirst($selectedUser->status) : '—'],
@@ -222,12 +220,16 @@
                     @endforeach
                 </div>
 
-                @if($selectedUser->address)
-                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">Alamat Lengkap</p>
-                    <p class="text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-4 py-3">{{ $selectedUser->address }}</p>
+                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
+                    <p class="text-xs text-gray-400 dark:text-gray-500 font-semibold">Alamat Lengkap</p>
+                    <p class="text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-4 py-3">{{ $selectedUser->full_address }}</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+                        <div class="bg-gray-50 dark:bg-gray-700/40 p-2 rounded-md"><span class="text-gray-400 block text-[10px]">RT / RW</span><span class="font-semibold text-gray-800 dark:text-gray-200">RT {{ $selectedUser->rt ? sprintf('%02d', (int)$selectedUser->rt) : '-' }}/RW {{ $selectedUser->rw ? sprintf('%02d', (int)$selectedUser->rw) : '-' }}</span></div>
+                        <div class="bg-gray-50 dark:bg-gray-700/40 p-2 rounded-md"><span class="text-gray-400 block text-[10px]">Kelurahan</span><span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selectedUser->kelurahan ?? '-' }}</span></div>
+                        <div class="bg-gray-50 dark:bg-gray-700/40 p-2 rounded-md"><span class="text-gray-400 block text-[10px]">Kecamatan</span><span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selectedUser->kecamatan ?? '-' }}</span></div>
+                        <div class="bg-gray-50 dark:bg-gray-700/40 p-2 rounded-md"><span class="text-gray-400 block text-[10px]">Provinsi</span><span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selectedUser->province ?? '-' }}</span></div>
+                    </div>
                 </div>
-                @endif
 
                 @if($selectedUser->role === 'admin' && $selectedUser->managedCities && $selectedUser->managedCities->count() > 0)
                 <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
@@ -349,22 +351,38 @@
                         </div>
 
                         <div>
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Tempat Lahir</label>
-                            <input type="text" wire:model.defer="place_of_birth"
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">RT</label>
+                            <input type="number" min="1" max="999" wire:model.defer="rt" placeholder="Contoh: 01"
                                 class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            @error('rt') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Tanggal Lahir</label>
-                            <input type="date" wire:model.defer="date_of_birth"
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">RW</label>
+                            <input type="number" min="1" max="999" wire:model.defer="rw" placeholder="Contoh: 05"
                                 class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                            @error('date_of_birth') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            @error('rw') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Kelurahan / Desa</label>
+                            <input type="text" wire:model.defer="kelurahan" placeholder="Nama Kelurahan / Desa"
+                                class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            @error('kelurahan') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Kecamatan</label>
+                            <input type="text" wire:model.defer="kecamatan" placeholder="Nama Kecamatan"
+                                class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            @error('kecamatan') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="md:col-span-2">
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Alamat Lengkap</label>
-                            <textarea wire:model.defer="address" rows="2"
-                                class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Provinsi</label>
+                            <input type="text" wire:model.defer="province" placeholder="Nama Provinsi"
+                                class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            @error('province') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
 

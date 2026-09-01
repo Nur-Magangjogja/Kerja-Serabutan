@@ -589,25 +589,67 @@ body::-webkit-scrollbar,
     scrollbar-width: none;
 }
 
-aside,
-aside *,
-main,
-nav,
-nav *,
-header,
-header *,
-[role="navigation"],
-[role="navigation"] *,
-.custom-scrollbar,
-#bottom-nav,
-.nav-item {
-    -webkit-transition: none !important;
-    transition: none !important;
-    animation: none !important;
+/* ==========================================================================
+   Ultra-Smooth Top Navigation Progress Bar & Loading Indicator
+   ========================================================================== */
+.livewire-progress-bar,
+#global-nav-progress {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 3px !important;
+    z-index: 999999 !important;
+    pointer-events: none !important;
+    background: linear-gradient(90deg, #0284c7 0%, #0ea5e9 30%, #6366f1 70%, #38bdf8 100%) !important;
+    box-shadow: 0 0 10px rgba(14, 165, 233, 0.8), 0 0 4px rgba(99, 102, 241, 0.6) !important;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease !important;
 }
 
-/* Eliminate Livewire progress bar judder */
-#nprogress,
-.livewire-progress-bar {
-    display: none !important;
+/* Shimmer pulse effect during navigation */
+@keyframes navProgressShimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
 }
+
+.livewire-progress-bar::after,
+#global-nav-progress::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: navProgressShimmer 1.5s infinite linear;
+}
+
+/* Navigation Button Tactile & Loading Feedback */
+.nav-item,
+a[wire\:navigate],
+[data-nav-item] {
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.nav-item:active,
+a[wire\:navigate]:active {
+    transform: scale(0.95);
+}
+
+.nav-item.nav-loading,
+a[wire\:navigate].nav-loading,
+[data-nav-item].nav-loading {
+    opacity: 0.75 !important;
+    pointer-events: none;
+}
+
+.nav-item.nav-loading svg,
+a[wire\:navigate].nav-loading svg {
+    animation: navIconPulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes navIconPulse {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.85); opacity: 0.55; }
+}
+

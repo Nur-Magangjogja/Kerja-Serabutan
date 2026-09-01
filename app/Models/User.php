@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
@@ -104,6 +105,36 @@ class User extends Authenticatable
         };
     }
 
+    public function getFullAddressAttribute(): string
+    {
+        $parts = [];
+        if (!empty($this->rt) || !empty($this->rw)) {
+            $rt = $this->rt ? sprintf('%02d', (int)$this->rt) : '-';
+            $rw = $this->rw ? sprintf('%02d', (int)$this->rw) : '-';
+            $parts[] = "RT {$rt}/RW {$rw}";
+        }
+        if (!empty($this->kelurahan)) {
+            $parts[] = 'Kel. ' . $this->kelurahan;
+        }
+        if (!empty($this->kecamatan)) {
+            $parts[] = 'Kec. ' . $this->kecamatan;
+        }
+        if (!empty($this->city)) {
+            $parts[] = $this->city;
+        } elseif (!empty($this->city_name)) {
+            $parts[] = $this->city_name;
+        }
+        if (!empty($this->province)) {
+            $parts[] = $this->province;
+        }
+
+        if (!empty($parts)) {
+            return implode(', ', $parts);
+        }
+
+        return $this->address ?? '—';
+    }
+
     public function getIsVerifiedAttribute(): bool
     {
         return (bool) ($this->verified ?? false);
@@ -122,6 +153,94 @@ class User extends Authenticatable
     public function hasWarning(): bool
     {
         return $this->warning_level > 0;
+    }
+
+    /**
+     * Hapus otomatis akun yang belum memverifikasi email setelah 10 menit.
+     *
+     * @param string|null $email
+     * @return int Jumlah akun yang dihapus
+     */
+    public static function purgeExpiredUnverified(?string $email = null): int
+    {
+        $cutoff = now()->subMinutes(10);
+        $query = static::whereNull('email_verified_at')
+            ->where('verified', false)
+            ->where('created_at', '<', $cutoff);
+
+        if ($email) {
+            $query->where('email', strtolower(trim($email)));
+        }
+
+        $users = $query->get();
+        $count = 0;
+
+        foreach ($users as $u) {
+            try {
+                \App\Models\Registration::where('email', $u->email)
+                    ->where('status', '!=', 'approved')
+                    ->delete();
+                $u->delete();
+                $count++;
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Hapus otomatis akun yang statusnya masih inactive dan belum menyelesaikan pengisian form data diri / KTP setelah 1x24 jam.
+     *
+     * @param string|null $email
+     * @return int Jumlah akun yang dihapus
+     */
+    public static function purgeExpiredInactive(?string $email = null): int
+    {
+        $cutoff = now()->subHours(24);
+        $query = static::where('status', 'inactive')
+            ->where('verified', false)
+            ->where('created_at', '<', $cutoff)
+            ->whereNotIn('role', ['admin', 'super_admin'])
+            ->where(function ($q) {
+                $q->whereNull('nik')
+                  ->orWhere('nik', '')
+                  ->orWhereNull('ktp_photo')
+                  ->orWhere('ktp_photo', '');
+            });
+
+        if ($email) {
+            $query->where('email', strtolower(trim($email)));
+        }
+
+        $users = $query->get();
+        $count = 0;
+
+        foreach ($users as $u) {
+            try {
+                $registrations = \App\Models\Registration::where('email', $u->email)
+                    ->whereNotIn('status', ['approved', 'pending_verification'])
+                    ->get();
+
+                foreach ($registrations as $reg) {
+                    if ($reg->ktp_photo_path) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($reg->ktp_photo_path);
+                    }
+                    if ($reg->selfie_photo_path) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($reg->selfie_photo_path);
+                    }
+                    $reg->delete();
+                }
+
+                $u->delete();
+                $count++;
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
+        return $count;
     }
 
     // Relationships

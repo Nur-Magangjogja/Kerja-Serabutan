@@ -15,8 +15,25 @@ class EnsureMitra
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check() || !auth()->user()->isMitra()) {
+        $user = $request->user();
+
+        if (!$user || !$user->isMitra()) {
             abort(403, 'Unauthorized. Mitra access only.');
+        }
+
+        // 1. Pastikan email terverifikasi
+        if (!$user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
+
+        // 2. Pastikan form data diri/KTP sudah selesai diisi
+        if (empty($user->nik) || (empty($user->ktp_photo) && empty($user->ktp_path))) {
+            return redirect()->route('register.step1');
+        }
+
+        // 3. Pastikan akun sudah disetujui & aktif oleh admin
+        if ($user->status !== 'active' || !$user->verified) {
+            return redirect()->route('registration.success');
         }
 
         return $next($request);

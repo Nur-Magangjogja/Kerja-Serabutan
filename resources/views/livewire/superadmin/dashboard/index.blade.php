@@ -25,8 +25,27 @@
     </div>
 
     {{-- Pending Alerts Grid --}}
-    @if((isset($stats['pending_topups']) && $stats['pending_topups'] > 0) || (isset($stats['pending_withdraws']) && $stats['pending_withdraws'] > 0))
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+    @if((isset($stats['pending_topups']) && $stats['pending_topups'] > 0) || (isset($stats['pending_withdraws']) && $stats['pending_withdraws'] > 0) || (isset($stats['pending_verifications']) && $stats['pending_verifications'] > 0))
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+        @if(isset($stats['pending_verifications']) && $stats['pending_verifications'] > 0)
+        <a href="{{ route('superadmin.verifications') }}" class="block group">
+            <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-4 flex items-center justify-between gap-4 group-hover:bg-indigo-100/70 dark:group-hover:bg-indigo-900/30 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-800/50 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-indigo-700 dark:text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-indigo-900 dark:text-indigo-200">{{ $stats['pending_verifications'] }} Verifikasi KTP Menunggu</h3>
+                        <p class="text-xs text-indigo-700 dark:text-indigo-300 mt-0.5">Tinjau dokumen identitas pendaftar baru.</p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center gap-1 text-xs font-semibold text-indigo-800 dark:text-indigo-200 group-hover:translate-x-1 transition-transform">
+                    Proses <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </span>
+            </div>
+        </a>
+        @endif
+
         @if(isset($stats['pending_topups']) && $stats['pending_topups'] > 0)
         <a href="{{ route('superadmin.topup.approvals') }}" class="block group">
             <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex items-center justify-between gap-4 group-hover:bg-amber-100/70 dark:group-hover:bg-amber-900/30 transition-colors">

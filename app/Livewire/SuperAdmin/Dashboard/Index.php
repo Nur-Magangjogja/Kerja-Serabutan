@@ -129,6 +129,7 @@ class Index extends Component
             'completed_helps' => Help::whereIn('status', ['selesai', 'completed'])->count(),
             'pending_withdraws' => \App\Models\WithdrawRequest::where('status', \App\Models\WithdrawRequest::STATUS_PENDING)->count(),
             'pending_topups' => \App\Models\BalanceTransaction::where('type', 'topup')->where('status', 'waiting_approval')->count(),
+            'pending_verifications' => \App\Models\Registration::whereIn('status', ['pending', 'pending_verification'])->count(),
         ];
 
         // Recent items for quick view
