@@ -268,11 +268,21 @@
                 </a>
 
                 <a href="{{ route('superadmin.partners.report') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.partners.report*') || request()->routeIs('superadmin.partners.reports*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
-                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    Manajemen Laporan Aduan
+                    class="flex items-center justify-between px-4 py-2.5 {{ request()->routeIs('superadmin.partners.report*') || request()->routeIs('superadmin.partners.reports*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <div class="flex items-center min-w-0">
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span class="truncate">Manajemen Laporan Aduan</span>
+                    </div>
+                    @php
+                        $pendingReportsCount = \App\Models\PartnerReport::getActiveReportsCountForUser();
+                    @endphp
+                    @if($pendingReportsCount > 0)
+                        <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold {{ request()->routeIs('superadmin.partners.report*') || request()->routeIs('superadmin.partners.reports*') ? 'bg-white text-rose-600 shadow-2xs' : 'bg-rose-500 text-white shadow-xs' }} ml-2 shrink-0 animate-pulse" title="{{ $pendingReportsCount }} Aduan Masuk / Diproses">
+                            {{ $pendingReportsCount > 99 ? '99+' : $pendingReportsCount }}
+                        </span>
+                    @endif
                 </a>
 
                 <a href="{{ route('superadmin.partners.greylist') }}" wire:navigate

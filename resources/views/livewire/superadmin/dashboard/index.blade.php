@@ -24,61 +24,64 @@
         </div>
     </div>
 
-    {{-- Pending Alerts Grid --}}
+    {{-- Pending Alerts Grid (Optimized equal height & grid layout) --}}
     @if((isset($stats['pending_topups']) && $stats['pending_topups'] > 0) || (isset($stats['pending_withdraws']) && $stats['pending_withdraws'] > 0) || (isset($stats['pending_verifications']) && $stats['pending_verifications'] > 0))
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 mb-6">
+        {{-- Card 1: Verifikasi KTP --}}
         @if(isset($stats['pending_verifications']) && $stats['pending_verifications'] > 0)
-        <a href="{{ route('superadmin.verifications') }}" class="block group">
-            <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-4 flex items-center justify-between gap-4 group-hover:bg-indigo-100/70 dark:group-hover:bg-indigo-900/30 transition-colors">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-800/50 flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-indigo-700 dark:text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
+        <a href="{{ route('superadmin.verifications') }}" wire:navigate class="block group h-full">
+            <div class="h-full bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-800/60 rounded-2xl p-4 flex items-center justify-between gap-3.5 group-hover:bg-indigo-100/80 dark:group-hover:bg-indigo-900/40 group-hover:border-indigo-300 dark:group-hover:border-indigo-700 transition-all duration-200 shadow-xs hover:shadow-md">
+                <div class="flex items-center gap-3.5 min-w-0">
+                    <div class="w-11 h-11 rounded-xl bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center flex-shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
                     </div>
-                    <div>
-                        <h3 class="text-sm font-bold text-indigo-900 dark:text-indigo-200">{{ $stats['pending_verifications'] }} Verifikasi KTP Menunggu</h3>
-                        <p class="text-xs text-indigo-700 dark:text-indigo-300 mt-0.5">Tinjau dokumen identitas pendaftar baru.</p>
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-bold text-indigo-950 dark:text-indigo-200 truncate">{{ $stats['pending_verifications'] }} Verifikasi KTP Menunggu</h3>
+                        <p class="text-xs text-indigo-700/80 dark:text-indigo-300/80 mt-0.5 truncate">Tinjau dokumen identitas pendaftar baru</p>
                     </div>
                 </div>
-                <span class="inline-flex items-center gap-1 text-xs font-semibold text-indigo-800 dark:text-indigo-200 group-hover:translate-x-1 transition-transform">
-                    Proses <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <span class="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 dark:text-indigo-300 group-hover:text-indigo-900 dark:group-hover:text-indigo-100 flex-shrink-0 group-hover:translate-x-1 transition-all">
+                    Proses <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                 </span>
             </div>
         </a>
         @endif
 
+        {{-- Card 2: Top-Up Approval --}}
         @if(isset($stats['pending_topups']) && $stats['pending_topups'] > 0)
-        <a href="{{ route('superadmin.topup.approvals') }}" class="block group">
-            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex items-center justify-between gap-4 group-hover:bg-amber-100/70 dark:group-hover:bg-amber-900/30 transition-colors">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-800/50 flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-amber-700 dark:text-amber-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+        <a href="{{ route('superadmin.topup.approvals') }}" wire:navigate class="block group h-full">
+            <div class="h-full bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 rounded-2xl p-4 flex items-center justify-between gap-3.5 group-hover:bg-amber-100/80 dark:group-hover:bg-amber-900/40 group-hover:border-amber-300 dark:group-hover:border-amber-700 transition-all duration-200 shadow-xs hover:shadow-md">
+                <div class="flex items-center gap-3.5 min-w-0">
+                    <div class="w-11 h-11 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center flex-shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
                     </div>
-                    <div>
-                        <h3 class="text-sm font-bold text-amber-900 dark:text-amber-200">{{ $stats['pending_topups'] }} Top-Up Menunggu Approval</h3>
-                        <p class="text-xs text-amber-700 dark:text-amber-300 mt-0.5">Verifikasi bukti transfer deposit customer.</p>
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-bold text-amber-950 dark:text-amber-200 truncate">{{ $stats['pending_topups'] }} Top-Up Menunggu Approval</h3>
+                        <p class="text-xs text-amber-700/80 dark:text-amber-300/80 mt-0.5 truncate">Verifikasi bukti transfer deposit customer</p>
                     </div>
                 </div>
-                <span class="inline-flex items-center gap-1 text-xs font-semibold text-amber-800 dark:text-amber-200 group-hover:translate-x-1 transition-transform">
-                    Proses <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-300 group-hover:text-amber-900 dark:group-hover:text-amber-100 flex-shrink-0 group-hover:translate-x-1 transition-all">
+                    Proses <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                 </span>
             </div>
         </a>
         @endif
 
+        {{-- Card 3: Withdraw / Tarik Saldo --}}
         @if(isset($stats['pending_withdraws']) && $stats['pending_withdraws'] > 0)
-        <a href="{{ route('superadmin.withdraws.index') }}" class="block group">
-            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between gap-4 group-hover:bg-blue-100/70 dark:group-hover:bg-blue-900/30 transition-colors">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-800/50 flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-blue-700 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        <a href="{{ route('superadmin.withdraws.index') }}" wire:navigate class="block group h-full">
+            <div class="h-full bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-800/60 rounded-2xl p-4 flex items-center justify-between gap-3.5 group-hover:bg-blue-100/80 dark:group-hover:bg-blue-900/40 group-hover:border-blue-300 dark:group-hover:border-blue-700 transition-all duration-200 shadow-xs hover:shadow-md">
+                <div class="flex items-center gap-3.5 min-w-0">
+                    <div class="w-11 h-11 rounded-xl bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center justify-center flex-shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                     </div>
-                    <div>
-                        <h3 class="text-sm font-bold text-blue-900 dark:text-blue-200">{{ $stats['pending_withdraws'] }} Tarik Saldo Menunggu Transfer</h3>
-                        <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5">Pengajuan penarikan dana mitra perlu ditransfer.</p>
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-bold text-blue-950 dark:text-blue-200 truncate">{{ $stats['pending_withdraws'] }} Tarik Saldo Menunggu Transfer</h3>
+                        <p class="text-xs text-blue-700/80 dark:text-blue-300/80 mt-0.5 truncate">Pengajuan penarikan dana mitra perlu ditransfer</p>
                     </div>
                 </div>
-                <span class="inline-flex items-center gap-1 text-xs font-semibold text-blue-800 dark:text-blue-200 group-hover:translate-x-1 transition-transform">
-                    Proses <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 dark:text-blue-300 group-hover:text-blue-900 dark:group-hover:text-blue-100 flex-shrink-0 group-hover:translate-x-1 transition-all">
+                    Proses <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                 </span>
             </div>
         </a>

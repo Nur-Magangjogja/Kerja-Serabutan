@@ -268,6 +268,60 @@ class User extends Authenticatable implements MustVerifyEmail
                     ->withTimestamps();
     }
 
+    /**
+     * Get all unique city IDs that this admin is authorized to manage.
+     * Merges the primary city_id with any cities in the admin_city pivot table.
+     *
+     * @return array<int>
+     */
+    public function getAdminCityIds(): array
+    {
+        if ($this->role !== 'admin') {
+            return [];
+        }
+
+        $ids = [];
+        if (!empty($this->city_id)) {
+            $ids[] = (int) $this->city_id;
+        }
+
+        if ($this->relationLoaded('managedCities')) {
+            $managedIds = $this->managedCities->pluck('id')->all();
+        } else {
+            $managedIds = $this->managedCities()->allRelatedIds()->all();
+        }
+
+        return array_values(array_unique(array_merge($ids, array_map('intval', $managedIds))));
+    }
+
+    /**
+     * Get Collection of City models managed by this admin.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getAdminCities()
+    {
+        $cityIds = $this->getAdminCityIds();
+        if (empty($cityIds)) {
+            return collect();
+        }
+
+        return City::whereIn('id', $cityIds)->get();
+    }
+
+    /**
+     * Get comma-separated names of all cities managed by this admin.
+     */
+    public function getAdminCityNamesAttribute(): string
+    {
+        $cities = $this->getAdminCities();
+        if ($cities->isEmpty()) {
+            return $this->city_name ?: 'Semua Wilayah';
+        }
+
+        return $cities->pluck('name')->join(', ');
+    }
+
     public function helps()
     {
         return $this->hasMany(Help::class);

@@ -37,6 +37,53 @@ class PartnerReport extends Model
         'refund_amount'       => 'decimal:2',
     ];
 
+    protected static function booted()
+    {
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('active_reports_count_superadmin');
+            \Illuminate\Support\Facades\Cache::increment('active_reports_count_version');
+        });
+
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('active_reports_count_superadmin');
+            \Illuminate\Support\Facades\Cache::increment('active_reports_count_version');
+        });
+    }
+
+    /**
+     * Menghitung jumlah laporan aduan aktif (masuk / sedang diproses)
+     * dengan optimasi query dan cache versi otomatis.
+     */
+    public static function getActiveReportsCountForUser(?User $user = null): int
+    {
+        $user = $user ?? auth()->user();
+        if (!$user) {
+            return 0;
+        }
+
+        $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
+        $version = \Illuminate\Support\Facades\Cache::get('active_reports_count_version', 1);
+        $cacheKey = 'active_reports_count_v' . $version . '_' . ($isSuperAdmin ? 'sa' : 'admin_' . $user->id . '_' . ($user->city_id ?? 'all'));
+
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin) {
+            $query = static::whereIn('status', ['pending', 'in_progress', 'investigating']);
+
+            if (!$isSuperAdmin) {
+                $cityIds = $user->getAdminCityIds();
+
+                if (!empty($cityIds)) {
+                    $query->where(function ($q) use ($cityIds) {
+                        $q->whereHas('reporter', fn($sq) => $sq->whereIn('city_id', $cityIds))
+                          ->orWhereHas('reportedUser', fn($sq) => $sq->whereIn('city_id', $cityIds));
+                    });
+                } else {
+                    $query->whereRaw('1 = 0');
+                }
+            }
+
+            return (int) $query->count();
+        });
+    }
 
     public function reporter()
     {

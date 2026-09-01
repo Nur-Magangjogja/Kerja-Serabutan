@@ -75,12 +75,12 @@ class Blocked extends Component
 
         // Territory validation for regular admin
         if (!$isSuperAdmin) {
-            $managedCityIds = $admin->managedCities()->pluck('cities.id')->toArray();
-            if ($admin->city_id) {
-                $managedCityIds[] = $admin->city_id;
-            }
+            $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
             if (!empty($managedCityIds) && !in_array($user->city_id, $managedCityIds)) {
                 $this->addError('selectedUserId', 'Anda tidak memiliki hak akses untuk memblokir pengguna di luar wilayah Anda.');
+                return;
+            } elseif (empty($managedCityIds)) {
+                $this->addError('selectedUserId', 'Anda belum memiliki wilayah wewenang.');
                 return;
             }
         }
@@ -120,12 +120,12 @@ class Blocked extends Component
 
         // Territory validation for regular admin
         if (!$isSuperAdmin) {
-            $managedCityIds = $admin->managedCities()->pluck('cities.id')->toArray();
-            if ($admin->city_id) {
-                $managedCityIds[] = $admin->city_id;
-            }
+            $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
             if (!empty($managedCityIds) && !in_array($user->city_id, $managedCityIds)) {
                 session()->flash('error', 'Anda tidak memiliki hak akses untuk mengubah status pengguna di luar wilayah Anda.');
+                return;
+            } elseif (empty($managedCityIds)) {
+                session()->flash('error', 'Anda belum memiliki wilayah wewenang.');
                 return;
             }
         }
@@ -167,12 +167,11 @@ class Blocked extends Component
         $query = User::where('status', 'blocked')->with('city')->latest();
 
         if (! $isSuperAdmin) {
-            $managedCityIds = $admin->managedCities()->pluck('cities.id')->toArray();
-            if ($admin->city_id) {
-                $managedCityIds[] = $admin->city_id;
-            }
+            $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
             if (!empty($managedCityIds)) {
                 $query->whereIn('city_id', $managedCityIds);
+            } elseif ($admin && $admin->role === 'admin') {
+                $query->whereRaw('1 = 0');
             }
         }
 
@@ -199,12 +198,11 @@ class Blocked extends Component
                 ->with('city');
 
             if (!$isSuperAdmin) {
-                $managedCityIds = $admin->managedCities()->pluck('cities.id')->toArray();
-                if ($admin->city_id) {
-                    $managedCityIds[] = $admin->city_id;
-                }
+                $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
                 if (!empty($managedCityIds)) {
                     $userQuery->whereIn('city_id', $managedCityIds);
+                } elseif ($admin && $admin->role === 'admin') {
+                    $userQuery->whereRaw('1 = 0');
                 }
             }
 

@@ -293,9 +293,11 @@ class Greylist extends Component
 
         // Filter kota jika admin wilayah
         if (! $isSuperAdmin) {
-            $managedCityIds = $admin->managedCities()->pluck('cities.id')->toArray();
+            $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
             if (!empty($managedCityIds)) {
                 $baseQuery->whereIn('city_id', $managedCityIds);
+            } elseif ($admin && $admin->role === 'admin') {
+                $baseQuery->whereRaw('1 = 0');
             }
         }
 
@@ -345,9 +347,11 @@ class Greylist extends Component
                 });
 
             if (! $isSuperAdmin) {
-                $managedCityIds = $admin->managedCities()->pluck('cities.id')->toArray();
+                $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
                 if (!empty($managedCityIds)) {
                     $candQuery->whereIn('city_id', $managedCityIds);
+                } elseif ($admin && $admin->role === 'admin') {
+                    $candQuery->whereRaw('1 = 0');
                 }
             }
 

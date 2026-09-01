@@ -350,7 +350,6 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/dashboard', \App\Livewire\Admin\Dashboard\Index::class)->name('dashboard');
     Route::view('/settings/appearance', 'livewire.admin.settings.appearance')->name('settings.appearance');
     Route::get('/helps', \App\Livewire\Admin\Helps\Index::class)->name('helps');
-    Route::get('/helps/approved', \App\Livewire\Admin\Helps\Approved::class)->name('helps.approved');
     Route::get('/verifications', \App\Livewire\Admin\Verifications\Index::class)->name('verifications');
     Route::get('/users', \App\Livewire\SuperAdmin\Users\Index::class)->name('users.index');
 

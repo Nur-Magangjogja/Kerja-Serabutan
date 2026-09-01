@@ -53,10 +53,13 @@ class Approval extends Component
     public function viewDetail($transactionId)
     {
         $admin = auth()->user();
+        $adminCityIds = $admin ? $admin->getAdminCityIds() : [];
         $query = BalanceTransaction::with(['user', 'user.city', 'approvedBy']);
         
-        if ($admin->city_id) {
-            $query->whereHas('user', fn($q) => $q->where('city_id', $admin->city_id));
+        if (!empty($adminCityIds)) {
+            $query->whereHas('user', fn($q) => $q->whereIn('city_id', $adminCityIds));
+        } elseif ($admin && $admin->role === 'admin') {
+            $query->whereRaw('1 = 0');
         }
 
         $this->selectedTransaction = $query->find($transactionId);
@@ -329,12 +332,15 @@ class Approval extends Component
     public function render()
     {
         $admin = auth()->user();
-        $adminCityName = $admin->city_name ?? ($admin->city_id ? \App\Models\City::find($admin->city_id)?->name : null);
+        $adminCityIds = $admin ? $admin->getAdminCityIds() : [];
+        $adminCityName = $admin ? $admin->admin_city_names : null;
 
         // Base scoped query for counts
         $baseQuery = BalanceTransaction::where('type', 'topup');
-        if ($admin->city_id) {
-            $baseQuery->whereHas('user', fn($q) => $q->where('city_id', $admin->city_id));
+        if (!empty($adminCityIds)) {
+            $baseQuery->whereHas('user', fn($q) => $q->whereIn('city_id', $adminCityIds));
+        } elseif ($admin && $admin->role === 'admin') {
+            $baseQuery->whereRaw('1 = 0');
         }
 
         $totalPending = (clone $baseQuery)->where('status', 'waiting_approval')->count();
@@ -346,8 +352,10 @@ class Approval extends Component
         $query = BalanceTransaction::where('type', 'topup')
             ->with(['user', 'user.city', 'approvedBy']);
 
-        if ($admin->city_id) {
-            $query->whereHas('user', fn($q) => $q->where('city_id', $admin->city_id));
+        if (!empty($adminCityIds)) {
+            $query->whereHas('user', fn($q) => $q->whereIn('city_id', $adminCityIds));
+        } elseif ($admin && $admin->role === 'admin') {
+            $query->whereRaw('1 = 0');
         }
 
         if ($this->filterStatus === 'waiting_approval') {

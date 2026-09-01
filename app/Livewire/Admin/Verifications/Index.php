@@ -59,13 +59,26 @@ class Index extends Component
         $this->resetPage();
     }
 
+    protected function isAuthorizedForRegistration(Registration $reg): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+        if (in_array($user->role, ['super_admin', 'superadmin'])) return true;
+        if ($user->role === 'admin') {
+            $allowedCityIds = $user->getAdminCityIds();
+            return !empty($reg->city_id) && in_array((int) $reg->city_id, $allowedCityIds, true);
+        }
+        return false;
+    }
+
     public function viewKtp($id)
     {
-        $this->selected = Registration::find($id);
-        if (!$this->selected) {
-            session()->flash('message', 'Data tidak ditemukan.');
+        $reg = Registration::find($id);
+        if (!$reg || !$this->isAuthorizedForRegistration($reg)) {
+            session()->flash('message', 'Data tidak ditemukan atau berada di luar wilayah wewenang Anda.');
             return;
         }
+        $this->selected = $reg;
         $this->showModal = true;
     }
 
@@ -77,9 +90,13 @@ class Index extends Component
 
     public function openRejectModal($id)
     {
-        $this->rejectingId = $id;
         $reg = Registration::find($id);
-        $this->rejectReason = $reg?->rejection_reason ?? '';
+        if (!$reg || !$this->isAuthorizedForRegistration($reg)) {
+            session()->flash('message', 'Data tidak ditemukan atau berada di luar wilayah wewenang Anda.');
+            return;
+        }
+        $this->rejectingId = $id;
+        $this->rejectReason = $reg->rejection_reason ?? '';
         $this->showRejectModal = true;
     }
 
@@ -93,8 +110,8 @@ class Index extends Component
     public function approveKtp($id)
     {
         $reg = Registration::find($id);
-        if (!$reg) {
-            session()->flash('message', 'Registrasi tidak ditemukan');
+        if (!$reg || !$this->isAuthorizedForRegistration($reg)) {
+            session()->flash('message', 'Registrasi tidak ditemukan atau berada di luar wilayah wewenang Anda.');
             return;
         }
         $reg->update(['status' => 'approved']);
@@ -198,16 +215,25 @@ class Index extends Component
 
     public function render()
     {
+        $authUser = auth()->user();
+        $isSuperAdmin = $authUser && in_array($authUser->role, ['super_admin', 'superadmin']);
+
         // Only include completed registrations waiting for or with decision (exclude in-progress/drafts)
         $query = Registration::query()
             ->whereIn('status', ['pending_verification', 'pending', 'approved', 'rejected']);
 
-        $authUser = auth()->user();
-        $isSuperAdmin = $authUser && in_array($authUser->role, ['super_admin', 'superadmin']);
-
-        // Strict city isolation: Admin only sees registrations from their assigned city
-        if (!$isSuperAdmin && $authUser && $authUser->role === 'admin' && $authUser->city_id) {
-            $query->where('city_id', $authUser->city_id);
+        // Strict city isolation: Admin only sees registrations from their assigned city / cities
+        if (!$isSuperAdmin && $authUser && $authUser->role === 'admin') {
+            $adminCityIds = $authUser->getAdminCityIds();
+            if (!empty($adminCityIds)) {
+                if ($this->cityFilter !== '' && $this->cityFilter !== 'all' && in_array((int) $this->cityFilter, $adminCityIds, true)) {
+                    $query->where('city_id', (int) $this->cityFilter);
+                } else {
+                    $query->whereIn('city_id', $adminCityIds);
+                }
+            } else {
+                $query->whereRaw('1 = 0');
+            }
         } elseif ($isSuperAdmin) {
             // Super Admin can filter by city or see all
             if ($this->cityFilter !== '' && $this->cityFilter !== 'all') {

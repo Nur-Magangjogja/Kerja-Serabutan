@@ -152,14 +152,12 @@ class Index extends Component
 
         // City scoping for Regional Admins
         if (!$isSuperAdmin) {
-            $cityIds = collect([$admin->city_id])
-                ->merge($admin->managedCities?->pluck('id') ?? [])
-                ->merge(City::where('admin_id', $admin->id)->pluck('id'))
-                ->filter()
-                ->unique();
+            $cityIds = $admin ? $admin->getAdminCityIds() : [];
 
-            if ($cityIds->isNotEmpty()) {
+            if (!empty($cityIds)) {
                 $query->whereIn('city_id', $cityIds);
+            } else {
+                $query->whereRaw('1 = 0');
             }
         }
 

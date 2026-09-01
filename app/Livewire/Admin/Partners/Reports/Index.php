@@ -53,13 +53,9 @@ class Index extends Component
         $statsQuery = PartnerReport::query();
 
         if (! $isSuperAdmin) {
-            $cityIds = collect([$admin->city_id])
-                ->merge($admin->managedCities?->pluck('id') ?? [])
-                ->merge(City::where('admin_id', $admin->id)->pluck('id'))
-                ->filter()
-                ->unique();
+            $cityIds = $admin ? $admin->getAdminCityIds() : [];
 
-            if ($cityIds->isNotEmpty()) {
+            if (!empty($cityIds)) {
                 $statsQuery->where(function ($q) use ($cityIds) {
                     $q->whereHas('reporter', function ($sq) use ($cityIds) {
                         $sq->whereIn('city_id', $cityIds);
@@ -67,6 +63,8 @@ class Index extends Component
                         $sq->whereIn('city_id', $cityIds);
                     });
                 });
+            } else {
+                $statsQuery->whereRaw('1 = 0');
             }
         }
 
@@ -74,7 +72,7 @@ class Index extends Component
         $totalPending = (clone $statsQuery)->where('status', 'pending')->count();
         $totalInProgress = (clone $statsQuery)->whereIn('status', ['in_progress', 'investigating'])->count();
         $totalResolved = (clone $statsQuery)->where('status', 'resolved')->count();
-        $totalRefundRequested = (clone $statsQuery)->where('refund_status', 'requested')->count();
+        $totalRefundPending = (clone $statsQuery)->where('refund_status', 'pending')->count();
         $totalFromCustomer = (clone $statsQuery)->where(function ($q) {
             $q->whereHas('reporter', fn($sq) => $sq->where('role', 'customer'))
               ->orWhere('report_type', 'customer_to_partner');
@@ -87,14 +85,18 @@ class Index extends Component
         // Main Query
         $query = PartnerReport::with(['reporter', 'reportedUser', 'reportedHelp.city', 'resolvedBy'])->withCount('messages');
 
-        if (! $isSuperAdmin && isset($cityIds) && $cityIds->isNotEmpty()) {
-            $query->where(function ($q) use ($cityIds) {
-                $q->whereHas('reporter', function ($sq) use ($cityIds) {
-                    $sq->whereIn('city_id', $cityIds);
-                })->orWhereHas('reportedUser', function ($sq) use ($cityIds) {
-                    $sq->whereIn('city_id', $cityIds);
+        if (! $isSuperAdmin) {
+            if (!empty($cityIds)) {
+                $query->where(function ($q) use ($cityIds) {
+                    $q->whereHas('reporter', function ($sq) use ($cityIds) {
+                        $sq->whereIn('city_id', $cityIds);
+                    })->orWhereHas('reportedUser', function ($sq) use ($cityIds) {
+                        $sq->whereIn('city_id', $cityIds);
+                    });
                 });
-            });
+            } else {
+                $query->whereRaw('1 = 0');
+            }
         }
 
         if ($this->status !== 'all') {

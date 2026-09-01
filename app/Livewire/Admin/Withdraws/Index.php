@@ -166,9 +166,11 @@ class Index extends Component
         $query = WithdrawRequest::with(['user.city'])->latest();
 
         if (! $isSuperAdmin) {
-            $managedCityIds = $admin->managedCities()->pluck('cities.id')->toArray();
+            $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
             if (!empty($managedCityIds)) {
                 $query->whereHas('user', fn($q) => $q->whereIn('city_id', $managedCityIds));
+            } elseif ($admin && $admin->role === 'admin') {
+                $query->whereRaw('1 = 0');
             }
         }
 
