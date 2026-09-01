@@ -113,11 +113,9 @@
                 </div>
             @endforelse
 
-            @if($history->hasPages())
-                <div class="pt-2">
-                    {{ $history->links() }}
-                </div>
-            @endif
+            <div class="mt-6 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs">
+                {{ $history->links('vendor.pagination.superadmin') }}
+            </div>
         </div>
     </div>
 </div>

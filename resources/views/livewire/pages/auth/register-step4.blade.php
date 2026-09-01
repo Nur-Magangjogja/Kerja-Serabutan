@@ -53,10 +53,6 @@ new #[Layout('layouts.guest')] class extends Component {
             'full_name',
             'phone',
             'gender',
-            'rt',
-            'rw',
-            'kelurahan',
-            'kecamatan',
             'city',
             'province'
         ]);
@@ -107,10 +103,6 @@ new #[Layout('layouts.guest')] class extends Component {
                 'name'           => $registration->full_name ?: $user->name,
                 'phone'          => $registration->phone ?: $user->phone,
                 'gender'         => $registration->gender,
-                'rt'             => $registration->rt,
-                'rw'             => $registration->rw,
-                'kelurahan'      => $registration->kelurahan,
-                'kecamatan'      => $registration->kecamatan,
                 'city'           => $registration->city,
                 'city_id'        => $cityId,
                 'province'       => $registration->province,
@@ -255,7 +247,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 <div class="pt-2 border-t border-gray-200/60 dark:border-gray-700/60">
                     <span class="text-gray-500 dark:text-gray-400 block mb-0.5">Alamat KTP:</span>
                     <span class="font-medium text-gray-900 dark:text-gray-200 text-xs leading-relaxed">
-                        RT {{ isset($step1_data['rt']) ? sprintf('%02d', (int)$step1_data['rt']) : '-' }}/RW {{ isset($step1_data['rw']) ? sprintf('%02d', (int)$step1_data['rw']) : '-' }}, Kel. {{ $step1_data['kelurahan'] ?? '-' }}, Kec. {{ $step1_data['kecamatan'] ?? '-' }}, {{ $step1_data['city'] ?? '-' }}, {{ $step1_data['province'] ?? '-' }}
+                        {{ $step1_data['city'] ?? '-' }}, {{ $step1_data['province'] ?? '-' }}
                     </span>
                 </div>
             </div>

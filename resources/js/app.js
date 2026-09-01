@@ -152,11 +152,18 @@ document.addEventListener('wheel', function(e) {
     }, true);
 
     document.addEventListener('livewire:navigating', () => {
+        document.body.classList.add('navigating');
         startProgress();
     });
 
     document.addEventListener('livewire:navigated', () => {
         completeProgress();
+        // Remove after two animation frames (same cadence as enableTransitions in theme.js)
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                document.body.classList.remove('navigating');
+            });
+        });
     });
 })();
 

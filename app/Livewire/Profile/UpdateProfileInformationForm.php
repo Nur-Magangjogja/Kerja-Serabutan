@@ -10,10 +10,6 @@ class UpdateProfileInformationForm extends Component
     public $name;
     public $email;
     public $phone;
-    public $rt;
-    public $rw;
-    public $kelurahan;
-    public $kecamatan;
     public $city_id;
     public $city;
     public $province;
@@ -24,10 +20,6 @@ class UpdateProfileInformationForm extends Component
         'name' => ['required', 'string', 'max:255'],
         'email' => ['required', 'email', 'max:255'],
         'phone' => ['required', 'string', 'min:9', 'max:20', 'regex:/^[0-9+\s\-]+$/'],
-        'rt' => ['required', 'integer', 'min:1', 'max:999'],
-        'rw' => ['required', 'integer', 'min:1', 'max:999'],
-        'kelurahan' => ['required', 'string', 'max:100'],
-        'kecamatan' => ['required', 'string', 'max:100'],
         'city_id' => ['nullable', 'exists:cities,id'],
         'city' => ['required', 'string', 'max:100'],
         'province' => ['required', 'string', 'max:100'],
@@ -41,12 +33,6 @@ class UpdateProfileInformationForm extends Component
         'phone.min' => 'Nomor HP minimal 9 digit.',
         'phone.max' => 'Nomor HP maksimal 20 digit.',
         'phone.regex' => 'Format nomor HP tidak valid.',
-        'rt.required' => 'Nomor RT wajib diisi.',
-        'rt.integer' => 'Nomor RT harus berupa angka.',
-        'rw.required' => 'Nomor RW wajib diisi.',
-        'rw.integer' => 'Nomor RW harus berupa angka.',
-        'kelurahan.required' => 'Kelurahan / Desa wajib diisi.',
-        'kecamatan.required' => 'Kecamatan wajib diisi.',
         'city.required' => 'Kota / Kabupaten wajib diisi.',
         'province.required' => 'Provinsi wajib diisi.',
     ];
@@ -57,10 +43,6 @@ class UpdateProfileInformationForm extends Component
         $this->name = $user->name;
         $this->email = $user->email;
         $this->phone = $user->phone;
-        $this->rt = $user->rt;
-        $this->rw = $user->rw;
-        $this->kelurahan = $user->kelurahan;
-        $this->kecamatan = $user->kecamatan;
         $this->city_id = $user->city_id;
         $this->city = $user->city;
         $this->province = $user->province;
@@ -155,10 +137,6 @@ class UpdateProfileInformationForm extends Component
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
-            'rt' => $this->rt,
-            'rw' => $this->rw,
-            'kelurahan' => $this->kelurahan,
-            'kecamatan' => $this->kecamatan,
             'city_id' => $this->city_id,
             'city' => $cityName,
             'province' => $provinceName,

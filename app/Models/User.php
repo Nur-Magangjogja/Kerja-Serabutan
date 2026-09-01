@@ -108,17 +108,6 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getFullAddressAttribute(): string
     {
         $parts = [];
-        if (!empty($this->rt) || !empty($this->rw)) {
-            $rt = $this->rt ? sprintf('%02d', (int)$this->rt) : '-';
-            $rw = $this->rw ? sprintf('%02d', (int)$this->rw) : '-';
-            $parts[] = "RT {$rt}/RW {$rw}";
-        }
-        if (!empty($this->kelurahan)) {
-            $parts[] = 'Kel. ' . $this->kelurahan;
-        }
-        if (!empty($this->kecamatan)) {
-            $parts[] = 'Kec. ' . $this->kecamatan;
-        }
         if (!empty($this->city)) {
             $parts[] = $this->city;
         } elseif (!empty($this->city_name)) {
@@ -133,6 +122,29 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return $this->address ?? '—';
+    }
+
+    public function getKtpUrlAttribute(): ?string
+    {
+        $path = $this->ktp_photo ?: $this->ktp_path;
+        if ($path) {
+            if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+                return $path;
+            }
+            return asset('storage/' . $path);
+        }
+        return null;
+    }
+
+    public function getSelfieUrlAttribute(): ?string
+    {
+        if ($this->selfie_photo) {
+            if (str_starts_with($this->selfie_photo, 'http://') || str_starts_with($this->selfie_photo, 'https://')) {
+                return $this->selfie_photo;
+            }
+            return asset('storage/' . $this->selfie_photo);
+        }
+        return null;
     }
 
     public function getIsVerifiedAttribute(): bool

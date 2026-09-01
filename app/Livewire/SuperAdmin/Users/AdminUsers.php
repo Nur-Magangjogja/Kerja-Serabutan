@@ -36,10 +36,6 @@ class AdminUsers extends Component
     public $place_of_birth = null;
     public $date_of_birth = null;
     public $gender = null;
-    public $rt = null;
-    public $rw = null;
-    public $kelurahan = null;
-    public $kecamatan = null;
     public $province = null;
     public $religion = null;
     public $marital_status = null;
@@ -142,10 +138,6 @@ class AdminUsers extends Component
         $this->place_of_birth = $user->place_of_birth;
         $this->date_of_birth = optional($user->date_of_birth)?->format('Y-m-d');
         $this->gender = $user->gender;
-        $this->rt = $user->rt;
-        $this->rw = $user->rw;
-        $this->kelurahan = $user->kelurahan;
-        $this->kecamatan = $user->kecamatan;
         $this->province = $user->province;
         $this->religion = $user->religion;
         $this->marital_status = $user->marital_status;
@@ -192,10 +184,6 @@ class AdminUsers extends Component
         $this->place_of_birth = null;
         $this->date_of_birth = null;
         $this->gender = null;
-        $this->rt = null;
-        $this->rw = null;
-        $this->kelurahan = null;
-        $this->kecamatan = null;
         $this->province = null;
         $this->religion = null;
         $this->marital_status = null;
@@ -273,10 +261,6 @@ class AdminUsers extends Component
             'place_of_birth' => $this->place_of_birth,
             'date_of_birth' => $this->date_of_birth,
             'gender' => $this->gender,
-            'rt' => $this->rt,
-            'rw' => $this->rw,
-            'kelurahan' => $this->kelurahan,
-            'kecamatan' => $this->kecamatan,
             'province' => $this->province,
             'religion' => $this->religion,
             'marital_status' => $this->marital_status,

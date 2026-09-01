@@ -13,10 +13,6 @@ new #[Layout('layouts.guest')] class extends Component {
     public string $full_name = '';
     public string $phone = '';
     public string $gender = '';
-    public $rt = null;
-    public $rw = null;
-    public string $kelurahan = '';
-    public string $kecamatan = '';
     public string $city = '';
     public ?int $city_id = null;
     public string $province = '';
@@ -48,10 +44,6 @@ new #[Layout('layouts.guest')] class extends Component {
                 $this->full_name = $registration->full_name ?? $this->full_name;
                 $this->phone = $registration->phone ?? $this->phone;
                 $this->gender = $registration->gender ?? $this->gender;
-                $this->rt = $registration->rt !== null ? (int) $registration->rt : $this->rt;
-                $this->rw = $registration->rw !== null ? (int) $registration->rw : $this->rw;
-                $this->kelurahan = $registration->kelurahan ?? $this->kelurahan;
-                $this->kecamatan = $registration->kecamatan ?? $this->kecamatan;
                 $this->city = $registration->city ?? $this->city;
                 $this->city_id = $registration->city_id ? (int) $registration->city_id : null;
                 $this->province = $registration->province ?? $this->province;
@@ -111,10 +103,6 @@ new #[Layout('layouts.guest')] class extends Component {
                 $this->full_name = $draft['full_name'] ?? $this->full_name;
                 $this->phone = $draft['phone'] ?? $this->phone;
                 $this->gender = $draft['gender'] ?? $this->gender;
-                $this->rt = isset($draft['rt']) && $draft['rt'] !== '' && $draft['rt'] !== null ? (int) $draft['rt'] : $this->rt;
-                $this->rw = isset($draft['rw']) && $draft['rw'] !== '' && $draft['rw'] !== null ? (int) $draft['rw'] : $this->rw;
-                $this->kelurahan = $draft['kelurahan'] ?? $this->kelurahan;
-                $this->kecamatan = $draft['kecamatan'] ?? $this->kecamatan;
                 $this->city = $draft['city'] ?? $this->city;
                 $this->city_id = isset($draft['city_id']) && $draft['city_id'] ? (int) $draft['city_id'] : null;
                 $this->province = $draft['province'] ?? $this->province;
@@ -155,10 +143,6 @@ new #[Layout('layouts.guest')] class extends Component {
             'full_name' => $this->full_name,
             'phone' => $this->phone,
             'gender' => $this->gender,
-            'rt' => $this->rt,
-            'rw' => $this->rw,
-            'kelurahan' => $this->kelurahan,
-            'kecamatan' => $this->kecamatan,
             'city_id' => $this->city_id,
             'city' => $this->city,
             'cityQuery' => $this->cityQuery,
@@ -179,18 +163,29 @@ new #[Layout('layouts.guest')] class extends Component {
             'string',
             'size:16',
             'regex:/^[0-9]+$/',
-            \Illuminate\Validation\Rule::unique('users', 'nik')->ignore($authId),
-            function ($attribute, $value, $fail) use ($authEmail, $uuid) {
-                $query = Registration::where('nik', $value)
-                    ->where('status', '!=', 'rejected');
-                if ($authEmail) {
+            function ($attribute, $value, $fail) use ($authId, $authEmail, $uuid) {
+                // Rule: Nomor NIK harus unik untuk setiap akun pengguna
+                $query = \App\Models\User::where('nik', $value);
+                if ($authId) {
+                    $query->where('id', '!=', $authId);
+                } elseif ($authEmail) {
                     $query->where('email', '!=', $authEmail);
                 }
-                if ($uuid) {
-                    $query->where('uuid', '!=', $uuid);
-                }
                 if ($query->exists()) {
-                    $fail('Nomor NIK ini sudah terdaftar pada pengajuan akun lain.');
+                    $fail('Nomor NIK ini sudah terdaftar di sistem. Setiap pengguna hanya dapat memiliki 1 akun.');
+                    return;
+                }
+
+                // Cek juga pendaftaran lain yang sedang in_progress
+                $regQuery = Registration::where('nik', $value);
+                if ($uuid) {
+                    $regQuery->where('uuid', '!=', $uuid);
+                }
+                if ($authEmail) {
+                    $regQuery->where('email', '!=', $authEmail);
+                }
+                if ($regQuery->whereIn('status', ['in_progress', 'pending_verification'])->exists()) {
+                    $fail('Nomor NIK ini sedang dalam proses pendaftaran aktif.');
                 }
             },
         ];
@@ -211,16 +206,6 @@ new #[Layout('layouts.guest')] class extends Component {
             'phone.regex' => 'Format nomor HP tidak valid (gunakan angka).',
             'gender.required' => 'Jenis kelamin wajib dipilih.',
             'gender.in' => 'Pilihan jenis kelamin tidak valid.',
-            'rt.required' => 'Nomor RT wajib diisi.',
-            'rt.integer' => 'Nomor RT harus berupa angka (contoh: 01 atau 1).',
-            'rt.min' => 'Nomor RT minimal 1.',
-            'rw.required' => 'Nomor RW wajib diisi.',
-            'rw.integer' => 'Nomor RW harus berupa angka (contoh: 05 atau 5).',
-            'rw.min' => 'Nomor RW minimal 1.',
-            'kelurahan.required' => 'Nama Kelurahan / Desa wajib diisi.',
-            'kelurahan.min' => 'Nama Kelurahan / Desa minimal 2 karakter.',
-            'kecamatan.required' => 'Nama Kecamatan wajib diisi.',
-            'kecamatan.min' => 'Nama Kecamatan minimal 2 karakter.',
             'city_id.required' => 'Kota / Kabupaten wajib dipilih dari daftar pencarian.',
             'city_id.exists' => 'Kota yang dipilih tidak valid dalam sistem.',
             'city.required' => 'Nama Kota / Kabupaten wajib diisi.',
@@ -254,10 +239,6 @@ new #[Layout('layouts.guest')] class extends Component {
                 'full_name' => ['required', 'string', 'min:3', 'max:255'],
                 'phone' => ['required', 'string', 'min:9', 'max:20', 'regex:/^[0-9+\s\-]+$/'],
                 'gender' => ['required', 'in:Laki-laki,Perempuan'],
-                'rt' => ['required', 'integer', 'min:1', 'max:999'],
-                'rw' => ['required', 'integer', 'min:1', 'max:999'],
-                'kelurahan' => ['required', 'string', 'min:2', 'max:100'],
-                'kecamatan' => ['required', 'string', 'min:2', 'max:100'],
                 'province' => ['required', 'string', 'min:2', 'max:100'],
             ];
 
@@ -309,10 +290,6 @@ new #[Layout('layouts.guest')] class extends Component {
                 'name' => $validated['full_name'],
                 'phone' => $validated['phone'],
                 'gender' => $validated['gender'],
-                'rt' => $validated['rt'],
-                'rw' => $validated['rw'],
-                'kelurahan' => $validated['kelurahan'],
-                'kecamatan' => $validated['kecamatan'],
                 'city_id' => $cityId,
                 'city' => $cityName,
                 'province' => $validated['province'],
@@ -552,38 +529,6 @@ new #[Layout('layouts.guest')] class extends Component {
                         </label>
                     </div>
                     <x-input-error :messages="$errors->get('gender')" />
-                </div>
-
-                <!-- RT & RW -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label for="rt" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">RT <span class="text-red-500">*</span></label>
-                        <input wire:model="rt" id="rt" type="number" min="1" max="999" placeholder="Contoh: 01"
-                            class="w-full px-4 py-3 rounded-xl border @error('rt') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
-                        <x-input-error :messages="$errors->get('rt')" />
-                    </div>
-                    <div>
-                        <label for="rw" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">RW <span class="text-red-500">*</span></label>
-                        <input wire:model="rw" id="rw" type="number" min="1" max="999" placeholder="Contoh: 05"
-                            class="w-full px-4 py-3 rounded-xl border @error('rw') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
-                        <x-input-error :messages="$errors->get('rw')" />
-                    </div>
-                </div>
-
-                <!-- Kelurahan -->
-                <div>
-                    <label for="kelurahan" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Kelurahan / Desa <span class="text-red-500">*</span></label>
-                    <input wire:model="kelurahan" id="kelurahan" type="text" placeholder="Nama Kelurahan / Desa"
-                        class="w-full px-4 py-3 rounded-xl border @error('kelurahan') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
-                    <x-input-error :messages="$errors->get('kelurahan')" />
-                </div>
-
-                <!-- Kecamatan -->
-                <div>
-                    <label for="kecamatan" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Kecamatan <span class="text-red-500">*</span></label>
-                    <input wire:model="kecamatan" id="kecamatan" type="text" placeholder="Nama Kecamatan"
-                        class="w-full px-4 py-3 rounded-xl border @error('kecamatan') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
-                    <x-input-error :messages="$errors->get('kecamatan')" />
                 </div>
 
                 <!-- Kota/Kabupaten (realtime search) -->

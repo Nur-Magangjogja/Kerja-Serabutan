@@ -177,11 +177,9 @@
                     @endforeach
                 </div>
 
-                @if($notifications->hasPages())
-                    <div class="mt-4">
-                        {{ $notifications->links() }}
-                    </div>
-                @endif
+                <div class="mt-4 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs">
+                    {{ $notifications->links('vendor.pagination.superadmin') }}
+                </div>
             @else
                 <!-- Clean Empty State -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 text-center mt-2">

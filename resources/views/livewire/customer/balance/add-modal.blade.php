@@ -32,7 +32,10 @@
                 @endif
 
                 <!-- Form -->
-                <form wire:submit.prevent="addBalance" class="space-y-4">
+                <form wire:submit="addBalance" 
+                      x-data="{ isSubmitting: false }" 
+                      @submit="if(isSubmitting) { $event.preventDefault(); return false; } isSubmitting = true" 
+                      class="space-y-4">
                     <!-- Amount Input -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -64,13 +67,20 @@
                     <!-- Buttons -->
                     <div class="flex gap-3 pt-2">
                         <button type="button" @click="$wire.closeModal()"
-                            class="flex-1 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition">
+                            class="flex-1 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition cursor-pointer">
                             Batal
                         </button>
-                        <button type="submit" wire:loading.attr="disabled"
-                            class="flex-1 py-2.5 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition disabled:opacity-50">
-                            <span wire:loading.remove>Tambah Saldo</span>
-                            <span wire:loading>Processing...</span>
+                        <button type="submit" 
+                            wire:loading.attr="disabled"
+                            wire:target="addBalance"
+                            :disabled="isSubmitting || $wire.isSubmitting"
+                            class="flex-1 py-2.5 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer">
+                            <svg wire:loading wire:target="addBalance" class="animate-spin h-4 w-4 text-white shrink-0" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span wire:loading.remove wire:target="addBalance">Tambah Saldo</span>
+                            <span wire:loading wire:target="addBalance">Memproses...</span>
                         </button>
                     </div>
 

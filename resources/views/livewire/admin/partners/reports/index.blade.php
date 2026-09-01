@@ -217,8 +217,8 @@
                 </table>
             </div>
 
-            <div class="p-4 border-t border-gray-100 dark:border-gray-700">
-                {{ $reports->links() }}
+            <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
+                {{ $reports->links('vendor.pagination.superadmin') }}
             </div>
         @endif
     </div>

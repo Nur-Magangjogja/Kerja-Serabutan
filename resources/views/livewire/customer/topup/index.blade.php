@@ -28,7 +28,10 @@
             </div>
         @endif
 
-        <form wire:submit.prevent="submit" class="bg-white dark:bg-gray-800 rounded-2xl shadow border border-gray-100 dark:border-gray-700 p-5">
+        <form wire:submit="submit" 
+              x-data="{ isSubmitting: false }" 
+              @submit="if(isSubmitting) { $event.preventDefault(); return false; } isSubmitting = true" 
+              class="bg-white dark:bg-gray-800 rounded-2xl shadow border border-gray-100 dark:border-gray-700 p-5">
             @csrf
 
             <div class="mb-4">
@@ -83,20 +86,16 @@
 
             <div class="mt-6">
                 <button type="submit"
-                    class="w-full bg-primary-600 text-white rounded-lg px-4 py-3 font-bold hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    wire:loading.attr="disabled">
-                    <span wire:loading.remove>Top Up Sekarang</span>
-                    <span wire:loading>
-                        <svg class="animate-spin inline-block w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg"
-                            fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                            </circle>
-                            <path class="opacity-75" fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                            </path>
-                        </svg>
-                        Memproses...
-                    </span>
+                    class="w-full bg-primary-600 text-white rounded-lg px-4 py-3 font-bold hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                    wire:loading.attr="disabled"
+                    wire:target="submit"
+                    :disabled="isSubmitting || $wire.isSubmitting">
+                    <svg wire:loading wire:target="submit" class="animate-spin h-5 w-5 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span wire:loading.remove wire:target="submit">Top Up Sekarang</span>
+                    <span wire:loading wire:target="submit">Memproses...</span>
                 </button>
             </div>
 

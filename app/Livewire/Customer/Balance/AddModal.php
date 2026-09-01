@@ -7,6 +7,8 @@ use App\Models\UserBalance;
 use Livewire\Component;
 use Livewire\Attributes\Validate;
 use Livewire\Attributes\On;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class AddModal extends Component
 {
@@ -17,6 +19,7 @@ class AddModal extends Component
     public $description = '';
 
     public $showModal = false;
+    public bool $isSubmitting = false;
 
     #[On('openAddBalance')]
     public function openModal()
@@ -26,16 +29,32 @@ class AddModal extends Component
 
     public function closeModal()
     {
-        $this->reset(['amount', 'description']);
+        $this->reset(['amount', 'description', 'isSubmitting']);
         $this->showModal = false;
     }
 
     public function addBalance()
     {
+        if ($this->isSubmitting) {
+            return;
+        }
+
         $this->validate();
 
+        $user = auth()->user();
+        if (!$user) {
+            return;
+        }
+
+        $lock = Cache::lock("user_add_balance_submit_{$user->id}", 10);
+        if (!$lock->get()) {
+            return;
+        }
+
+        $this->isSubmitting = true;
+
         try {
-            $user = auth()->user();
+            DB::beginTransaction();
 
             // Get or create user balance
             $userBalance = UserBalance::firstOrCreate(
@@ -55,12 +74,19 @@ class AddModal extends Component
             // Update balance
             $userBalance->increment('balance', $this->amount);
 
+            DB::commit();
+
             session()->flash('success', 'Saldo berhasil ditambahkan!');
 
             $this->dispatch('balance-updated');
             $this->closeModal();
         } catch (\Exception $e) {
+            DB::rollBack();
+            $this->isSubmitting = false;
+            $lock->release();
             session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        } finally {
+            $this->isSubmitting = false;
         }
     }
 

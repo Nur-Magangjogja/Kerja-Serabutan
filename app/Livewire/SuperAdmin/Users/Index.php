@@ -32,10 +32,6 @@ class Index extends Component
     public $place_of_birth = null;
     public $date_of_birth = null;
     public $gender = null;
-    public $rt = null;
-    public $rw = null;
-    public $kelurahan = null;
-    public $kecamatan = null;
     public $province = null;
     public $religion = null;
     public $marital_status = null;
@@ -100,10 +96,6 @@ class Index extends Component
         $this->place_of_birth = $user->place_of_birth;
         $this->date_of_birth = optional($user->date_of_birth)?->format('Y-m-d');
         $this->gender = $user->gender;
-        $this->rt = $user->rt;
-        $this->rw = $user->rw;
-        $this->kelurahan = $user->kelurahan;
-        $this->kecamatan = $user->kecamatan;
         $this->province = $user->province;
         $this->religion = $user->religion;
         $this->marital_status = $user->marital_status;
@@ -150,10 +142,6 @@ class Index extends Component
         $this->place_of_birth = null;
         $this->date_of_birth = null;
         $this->gender = null;
-        $this->rt = null;
-        $this->rw = null;
-        $this->kelurahan = null;
-        $this->kecamatan = null;
         $this->province = null;
         $this->religion = null;
         $this->marital_status = null;
@@ -182,10 +170,6 @@ class Index extends Component
             'managed_city_ids' => 'nullable|array',
             'managed_city_ids.*' => 'exists:cities,id',
             'nik' => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::unique('users', 'nik')->ignore($this->selectedUser?->id)],
-            'rt' => 'nullable|integer|min:1|max:999',
-            'rw' => 'nullable|integer|min:1|max:999',
-            'kelurahan' => 'nullable|string|max:100',
-            'kecamatan' => 'nullable|string|max:100',
             'province' => 'nullable|string|max:100',
             'date_of_birth' => 'nullable|date',
             'gender' => 'nullable|in:Laki-laki,Perempuan',
@@ -224,10 +208,6 @@ class Index extends Component
             'place_of_birth' => $this->place_of_birth,
             'date_of_birth' => $this->date_of_birth,
             'gender' => $this->gender,
-            'rt' => $this->rt,
-            'rw' => $this->rw,
-            'kelurahan' => $this->kelurahan,
-            'kecamatan' => $this->kecamatan,
             'province' => $this->province,
             'religion' => $this->religion,
             'marital_status' => $this->marital_status,

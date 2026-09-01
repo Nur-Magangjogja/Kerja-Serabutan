@@ -308,11 +308,9 @@
                     @endforelse
 
                         <!-- Pagination -->
-                    @if($helps->hasPages())
-                        <div class="mt-6">
-                            {{ $helps->links() }}
+                        <div class="mt-6 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs">
+                            {{ $helps->links('vendor.pagination.superadmin') }}
                         </div>
-                    @endif
                 </div>
             </div>
         </div>

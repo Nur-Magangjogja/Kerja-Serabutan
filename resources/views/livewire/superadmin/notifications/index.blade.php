@@ -133,10 +133,8 @@
     </div>
 
     <!-- Pagination -->
-    @if($notifications->hasPages())
-        <div class="mt-6">
-            {{ $notifications->links() }}
-        </div>
-    @endif
+    <div class="px-5 py-4 bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700 rounded-2xl shadow-xs">
+        {{ $notifications->links('vendor.pagination.superadmin') }}
+    </div>
 </div>
 

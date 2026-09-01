@@ -231,8 +231,8 @@
                         </div>
                     @endforeach
 
-                    <div class="mt-4">
-                        {{ $transactions->links() }}
+                    <div class="mt-4 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs">
+                        {{ $transactions->links('vendor.pagination.superadmin') }}
                     </div>
                 @else
                     <div class="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700/80 p-8 text-center shadow-xs">

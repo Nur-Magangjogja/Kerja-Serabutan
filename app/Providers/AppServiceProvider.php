@@ -37,6 +37,10 @@ class AppServiceProvider extends ServiceProvider
         // Register BalanceTransaction observer to update user balances when transactions complete
         \App\Models\BalanceTransaction::observe(\App\Observers\BalanceTransactionObserver::class);
 
+        // Set global default pagination view to unified 5-number design
+        \Illuminate\Pagination\Paginator::defaultView('vendor.pagination.superadmin');
+        \Illuminate\Pagination\Paginator::defaultSimpleView('vendor.pagination.superadmin');
+
         // Redirect authenticated users based on their role
         $this->configureRedirectsForAuthentication();
     }

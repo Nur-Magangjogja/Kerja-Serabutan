@@ -182,11 +182,9 @@
             </table>
         </div>
 
-        @if($verifications->hasPages())
-        <div class="px-5 py-3.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-750/30">
-            {{ $verifications->links() }}
+        <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
+            {{ $verifications->links('vendor.pagination.superadmin') }}
         </div>
-        @endif
     </div>
 
     {{-- ===== Detail Modal ===== --}}
@@ -239,12 +237,9 @@
                         </div>
 
                         <div class="bg-gray-50/70 dark:bg-gray-750/50 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-700/80">
-                            <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5">Alamat Lengkap KTP</h4>
+                            <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5">Wilayah kota</h4>
                             <p class="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3 break-words">{{ $selected->full_address }}</p>
-                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">RT / RW</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">RT {{ $selected->rt ? sprintf('%02d', (int)$selected->rt) : '-' }}/RW {{ $selected->rw ? sprintf('%02d', (int)$selected->rw) : '-' }}</span></div>
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Kelurahan</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->kelurahan ?? '-' }}</span></div>
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Kecamatan</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->kecamatan ?? '-' }}</span></div>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
                                 <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Kota / Kab</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->city ?? '-' }}</span></div>
                                 <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Provinsi</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->province ?? '-' }}</span></div>
                             </div>

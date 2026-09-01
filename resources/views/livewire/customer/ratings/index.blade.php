@@ -103,11 +103,9 @@
                     @endforeach
                 </div>
 
-                @if($ratings->hasPages())
-                    <div class="mt-6">
-                        {{ $ratings->links() }}
-                    </div>
-                @endif
+                <div class="mt-6 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs">
+                    {{ $ratings->links('vendor.pagination.superadmin') }}
+                </div>
             @else
                 <div class="text-center py-16">
                     <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">

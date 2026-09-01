@@ -74,17 +74,6 @@ class Registration extends Model
     public function getFullAddressAttribute(): string
     {
         $parts = [];
-        if (!empty($this->rt) || !empty($this->rw)) {
-            $rt = $this->rt ? sprintf('%02d', (int)$this->rt) : '-';
-            $rw = $this->rw ? sprintf('%02d', (int)$this->rw) : '-';
-            $parts[] = "RT {$rt}/RW {$rw}";
-        }
-        if (!empty($this->kelurahan)) {
-            $parts[] = 'Kel. ' . $this->kelurahan;
-        }
-        if (!empty($this->kecamatan)) {
-            $parts[] = 'Kec. ' . $this->kecamatan;
-        }
         if (!empty($this->city)) {
             $parts[] = $this->city;
         }

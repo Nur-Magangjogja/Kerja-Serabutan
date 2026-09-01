@@ -160,11 +160,9 @@
 							@endforeach
 						</div>
 
-						@if($completedHelps->hasPages())
-							<div class="mt-6">
-								{{ $completedHelps->links() }}
-							</div>
-						@endif
+						<div class="mt-6 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs">
+							{{ $completedHelps->links('vendor.pagination.superadmin') }}
+						</div>
 					@else
 						<div class="text-center py-8 text-gray-600">Data riwayat belum tersedia.</div>
 					@endif

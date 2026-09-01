@@ -491,7 +491,9 @@
                 @endif
 
                 @if(method_exists($availableHelps, 'links'))
-                    <div class="mt-4">{{ $availableHelps->links() }}</div>
+                    <div class="mt-4 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs">
+                        {{ $availableHelps->links('vendor.pagination.superadmin') }}
+                    </div>
                 @endif
             </div>
         </div>

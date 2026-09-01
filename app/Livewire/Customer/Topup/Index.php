@@ -6,6 +6,8 @@ use App\Models\BalanceTransaction;
 use Livewire\Component;
 use Midtrans\Config;
 use Midtrans\Snap;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class Index extends Component
 {
@@ -13,6 +15,7 @@ class Index extends Component
     public $method = 'bank';
     public $snapToken;
     public $orderId;
+    public bool $isSubmitting = false;
 
     protected $rules = [
         'amount' => 'required|numeric|min:10000',
@@ -30,7 +33,24 @@ class Index extends Component
 
     public function submit()
     {
+        if ($this->isSubmitting) {
+            return;
+        }
+
         $this->validate();
+
+        $user = auth()->user();
+        if (!$user) {
+            return;
+        }
+
+        // Atomic lock (10s) untuk mencegah duplicate submit
+        $lock = Cache::lock("user_midtrans_topup_submit_{$user->id}", 10);
+        if (!$lock->get()) {
+            return;
+        }
+
+        $this->isSubmitting = true;
 
         try {
             // Set Midtrans configuration
@@ -50,6 +70,8 @@ class Index extends Component
             ) {
                 session()->flash('error', 'Midtrans belum dikonfigurasi. Silakan daftar di https://dashboard.sandbox.midtrans.com/ dan masukkan kredensial Anda ke file .env');
                 \Log::error('Midtrans Server Key not configured in .env file');
+                $this->isSubmitting = false;
+                $lock->release();
                 return;
             }
 
@@ -60,10 +82,10 @@ class Index extends Component
             ) {
                 session()->flash('error', 'Midtrans belum dikonfigurasi. Silakan daftar di https://dashboard.sandbox.midtrans.com/ dan masukkan kredensial Anda ke file .env');
                 \Log::error('Midtrans Client Key not configured in .env file');
+                $this->isSubmitting = false;
+                $lock->release();
                 return;
             }
-
-            $user = auth()->user();
 
             // Generate unique order ID
             $this->orderId = 'TOPUP-' . $user->id . '-' . time();
@@ -121,6 +143,10 @@ class Index extends Component
             $this->dispatch('openMidtransSnap', snapToken: $this->snapToken);
 
         } catch (\Exception $e) {
+            $this->isSubmitting = false;
+            if (isset($lock)) {
+                $lock->release();
+            }
             \Log::error('Midtrans error: ' . $e->getMessage());
             \Log::error('Error details', [
                 'code' => $e->getCode(),
@@ -128,6 +154,8 @@ class Index extends Component
                 'line' => $e->getLine(),
             ]);
             session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        } finally {
+            $this->isSubmitting = false;
         }
     }
 

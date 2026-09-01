@@ -10,6 +10,8 @@ use App\Notifications\NewTopupRequest;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class TopupRequest extends Component
 {
@@ -17,6 +19,7 @@ class TopupRequest extends Component
 
     // Step management
     public $currentStep = 1;
+    public bool $isSubmitting = false;
 
     // Step 1 - Form data
     public $amount;
@@ -216,23 +219,65 @@ class TopupRequest extends Component
 
     public function submitRequest()
     {
+        if ($this->isSubmitting) {
+            return;
+        }
+
+        $userId = auth()->id();
+        if (!$userId) {
+            return;
+        }
+
+        // Atomic lock (10s) untuk mencegah eksekusi berulang dari double-click
+        $lock = Cache::lock("user_topup_submit_{$userId}", 10);
+        if (!$lock->get()) {
+            return;
+        }
+
+        $this->isSubmitting = true;
+
         $this->loadPaymentSettings();
         if (empty($this->qrisImage) || !$this->qrisEnabled) {
             $this->addError('proofOfPayment', 'Metode pembayaran QRIS sedang tidak tersedia / belum diatur admin. Silakan hubungi customer service.');
+            $this->isSubmitting = false;
+            $lock->release();
             return;
         }
 
         // Validate step 3 proof of payment
-        $this->validate([
-            'proofOfPayment' => 'required|image|max:2048|mimes:jpg,jpeg,png',
-        ], [
-            'proofOfPayment.required' => 'Bukti pembayaran QRIS wajib diupload',
-            'proofOfPayment.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
-            'proofOfPayment.mimes' => 'Format file harus berupa JPG, JPEG, atau PNG',
-            'proofOfPayment.max' => 'Ukuran file maksimal 2MB',
-        ]);
+        try {
+            $this->validate([
+                'proofOfPayment' => 'required|image|max:2048|mimes:jpg,jpeg,png',
+            ], [
+                'proofOfPayment.required' => 'Bukti pembayaran QRIS wajib diupload',
+                'proofOfPayment.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
+                'proofOfPayment.mimes' => 'Format file harus berupa JPG, JPEG, atau PNG',
+                'proofOfPayment.max' => 'Ukuran file maksimal 2MB',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->isSubmitting = false;
+            $lock->release();
+            throw $e;
+        }
+
+        // Cek duplikasi transaksi yang baru saja dibuat dalam 15 detik terakhir
+        $recentDuplicate = BalanceTransaction::where('user_id', $userId)
+            ->where('type', 'topup')
+            ->where('amount', $this->amount)
+            ->where('status', 'waiting_approval')
+            ->where('created_at', '>=', now()->subSeconds(15))
+            ->first();
+
+        if ($recentDuplicate) {
+            session()->forget('topup_form_data');
+            session()->flash('success', 'Request top-up telah berhasil dikirim sebelumnya (Kode: ' . ($recentDuplicate->request_code ?? $recentDuplicate->id) . ').');
+            $lock->release();
+            return $this->redirectRoute('customer.transactions.index', navigate: true);
+        }
 
         try {
+            DB::beginTransaction();
+
             // Upload proof of payment
             $proofPath = $this->proofOfPayment->store('proof-of-payment', 'public');
 
@@ -241,7 +286,7 @@ class TopupRequest extends Component
 
             // Create transaction (total_payment = amount, admin_fee = 0)
             $transaction = BalanceTransaction::create([
-                'user_id' => auth()->id(),
+                'user_id' => $userId,
                 'amount' => $this->amount,
                 'admin_fee' => 0,
                 'total_payment' => $this->amount,
@@ -257,6 +302,8 @@ class TopupRequest extends Component
                 'customer_notes' => $this->customerNotes ?: null,
                 'expired_at' => now()->addHours(24),
             ]);
+
+            DB::commit();
 
             // Send notification to customer safely
             try {
@@ -283,6 +330,9 @@ class TopupRequest extends Component
             return $this->redirectRoute('customer.transactions.index', navigate: true);
 
         } catch (\Exception $e) {
+            DB::rollBack();
+            $this->isSubmitting = false;
+            $lock->release();
             \Log::error('Topup request error: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat memproses top-up: ' . $e->getMessage());
         }

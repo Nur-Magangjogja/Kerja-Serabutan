@@ -169,8 +169,8 @@
         </div>
 
         <!-- Pagination -->
-        <div class="mt-6">
-            {{ $history->links() }}
+        <div class="mt-6 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs">
+            {{ $history->links('vendor.pagination.superadmin') }}
         </div>
     </div>
 @endsection

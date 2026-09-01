@@ -248,11 +248,9 @@
                 </table>
             </div>
 
-            @if ($transactions->hasPages())
-            <div class="px-5 py-3.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
-                {{ $transactions->links() }}
+            <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
+                {{ $transactions->links('vendor.pagination.superadmin') }}
             </div>
-            @endif
         </div>
     </div>
 
@@ -333,16 +331,23 @@
                     <!-- Actions in Modal -->
                     <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-wrap gap-2.5">
                         @if($selectedTransaction->status === 'waiting_approval' || $selectedTransaction->status === 'pending')
-                            <button type="button" wire:loading.attr="disabled"
-                                data-id="{{ $selectedTransaction->id }}"
-                                data-name="{{ $selectedTransaction->user->name ?? 'Customer' }}"
-                                data-amount="{{ 'Rp ' . number_format($selectedTransaction->amount, 0, ',', '.') }}"
-                                @click.prevent="openFromEl($event)"
-                                class="flex-1 px-4 py-2.5 text-xs sm:text-sm font-bold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition cursor-pointer shadow-xs">
-                                Setujui (Approve)
+                            <button type="button" 
+                                wire:click="approve({{ $selectedTransaction->id }})" 
+                                wire:loading.attr="disabled"
+                                wire:target="approve({{ $selectedTransaction->id }})"
+                                class="flex-1 px-4 py-2.5 text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl transition cursor-pointer shadow-xs disabled:opacity-50 flex items-center justify-center gap-1.5">
+                                <svg wire:loading wire:target="approve({{ $selectedTransaction->id }})" class="animate-spin h-4 w-4 text-white shrink-0" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <svg wire:loading.remove wire:target="approve({{ $selectedTransaction->id }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span wire:loading.remove wire:target="approve({{ $selectedTransaction->id }})">Setujui (Approve)</span>
+                                <span wire:loading wire:target="approve({{ $selectedTransaction->id }})">Menyetujui...</span>
                             </button>
                             <button type="button" wire:click="openRejectModal({{ $selectedTransaction->id }})" wire:loading.attr="disabled"
-                                class="flex-1 px-4 py-2.5 text-xs sm:text-sm font-bold bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition cursor-pointer shadow-xs">
+                                class="flex-1 px-4 py-2.5 text-xs sm:text-sm font-bold bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl transition cursor-pointer shadow-xs">
                                 Tolak Request
                             </button>
                         @elseif($selectedTransaction->status === 'completed' || $selectedTransaction->status === 'approved')
@@ -451,10 +456,10 @@
 
     <!-- Approval Confirmation Modal (Alpine) -->
     <template x-teleport="body">
-        <div x-cloak x-show="show" x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center" style="display: none;">
-            <div class="absolute inset-0 bg-black/50 backdrop-blur-xs" @click="close()" aria-hidden="true"></div>
+        <div x-cloak x-show="show" x-transition.opacity class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="display: none;">
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-xs" @click="close()" aria-hidden="true"></div>
 
-            <div x-transition class="relative w-full max-w-sm mx-4 px-4">
+            <div x-transition class="relative w-full max-w-sm mx-auto">
                 <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div class="p-6 relative">
                         <button @click="close()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">

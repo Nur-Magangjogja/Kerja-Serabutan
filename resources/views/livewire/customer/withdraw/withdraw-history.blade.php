@@ -164,8 +164,8 @@
                     @endforeach
                 </div>
 
-                <div class="pt-2">
-                    {{ $withdraws->links() }}
+                <div class="pt-4 border-t border-gray-100 dark:border-gray-700/80">
+                    {{ $withdraws->links('vendor.pagination.superadmin') }}
                 </div>
             @endif
         </div>

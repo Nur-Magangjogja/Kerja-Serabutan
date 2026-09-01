@@ -107,15 +107,6 @@ class Create extends Component
                     $this->setCityId($matchedCity->id);
                 }
             }
-
-            // Otomatis isi alamat lengkap jika sudah ada di profil customer
-            if (empty($this->full_address)) {
-                if (!empty($user->full_address) && $user->full_address !== '—') {
-                    $this->full_address = $user->full_address;
-                } elseif (!empty($user->address)) {
-                    $this->full_address = $user->address;
-                }
-            }
         }
 
         if (Schema::hasTable('req_provinces')) {

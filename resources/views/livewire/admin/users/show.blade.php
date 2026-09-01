@@ -16,90 +16,161 @@
     </div>
 
     {{-- ===== Main Content ===== --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-6">
-            <div class="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-lg">
-                        {{ strtoupper(substr($user->name, 0, 1)) }}
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {{-- Kolom Kiri: Informasi Akun & Aksi (8 cols) --}}
+        <div class="lg:col-span-8 space-y-6">
+            {{-- Data Profil & Identitas --}}
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 space-y-6">
+                {{-- User Header Card --}}
+                <div class="flex items-center justify-between pb-5 border-b border-gray-100 dark:border-gray-700 flex-wrap gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="relative">
+                            @if($user->selfie_url)
+                                <img src="{{ $user->selfie_url }}" alt="{{ $user->name }}" class="w-14 h-14 rounded-2xl object-cover ring-2 ring-primary-500/20 shadow-xs">
+                            @else
+                                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-xl shadow-xs">
+                                    {{ strtoupper(substr($user->name, 0, 1)) }}
+                                </div>
+                            @endif
+                            @if($user->verified)
+                                <span class="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 ring-2 ring-white dark:ring-gray-800" title="KTP Terverifikasi">
+                                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                </span>
+                            @endif
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-lg font-bold text-gray-900 dark:text-white">{{ $user->name }}</h2>
+                                <span class="text-xs font-mono text-gray-400 dark:text-gray-500">#{{ $user->id }}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ $user->email }}</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 class="text-lg font-bold text-gray-900 dark:text-white">{{ $user->name }}</h2>
-                        <p class="text-xs text-gray-400 dark:text-gray-500">ID Pengguna: #{{ $user->id }}</p>
+                    <div class="flex items-center gap-2">
+                        <span class="px-3 py-1 rounded-xl text-xs font-bold {{ $user->role === 'mitra' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' }}">
+                            {{ ucfirst($user->role) }}
+                        </span>
+                        <span class="px-3 py-1 rounded-xl text-xs font-semibold {{ $user->status === 'blocked' ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800' : ($user->status === 'inactive' ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800') }}">
+                            {{ $user->status === 'blocked' ? 'Diblokir' : ($user->status === 'inactive' ? 'Nonaktif' : 'Aktif') }}
+                        </span>
                     </div>
                 </div>
-                <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $user->role === 'mitra' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400' }}">
-                    {{ ucfirst($user->role) }}
-                </span>
+
+                {{-- Detail Fields Grid --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                    <div class="p-3 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700/80">
+                        <span class="text-gray-400 block text-[10px]">Nomor NIK KTP</span>
+                        <span class="font-bold font-mono text-gray-900 dark:text-gray-100 text-sm block mt-0.5">{{ $user->nik ?: 'Belum diisi' }}</span>
+                    </div>
+                    <div class="p-3 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700/80">
+                        <span class="text-gray-400 block text-[10px]">No. HP / WhatsApp</span>
+                        <span class="font-semibold text-gray-800 dark:text-gray-200 text-xs sm:text-sm block mt-0.5">{{ $user->phone ?: '—' }}</span>
+                    </div>
+                    <div class="p-3 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700/80">
+                        <span class="text-gray-400 block text-[10px]">Jenis Kelamin</span>
+                        <span class="font-semibold text-gray-800 dark:text-gray-200 block mt-0.5">{{ $user->gender ?: '—' }}</span>
+                    </div>
+                    <div class="p-3 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700/80">
+                        <span class="text-gray-400 block text-[10px]">Kota Operasional</span>
+                        <span class="font-semibold text-gray-800 dark:text-gray-200 block mt-0.5">{{ $user->city_name ?: '—' }}</span>
+                    </div>
+                    <div class="sm:col-span-2 p-3.5 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700/80 space-y-1">
+                        <span class="text-gray-400 block text-[10px]">Kota Wilayah</span>
+                        <p class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200 leading-relaxed">{{ $user->full_address }}</p>
+                    </div>
+                    <div class="p-3 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700/80">
+                        <span class="text-gray-400 block text-[10px]">Waktu Registrasi</span>
+                        <span class="font-medium text-gray-800 dark:text-gray-200 block mt-0.5">{{ optional($user->created_at)->translatedFormat('d M Y, H:i') ?? '—' }} WIB</span>
+                    </div>
+                    <div class="p-3 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700/80">
+                        <span class="text-gray-400 block text-[10px]">Aktivitas Terakhir</span>
+                        <span class="font-medium text-gray-800 dark:text-gray-200 truncate block mt-0.5">{{ $user->last_activity_at ? $user->last_activity_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Belum ada aktivitas' }}</span>
+                    </div>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div class="p-3 bg-gray-50 dark:bg-gray-700/40 rounded-lg">
-                    <p class="text-xs text-gray-400 dark:text-gray-500">Email</p>
-                    <p class="font-medium text-gray-800 dark:text-gray-200 mt-0.5">{{ $user->email }}</p>
+            {{-- Card Aksi Akun --}}
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <h3 class="text-sm font-bold text-gray-900 dark:text-white">Kelola Status Akses Akun</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Blokir atau aktifkan kembali akses pengguna ke sistem.</p>
                 </div>
-                <div class="p-3 bg-gray-50 dark:bg-gray-700/40 rounded-lg">
-                    <p class="text-xs text-gray-400 dark:text-gray-500">No. HP / Telepon</p>
-                    <p class="font-medium text-gray-800 dark:text-gray-200 mt-0.5">{{ $user->phone ?? '—' }}</p>
-                </div>
-                <div class="p-3 bg-gray-50 dark:bg-gray-700/40 rounded-lg">
-                    <p class="text-xs text-gray-400 dark:text-gray-500">Kota Operasional</p>
-                    <p class="font-medium text-gray-800 dark:text-gray-200 mt-0.5">{{ $user->city_name ?? '—' }}</p>
-                </div>
-                <div class="p-3 bg-gray-50 dark:bg-gray-700/40 rounded-lg">
-                    <p class="text-xs text-gray-400 dark:text-gray-500">Waktu Registrasi</p>
-                    <p class="font-medium text-gray-800 dark:text-gray-200 mt-0.5">{{ optional($user->created_at)->format('d M Y, H:i') ?? '—' }} WIB</p>
-                </div>
-                <div class="md:col-span-2 p-3.5 bg-gray-50 dark:bg-gray-700/40 rounded-lg space-y-2">
-                    <p class="text-xs text-gray-400 dark:text-gray-500 font-semibold">Alamat Lengkap</p>
-                    <p class="font-medium text-gray-800 dark:text-gray-200 text-sm">{{ $user->full_address }}</p>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
-                        <div class="bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-100 dark:border-gray-700"><span class="text-gray-400 block text-[10px]">RT / RW</span><span class="font-semibold text-gray-800 dark:text-gray-200">RT {{ $user->rt ? sprintf('%02d', (int)$user->rt) : '-' }}/RW {{ $user->rw ? sprintf('%02d', (int)$user->rw) : '-' }}</span></div>
-                        <div class="bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-100 dark:border-gray-700"><span class="text-gray-400 block text-[10px]">Kelurahan</span><span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $user->kelurahan ?? '-' }}</span></div>
-                        <div class="bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-100 dark:border-gray-700"><span class="text-gray-400 block text-[10px]">Kecamatan</span><span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $user->kecamatan ?? '-' }}</span></div>
-                        <div class="bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-100 dark:border-gray-700"><span class="text-gray-400 block text-[10px]">Provinsi</span><span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $user->province ?? '-' }}</span></div>
-                    </div>
-                </div>
+                <form action="{{ route('admin.partners.toggle', $user->id) }}" method="POST" id="show-block-form">
+                    @csrf
+                    <input type="hidden" name="admin_password" id="show-admin-password-input" value="" />
+                    <button type="button" id="btn-show-block-trigger"
+                        class="px-5 py-2.5 rounded-xl text-xs font-bold {{ $user->status === 'blocked' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white' }} shadow-xs hover:shadow transition-all cursor-pointer">
+                        {{ $user->status === 'blocked' ? 'Buka Blokir Akun' : 'Blokir Akun Pengguna' }}
+                    </button>
+                </form>
             </div>
         </div>
 
-        {{-- Sidebar Action Cards --}}
-        <div class="space-y-4">
-            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-3">
-                <h3 class="text-sm font-bold text-gray-800 dark:text-white">Status Akun</h3>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-500 dark:text-gray-400">Status</span>
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $user->status === 'blocked' ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' }}">
-                        {{ $user->status === 'blocked' ? 'Diblokir' : ($user->status === 'inactive' ? 'Nonaktif' : 'Aktif') }}
-                    </span>
+        {{-- Kolom Kanan: Dokumen KTP & Selfie (4 cols) --}}
+        <div class="lg:col-span-4 space-y-6">
+            {{-- Card Foto KTP --}}
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-3.5">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>🪪</span> Foto e-KTP
+                    </h3>
+                    @if($user->verified)
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                            ✓ Terverifikasi
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                            Belum Verifikasi
+                        </span>
+                    @endif
                 </div>
-                <div class="pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <form action="{{ route('admin.partners.toggle', $user->id) }}" method="POST" id="show-block-form">
-                        @csrf
-                        <input type="hidden" name="admin_password" id="show-admin-password-input" value="" />
-                        <button type="button" id="btn-show-block-trigger"
-                            class="w-full px-4 py-2.5 rounded-lg text-xs font-semibold {{ $user->status === 'blocked' ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-rose-600 text-white hover:bg-rose-700' }} transition-colors">
-                            {{ $user->status === 'blocked' ? 'Buka Blokir Pengguna' : 'Blokir Pengguna' }}
-                        </button>
-                    </form>
-                </div>
-            </div>
 
-            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-3">
-                <h3 class="text-sm font-bold text-gray-800 dark:text-white">Verifikasi KTP</h3>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-500 dark:text-gray-400">Status</span>
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $user->verified ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400' }}">
-                        {{ $user->verified ? 'Terverifikasi' : 'Belum Verifikasi' }}
-                    </span>
-                </div>
-                @if ($user->ktp_path)
-                <a href="{{ Storage::url($user->ktp_path) }}" target="_blank"
-                    class="block text-center px-4 py-2 text-xs font-semibold bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50 rounded-lg transition-colors">
-                    Lihat Dokumen KTP
-                </a>
+                @if($user->ktp_url)
+                    <div class="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-900/10 dark:bg-gray-900/40 shadow-xs aspect-16/10">
+                        <img src="{{ $user->ktp_url }}" alt="Dokumen KTP {{ $user->name }}" class="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <a href="{{ $user->ktp_url }}" target="_blank" class="px-3.5 py-1.5 bg-white/95 hover:bg-white text-gray-900 text-xs font-bold rounded-lg shadow transition">
+                                Buka Foto
+                            </a>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between text-xs pt-1">
+                        <a href="{{ $user->ktp_url }}" target="_blank" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            Buka Foto Asli
+                        </a>
+                        <a href="{{ $user->ktp_url }}" download class="text-gray-500 dark:text-gray-400 hover:underline flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            Unduh Berkas
+                        </a>
+                    </div>
+                @else
+                    <div class="rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 p-6 text-center space-y-2">
+                        <div class="w-10 h-10 mx-auto rounded-xl bg-gray-100 dark:bg-gray-750 flex items-center justify-center text-gray-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </div>
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">Belum Ada Dokumen KTP</p>
+                        <p class="text-[11px] text-gray-400 dark:text-gray-500">Pengguna belum mengunggah dokumen e-KTP.</p>
+                    </div>
                 @endif
             </div>
+
+            {{-- Card Foto Selfie jika ada --}}
+            @if($user->selfie_url)
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-3">
+                <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>🤳</span> Foto Selfie Verifikasi
+                </h3>
+                <div class="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-900/10 shadow-xs aspect-4/3">
+                    <img src="{{ $user->selfie_url }}" alt="Selfie {{ $user->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                </div>
+                <div class="text-right">
+                    <a href="{{ $user->selfie_url }}" target="_blank" class="text-xs text-primary-600 dark:text-primary-400 font-semibold hover:underline">
+                        Buka Foto Asli &rarr;
+                    </a>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 </div>

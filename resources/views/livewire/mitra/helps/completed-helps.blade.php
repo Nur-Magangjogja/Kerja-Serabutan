@@ -198,8 +198,8 @@
                             </div>
                         @endforeach
 
-                        <div class="mt-4">
-                            {{ $helps->links() }}
+                        <div class="mt-4 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs">
+                            {{ $helps->links('vendor.pagination.superadmin') }}
                         </div>
                     </div>
                 @endif
@@ -258,8 +258,8 @@
                             </div>
                         @endforeach
 
-                        <div class="mt-4">
-                            {{ $cancelledActivities->links() }}
+                        <div class="mt-4 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs">
+                            {{ $cancelledActivities->links('vendor.pagination.superadmin') }}
                         </div>
                     </div>
                 @endif

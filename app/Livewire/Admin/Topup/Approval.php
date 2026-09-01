@@ -344,7 +344,7 @@ class Approval extends Component
         $totalAll = (clone $baseQuery)->count();
 
         $query = BalanceTransaction::where('type', 'topup')
-            ->with(['user', 'approvedBy']);
+            ->with(['user', 'user.city', 'approvedBy']);
 
         if ($admin->city_id) {
             $query->whereHas('user', fn($q) => $q->where('city_id', $admin->city_id));

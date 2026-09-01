@@ -24,8 +24,9 @@
     </style>
     <script>
         (function() {
-            window.applyTheme = function(mode) {
+            window.applyTheme = function(mode, opts) {
                 try {
+                    var skipIfSame = opts && opts.skipIfSame;
                     mode = mode || localStorage.getItem('theme') || localStorage.getItem('color-theme') || 'system';
                     if (mode !== 'dark' && mode !== 'light') mode = 'system';
                     var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -33,28 +34,22 @@
                     var d = document.documentElement;
                     var currentlyDark = d.classList.contains('dark');
 
-                    // If state is already what was requested, do not force redundant DOM mutations / animations
-                    if (isDark !== currentlyDark) {
-                        var css = document.createElement('style');
-                        css.type = 'text/css';
-                        css.appendChild(document.createTextNode('*,*::before,*::after{-webkit-transition:none!important;-moz-transition:none!important;-o-transition:none!important;-ms-transition:none!important;transition:none!important}'));
-                        document.head.appendChild(css);
+                    // Skip redundant DOM mutation to prevent unnecessary repaints / flash
+                    if (skipIfSame && isDark === currentlyDark) {
+                        window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: mode, isDark: isDark } }));
+                        return;
+                    }
 
-                        if (isDark) {
-                            d.classList.add('dark');
-                            d.style.colorScheme = 'dark';
-                            d.style.backgroundColor = '#111827';
-                            if (document.body) document.body.style.backgroundColor = '#111827';
-                        } else {
-                            d.classList.remove('dark');
-                            d.style.colorScheme = 'light';
-                            d.style.backgroundColor = '#f3f4f6';
-                            if (document.body) document.body.style.backgroundColor = '#f3f4f6';
-                        }
-
-                        setTimeout(function() {
-                            if (css.parentNode) css.parentNode.removeChild(css);
-                        }, 50);
+                    if (isDark) {
+                        d.classList.add('dark');
+                        d.style.colorScheme = 'dark';
+                        d.style.backgroundColor = '#111827';
+                        if (document.body) document.body.style.backgroundColor = '#111827';
+                    } else {
+                        d.classList.remove('dark');
+                        d.style.colorScheme = 'light';
+                        d.style.backgroundColor = '#f3f4f6';
+                        if (document.body) document.body.style.backgroundColor = '#f3f4f6';
                     }
 
                     window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: mode, isDark: isDark } }));
@@ -75,8 +70,8 @@
                 return 'system';
             };
 
-            // Execute immediately on page load
-            window.applyTheme();
+            // Execute immediately on page load - skip if HTML already has correct class
+            window.applyTheme(null, { skipIfSame: true });
 
             function scrollToActiveSidebarItem() {
                 requestAnimationFrame(function() {
@@ -92,9 +87,33 @@
             }
 
             document.addEventListener('DOMContentLoaded', scrollToActiveSidebarItem);
-            document.addEventListener('livewire:navigating', function() { if (window.applyTheme) window.applyTheme(); });
+
+            // --- Livewire SPA navigation: freeze transitions during page morph ---
+            var _noTransEl = null;
+
+            function _disableTransitions() {
+                if (_noTransEl) return;
+                _noTransEl = document.createElement('style');
+                _noTransEl.textContent = '*,*::before,*::after{transition:none!important;animation-duration:0.01ms!important;}';
+                document.head.appendChild(_noTransEl);
+            }
+
+            function _enableTransitions() {
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() {
+                        if (_noTransEl && _noTransEl.parentNode) _noTransEl.parentNode.removeChild(_noTransEl);
+                        _noTransEl = null;
+                    });
+                });
+            }
+
+            document.addEventListener('livewire:navigating', function() {
+                _disableTransitions();
+                window.applyTheme(null, { skipIfSame: true });
+            });
             document.addEventListener('livewire:navigated', function() { 
-                if (window.applyTheme) window.applyTheme(); 
+                window.applyTheme(null, { skipIfSame: false });
+                _enableTransitions();
                 scrollToActiveSidebarItem();
             });
         })();

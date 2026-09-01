@@ -187,11 +187,9 @@
                 </table>
             </div>
 
-            @if ($users->hasPages())
-                <div class="px-5 py-3.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
-                    {{ $users->links() }}
-                </div>
-            @endif
+            <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
+                {{ $users->links('vendor.pagination.superadmin') }}
+            </div>
         @endif
     </div>
 </div>

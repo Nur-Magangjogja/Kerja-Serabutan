@@ -159,11 +159,9 @@
             </div>
 
             <!-- Pagination -->
-            @if($transactions->hasPages())
-                <div class="mt-6">
-                    {{ $transactions->links() }}
-                </div>
-            @endif
+            <div class="mt-6 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs">
+                {{ $transactions->links('vendor.pagination.superadmin') }}
+            </div>
         </div>
     </div>
 

@@ -66,7 +66,7 @@
         <!-- Step 1: Form Pengisian Data -->
         @if ($currentStep === 1)
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
-                <form wire:submit.prevent="nextStep" class="space-y-4">
+                <form wire:submit="nextStep" class="space-y-4">
                     <!-- Nominal -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Nominal Top-Up *</label>
@@ -137,9 +137,10 @@
                             class="px-6 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold text-center hover:bg-gray-50 dark:hover:bg-gray-600 transition cursor-pointer">
                             Batal
                         </a>
-                        <button type="submit"
-                            class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition shadow-md shadow-blue-500/20 cursor-pointer">
-                            Lanjutkan →
+                        <button type="submit" wire:loading.attr="disabled" wire:target="nextStep"
+                            class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition shadow-md shadow-blue-500/20 cursor-pointer disabled:opacity-50">
+                            <span wire:loading.remove wire:target="nextStep">Lanjutkan →</span>
+                            <span wire:loading wire:target="nextStep">Memproses...</span>
                         </button>
                     </div>
                 </form>
@@ -214,9 +215,10 @@
                             class="px-6 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-600 transition cursor-pointer">
                             ← Kembali
                         </button>
-                        <button type="button" wire:click="nextStep"
-                            class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition shadow-md shadow-blue-500/20 cursor-pointer">
-                            Lanjut ke QRIS →
+                        <button type="button" wire:click="nextStep" wire:loading.attr="disabled" wire:target="nextStep"
+                            class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition shadow-md shadow-blue-500/20 cursor-pointer disabled:opacity-50">
+                            <span wire:loading.remove wire:target="nextStep">Lanjut ke QRIS →</span>
+                            <span wire:loading wire:target="nextStep">Memproses...</span>
                         </button>
                     </div>
                 </div>
@@ -260,33 +262,19 @@
                         </button>
                     </div>
                 @else
-                    <!-- QRIS Card Display -->
-                    <div class="border-2 border-blue-500/40 dark:border-blue-500/30 bg-blue-50/40 dark:bg-blue-950/20 rounded-2xl p-4 sm:p-5 text-center space-y-3">
-                        <div class="flex items-center justify-center gap-2">
-                            <span class="text-lg">📱</span>
-                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">
-                                SCAN QRIS PEMBAYARAN
-                            </h3>
-                        </div>
-
-                        @php
-                            $displayQrisUrl = str_starts_with($qrisImage, 'images/') 
-                                ? asset($qrisImage) 
-                                : asset('storage/' . $qrisImage);
-                        @endphp
-
-                        <!-- QR Box Frame -->
-                        <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 inline-block mx-auto max-w-[270px] w-full">
+                    <!-- QRIS Image Box -->
+                    <div class="bg-gradient-to-b from-gray-50 to-white dark:from-gray-700/50 dark:to-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-600 text-center space-y-3">
+                        <div class="inline-block p-3 bg-white rounded-2xl shadow-md border border-gray-100">
+                            @php
+                                $displayQrisUrl = str_starts_with($qrisImage, 'images/') ? asset($qrisImage) : asset('storage/' . $qrisImage);
+                            @endphp
                             <img src="{{ $displayQrisUrl }}" 
-                                alt="QRIS Barcode" 
-                                class="w-56 h-56 object-contain rounded-xl mx-auto">
-                            
-                            <div class="mt-2.5 pt-2 border-t border-gray-100 text-center">
-                                <p class="text-xs font-bold text-gray-900 truncate">
-                                    {{ $qrisMerchantName ?: 'PT SayaBantu' }}
-                                </p>
+                                 alt="QRIS Barcode" 
+                                 class="w-56 h-56 sm:w-64 sm:h-64 object-contain mx-auto rounded-lg">
+                            <div class="mt-2 text-center">
+                                <p class="text-xs font-bold text-gray-900 uppercase tracking-wider">{{ $qrisMerchantName ?: 'PT SAYA BANTU NUSANTARA' }}</p>
                                 @if($qrisNmid)
-                                    <p class="text-[10px] text-gray-500 font-mono mt-0.5">NMID: {{ $qrisNmid }}</p>
+                                    <p class="text-[11px] text-gray-500 font-mono">NMID: {{ $qrisNmid }}</p>
                                 @endif
                             </div>
 
@@ -315,7 +303,10 @@
                         </div>
                     </div>
 
-                    <form wire:submit.prevent="submitRequest" class="space-y-4">
+                    <form wire:submit="submitRequest" 
+                          x-data="{ isSubmitting: false }" 
+                          @submit="if(isSubmitting) { $event.preventDefault(); return false; } isSubmitting = true" 
+                          class="space-y-4">
                         <!-- Upload Bukti Transfer -->
                         <div>
                             <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
@@ -363,15 +354,21 @@
 
                         <!-- Action Buttons -->
                         <div class="flex gap-3 pt-2">
-                            <button type="button" wire:click="previousStep"
-                                class="px-6 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-600 transition cursor-pointer">
+                            <button type="button" wire:click="previousStep" wire:loading.attr="disabled" wire:target="submitRequest"
+                                class="px-6 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-600 transition cursor-pointer disabled:opacity-50">
                                 ← Kembali
                             </button>
                             <button type="submit"
-                                class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl font-semibold transition shadow-md shadow-blue-500/20 cursor-pointer disabled:opacity-50"
-                                wire:loading.attr="disabled">
-                                <span wire:loading.remove>Kirim Bukti Pembayaran</span>
-                                <span wire:loading>Mengirim Request...</span>
+                                class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl font-semibold transition shadow-md shadow-blue-500/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                wire:loading.attr="disabled"
+                                wire:target="submitRequest, proofOfPayment"
+                                :disabled="isSubmitting || $wire.isSubmitting">
+                                <svg wire:loading wire:target="submitRequest" class="animate-spin h-4 w-4 text-white shrink-0" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span wire:loading.remove wire:target="submitRequest">Kirim Bukti Pembayaran</span>
+                                <span wire:loading wire:target="submitRequest">Mengirim Request...</span>
                             </button>
                         </div>
                     </form>
