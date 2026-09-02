@@ -21,6 +21,7 @@ class AdminUsers extends Component
     public $roleFilter = 'admin';
     public $perPage = 10;
     public $selectedUser = null;
+    public $selectedUserId = null;
 
     // form fields
     public $name = '';
@@ -111,6 +112,7 @@ class AdminUsers extends Component
             return;
         }
         $this->selectedUser = $user;
+        $this->selectedUserId = $user->id;
         $this->showViewModal = true;
     }
 
@@ -122,6 +124,7 @@ class AdminUsers extends Component
             return;
         }
         $this->selectedUser = $user;
+        $this->selectedUserId = $user->id;
         $this->name = $user->name;
         $this->email = $user->email;
         $this->phone = $user->phone;
@@ -171,6 +174,7 @@ class AdminUsers extends Component
     public function resetForm()
     {
         $this->selectedUser = null;
+        $this->selectedUserId = null;
         $this->name = '';
         $this->email = '';
         $this->phone = '';
@@ -195,9 +199,11 @@ class AdminUsers extends Component
 
     public function saveUser()
     {
+        $userId = $this->selectedUserId ?? (is_array($this->selectedUser) ? ($this->selectedUser['id'] ?? null) : ($this->selectedUser->id ?? null));
+
         $emailRules = ['required', 'email', 'max:255'];
-        if ($this->selectedUser) {
-            $emailRules[] = Rule::unique('users', 'email')->ignore($this->selectedUser->id);
+        if ($userId) {
+            $emailRules[] = Rule::unique('users', 'email')->ignore($userId);
         } else {
             $emailRules[] = 'unique:users,email';
         }
@@ -212,16 +218,14 @@ class AdminUsers extends Component
             'city_id' => 'nullable|exists:cities,id',
             'managed_city_ids' => 'nullable|array',
             'managed_city_ids.*' => 'exists:cities,id',
-            'nik' => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::unique('users', 'nik')->ignore($this->selectedUser?->id)],
+            'nik' => ['nullable', 'string', 'max:50', Rule::unique('users', 'nik')->ignore($userId)],
             'address' => 'nullable|string|max:1000',
-            'rt' => 'nullable|integer|min:1|max:999',
-            'rw' => 'nullable|integer|min:1|max:999',
             'date_of_birth' => 'nullable|date',
             'gender' => 'nullable|in:Laki-laki,Perempuan',
             'occupation' => 'nullable|string|max:150',
         ];
 
-        if ($this->selectedUser) {
+        if ($userId) {
             $rules['password'] = 'nullable|string|min:8';
             $rules['adminPassword'] = 'required|string';
         } else {
@@ -232,7 +236,7 @@ class AdminUsers extends Component
             'adminPassword.required' => 'Kata sandi Superadmin wajib dimasukkan untuk mengonfirmasi perubahan data admin.',
         ]);
 
-        if ($this->selectedUser) {
+        if ($userId) {
             if (!\Illuminate\Support\Facades\Hash::check($this->adminPassword, auth()->user()->password)) {
                 $this->addError('adminPassword', 'Kata sandi Superadmin yang Anda masukkan salah. Perubahan data admin dibatalkan.');
                 return;
@@ -273,8 +277,8 @@ class AdminUsers extends Component
             $data['email_verified_at'] = null;
         }
 
-        if ($this->selectedUser) {
-            $user = User::find($this->selectedUser->id);
+        if ($userId) {
+            $user = User::find($userId);
             if (!$user) {
                 session()->flash('error', 'Admin tidak ditemukan');
                 return;

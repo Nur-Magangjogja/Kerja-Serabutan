@@ -597,7 +597,7 @@
     document.addEventListener('livewire:navigated', safeInit);
 
     window.addEventListener('theme-changed', function() {
-        if (usersChart) {
+        if (usersChart && document.getElementById('usersChart')) {
             const currentRange = localStorage.getItem('superadmin.usersChart.range') || 'daily';
             initUsersChart();
         }

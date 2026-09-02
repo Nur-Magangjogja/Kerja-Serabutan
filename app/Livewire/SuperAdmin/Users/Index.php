@@ -17,6 +17,7 @@ class Index extends Component
     public $roleFilter = '';
     public $perPage = 10;
     public $selectedUser = null;
+    public $selectedUserId = null;
 
     // form fields
     public $name;
@@ -63,14 +64,43 @@ class Index extends Component
         $this->resetPage();
     }
 
-    public function viewUser($id)
+    public function toggleVerified($id)
     {
         $user = User::find($id);
         if (!$user) {
             session()->flash('error', 'User not found');
             return;
         }
+
+        $user->verified = !$user->verified;
+        $user->save();
+
+        session()->flash('message', 'User verification updated.');
+    }
+
+    public function toggleStatus($id)
+    {
+        $user = User::find($id);
+        if (!$user) {
+            session()->flash('error', 'User not found');
+            return;
+        }
+
+        $user->status = ($user->status === 'active') ? 'inactive' : 'active';
+        $user->save();
+
+        session()->flash('message', 'User status updated.');
+    }
+
+    public function viewUser($id)
+    {
+        $user = User::with(['city', 'managedCities'])->find($id);
+        if (!$user) {
+            session()->flash('error', 'User not found');
+            return;
+        }
         $this->selectedUser = $user;
+        $this->selectedUserId = $user->id;
         $this->showViewModal = true;
     }
 
@@ -83,6 +113,7 @@ class Index extends Component
             return;
         }
         $this->selectedUser = $user;
+        $this->selectedUserId = $user->id;
         $this->name = $user->name;
         $this->email = $user->email;
         $this->phone = $user->phone;
@@ -129,6 +160,7 @@ class Index extends Component
     public function resetForm()
     {
         $this->selectedUser = null;
+        $this->selectedUserId = null;
         $this->name = '';
         $this->email = '';
         $this->phone = '';
@@ -151,10 +183,12 @@ class Index extends Component
 
     public function saveUser()
     {
+        $userId = $this->selectedUserId ?? (is_array($this->selectedUser) ? ($this->selectedUser['id'] ?? null) : ($this->selectedUser->id ?? null));
+
         // build validation rules and handle unique email on update
         $emailRules = ['required', 'email', 'max:255'];
-        if ($this->selectedUser) {
-            $emailRules[] = Rule::unique('users', 'email')->ignore($this->selectedUser->id);
+        if ($userId) {
+            $emailRules[] = Rule::unique('users', 'email')->ignore($userId);
         } else {
             $emailRules[] = 'unique:users,email';
         }
@@ -169,14 +203,14 @@ class Index extends Component
             'city_id' => 'nullable|exists:cities,id',
             'managed_city_ids' => 'nullable|array',
             'managed_city_ids.*' => 'exists:cities,id',
-            'nik' => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::unique('users', 'nik')->ignore($this->selectedUser?->id)],
+            'nik' => ['nullable', 'string', 'max:50', Rule::unique('users', 'nik')->ignore($userId)],
             'province' => 'nullable|string|max:100',
             'date_of_birth' => 'nullable|date',
             'gender' => 'nullable|in:Laki-laki,Perempuan',
             'occupation' => 'nullable|string|max:150',
         ];
 
-        if ($this->selectedUser) {
+        if ($userId) {
             $rules['password'] = 'nullable|string|min:8';
         } else {
             $rules['password'] = 'required|string|min:8';
@@ -203,7 +237,8 @@ class Index extends Component
             'status' => $this->status,
             'verified' => $this->verified,
             'city_id' => $this->city_id,
-            'city' => $cityName ?? ($this->selectedUser?->city),
+            'city_name' => $cityName,
+            'address' => $this->address,
             'nik' => $this->nik,
             'place_of_birth' => $this->place_of_birth,
             'date_of_birth' => $this->date_of_birth,
@@ -214,8 +249,14 @@ class Index extends Component
             'occupation' => $this->occupation,
         ];
 
-        if ($this->selectedUser) {
-            $user = User::find($this->selectedUser->id);
+        if ($this->verified) {
+            $data['email_verified_at'] = now();
+        } else {
+            $data['email_verified_at'] = null;
+        }
+
+        if ($userId) {
+            $user = User::find($userId);
             if (!$user) {
                 session()->flash('error', 'User not found');
                 return;

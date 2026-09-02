@@ -261,7 +261,7 @@
     {{-- ===== Detail Modal ===== --}}
     @if ($showDetailModal && $selectedTransaction)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4" wire:click="closeModal">
-            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative border border-gray-100 dark:border-gray-700" wire:click.stop>
+            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative border border-gray-100 dark:border-gray-700" @click.stop>
                 <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-6 py-4 rounded-t-3xl z-10 flex items-center justify-between">
                     <div>
                         <h2 class="text-base font-bold text-gray-900 dark:text-white">Detail Transaksi Top-Up</h2>
@@ -374,7 +374,7 @@
     {{-- ===== Reject Modal ===== --}}
     @if ($showRejectModal && $selectedTransaction)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[110] flex items-center justify-center p-4" wire:click="closeModal">
-            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-3xl shadow-2xl w-full max-w-md p-6 z-[120] border border-gray-100 dark:border-gray-700" wire:click.stop>
+            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-3xl shadow-2xl w-full max-w-md p-6 z-[120] border border-gray-100 dark:border-gray-700" @click.stop>
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
@@ -411,7 +411,7 @@
     {{-- ===== Cancel Approval Modal (Fraud / Barcode Salah) ===== --}}
     @if ($showCancelApprovalModal && $selectedTransaction)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[110] flex items-center justify-center p-4" wire:click="closeModal">
-            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-3xl shadow-2xl w-full max-w-lg p-6 z-[120] border border-rose-200 dark:border-rose-900/60" wire:click.stop>
+            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-3xl shadow-2xl w-full max-w-lg p-6 z-[120] border border-rose-200 dark:border-rose-900/60" @click.stop>
                 <div class="flex items-start gap-3.5 mb-4">
                     <div class="w-11 h-11 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>

@@ -723,7 +723,7 @@
              style="background: rgba(0,0,0,0.6);" 
              wire:click="$set('showPartnerCancelModal', false)">
             <div class="bg-white dark:bg-gray-800 rounded-t-3xl w-full max-w-md shadow-2xl animate-slide-up relative" 
-                 wire:click.stop 
+                 @click.stop 
                  style="padding-bottom: env(safe-area-inset-bottom,24px);">
                 
                 {{-- Header --}}

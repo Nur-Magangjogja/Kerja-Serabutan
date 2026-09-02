@@ -190,7 +190,7 @@
     {{-- ===== Detail Modal ===== --}}
     @if($showModal && $selected)
     <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto" role="dialog" aria-modal="true" wire:click="closeModal">
-        <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-4xl shadow-2xl my-auto max-h-[92vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700" wire:click.stop>
+        <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-4xl shadow-2xl my-auto max-h-[92vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700" @click.stop>
             {{-- Header --}}
             <div class="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
                 <div class="flex items-center gap-3 min-w-0 flex-1 pr-2">

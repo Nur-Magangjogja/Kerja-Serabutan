@@ -261,7 +261,8 @@
 
         {{-- Section 2: 100% REAKTIF LIVEWIRE MULTI-TIPE FINANCIAL CHART --}}
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 sm:p-6 border border-gray-200/80 dark:border-gray-700 shadow-xs space-y-4"
-             x-data="financialChartController()">
+             x-data="financialChartController()"
+             @theme-changed.window="renderChart()">
             
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-gray-100 dark:border-gray-700/80 pb-4">
                 <div>
@@ -783,12 +784,11 @@ function financialChartController() {
             this.$nextTick(() => {
                 this.renderChart();
             });
-            this.$wire.$watch('chartData', () => {
-                this.renderChart();
-            });
-            window.addEventListener('theme-changed', () => {
-                this.renderChart();
-            });
+            if (this.$wire && typeof this.$wire.$watch === 'function') {
+                this.$wire.$watch('chartData', () => {
+                    this.renderChart();
+                });
+            }
         },
         toggleDataset(key) {
             this.activeDatasets[key] = !this.activeDatasets[key];
@@ -800,15 +800,26 @@ function financialChartController() {
         },
         renderChart() {
             const canvas = document.getElementById('superadminMultiFinancialChart');
-            if (!canvas) return;
+            if (!canvas || !document.body.contains(canvas)) return;
 
             if (typeof Chart === 'undefined') {
-                setTimeout(() => this.renderChart(), 100);
+                setTimeout(() => {
+                    if (document.getElementById('superadminMultiFinancialChart')) {
+                        this.renderChart();
+                    }
+                }, 100);
+                return;
+            }
+
+            let dataObj = { labels: [] };
+            try {
+                if (!this.$el || !document.body.contains(this.$el)) return;
+                dataObj = (this.$wire && typeof this.$wire.get === 'function') ? (this.$wire.get('chartData') || { labels: [] }) : { labels: [] };
+            } catch (e) {
                 return;
             }
 
             const isDark = document.documentElement.classList.contains('dark');
-            const dataObj = this.$wire.get('chartData') || { labels: [] };
             const labels = dataObj.labels || [];
 
             const datasets = [

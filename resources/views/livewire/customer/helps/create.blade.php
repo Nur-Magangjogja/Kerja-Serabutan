@@ -1014,7 +1014,7 @@
         <div class="modal-overlay fixed inset-0 z-[9999] flex items-end justify-center animate-fade-in"
             style="background: rgba(0,0,0,0.6);" wire:click="closeConfirmModal">
             <div class="bg-white dark:bg-gray-850 bg-white dark:bg-gray-800 rounded-t-3xl w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto hide-scrollbar animate-slide-up relative border-t border-gray-150 dark:border-gray-700 text-gray-900 dark:text-gray-100"
-                wire:click.stop style="padding-bottom: env(safe-area-inset-bottom,24px);">
+                @click.stop style="padding-bottom: env(safe-area-inset-bottom,24px);">
                 <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 rounded-t-3xl z-10">
                     <div class="flex items-center justify-between">
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Konfirmasi Permintaan</h3>

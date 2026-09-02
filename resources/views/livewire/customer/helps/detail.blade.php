@@ -821,7 +821,7 @@
     {{-- Real-time Tracking Map Modal --}}
     @if($showMapModal)
         <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" wire:click="closeMapModal" data-tracking-modal>
-            <div class="bg-white rounded-2xl w-full max-w-md mx-auto flex flex-col shadow-2xl" style="max-height: 85vh;" wire:click.stop>
+            <div class="bg-white rounded-2xl w-full max-w-md mx-auto flex flex-col shadow-2xl" style="max-height: 85vh;" @click.stop>
                 {{-- Header --}}
                 <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl shrink-0">
                     <div class="flex items-center gap-2.5">
@@ -893,7 +893,7 @@
     {{-- Cancel Confirmation Modal --}}
     @if($showCancelConfirm)
         <div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4" wire:click="closeModal" data-confirm-modal>
-            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700" wire:click.stop style="transform: translateY(-120px);">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700" @click.stop style="transform: translateY(-120px);">
                 <div class="text-center">
                     <div class="w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg class="w-8 h-8 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

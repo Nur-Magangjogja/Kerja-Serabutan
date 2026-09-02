@@ -262,7 +262,7 @@
     @if($showDetailModal && $selectedHelp)
         <div class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" wire:click="closeDetailModal">
             <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 max-h-[90vh] flex flex-col animate-scale-in"
-                 wire:click.stop>
+                 @click.stop>
                 
                 {{-- Header --}}
                 <div class="bg-gradient-to-r from-primary-600 to-blue-700 px-6 py-5 text-white flex items-center justify-between flex-shrink-0">

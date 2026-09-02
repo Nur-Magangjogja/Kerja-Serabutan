@@ -375,7 +375,7 @@
     <!-- Edit Modal (z-[70] to clear floating bottom nav) -->
     @if(isset($editingHelp) && $editingHelp)
         <div class="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4" wire:click="closeEdit">
-            <div class="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto hide-scrollbar text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700" wire:click.stop>
+            <div class="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto hide-scrollbar text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700" @click.stop>
                 <!-- Modal Header -->
                 <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 rounded-t-3xl sm:rounded-t-2xl z-10">
                     <div class="flex items-center justify-between">
@@ -455,7 +455,7 @@
     <!-- Delete Confirmation Modal (Centered Modal with z-[70] for Zero Interference) -->
     @if($showDeleteConfirm)
         <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" wire:click="cancelDelete">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in duration-150" wire:click.stop>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in duration-150" @click.stop>
                 <div class="p-6 text-center space-y-4">
                     <div class="w-14 h-14 rounded-2xl bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-xs">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -486,7 +486,7 @@
     {{-- Confirmation Modal for Completing Help (Centered Modal with z-[70]) --}}
     @if($confirmingHelpId)
         <div data-confirm-modal class="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" wire:click="$set('confirmingHelpId', null)">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-sm w-full p-6 text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in duration-150 text-center space-y-4" wire:click.stop>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-sm w-full p-6 text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in duration-150 text-center space-y-4" @click.stop>
                 <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-xs">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />

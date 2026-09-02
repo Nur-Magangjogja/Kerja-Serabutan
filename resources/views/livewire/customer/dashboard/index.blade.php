@@ -510,7 +510,7 @@
         <!-- Help Detail Modal (bottom-sheet style like helps index) -->
         @if($selectedHelpData)
             <div class="fixed inset-0 z-50 flex items-end justify-center" style="background: rgba(0,0,0,0.5);" wire:click="closeHelp">
-                <div class="bg-white rounded-t-3xl w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto hide-scrollbar" wire:click.stop>
+                <div class="bg-white rounded-t-3xl w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto hide-scrollbar" @click.stop>
                     <!-- Modal Header -->
                     <div class="sticky top-0 bg-white border-b px-5 py-4 rounded-t-3xl">
                         <div class="flex items-center justify-between">

@@ -168,7 +168,7 @@
     <!-- Detail Modal -->
     @if($showDetailModal && $selectedTransaction)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-4" wire:click="closeModal">
-            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto" wire:click.stop>
+            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto" @click.stop>
                 <!-- Modal Header -->
                 <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-6 py-4 rounded-t-3xl z-10">
                     <div class="flex items-center justify-between">
