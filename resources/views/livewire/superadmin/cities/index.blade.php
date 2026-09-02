@@ -471,6 +471,26 @@
         window.cityUsersChartInstance = null;
 
         function createChartInstance(el, labels, customerData, mitraData) {
+            const isDark = document.documentElement.classList.contains('dark');
+
+            if (window.cityUsersChartInstance && window.cityUsersChartInstance.ctx && document.getElementById('cityUsersChart')) {
+                window.cityUsersChartInstance.data.labels = labels;
+                if (window.cityUsersChartInstance.data.datasets && window.cityUsersChartInstance.data.datasets.length >= 2) {
+                    window.cityUsersChartInstance.data.datasets[0].data = customerData;
+                    window.cityUsersChartInstance.data.datasets[1].data = mitraData;
+                }
+                if (window.cityUsersChartInstance.options && window.cityUsersChartInstance.options.scales) {
+                    if (window.cityUsersChartInstance.options.scales.x && window.cityUsersChartInstance.options.scales.x.ticks) {
+                        window.cityUsersChartInstance.options.scales.x.ticks.color = isDark ? '#9ca3af' : '#6b7280';
+                    }
+                    if (window.cityUsersChartInstance.options.scales.y && window.cityUsersChartInstance.options.scales.y.ticks) {
+                        window.cityUsersChartInstance.options.scales.y.ticks.color = isDark ? '#9ca3af' : '#6b7280';
+                    }
+                }
+                window.cityUsersChartInstance.update('none');
+                return;
+            }
+
             const ctx = el.getContext('2d');
             if (typeof Chart !== 'undefined' && Chart.getChart) {
                 const existing = Chart.getChart(el) || Chart.getChart('cityUsersChart');
@@ -482,7 +502,6 @@
                 try { window.cityUsersChartInstance.destroy(); } catch (e) {}
                 window.cityUsersChartInstance = null;
             }
-            const isDark = document.documentElement.classList.contains('dark');
             window.cityUsersChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {

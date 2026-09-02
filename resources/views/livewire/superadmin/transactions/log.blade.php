@@ -769,6 +769,8 @@
 </div>
 
 <script>
+let _financialChart = null;
+
 function financialChartController() {
     return {
         activeDatasets: {
@@ -779,7 +781,6 @@ function financialChartController() {
             escrow_lock: false,
             refund: false
         },
-        chartInstance: null,
         init() {
             this.$nextTick(() => {
                 this.renderChart();
@@ -788,6 +789,12 @@ function financialChartController() {
                 this.$wire.$watch('chartData', () => {
                     this.renderChart();
                 });
+            }
+        },
+        destroy() {
+            if (_financialChart) {
+                try { _financialChart.destroy(); } catch (e) {}
+                _financialChart = null;
             }
         },
         toggleDataset(key) {
@@ -885,19 +892,35 @@ function financialChartController() {
                 }
             ].filter(d => !d.hidden);
 
+            // If chart instance already exists and valid, update smoothly
+            if (_financialChart && _financialChart.ctx && document.getElementById('superadminMultiFinancialChart')) {
+                _financialChart.data.labels = labels;
+                _financialChart.data.datasets = datasets;
+                if (_financialChart.options && _financialChart.options.scales) {
+                    if (_financialChart.options.scales.x && _financialChart.options.scales.x.ticks) {
+                        _financialChart.options.scales.x.ticks.color = isDark ? '#9ca3af' : '#6b7280';
+                    }
+                    if (_financialChart.options.scales.y && _financialChart.options.scales.y.ticks) {
+                        _financialChart.options.scales.y.ticks.color = isDark ? '#9ca3af' : '#6b7280';
+                    }
+                }
+                _financialChart.update('none');
+                return;
+            }
+
             if (Chart.getChart) {
                 const existing = Chart.getChart(canvas);
                 if (existing) {
                     try { existing.destroy(); } catch(e) {}
                 }
             }
-            if (this.chartInstance) {
-                try { this.chartInstance.destroy(); } catch(e) {}
-                this.chartInstance = null;
+            if (_financialChart) {
+                try { _financialChart.destroy(); } catch(e) {}
+                _financialChart = null;
             }
 
             const ctx = canvas.getContext('2d');
-            this.chartInstance = new Chart(ctx, {
+            _financialChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
@@ -921,8 +944,8 @@ function financialChartController() {
                             cornerRadius: 8,
                             callbacks: {
                                 label: function(c) {
-                                    const v = c.raw ?? c.parsed?.y ?? 0;
-                                    return c.dataset.label + ': Rp ' + Number(v).toLocaleString('id-ID');
+                                    const v = c.raw ?? (c.parsed ? c.parsed.y : 0) ?? 0;
+                                    return (c.dataset?.label || 'Total') + ': Rp ' + Number(v).toLocaleString('id-ID');
                                 }
                             }
                         }

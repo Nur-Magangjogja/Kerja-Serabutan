@@ -476,9 +476,16 @@
     {{-- Alpine & Chart.js Multi-Dataset Unified Integration --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        let _adminDashboardChart = null;
+
         function adminUnifiedChart() {
             return {
-                chartInstance: null,
+                destroy() {
+                    if (_adminDashboardChart) {
+                        try { _adminDashboardChart.destroy(); } catch (e) {}
+                        _adminDashboardChart = null;
+                    }
+                },
                 initChart() {
                     this.waitForChart(() => {
                         this.renderChart();
@@ -519,16 +526,6 @@
                         verifications = JSON.parse(el.getAttribute('data-verifications') || '[]');
                     } catch (e) {
                         console.error('Error parsing chart data:', e);
-                    }
-
-                    // Destroy old instance on canvas
-                    const existingChart = Chart.getChart(canvas);
-                    if (existingChart) {
-                        existingChart.destroy();
-                    }
-                    if (this.chartInstance) {
-                        try { this.chartInstance.destroy(); } catch (e) {}
-                        this.chartInstance = null;
                     }
 
                     const isDark = document.documentElement.classList.contains('dark');
@@ -585,7 +582,31 @@
                         }
                     ];
 
-                    this.chartInstance = new Chart(canvas.getContext('2d'), {
+                    if (_adminDashboardChart && _adminDashboardChart.ctx && this.$refs.canvas) {
+                        _adminDashboardChart.data.labels = labels;
+                        _adminDashboardChart.data.datasets = datasets;
+                        if (_adminDashboardChart.options && _adminDashboardChart.options.scales) {
+                            if (_adminDashboardChart.options.scales.x && _adminDashboardChart.options.scales.x.ticks) {
+                                _adminDashboardChart.options.scales.x.ticks.color = isDark ? '#9ca3af' : '#6b7280';
+                            }
+                            if (_adminDashboardChart.options.scales.y && _adminDashboardChart.options.scales.y.ticks) {
+                                _adminDashboardChart.options.scales.y.ticks.color = isDark ? '#9ca3af' : '#6b7280';
+                            }
+                        }
+                        _adminDashboardChart.update('none');
+                        return;
+                    }
+
+                    const existingChart = Chart.getChart(canvas);
+                    if (existingChart) {
+                        existingChart.destroy();
+                    }
+                    if (_adminDashboardChart) {
+                        try { _adminDashboardChart.destroy(); } catch (e) {}
+                        _adminDashboardChart = null;
+                    }
+
+                    _adminDashboardChart = new Chart(canvas.getContext('2d'), {
                         type: 'line',
                         data: { labels: labels, datasets: datasets },
                         options: {

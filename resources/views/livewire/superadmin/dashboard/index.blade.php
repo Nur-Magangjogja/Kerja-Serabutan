@@ -476,14 +476,37 @@
             }
 
             const c = getColors();
+            const labels = chartData[range]?.labels || [];
+            const data = chartData[range]?.data || [];
+
+            // If chart exists, update smoothly
+            if (usersChart && usersChart.ctx && document.getElementById('usersChart')) {
+                usersChart.data.labels = labels;
+                if (usersChart.data.datasets && usersChart.data.datasets[0]) {
+                    usersChart.data.datasets[0].data = data;
+                    usersChart.data.datasets[0].backgroundColor = c.bar;
+                    usersChart.data.datasets[0].hoverBackgroundColor = c.barHover;
+                    usersChart.data.datasets[0].borderColor = c.border;
+                }
+                if (usersChart.options && usersChart.options.scales) {
+                    if (usersChart.options.scales.x && usersChart.options.scales.x.ticks) {
+                        usersChart.options.scales.x.ticks.color = c.tickColor;
+                    }
+                    if (usersChart.options.scales.y && usersChart.options.scales.y.ticks) {
+                        usersChart.options.scales.y.ticks.color = c.tickColor;
+                    }
+                }
+                usersChart.update('none');
+                return;
+            }
 
             const cfg = {
                 type: 'bar',
                 data: {
-                    labels: chartData[range]?.labels || [],
+                    labels: labels,
                     datasets: [{
                         label: 'Pendaftaran',
-                        data: chartData[range]?.data || [],
+                        data: data,
                         backgroundColor: c.bar,
                         hoverBackgroundColor: c.barHover,
                         borderColor: c.border,
@@ -502,7 +525,7 @@
                             padding: 10,
                             cornerRadius: 8,
                             callbacks: {
-                                label: ctx => 'Pendaftaran: ' + Number(ctx.raw ?? 0).toLocaleString()
+                                label: ctx => 'Pendaftaran: ' + Number(ctx.raw ?? (ctx.parsed ? ctx.parsed.y : 0) ?? 0).toLocaleString()
                             }
                         }
                     },
