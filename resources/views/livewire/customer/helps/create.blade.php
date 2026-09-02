@@ -111,8 +111,7 @@
                     </div>
                 @endif
 
-                <form wire:submit.prevent="prepareConfirm" enctype="multipart/form-data" class="space-y-5"
-                      onsubmit="console.log('📤 Form submitted with coordinates:', { lat: @this.get('latitude'), lng: @this.get('longitude') })">
+                <form wire:submit.prevent="prepareConfirm" enctype="multipart/form-data" class="space-y-5">
                     <!-- Title -->
                     <div class="pt-1 pb-1" id="group-title">
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
@@ -1198,326 +1197,433 @@
             document.addEventListener('livewire:navigated', updateModalState);
         })();
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Tunggu sebentar untuk memastikan DOM fully loaded
-            setTimeout(function() {
-                initializeMap();
-            }, 100);
-        });
-        
-        // Juga initialize saat Livewire navigated
-        document.addEventListener('livewire:navigated', function() {
-            setTimeout(function() {
-                initializeMap();
-            }, 100);
-        });
-        
-        let customerMap = null;
-        let customerMarker = null;
-
-        function locateUserGPS() {
-            if (!navigator.geolocation) {
-                alert('Browser Anda tidak mendukung deteksi lokasi GPS.');
-                return;
+        (function() {
+            function waitForLeaflet(callback, maxAttempts = 60) {
+                if (typeof L !== 'undefined') {
+                    callback();
+                    return;
+                }
+                if (!document.querySelector('script[src*="leaflet.js"]')) {
+                    const script = document.createElement('script');
+                    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                    script.crossOrigin = '';
+                    document.head.appendChild(script);
+                }
+                if (!document.querySelector('link[href*="leaflet.css"]')) {
+                    const link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                    link.crossOrigin = '';
+                    document.head.appendChild(link);
+                }
+                let attempts = 0;
+                const timer = setInterval(() => {
+                    attempts++;
+                    if (typeof L !== 'undefined') {
+                        clearInterval(timer);
+                        callback();
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(timer);
+                        console.warn('Leaflet library failed to load in time.');
+                    }
+                }, 50);
             }
 
-            const pill = document.getElementById('gps-status-pill');
-            if (pill) {
-                pill.textContent = 'Mencari GPS...';
-                pill.className = 'px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-semibold animate-pulse';
+            document.addEventListener('DOMContentLoaded', function() {
+                waitForLeaflet(() => initializeMap());
+            });
+            
+            // Juga initialize saat Livewire navigated
+            document.addEventListener('livewire:navigated', function() {
+                waitForLeaflet(() => initializeMap());
+            });
+            
+            let customerMap = null;
+            let customerMarker = null;
+
+            function locateUserGPS() {
+                if (!navigator.geolocation) {
+                    alert('Browser Anda tidak mendukung deteksi lokasi GPS.');
+                    return;
+                }
+
+                const pill = document.getElementById('gps-status-pill');
+                if (pill) {
+                    pill.textContent = 'Mencari GPS...';
+                    pill.className = 'px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-semibold animate-pulse';
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+
+                        if (customerMap && typeof L !== 'undefined') {
+                            customerMap.setView([lat, lng], 16);
+                            
+                            if (customerMarker) {
+                                customerMarker.setLatLng([lat, lng]);
+                            } else {
+                                customerMarker = L.marker([lat, lng], { draggable: true }).addTo(customerMap);
+                                customerMarker.on('dragend', function(e) {
+                                    const pos = e.target.getLatLng();
+                                    updateCoordinates(pos.lat, pos.lng, true);
+                                });
+                            }
+                        }
+
+                        updateCoordinates(lat, lng, true);
+                    },
+                    (error) => {
+                        console.warn('GPS location error:', error.message);
+                        if (pill) {
+                            pill.textContent = 'Gagal Deteksi';
+                            pill.className = 'px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 text-[11px] font-semibold';
+                        }
+                    },
+                    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                );
             }
 
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
+            // Expose locateUserGPS to window so inline onclick can find it if needed
+            window.locateUserGPS = locateUserGPS;
 
-                    if (customerMap) {
-                        customerMap.setView([lat, lng], 16);
-                        
+            function getLivewire() {
+                try {
+                    if (typeof @this !== 'undefined' && @this) return @this;
+                } catch(e) {}
+                try {
+                    const root = document.getElementById('map')?.closest('[wire\\:id]');
+                    if (root && window.Livewire) {
+                        const id = root.getAttribute('wire:id');
+                        if (id) return window.Livewire.find(id);
+                    }
+                } catch(e) {}
+                return null;
+            }
+
+            function getLivewireProp(prop, fallback = null) {
+                const lw = getLivewire();
+                if (lw && typeof lw.get === 'function') {
+                    try {
+                        const val = lw.get(prop);
+                        if (val !== undefined && val !== null) return val;
+                    } catch(e){}
+                }
+                const input = document.querySelector(`input[wire\\:model="${prop}"], input[wire\\:model\\.live="${prop}"], textarea[wire\\:model="${prop}"], select[wire\\:model="${prop}"]`);
+                if (input && input.value !== undefined && input.value !== '') return input.value;
+                return fallback;
+            }
+
+            function setLivewireProp(prop, val) {
+                const lw = getLivewire();
+                if (lw && typeof lw.set === 'function') {
+                    try { lw.set(prop, val); return; } catch(e){}
+                }
+                const input = document.querySelector(`input[wire\\:model="${prop}"], input[wire\\:model\\.live="${prop}"], textarea[wire\\:model="${prop}"], select[wire\\:model="${prop}"]`);
+                if (input) {
+                    input.value = val;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+
+            function updateCoordinates(lat, lng, isGPS = false) {
+                const displayEl = document.getElementById('coordinates-display');
+                if (displayEl) displayEl.classList.remove('hidden');
+
+                const latEl = document.getElementById('lat-display');
+                if (latEl) latEl.textContent = parseFloat(lat).toFixed(6);
+
+                const lngEl = document.getElementById('lng-display');
+                if (lngEl) lngEl.textContent = parseFloat(lng).toFixed(6);
+
+                const pill = document.getElementById('gps-status-pill');
+                if (pill) {
+                    pill.textContent = isGPS ? 'GPS Realtime' : 'Titik Peta';
+                    pill.className = isGPS 
+                        ? 'px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold'
+                        : 'px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-semibold';
+                }
+
+                // Sync to Livewire safely
+                setLivewireProp('latitude', lat);
+                setLivewireProp('longitude', lng);
+
+                // Automatic reverse geocode to fill 'location' field
+                const geocodeIndicator = document.getElementById('reverse-geocode-indicator');
+                if (geocodeIndicator) geocodeIndicator.classList.remove('hidden');
+
+                try {
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, { headers: { 'Accept-Language': 'id' } })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
+                            if (data && data.display_name) {
+                                // Extract clean address (e.g. road / village / district)
+                                let parts = data.display_name.split(',');
+                                let cleanAddress = parts.slice(0, 4).join(',').trim();
+                                setLivewireProp('location', cleanAddress);
+                            }
+                        }).catch(() => {
+                            if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
+                        });
+                } catch (e) {
+                    if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
+                }
+            }
+
+            function initializeMap() {
+                const mapContainer = document.getElementById('map');
+                if (!mapContainer) return;
+
+                if (typeof L === 'undefined') {
+                    waitForLeaflet(() => initializeMap());
+                    return;
+                }
+
+                // If a previous map instance exists globally on window or locally, remove it cleanly
+                if (window._activeCustomerMap) {
+                    try { window._activeCustomerMap.remove(); } catch(e){}
+                    window._activeCustomerMap = null;
+                }
+                if (customerMap) {
+                    try { customerMap.remove(); } catch(e){}
+                    customerMap = null;
+                }
+
+                // Reset Leaflet ID attribute on the container DOM element
+                if (mapContainer._leaflet_id) {
+                    mapContainer._leaflet_id = null;
+                }
+                
+                // Default center (Indonesia)
+                const defaultLocation = [-7.7956, 110.3695]; // Yogyakarta
+                const existingLat = getLivewireProp('latitude', {{ json_encode($latitude ?? null) }});
+                const existingLng = getLivewireProp('longitude', {{ json_encode($longitude ?? null) }});
+
+                try {
+                    customerMap = L.map(mapContainer, {
+                        center: (existingLat && existingLng) ? [existingLat, existingLng] : defaultLocation,
+                        zoom: (existingLat && existingLng) ? 16 : 13,
+                        scrollWheelZoom: true,
+                        zoomControl: true
+                    });
+                    window._activeCustomerMap = customerMap;
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors',
+                        maxZoom: 19,
+                    }).addTo(customerMap);
+                    
+                    setTimeout(() => { if (customerMap) customerMap.invalidateSize(); }, 250);
+
+                    // Existing coordinates marker
+                    if (existingLat && existingLng) {
+                        customerMarker = L.marker([existingLat, existingLng], { draggable: true }).addTo(customerMap);
+                        updateCoordinates(existingLat, existingLng, false);
+                        customerMarker.on('dragend', function(e) {
+                            const pos = e.target.getLatLng();
+                            updateCoordinates(pos.lat, pos.lng, false);
+                        });
+                    }
+
+                    // Click to pin
+                    customerMap.on('click', function(e) {
+                        const lat = e.latlng.lat;
+                        const lng = e.latlng.lng;
+
                         if (customerMarker) {
                             customerMarker.setLatLng([lat, lng]);
                         } else {
                             customerMarker = L.marker([lat, lng], { draggable: true }).addTo(customerMap);
-                            customerMarker.on('dragend', function(e) {
-                                const pos = e.target.getLatLng();
-                                updateCoordinates(pos.lat, pos.lng, true);
+                            customerMarker.on('dragend', function(evt) {
+                                const pos = evt.target.getLatLng();
+                                updateCoordinates(pos.lat, pos.lng, false);
                             });
                         }
-                    }
 
-                    updateCoordinates(lat, lng, true);
-                },
-                (error) => {
-                    console.warn('GPS location error:', error.message);
-                    if (pill) {
-                        pill.textContent = 'Gagal Deteksi';
-                        pill.className = 'px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 text-[11px] font-semibold';
-                    }
-                },
-                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-            );
-        }
-
-        function updateCoordinates(lat, lng, isGPS = false) {
-            const displayEl = document.getElementById('coordinates-display');
-            if (displayEl) displayEl.classList.remove('hidden');
-
-            const latEl = document.getElementById('lat-display');
-            if (latEl) latEl.textContent = parseFloat(lat).toFixed(6);
-
-            const lngEl = document.getElementById('lng-display');
-            if (lngEl) lngEl.textContent = parseFloat(lng).toFixed(6);
-
-            const pill = document.getElementById('gps-status-pill');
-            if (pill) {
-                pill.textContent = isGPS ? 'GPS Realtime' : 'Titik Peta';
-                pill.className = isGPS 
-                    ? 'px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold'
-                    : 'px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-semibold';
-            }
-
-            // Sync to Livewire
-            @this.set('latitude', lat);
-            @this.set('longitude', lng);
-
-            // Automatic reverse geocode to fill 'location' field
-            const geocodeIndicator = document.getElementById('reverse-geocode-indicator');
-            if (geocodeIndicator) geocodeIndicator.classList.remove('hidden');
-
-            try {
-                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, { headers: { 'Accept-Language': 'id' } })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
-                        if (data && data.display_name) {
-                            // Extract clean address (e.g. road / village / district)
-                            let parts = data.display_name.split(',');
-                            let cleanAddress = parts.slice(0, 4).join(',').trim();
-                            @this.set('location', cleanAddress);
-                        }
-                    }).catch(() => {
-                        if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
+                        updateCoordinates(lat, lng, false);
                     });
-            } catch (e) {
-                if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
-            }
-        }
-
-        function initializeMap() {
-            const mapContainer = document.getElementById('map');
-            if (!mapContainer) return;
-
-            if (mapContainer._leaflet_id) {
-                return;
-            }
-            
-            // Default center (Indonesia)
-            const defaultLocation = [-7.7956, 110.3695]; // Yogyakarta
-            const existingLat = @this.get('latitude');
-            const existingLng = @this.get('longitude');
-
-            customerMap = L.map('map', {
-                center: (existingLat && existingLng) ? [existingLat, existingLng] : defaultLocation,
-                zoom: (existingLat && existingLng) ? 16 : 13,
-                scrollWheelZoom: true,
-                zoomControl: true
-            });
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19,
-            }).addTo(customerMap);
-            
-            setTimeout(() => { customerMap.invalidateSize(); }, 250);
-
-            // Existing coordinates marker
-            if (existingLat && existingLng) {
-                customerMarker = L.marker([existingLat, existingLng], { draggable: true }).addTo(customerMap);
-                updateCoordinates(existingLat, existingLng, false);
-                customerMarker.on('dragend', function(e) {
-                    const pos = e.target.getLatLng();
-                    updateCoordinates(pos.lat, pos.lng, false);
-                });
-            }
-
-            // Click to pin
-            customerMap.on('click', function(e) {
-                const lat = e.latlng.lat;
-                const lng = e.latlng.lng;
-
-                if (customerMarker) {
-                    customerMarker.setLatLng([lat, lng]);
-                } else {
-                    customerMarker = L.marker([lat, lng], { draggable: true }).addTo(customerMap);
-                    customerMarker.on('dragend', function(evt) {
-                        const pos = evt.target.getLatLng();
-                        updateCoordinates(pos.lat, pos.lng, false);
-                    });
+                } catch (err) {
+                    console.error('Error initializing customer map:', err);
                 }
+            }
 
-                updateCoordinates(lat, lng, false);
+            // Cleanup map before Livewire navigation
+            document.addEventListener('livewire:navigating', () => {
+                if (window._activeCustomerMap) {
+                    try { window._activeCustomerMap.remove(); } catch(e){}
+                    window._activeCustomerMap = null;
+                }
+                const mapEl = document.getElementById('map');
+                if (mapEl && mapEl._leaflet_id) {
+                    mapEl._leaflet_id = null;
+                }
             });
 
             // Listen for city selection to center the map
             window.addEventListener('city-selected', (e) => {
-                if (e.detail && e.detail.cityName && customerMap) {
+                const map = customerMap || window._activeCustomerMap;
+                if (e.detail && e.detail.cityName && map) {
                     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(e.detail.cityName + ', Indonesia')}&limit=1`)
                         .then(r => r.json())
                         .then(results => {
                             if (results && results.length > 0) {
                                 const cLat = parseFloat(results[0].lat);
                                 const cLng = parseFloat(results[0].lon);
-                                customerMap.setView([cLat, cLng], 13);
+                                map.setView([cLat, cLng], 13);
                             }
                         }).catch(() => {});
                 }
             });
-        }
 
-        // Auto-scroll ke pesan peringatan / kolom error pertama HANYA saat form disubmit
-        function scrollToFirstError() {
-            setTimeout(() => {
-                const errorEl = document.querySelector('.field-error-message, #group-title .field-error-message, #title-input.border-red-500, input.border-red-500, textarea.border-red-500');
-                if (errorEl) {
-                    const yOffset = -140;
-                    const y = errorEl.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
-
-                    const parentGroup = errorEl.closest('div[id^="group-"]') || errorEl.closest('div');
-                    if (parentGroup) {
-                        const input = parentGroup.querySelector('input:not([type="hidden"]), textarea, select');
-                        if (input) {
-                            input.focus();
-                            input.classList.add('ring-4', 'ring-red-400', 'transition-all');
-                            setTimeout(() => input.classList.remove('ring-4', 'ring-red-400'), 3500);
-                        }
-                    }
-                }
-            }, 80);
-        }
-
-        window.addEventListener('scroll-to-first-error', scrollToFirstError);
-
-        // ─── Kunci posisi scroll saat mengunggah foto (mencegah mental ke atas) ───
-        let uploadScrollPos = null;
-
-        document.addEventListener('livewire:upload-start', () => {
-            uploadScrollPos = window.pageYOffset || document.documentElement.scrollTop;
-        });
-
-        document.addEventListener('livewire:upload-finish', () => {
-            if (uploadScrollPos !== null) {
-                const targetY = uploadScrollPos;
+            // Auto-scroll ke pesan peringatan / kolom error pertama HANYA saat form disubmit
+            function scrollToFirstError() {
                 setTimeout(() => {
-                    window.scrollTo({ top: targetY, behavior: 'instant' });
-                    uploadScrollPos = null;
-                }, 40);
-            }
-            saveFormDraft();
-        });
+                    const errorEl = document.querySelector('.field-error-message, #group-title .field-error-message, #title-input.border-red-500, input.border-red-500, textarea.border-red-500');
+                    if (errorEl) {
+                        const yOffset = -140;
+                        const y = errorEl.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
 
-        document.addEventListener('livewire:upload-error', () => {
-            if (uploadScrollPos !== null) {
-                window.scrollTo({ top: uploadScrollPos, behavior: 'instant' });
-                uploadScrollPos = null;
-            }
-        });
-
-        // ─── Draf Form (Tersimpan saat REFRESH, Bersih/Kosong saat BERPINDAH HALAMAN) ───
-        const DRAFT_KEY = 'sayabantu_create_help_draft';
-
-        // Deteksi apakah pemuatan halaman ini adalah akibat REFRESH / RELOAD
-        function isPageReload() {
-            try {
-                const navEntries = performance.getEntriesByType('navigation');
-                if (navEntries && navEntries.length > 0) {
-                    return navEntries[0].type === 'reload';
-                }
-                // Fallback untuk browser lawas
-                return performance.navigation && performance.navigation.type === 1;
-            } catch (e) {
-                return false;
-            }
-        }
-
-        function saveFormDraft() {
-            try {
-                const data = {
-                    title: @this.get('title') || '',
-                    amount: @this.get('amount') || {{ $minHelpNominal ?? 10000 }},
-                    city_id: @this.get('city_id') || '',
-                    cityQuery: @this.get('cityQuery') || '',
-                    location: @this.get('location') || '',
-                    full_address: @this.get('full_address') || '',
-                    scheduled_date: @this.get('scheduled_date') || '',
-                    scheduled_time: @this.get('scheduled_time') || '',
-                    description: @this.get('description') || '',
-                    equipment_provided: @this.get('equipment_provided') || '',
-                    latitude: @this.get('latitude') || null,
-                    longitude: @this.get('longitude') || null,
-                    timestamp: Date.now()
-                };
-                sessionStorage.setItem(DRAFT_KEY, JSON.stringify(data));
-            } catch (e) {}
-        }
-
-        function restoreFormDraft() {
-            try {
-                // JIKA BUKAN REFRESH (yaitu masuk dari halaman lain), hapus draf dan biarkan form kosong
-                if (!isPageReload()) {
-                    sessionStorage.removeItem(DRAFT_KEY);
-                    localStorage.removeItem(DRAFT_KEY);
-                    return;
-                }
-
-                const raw = sessionStorage.getItem(DRAFT_KEY) || localStorage.getItem(DRAFT_KEY);
-                if (!raw) return;
-                const draft = JSON.parse(raw);
-                if (draft && (Date.now() - (draft.timestamp || 0) < 86400000)) {
-                    const curTitle = @this.get('title');
-                    const curDesc = @this.get('description');
-                    if (!curTitle && !curDesc && (draft.title || draft.description || draft.city_id || draft.location || draft.full_address)) {
-                        @this.call('restoreDraft', draft);
-                        if (draft.latitude && draft.longitude && window.customerMap) {
-                            setTimeout(() => {
-                                updateCoordinates(draft.latitude, draft.longitude, false);
-                            }, 300);
+                        const parentGroup = errorEl.closest('div[id^="group-"]') || errorEl.closest('div');
+                        if (parentGroup) {
+                            const input = parentGroup.querySelector('input:not([type="hidden"]), textarea, select');
+                            if (input) {
+                                input.focus();
+                                input.classList.add('ring-4', 'ring-red-400', 'transition-all');
+                                setTimeout(() => input.classList.remove('ring-4', 'ring-red-400'), 3500);
+                            }
                         }
                     }
+                }, 80);
+            }
+
+            window.addEventListener('scroll-to-first-error', scrollToFirstError);
+
+            // ─── Kunci posisi scroll saat mengunggah foto (mencegah mental ke atas) ───
+            let uploadScrollPos = null;
+
+            document.addEventListener('livewire:upload-start', () => {
+                uploadScrollPos = window.pageYOffset || document.documentElement.scrollTop;
+            });
+
+            document.addEventListener('livewire:upload-finish', () => {
+                if (uploadScrollPos !== null) {
+                    const targetY = uploadScrollPos;
+                    setTimeout(() => {
+                        window.scrollTo({ top: targetY, behavior: 'instant' });
+                        uploadScrollPos = null;
+                    }, 40);
                 }
-            } catch (e) {}
-        }
+                saveFormDraft();
+            });
 
-        document.addEventListener('livewire:initialized', () => {
-            restoreFormDraft();
-        });
+            document.addEventListener('livewire:upload-error', () => {
+                if (uploadScrollPos !== null) {
+                    window.scrollTo({ top: uploadScrollPos, behavior: 'instant' });
+                    uploadScrollPos = null;
+                }
+            });
 
-        // Hapus draf saat bantuan berhasil dibuat atau form di-submit
-        window.addEventListener('draft-cleared', () => {
-            sessionStorage.removeItem(DRAFT_KEY);
-            localStorage.removeItem(DRAFT_KEY);
-        });
+            // ─── Draf Form (Tersimpan saat REFRESH, Bersih/Kosong saat BERPINDAH HALAMAN) ───
+            const DRAFT_KEY = 'sayabantu_create_help_draft';
 
-        // Bersihkan draf jika user menekan link navigasi / menu keluar dari halaman
-        document.addEventListener('click', (e) => {
-            const navLink = e.target.closest('a, button[onclick*="history"], [data-nav-leave]');
-            if (navLink && !navLink.closest('form')) {
+            // Deteksi apakah pemuatan halaman ini adalah akibat REFRESH / RELOAD
+            function isPageReload() {
+                try {
+                    const navEntries = performance.getEntriesByType('navigation');
+                    if (navEntries && navEntries.length > 0) {
+                        return navEntries[0].type === 'reload';
+                    }
+                    // Fallback untuk browser lawas
+                    return performance.navigation && performance.navigation.type === 1;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            function saveFormDraft() {
+                try {
+                    const data = {
+                        title: getLivewireProp('title', ''),
+                        amount: getLivewireProp('amount', {{ $minHelpNominal ?? 10000 }}),
+                        city_id: getLivewireProp('city_id', ''),
+                        cityQuery: getLivewireProp('cityQuery', ''),
+                        location: getLivewireProp('location', ''),
+                        full_address: getLivewireProp('full_address', ''),
+                        scheduled_date: getLivewireProp('scheduled_date', ''),
+                        scheduled_time: getLivewireProp('scheduled_time', ''),
+                        description: getLivewireProp('description', ''),
+                        equipment_provided: getLivewireProp('equipment_provided', ''),
+                        latitude: getLivewireProp('latitude', null),
+                        longitude: getLivewireProp('longitude', null),
+                        timestamp: Date.now()
+                    };
+                    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+                } catch (e) {}
+            }
+
+            function restoreFormDraft() {
+                try {
+                    // JIKA BUKAN REFRESH (yaitu masuk dari halaman lain), hapus draf dan biarkan form kosong
+                    if (!isPageReload()) {
+                        sessionStorage.removeItem(DRAFT_KEY);
+                        localStorage.removeItem(DRAFT_KEY);
+                        return;
+                    }
+
+                    const raw = sessionStorage.getItem(DRAFT_KEY) || localStorage.getItem(DRAFT_KEY);
+                    if (!raw) return;
+                    const draft = JSON.parse(raw);
+                    if (draft && (Date.now() - (draft.timestamp || 0) < 86400000)) {
+                        const curTitle = getLivewireProp('title', '');
+                        const curDesc = getLivewireProp('description', '');
+                        if (!curTitle && !curDesc && (draft.title || draft.description || draft.city_id || draft.location || draft.full_address)) {
+                            const lw = getLivewire();
+                            if (lw && typeof lw.call === 'function') {
+                                lw.call('restoreDraft', draft);
+                            }
+                            if (draft.latitude && draft.longitude && window.customerMap) {
+                                setTimeout(() => {
+                                    updateCoordinates(draft.latitude, draft.longitude, false);
+                                }, 300);
+                            }
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            document.addEventListener('livewire:initialized', () => {
+                restoreFormDraft();
+            });
+
+            // Hapus draf saat bantuan berhasil dibuat atau form di-submit
+            window.addEventListener('draft-cleared', () => {
                 sessionStorage.removeItem(DRAFT_KEY);
                 localStorage.removeItem(DRAFT_KEY);
-            }
-        });
+            });
 
-        // Simpan draf saat ada perubahan input pada form (hanya disimpan untuk antisipasi refresh)
-        document.addEventListener('input', (e) => {
-            if (e.target.closest('form')) {
-                setTimeout(saveFormDraft, 250);
-            }
-        });
-        document.addEventListener('change', (e) => {
-            if (e.target.closest('form')) {
-                setTimeout(saveFormDraft, 250);
-            }
-        });
+            // Bersihkan draf jika user menekan link navigasi / menu keluar dari halaman
+            document.addEventListener('click', (e) => {
+                const navLink = e.target.closest('a, button[onclick*="history"], [data-nav-leave]');
+                if (navLink && !navLink.closest('form')) {
+                    sessionStorage.removeItem(DRAFT_KEY);
+                    localStorage.removeItem(DRAFT_KEY);
+                }
+            });
+
+            // Simpan draf saat ada perubahan input pada form (hanya disimpan untuk antisipasi refresh)
+            document.addEventListener('input', (e) => {
+                if (e.target.closest('form')) {
+                    setTimeout(saveFormDraft, 250);
+                }
+            });
+            document.addEventListener('change', (e) => {
+                if (e.target.closest('form')) {
+                    setTimeout(saveFormDraft, 250);
+                }
+            });
+        })();
     </script>
 </div>

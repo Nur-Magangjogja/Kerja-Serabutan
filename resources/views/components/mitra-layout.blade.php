@@ -105,6 +105,24 @@
         </div>
     </div>
 
+    <script>
+        // Safe fallback for Laravel Echo when WebSocket is not active
+        if (typeof window !== 'undefined' && typeof window.Echo === 'undefined') {
+            window.Echo = {
+                socketId: () => undefined,
+                private: () => ({ listen: () => ({}), stopListening: () => ({}) }),
+                channel: () => ({ listen: () => ({}), stopListening: () => ({}) }),
+                join: () => ({ here: () => ({ joining: () => ({ leaving: () => ({ listen: () => ({}) }) }) }) }),
+                leave: () => {},
+                leaveChannel: () => {},
+                connector: {
+                    socketId: () => undefined,
+                    channels: {},
+                }
+            };
+        }
+    </script>
+
     @livewireScripts
     @include('partials.help-modal')
 
@@ -112,107 +130,93 @@
     @livewire('mitra.notifications.realtime')
 
     <script>
-        function togglePassword(fieldId) {
-            const field = document.getElementById(fieldId);
-            if (field.type === 'password') {
-                field.type = 'text';
-            } else {
-                field.type = 'password';
-            }
-        }
-    </script>
+        (function () {
+            if (!window.showMitraNotification) {
+                window.showMitraNotification = function({ title = 'Notifikasi', message = '', url = '#' , timeout = 4000, type = 'success' }) {
+                    try {
+                        const container = document.getElementById('mitra-global-notification-inner');
+                        if (!container) return;
 
-    <script>
-        // Utility to show a temporary clickable toast in the mitra header area.
-        function showMitraNotification({ title = 'Notifikasi', message = '', url = '#' , timeout = 4000, type = 'success' }) {
-            try {
-                const container = document.getElementById('mitra-global-notification-inner');
-                if (!container) return;
+                        container.innerHTML = '';
 
-                // Clear any existing notification (single toast at a time)
-                container.innerHTML = '';
+                        const wrap = document.createElement('div');
+                        wrap.className = 'bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-3 max-w-md mx-3 pointer-events-auto transition transform duration-300';
+                        wrap.style.boxShadow = '0 10px 30px rgba(2,6,23,0.08)';
 
-                const wrap = document.createElement('div');
-                wrap.className = 'bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-3 max-w-md mx-3 pointer-events-auto transition transform duration-300';
-                wrap.style.boxShadow = '0 10px 30px rgba(2,6,23,0.08)';
+                        const body = document.createElement('div');
+                        body.className = 'min-w-0';
+                        const titleEl = document.createElement('div');
+                        titleEl.className = 'text-sm font-semibold text-gray-900 dark:text-white';
+                        titleEl.innerText = String(title || 'Notifikasi');
 
-                // Text-only body (matching customer notification style)
-                const body = document.createElement('div');
-                body.className = 'min-w-0';
-                const titleEl = document.createElement('div');
-                titleEl.className = 'text-sm font-semibold text-gray-900 dark:text-white';
-                titleEl.innerText = String(title || 'Notifikasi');
+                        const msgEl = document.createElement('div');
+                        msgEl.className = 'text-xs text-gray-600 dark:text-gray-300 mt-0.5';
+                        msgEl.innerText = String(message || '');
 
-                const msgEl = document.createElement('div');
-                msgEl.className = 'text-xs text-gray-600 dark:text-gray-300 mt-0.5';
-                msgEl.innerText = String(message || '');
+                        body.appendChild(titleEl);
+                        if ((message || '').toString().trim() !== '') body.appendChild(msgEl);
 
-                body.appendChild(titleEl);
-                if ((message || '').toString().trim() !== '') body.appendChild(msgEl);
+                        wrap.appendChild(body);
 
-                wrap.appendChild(body);
+                        wrap.addEventListener('click', function (ev) {
+                            ev.preventDefault();
+                            if (url && url !== '#') {
+                                window.location.href = url;
+                            }
+                            container.innerHTML = '';
+                        });
 
-                // When clicked, navigate to target and clear toast
-                wrap.addEventListener('click', function (ev) {
-                    ev.preventDefault();
-                    if (url && url !== '#') {
-                        window.location.href = url;
+                        container.appendChild(wrap);
+
+                        const effectiveTimeout = (type === 'error' || type === 'warning' || type === 'danger') ? Math.max(timeout, 8000) : timeout;
+                        setTimeout(() => {
+                            container.innerHTML = '';
+                        }, effectiveTimeout);
+                    } catch (err) {
+                        console.error('showMitraNotification error', err);
                     }
-                    container.innerHTML = '';
+                };
+            }
+
+            const mitraHelpDetailTemplate = "{{ route('mitra.helps.detail', ['id' => 'REPLACE_ID']) }}";
+            const mitraChatRoute = "{{ route('mitra.chat') }}";
+
+            if (!window._mitraComponentListenersAttached) {
+                window._mitraComponentListenersAttached = true;
+
+                window.addEventListener('help-taken', function (e) {
+                    const helpId = e && e.detail && e.detail.helpId ? e.detail.helpId : null;
+                    const url = helpId ? mitraHelpDetailTemplate.replace('REPLACE_ID', helpId) : mitraHelpDetailTemplate.replace('REPLACE_ID', '');
+                    window.showMitraNotification({ title: 'Bantuan Diambil', message: 'Anda berhasil mengambil bantuan. Ketuk untuk melihat detail.', url });
                 });
 
-                container.appendChild(wrap);
+                window.addEventListener('message-sent', function (e) {
+                    const helpId = e && e.detail && e.detail.helpId ? e.detail.helpId : null;
+                    const url = helpId ? mitraChatRoute + '?help=' + encodeURIComponent(helpId) : mitraChatRoute;
+                    window.showMitraNotification({ title: 'Pesan Terkirim', message: 'Pesan berhasil dikirim. Ketuk untuk membuka chat.', url });
+                });
 
-                // auto-hide
-                const effectiveTimeout = (type === 'error' || type === 'warning' || type === 'danger') ? Math.max(timeout, 8000) : timeout;
-                setTimeout(() => {
-                    container.innerHTML = '';
-                }, effectiveTimeout);
-            } catch (err) {
-                console.error('showMitraNotification error', err);
+                window.addEventListener('help-new-message', function (e) {
+                    const helpId = e && e.detail && e.detail.helpId ? e.detail.helpId : null;
+                    const from = e && e.detail && e.detail.from ? e.detail.from : 'Customer';
+                    const message = e && e.detail && e.detail.message ? e.detail.message : '';
+                    const url = helpId ? mitraChatRoute + '?help=' + encodeURIComponent(helpId) : mitraChatRoute;
+                    window.showMitraNotification({ title: 'Pesan Baru dari ' + from, message: message || 'Ketuk untuk membuka chat.', url, timeout: 6000 });
+                });
+
+                window.triggerMitraNotification = function (payload) {
+                    window.showMitraNotification(payload || {});
+                };
             }
-        }
 
-        function escapeHtml(unsafe) {
-            return String(unsafe)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
-
-        // Build route templates (replace placeholder REPLACE_ID with actual id when available)
-        const mitraHelpDetailTemplate = "{{ route('mitra.helps.detail', ['id' => 'REPLACE_ID']) }}";
-        const mitraChatRoute = "{{ route('mitra.chat') }}";
-
-        // Listen for Livewire/browser events used elsewhere in the app
-        window.addEventListener('help-taken', function (e) {
-            const helpId = e && e.detail && e.detail.helpId ? e.detail.helpId : null;
-            const url = helpId ? mitraHelpDetailTemplate.replace('REPLACE_ID', helpId) : mitraHelpDetailTemplate.replace('REPLACE_ID', '');
-            showMitraNotification({ title: 'Bantuan Diambil', message: 'Anda berhasil mengambil bantuan. Ketuk untuk melihat detail.', url });
-        });
-
-        window.addEventListener('message-sent', function (e) {
-            // If event includes helpId, navigate to chat for that help
-            const helpId = e && e.detail && e.detail.helpId ? e.detail.helpId : null;
-            const url = helpId ? mitraChatRoute + '?help=' + encodeURIComponent(helpId) : mitraChatRoute;
-            showMitraNotification({ title: 'Pesan Terkirim', message: 'Pesan berhasil dikirim. Ketuk untuk membuka chat.', url });
-        });
-
-        // Event dispatched by server-side polling component when a new chat arrives for mitra
-        window.addEventListener('help-new-message', function (e) {
-            const helpId = e && e.detail && e.detail.helpId ? e.detail.helpId : null;
-            const from = e && e.detail && e.detail.from ? e.detail.from : 'Customer';
-            const message = e && e.detail && e.detail.message ? e.detail.message : '';
-            const url = helpId ? mitraChatRoute + '?help=' + encodeURIComponent(helpId) : mitraChatRoute;
-            showMitraNotification({ title: 'Pesan Baru dari ' + from, message: message || 'Ketuk untuk membuka chat.', url, timeout: 6000 });
-        });
-
-        // Also expose a global helper for other components to trigger notifications
-        window.triggerMitraNotification = function (payload) {
-            showMitraNotification(payload || {});
-        }
+            if (!window.togglePassword) {
+                window.togglePassword = function(fieldId) {
+                    const field = document.getElementById(fieldId);
+                    if (!field) return;
+                    field.type = (field.type === 'password') ? 'text' : 'password';
+                };
+            }
+        })();
     </script>
 </body>
 
