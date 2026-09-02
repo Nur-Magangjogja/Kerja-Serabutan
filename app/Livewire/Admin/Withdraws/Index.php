@@ -124,11 +124,12 @@ class Index extends Component
 
         $withdraw = WithdrawRequest::findOrFail($this->selectedWithdrawId);
         $user = $withdraw->user;
+        $refundAmount = (float) ($withdraw->amount + ($withdraw->admin_fee ?? 0));
 
         // Refund balance back to user
         if ($user) {
             $userBalance = UserBalance::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
-            $userBalance->increment('balance', $withdraw->amount);
+            $userBalance->increment('balance', $refundAmount);
         }
 
         $withdraw->update([
@@ -141,7 +142,8 @@ class Index extends Component
             'user_id' => $user->id,
             'order_id' => 'REFUND-WD-' . $withdraw->id,
             'type' => 'refund',
-            'amount' => $withdraw->amount,
+            'amount' => $refundAmount,
+            'total_payment' => $refundAmount,
             'status' => 'success',
             'description' => "Pengembalian dana penarikan #WD-{$withdraw->id} yang ditolak: {$this->rejectReason}",
         ]);
@@ -150,8 +152,8 @@ class Index extends Component
         \App\Models\ActivityLog::record(
             auth()->user(),
             'withdraw_rejected',
-            "Admin " . (auth()->user()->name ?? 'Admin') . " menolak pencairan dana #WD-{$withdraw->id} sebesar Rp " . number_format($withdraw->amount, 0, ',', '.') . " untuk user {$user->name}. Alasan: {$this->rejectReason}",
-            ['withdraw_id' => $withdraw->id, 'amount' => $withdraw->amount, 'user_id' => $user->id, 'reason' => $this->rejectReason]
+            "Admin " . (auth()->user()->name ?? 'Admin') . " menolak pencairan dana #WD-{$withdraw->id} sebesar Rp " . number_format($refundAmount, 0, ',', '.') . " untuk user {$user->name}. Alasan: {$this->rejectReason}",
+            ['withdraw_id' => $withdraw->id, 'amount' => $refundAmount, 'user_id' => $user->id, 'reason' => $this->rejectReason]
         );
 
         $this->showRejectModal = false;

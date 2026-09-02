@@ -36,7 +36,6 @@ class WithdrawForm extends Component
                 'required',
                 'numeric',
                 'min:' . $minAmount,
-                'max:' . $balance,
                 function ($attribute, $value, $fail) {
                     if ((int) $value % 100 !== 0) {
                         $fail('Nominal pencairan harus berupa kelipatan 100 atau 1.000 rupiah (contoh: 10.000, 25.000, 50.000).');
@@ -50,7 +49,6 @@ class WithdrawForm extends Component
             'amount.required' => 'Nominal penarikan wajib diisi.',
             'amount.numeric' => 'Nominal harus berupa angka.',
             'amount.min' => 'Jumlah penarikan minimal Rp ' . number_format($minAmount, 0, ',', '.'),
-            'amount.max' => 'Saldo dompet Anda tidak mencukupi (Saldo: Rp ' . number_format($balance, 0, ',', '.') . ')',
             'bankCode.required' => 'Silakan pilih bank atau e-wallet tujuan.',
             'accountNumber.required' => 'Nomor rekening atau nomor HP e-wallet wajib diisi.',
             'accountName.required' => 'Nama pemilik rekening wajib diisi.',
@@ -65,11 +63,17 @@ class WithdrawForm extends Component
         $feeCalc = AppSetting::calculateWithdrawFee($this->bankCode, (int) $amountVal);
         $adminFee = (float) $feeCalc['fee'];
         $netAmount = (float) $feeCalc['net_amount'];
+        $totalDeduction = $amountVal + $adminFee;
 
-        DB::transaction(function () use ($user, $amountVal, $adminFee, $netAmount) {
-            // Deduct balance from UserBalance record
+        if ($totalDeduction > $balance) {
+            $this->addError('amount', 'Saldo dompet tidak mencukupi untuk penarikan Rp ' . number_format($amountVal, 0, ',', '.') . ' + biaya admin Rp ' . number_format($adminFee, 0, ',', '.') . ' (Total dipotong: Rp ' . number_format($totalDeduction, 0, ',', '.') . '. Saldo Anda: Rp ' . number_format($balance, 0, ',', '.') . ')');
+            return;
+        }
+
+        DB::transaction(function () use ($user, $amountVal, $adminFee, $netAmount, $totalDeduction) {
+            // Deduct balance from UserBalance record (amount + admin fee)
             $userBalance = UserBalance::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
-            $userBalance->decrement('balance', $amountVal);
+            $userBalance->decrement('balance', $totalDeduction);
 
             $withdraw = WithdrawRequest::create([
                 'user_id' => $user->id,
@@ -90,7 +94,7 @@ class WithdrawForm extends Component
                 'type' => 'withdraw',
                 'amount' => $amountVal,
                 'admin_fee' => $adminFee,
-                'total_payment' => $amountVal,
+                'total_payment' => $totalDeduction,
                 'status' => 'pending',
                 'description' => "Pencairan penghasilan mitra ke {$this->bankCode} ({$this->accountNumber} a.n {$this->accountName})",
             ]);
@@ -130,6 +134,7 @@ class WithdrawForm extends Component
         $feeCalc = AppSetting::calculateWithdrawFee($this->bankCode ?: 'BCA', (int) $amountVal);
         $adminFee = (float) $feeCalc['fee'];
         $netAmount = (float) $feeCalc['net_amount'];
+        $totalDeduction = (float) ($amountVal > 0 ? ($amountVal + $adminFee) : 0);
 
         return view('livewire.mitra.withdraw.withdraw-form', [
             'balance' => $balance,
@@ -137,6 +142,7 @@ class WithdrawForm extends Component
             'minAmount' => $minAmount,
             'adminFee' => $adminFee,
             'netAmount' => $netAmount,
+            'totalDeduction' => $totalDeduction,
             'isPlatform' => $feeCalc['is_platform_account'],
             'selectedBankName' => $feeCalc['bank_name'],
         ])->layout('layouts.app');

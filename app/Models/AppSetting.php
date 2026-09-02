@@ -207,7 +207,9 @@ class AppSetting extends Model
             $bankIcon = '💳';
         }
 
-        $netAmount = max(0, $amount - $fee);
+        // Biaya admin ditambahkan dari pemotongan saldo (dana masuk rekening utuh sesuai nominal yang ditarik)
+        $netAmount = max(0, $amount);
+        $totalDeduction = $amount + $fee;
 
         return [
             'fee' => $fee,
@@ -215,7 +217,8 @@ class AppSetting extends Model
             'bank_name' => $bankName,
             'bank_icon' => $bankIcon,
             'net_amount' => $netAmount,
-            'fee_mode' => static::getWithdrawFeeMode(),
+            'total_deduction' => $totalDeduction,
+            'fee_mode' => 'deduct_from_balance',
         ];
     }
 

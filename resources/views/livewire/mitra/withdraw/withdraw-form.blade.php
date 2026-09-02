@@ -94,17 +94,21 @@
 
                 {{-- Ringkasan Realtime --}}
                 <div class="p-3.5 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600 text-xs space-y-2">
+                    <div class="flex items-center justify-between text-gray-600 dark:text-gray-300">
+                        <span>Dana Masuk Rekening (Bersih):</span>
+                        <span class="font-bold text-gray-900 dark:text-white">Rp {{ number_format($netAmount, 0, ',', '.') }}</span>
+                    </div>
                     <div class="flex items-center justify-between text-gray-500 dark:text-gray-400">
                         <span>Biaya Admin ({{ $selectedBankName }}):</span>
                         @if($adminFee == 0)
                             <span class="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md">Rp 0 (Bebas Biaya)</span>
                         @else
-                            <span class="font-semibold text-gray-700 dark:text-gray-300">Rp {{ number_format($adminFee, 0, ',', '.') }}</span>
+                            <span class="font-semibold text-gray-700 dark:text-gray-300">+ Rp {{ number_format($adminFee, 0, ',', '.') }}</span>
                         @endif
                     </div>
                     <div class="flex items-center justify-between font-extrabold text-gray-900 dark:text-white text-sm pt-2 border-t border-gray-200 dark:border-gray-600">
-                        <span>Jumlah Bersih yang Diterima:</span>
-                        <span class="text-emerald-600 dark:text-emerald-400 font-black">Rp {{ number_format($netAmount, 0, ',', '.') }}</span>
+                        <span>Total Saldo yang Dipotong:</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-black">Rp {{ number_format($totalDeduction, 0, ',', '.') }}</span>
                     </div>
                 </div>
 

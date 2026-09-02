@@ -119,7 +119,7 @@
         </div>
 
         <form wire:submit.prevent="saveGeneralSettings" class="p-6 space-y-5">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <!-- Minimum Amount -->
                 <div>
                     <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -157,21 +157,13 @@
                     @error('default_other_fee') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     <p class="text-[11px] text-gray-400 mt-1">Dikenakan saat pengguna memilih bank di luar daftar khusus.</p>
                 </div>
+            </div>
 
-                <!-- Fee Mode -->
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                        Mekanisme Pemotongan Biaya
-                    </label>
-                    <select
-                        wire:model.defer="fee_mode"
-                        class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700/70 border border-gray-200 dark:border-gray-600 rounded-xl text-xs font-semibold text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
-                    >
-                        <option value="deduct_from_received">Potong dari Dana Diterima (Contoh: Tarik 50rb, biaya 2.5rb -> cair 47.5rb)</option>
-                        <option value="deduct_from_balance">Potong dari Saldo Tambahan (Contoh: Tarik 50rb, saldo terpotong 52.5rb)</option>
-                    </select>
-                    @error('fee_mode') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-                    <p class="text-[11px] text-gray-400 mt-1">Sistem default menyalurkan biaya admin langsung dari nominal pencairan.</p>
+            <!-- Policy Information Banner -->
+            <div class="p-3.5 bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800/60 rounded-xl text-xs flex items-start gap-2.5">
+                <span class="text-base flex-shrink-0">ℹ️</span>
+                <div class="text-sky-800 dark:text-sky-300 leading-relaxed text-[11px]">
+                    <strong class="font-bold">Kebijakan Pemotongan Biaya:</strong> Biaya admin transfer bank/BI-FAST otomatis ditambahkan ke total pemotongan saldo dompet pengguna. Pengguna akan menerima transfer dana bersih secara utuh sesuai nominal yang ditarik (Contoh: Tarik Rp 50.000 + Biaya Rp 2.500 $\rightarrow$ Saldo dompet terpotong Rp 52.500, dana masuk rekening bank tetap Rp 50.000).
                 </div>
             </div>
 

@@ -13,7 +13,6 @@ class WithdrawSettings extends Component
     // General Settings
     public $min_amount;
     public $default_other_fee;
-    public $fee_mode;
 
     // Banks configuration list
     public $banks = [];
@@ -42,7 +41,6 @@ class WithdrawSettings extends Component
     {
         $this->min_amount = AppSetting::getWithdrawMinAmount();
         $this->default_other_fee = AppSetting::getWithdrawDefaultFee();
-        $this->fee_mode = AppSetting::getWithdrawFeeMode();
         $this->banks = AppSetting::getWithdrawBanks();
     }
 
@@ -51,17 +49,15 @@ class WithdrawSettings extends Component
         $this->validate([
             'min_amount' => 'required|integer|min:100|max:10000000',
             'default_other_fee' => 'required|integer|min:0|max:50000',
-            'fee_mode' => 'required|in:deduct_from_received,deduct_from_balance',
         ], [
             'min_amount.required' => 'Batas minimum penarikan wajib diisi.',
             'min_amount.min' => 'Batas minimum penarikan minimal Rp 100.',
             'default_other_fee.required' => 'Biaya admin default wajib diisi.',
-            'fee_mode.required' => 'Mode pemotongan biaya wajib dipilih.',
         ]);
 
         AppSetting::set('withdraw_min_amount', $this->min_amount);
         AppSetting::set('withdraw_default_other_fee', $this->default_other_fee);
-        AppSetting::set('withdraw_fee_mode', $this->fee_mode);
+        AppSetting::set('withdraw_fee_mode', 'deduct_from_balance');
 
         session()->flash('message', 'Pengaturan umum penarikan dana berhasil disimpan.');
         $this->dispatch('settings-saved');
@@ -222,7 +218,7 @@ class WithdrawSettings extends Component
             'active_banks' => collect($this->banks)->where('is_active', true)->count(),
             'platform_accounts' => collect($this->banks)->where('is_platform_account', true)->count(),
             'total_withdraw_count' => WithdrawRequest::count(),
-            'total_withdraw_amount' => WithdrawRequest::where('status', WithdrawRequest::STATUS_SUCCESS)->sum('amount'),
+            'total_withdraw_amount' => WithdrawRequest::whereIn('status', ['completed', 'approved', 'success'])->sum('amount'),
         ];
 
         return view('livewire.superadmin.settings.withdraw-settings', [
@@ -230,7 +226,6 @@ class WithdrawSettings extends Component
             'stats' => $stats,
             'min_amount' => $this->min_amount,
             'default_other_fee' => $this->default_other_fee,
-            'fee_mode' => $this->fee_mode,
             'banks' => $this->banks,
             'modalOpen' => $this->modalOpen,
             'editingIndex' => $this->editingIndex,

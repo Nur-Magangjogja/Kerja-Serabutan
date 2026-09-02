@@ -56,7 +56,7 @@
         </div>
 
         {{-- Premium Optimized Month Selector --}}
-        <div class="flex items-center gap-1.5" x-data="{ isOpen: false }" @click.away="isOpen = false">
+        <div class="flex items-center gap-1.5" x-data="{ isOpen: false }" @click.away="isOpen = false" wire:ignore.self>
             {{-- Quick Prev Month Button --}}
             <button type="button" wire:click="prevMonth" wire:loading.attr="disabled"
                 class="p-2 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 shadow-2xs transition cursor-pointer disabled:opacity-50" 

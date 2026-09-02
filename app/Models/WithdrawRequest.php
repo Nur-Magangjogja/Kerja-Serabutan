@@ -43,7 +43,12 @@ class WithdrawRequest extends Model
         if ($this->net_amount && $this->net_amount > 0) {
             return (int) $this->net_amount;
         }
-        return (int) max(0, $this->amount - $this->effective_admin_fee);
+        return (int) ($this->amount ?? 0);
+    }
+
+    public function getTotalDeductionAttribute(): int
+    {
+        return (int) ($this->amount + $this->effective_admin_fee);
     }
 
     public const STATUS_PENDING = 'pending';

@@ -9,6 +9,7 @@ class Dropdown extends Component
 {
     public $notifications = [];
     public $unreadCount = 0;
+    public bool $isOpen = false;
 
     public function mount()
     {
@@ -41,6 +42,16 @@ class Dropdown extends Component
             $notification->markAsRead();
             $this->loadNotifications();
         }
+    }
+
+    public function toggleDropdown()
+    {
+        $this->isOpen = !$this->isOpen;
+    }
+
+    public function closeDropdown()
+    {
+        $this->isOpen = false;
     }
 
     public function markAllAsRead()
