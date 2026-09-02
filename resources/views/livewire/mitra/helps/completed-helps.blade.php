@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors" wire:poll.5s>
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
     <div class="max-w-md mx-auto">
         <!-- Header Section -->
         <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
@@ -81,7 +81,7 @@
                             @php
                                 $rating = $help->rating;
                             @endphp
-                            <div x-data="{ open: false }" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs hover:shadow-md transition">
+                            <div x-data="{ isExpanded: false }" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs hover:shadow-md transition">
                                 <div class="p-4">
                                     <div class="flex items-start gap-3 mb-3">
                                         <div class="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
@@ -131,15 +131,15 @@
                                         </div>
                                     </div>
 
-                                    <button @click="open = !open" class="w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 text-primary-600 dark:text-sky-400 transition cursor-pointer">
-                                        <span x-text="open ? 'Sembunyikan Detail' : 'Lihat Detail & Ulasan Customer'"></span>
-                                        <svg :class="open ? 'rotate-180' : ''" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <button @click="isExpanded = !isExpanded" class="w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 text-primary-600 dark:text-sky-400 transition cursor-pointer">
+                                        <span x-text="isExpanded ? 'Sembunyikan Detail' : 'Lihat Detail & Ulasan Customer'"></span>
+                                        <svg :class="isExpanded ? 'rotate-180' : ''" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                         </svg>
                                     </button>
                                 </div>
 
-                                <div x-show="open" x-cloak x-transition class="px-4 pb-4 border-t border-gray-100 dark:border-gray-700/60 pt-3.5 space-y-3">
+                                <div x-show="isExpanded" x-cloak x-transition class="px-4 pb-4 border-t border-gray-100 dark:border-gray-700/60 pt-3.5 space-y-3">
                                     @if($help->description)
                                         <div>
                                             <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Deskripsi Tugas</h4>

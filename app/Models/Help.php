@@ -129,17 +129,16 @@ class Help extends Model
     ];
 
     /**
-     * Cek apakah transisi ke status target diizinkan.
+     * Cek apakah transisi ke status target diizinkan (Fail-Closed).
      */
     public function canTransitionTo(string $toStatus): bool
     {
         $from = $this->status ?? '';
         $allowed = self::VALID_TRANSITIONS[$from] ?? null;
 
-        // Jika status saat ini tidak dikenal dalam map, izinkan transisi
-        // (misal: data lama yang belum dimigrasi)
+        // Fail-Closed: Jika status saat ini tidak dikenal dalam map, tolak transisi secara tegas demi integritas data
         if ($allowed === null) {
-            return true;
+            return false;
         }
 
         return in_array($toStatus, $allowed, true);
@@ -170,8 +169,9 @@ class Help extends Model
     protected static function booted()
     {
         static::saving(function ($help) {
-            if ($help->user_id) {
-                $user = User::find($help->user_id);
+            // Hanya jalankan query validasi role jika user_id baru dibuat atau diubah nilainya
+            if ($help->isDirty('user_id') && $help->user_id) {
+                $user = $help->relationLoaded('user') ? $help->user : User::find($help->user_id);
                 if ($user && !$user->isCustomer()) {
                     throw new \InvalidArgumentException(
                         "Hanya pengguna dengan peran Customer yang dapat membuat atau memiliki permintaan bantuan. " .
@@ -345,6 +345,11 @@ class Help extends Model
         return $this->hasOne(HelpDispatch::class)->where('status', HelpDispatch::STATUS_OFFERED)->latestOfMany();
     }
 
+    public function partnerExclusions()
+    {
+        return $this->hasMany(HelpPartnerExclusion::class, 'help_id');
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // QUERY SCOPES
     // ─────────────────────────────────────────────────────────────────────────
@@ -394,7 +399,7 @@ class Help extends Model
 
     /**
      * Scope untuk menyaring bantuan yang berhak diambil oleh mitra tertentu
-     * (mengecualikan bantuan yang pernah dibatalkan oleh mitra tersebut).
+     * (mengecualikan bantuan yang pernah dibatalkan oleh mitra tersebut via tabel relasional terindeks).
      */
     public function scopeAvailableForMitra($query, ?int $mitraId = null)
     {
@@ -402,7 +407,10 @@ class Help extends Model
             return $query;
         }
 
-        return $query->where(function ($q) use ($mitraId) {
+        return $query->whereDoesntHave('partnerExclusions', function ($q) use ($mitraId) {
+            $q->where('mitra_id', $mitraId);
+        })->where(function ($q) use ($mitraId) {
+            // Fallback backward-compatibility untuk data legacy
             $q->whereNull('cancelled_mitra_ids')
               ->orWhereJsonDoesntContain('cancelled_mitra_ids', (int) $mitraId);
         });
@@ -417,6 +425,16 @@ class Help extends Model
             return false;
         }
 
+        // Cek dari relasi terindeks (jika sudah di-load atau dari tabel)
+        if ($this->relationLoaded('partnerExclusions')) {
+            if ($this->partnerExclusions->contains('mitra_id', $mitraId)) {
+                return true;
+            }
+        } elseif (\Illuminate\Support\Facades\Schema::hasTable('help_partner_exclusions') && HelpPartnerExclusion::where('help_id', $this->id)->where('mitra_id', $mitraId)->exists()) {
+            return true;
+        }
+
+        // Fallback backward-compatibility untuk data legacy
         $ids = $this->cancelled_mitra_ids ?? [];
         if (!is_array($ids)) {
             $ids = json_decode((string) $ids, true) ?? [];

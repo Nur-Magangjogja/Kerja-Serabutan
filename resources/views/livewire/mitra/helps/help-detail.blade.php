@@ -523,9 +523,31 @@
                                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <div class="flex-1">
-                        <h4 class="font-bold text-sm text-gray-900 dark:text-white">Menunggu Konfirmasi Customer</h4>
-                        <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">Anda telah mengunggah bukti penyelesaian. Menunggu customer memeriksa dan mengonfirmasi penyelesaian tugas.</p>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Menunggu Konfirmasi Customer</h4>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700">
+                                🛡️ Escrow Rp {{ number_format($help->amount, 0, ',', '.') }} Diamankan
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
+                            Bukti pengerjaan telah berhasil dikirim. Dana otomatis cair ke saldo Anda saat customer mengonfirmasi atau dalam batas waktu 24 jam.
+                        </p>
+
+                        <!-- Status Bebas Tugas & Quick Action -->
+                        <div class="mt-3 p-3 rounded-xl bg-white/80 dark:bg-gray-800/80 border border-amber-200/80 dark:border-amber-800/60 flex items-center justify-between gap-3 flex-wrap">
+                            <div>
+                                <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 block uppercase">Status Mitra Saat Ini</span>
+                                <span class="text-xs font-black text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    BEBAS TUGAS (STANDBY)
+                                </span>
+                            </div>
+                            <a href="{{ route('mitra.helps.all') }}" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5">
+                                <span>Cari Order Baru</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            </a>
+                        </div>
                         
                         @if($help->proof_photo)
                             <div class="mt-3 pt-3 border-t border-amber-200/60 dark:border-amber-800/40">
@@ -566,7 +588,7 @@
                                 <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ optional($customerReview->created_at)->translatedFormat('d M Y, H:i') }}</p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/60 px-2.5 py-1 rounded-full border border-amber-200">
+                        <div class="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/60 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-800/60">
                             <span class="text-sm font-extrabold text-amber-700 dark:text-amber-300">{{ $customerReview->rating }}.0</span>
                             <div class="flex">
                                 @for ($i = 1; $i <= 5; $i++)
@@ -722,7 +744,7 @@
                 <div class="p-5 pb-6">
                     {{-- Info Icon --}}
                     <div class="flex items-center justify-center mb-4">
-                        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                        <div class="w-16 h-16 bg-red-100 dark:bg-red-950/60 rounded-full flex items-center justify-center">
                             <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
@@ -761,19 +783,19 @@
                     {{-- Buttons --}}
                     <div class="flex gap-3">
                         <button wire:click="$set('showPartnerCancelModal', false)"
-                                class="flex-1 px-5 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-                            Batal
+                                class="flex-1 px-5 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-pointer">
+                            Kembali
                         </button>
                         <button wire:click="requestPartnerCancel" 
                                 wire:loading.attr="disabled"
-                                class="flex-1 px-5 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                            <span wire:loading.remove wire:target="requestPartnerCancel">Kirim Permintaan</span>
+                                class="flex-1 px-5 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-xs">
+                            <span wire:loading.remove wire:target="requestPartnerCancel">Ya, Batalkan</span>
                             <span wire:loading wire:target="requestPartnerCancel">
                                 <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                Mengirim...
+                                Memproses...
                             </span>
                         </button>
                     </div>

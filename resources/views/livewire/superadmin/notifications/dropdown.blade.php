@@ -1,7 +1,7 @@
-<div class="relative" x-data="{ open: false }" wire:poll.15s="loadNotifications">
+<div class="relative" x-data="{ isOpen: false }" wire:poll.15s="loadNotifications">
     <!-- Notification Bell Button -->
     <button 
-        @click="open = !open"
+        @click="isOpen = !isOpen"
         class="relative p-2 rounded-xl bg-gray-100/80 dark:bg-gray-700/60 border border-gray-200/60 dark:border-gray-600/60 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 focus:outline-none focus:ring-2 focus:ring-primary-500 transition cursor-pointer text-gray-600 dark:text-gray-200"
         type="button"
         aria-label="Notifikasi Keuangan Super Admin">
@@ -18,8 +18,8 @@
 
     <!-- Dropdown Menu -->
     <div 
-        x-show="open"
-        @click.away="open = false"
+        x-show="isOpen"
+        @click.away="isOpen = false"
         x-transition:enter="transition ease-out duration-150"
         x-transition:enter-start="opacity-0 scale-95 translate-y-1"
         x-transition:enter-end="opacity-100 scale-100 translate-y-0"
@@ -69,7 +69,7 @@
                     <!-- Content -->
                     <div class="flex-1 min-w-0">
                         <a href="{{ $targetUrl }}" 
-                           @click="open = false; $wire.markAsRead('{{ $notification->id }}')" 
+                           @click="isOpen = false; $wire.markAsRead('{{ $notification->id }}')" 
                            class="block group-hover:text-primary-600 dark:group-hover:text-primary-400 transition">
                             <p class="text-xs font-bold text-gray-900 dark:text-white leading-tight">
                                 {{ $data['title'] ?? ($isTopup ? 'Permintaan Top-Up Saldo' : 'Permintaan Penarikan Dana') }}

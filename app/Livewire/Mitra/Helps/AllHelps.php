@@ -141,57 +141,73 @@ class AllHelps extends Component
             });
         }
 
-        $allHelps = $query->with(['user', 'city'])->get();
+        $hasGps = ($this->mitraLat && $this->mitraLng);
+        $haversineSql = null;
 
-        // Hitung jarak
-        $allHelps->transform(function ($help) use ($locationService) {
-            if ($this->mitraLat && $this->mitraLng && $help->latitude && $help->longitude) {
-                $distanceMeters = $locationService->calculateDistance(
-                    $this->mitraLat, $this->mitraLng,
-                    (float) $help->latitude, (float) $help->longitude
-                );
-                $help->distance_km = round($distanceMeters / 1000, 1);
-            } else {
-                $help->distance_km = null;
-            }
-            return $help;
-        });
+        if ($hasGps) {
+            $lat = (float) $this->mitraLat;
+            $lng = (float) $this->mitraLng;
 
-        // Filter batas maksimal jangkauan radius dinamis dari AppSetting (jika GPS terdeteksi)
-        $maxAppRadiusKm = \App\Models\AppSetting::getMaxMatchingRadiusKm();
-        if ($this->mitraLat && $this->mitraLng) {
-            $allHelps = $allHelps->filter(function ($h) use ($maxAppRadiusKm) {
-                return $h->distance_km === null || $h->distance_km <= $maxAppRadiusKm;
+            // 1. Tentukan batas radius filter (KM): Pilihan eksplisit pengguna (5/15/25/30/60) atau batas maksimal platform pool (60 KM)
+            $maxPoolRadiusKm = (float) \App\Models\AppSetting::getMaxPoolRadiusKm();
+            $filterRadius = in_array($this->distanceRadius, ['5', '15', '25', '30', '60'])
+                ? (float) $this->distanceRadius
+                : $maxPoolRadiusKm;
+
+            // 2. Bounding Box Pre-Filter (Menggunakan Index Database B-Tree untuk memotong 99% data di luar area)
+            // 1 deg Lat ~ 111.045 KM; 1 deg Lng ~ 111.045 * cos(Lat) KM
+            $latDelta = $filterRadius / 111.045;
+            $lngDelta = $filterRadius / (111.045 * max(0.01, cos(deg2rad($lat))));
+
+            $minLat = $lat - $latDelta;
+            $maxLat = $lat + $latDelta;
+            $minLng = $lng - $lngDelta;
+            $maxLng = $lng + $lngDelta;
+
+            // 3. Formula Haversine SQL Presisi (Hanya dievaluasi untuk data di dalam Bounding Box)
+            $haversineSql = "(6371 * acos(least(1.0, greatest(-1.0, cos(radians($lat)) * cos(radians(latitude)) * cos(radians(longitude) - radians($lng)) + sin(radians($lat)) * sin(radians(latitude))))))";
+
+            $query->select('helps.*')
+                  ->selectRaw("$haversineSql AS distance_km");
+
+            // Filter: Bounding Box terindeks terlebih dahulu, lalu presisi Haversine
+            $query->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $filterRadius) {
+                $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $filterRadius) {
+                    $sub->whereBetween('latitude', [$minLat, $maxLat])
+                        ->whereBetween('longitude', [$minLng, $maxLng])
+                        ->whereRaw("$haversineSql <= ?", [$filterRadius]);
+                })->orWhere(function ($sub) {
+                    $sub->whereNull('latitude')->orWhereNull('longitude');
+                });
             });
         }
 
-        // Filter radius pilihan km (5, 15, 30, 60)
-        if (in_array($this->distanceRadius, ['5', '15', '25', '30', '60'])) {
-            $maxKm    = (float) $this->distanceRadius;
-            $allHelps = $allHelps->filter(fn($h) => $h->distance_km !== null ? $h->distance_km <= $maxKm : true);
-        }
-
-        // Sorting
-        $allHelps = match($this->sortBy) {
-            'nearby'     => $allHelps->sortBy(fn($h) => $h->distance_km ?? (($user && $h->city_id == $user->city_id) ? 9999 : 99999)),
-            'latest'     => $allHelps->sortByDesc('created_at'),
-            'oldest'     => $allHelps->sortBy('created_at'),
-            'price_high' => $allHelps->sortByDesc('amount'),
-            'price_low'  => $allHelps->sortBy('amount'),
-            default      => $allHelps,
+        // Database-Level Sorting
+        match ($this->sortBy) {
+            'nearby' => $hasGps
+                ? $query->orderByRaw("CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN $haversineSql ELSE 99999 END ASC")
+                : ($user && $user->city_id ? $query->orderByRaw("(city_id = ?) DESC", [$user->city_id])->latest() : $query->latest()),
+            'latest'     => $query->latest(),
+            'oldest'     => $query->oldest(),
+            'price_high' => $query->orderByDesc('amount'),
+            'price_low'  => $query->orderBy('amount'),
+            default      => $hasGps 
+                ? $query->orderByRaw("CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN $haversineSql ELSE 99999 END ASC")
+                : $query->latest(),
         };
 
-        // Manual pagination
-        $currentPage  = $this->getPage();
-        $perPage      = 15;
-        $currentItems = $allHelps->slice(($currentPage - 1) * $perPage, $perPage)->values();
-        $helps        = new \Illuminate\Pagination\LengthAwarePaginator(
-            $currentItems,
-            $allHelps->count(),
-            $perPage,
-            $currentPage,
-            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
-        );
+        // Native Database Pagination (Hanya mengambil 15 record per halaman langsung dari SQL)
+        $helps = $query->with(['user', 'city'])->paginate(15);
+
+        // Format angka distance_km jika dihitung dari SQL
+        if ($hasGps) {
+            $helps->getCollection()->transform(function ($h) {
+                if ($h->distance_km !== null) {
+                    $h->distance_km = round((float) $h->distance_km, 1);
+                }
+                return $h;
+            });
+        }
 
         $activeTask = $user ? Help::where('mitra_id', $user->id)->active()->first() : null;
 

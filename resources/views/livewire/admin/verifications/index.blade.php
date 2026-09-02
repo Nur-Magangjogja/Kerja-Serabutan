@@ -1,4 +1,4 @@
-<div wire:poll.20s>
+<div wire:poll.30s.visible>
     {{-- ===== Page Header ===== --}}
     <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div>

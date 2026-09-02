@@ -9,6 +9,7 @@ use App\Services\HelpTransactionService;
 use App\Services\LocationTrackingService;
 use App\Services\PartnerOnlineService;
 use App\Notifications\HelpTakenNotification;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
@@ -122,6 +123,7 @@ class Index extends Component
     #[On('balance-updated')]
     public function refreshBalance()
     {
+        $this->clearDashboardCache();
         $this->dispatch('$refresh');
     }
 
@@ -143,6 +145,7 @@ class Index extends Component
                 $longitude ? (float) $longitude : null
             );
 
+            $this->clearDashboardCache();
             session()->flash('message', 'Bantuan berhasil diambil! GPS tracking aktif. Segera menuju lokasi customer.');
         } catch (\RuntimeException $e) {
             session()->flash('error', $e->getMessage());
@@ -166,6 +169,7 @@ class Index extends Component
     {
         try {
             $help = app(\App\Services\HelpMatchingService::class)->acceptOffer($dispatchId, auth()->user());
+            $this->clearDashboardCache();
             session()->flash('message', "Tawaran pekerjaan '{$help->title}' berhasil diterima! Segera menuju lokasi customer.");
             $this->dispatch('start-gps-tracking', helpId: $help->id);
             $this->setTab('diproses');
@@ -182,8 +186,15 @@ class Index extends Component
     {
         try {
             app(\App\Services\HelpMatchingService::class)->rejectOffer($dispatchId, auth()->user(), $reason);
-            session()->flash('message', 'Tawaran pekerjaan dilewati. Status kembali mencari order baru.');
-            $this->dispatch('show-status-notification', message: 'Tawaran dilewati.');
+            $this->clearDashboardCache();
+            $state = app(\App\Services\PartnerOnlineService::class)->getOrCreateState(auth()->id());
+            if ($state->matching_status === PartnerOnlineState::STATUS_ONLINE) {
+                session()->flash('message', 'Tawaran dilewati. Batas penolakan berturut-turut tercapai, status dialihkan ke Standby. Klik "Cari Order" saat Anda siap menerima pesanan.');
+                $this->dispatch('show-status-notification', message: 'Status Anda beralih ke Standby.');
+            } else {
+                session()->flash('message', 'Tawaran dilewati. Status tetap AKTIF mencari order baru di sekitar Anda.');
+                $this->dispatch('show-status-notification', message: 'Tawaran dilewati. Tetap mencari order...');
+            }
         } catch (\Throwable $e) {
             Log::error('[Mitra/Dashboard] rejectOffer error: ' . $e->getMessage(), ['dispatch_id' => $dispatchId]);
             session()->flash('error', 'Gagal menolak tawaran.');
@@ -194,7 +205,15 @@ class Index extends Component
     {
         try {
             app(\App\Services\HelpMatchingService::class)->handleExpiry($dispatchId, true);
-            $this->dispatch('show-status-notification', message: 'Batas waktu respon tawaran telah berakhir.');
+            $this->clearDashboardCache();
+            $state = app(\App\Services\PartnerOnlineService::class)->getOrCreateState(auth()->id());
+            if ($state->matching_status === PartnerOnlineState::STATUS_ONLINE) {
+                session()->flash('message', 'Waktu tawaran habis. Status dialihkan ke Standby. Klik "Cari Order" untuk mulai matching lagi.');
+                $this->dispatch('show-status-notification', message: 'Waktu habis. Status beralih ke Standby.');
+            } else {
+                session()->flash('message', 'Waktu tawaran habis. Sistem melanjutkan pencarian order baru untuk Anda.');
+                $this->dispatch('show-status-notification', message: 'Waktu habis. Melanjutkan pencarian...');
+            }
         } catch (\Throwable $e) {
             Log::error('[Mitra/Dashboard] handleExpiry error: ' . $e->getMessage(), ['dispatch_id' => $dispatchId]);
         }
@@ -214,42 +233,40 @@ class Index extends Component
 
         // Lepaskan status BUSY mitra agar dapat langsung mencari pesanan baru
         app(\App\Services\PartnerOnlineService::class)->releaseBusy(auth()->id(), $help->id);
+        $this->clearDashboardCache();
 
-        session()->flash('message', 'Pekerjaan telah ditandai selesai! Menunggu konfirmasi customer (maks. 24 jam). Dana akan otomatis diteruskan jika tidak ada komplain.');
+        session()->flash('message', 'Pekerjaan selesai! Dana escrow diamankan (maks. 24 jam). Status Anda kembali Bebas Tugas — Klik "Cari Order" untuk mulai pekerjaan baru.');
         $this->setTab('diproses');
+    }
+
+    public function clearDashboardCache(?int $userId = null): void
+    {
+        $uid = $userId ?? auth()->id();
+        if (!$uid) return;
+
+        $userCityId = auth()->user()?->city_id;
+        app(\App\Services\DashboardStatsService::class)->clearStatsCache($uid, $userCityId);
     }
 
     public function render()
     {
         $user = auth()->user();
-        $userBalance = UserBalance::where('user_id', $user->id)->first();
-        $balance = $userBalance ? $userBalance->balance : 0;
+        if (!$user) {
+            return view('livewire.mitra.dashboard.index');
+        }
 
-        // Statistik bantuan
-        $availableHelpsCount = Help::where('status', 'menunggu_mitra')
-            ->where(function ($q) {
-                $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
-                  ->orWhereNull('dispatch_mode');
-            })
-            ->whereNull('mitra_id')
-            ->availableForMitra($user?->id)
-            ->where(function ($q) {
-                $q->whereNull('scheduled_at')
-                  ->orWhere('scheduled_at', '<=', now());
-            })
-            ->count();
+        $statsService = app(\App\Services\DashboardStatsService::class);
 
-        $inProgressCount = Help::where('mitra_id', $user->id)
-            ->whereIn('status', ['memperoleh_mitra', 'taken', 'sedang_diproses', 'in_progress', 'partner_on_the_way', 'partner_arrived', 'waiting_customer_confirmation', 'partner_cancel_requested'])
-            ->count();
+        // 1. Statistik ringkas & saldo di-cache via DashboardStatsService
+        $stats               = $statsService->getSummaryStats($user);
+        $balance             = $stats['balance'];
+        $availableHelpsCount = $stats['available'];
+        $inProgressCount     = $stats['inProgress'];
+        $completedCount      = $stats['completed'];
 
-        $completedCount = Help::where('mitra_id', $user->id)
-            ->whereIn('status', ['selesai', 'completed'])
-            ->count();
+        $userCityId = $user->city_id;
 
-        $userCityId = optional($user)->city_id;
-
-        // Data berdasarkan tab
+        // 2. Data paginasi berdasarkan tab aktif
         if ($this->activeTab === 'tersedia' || $this->activeTab === 'semua') {
             $helpsQuery = Help::where('status', 'menunggu_mitra')
                 ->where(function ($q) {
@@ -257,7 +274,7 @@ class Index extends Component
                       ->orWhereNull('dispatch_mode');
                 })
                 ->whereNull('mitra_id')
-                ->availableForMitra($user?->id)
+                ->availableForMitra($user->id)
                 ->where(function ($q) {
                     $q->whereNull('scheduled_at')
                       ->orWhere('scheduled_at', '<=', now());
@@ -290,126 +307,56 @@ class Index extends Component
                 ->paginate(6);
         }
 
-        // Rekomendasi bantuan (berdasarkan kota atau kategori)
-        $recommendedHelps = Help::where('status', 'menunggu_mitra')
+        // 3. Rekomendasi, Terbaru, dan Terdekat via DashboardStatsService
+        $recommendedHelps = $statsService->getRecommendedHelps($user, 3);
+        $latestHelps      = $statsService->getLatestHelps($user, 5);
+        $nearbyHelps      = $statsService->getNearbyHelps($user, 3);
+
+        // 4. Unread Chat Count via DashboardStatsService
+        $unreadChatCount = $statsService->getUnreadChatCount($user);
+
+        // 5. Real-Time State & Task Check (Terkonsolidasi dalam 1 Query Index Tunggal)
+        $onlineState = app(PartnerOnlineService::class)->getOrCreateState($user->id);
+
+        $relevantMitraHelps = Help::where('mitra_id', $user->id)
             ->where(function ($q) {
-                $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
-                  ->orWhereNull('dispatch_mode');
-            })
-            ->whereNull('mitra_id')
-            ->availableForMitra($user?->id)
-            ->where(function ($q) {
-                $q->whereNull('scheduled_at')
-                  ->orWhere('scheduled_at', '<=', now());
-            })
-            ->when($userCityId, function ($query, $cityId) {
-                return $query->where('city_id', $cityId);
+                $q->active()
+                  ->orWhere('status', Help::STATUS_WAITING_CONFIRMATION);
             })
             ->with(['user', 'city'])
             ->latest()
-            ->take(3)
             ->get();
 
-        // Bantuan terbaru
-        $latestHelps = Help::where('status', 'menunggu_mitra')
-            ->where(function ($q) {
-                $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
-                  ->orWhereNull('dispatch_mode');
-            })
-            ->whereNull('mitra_id')
-            ->availableForMitra($user?->id)
-            ->where(function ($q) {
-                $q->whereNull('scheduled_at')
-                  ->orWhere('scheduled_at', '<=', now());
-            })
-            ->with(['user', 'city'])
-            ->latest()
-            ->take(5)
-            ->get();
+        $activeTask = $relevantMitraHelps->first(function ($h) {
+            return in_array($h->status, [
+                Help::STATUS_TAKEN,
+                'memperoleh_mitra',
+                Help::STATUS_PARTNER_ON_THE_WAY,
+                Help::STATUS_PARTNER_ARRIVED,
+                Help::STATUS_IN_PROGRESS,
+                'sedang_diproses',
+                Help::STATUS_PARTNER_CANCEL_REQUESTED,
+            ]);
+        });
 
-        // Bantuan terdekat
-        $nearbyHelps = Help::where('status', 'menunggu_mitra')
-            ->where(function ($q) {
-                $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
-                  ->orWhereNull('dispatch_mode');
-            })
-            ->whereNull('mitra_id')
-            ->availableForMitra($user?->id)
-            ->where(function ($q) {
-                $q->whereNull('scheduled_at')
-                  ->orWhere('scheduled_at', '<=', now());
-            })
-            ->when($userCityId, function ($query, $cityId) {
-                return $query->where('city_id', $cityId);
-            })
-            ->with(['user', 'city'])
-            ->take(3)
-            ->get();
-
-        // Check unread messages count across all active helps for this mitra
-        $unreadChatCount = 0;
-        try {
-            if ($user && Schema::hasTable('chats')) {
-                $myHelpIds = Help::where('mitra_id', $user->id)
-                    ->whereIn('status', ['memperoleh_mitra', 'taken', 'sedang_diproses', 'in_progress', 'partner_on_the_way', 'partner_arrived', 'waiting_customer_confirmation'])
-                    ->pluck('id');
-
-                $unreadChatCount = \App\Models\Chat::whereIn('help_id', $myHelpIds)
-                    ->where('sender_id', '!=', $user->id)
-                    ->where('is_read', false)
-                    ->count();
-            }
-        } catch (\Throwable $e) {
-            // ignore if Chat table or column is missing
-        }
-
-        // Active task checking
-        $activeTask = $user ? Help::where('mitra_id', $user->id)->active()->first() : null;
-
-        $onlineState = $user ? app(PartnerOnlineService::class)->getOrCreateState($user->id) : null;
-
-        // Active Offer Checking (jika mitra sedang berstatus OFFER_PENDING dan tidak memiliki tugas aktif)
-        $activeOffer = null;
-        if ($activeTask) {
-            // Jika mitra sedang mengerjakan tugas aktif, pastikan tawaran sequential lain tidak menggantung
-            $staleDispatches = \App\Models\HelpDispatch::where('mitra_id', $user->id)
-                ->where('status', \App\Models\HelpDispatch::STATUS_OFFERED)
-                ->get();
-            foreach ($staleDispatches as $stale) {
-                app(\App\Services\HelpMatchingService::class)->rejectOffer($stale->id, $user, 'Mitra sedang sibuk mengerjakan tugas aktif');
-            }
-        } elseif ($onlineState && $onlineState->matching_status === PartnerOnlineState::STATUS_OFFER_PENDING && $onlineState->current_help_id) {
-            $activeOffer = \App\Models\HelpDispatch::with('help.user', 'help.city')
-                ->where('help_id', $onlineState->current_help_id)
-                ->where('mitra_id', $user->id)
-                ->where('status', \App\Models\HelpDispatch::STATUS_OFFERED)
-                ->latest()
-                ->first();
-
-            if ($activeOffer && $activeOffer->expires_at && $activeOffer->expires_at->isPast()) {
-                app(\App\Services\HelpMatchingService::class)->handleExpiry($activeOffer->id, true);
-                $onlineState->refresh();
-                $activeOffer = null;
-            } elseif (!$activeOffer) {
-                app(\App\Services\PartnerOnlineService::class)->revertFromOfferPending($user->id, $onlineState->current_help_id);
-                $onlineState->refresh();
-            }
-        }
+        $waitingConfirmationHelps = $relevantMitraHelps->filter(function ($h) {
+            return $h->status === Help::STATUS_WAITING_CONFIRMATION;
+        })->take(3)->values();
 
         return view('livewire.mitra.dashboard.index', [
-            'helps' => $helps,
-            'balance' => $balance,
-            'availableHelpsCount' => $availableHelpsCount,
-            'inProgressCount' => $inProgressCount,
-            'completedCount' => $completedCount,
-            'user' => $user,
-            'recommendedHelps' => $recommendedHelps,
-            'latestHelps' => $latestHelps,
-            'nearbyHelps' => $nearbyHelps,
-            'unreadChatCount' => $unreadChatCount,
-            'activeTask' => $activeTask,
-            'onlineState' => $onlineState,
-            'activeOffer' => $activeOffer,
+            'helps'                    => $helps,
+            'balance'                  => $balance,
+            'availableHelpsCount'      => $availableHelpsCount,
+            'inProgressCount'          => $inProgressCount,
+            'completedCount'           => $completedCount,
+            'user'                     => $user,
+            'recommendedHelps'         => $recommendedHelps,
+            'latestHelps'              => $latestHelps,
+            'nearbyHelps'              => $nearbyHelps,
+            'unreadChatCount'          => $unreadChatCount,
+            'activeTask'               => $activeTask,
+            'waitingConfirmationHelps' => $waitingConfirmationHelps,
+            'onlineState'              => $onlineState,
         ]);
     }
 }

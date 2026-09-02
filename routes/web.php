@@ -161,8 +161,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     // MITRA ROUTES (Volunteer/Pemberi Bantuan)
     // ========================================
     Route::prefix('mitra')->name('mitra.')->middleware('mitra')->group(function () {
-        // Dashboard
+        // Dashboard & Lightweight Background Heartbeat
         Route::get('/dashboard', \App\Livewire\Mitra\Dashboard\Index::class)->name('dashboard');
+        Route::post('/heartbeat', \App\Http\Controllers\Mitra\PartnerHeartbeatController::class)->name('heartbeat');
 
         // Helps Management
         Route::get('/helps', \App\Livewire\Mitra\Helps\AllHelps::class)->name('helps.all');

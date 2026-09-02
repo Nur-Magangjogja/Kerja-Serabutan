@@ -194,12 +194,18 @@ class PartnerOnlineService
      * Mengupdate last_seen_at dan koordinat GPS.
      * Guard: TIDAK PERNAH menghidupkan mitra yang OFFLINE menjadi online secara otomatis.
      */
-    public function heartbeat(User $mitra, ?float $lat = null, ?float $lng = null): void
+    public function heartbeat(User $mitra, ?float $lat = null, ?float $lng = null): ?PartnerOnlineState
     {
         $state = PartnerOnlineState::where('user_id', $mitra->id)->first();
 
         if (!$state) {
-            return;
+            $state = PartnerOnlineState::create([
+                'user_id'         => $mitra->id,
+                'matching_status' => PartnerOnlineState::STATUS_OFFLINE,
+                'latitude'        => $lat,
+                'longitude'       => $lng,
+            ]);
+            return $state;
         }
 
         // Jangan revive jika offline
@@ -210,7 +216,7 @@ class PartnerOnlineService
                     'longitude' => $lng,
                 ]);
             }
-            return;
+            return $state;
         }
 
         $updates = ['last_seen_at' => now()];
@@ -221,6 +227,7 @@ class PartnerOnlineService
         }
 
         $state->update($updates);
+        return $state;
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -306,7 +313,11 @@ class PartnerOnlineService
 
     /**
      * Menetapkan mitra ke status BUSY saat penawaran diterima atau bantuan diambil (Atomic Lock).
-     * Transisi: OFFER_PENDING / SEARCHING -> BUSY.
+     * Transisi yang Diizinkan: SEARCHING / ONLINE / OFFER_PENDING -> BUSY.
+     * Invariant Guards:
+     * 1. Mitra tidak boleh sudah BUSY pada tugas aktif lain yang berbeda.
+     * 2. Mitra dengan penawaran tertunda (OFFER_PENDING) harus cocok dengan ID tugas terkait.
+     * 3. Record Help tidak boleh sudah ditugaskan ke mitra lain atau dalam status terminal.
      */
     public function setBusy(int $mitraId, int $helpId): bool
     {
@@ -315,8 +326,30 @@ class PartnerOnlineService
 
             if (!$state) {
                 $state = PartnerOnlineState::create([
-                    'user_id' => $mitraId,
+                    'user_id'         => $mitraId,
+                    'matching_status' => PartnerOnlineState::STATUS_OFFLINE,
                 ]);
+            }
+
+            // Invariant 1: Jika sudah BUSY pada tugas yang berbeda, tolak tegas
+            if ($state->matching_status === PartnerOnlineState::STATUS_BUSY && $state->current_help_id && $state->current_help_id != $helpId) {
+                throw new \RuntimeException("Mitra #{$mitraId} saat ini sedang sibuk (BUSY) mengerjakan Help #{$state->current_help_id}.");
+            }
+
+            // Invariant 2: Jika dalam status OFFER_PENDING, pastikan order yang diambil cocok
+            if ($state->matching_status === PartnerOnlineState::STATUS_OFFER_PENDING && $state->current_help_id && $state->current_help_id != $helpId) {
+                throw new \RuntimeException("Mitra #{$mitraId} memiliki penawaran tertunda untuk Help #{$state->current_help_id}, tidak cocok dengan Help #{$helpId}.");
+            }
+
+            // Invariant 3: Verifikasi keberadaan dan kepemilikan record Help
+            $help = \App\Models\Help::find($helpId);
+            if ($help) {
+                if ($help->mitra_id !== null && $help->mitra_id !== $mitraId) {
+                    throw new \RuntimeException("Help #{$helpId} sudah ditugaskan ke Mitra lain (#{$help->mitra_id}).");
+                }
+                if (in_array($help->status, [\App\Models\Help::STATUS_SELESAI, \App\Models\Help::STATUS_DIBATALKAN, 'completed', 'cancelled'])) {
+                    throw new \RuntimeException("Help #{$helpId} sudah dalam status terminal ('{$help->status}').");
+                }
             }
 
             $state->matching_status      = PartnerOnlineState::STATUS_BUSY;
@@ -332,11 +365,12 @@ class PartnerOnlineService
 
     /**
      * Melepaskan status BUSY setelah bantuan selesai / dibatalkan (Atomic Lock).
-     * Transisi: BUSY -> SEARCHING (jika heartbeat segar) atau ONLINE.
+     * Transisi Eksplisit: BUSY -> ONLINE (Standby).
+     * Memberikan kontrol penuh kepada Mitra untuk menekan tombol "Cari Order" secara sadar saat siap menerima tugas baru.
      */
     public function releaseBusy(int $mitraId, int $helpId, int $heartbeatTtlSeconds = self::DEFAULT_HEARTBEAT_TTL): void
     {
-        DB::transaction(function () use ($mitraId, $helpId, $heartbeatTtlSeconds) {
+        DB::transaction(function () use ($mitraId, $helpId) {
             $state = PartnerOnlineState::where('user_id', $mitraId)->lockForUpdate()->first();
 
             if (!$state) {
@@ -345,19 +379,14 @@ class PartnerOnlineService
 
             // Hanya lepas jika memang sedang mengerjakan help terkait atau status busy
             if ($state->matching_status === PartnerOnlineState::STATUS_BUSY || $state->current_help_id == $helpId) {
-                $state->current_help_id   = null;
-                $state->last_completed_at = now();
-
-                if ($state->isHeartbeatFresh($heartbeatTtlSeconds)) {
-                    $state->matching_status = PartnerOnlineState::STATUS_SEARCHING;
-                    $state->searching_since = now();
-                } else {
-                    $state->matching_status = PartnerOnlineState::STATUS_ONLINE;
-                    $state->searching_since = null;
-                }
+                $state->current_help_id      = null;
+                $state->last_completed_at    = now();
+                $state->matching_status      = PartnerOnlineState::STATUS_ONLINE;
+                $state->searching_since      = null;
+                $state->consecutive_declines = 0;
 
                 $state->save();
-                Log::info("[PartnerOnlineService] Mitra #{$mitraId} released from BUSY -> '{$state->matching_status}'.");
+                Log::info("[PartnerOnlineService] Mitra #{$mitraId} released from BUSY -> ONLINE (Standby). Ready for manual 'Cari Order'.");
             }
         });
     }

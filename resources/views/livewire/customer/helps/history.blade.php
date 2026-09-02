@@ -60,7 +60,7 @@
 					@elseif(isset($completedHelps))
 						<div class="space-y-3">
 							@foreach($completedHelps as $help)
-								<div x-data="{ open: false }" class="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition">
+								<div x-data="{ isExpanded: false }" class="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition">
 									<div class="p-4">
 										<div class="flex items-center gap-3 mb-3">
 											<div class="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gradient-to-br from-gray-100 to-gray-50">
@@ -106,15 +106,15 @@
 											</div>
 										</div>
 
-										<button @click="open = !open" class="w-full flex items-center justify-center gap-2 text-sm font-semibold py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition" style="color: #0098e7;">
-											<span x-text="open ? 'Sembunyikan Detail' : 'Lihat Detail & Penilaian'"></span>
-											<svg :class="open ? 'rotate-180' : ''" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<button @click="isExpanded = !isExpanded" class="w-full flex items-center justify-center gap-2 text-sm font-semibold py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition" style="color: #0098e7;">
+											<span x-text="isExpanded ? 'Sembunyikan Detail' : 'Lihat Detail & Penilaian'"></span>
+											<svg :class="isExpanded ? 'rotate-180' : ''" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 											</svg>
 										</button>
 									</div>
 
-									<div x-show="open" x-cloak x-transition class="px-4 pb-4 border-t border-gray-100 mt-3 pt-4">
+									<div x-show="isExpanded" x-cloak x-transition class="px-4 pb-4 border-t border-gray-100 mt-3 pt-4">
 										<div class="space-y-4">
 											@if($help->photo)
 												<img src="{{ asset('storage/' . $help->photo) }}" alt="foto bantuan" class="w-full h-48 object-cover rounded-xl">

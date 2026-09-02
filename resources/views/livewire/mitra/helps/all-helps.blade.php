@@ -207,55 +207,55 @@
 
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-start justify-between gap-2 mb-1">
-                                    <h3 class="font-bold text-sm text-gray-900 line-clamp-1">{{ $help->title }}</h3>
-                                    <span class="text-xs font-extrabold whitespace-nowrap text-primary-600">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
+                                    <h3 class="font-bold text-sm text-gray-900 dark:text-white line-clamp-1">{{ $help->title }}</h3>
+                                    <span class="text-xs font-extrabold whitespace-nowrap text-primary-600 dark:text-primary-400">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
                                 </div>
 
                                 <!-- Tags & Badges: Distance + Status -->
                                 <div class="flex items-center gap-1.5 flex-wrap mb-2">
                                     @if(isset($help->distance_km) && $help->distance_km !== null)
                                         @if($help->distance_km <= 5)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                                                 🟢 {{ $help->distance_km }} km (Dekat)
                                             </span>
                                         @elseif($help->distance_km <= 25)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                                                 🟡 {{ $help->distance_km }} km
                                             </span>
                                         @else
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                                                 🔴 {{ $help->distance_km }} km (Jauh)
                                             </span>
                                         @endif
                                     @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-600">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                                             📍 {{ $help->city->name ?? 'Indonesia' }}
                                         </span>
                                     @endif
 
                                     @if($help->scheduled_at)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
                                             📅 Terjadwal
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-100">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-100 dark:border-purple-800">
                                             ⚡ Butuh Cepat
                                         </span>
                                     @endif
                                 </div>
 
-                                <p class="text-xs text-gray-600 line-clamp-2 mb-2 leading-relaxed">{{ $help->description }}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 mb-2 leading-relaxed">{{ $help->description }}</p>
 
                                 @if($help->scheduled_at)
-                                    <div class="flex items-center gap-1.5 text-[11px] text-blue-700 font-medium bg-blue-50/70 rounded-lg px-2.5 py-1 mb-2.5">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    <div class="flex items-center gap-1.5 text-[11px] text-blue-700 dark:text-blue-300 font-medium bg-blue-50/70 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/60 rounded-lg px-2.5 py-1 mb-2.5">
+                                        <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                         <span>Waktu: {{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('l, d M Y - H:i') }} WIB</span>
                                     </div>
                                 @endif
 
-                                <div class="flex items-center justify-between pt-1 border-t border-gray-100 text-xs text-gray-500">
+                                <div class="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
                                     <div class="flex items-center gap-1">
-                                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                        <svg class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                                         <span class="truncate max-w-[100px]">{{ $help->user->name ?? 'Pengguna' }}</span>
                                     </div>
 
@@ -626,40 +626,50 @@
             );
         };
 
-        window.takeHelpFromModal = function() {
+        window.takeHelpFromModal = async function() {
             if (!currentHelpId) return;
             
             const btn = document.getElementById('previewTakeBtn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = `
-                <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Memproses...</span>
-            `;
-            btn.disabled = true;
+            const originalText = btn ? btn.innerHTML : 'Ambil Bantuan';
+            if (btn) {
+                btn.innerHTML = `
+                    <svg class="animate-spin w-4 h-4 text-white inline-block mr-1" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Memproses...</span>
+                `;
+                btn.disabled = true;
+            }
 
-            const executeTake = (lat = null, lng = null) => {
-                if (lat && lng) {
-                    $wire.takeHelp(currentHelpId, lat, lng);
-                } else {
-                    $wire.takeHelp(currentHelpId);
+            const executeTake = async (lat = null, lng = null) => {
+                try {
+                    if (lat && lng) {
+                        await $wire.takeHelp(currentHelpId, lat, lng);
+                    } else {
+                        await $wire.takeHelp(currentHelpId);
+                    }
+                    window.closePreviewModal();
+                } catch (error) {
+                    console.error('Gagal mengambil bantuan:', error);
+                } finally {
+                    if (btn) {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
                 }
-                window.closePreviewModal();
-                btn.innerHTML = originalText;
-                btn.disabled = false;
             };
 
             if (userMitraLat && userMitraLng) {
-                executeTake(userMitraLat, userMitraLng);
+                await executeTake(userMitraLat, userMitraLng);
             } else if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
-                    (p) => executeTake(p.coords.latitude, p.coords.longitude),
-                    () => executeTake()
+                    async (p) => await executeTake(p.coords.latitude, p.coords.longitude),
+                    async () => await executeTake(),
+                    { timeout: 5000 }
                 );
             } else {
-                executeTake();
+                await executeTake();
             }
         };
 

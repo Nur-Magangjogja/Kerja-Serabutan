@@ -56,7 +56,7 @@
         </div>
 
         {{-- Premium Optimized Month Selector --}}
-        <div class="flex items-center gap-1.5" x-data="{ open: false }" @click.away="open = false">
+        <div class="flex items-center gap-1.5" x-data="{ isOpen: false }" @click.away="isOpen = false">
             {{-- Quick Prev Month Button --}}
             <button type="button" wire:click="prevMonth" wire:loading.attr="disabled"
                 class="p-2 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 shadow-2xs transition cursor-pointer disabled:opacity-50" 
@@ -66,7 +66,7 @@
 
             {{-- Main Dropdown Popover Button --}}
             <div class="relative">
-                <button type="button" @click="open = !open"
+                <button type="button" @click="isOpen = !isOpen"
                     class="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-400 rounded-2xl px-4 py-2 shadow-2xs transition cursor-pointer group">
                     <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-950/80 dark:to-primary-900/40 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 border border-primary-200/60 dark:border-primary-800/60 shadow-2xs">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,7 +79,7 @@
                             <span class="text-xs font-bold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                                 {{ $periodLabel }}
                             </span>
-                            <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-primary-600 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-primary-600 transition-transform duration-200" :class="{ 'rotate-180': isOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </div>
@@ -87,7 +87,7 @@
                 </button>
 
                 {{-- Popover Menu --}}
-                <div x-cloak x-show="open" 
+                <div x-cloak x-show="isOpen" 
                     x-transition:enter="transition ease-out duration-150" 
                     x-transition:enter-start="opacity-0 translate-y-2 scale-95" 
                     x-transition:enter-end="opacity-100 translate-y-0 scale-100" 
@@ -98,13 +98,13 @@
                     
                     {{-- Quick Action Buttons --}}
                     <div class="grid grid-cols-2 gap-1.5 pb-2.5 mb-2.5 border-b border-gray-100 dark:border-gray-700">
-                        <button type="button" wire:click="setCurrentMonth(); open = false"
+                        <button type="button" wire:click="setCurrentMonth(); isOpen = false"
                             class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer {{ !$isAllPeriod && $selectedMonth === now()->format('Y-m') ? 'bg-primary-600 text-white shadow-xs' : 'bg-gray-50 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
                             <span class="w-1.5 h-1.5 rounded-full {{ !$isAllPeriod && $selectedMonth === now()->format('Y-m') ? 'bg-white' : 'bg-emerald-500 animate-pulse' }}"></span>
                             Bulan Ini
                         </button>
 
-                        <button type="button" wire:click="setAllPeriod(); open = false"
+                        <button type="button" wire:click="setAllPeriod(); isOpen = false"
                             class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer {{ $isAllPeriod ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xs' : 'bg-gray-50 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             Semua Periode
@@ -115,7 +115,7 @@
                     <p class="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider px-2 mb-1.5">Riwayat 12 Bulan Terakhir</p>
                     <div class="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
                         @foreach($availableMonths as $m)
-                            <button type="button" wire:click="setMonth('{{ $m['key'] }}'); open = false"
+                            <button type="button" wire:click="setMonth('{{ $m['key'] }}'); isOpen = false"
                                 class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition text-left cursor-pointer {{ $selectedMonth === $m['key'] ? 'bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 font-bold border border-primary-200 dark:border-primary-800' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50' }}">
                                 <span class="flex items-center gap-2">
                                     <span class="w-1.5 h-1.5 rounded-full {{ $m['is_current'] ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600' }}"></span>

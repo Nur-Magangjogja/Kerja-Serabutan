@@ -116,9 +116,8 @@
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">#</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Customer</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">Kode Request</th>
-                            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Nominal</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden sm:table-cell">Total Bayar</th>
-                            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Metode</th>
+                            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">No. Pengguna</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Waktu</th>
                             <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Aksi</th>
@@ -144,23 +143,12 @@
                                 </td>
                                 <td class="px-4 py-3.5 hidden md:table-cell">
                                     <code class="text-xs bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded font-mono">{{ $transaction->request_code ?? '#' . $transaction->id }}</code>
-                                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ $transaction->customer_phone ?? ($transaction->user->phone ?? '—') }}</p>
-                                </td>
-                                <td class="px-4 py-3.5">
-                                    <p class="text-sm font-bold text-gray-800 dark:text-gray-100">Rp {{ number_format($transaction->amount, 0, ',', '.') }}</p>
-                                    @if(($transaction->admin_fee ?? 0) > 0)
-                                        <p class="text-[11px] text-gray-400 dark:text-gray-500">+Rp {{ number_format($transaction->admin_fee, 0, ',', '.') }} admin</p>
-                                    @else
-                                        <p class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">Bebas Pajak (Rp 0)</p>
-                                    @endif
                                 </td>
                                 <td class="px-4 py-3.5 hidden sm:table-cell">
                                     <p class="text-sm font-bold text-primary-600 dark:text-primary-400">Rp {{ number_format($transaction->total_payment, 0, ',', '.') }}</p>
                                 </td>
                                 <td class="px-4 py-3.5 hidden lg:table-cell text-xs font-semibold">
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
-                                        {{ strtoupper($transaction->payment_method ?? 'QRIS') }}
-                                    </span>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ $transaction->customer_phone ?? ($transaction->user->phone ?? '—') }}</p>
                                 </td>
                                 <td class="px-4 py-3.5">
                                     @if($transaction->status === 'waiting_approval' || $transaction->status === 'pending')
@@ -233,7 +221,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="px-4 py-16 text-center">
+                                <td colspan="8" class="px-4 py-16 text-center">
                                     <div class="flex flex-col items-center">
                                         <div class="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700/60 flex items-center justify-center mb-3 text-gray-400">
                                             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>

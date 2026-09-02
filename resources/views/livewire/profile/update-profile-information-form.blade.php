@@ -90,7 +90,7 @@
         <!-- Kota / Kabupaten & Provinsi -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <!-- Kota / Kabupaten (Pencarian Livewire) -->
-            <div class="min-w-0 relative" x-data="{ open: false }" @click.outside="open = false">
+            <div class="min-w-0 relative" x-data="{ showDropdown: false }" @click.outside="showDropdown = false">
                 <label class="block text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1.5">
                     <span class="flex items-center gap-1.5">
                         <svg class="w-4 h-4 text-primary-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -103,8 +103,8 @@
                 <div class="relative w-full min-w-0">
                     <input type="text"
                         wire:model.live.debounce.300ms="cityQuery"
-                        @focus="open = true"
-                        @input="open = true"
+                        @focus="showDropdown = true"
+                        @input="showDropdown = true"
                         placeholder="Ketik nama Kota / Kabupaten..."
                         class="w-full px-4 py-3 pl-10 pr-10 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 dark:focus:ring-primary-950/60 transition shadow-2xs outline-none truncate">
                     
@@ -134,12 +134,12 @@
 
                     <!-- Search Results Dropdown -->
                     @if(!empty($searchResults))
-                        <div x-show="open"
+                        <div x-show="showDropdown"
                             class="absolute z-50 left-0 right-0 mt-1 max-h-56 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl divide-y divide-gray-100 dark:divide-gray-700/60">
                             @foreach($searchResults as $c)
                                 <button type="button"
                                     wire:click="setCityId({{ $c['id'] }})"
-                                    @click="open = false"
+                                    @click="showDropdown = false"
                                     class="w-full text-left px-4 py-2.5 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-xs sm:text-sm text-gray-800 dark:text-gray-100 flex items-center justify-between transition-colors cursor-pointer group">
                                     <span class="font-medium group-hover:text-primary-600 dark:group-hover:text-primary-400">{{ $c['name'] }}</span>
                                     <span class="text-[11px] text-gray-400 dark:text-gray-500 font-normal">{{ $c['province'] }}</span>
@@ -147,7 +147,7 @@
                             @endforeach
                         </div>
                     @elseif(strlen(trim($cityQuery)) >= 2 && empty($city_id))
-                        <div x-show="open"
+                        <div x-show="showDropdown"
                             class="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-3 text-center text-xs text-gray-400">
                             Kota / Kabupaten tidak ditemukan
                         </div>

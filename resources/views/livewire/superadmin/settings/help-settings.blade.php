@@ -237,7 +237,7 @@
                             </h3>
                             @if($existing_qris_image)
                                 <button type="button" wire:click="removeQrisImage"
-                                    onclick="return confirm('Hapus gambar QRIS yang tersimpan saat ini?')"
+                                    wire:confirm="Hapus gambar QRIS yang tersimpan saat ini?"
                                     class="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer">
                                     Hapus Gambar QRIS
                                 </button>

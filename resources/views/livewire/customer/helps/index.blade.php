@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors" wire:poll.5s>
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors" wire:poll.15s.visible>
     <style>
         :root{
             --brand-500: #0ea5a4;
@@ -81,12 +81,15 @@
                             $rating = $help->rating;
                             $isCancelled = in_array($help->status, ['dibatalkan', 'cancelled']);
                         @endphp
-                        <div x-data="{ open: false }" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs hover:shadow-md transition">
+                        <div x-data="{ isExpanded: false }" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs hover:shadow-md transition">
                             <div class="p-4">
                                 <div class="flex items-start gap-3 mb-3">
                                     <div class="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
                                         @if($help->photo)
-                                            <img src="{{ asset('storage/' . $help->photo) }}" alt="{{ $help->title }}" class="w-full h-full object-cover">
+                                            <img src="{{ asset('storage/' . $help->photo) }}" 
+                                                alt="{{ $help->title }}" 
+                                                class="w-full h-full object-cover"
+                                                onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500\'><svg class=\'w-6 h-6\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\'></path></svg></div>';">
                                         @else
                                             <div class="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
                                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,15 +141,15 @@
                                     </div>
                                 </div>
 
-                                <button @click="open = !open" class="w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 text-primary-600 dark:text-sky-400 transition cursor-pointer">
-                                    <span x-text="open ? 'Sembunyikan Detail' : '{{ $isCancelled ? 'Lihat Detail Pembatalan' : 'Lihat Detail & Penilaian' }}'"></span>
-                                    <svg :class="open ? 'rotate-180' : ''" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <button @click="isExpanded = !isExpanded" class="w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 text-primary-600 dark:text-sky-400 transition cursor-pointer">
+                                    <span x-text="isExpanded ? 'Sembunyikan Detail' : '{{ $isCancelled ? 'Lihat Detail Pembatalan' : 'Lihat Detail & Penilaian' }}'"></span>
+                                    <svg :class="isExpanded ? 'rotate-180' : ''" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </button>
                             </div>
 
-                            <div x-show="open" x-cloak x-transition class="px-4 pb-4 border-t border-gray-100 dark:border-gray-700/60 pt-3.5 space-y-3">
+                            <div x-show="isExpanded" x-cloak x-transition class="px-4 pb-4 border-t border-gray-100 dark:border-gray-700/60 pt-3.5 space-y-3">
                                 @if($isCancelled)
                                     <div class="bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/60 rounded-xl p-3 space-y-1">
                                         <div class="flex items-center gap-1.5 text-xs font-bold text-rose-800 dark:text-rose-300">
@@ -227,7 +230,10 @@
                             <div class="flex items-start gap-3">
                                 <div class="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex-shrink-0 flex items-center justify-center">
                                     @if($help->photo)
-                                        <img src="{{ asset('storage/' . $help->photo) }}" alt="{{ $help->title }}" class="w-full h-full object-cover">
+                                        <img src="{{ asset('storage/' . $help->photo) }}" 
+                                            alt="{{ $help->title }}" 
+                                            class="w-full h-full object-cover"
+                                            onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'text-xl\'>💡</div>';">
                                     @else
                                         <div class="text-xl">
                                             {{ ['🩺', '🏠', '💡', '🔧', '🎯'][($loop->index) % 5] }}

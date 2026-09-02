@@ -160,6 +160,50 @@
             Klik <strong>Mulai</strong> untuk mensimulasikan pergerakan mitra menuju titik lokasi pesanan secara otomatis.
         </p>
     </div>
+
+    {{-- Custom Confirmation Modal for Teleport --}}
+    <div x-show="showTeleportModal" 
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-xs transition-opacity"
+         x-transition:enter="ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-gray-100 dark:border-gray-700 transform transition-all text-center"
+             @click.away="showTeleportModal = false"
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95">
+            
+            <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 mx-auto flex items-center justify-center mb-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            
+            <h4 class="text-base font-bold text-gray-900 dark:text-white mb-1.5">Teleport ke Lokasi Customer?</h4>
+            <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-5">
+                Posisi GPS Anda akan langsung dipindahkan seketika ke koordinat lokasi customer.
+            </p>
+            
+            <div class="grid grid-cols-2 gap-2.5">
+                <button type="button" 
+                        @click="showTeleportModal = false"
+                        class="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    Kembali
+                </button>
+                <button type="button" 
+                        @click="confirmTeleport()"
+                        class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-xs">
+                    Ya, Teleport
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @script
@@ -175,6 +219,7 @@ Alpine.data('gpsSimulator', (helpId, isSimulating, currentLat, currentLng, targe
     stepSize: 20,
     intervalId: null,
     distanceText: 'Menghitung...',
+    showTeleportModal: false,
 
     init() {
         // Convert to float immediately
@@ -270,9 +315,12 @@ Alpine.data('gpsSimulator', (helpId, isSimulating, currentLat, currentLng, targe
     },
 
     teleport() {
-        if (confirm('Teleport langsung ke lokasi customer?')) {
-            this.$wire.teleportToTarget();
-        }
+        this.showTeleportModal = true;
+    },
+
+    confirmTeleport() {
+        this.showTeleportModal = false;
+        this.$wire.teleportToTarget();
     },
 
     quickMove(meters) {

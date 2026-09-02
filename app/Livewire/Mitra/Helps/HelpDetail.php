@@ -246,7 +246,7 @@ class HelpDetail extends Component
             $this->partnerCancelStatus          = null;
 
             session()->flash('message', 'Pembatalan berhasil. Tugas telah dilepaskan dan dikembalikan ke sistem pencarian untuk Rekan Jasa lain.');
-            return redirect()->route('mitra.helps.find');
+            return redirect()->route('mitra.helps.all');
         } catch (\RuntimeException $e) {
             $this->showPartnerCancelModal = false;
             session()->flash('error', $e->getMessage());

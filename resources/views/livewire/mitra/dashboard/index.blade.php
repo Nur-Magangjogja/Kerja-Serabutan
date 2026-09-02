@@ -1,5 +1,4 @@
-<div class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-     @if(in_array($onlineState?->matching_status ?? '', ['searching', 'offer_pending'], true)) wire:poll.4s @endif>
+<div class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
     <style>
         :root{
             --brand-500: #0ea5a4;
@@ -140,370 +139,8 @@
         </div>
     </div>
 
-    <!-- Online & Matching Status Control Card (Tahap 2) -->
-    <div class="px-5 mt-4 relative z-10"
-         x-data="{
-             matchingStatus: '{{ $onlineState?->matching_status ?? 'offline' }}',
-             isGettingLocation: false,
-             triggerAction(action) {
-                 this.isGettingLocation = true;
-                 if (navigator.geolocation) {
-                     navigator.geolocation.getCurrentPosition(
-                         (pos) => {
-                             this.isGettingLocation = false;
-                             if (action === 'startSearching') {
-                                 $wire.startSearching(pos.coords.latitude, pos.coords.longitude);
-                             } else if (action === 'goOnline') {
-                                 $wire.toggleOnline(pos.coords.latitude, pos.coords.longitude);
-                             }
-                         },
-                         (err) => {
-                             this.isGettingLocation = false;
-                             if (action === 'startSearching') $wire.startSearching();
-                             if (action === 'goOnline') $wire.toggleOnline();
-                         },
-                         { timeout: 5000, maximumAge: 30000 }
-                     );
-                 } else {
-                     this.isGettingLocation = false;
-                     if (action === 'startSearching') $wire.startSearching();
-                     if (action === 'goOnline') $wire.toggleOnline();
-                 }
-             },
-             pingHeartbeat() {
-                 if (this.matchingStatus !== 'offline') {
-                     if (navigator.geolocation) {
-                         navigator.geolocation.getCurrentPosition(
-                             (pos) => { $wire.heartbeat(pos.coords.latitude, pos.coords.longitude); },
-                             () => { $wire.heartbeat(); },
-                             { timeout: 5000, maximumAge: 30000 }
-                         );
-                     } else {
-                         $wire.heartbeat();
-                     }
-                 }
-             }
-         }"
-         x-init="
-             setInterval(() => { pingHeartbeat(); }, 25000);
-         ">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                    @if(($onlineState?->matching_status ?? 'offline') === 'searching')
-                        <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400">
-                            <span class="absolute w-3 h-3 bg-emerald-500 rounded-full animate-ping"></span>
-                            <span class="relative w-3 h-3 bg-emerald-600 rounded-full"></span>
-                        </div>
-                    @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
-                        <div class="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 flex items-center justify-center">
-                            <span class="w-3 h-3 bg-sky-500 rounded-full"></span>
-                        </div>
-                    @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
-                        <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400">
-                            <span class="absolute w-3 h-3 bg-amber-500 rounded-full animate-ping"></span>
-                            <span class="relative w-3 h-3 bg-amber-600 rounded-full"></span>
-                        </div>
-                    @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
-                        <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                        </div>
-                    @else
-                        <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-400 flex items-center justify-center">
-                            <span class="w-3 h-3 bg-gray-400 rounded-full"></span>
-                        </div>
-                    @endif
-
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h3 class="text-xs font-bold text-gray-900 dark:text-white">
-                                @if(($onlineState?->matching_status ?? 'offline') === 'searching')
-                                    Mencari Order
-                                @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
-                                    Online (Standby)
-                                @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
-                                    Menunggu Respon Tawaran
-                                @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
-                                    Sedang Bertugas
-                                @else
-                                    Offline (Tidak Aktif)
-                                @endif
-                            </h3>
-                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full
-                                @if(($onlineState?->matching_status ?? 'offline') === 'searching') bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300
-                                @elseif(($onlineState?->matching_status ?? 'offline') === 'online') bg-sky-100 text-sky-800 dark:bg-sky-900/60 dark:text-sky-300
-                                @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending') bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300
-                                @elseif(($onlineState?->matching_status ?? 'offline') === 'busy') bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300
-                                @else bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400
-                                @endif">
-                                {{ strtoupper($onlineState?->matching_status ?? 'offline') }}
-                            </span>
-                        </div>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                            @if(($onlineState?->matching_status ?? 'offline') === 'searching')
-                                Menerima penawaran otomatis matching engine
-                            @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
-                                Terhubung, klik "Cari Order" untuk matching
-                            @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
-                                Ada tawaran order yang sedang diarahkan ke Anda
-                            @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
-                                Selesaikan bantuan aktif untuk mencari order lagi
-                            @else
-                                Aktifkan status untuk mulai menerima bantuan
-                            @endif
-                        </p>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-1.5 flex-shrink-0">
-                    @if(($onlineState?->matching_status ?? 'offline') === 'searching')
-                        <button wire:click="stopSearching"
-                                wire:loading.attr="disabled"
-                                class="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-xl text-xs font-bold hover:bg-amber-100 transition cursor-pointer">
-                            Jeda Cari
-                        </button>
-                        <button wire:click="goOffline"
-                                wire:loading.attr="disabled"
-                                class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-200 transition cursor-pointer">
-                            Offline
-                        </button>
-                    @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
-                        <button @click="triggerAction('startSearching')"
-                                :disabled="isGettingLocation"
-                                class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1">
-                            <span x-show="!isGettingLocation">Cari Order</span>
-                            <span x-show="isGettingLocation" x-cloak>GPS...</span>
-                        </button>
-                        <button wire:click="goOffline"
-                                wire:loading.attr="disabled"
-                                class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-200 transition cursor-pointer">
-                            Offline
-                        </button>
-                    @elseif(($onlineState?->matching_status ?? 'offline') === 'offline')
-                        <button @click="triggerAction('goOnline')"
-                                :disabled="isGettingLocation"
-                                class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5">
-                            <span x-show="!isGettingLocation">Aktifkan Online</span>
-                            <span x-show="isGettingLocation" x-cloak>Memuat GPS...</span>
-                        </button>
-                    @endif
-                </div>
-            </div>
-
-            {{-- Indikator Gamifikasi Status Antrean & Waktu Tunggu --}}
-            @if(($onlineState?->matching_status ?? 'offline') === 'searching')
-                @php
-                    $searchingSince = $onlineState->searching_since ?? $onlineState->last_seen_at ?? now();
-                    $totalSeconds   = (int) floor(max(0, $searchingSince->diffInSeconds(now())));
-                    $waitMinutes    = (int) floor($totalSeconds / 60);
-
-                    // Format waktu dinamis: 1-59 detik, 1-59 menit, dan mentok di 1 jam (karena batas maksimal poin boost adalah 1 jam)
-                    if ($totalSeconds < 60) {
-                        $formattedWaitTime = (int) $totalSeconds . ' Second';
-                    } elseif ($waitMinutes < 60) {
-                        $formattedWaitTime = (int) $waitMinutes . ' Minute';
-                    } else {
-                        $formattedWaitTime = '1 Hour';
-                    }
-
-                    $boostDays = \App\Models\AppSetting::getNewbieBoostDays();
-                    $threshold = \App\Models\AppSetting::getNewbieOrderThreshold();
-                    $isNewbie  = \App\Models\AppSetting::isNewbieBoostEnabled()
-                        && auth()->user()
-                        && (
-                            (auth()->user()->created_at && auth()->user()->created_at->diffInDays(now()) <= $boostDays)
-                            || \App\Models\Help::where('mitra_id', auth()->id())->where('status', 'selesai')->count() < $threshold
-                        );
-                @endphp
-                <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between text-xs flex-wrap gap-2">
-                    <div class="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
-                        <svg class="w-3.5 h-3.5 text-emerald-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-                        <span>Menunggu: <strong>{{ $formattedWaitTime }}</strong></span>
-                        @if($isNewbie)
-                            <span class="bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
-                                🚀 Newbie Boost Aktif
-                            </span>
-                        @endif
-                    </div>
-                    <div class="flex items-center gap-1">
-                        @if($waitMinutes >= 45)
-                            <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1">
-                                🔥 Prioritas Maksimal
-                            </span>
-                        @elseif($waitMinutes >= 15)
-                            <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1">
-                                ⚡ Prioritas Meningkat
-                            </span>
-                        @else
-                            <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
-                                🟢 Antrean Normal
-                            </span>
-                        @endif
-                    </div>
-                </div>
-            @endif
-        </div>
-    </div>
-
-    {{-- Sequential Matching Active Offer Card (Tahap 3 & 4) --}}
-    @if(isset($activeOffer) && $activeOffer && $activeOffer->help)
-        @php
-            $secondsRemaining = (int) max(0, $activeOffer->expires_at ? now()->diffInSeconds($activeOffer->expires_at, false) : 180);
-
-            // Hitung estimasi jarak tempuh & perkiraan waktu perjalanan
-            $mitraLat = $onlineState?->latitude ?? auth()->user()->latitude;
-            $mitraLng = $onlineState?->longitude ?? auth()->user()->longitude;
-            $helpLat  = $activeOffer->help->latitude;
-            $helpLng  = $activeOffer->help->longitude;
-
-            $formattedDistance = null;
-            $estimatedMinutes  = null;
-
-            if ($mitraLat && $mitraLng && $helpLat && $helpLng) {
-                $distanceMeters = app(\App\Services\LocationTrackingService::class)->calculateDistance(
-                    (float) $mitraLat, (float) $mitraLng,
-                    (float) $helpLat, (float) $helpLng
-                );
-                $distanceKm = $distanceMeters / 1000;
-                if ($distanceKm < 1) {
-                    $formattedDistance = round($distanceMeters) . ' m';
-                } else {
-                    $formattedDistance = round($distanceKm, 1) . ' km';
-                }
-                $estimatedMinutes = max(1, (int) round(($distanceKm / 30) * 60));
-            }
-        @endphp
-        <div class="px-5 mt-4 relative z-20"
-             wire:key="active-offer-card-{{ $activeOffer->id }}"
-             x-data="{
-                 timeLeft: Math.max(0, parseInt('{{ (int) $secondsRemaining }}', 10)),
-                 timer: null,
-                 init() {
-                     if (this.timer) clearInterval(this.timer);
-                     this.timer = setInterval(() => {
-                         if (this.timeLeft > 0) {
-                             this.timeLeft--;
-                         } else {
-                             clearInterval(this.timer);
-                             $wire.handleExpiry({{ $activeOffer->id }});
-                         }
-                     }, 1000);
-                 },
-                 destroy() {
-                     if (this.timer) clearInterval(this.timer);
-                 }
-             }">
-            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 text-gray-900 dark:text-white shadow-xl dark:shadow-2xl border border-gray-200 dark:border-slate-800 relative overflow-hidden ring-1 ring-gray-900/5 dark:ring-white/10 transition-colors">
-                <!-- Ambient Glow Effect -->
-                <div class="absolute -right-10 -top-10 w-36 h-36 bg-blue-500/10 dark:bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
-                <div class="absolute -left-10 -bottom-10 w-36 h-36 bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
-
-                <!-- Header: Badge & Countdown -->
-                <div class="flex items-center justify-between gap-3 mb-3.5 relative z-10">
-                    <div class="flex items-center gap-2">
-                        <span class="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-black bg-blue-50 dark:bg-indigo-500/20 text-blue-700 dark:text-indigo-300 border border-blue-200 dark:border-indigo-500/30 px-2.5 py-1 rounded-full shadow-xs">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping"></span>
-                            Tawaran Pekerjaan Baru
-                        </span>
-                    </div>
-
-                    <!-- Countdown Timer Pill -->
-                    <div class="flex items-center gap-1.5 px-3 py-1 bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 rounded-xl font-mono text-xs sm:text-sm font-black shadow-xs">
-                        <svg class="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-                        <span x-text="Math.floor(timeLeft) + ' Second'"></span>
-                    </div>
-                </div>
-
-                <!-- Judul Bantuan -->
-                <div class="relative z-10">
-                    <h3 class="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white tracking-tight leading-snug">
-                        {{ $activeOffer->help->title }}
-                    </h3>
-                </div>
-
-                <!-- Detail Pekerjaan / Deskripsi -->
-                @if(!empty($activeOffer->help->description))
-                    <div class="mt-2.5 p-3 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/80 dark:border-white/[0.07] text-xs text-gray-700 dark:text-slate-300 relative z-10">
-                        <div class="flex items-center gap-1 text-[11px] font-bold text-gray-500 dark:text-slate-400 mb-1">
-                            <svg class="w-3.5 h-3.5 text-blue-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                            <span>Detail Pekerjaan:</span>
-                        </div>
-                        <p class="text-gray-800 dark:text-slate-200 leading-relaxed line-clamp-3 whitespace-pre-line font-normal">
-                            {{ $activeOffer->help->description }}
-                        </p>
-                    </div>
-                @endif
-
-                <!-- Metadata Grid (Estimasi Jarak, Lokasi, Customer) -->
-                <div class="mt-3 grid grid-cols-2 gap-2 text-xs relative z-10">
-                    <!-- Column 1: Estimasi Jarak Tempuh -->
-                    <div class="p-2.5 rounded-xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/[0.06] flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-indigo-500/20 text-blue-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                        </div>
-                        <div class="min-w-0">
-                            <span class="text-[10px] text-gray-500 dark:text-slate-400 block font-medium">Estimasi Jarak</span>
-                            @if($formattedDistance)
-                                <span class="font-bold text-gray-900 dark:text-white text-xs truncate block">
-                                    {{ $formattedDistance }} <span class="text-gray-500 dark:text-slate-400 font-normal">(~{{ $estimatedMinutes }} mnt)</span>
-                                </span>
-                            @else
-                                <span class="font-bold text-gray-900 dark:text-white text-xs truncate block">{{ optional($activeOffer->help->city)->name ?? 'Radius Kota' }}</span>
-                            @endif
-                        </div>
-                    </div>
-
-                    <!-- Column 2: Customer / Pemohon -->
-                    <div class="p-2.5 rounded-xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/[0.06] flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-400 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                        </div>
-                        <div class="min-w-0">
-                            <span class="text-[10px] text-gray-500 dark:text-slate-400 block font-medium">Customer</span>
-                            <span class="font-bold text-gray-900 dark:text-white text-xs truncate block">{{ optional($activeOffer->help->user)->name ?? 'Customer' }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Alamat Detail jika ada -->
-                @if(!empty($activeOffer->help->address))
-                    <div class="mt-2 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.04] text-[11px] text-gray-600 dark:text-slate-400 flex items-center gap-1.5 relative z-10">
-                        <svg class="w-3.5 h-3.5 text-gray-400 dark:text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                        <span class="truncate">{{ $activeOffer->help->address }}</span>
-                    </div>
-                @endif
-
-                <!-- Imbalan Jasa & Escrow Security Badge -->
-                <div class="mt-3.5 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/25 flex items-center justify-between relative z-10">
-                    <div>
-                        <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider block">Pendapatan Bersih</span>
-                        <span class="text-lg sm:text-xl font-black text-emerald-700 dark:text-white">Rp {{ number_format($activeOffer->help->amount, 0, ',', '.') }}</span>
-                    </div>
-                    <span class="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1">
-                        <svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                        Dana Escrow Dijamin
-                    </span>
-                </div>
-
-                <!-- Action Buttons: TERIMA & TOLAK -->
-                <div class="mt-4 grid grid-cols-2 gap-3 relative z-10">
-                    <button wire:click="rejectOffer({{ $activeOffer->id }})"
-                            wire:loading.attr="disabled"
-                            class="w-full py-3 bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 active:scale-98 text-gray-700 hover:text-gray-900 dark:text-slate-300 dark:hover:text-white border border-gray-200 dark:border-white/10 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer flex items-center justify-center gap-1.5">
-                        <svg class="w-4 h-4 text-gray-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        <span>Lewati Tawaran</span>
-                    </button>
-
-                    <button wire:click="acceptOffer({{ $activeOffer->id }})"
-                            wire:loading.attr="disabled"
-                            class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-98 text-white rounded-xl text-xs font-extrabold transition shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 cursor-pointer flex items-center justify-center gap-1.5">
-                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                        <span>Terima Pekerjaan</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    @endif
+    <!-- Isolated Realtime Offer & Radar Widget (Fase 1 Dekomposisi) -->
+    <livewire:mitra.dashboard.offer-radar-widget />
 
     {{-- Official Warning / Shadow Ban Alert Banner for Mitra --}}
     @if(auth()->check() && (auth()->user()->warning_level > 0 || auth()->user()->is_shadow_banned))
@@ -637,6 +274,35 @@
                          style="width: {{ $activeTask->progress_percentage }}%;"></div>
                 </div>
             </div>
+        @endif
+
+        <!-- Completed Tasks Waiting Confirmation Banner -->
+        @if(!empty($waitingConfirmationHelps) && $waitingConfirmationHelps->isNotEmpty())
+            @foreach($waitingConfirmationHelps as $wcHelp)
+                <div class="mb-4 bg-amber-50/80 dark:bg-gray-800 border border-amber-200/90 dark:border-amber-700/60 rounded-2xl p-4 shadow-sm">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-2.5 min-w-0">
+                            <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center text-base flex-shrink-0 font-bold shadow-xs">
+                                ⏳
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h4 class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">Pekerjaan Selesai — Menunggu Konfirmasi</h4>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200">
+                                        Rp {{ number_format($wcHelp->amount, 0, ',', '.') }} di Escrow
+                                    </span>
+                                </div>
+                                <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5 truncate">
+                                    "{{ $wcHelp->title }}" • Bukti terkirim. Anda <strong>Bebas Tugas</strong> dan siap mencari pesanan baru.
+                                </p>
+                            </div>
+                        </div>
+                        <a href="{{ route('mitra.helps.detail', $wcHelp->id) }}" class="flex-shrink-0 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-xs whitespace-nowrap">
+                            Detail
+                        </a>
+                    </div>
+                </div>
+            @endforeach
         @endif
 
         <!-- GPS Tracker Component - Tampil untuk bantuan aktif -->
@@ -1152,130 +818,53 @@
             currentHelpId = null;
         }
 
-        function takeHelpFromModal() {
+        async function takeHelpFromModal() {
             if (!currentHelpId) return;
 
-            // Fungsi untuk reset button
-            const resetButton = (btn, originalText) => {
-                btn.textContent = originalText;
-                btn.disabled = false;
-            };
-            
-            // Fungsi untuk ambil bantuan dengan/tanpa lokasi
-            const takeBantuanWithLocation = (lat = null, lng = null) => {
-                if (lat && lng) {
-                    console.log('📍 Mengambil bantuan dengan lokasi:', { lat, lng });
-                    @this.takeHelp(currentHelpId, lat, lng);
-                } else {
-                    console.log('📍 Mengambil bantuan tanpa lokasi GPS');
-                    @this.takeHelp(currentHelpId);
-                }
-                closePreviewModal();
-            };
-            
-            // Fungsi fallback: Coba gunakan IP-based location
-            const tryIPBasedLocation = (btn, originalText) => {
-                console.log('🌐 Mencoba IP-based location...');
-                btn.textContent = 'Mendeteksi lokasi dari IP...';
-                
-                // Gunakan ipapi.co untuk mendapatkan koordinat dari IP
-                fetch('https://ipapi.co/json/', { timeout: 3000 })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.latitude && data.longitude) {
-                            console.log('✅ IP-based location berhasil:', data);
-                            takeBantuanWithLocation(data.latitude, data.longitude);
-                            resetButton(btn, originalText);
-                        } else {
-                            throw new Error('Invalid location data');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ IP-based location gagal:', error);
-                        // Tetap tanyakan apakah mau ambil tanpa lokasi
-                        if (confirm('📍 Lokasi tidak dapat dideteksi.\n\n✅ Ambil bantuan tanpa GPS tracking?\n\n(Lokasi dapat diupdate nanti saat Anda mulai bergerak)')) {
-                            takeBantuanWithLocation();
-                        }
-                        resetButton(btn, originalText);
-                    });
-            };
-
-            // Request GPS permission dan ambil lokasi
-            if (navigator.geolocation) {
-                // Show loading on button
-                const btn = document.getElementById('previewTakeBtn');
-                const originalText = btn.textContent;
-                btn.textContent = 'Mengambil GPS...';
+            const btn = document.getElementById('previewTakeBtn');
+            const originalText = btn ? btn.innerHTML : 'Ambil Bantuan';
+            if (btn) {
+                btn.innerHTML = `
+                    <svg class="animate-spin w-4 h-4 text-white inline-block mr-1" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Memproses...</span>
+                `;
                 btn.disabled = true;
+            }
 
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        const accuracy = position.coords.accuracy;
-                        
-                        console.log('✅ GPS Location obtained:', { lat, lng, accuracy: accuracy + 'm' });
-                        
-                        // Call Livewire method dengan GPS coordinates
-                        takeBantuanWithLocation(lat, lng);
-                        
-                        // Reset button
-                        resetButton(btn, originalText);
-                    },
-                    (error) => {
-                        console.error('❌ GPS Error:', error);
-                        
-                        // Error codes:
-                        // 1 = PERMISSION_DENIED
-                        // 2 = POSITION_UNAVAILABLE (no GPS hardware atau signal)
-                        // 3 = TIMEOUT
-                        
-                        if (error.code === 2) {
-                            // GPS tidak tersedia (laptop/desktop tanpa GPS)
-                            console.log('💻 Device tidak memiliki GPS, mencoba IP-based location...');
-                            tryIPBasedLocation(btn, originalText);
-                        } else if (error.code === 1) {
-                            // User menolak permission
-                            if (confirm('📍 Akses lokasi ditolak.\n\n🌐 Coba deteksi lokasi dari IP address?\n\n(Akurasi lebih rendah tetapi cukup untuk tracking)')) {
-                                tryIPBasedLocation(btn, originalText);
-                            } else if (confirm('✅ Ambil bantuan tanpa GPS tracking?\n\n(Lokasi dapat diupdate nanti)')) {
-                                takeBantuanWithLocation();
-                                resetButton(btn, originalText);
-                            } else {
-                                resetButton(btn, originalText);
-                            }
-                        } else {
-                            // Timeout atau error lain
-                            if (confirm('⏱️ GPS timeout atau error.\n\n🌐 Coba deteksi lokasi dari IP address?')) {
-                                tryIPBasedLocation(btn, originalText);
-                            } else if (confirm('✅ Ambil bantuan tanpa GPS tracking?')) {
-                                takeBantuanWithLocation();
-                                resetButton(btn, originalText);
-                            } else {
-                                resetButton(btn, originalText);
-                            }
-                        }
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 8000, // 8 detik timeout (lebih lama untuk laptop)
-                        maximumAge: 0
+            const executeTake = async (lat = null, lng = null) => {
+                try {
+                    if (lat && lng) {
+                        await @this.takeHelp(currentHelpId, lat, lng);
+                    } else {
+                        await @this.takeHelp(currentHelpId);
                     }
+                    closePreviewModal();
+                } catch (error) {
+                    console.error('Gagal mengambil bantuan:', error);
+                } finally {
+                    if (btn) {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                }
+            };
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        await executeTake(position.coords.latitude, position.coords.longitude);
+                    },
+                    async (error) => {
+                        console.warn('GPS failed/denied, taking without live coords:', error);
+                        await executeTake();
+                    },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
                 );
             } else {
-                // Browser tidak support GPS (browser lama)
-                const btn = document.getElementById('previewTakeBtn');
-                const originalText = btn.textContent;
-                console.warn('⚠️ Browser tidak support Geolocation API');
-                
-                if (confirm('🌐 Browser tidak mendukung GPS.\n\nCoba deteksi lokasi dari IP address?')) {
-                    btn.disabled = true;
-                    tryIPBasedLocation(btn, originalText);
-                } else if (confirm('✅ Ambil bantuan tanpa GPS tracking?')) {
-                    takeBantuanWithLocation();
-                } else {
-                    // User cancel
-                }
+                await executeTake();
             }
         }
 

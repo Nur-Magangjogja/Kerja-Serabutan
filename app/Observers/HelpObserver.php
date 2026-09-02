@@ -132,14 +132,20 @@ class HelpObserver
                 );
 
                 if ($platformFee > 0) {
-                    BalanceTransaction::create([
-                        'user_id'      => null, // kas platform
-                        'amount'       => $platformFee,
-                        'type'         => 'platform_fee',
-                        'description'  => "Biaya Layanan Platform Rp " . number_format($platformFee, 0, ',', '.') . " dari Bantuan '{$help->title}'",
-                        'reference_id' => $help->id,
-                        'status'       => 'completed',
-                    ]);
+                    BalanceTransaction::firstOrCreate(
+                        ['idempotency_key' => "help:{$help->id}:platform_fee"],
+                        [
+                            'user_id'        => null, // kas platform
+                            'amount'         => $platformFee,
+                            'direction'      => 'credit',
+                            'type'           => 'platform_fee',
+                            'description'    => "Biaya Layanan Platform Rp " . number_format($platformFee, 0, ',', '.') . " dari Bantuan '{$help->title}'",
+                            'reference_id'   => $help->id,
+                            'reference_type' => 'help',
+                            'order_id'       => $help->order_id,
+                            'status'         => 'completed',
+                        ]
+                    );
                 }
 
                 \Log::info('[HelpObserver] Mitra dikreditkan via observer model v2 (fallback)', [

@@ -9,15 +9,97 @@ class AppSetting extends Model
     protected $table = 'app_settings';
     protected $fillable = ['key', 'value'];
 
-    public static function get($key, $default = null)
+    const CACHE_KEY = 'app_settings';
+    const CACHE_TTL_SECONDS = 300; // 5 Menit
+
+    /**
+     * @var array<string, mixed>|null Static in-memory memoization per request lifecycle
+     */
+    protected static ?array $memoizedSettings = null;
+
+    /**
+     * Ambil seluruh konfigurasi aplikasi sebagai dictionary [key => value]
+     * yang di-cache di sistem Cache Laravel dan di-memoize di RAM PHP.
+     *
+     * @return array<string, mixed>
+     */
+    public static function allSettings(): array
     {
-        $row = static::where('key', $key)->first();
-        return $row ? $row->value : $default;
+        if (static::$memoizedSettings !== null) {
+            return static::$memoizedSettings;
+        }
+
+        try {
+            static::$memoizedSettings = \Illuminate\Support\Facades\Cache::remember(
+                static::CACHE_KEY,
+                static::CACHE_TTL_SECONDS,
+                function () {
+                    return static::pluck('value', 'key')->toArray();
+                }
+            );
+        } catch (\Throwable $e) {
+            try {
+                static::$memoizedSettings = static::pluck('value', 'key')->toArray();
+            } catch (\Throwable $e2) {
+                static::$memoizedSettings = [];
+            }
+        }
+
+        return static::$memoizedSettings ?? [];
     }
 
+    /**
+     * Ambil nilai konfigurasi berdasarkan key.
+     * 100% bebas dari query database berulang.
+     */
+    public static function get($key, $default = null)
+    {
+        $settings = static::allSettings();
+
+        if (array_key_exists($key, $settings) && $settings[$key] !== null) {
+            return $settings[$key];
+        }
+
+        return $default;
+    }
+
+    /**
+     * Simpan / perbarui konfigurasi dan otomatis bersihkan cache.
+     */
     public static function set($key, $value)
     {
-        return static::updateOrCreate(['key' => $key], ['value' => is_array($value) ? json_encode($value) : (string) $value]);
+        $valString = is_array($value) ? json_encode($value) : (string) $value;
+
+        $record = static::updateOrCreate(
+            ['key' => $key],
+            ['value' => $valString]
+        );
+
+        // Invalidate Cache
+        static::clearCache();
+
+        return $record;
+    }
+
+    /**
+     * Bersihkan cache sistem untuk konfigurasi aplikasi.
+     */
+    public static function clearCache(): void
+    {
+        static::$memoizedSettings = null;
+        try {
+            \Illuminate\Support\Facades\Cache::forget(static::CACHE_KEY);
+        } catch (\Throwable $e) {
+            // ignore
+        }
+    }
+
+    /**
+     * Alias untuk clearCache
+     */
+    public static function clearRuntimeCache(): void
+    {
+        static::clearCache();
     }
 
     /** Platform Service Fee Helpers (Nilai Pajak Layanan Tetap Rp) */
@@ -143,7 +225,7 @@ class AppSetting extends Model
 
     public static function getOfferTimeoutSeconds(): int
     {
-        $val = (int) static::get('offer_timeout_seconds', 180);
+        $val = (int) static::get('offer_timeout_seconds', 45);
         return max(15, min(600, $val));
     }
 
@@ -169,6 +251,12 @@ class AppSetting extends Model
     {
         $val = (float) static::get('max_matching_radius_km', 15.0);
         return max(1.0, min(100.0, $val));
+    }
+
+    public static function getMaxPoolRadiusKm(): float
+    {
+        $val = (float) static::get('max_pool_radius_km', 60.0);
+        return max(1.0, min(150.0, $val));
     }
 
     public static function getNeutralRatingPrior(): float

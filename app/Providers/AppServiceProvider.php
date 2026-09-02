@@ -37,6 +37,14 @@ class AppServiceProvider extends ServiceProvider
         // Register BalanceTransaction observer to update user balances when transactions complete
         \App\Models\BalanceTransaction::observe(\App\Observers\BalanceTransactionObserver::class);
 
+        // Reset in-memory memoized AppSetting state per-job / per-request cycle in long-running workers (Octane / Queue)
+        \Illuminate\Support\Facades\Queue::looping(function () {
+            \App\Models\AppSetting::clearRuntimeCache();
+        });
+        $this->app->terminating(function () {
+            \App\Models\AppSetting::clearRuntimeCache();
+        });
+
         // Set global default pagination view to unified 5-number design
         \Illuminate\Pagination\Paginator::defaultView('vendor.pagination.superadmin');
         \Illuminate\Pagination\Paginator::defaultSimpleView('vendor.pagination.superadmin');

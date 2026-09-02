@@ -78,11 +78,22 @@ class PartnerDisciplineService
             ->whereIn('status', [HelpDispatch::STATUS_REJECTED, HelpDispatch::STATUS_EXPIRED])
             ->count();
 
-        // Hitung total pembatalan bantuan yang pernah diambil oleh mitra
-        $totalCancels = Help::where(function ($q) use ($mitra) {
-            $q->whereJsonContains('cancelled_mitra_ids', $mitra->id)
-              ->orWhereJsonContains('cancelled_mitra_ids', (string) $mitra->id);
-        })->count();
+        // Hitung total pembatalan bantuan yang pernah diambil oleh mitra via relasi terindeks
+        $totalCancels = 0;
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('help_partner_exclusions')) {
+                $totalCancels = \App\Models\HelpPartnerExclusion::where('mitra_id', $mitra->id)->count();
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        if ($totalCancels === 0) {
+            $totalCancels = Help::where(function ($q) use ($mitra) {
+                $q->whereJsonContains('cancelled_mitra_ids', $mitra->id)
+                  ->orWhereJsonContains('cancelled_mitra_ids', (string) $mitra->id);
+            })->count();
+        }
 
         $totalViolations = $totalDeclines + $totalCancels;
         $currentLevel = (int) ($mitra->warning_level ?? 0);

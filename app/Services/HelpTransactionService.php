@@ -45,19 +45,52 @@ class HelpTransactionService
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Mitra mengambil bantuan dari pool.
+     * Memvalidasi kelayakan akun Mitra dan kriteria order secara menyeluruh di level Backend Service (Source of Truth).
      */
-    public function takeHelp(Help $help, User $mitra, ?float $lat = null, ?float $lng = null): void
+    public function assertMitraEligibleToTakeHelp(User $mitra, Help $help, ?float $lat = null, ?float $lng = null): void
     {
-        // 1. Guard: Mitra tidak boleh mengambil tugas baru jika masih memiliki tugas aktif
-        $this->assertMitraHasNoActiveTask($mitra);
+        // 1. Validasi Peran Akun
+        if ($mitra->role !== 'mitra') {
+            throw new \RuntimeException('Hanya pengguna dengan peran Rekan Jasa (Mitra) yang diizinkan mengambil pekerjaan bantuan.');
+        }
 
-        // 2. Guard: Order hanya boleh diambil dari open pool jika dispatch_mode sudah 'pool'
+        // 2. Validasi Status Akun Aktif
+        if ($mitra->status !== 'active') {
+            throw new \RuntimeException('Akun Anda saat ini tidak aktif (' . ($mitra->status ?? 'non-aktif') . '). Harap hubungi administrator.');
+        }
+
+        // 3. Validasi Verifikasi Akun / Email
+        if (!$mitra->verified && !$mitra->hasVerifiedEmail()) {
+            throw new \RuntimeException('Akun Anda belum terverifikasi untuk mengambil pekerjaan bantuan.');
+        }
+
+        // 4. Validasi Pembatasan Akun (Shadow Banned)
+        if ($mitra->isShadowBanned()) {
+            throw new \RuntimeException('Akun Anda sedang dalam pembatasan fitur (moderasi) dan tidak diizinkan mengambil tugas bantuan.');
+        }
+
+        // 5. Validasi Sanksi Disiplin (SP 3 / Pembekuan)
+        if ($mitra->warning_level >= 3) {
+            throw new \RuntimeException('Akun Anda sedang dalam masa penangguhan (SP 3) akibat pelanggaran kepatuhan.');
+        }
+
+        // 5b. Validasi Ketersediaan Bantuan (Belum diambil mitra lain)
+        if ($help->mitra_id !== null || !in_array($help->status, [Help::STATUS_MENUNGGU_MITRA, 'menunggu_mitra'])) {
+            throw new \RuntimeException('Bantuan ini sudah diambil oleh Rekan Jasa lain atau tidak tersedia lagi.');
+        }
+
+        // 6. Validasi Dispatch Mode (Harus Pool untuk pengambilan mandiri)
         if ($help->dispatch_mode && $help->dispatch_mode !== Help::DISPATCH_MODE_POOL) {
             throw new \RuntimeException('Pesanan ini sedang dalam penawaran sequential khusus dan belum dibuka untuk pool umum.');
         }
 
-        // 2. Guard: Batas radius jangkauan maksimal 60 km
+        // 7. Validasi Riwayat Pembatalan
+        if ($help->hasCancelledBy($mitra->id)) {
+            throw new \RuntimeException('Anda tidak dapat mengambil bantuan ini karena sebelumnya telah Anda batalkan.');
+        }
+
+        // 8. Validasi Radius Jarak Maksimal Platform Pool
+        $maxPoolRadiusKm = (float) \App\Models\AppSetting::getMaxPoolRadiusKm();
         $mitraLat = $lat ?? ($mitra->latitude ? (float) $mitra->latitude : null);
         $mitraLng = $lng ?? ($mitra->longitude ? (float) $mitra->longitude : null);
         if ($mitraLat && $mitraLng && $help->latitude && $help->longitude) {
@@ -66,22 +99,36 @@ class HelpTransactionService
                 (float) $help->latitude, (float) $help->longitude
             );
             $distKm = $distMeters / 1000;
-            if ($distKm > 60) {
-                throw new \RuntimeException('Lokasi bantuan ini berjarak ' . round($distKm, 1) . ' km, melebihi batas radius jangkauan maksimal Mitra (60 km).');
+            if ($distKm > $maxPoolRadiusKm) {
+                throw new \RuntimeException("Lokasi bantuan ini berjarak " . round($distKm, 1) . " km, melebihi batas radius jangkauan maksimal Mitra ({$maxPoolRadiusKm} km).");
             }
         }
+    }
 
-        // 3. Guard: Mitra yang sebelumnya telah membatalkan bantuan ini tidak boleh mengambilnya kembali
-        if ($help->hasCancelledBy($mitra->id)) {
-            throw new \RuntimeException('Anda tidak dapat mengambil bantuan ini karena sebelumnya telah Anda batalkan.');
-        }
+    /**
+     * Mitra mengambil bantuan dari pool.
+     */
+    public function takeHelp(Help $help, User $mitra, ?float $lat = null, ?float $lng = null): void
+    {
+        // 1. Guard Komprehensif Backend (Single Source of Truth)
+        $this->assertMitraEligibleToTakeHelp($mitra, $help, $lat, $lng);
 
-        // 4. Transaksi atomik dengan Pessimistic Locking
-        DB::transaction(function () use ($help, $mitra, $lat, $lng) {
-            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
+        // 2. Transaksi Atomik dengan Canonical Lock Hierarchy (Mencegah Deadlock & Race Condition)
+        // Urutan Kunci Global: Tier 1 (Help) -> Tier 2 (HelpDispatch) -> Tier 3 (PartnerOnlineState)
+        $advances = [];
 
-            if (!$lockedHelp || $lockedHelp->mitra_id !== null || $lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA) {
+        DB::transaction(function () use ($help, $mitra, $lat, $lng, &$advances) {
+            // STEP 1 (Tier 1): Lock baris Help yang ingin diambil
+            $lockedHelp = Help::where('id', $help->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$lockedHelp || $lockedHelp->mitra_id !== null || !in_array($lockedHelp->status, [Help::STATUS_MENUNGGU_MITRA, 'menunggu_mitra'])) {
                 throw new \RuntimeException('Bantuan ini sudah diambil oleh Rekan Jasa lain atau tidak tersedia lagi.');
+            }
+
+            if ($lockedHelp->dispatch_mode && $lockedHelp->dispatch_mode !== Help::DISPATCH_MODE_POOL) {
+                throw new \RuntimeException('Pesanan ini sedang dalam penawaran sequential khusus dan belum dibuka untuk pool umum.');
             }
 
             if ($lockedHelp->hasCancelledBy($mitra->id)) {
@@ -92,6 +139,54 @@ class HelpTransactionService
                 throw new \RuntimeException('Bantuan ini dijadwalkan untuk waktu yang akan datang dan belum dapat diambil saat ini.');
             }
 
+            // STEP 2 (Tier 2): Lock & selesaikan HelpDispatch aktif untuk mitra ini (jika ada pending offer)
+            $staleDispatches = \App\Models\HelpDispatch::where('mitra_id', $mitra->id)
+                ->where('status', \App\Models\HelpDispatch::STATUS_OFFERED)
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($staleDispatches as $stale) {
+                $stale->update([
+                    'status'           => \App\Models\HelpDispatch::STATUS_REJECTED,
+                    'responded_at'     => now(),
+                    'rejection_reason' => 'Mitra mengambil pekerjaan lain dari open pool',
+                ]);
+                $advances[] = [
+                    'help_id' => $stale->help_id,
+                    'round'   => $stale->round,
+                    'rank'    => $stale->rank + 1,
+                ];
+            }
+
+            // STEP 3 (Tier 3): Lock baris PartnerOnlineState mitra
+            $partnerState = \App\Models\PartnerOnlineState::where('user_id', $mitra->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$partnerState) {
+                $partnerState = \App\Models\PartnerOnlineState::create([
+                    'user_id'         => $mitra->id,
+                    'matching_status' => \App\Models\PartnerOnlineState::STATUS_SEARCHING,
+                ]);
+            }
+
+            // Validasi di dalam lock: Mitra tidak boleh BUSY
+            if ($partnerState->matching_status === \App\Models\PartnerOnlineState::STATUS_BUSY) {
+                throw new \RuntimeException('Anda masih memiliki tugas bantuan aktif yang sedang berjalan. Harap selesaikan tugas tersebut terlebih dahulu sebelum mengambil tugas baru.');
+            }
+
+            // Lock & Verifikasi apakah mitra memiliki tugas aktif lain di tabel helps
+            $hasActiveHelp = Help::where('mitra_id', $mitra->id)
+                ->where('id', '!=', $lockedHelp->id)
+                ->active()
+                ->lockForUpdate()
+                ->exists();
+
+            if ($hasActiveHelp) {
+                throw new \RuntimeException('Anda masih memiliki tugas bantuan aktif yang sedang berjalan. Harap selesaikan tugas tersebut terlebih dahulu sebelum mengambil tugas baru.');
+            }
+
+            // STEP 4: Mutasi Bersama (Assign Help + Ubah PartnerOnlineState ke BUSY)
             $lockedHelp->update([
                 'mitra_id'      => $mitra->id,
                 'status'        => Help::STATUS_TAKEN,
@@ -99,8 +194,12 @@ class HelpTransactionService
                 'taken_at'      => now(),
             ]);
 
-            // Ubah status online mitra menjadi BUSY
-            app(PartnerOnlineService::class)->setBusy($mitra->id, $lockedHelp->id);
+            $partnerState->update([
+                'matching_status'      => \App\Models\PartnerOnlineState::STATUS_BUSY,
+                'current_help_id'      => $lockedHelp->id,
+                'searching_since'      => null,
+                'consecutive_declines' => 0,
+            ]);
 
             // Set koordinat awal mitra
             if ($lat && $lng) {
@@ -121,6 +220,11 @@ class HelpTransactionService
 
             $help->refresh();
         });
+
+        // Advance sequential matching untuk order yang ditinggalkan di luar transaksi penguncian
+        foreach ($advances as $adv) {
+            app(\App\Services\HelpMatchingService::class)->dispatchNextCandidate($adv['help_id'], $adv['round'], $adv['rank']);
+        }
 
         // 5. Otomatis batalkan penawaran pop-up aktif lain yang sedang menggantung dan teruskan ke kandidat berikutnya
         $pendingDispatches = \App\Models\HelpDispatch::where('mitra_id', $mitra->id)
@@ -291,7 +395,14 @@ class HelpTransactionService
                 throw new \RuntimeException('Pesanan ini sudah selesai atau telah dibatalkan.');
             }
 
-            // Tambahkan mitra ke daftar cancelled_mitra_ids agar tidak mendapat order ini lagi
+            // Tambahkan mitra ke daftar help_partner_exclusions terindeks dan legacy cancelled_mitra_ids
+            \App\Models\HelpPartnerExclusion::firstOrCreate([
+                'help_id'  => $lockedHelp->id,
+                'mitra_id' => $mitra->id,
+            ], [
+                'reason'   => $reason ?? 'Pembatalan tugas oleh mitra',
+            ]);
+
             $cancelledMitraIds = $lockedHelp->cancelled_mitra_ids ?? [];
             if (!is_array($cancelledMitraIds)) {
                 $cancelledMitraIds = json_decode((string) $cancelledMitraIds, true) ?? [];
@@ -917,8 +1028,17 @@ class HelpTransactionService
             // karena pesanan dikembalikan ke pool dengan status 'menunggu_mitra' agar bisa diambil oleh mitra lain.
             // Tidak ada pemotongan denda saldo lagi (sanksi pelanggaran dikelola melalui Daftar Abu-Abu & Surat Peringatan Admin).
 
-            // Tambahkan ID mitra yang membatalkan ke daftar cancelled_mitra_ids
+            // Tambahkan ID mitra yang membatalkan ke daftar help_partner_exclusions dan cancelled_mitra_ids
             // agar mitra ini tidak dapat mengambil kembali bantuan ini di masa mendatang
+            if ($formerMitra) {
+                \App\Models\HelpPartnerExclusion::firstOrCreate([
+                    'help_id'  => $lockedHelp->id,
+                    'mitra_id' => $formerMitra->id,
+                ], [
+                    'reason'   => $lockedHelp->partner_cancel_reason ?? 'Persetujuan pembatalan mitra oleh customer',
+                ]);
+            }
+
             $cancelledMitraIds = $lockedHelp->cancelled_mitra_ids ?? [];
             if (!is_array($cancelledMitraIds)) {
                 $cancelledMitraIds = json_decode((string) $cancelledMitraIds, true) ?? [];

@@ -1,6 +1,6 @@
-<div x-data="{ open: @entangle('showModal') }">
+<div x-data="{ isOpen: @entangle('showModal') }">
     <!-- Modal -->
-    <div x-show="open" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+    <div x-show="isOpen" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
         @click="if($event.target === $event.currentTarget) $wire.closeModal()" style="display: none;">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-slide-up" @click.stop>
             <!-- Header -->

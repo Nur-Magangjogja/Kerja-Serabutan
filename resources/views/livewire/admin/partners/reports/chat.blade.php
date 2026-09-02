@@ -1,4 +1,4 @@
-<div class="space-y-4 max-w-5xl mx-auto" wire:poll.3000ms="markAsRead">
+<div class="space-y-4 max-w-5xl mx-auto" wire:poll.10s.visible>
     @php
         $routePrefix = in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? 'superadmin.' : 'admin.';
         $customer = $report->reporter ?? $report->user;
