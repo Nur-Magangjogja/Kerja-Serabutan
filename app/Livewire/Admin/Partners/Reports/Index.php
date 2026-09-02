@@ -72,7 +72,7 @@ class Index extends Component
         $totalPending = (clone $statsQuery)->where('status', 'pending')->count();
         $totalInProgress = (clone $statsQuery)->whereIn('status', ['in_progress', 'investigating'])->count();
         $totalResolved = (clone $statsQuery)->where('status', 'resolved')->count();
-        $totalRefundPending = (clone $statsQuery)->where('refund_status', 'pending')->count();
+        $totalRefundRequested = (clone $statsQuery)->whereIn('refund_status', ['requested', 'pending'])->count();
         $totalFromCustomer = (clone $statsQuery)->where(function ($q) {
             $q->whereHas('reporter', fn($sq) => $sq->where('role', 'customer'))
               ->orWhere('report_type', 'customer_to_partner');
