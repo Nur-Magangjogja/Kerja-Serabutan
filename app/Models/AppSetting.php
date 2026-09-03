@@ -155,7 +155,6 @@ class AppSetting extends Model
             ['code' => 'OVO', 'name' => 'OVO', 'category' => 'E-Wallet', 'icon' => '📱', 'fee' => 1000, 'is_platform_account' => false, 'is_active' => true],
             ['code' => 'SHOPEEPAY', 'name' => 'ShopeePay', 'category' => 'E-Wallet', 'icon' => '📱', 'fee' => 1000, 'is_platform_account' => false, 'is_active' => true],
             ['code' => 'LINKAJA', 'name' => 'LinkAja', 'category' => 'E-Wallet', 'icon' => '📱', 'fee' => 1000, 'is_platform_account' => false, 'is_active' => true],
-            ['code' => 'OTHER', 'name' => 'Bank / E-Wallet Lainnya', 'category' => 'Lainnya', 'icon' => '💳', 'fee' => 2500, 'is_platform_account' => false, 'is_active' => true],
         ];
     }
 

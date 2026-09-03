@@ -163,7 +163,7 @@
             <div class="p-3.5 bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800/60 rounded-xl text-xs flex items-start gap-2.5">
                 <span class="text-base flex-shrink-0">ℹ️</span>
                 <div class="text-sky-800 dark:text-sky-300 leading-relaxed text-[11px]">
-                    <strong class="font-bold">Kebijakan Pemotongan Biaya:</strong> Biaya admin transfer bank/BI-FAST otomatis ditambahkan ke total pemotongan saldo dompet pengguna. Pengguna akan menerima transfer dana bersih secara utuh sesuai nominal yang ditarik (Contoh: Tarik Rp 50.000 + Biaya Rp 2.500 $\rightarrow$ Saldo dompet terpotong Rp 52.500, dana masuk rekening bank tetap Rp 50.000).
+                    <strong class="font-bold">Kebijakan Pemotongan Biaya:</strong> Biaya admin transfer bank/BI-FAST otomatis ditambahkan ke total pemotongan saldo dompet pengguna. Pengguna akan menerima transfer dana bersih secara utuh sesuai nominal yang ditarik (Contoh: Tarik Rp 50.000 + Biaya Rp 2.500  >> Saldo dompet terpotong Rp 52.500, dana masuk rekening bank tetap Rp 50.000).
                 </div>
             </div>
 
@@ -400,28 +400,28 @@
                 <form wire:submit.prevent="saveBank" class="p-5 space-y-4 text-xs">
                     <!-- Kode Bank -->
                     <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                             Kode Singkatan (Uppercase)
                         </label>
                         <input
                             type="text"
                             wire:model.defer="bank_code"
                             placeholder="Contoh: BCA, BRI, DANA, BLU"
-                            class="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl font-bold uppercase text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                            class="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 rounded-xl font-medium uppercase text-gray-900 dark:text-white placeholder:font-normal placeholder:normal-case placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-xs sm:text-sm outline-none transition"
                         />
                         @error('bank_code') <span class="text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
                     <!-- Nama Lengkap Bank -->
                     <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                             Nama Lengkap Bank / E-Wallet
                         </label>
                         <input
                             type="text"
                             wire:model.defer="bank_name"
                             placeholder="Contoh: Bank Central Asia (BCA)"
-                            class="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl font-semibold text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                            class="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 rounded-xl font-medium text-gray-900 dark:text-white placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-xs sm:text-sm outline-none transition"
                         />
                         @error('bank_name') <span class="text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
@@ -429,52 +429,49 @@
                     <!-- Kategori & Ikon -->
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                            <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                                 Kategori
                             </label>
                             <select
                                 wire:model.defer="bank_category"
-                                class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl font-semibold text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                                class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 rounded-xl font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent text-xs sm:text-sm outline-none transition cursor-pointer"
                             >
                                 <option value="Bank">Bank Transfer</option>
                                 <option value="E-Wallet">E-Wallet</option>
-                                <option value="Lainnya">Lainnya</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                            <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                                 Ikon / Emoji
                             </label>
                             <select
                                 wire:model.defer="bank_icon"
-                                class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl font-semibold text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                                class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 rounded-xl font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent text-xs sm:text-sm outline-none transition cursor-pointer"
                             >
                                 <option value="🏦">🏦 Bank</option>
                                 <option value="📱">📱 E-Wallet</option>
-                                <option value="💳">💳 Kartu/Lainnya</option>
-                                <option value="🌐">🌐 Digital</option>
                             </select>
                         </div>
                     </div>
 
                     <!-- Biaya Admin -->
                     <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                             Biaya Admin Transfer (Rp)
                         </label>
                         <div class="relative">
-                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-gray-400">Rp</span>
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-semibold text-gray-400">Rp</span>
                             <input
                                 type="number"
                                 wire:model.defer="bank_fee"
                                 step="100"
                                 min="0"
                                 placeholder="0"
-                                class="w-full pl-10 pr-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl font-black text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                                class="w-full pl-10 pr-3.5 py-2.5 bg-gray-50 dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 rounded-xl font-medium text-gray-900 dark:text-white placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-xs sm:text-sm outline-none transition"
                             />
                         </div>
                         @error('bank_fee') <span class="text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-                        <p class="text-[10px] text-gray-400 mt-1">Isi 0 jika bank ini gratis atau merupakan rekening pengirim utama platform.</p>
+                        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Isi 0 jika bank ini gratis atau merupakan rekening pengirim utama platform.</p>
                     </div>
 
                     <!-- Checkbox Platform Account -->

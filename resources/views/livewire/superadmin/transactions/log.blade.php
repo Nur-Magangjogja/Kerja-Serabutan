@@ -368,7 +368,7 @@
                             <th class="px-4 py-3 text-right text-rose-600 dark:text-rose-400">Withdraw</th>
                             <th class="px-4 py-3 text-right text-amber-600 dark:text-amber-400">Escrow Lock</th>
                             <th class="px-4 py-3 text-right text-cyan-600 dark:text-cyan-400">Refund</th>
-                            <th class="px-4 py-3 text-right font-bold">Net Arus Kas Masuk</th>
+                            <th class="px-4 py-3 text-right font-bold">Net Arus Kas (+/-)</th>
                             <th class="px-4 py-3 text-center">Transaksi</th>
                         </tr>
                     </thead>

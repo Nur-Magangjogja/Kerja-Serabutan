@@ -89,7 +89,7 @@
      }">
 
     <!-- Card Status Mitra Online / Offline / Searching / Busy -->
-    <div class="px-5 -mt-8 relative z-10">
+    <div class="px-5 mt-3.5 sm:mt-4 relative z-10">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700/80">
             <div class="flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
@@ -157,7 +157,7 @@
                                 {{ strtoupper($onlineState?->matching_status ?? 'OFFLINE') }}
                             </span>
                         </div>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">
                             @if(($onlineState?->matching_status ?? 'offline') === 'searching')
                                 Radar aktif mencari order di sekitar Anda
                             @elseif(($onlineState?->matching_status ?? 'offline') === 'online')

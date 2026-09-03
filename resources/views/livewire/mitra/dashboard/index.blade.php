@@ -116,18 +116,8 @@
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <a
-                        href="{{ route('mitra.transactions.index') }}"
-                        class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border border-gray-200/60 dark:border-gray-600/60"
-                        title="Riwayat Mutasi Saldo"
-                    >
-                        <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                        </svg>
-                        <span>Mutasi</span>
-                    </a>
-                    <a
                         href="{{ route('mitra.withdraw.form') }}"
-                        class="text-white px-3.5 py-2 rounded-xl text-xs font-bold bg-primary-600 hover:bg-primary-700 transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        class="text-white px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs font-bold bg-primary-600 hover:bg-primary-700 transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                     >
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -178,55 +168,7 @@
         </div>
     @endif
 
-    <!-- Quick Action Sub-Nav Grid (Clean Button + Label without outer card) -->
-    <div class="px-5 mt-4 sm:mt-5 relative z-10">
-        <div class="grid grid-cols-4 gap-2">
-            <!-- 1. Cari Pekerjaan -->
-            <a href="{{ route('mitra.helps.all') }}" class="flex flex-col items-center gap-1.5 p-1 transition group cursor-pointer text-center">
-                <div class="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md transition">
-                    <svg class="w-5 h-5 text-[#0098e7] dark:text-[#38bdf8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">Cari</span>
-            </a>
 
-            <!-- 2. Pekerjaan Aktif -->
-            <a href="{{ route('mitra.helps.processing') }}" class="flex flex-col items-center gap-1.5 p-1 transition group cursor-pointer text-center">
-                <div class="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md transition">
-                    <svg class="w-5 h-5 text-[#0098e7] dark:text-[#38bdf8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">Pekerjaan</span>
-            </a>
-
-            <!-- 3. Riwayat -->
-            <a href="{{ route('mitra.withdraw.history') }}" class="flex flex-col items-center gap-1.5 p-1 transition group cursor-pointer text-center">
-                <div class="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md transition">
-                    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Riwayat</span>
-            </a>
-
-            <!-- 4. Chat -->
-            <a href="{{ route('mitra.chat') }}" class="flex flex-col items-center gap-1.5 p-1 transition group cursor-pointer text-center relative">
-                <div class="relative">
-                    <div class="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md transition">
-                        <svg class="w-5 h-5 text-[#0098e7] dark:text-[#38bdf8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-5 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-1l-4 4z" />
-                        </svg>
-                    </div>
-                    @if(!empty($unreadChatCount) && $unreadChatCount > 0)
-                        <span class="absolute -top-1 -right-1 inline-flex items-center justify-center text-[10px] font-bold bg-rose-500 text-white rounded-full min-w-[18px] h-[18px] px-1 shadow-xs ring-2 ring-white dark:ring-gray-800 animate-pulse">{{ $unreadChatCount > 99 ? '99+' : $unreadChatCount }}</span>
-                    @endif
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Chat</span>
-            </a>
-        </div>
-    </div>
 
     <!-- Main Content -->
     <div class="px-5 pt-9 sm:pt-11 pb-6">
@@ -318,24 +260,40 @@
         @php
             $mitraBanners = json_decode((string) \App\Models\AppSetting::get('banner_mitra', '[]'), true) ?: [];
         @endphp
-        <div class="mt-2 mb-8" x-data="{
+        <div class="mt-2 mb-8" wire:ignore x-data="{
             active: 0,
             total: {{ !empty($mitraBanners) && count($mitraBanners) ? count($mitraBanners) : 3 }},
             timer: null,
+            intervalMs: 3500,
             startAuto() {
-                this.timer = setInterval(() => {
-                    this.active = (this.active + 1) % this.total;
-                }, 4500);
+                this.stopAuto();
+                if (this.total > 1) {
+                    this.timer = setInterval(() => {
+                        this.active = (this.active + 1) % this.total;
+                    }, this.intervalMs);
+                }
             },
             stopAuto() {
-                if (this.timer) clearInterval(this.timer);
+                if (this.timer) {
+                    clearInterval(this.timer);
+                    this.timer = null;
+                }
             },
             goTo(index) {
                 this.active = index;
-                this.stopAuto();
                 this.startAuto();
+            },
+            init() {
+                this.startAuto();
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        this.stopAuto();
+                    } else {
+                        this.startAuto();
+                    }
+                });
             }
-        }" x-init="startAuto()" @mouseenter="stopAuto()" @mouseleave="startAuto()">
+        }" @mouseenter="stopAuto()" @mouseleave="startAuto()" @touchstart="stopAuto()" @touchend="startAuto()">
             <div class="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg shadow-sky-500/5 border border-gray-100/80 dark:border-gray-700/60 h-44 sm:h-48 bg-gray-900">
                 @if(!empty($mitraBanners) && count($mitraBanners))
                     <div class="flex h-full transition-transform duration-700 ease-out" :style="'transform: translateX(-' + (active * 100) + '%)'">

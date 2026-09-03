@@ -157,12 +157,12 @@
                                 <span class="nav-label text-[11px] font-semibold mt-0.5">Bantuan</span>
                             </a>
 
-                            <a href="{{ route('mitra.helps.processing') }}" wire:navigate
-                                class="nav-item flex flex-col items-center py-1.5 px-3 rounded-2xl transition {{ request()->routeIs('mitra.helps.processing') ? 'text-primary-600 dark:text-primary-400 font-bold active' : 'text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400' }}">
+                            <a href="{{ route('mitra.chat') }}" wire:navigate
+                                class="nav-item flex flex-col items-center py-1.5 px-3 rounded-2xl transition {{ request()->routeIs('mitra.chat*') ? 'text-primary-600 dark:text-primary-400 font-bold active' : 'text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400' }}">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z" />
+                                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
                                 </svg>
-                                <span class="nav-label text-[11px] font-semibold mt-0.5">Diproses</span>
+                                <span class="nav-label text-[11px] font-semibold mt-0.5">Chat</span>
                             </a>
 
                             <a href="{{ route('mitra.helps.completed') }}" wire:navigate

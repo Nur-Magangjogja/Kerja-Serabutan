@@ -297,24 +297,40 @@
         @php
             $customerBanners = json_decode((string) \App\Models\AppSetting::get('banner_customer', '[]'), true) ?: [];
         @endphp
-        <div class="mt-2 mb-8" x-data="{
+        <div class="mt-2 mb-8" wire:ignore x-data="{
             active: 0,
             total: {{ !empty($customerBanners) && count($customerBanners) ? count($customerBanners) : 3 }},
             timer: null,
+            intervalMs: 3500,
             startAuto() {
-                this.timer = setInterval(() => {
-                    this.active = (this.active + 1) % this.total;
-                }, 4500);
+                this.stopAuto();
+                if (this.total > 1) {
+                    this.timer = setInterval(() => {
+                        this.active = (this.active + 1) % this.total;
+                    }, this.intervalMs);
+                }
             },
             stopAuto() {
-                if (this.timer) clearInterval(this.timer);
+                if (this.timer) {
+                    clearInterval(this.timer);
+                    this.timer = null;
+                }
             },
             goTo(index) {
                 this.active = index;
-                this.stopAuto();
                 this.startAuto();
+            },
+            init() {
+                this.startAuto();
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        this.stopAuto();
+                    } else {
+                        this.startAuto();
+                    }
+                });
             }
-        }" x-init="startAuto()" @mouseenter="stopAuto()" @mouseleave="startAuto()">
+        }" @mouseenter="stopAuto()" @mouseleave="startAuto()" @touchstart="stopAuto()" @touchend="startAuto()">
             <div class="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg shadow-sky-500/5 border border-gray-100/80 dark:border-gray-700/60 h-44 sm:h-48 bg-gray-900">
                 @if(!empty($customerBanners) && count($customerBanners))
                     <div class="flex h-full transition-transform duration-700 ease-out" :style="'transform: translateX(-' + (active * 100) + '%)'">

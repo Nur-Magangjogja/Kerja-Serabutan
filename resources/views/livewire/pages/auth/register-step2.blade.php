@@ -199,7 +199,7 @@ new #[Layout('layouts.guest')] class extends Component {
                         <img src="{{ $preview_url }}" alt="Preview KTP" class="w-full max-h-72 object-contain bg-gray-950/5 dark:bg-gray-950/40">
                         
                         <!-- Overlay Action Toolbar -->
-                        <div class="p-3 bg-gray-50/95 dark:bg-gray-850/95 border-t border-gray-100 dark:border-gray-700/80 flex items-center justify-between gap-2">
+                        <div class="p-3 bg-gray-50/95 dark:bg-gray-800/95 border-t border-gray-100 dark:border-gray-700/80 flex items-center justify-between gap-2">
                             <div class="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />

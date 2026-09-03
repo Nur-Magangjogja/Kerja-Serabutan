@@ -20,7 +20,7 @@
     <!-- Header Title -->
     <div class="mb-4">
         <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Pengaturan</h1>
-        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola seluruh konfigurasi sistem, tema tampilan, biaya platform, tarif withdraw, dan banner dari satu tempat.</p>
+        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola seluruh konfigurasi sistem, tema tampilan, biaya platform, tarif withdraw, dan banner dalam satu tempat.</p>
     </div>
 
     <!-- Sub-navigation Tabs -->
@@ -49,7 +49,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c.79 0 1.5.3 2.04.78L20 14v6a1 1 0 01-1 1h-6l-5.22-5.22A4 4 0 1112 8z" />
             </svg>
-            <span>Biaya Layanan Platform</span>
+            <span>Matching & Biaya Layanan Platform</span>
         </a>
 
         <!-- Tab: Biaya & Rekening Withdraw -->

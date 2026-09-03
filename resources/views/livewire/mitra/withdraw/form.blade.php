@@ -239,13 +239,6 @@
                         </button>
                     </div>
 
-                    <!-- Custom Bank input if OTHER -->
-                    <div x-show="bankCode === 'OTHER'" x-cloak class="space-y-1">
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Nama Bank / E-Wallet Lainnya *</label>
-                        <input type="text" x-model="customBankInput" placeholder="Ketik nama bank (misal: Bank Nagari, BJB, dll)"
-                            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition" />
-                    </div>
-
                     <!-- Nomor Rekening -->
                     <div>
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Nomor Rekening / E-Wallet *</label>
