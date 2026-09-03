@@ -28,6 +28,7 @@ class Approval extends Component
     public $cancellationReason = '';
     public $filterStatus = 'waiting_approval';
     public $search = '';
+    public $cityFilter = 'all';
 
     protected $queryString = [
         'filterStatus' => ['except' => 'waiting_approval'],
@@ -37,11 +38,44 @@ class Approval extends Component
     protected $listeners = [
         'topupRequestCreated' => '$refresh',
         'confirmApprove' => 'approve',
+        'admin-city-changed' => 'onAdminCityChanged',
     ];
+
+    public function mount()
+    {
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $this->cityFilter = $admin->getActiveAdminCityFilter();
+        }
+    }
 
     public function updatingSearch()
     {
         $this->resetPage();
+    }
+
+    public function updatingCityFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedCityFilter()
+    {
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $admin->setActiveAdminCityFilter($this->cityFilter);
+            $this->dispatch('admin-city-changed', cityId: $this->cityFilter);
+        }
+        $this->resetPage();
+    }
+
+    public function onAdminCityChanged($cityId = null)
+    {
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $this->cityFilter = $admin->getActiveAdminCityFilter();
+            $this->resetPage();
+        }
     }
 
     public function filterByStatus($status)
@@ -50,25 +84,30 @@ class Approval extends Component
         $this->resetPage();
     }
 
-    public function viewDetail($transactionId)
+    protected function isAuthorizedForTransaction(BalanceTransaction $tx): bool
     {
         $admin = auth()->user();
-        $adminCityIds = $admin ? $admin->getAdminCityIds() : [];
-        $query = BalanceTransaction::with(['user', 'user.city', 'approvedBy']);
+        if (!$admin) return false;
+        if (in_array($admin->role, ['super_admin', 'superadmin'])) return true;
+        if ($admin->role === 'admin') {
+            $allowedCityIds = $admin->getAdminCityIds();
+            $userCityId = $tx->user?->city_id;
+            return !empty($userCityId) && in_array((int) $userCityId, $allowedCityIds, true);
+        }
+        return false;
+    }
+
+    public function viewDetail($transactionId)
+    {
+        $tx = BalanceTransaction::with(['user', 'user.city', 'approvedBy'])->find($transactionId);
         
-        if (!empty($adminCityIds)) {
-            $query->whereHas('user', fn($q) => $q->whereIn('city_id', $adminCityIds));
-        } elseif ($admin && $admin->role === 'admin') {
-            $query->whereRaw('1 = 0');
+        if (!$tx || !$this->isAuthorizedForTransaction($tx)) {
+            session()->flash('error', 'Transaksi tidak ditemukan atau berada di luar wilayah wewenang Anda.');
+            return;
         }
 
-        $this->selectedTransaction = $query->find($transactionId);
-        
-        if ($this->selectedTransaction) {
-            $this->showDetailModal = true;
-        } else {
-            session()->flash('error', 'Transaksi tidak ditemukan atau berada di luar wilayah wewenang Anda.');
-        }
+        $this->selectedTransaction = $tx;
+        $this->showDetailModal = true;
     }
 
     public function closeModal()
@@ -83,55 +122,38 @@ class Approval extends Component
 
     public function openRejectModal($transactionId)
     {
-        $admin = auth()->user();
-        $query = BalanceTransaction::with(['user', 'user.city']);
-        
-        if ($admin->city_id) {
-            $query->whereHas('user', fn($q) => $q->where('city_id', $admin->city_id));
-        }
+        $tx = BalanceTransaction::with(['user', 'user.city'])->find($transactionId);
 
-        $this->selectedTransaction = $query->find($transactionId);
-
-        if ($this->selectedTransaction) {
-            $this->showRejectModal = true;
-            $this->rejectionReason = '';
-        } else {
+        if (!$tx || !$this->isAuthorizedForTransaction($tx)) {
             session()->flash('error', 'Transaksi tidak ditemukan atau berada di luar wilayah wewenang Anda.');
+            return;
         }
+
+        $this->selectedTransaction = $tx;
+        $this->showRejectModal = true;
+        $this->rejectionReason = '';
     }
 
     public function openCancelApprovalModal($transactionId)
     {
-        $admin = auth()->user();
-        $query = BalanceTransaction::with(['user', 'user.city', 'approvedBy']);
-        
-        if ($admin->city_id) {
-            $query->whereHas('user', fn($q) => $q->where('city_id', $admin->city_id));
-        }
+        $tx = BalanceTransaction::with(['user', 'user.city', 'approvedBy'])->find($transactionId);
 
-        $this->selectedTransaction = $query->find($transactionId);
-
-        if ($this->selectedTransaction) {
-            $this->showCancelApprovalModal = true;
-            $this->cancellationReason = '';
-        } else {
+        if (!$tx || !$this->isAuthorizedForTransaction($tx)) {
             session()->flash('error', 'Transaksi tidak ditemukan atau berada di luar wilayah wewenang Anda.');
+            return;
         }
+
+        $this->selectedTransaction = $tx;
+        $this->showCancelApprovalModal = true;
+        $this->cancellationReason = '';
     }
 
     public function approve($transactionId)
     {
-        $admin = auth()->user();
-        $query = BalanceTransaction::with('user');
-        
-        if ($admin->city_id) {
-            $query->whereHas('user', fn($q) => $q->where('city_id', $admin->city_id));
-        }
+        $transaction = BalanceTransaction::with('user')->find($transactionId);
 
-        $transaction = $query->find($transactionId);
-
-        if (!$transaction || $transaction->status !== 'waiting_approval') {
-            session()->flash('error', 'Request top-up tidak valid, sudah diproses, atau berada di luar wilayah Anda.');
+        if (!$transaction || $transaction->status !== 'waiting_approval' || !$this->isAuthorizedForTransaction($transaction)) {
+            session()->flash('error', 'Request top-up tidak valid, sudah diproses, atau berada di luar wilayah wewenang Anda.');
             return;
         }
 
@@ -204,8 +226,7 @@ class Approval extends Component
             return;
         }
 
-        $admin = auth()->user();
-        if ($admin->city_id && optional($this->selectedTransaction->user)->city_id != $admin->city_id) {
+        if (!$this->isAuthorizedForTransaction($this->selectedTransaction)) {
             session()->flash('error', 'Anda tidak memiliki wewenang untuk menolak transaksi di luar wilayah Anda.');
             $this->closeModal();
             return;
@@ -260,8 +281,7 @@ class Approval extends Component
             return;
         }
 
-        $admin = auth()->user();
-        if ($admin->city_id && optional($this->selectedTransaction->user)->city_id != $admin->city_id) {
+        if (!$this->isAuthorizedForTransaction($this->selectedTransaction)) {
             session()->flash('error', 'Anda tidak memiliki wewenang untuk membatalkan transaksi di luar wilayah Anda.');
             $this->closeModal();
             return;
@@ -332,7 +352,10 @@ class Approval extends Component
     public function render()
     {
         $admin = auth()->user();
-        $adminCityIds = $admin ? $admin->getAdminCityIds() : [];
+        if ($admin && $admin->role === 'admin') {
+            $this->cityFilter = $admin->getActiveAdminCityFilter();
+        }
+        $adminCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
         $adminCityName = $admin ? $admin->admin_city_names : null;
 
         // Base scoped query for counts
@@ -385,10 +408,12 @@ class Approval extends Component
             });
         }
 
+        $cities = $admin ? $admin->getAdminCities() : collect();
         $transactions = $query->orderBy('created_at', 'desc')->paginate(15);
 
         return view('livewire.admin.topup.approval', [
             'transactions' => $transactions,
+            'cities' => $cities,
             'adminCityName' => $adminCityName,
             'totalPending' => $totalPending,
             'totalCompleted' => $totalCompleted,

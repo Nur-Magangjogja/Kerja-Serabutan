@@ -1,57 +1,8 @@
 <div class="space-y-6">
-    {{-- ===== Page Header & Multi-Wilayah & Month Selector ===== --}}
+    {{-- ===== Page Header & Month Selector ===== --}}
     <div class="flex items-center justify-between flex-wrap gap-4 pb-2 border-b border-gray-100 dark:border-gray-800">
         <div>
-            <div class="flex items-center gap-2.5 flex-wrap">
-                <h1 class="text-xl font-bold text-gray-900 dark:text-white">Dashboard Admin</h1>
-                
-                {{-- Multi-Wilayah Badge / Switcher --}}
-                @if(isset($managedCities) && $managedCities->count() > 1)
-                    <div class="relative" x-data="{ cityOpen: false }" @click.away="cityOpen = false">
-                        <button type="button" @click="cityOpen = !cityOpen"
-                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 shadow-2xs hover:bg-primary-100 dark:hover:bg-primary-900/60 transition cursor-pointer">
-                            <svg class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
-                            </svg>
-                            <span>{{ $activeCityLabel }}</span>
-                            <svg class="w-3 h-3 text-primary-500 transition-transform duration-200" :class="{ 'rotate-180': cityOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-
-                        <div x-cloak x-show="cityOpen" 
-                            x-transition:enter="transition ease-out duration-150" 
-                            x-transition:enter-start="opacity-0 translate-y-2 scale-95" 
-                            x-transition:enter-end="opacity-100 translate-y-0 scale-100" 
-                            class="absolute left-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-2 z-50 overflow-hidden">
-                            <p class="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider px-2 py-1">Pilih Wilayah Wewenang</p>
-                            <div class="space-y-1">
-                                <button type="button" wire:click="setCityFilter('all'); cityOpen = false"
-                                    class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition text-left cursor-pointer {{ $selectedCity === 'all' ? 'bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50' }}">
-                                    <span>Semua Wilayah Saya ({{ $managedCities->count() }} Kota)</span>
-                                    @if($selectedCity === 'all')
-                                        <svg class="w-4 h-4 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                                    @endif
-                                </button>
-                                @foreach($managedCities as $mc)
-                                    <button type="button" wire:click="setCityFilter('{{ $mc->id }}'); cityOpen = false"
-                                        class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition text-left cursor-pointer {{ (string)$selectedCity === (string)$mc->id ? 'bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 font-bold border border-primary-200 dark:border-primary-800' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50' }}">
-                                        <span>{{ $mc->name }}</span>
-                                        @if((string)$selectedCity === (string)$mc->id)
-                                            <svg class="w-4 h-4 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                                        @endif
-                                    </button>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-                @elseif(auth()->user() && (auth()->user()->city_name || auth()->user()->city_id || auth()->user()->city))
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 shadow-2xs">
-                        <svg class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
-                        </svg>
-                        {{ auth()->user()->city_name ?? (is_object(auth()->user()->city) ? auth()->user()->city->name : auth()->user()->city) }}
-                    </span>
-                @endif
-            </div>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Dashboard Admin</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Ringkasan aktivitas operasional dan tren seluruh data di wilayah wewenang Anda</p>
         </div>
 
@@ -276,54 +227,70 @@
     {{-- ===== Unified Multi-Metric Chart + Ringkasan Operasional ===== --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {{-- Unified Multi-Metric Chart --}}
-        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-xs p-5 sm:p-6 flex flex-col justify-between">
+        <div class="lg:col-span-2 min-w-0 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-xs p-4 sm:p-6 flex flex-col justify-between overflow-hidden">
             <div>
                 <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-                    <div>
-                        <h2 class="text-sm font-bold text-gray-900 dark:text-white">Tren Aktivitas Operasional Gabungan</h2>
-                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                    <div class="min-w-0">
+                        <h2 class="text-sm font-bold text-gray-900 dark:text-white truncate">Tren Aktivitas Operasional Gabungan</h2>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                             Grafik terintegrasi seluruh data wilayah • <strong class="text-primary-600 dark:text-primary-400">{{ $periodLabel }}</strong>
                         </p>
                     </div>
-                    <span class="text-xs text-primary-600 dark:text-primary-400 font-bold bg-primary-50 dark:bg-primary-900/30 px-3 py-1 rounded-xl border border-primary-100 dark:border-primary-800/60 shadow-2xs">
-                        {{ $isAllPeriod ? 'Data Akumulasi' : 'Filter Bulanan' }}
-                    </span>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs text-primary-600 dark:text-primary-400 font-bold bg-primary-50 dark:bg-primary-900/30 px-3 py-1 rounded-xl border border-primary-100 dark:border-primary-800/60 shadow-2xs shrink-0">
+                            {{ $isAllPeriod ? 'Data Akumulasi' : 'Filter Bulanan' }}
+                        </span>
+                        {{-- Mobile Scroll Indicator --}}
+                        <span class="sm:hidden text-[10px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100/80 dark:bg-gray-700/60 px-2 py-0.5 rounded-lg inline-flex items-center gap-1 shadow-2xs">
+                            <svg class="w-3 h-3 text-primary-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                            Geser grafik
+                        </span>
+                    </div>
                 </div>
 
-                {{-- Interactive Multi-Metric Legend Pills --}}
-                <div class="flex items-center gap-2 flex-wrap mb-4 pt-1">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-800/70">
-                        <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
-                        Total Bantuan ({{ number_format($totalHelps) }})
-                    </span>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/70">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                        Selesai ({{ number_format($completedHelps) }})
-                    </span>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/70 dark:border-rose-800/70">
-                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-                        Dibatalkan ({{ number_format($cancelledHelps) }})
-                    </span>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/70">
-                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                        Pendaftaran KTP ({{ number_format($pendingVerifications) }})
-                    </span>
+                {{-- Interactive Multi-Metric Legend Toggle Buttons (Scrollable on mobile, wrapped on desktop) --}}
+                <div class="flex items-center gap-2 overflow-x-auto pb-2 pt-1 custom-scrollbar flex-nowrap sm:flex-wrap" id="chartLegendContainer">
+                    <button type="button" onclick="toggleAdminChartDataset(0)" data-dataset-index="0"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-800/70 hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 shrink-0"
+                        title="Klik untuk menyembunyikan / menampilkan data Total Bantuan">
+                        <span class="w-2.5 h-2.5 rounded-full bg-sky-500 shadow-xs shrink-0"></span>
+                        <span class="whitespace-nowrap">Total Bantuan ({{ number_format($totalHelps) }})</span>
+                    </button>
+                    <button type="button" onclick="toggleAdminChartDataset(1)" data-dataset-index="1"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/70 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 shrink-0"
+                        title="Klik untuk menyembunyikan / menampilkan data Bantuan Selesai">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs shrink-0"></span>
+                        <span class="whitespace-nowrap">Selesai ({{ number_format($completedHelps) }})</span>
+                    </button>
+                    <button type="button" onclick="toggleAdminChartDataset(2)" data-dataset-index="2"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/70 dark:border-rose-800/70 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 shrink-0"
+                        title="Klik untuk menyembunyikan / menampilkan data Bantuan Dibatalkan">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-xs shrink-0"></span>
+                        <span class="whitespace-nowrap">Dibatalkan ({{ number_format($cancelledHelps) }})</span>
+                    </button>
+                    <button type="button" onclick="toggleAdminChartDataset(3)" data-dataset-index="3"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/70 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 shrink-0"
+                        title="Klik untuk menyembunyikan / menampilkan data Pendaftaran KTP">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-xs shrink-0"></span>
+                        <span class="whitespace-nowrap">Pendaftaran KTP ({{ number_format($pendingVerifications) }})</span>
+                    </button>
                 </div>
             </div>
 
-            {{-- Fully Reactive Dynamic Chart Canvas --}}
-            <div 
-                x-data="adminUnifiedChart()"
-                x-init="initChart()"
-                data-labels="{{ json_encode($chartLabels) }}"
-                data-total="{{ json_encode($chartHelpsData) }}"
-                data-completed="{{ json_encode($chartCompletedData) }}"
-                data-cancelled="{{ json_encode($chartCancelledData) }}"
-                data-verifications="{{ json_encode($chartVerificationsData) }}"
-                @chart-refresh.window="$nextTick(() => renderChart())"
-                class="h-64 sm:h-72 w-full relative"
-            >
-                <canvas x-ref="canvas"></canvas>
+            {{-- Responsive Chart Scroll Wrapper with Automated Overflow --}}
+            <div class="w-full overflow-x-auto custom-scrollbar mt-2 -mx-1 px-1 sm:mx-0 sm:px-0" id="adminChartScrollWrapper">
+                <div id="adminUnifiedChartContainer" 
+                     class="w-full min-w-[560px] sm:min-w-0 flex-1 min-h-[260px] sm:min-h-[300px] h-64 sm:h-76 relative"
+                     data-labels="{{ json_encode($chartLabels) }}"
+                     data-total="{{ json_encode($chartHelpsData) }}"
+                     data-completed="{{ json_encode($chartCompletedData) }}"
+                     data-cancelled="{{ json_encode($chartCancelledData) }}"
+                     data-verifications="{{ json_encode($chartVerificationsData) }}"
+                >
+                    <div class="absolute inset-0 w-full h-full" wire:ignore>
+                        <canvas id="adminUnifiedChartCanvas" class="w-full h-full block" style="max-height: 100% !important; height: 100% !important; width: 100% !important;"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -473,199 +440,323 @@
         @endif
     </div>
 
-    {{-- Alpine & Chart.js Multi-Dataset Unified Integration --}}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {{-- Native Chart.js Multi-Dataset Unified Integration --}}
     <script>
-        let _adminDashboardChart = null;
-
-        function adminUnifiedChart() {
-            return {
-                destroy() {
-                    if (_adminDashboardChart) {
-                        try { _adminDashboardChart.destroy(); } catch (e) {}
-                        _adminDashboardChart = null;
-                    }
-                },
-                initChart() {
-                    this.waitForChart(() => {
-                        this.renderChart();
-                    });
-                },
-                waitForChart(callback, maxAttempts = 60) {
-                    if (typeof Chart !== 'undefined') {
-                        callback();
-                        return;
-                    }
-                    let attempts = 0;
-                    const timer = setInterval(() => {
-                        attempts++;
-                        if (typeof Chart !== 'undefined') {
-                            clearInterval(timer);
-                            callback();
-                        } else if (attempts >= maxAttempts) {
-                            clearInterval(timer);
-                        }
-                    }, 50);
-                },
-                renderChart() {
-                    const el = this.$el;
-                    const canvas = this.$refs.canvas;
-                    if (!el || !canvas || typeof Chart === 'undefined') return;
-
-                    let labels = [];
-                    let totalHelps = [];
-                    let completedHelps = [];
-                    let cancelledHelps = [];
-                    let verifications = [];
-
-                    try {
-                        labels = JSON.parse(el.getAttribute('data-labels') || '[]');
-                        totalHelps = JSON.parse(el.getAttribute('data-total') || '[]');
-                        completedHelps = JSON.parse(el.getAttribute('data-completed') || '[]');
-                        cancelledHelps = JSON.parse(el.getAttribute('data-cancelled') || '[]');
-                        verifications = JSON.parse(el.getAttribute('data-verifications') || '[]');
-                    } catch (e) {
-                        console.error('Error parsing chart data:', e);
-                    }
-
-                    const isDark = document.documentElement.classList.contains('dark');
-
-                    const datasets = [
-                        {
-                            label: 'Total Bantuan',
-                            data: totalHelps,
-                            borderColor: '#0ea5e9',
-                            backgroundColor: isDark ? 'rgba(14,165,233,0.15)' : 'rgba(14,165,233,0.08)',
-                            pointBackgroundColor: '#0ea5e9',
-                            pointHoverBackgroundColor: '#0284c7',
-                            pointRadius: labels.length > 20 ? 2 : 3.5,
-                            borderWidth: 2.5,
-                            fill: true,
-                            tension: 0.35
-                        },
-                        {
-                            label: 'Bantuan Selesai',
-                            data: completedHelps,
-                            borderColor: '#10b981',
-                            backgroundColor: 'transparent',
-                            pointBackgroundColor: '#10b981',
-                            pointHoverBackgroundColor: '#059669',
-                            pointRadius: labels.length > 20 ? 2 : 3,
-                            borderWidth: 2,
-                            fill: false,
-                            tension: 0.35
-                        },
-                        {
-                            label: 'Bantuan Dibatalkan',
-                            data: cancelledHelps,
-                            borderColor: '#f43f5e',
-                            backgroundColor: 'transparent',
-                            pointBackgroundColor: '#f43f5e',
-                            pointHoverBackgroundColor: '#e11d48',
-                            pointRadius: labels.length > 20 ? 2 : 3,
-                            borderWidth: 2,
-                            borderDash: [4, 4],
-                            fill: false,
-                            tension: 0.35
-                        },
-                        {
-                            label: 'Pendaftaran KTP',
-                            data: verifications,
-                            borderColor: '#f59e0b',
-                            backgroundColor: 'transparent',
-                            pointBackgroundColor: '#f59e0b',
-                            pointHoverBackgroundColor: '#d97706',
-                            pointRadius: labels.length > 20 ? 2 : 3,
-                            borderWidth: 2,
-                            fill: false,
-                            tension: 0.35
-                        }
-                    ];
-
-                    if (_adminDashboardChart && _adminDashboardChart.ctx && this.$refs.canvas) {
-                        _adminDashboardChart.data.labels = labels;
-                        _adminDashboardChart.data.datasets = datasets;
-                        if (_adminDashboardChart.options && _adminDashboardChart.options.scales) {
-                            if (_adminDashboardChart.options.scales.x && _adminDashboardChart.options.scales.x.ticks) {
-                                _adminDashboardChart.options.scales.x.ticks.color = isDark ? '#9ca3af' : '#6b7280';
-                            }
-                            if (_adminDashboardChart.options.scales.y && _adminDashboardChart.options.scales.y.ticks) {
-                                _adminDashboardChart.options.scales.y.ticks.color = isDark ? '#9ca3af' : '#6b7280';
-                            }
-                        }
-                        _adminDashboardChart.update('none');
-                        return;
-                    }
-
-                    const existingChart = Chart.getChart(canvas);
-                    if (existingChart) {
-                        existingChart.destroy();
-                    }
-                    if (_adminDashboardChart) {
-                        try { _adminDashboardChart.destroy(); } catch (e) {}
-                        _adminDashboardChart = null;
-                    }
-
-                    _adminDashboardChart = new Chart(canvas.getContext('2d'), {
-                        type: 'line',
-                        data: { labels: labels, datasets: datasets },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            interaction: {
-                                mode: 'index',
-                                intersect: false
-                            },
-                            animation: { duration: 250 },
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: {
-                                    backgroundColor: isDark ? '#1f2937' : '#ffffff',
-                                    titleColor: isDark ? '#f3f4f6' : '#111827',
-                                    bodyColor: isDark ? '#d1d5db' : '#374151',
-                                    borderColor: isDark ? '#374151' : '#e5e7eb',
-                                    borderWidth: 1,
-                                    padding: 10,
-                                    boxPadding: 4,
-                                    usePointStyle: true,
-                                    callbacks: {
-                                        title: function(items) {
-                                            return '📅 Tanggal: ' + items[0].label;
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    grid: { display: false },
-                                    ticks: {
-                                        color: isDark ? '#9ca3af' : '#6b7280',
-                                        font: { size: 10 },
-                                        maxRotation: 0,
-                                        autoSkip: true,
-                                        maxTicksLimit: 12
-                                    }
-                                },
-                                y: {
-                                    beginAtZero: true,
-                                    grid: { color: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
-                                    ticks: { color: isDark ? '#9ca3af' : '#6b7280', precision: 0, font: { size: 11 } }
-                                }
-                            }
-                        }
-                    });
-                }
-            };
+    (function() {
+        let adminChart = null;
+        if (!Array.isArray(window._adminChartVisibility) || window._adminChartVisibility.length < 4) {
+            window._adminChartVisibility = [true, true, true, true];
         }
 
-        document.addEventListener('livewire:initialized', () => {
-            Livewire.hook('morph.updated', ({ el, component }) => {
-                window.dispatchEvent(new CustomEvent('chart-refresh'));
+        function syncLegendButtonsUI() {
+            const container = document.getElementById('chartLegendContainer');
+            if (!container) return;
+            const buttons = container.querySelectorAll('button[data-dataset-index]');
+            buttons.forEach(btn => {
+                const idx = parseInt(btn.getAttribute('data-dataset-index'), 10);
+                if (isNaN(idx)) return;
+                const isVisible = (window._adminChartVisibility[idx] !== false);
+                if (isVisible) {
+                    btn.classList.remove('opacity-40', 'line-through', 'grayscale');
+                    btn.setAttribute('aria-pressed', 'true');
+                } else {
+                    btn.classList.add('opacity-40', 'line-through', 'grayscale');
+                    btn.setAttribute('aria-pressed', 'false');
+                }
             });
+        }
+
+        function waitForChart(callback, maxAttempts = 50) {
+            if (typeof Chart !== 'undefined') {
+                callback();
+                return;
+            }
+            let attempts = 0;
+            const timer = setInterval(() => {
+                attempts++;
+                if (typeof Chart !== 'undefined') {
+                    clearInterval(timer);
+                    callback();
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(timer);
+                }
+            }, 50);
+        }
+
+        function initAdminChart() {
+            const container = document.getElementById('adminUnifiedChartContainer');
+            const canvas = document.getElementById('adminUnifiedChartCanvas');
+            if (!container || !canvas) return;
+
+            const isDark = document.documentElement.classList.contains('dark');
+            let labels = [], totalHelps = [], completedHelps = [], cancelledHelps = [], verifications = [];
+            try {
+                labels = JSON.parse(container.getAttribute('data-labels') || '[]');
+                totalHelps = JSON.parse(container.getAttribute('data-total') || '[]');
+                completedHelps = JSON.parse(container.getAttribute('data-completed') || '[]');
+                cancelledHelps = JSON.parse(container.getAttribute('data-cancelled') || '[]');
+                verifications = JSON.parse(container.getAttribute('data-verifications') || '[]');
+            } catch (e) {
+                console.error('Failed to parse chart data:', e);
+            }
+
+            const datasets = [
+                {
+                    label: 'Total Bantuan',
+                    data: totalHelps,
+                    borderColor: '#0ea5e9',
+                    backgroundColor: isDark ? 'rgba(14,165,233,0.15)' : 'rgba(14,165,233,0.08)',
+                    pointBackgroundColor: '#0ea5e9',
+                    pointHoverBackgroundColor: '#0284c7',
+                    pointRadius: labels.length > 20 ? 2 : 3.5,
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.35,
+                    hidden: (window._adminChartVisibility[0] === false)
+                },
+                {
+                    label: 'Bantuan Selesai',
+                    data: completedHelps,
+                    borderColor: '#10b981',
+                    backgroundColor: 'transparent',
+                    pointBackgroundColor: '#10b981',
+                    pointHoverBackgroundColor: '#059669',
+                    pointRadius: labels.length > 20 ? 2 : 3,
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.35,
+                    hidden: (window._adminChartVisibility[1] === false)
+                },
+                {
+                    label: 'Bantuan Dibatalkan',
+                    data: cancelledHelps,
+                    borderColor: '#f43f5e',
+                    backgroundColor: 'transparent',
+                    pointBackgroundColor: '#f43f5e',
+                    pointHoverBackgroundColor: '#e11d48',
+                    pointRadius: labels.length > 20 ? 2 : 3,
+                    borderWidth: 2,
+                    borderDash: [4, 4],
+                    fill: false,
+                    tension: 0.35,
+                    hidden: (window._adminChartVisibility[2] === false)
+                },
+                {
+                    label: 'Pendaftaran KTP',
+                    data: verifications,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'transparent',
+                    pointBackgroundColor: '#f59e0b',
+                    pointHoverBackgroundColor: '#d97706',
+                    pointRadius: labels.length > 20 ? 2 : 3,
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.35,
+                    hidden: (window._adminChartVisibility[3] === false)
+                }
+            ];
+
+            // If chart exists on this active canvas, update it smoothly without zoom/ballooning
+            if (adminChart && adminChart.ctx && document.getElementById('adminUnifiedChartCanvas') === adminChart.canvas) {
+                adminChart.data.labels = labels;
+                datasets.forEach((ds, idx) => {
+                    const isVis = (window._adminChartVisibility[idx] !== false);
+                    ds.hidden = !isVis;
+                    adminChart.setDatasetVisibility(idx, isVis);
+                });
+                adminChart.data.datasets = datasets;
+                if (adminChart.options && adminChart.options.scales) {
+                    if (adminChart.options.scales.x && adminChart.options.scales.x.ticks) {
+                        adminChart.options.scales.x.ticks.color = isDark ? '#9ca3af' : '#6b7280';
+                        adminChart.options.scales.x.ticks.maxTicksLimit = window.innerWidth < 640 ? 8 : 14;
+                    }
+                    if (adminChart.options.scales.y && adminChart.options.scales.y.ticks) {
+                        adminChart.options.scales.y.ticks.color = isDark ? '#9ca3af' : '#6b7280';
+                    }
+                }
+                adminChart.update('none');
+                adminChart.resize();
+                syncLegendButtonsUI();
+
+                const scrollWrapper = container.closest('.overflow-x-auto');
+                if (scrollWrapper && window.innerWidth < 640) {
+                    setTimeout(() => {
+                        scrollWrapper.scrollLeft = scrollWrapper.scrollWidth;
+                    }, 50);
+                }
+                return;
+            }
+
+            // Clean up previous instances
+            if (adminChart) {
+                try { adminChart.destroy(); } catch(e) {}
+                adminChart = null;
+            }
+            if (window._adminUnifiedChartInstance) {
+                try { window._adminUnifiedChartInstance.destroy(); } catch(e) {}
+                window._adminUnifiedChartInstance = null;
+            }
+            if (typeof Chart !== 'undefined') {
+                const existing = Chart.getChart(canvas);
+                if (existing) {
+                    try { existing.destroy(); } catch(e) {}
+                }
+            }
+
+            const config = {
+                type: 'line',
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    resizeDelay: 50,
+                    devicePixelRatio: window.devicePixelRatio || 1,
+                    layout: {
+                        padding: {
+                            top: 8,
+                            bottom: 8,
+                            left: 0,
+                            right: 8
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    animation: { duration: 250 },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                            titleColor: isDark ? '#f3f4f6' : '#111827',
+                            bodyColor: isDark ? '#d1d5db' : '#374151',
+                            borderColor: isDark ? '#374151' : '#e5e7eb',
+                            borderWidth: 1,
+                            padding: 10,
+                            boxPadding: 4,
+                            usePointStyle: true,
+                            callbacks: {
+                                title: function(items) {
+                                    return '📅 Tanggal: ' + items[0].label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                color: isDark ? '#9ca3af' : '#6b7280',
+                                font: { size: 10 },
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: window.innerWidth < 640 ? 8 : 14
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
+                            ticks: { color: isDark ? '#9ca3af' : '#6b7280', precision: 0, font: { size: 11 } }
+                        }
+                    }
+                }
+            };
+
+            try {
+                adminChart = new Chart(canvas.getContext('2d'), config);
+                window._adminUnifiedChartInstance = adminChart;
+            } catch(err) {
+                console.warn('Canvas reset required for Admin Chart:', err);
+                const parent = canvas.parentNode;
+                if (parent) {
+                    const newCanvas = document.createElement('canvas');
+                    newCanvas.id = 'adminUnifiedChartCanvas';
+                    newCanvas.className = 'w-full h-full block';
+                    newCanvas.style.maxHeight = '100%';
+                    newCanvas.style.height = '100%';
+                    newCanvas.style.width = '100%';
+                    parent.replaceChild(newCanvas, canvas);
+                    adminChart = new Chart(newCanvas.getContext('2d'), config);
+                    window._adminUnifiedChartInstance = adminChart;
+                }
+            }
+
+            syncLegendButtonsUI();
+
+            // Auto-scroll on mobile to latest dates on load
+            const scrollWrapper = container.closest('.overflow-x-auto');
+            if (scrollWrapper && window.innerWidth < 640) {
+                setTimeout(() => {
+                    scrollWrapper.scrollLeft = scrollWrapper.scrollWidth;
+                }, 100);
+            }
+
+            // Setup ResizeObserver for smooth minimize/maximize & sidebar animation
+            if (window.ResizeObserver && container) {
+                if (window._adminChartResizeObs) {
+                    try { window._adminChartResizeObs.disconnect(); } catch(e) {}
+                }
+                window._adminChartResizeObs = new ResizeObserver(() => {
+                    if (adminChart && adminChart.ctx) {
+                        adminChart.resize();
+                    }
+                });
+                window._adminChartResizeObs.observe(container);
+            }
+        }
+
+        window.toggleAdminChartDataset = function(datasetIndex) {
+            if (!Array.isArray(window._adminChartVisibility)) {
+                window._adminChartVisibility = [true, true, true, true];
+            }
+            window._adminChartVisibility[datasetIndex] = !window._adminChartVisibility[datasetIndex];
+
+            const chart = window._adminUnifiedChartInstance || adminChart;
+            if (chart) {
+                chart.setDatasetVisibility(datasetIndex, window._adminChartVisibility[datasetIndex]);
+                chart.update();
+            }
+            syncLegendButtonsUI();
+        };
+
+        function safeInit() {
+            waitForChart(() => {
+                initAdminChart();
+                syncLegendButtonsUI();
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', safeInit);
+        } else {
+            safeInit();
+        }
+
+        document.addEventListener('livewire:navigated', safeInit);
+        window.addEventListener('admin-city-changed', () => setTimeout(safeInit, 50));
+        window.addEventListener('chart-refresh', () => setTimeout(safeInit, 50));
+        window.addEventListener('theme-changed', safeInit);
+
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (adminChart && adminChart.ctx) {
+                    adminChart.resize();
+                }
+                syncLegendButtonsUI();
+            }, 100);
         });
 
-        window.addEventListener('theme-changed', function(e) {
-            window.dispatchEvent(new CustomEvent('chart-refresh'));
+        document.addEventListener('livewire:init', () => {
+            Livewire.hook('commit', ({ component, succeed }) => {
+                succeed(() => {
+                    if (component.name === 'admin.dashboard.index') {
+                        setTimeout(safeInit, 50);
+                    }
+                });
+            });
         });
+    })();
     </script>
 </div>

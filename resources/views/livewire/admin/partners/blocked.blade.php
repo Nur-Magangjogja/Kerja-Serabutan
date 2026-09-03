@@ -21,7 +21,17 @@
     {{-- ===== Page Header ===== --}}
     <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
-            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Daftar Akun Diblokir</h1>
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white">Daftar Akun Diblokir</h1>
+                @if(!$isSuperAdmin && auth()->user() && auth()->user()->active_admin_city_label)
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary-50 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 shadow-2xs">
+                        <svg class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                        </svg>
+                        Wilayah: {{ auth()->user()->active_admin_city_label }}
+                    </span>
+                @endif
+            </div>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola, blokir pengguna bermasalah, dan buka akses blokir akun mitra & customer</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
@@ -31,7 +41,7 @@
             <button type="button" wire:click="openBlockModal"
                 class="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
-                <span>➕ Blokir Pengguna (Mitra / Customer)</span>
+                <span>Blokir Pengguna (Mitra / Customer)</span>
             </button>
         </div>
     </div>

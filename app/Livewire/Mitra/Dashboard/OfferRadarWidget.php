@@ -26,6 +26,11 @@ class OfferRadarWidget extends Component
 
         if (!$user) return;
 
+        if ($user->isShadowBanned() || $user->warning_level >= 3 || $user->status === 'blocked') {
+            session()->flash('error', 'Akun Anda sedang dalam pembatasan fitur (Shadow Ban / SP 3) dan tidak diizinkan untuk online.');
+            return;
+        }
+
         try {
             $service->goOnline($user, $latitude ? (float) $latitude : null, $longitude ? (float) $longitude : null);
             $this->dispatch('show-status-notification', message: 'Status Anda sekarang ONLINE (Standby).');
@@ -44,6 +49,11 @@ class OfferRadarWidget extends Component
         $user    = auth()->user();
 
         if (!$user) return;
+
+        if ($user->isShadowBanned() || $user->warning_level >= 3 || $user->status === 'blocked') {
+            session()->flash('error', 'Akun Anda sedang dalam pembatasan fitur (Shadow Ban / SP 3) dan tidak diizinkan mencari order bantuan.');
+            return;
+        }
 
         try {
             $service->startSearching($user, $latitude ? (float) $latitude : null, $longitude ? (float) $longitude : null);
@@ -196,9 +206,13 @@ class OfferRadarWidget extends Component
             }
         }
 
+        $user = auth()->user();
+        $isRestricted = $user && ($user->isShadowBanned() || $user->warning_level >= 3 || $user->status === 'blocked');
+
         return view('livewire.mitra.dashboard.offer-radar-widget', [
-            'onlineState' => $onlineState,
-            'activeOffer' => $activeOffer,
+            'onlineState'  => $onlineState,
+            'activeOffer'  => $activeOffer,
+            'isRestricted' => $isRestricted,
         ]);
     }
 }

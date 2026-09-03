@@ -342,6 +342,23 @@
                             </div>
                         @endif
 
+                        @if($selectedTransaction['type'] === 'withdraw')
+                            <div class="pt-2 border-t border-gray-100 dark:border-gray-800 space-y-1.5 text-xs sm:text-sm">
+                                <div class="flex justify-between items-center text-gray-500 dark:text-gray-400">
+                                    <span>Nominal Masuk Rekening</span>
+                                    <span class="font-semibold text-gray-900 dark:text-gray-100">Rp {{ number_format($selectedTransaction['amount'], 0, ',', '.') }}</span>
+                                </div>
+                                <div class="flex justify-between items-center text-gray-500 dark:text-gray-400">
+                                    <span>Biaya Admin Bank/E-Wallet</span>
+                                    <span class="font-semibold text-gray-900 dark:text-gray-100">Rp {{ number_format($selectedTransaction['admin_fee'], 0, ',', '.') }}</span>
+                                </div>
+                                <div class="flex justify-between items-center font-bold pt-1 border-t border-dashed border-gray-200 dark:border-gray-700 text-rose-600 dark:text-rose-400">
+                                    <span>Total Potong Saldo Dompet</span>
+                                    <span>-Rp {{ number_format($selectedTransaction['total_payment'], 0, ',', '.') }}</span>
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="flex justify-between items-center text-xs sm:text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
                             <span class="text-gray-500 dark:text-gray-400">Waktu Mutasi</span>
                             <span class="font-semibold text-gray-900 dark:text-gray-100">{{ $selectedTransaction['created_at'] }}</span>

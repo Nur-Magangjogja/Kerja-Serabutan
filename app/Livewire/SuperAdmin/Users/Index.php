@@ -49,6 +49,10 @@ class Index extends Component
     public $adminPassword = '';
 
 
+    protected $listeners = [
+        'admin-city-changed' => '$refresh',
+    ];
+
     public function updatedSearch()
     {
         $this->resetPage();
@@ -369,9 +373,11 @@ class Index extends Component
             ->where('verified', true);
 
         if (! $isSuperAdmin) {
-            $managedCityIds = $currentUser->managedCities()->pluck('cities.id')->toArray();
+            $managedCityIds = $currentUser ? $currentUser->getEffectiveAdminCityIds() : [];
             if (!empty($managedCityIds)) {
                 $query->whereIn('city_id', $managedCityIds);
+            } elseif ($currentUser && $currentUser->role === 'admin') {
+                $query->whereRaw('1 = 0');
             }
         }
 

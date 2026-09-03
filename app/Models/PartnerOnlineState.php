@@ -64,7 +64,12 @@ class PartnerOnlineState extends Model
 
         return $query->where('matching_status', self::STATUS_SEARCHING)
             ->whereNotNull('last_seen_at')
-            ->where('last_seen_at', '>=', $cutoff);
+            ->where('last_seen_at', '>=', $cutoff)
+            ->whereHas('user', function ($q) {
+                $q->where('status', 'active')
+                  ->where('is_shadow_banned', false)
+                  ->where('warning_level', '<', 3);
+            });
     }
 
     public function scopeSearching($query)

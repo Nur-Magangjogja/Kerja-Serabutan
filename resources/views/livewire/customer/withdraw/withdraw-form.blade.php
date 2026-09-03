@@ -50,6 +50,25 @@
             </div>
 
             {{-- Form Penarikan --}}
+            {{-- Ringkasan Realtime --}}
+                <div class="p-3.5 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600 text-xs space-y-2">
+                    <div class="flex items-center justify-between text-gray-600 dark:text-gray-300">
+                        <span>Dana Masuk Rekening (Bersih):</span>
+                        <span class="font-bold text-gray-900 dark:text-white">Rp {{ number_format($netAmount, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-gray-500 dark:text-gray-400">
+                        <span>Biaya Admin ({{ $selectedBankName }}):</span>
+                        @if($adminFee == 0)
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md">Rp 0 (Bebas Biaya)</span>
+                        @else
+                            <span class="font-semibold text-gray-700 dark:text-gray-300">+ Rp {{ number_format($adminFee, 0, ',', '.') }}</span>
+                        @endif
+                    </div>
+                    <div class="flex items-center justify-between text-gray-900 dark:text-white text-sm pt-2 border-t border-gray-200 dark:border-gray-600">
+                        <span>Total Saldo yang Dipotong:</span>
+                        <span class="text-primary-600 dark:text-sky-400 font-black">Rp {{ number_format($totalDeduction, 0, ',', '.') }}</span>
+                    </div>
+                </div>
             <form wire:submit="submit" class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nominal Penarikan (Rp) *</label>
@@ -90,26 +109,6 @@
                     <input type="text" wire:model="accountName" placeholder="Nama lengkap sesuai buku tabungan / e-wallet..."
                         class="w-full px-3.5 py-2.5 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
                     @error('accountName') <span class="text-rose-500 text-xs mt-1 block font-medium">{{ $message }}</span> @enderror
-                </div>
-
-                {{-- Ringkasan Realtime --}}
-                <div class="p-3.5 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600 text-xs space-y-2">
-                    <div class="flex items-center justify-between text-gray-600 dark:text-gray-300">
-                        <span>Dana Masuk Rekening (Bersih):</span>
-                        <span class="font-bold text-gray-900 dark:text-white">Rp {{ number_format($netAmount, 0, ',', '.') }}</span>
-                    </div>
-                    <div class="flex items-center justify-between text-gray-500 dark:text-gray-400">
-                        <span>Biaya Admin ({{ $selectedBankName }}):</span>
-                        @if($adminFee == 0)
-                            <span class="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md">Rp 0 (Bebas Biaya)</span>
-                        @else
-                            <span class="font-semibold text-gray-700 dark:text-gray-300">+ Rp {{ number_format($adminFee, 0, ',', '.') }}</span>
-                        @endif
-                    </div>
-                    <div class="flex items-center justify-between font-extrabold text-gray-900 dark:text-white text-sm pt-2 border-t border-gray-200 dark:border-gray-600">
-                        <span>Total Saldo yang Dipotong:</span>
-                        <span class="text-primary-600 dark:text-sky-400 font-black">Rp {{ number_format($totalDeduction, 0, ',', '.') }}</span>
-                    </div>
                 </div>
 
                 <button type="submit" class="w-full py-3 bg-gradient-to-r from-[#0098e7] to-[#0077cc] hover:opacity-95 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer flex items-center justify-center gap-2">

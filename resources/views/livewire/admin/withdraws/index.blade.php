@@ -10,11 +10,19 @@
             <span class="font-semibold">{{ session('success') }}</span>
         </div>
     @endif
+    @if(session('error'))
+        <div class="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-2xl text-xs flex items-center gap-3 shadow-xs">
+            <svg class="w-5 h-5 text-rose-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+            <span class="font-semibold">{{ session('error') }}</span>
+        </div>
+    @endif
 
     {{-- ===== Page Header ===== --}}
     <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
-            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Persetujuan Penarikan Dana (Withdraw)</h1>
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white">Persetujuan Penarikan Dana (Withdraw)</h1>
+            </div>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola dan verifikasi transfer pencairan dana mitra secara real-time</p>
         </div>
         <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 px-3 py-1.5 rounded-lg">
@@ -35,6 +43,37 @@
                         class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
             </div>
+
+            @if($isSuperAdmin)
+                <div>
+                    <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Wilayah / Kota</label>
+                    <select wire:model.live="cityFilter"
+                        class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <option value="all">Semua Wilayah (Nasional)</option>
+                        @foreach($cities as $city)
+                            <option value="{{ $city->id }}">{{ $city->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @elseif($cities->count() > 1)
+                <div>
+                    <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Wilayah / Kota</label>
+                    <select wire:model.live="cityFilter"
+                        class="py-2 pl-3 pr-8 text-sm border border-primary-200 dark:border-primary-800 rounded-lg bg-primary-50/50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 font-bold focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <option value="all">Semua Wilayah Saya ({{ $cities->count() }} Kota)</option>
+                        @foreach($cities as $city)
+                            <option value="{{ $city->id }}">{{ $city->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @elseif($cities->count() === 1)
+                <div>
+                    <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Wilayah Wewenang</label>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 rounded-lg">
+                        📍 {{ $cities->first()->name }}
+                    </span>
+                </div>
+            @endif
 
             <div>
                 <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Peran Pengguna</label>
@@ -77,6 +116,7 @@
                     <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 font-bold uppercase tracking-wider text-[10px] border-b border-gray-100 dark:border-gray-700">
                         <tr>
                             <th class="px-4 py-3">ID / Pengguna</th>
+                            <th class="px-4 py-3">Wilayah</th>
                             <th class="px-4 py-3">Rekening Tujuan</th>
                             <th class="px-4 py-3">Nominal Tarik</th>
                             <th class="px-4 py-3">Biaya Admin</th>
@@ -103,6 +143,22 @@
                                         </div>
                                         <span class="text-[10px] text-gray-400">{{ $u?->email }}</span>
                                     </div>
+                                </td>
+
+                                <td class="px-4 py-3.5 whitespace-nowrap">
+                                    @php
+                                        $cityName = $u?->city_name ?? (is_object($u?->city) ? $u?->city?->name : ($u?->city ?? null));
+                                    @endphp
+                                    @if($cityName)
+                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
+                                            <svg class="w-3.5 h-3.5 text-primary-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                                            </svg>
+                                            <span>{{ $cityName }}</span>
+                                        </div>
+                                    @else
+                                        <span class="text-gray-400 text-xs italic">Semua Wilayah</span>
+                                    @endif
                                 </td>
 
                                 <td class="px-4 py-3.5 whitespace-nowrap">
@@ -178,22 +234,46 @@
 
     {{-- MODAL APPROVAL & BUKTI TRANSFER --}}
     @if($showApproveModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-            <div class="bg-white dark:bg-gray-800 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700 space-y-4">
-                <h3 class="text-sm font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                    <span>💳</span> Konfirmasi Transfer Pencairan Dana
-                </h3>
+        @teleport('body')
+        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" wire:click="closeApproveModal"></div>
+            <div class="relative bg-white dark:bg-gray-800 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700 space-y-4 z-10">
+                <div class="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-gray-700">
+                    <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <span>💳</span> Konfirmasi Transfer Pencairan Dana
+                    </h3>
+                    <button type="button" wire:click="closeApproveModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none cursor-pointer">&times;</button>
+                </div>
 
-                <div class="p-3.5 bg-emerald-50/70 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-800 text-xs space-y-1">
-                    <p class="text-emerald-900 dark:text-emerald-200">
-                        Penerima: <strong>{{ $selectedWithdraw?->account_name ?: $selectedWithdraw?->user?->name }}</strong>
-                    </p>
-                    <p class="text-emerald-900 dark:text-emerald-200 font-mono">
-                        Bank: <strong>{{ $selectedWithdraw?->bank_code }}</strong> ({{ $selectedWithdraw?->account_number }})
-                    </p>
-                    <p class="text-emerald-950 dark:text-emerald-100 font-bold text-sm pt-1">
-                        Jumlah Transfer Bersih: Rp {{ number_format($selectedWithdraw?->net_amount ?: $selectedWithdraw?->amount, 0, ',', '.') }}
-                    </p>
+                <div class="p-4 bg-emerald-50/80 dark:bg-emerald-950/50 rounded-2xl border border-emerald-200 dark:border-emerald-800/80 text-xs space-y-2.5">
+                    <div class="flex items-center justify-between gap-2 border-b border-emerald-200/60 dark:border-emerald-800/50 pb-2">
+                        <span class="text-emerald-800 dark:text-emerald-300 font-semibold">Penerima:</span>
+                        <span class="text-gray-900 dark:text-white font-extrabold text-right">
+                            {{ $selectedWithdraw?->account_name ?: $selectedWithdraw?->user?->name }}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 border-b border-emerald-200/60 dark:border-emerald-800/50 pb-2">
+                        <span class="text-emerald-800 dark:text-emerald-300 font-semibold">Wilayah Asal:</span>
+                        @php
+                            $apprU = $selectedWithdraw?->user;
+                            $apprCity = $apprU?->city_name ?? (is_object($apprU?->city) ? $apprU?->city?->name : ($apprU?->city ?? 'Semua Wilayah / Luar Kota'));
+                        @endphp
+                        <span class="text-gray-900 dark:text-white font-bold text-right flex items-center gap-1 justify-end">
+                            <span>📍</span> {{ $apprCity }}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 border-b border-emerald-200/60 dark:border-emerald-800/50 pb-2">
+                        <span class="text-emerald-800 dark:text-emerald-300 font-semibold">Bank & Rekening:</span>
+                        <span class="text-gray-900 dark:text-white font-mono font-bold text-right">
+                            <strong class="text-emerald-700 dark:text-emerald-400">{{ $selectedWithdraw?->bank_code }}</strong> ({{ $selectedWithdraw?->account_number }})
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 pt-0.5">
+                        <span class="text-emerald-800 dark:text-emerald-300 font-bold">Jumlah Transfer Bersih:</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-black text-sm text-right">
+                            Rp {{ number_format($selectedWithdraw?->net_amount ?: $selectedWithdraw?->amount, 0, ',', '.') }}
+                        </span>
+                    </div>
                 </div>
 
                 <div>
@@ -204,23 +284,49 @@
                 </div>
 
                 <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <button type="button" wire:click="closeApproveModal" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold">Batal</button>
-                    <button type="button" wire:click="submitApprove" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs">Setujui & Selesaikan</button>
+                    <button type="button" wire:click="closeApproveModal" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold cursor-pointer">Batal</button>
+                    <button type="button" wire:click="submitApprove" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer">Setujui & Selesaikan</button>
                 </div>
             </div>
         </div>
+        @endteleport
     @endif
 
     {{-- MODAL REJECTION --}}
     @if($showRejectModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-            <div class="bg-white dark:bg-gray-800 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700 space-y-4">
-                <h3 class="text-sm font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                    <span>❌</span> Tolak Pencairan Dana
-                </h3>
+        @teleport('body')
+        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" wire:click="closeRejectModal"></div>
+            <div class="relative bg-white dark:bg-gray-800 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700 space-y-4 z-10">
+                <div class="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-gray-700">
+                    <h3 class="text-sm font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+                        <span>❌</span> Tolak Pencairan Dana
+                    </h3>
+                    <button type="button" wire:click="closeRejectModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none cursor-pointer">&times;</button>
+                </div>
                 <p class="text-xs text-gray-600 dark:text-gray-300">
-                    Saldo sebesar <strong>Rp {{ number_format($selectedWithdraw?->amount ?? 0, 0, ',', '.') }}</strong> akan dikembalikan otomatis ke saldo dompet user.
+                    Saldo akan dikembalikan otomatis ke saldo dompet user.
                 </p>
+
+                <div class="p-3 bg-gray-50 dark:bg-gray-700/60 rounded-xl border border-gray-200 dark:border-gray-600 text-xs space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-500 dark:text-gray-400 font-medium">Pengguna:</span>
+                        <span class="font-bold text-gray-900 dark:text-white">{{ $selectedWithdraw?->user?->name }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-500 dark:text-gray-400 font-medium">Wilayah:</span>
+                        @php
+                            $rejU = $selectedWithdraw?->user;
+                            $rejCity = $rejU?->city_name ?? (is_object($rejU?->city) ? $rejU?->city?->name : ($rejU?->city ?? 'Semua Wilayah'));
+                        @endphp
+                        <span class="font-semibold text-gray-800 dark:text-gray-200">📍 {{ $rejCity }}</span>
+                    </div>
+                    <div class="flex items-center justify-between pt-1 border-t border-gray-200/60 dark:border-gray-600/60">
+                        <span class="text-gray-500 dark:text-gray-400 font-medium">Nominal Pengembalian:</span>
+                        <span class="font-extrabold text-primary-600 dark:text-primary-400">Rp {{ number_format($selectedWithdraw?->amount ?? 0, 0, ',', '.') }}</span>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan Penolakan</label>
                     <textarea wire:model="rejectReason" rows="3" placeholder="Contoh: Nomor rekening tidak sesuai dengan nama pemilik akun..."
@@ -228,10 +334,11 @@
                     @error('rejectReason') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
                 </div>
                 <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <button type="button" wire:click="closeRejectModal" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold">Batal</button>
-                    <button type="button" wire:click="submitReject" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs">Tolak Pencairan</button>
+                    <button type="button" wire:click="closeRejectModal" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold cursor-pointer">Batal</button>
+                    <button type="button" wire:click="submitReject" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer">Tolak Pencairan</button>
                 </div>
             </div>
         </div>
+        @endteleport
     @endif
 </div>

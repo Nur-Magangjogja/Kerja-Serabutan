@@ -60,6 +60,8 @@ class Index extends Component
             'is_credit' => $isCredit,
             'status' => $transaction->status ?? 'completed',
             'amount' => (float) $transaction->amount,
+            'admin_fee' => (float) ($transaction->admin_fee ?? 0),
+            'total_payment' => (float) ($transaction->total_payment ?? $transaction->amount),
             'description' => $transaction->description,
             'payment_type' => $transaction->payment_type,
             'order_id' => $orderId,

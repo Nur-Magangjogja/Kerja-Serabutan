@@ -455,65 +455,10 @@
                     } catch (err) { console.error('customer-toast handler error', err); }
                 });
 
-                // Listen for Livewire dispatch to open Midtrans Snap
-                window.addEventListener('openMidtransSnap', function (e) {
-                    try {
-                        var token = e.detail?.snapToken || e.detail?.detail?.snapToken || e.detail;
-                        if (!token && e?.detail?.snapToken) token = e.detail.snapToken;
-
-                        if (!token) {
-                            console.warn('openMidtransSnap called without snap token', e);
-                            return;
-                        }
-
-                        if (typeof snap === 'undefined' || !snap.pay) {
-                            console.warn('Midtrans snap.js not loaded. Cannot open snap.pay.');
-                            return;
-                        }
-
-                        snap.pay(token, {
-                            onSuccess: function (result) {
-                                fetch("{{ route('topup.client-callback') }}", {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                                    },
-                                    body: JSON.stringify({ order_id: result.order_id, result: result })
-                                }).then(function (resp) {
-                                    return resp.json();
-                                }).then(function (json) {
-                                    if (window.Livewire) {
-                                        try { window.Livewire.emit('balance-updated'); } catch (e) { }
-                                    }
-                                    try {
-                                        var successUrl = "{{ route('topup.success') }}" + '?order_id=' + encodeURIComponent(result.order_id);
-                                        setTimeout(function () {
-                                            window.location.href = successUrl;
-                                        }, 800);
-                                    } catch (e) {
-                                        console.warn('Failed to redirect to success page', e);
-                                    }
-                                }).catch(function (err) {
-                                    try {
-                                        window.location.href = "{{ route('topup.success') }}" + '?order_id=' + encodeURIComponent(result.order_id);
-                                    } catch (e) { }
-                                });
-                            },
-                            onPending: function (result) {
-                                console.info('Snap pending callback', result);
-                            },
-                            onError: function (result) {
-                                console.error('Snap error callback', result);
-                            },
-                            onClose: function () {
-                                console.info('Snap widget closed by user');
-                            }
-                        });
-                    } catch (err) {
-                        console.error('Failed to open Midtrans snap', err);
-                    }
-                });
+                // Listen for Livewire dispatch to open Midtrans Snap (Nonaktif / Disabled)
+                // window.addEventListener('openMidtransSnap', function (e) {
+                //     ...
+                // });
             }
         })();
     </script>

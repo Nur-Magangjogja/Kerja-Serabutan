@@ -33,10 +33,19 @@ class Greylist extends Component
     public $warningMessage = '';
     public $warningReason = '';
 
+    // Modal Detail Moderasi User (Khusus Admin/Superadmin)
+    public $showDetailModal = false;
+    public $detailUserId = null;
+    public $detailUser = null;
+
     protected $queryString = [
         'search' => ['except' => ''],
         'roleFilter' => ['except' => 'all'],
         'statusFilter' => ['except' => 'all'],
+    ];
+
+    protected $listeners = [
+        'admin-city-changed' => '$refresh',
     ];
 
     public function updatingSearch()
@@ -52,6 +61,20 @@ class Greylist extends Component
     public function updatingStatusFilter()
     {
         $this->resetPage();
+    }
+
+    public function openDetailModal($userId)
+    {
+        $this->detailUserId = $userId;
+        $this->detailUser = User::with(['city', 'greylistLogs.admin'])->findOrFail($userId);
+        $this->showDetailModal = true;
+    }
+
+    public function closeDetailModal()
+    {
+        $this->showDetailModal = false;
+        $this->detailUserId = null;
+        $this->detailUser = null;
     }
 
     public function openAddModal()
@@ -86,13 +109,18 @@ class Greylist extends Component
         $user = User::findOrFail($this->selectedUserId);
         $admin = auth()->user();
 
+        $applyShadowBan = (bool) $this->addApplyShadowBan;
+        if ((int) $this->addWarningLevel === 3) {
+            $applyShadowBan = true;
+        }
+
         $user->update([
             'is_greylisted' => true,
             'greylisted_at' => now(),
             'greylist_reason' => $this->addReason,
             'warning_level' => (int) $this->addWarningLevel,
-            'is_shadow_banned' => (bool) $this->addApplyShadowBan,
-            'shadow_banned_at' => $this->addApplyShadowBan ? now() : null,
+            'is_shadow_banned' => $applyShadowBan,
+            'shadow_banned_at' => $applyShadowBan ? now() : null,
             'latest_warning_message' => $this->addWarningLevel > 0 ? "Surat Peringatan SP {$this->addWarningLevel}: {$this->addReason}" : null,
             'latest_warning_at' => $this->addWarningLevel > 0 ? now() : null,
         ]);
@@ -103,8 +131,19 @@ class Greylist extends Component
             'action' => 'greylist_add',
             'warning_level' => (int) $this->addWarningLevel,
             'reason' => $this->addReason,
-            'message' => "User dimasukkan ke Daftar Abu-Abu oleh Admin {$admin->name}. " . ($this->addApplyShadowBan ? '[Shadow Ban Aktif]' : ''),
+            'message' => "User dimasukkan ke Daftar Abu-Abu oleh Admin {$admin->name}. " . ($applyShadowBan ? '[Shadow Ban Aktif]' : ''),
         ]);
+
+        if ($applyShadowBan) {
+            UserGreylistLog::create([
+                'user_id' => $user->id,
+                'admin_id' => $admin->id,
+                'action' => 'shadow_ban_enabled',
+                'warning_level' => (int) $this->addWarningLevel,
+                'reason' => 'Shadow Ban diterapkan saat memasukkan ke Daftar Abu-Abu',
+                'message' => "Shadow Ban diaktifkan untuk akun {$user->name}.",
+            ]);
+        }
 
         \App\Models\ActivityLog::record(
             $admin,
@@ -115,7 +154,7 @@ class Greylist extends Component
                 'role'           => $user->role,
                 'warning_level'  => (int) $this->addWarningLevel,
                 'reason'         => $this->addReason,
-                'is_shadow_banned' => (bool) $this->addApplyShadowBan,
+                'is_shadow_banned' => $applyShadowBan,
             ]
         );
 
@@ -131,7 +170,7 @@ class Greylist extends Component
         $this->currentWarningLevel = (int) $user->warning_level;
         $this->newWarningLevel = min(3, max(1, $this->currentWarningLevel + 1));
         $this->warningMessage = $this->getDefaultWarningTemplate($this->newWarningLevel, $user->name);
-        $this->warningReason = '';
+        $this->warningReason = $user->greylist_reason ?? '';
         $this->showWarningModal = true;
     }
 
@@ -144,8 +183,8 @@ class Greylist extends Component
     {
         return match ($level) {
             1 => "Halo {$name}, kami memberikan Surat Peringatan Pertama (SP 1) terkait ketidaksesuaian SOP pelayanan. Harap memperbaiki kualitas layanan dan menjaga komunikasi.",
-            2 => "PERINGATAN KEDUA (SP 2): Akun Anda {$name} terindikasi melakukan pelanggaran berulang. Jika pelanggaran berlanjut, akun akan dikenakan pembatasan fitur total (Shadow Ban).",
-            3 => "PERINGATAN TERAKHIR (SP 3): Akun {$name} berada di batas toleransi pelanggaran sistem SayaBantu. Pelanggaran berikutnya akan menyebabkan akun dinonaktifkan secara permanen.",
+            2 => "PERINGATAN KEDUA (SP 2): Akun Anda {$name} terindikasi melakukan pelanggaran berulang. Jika pelanggaran berlanjut hingga SP 3, akun akan dikenakan pembatasan fitur total.",
+            3 => "PERINGATAN TERAKHIR (SP 3): Akun {$name} telah mencapai batas toleransi pelanggaran sistem SayaBantu. Akun Anda dikenakan Ban (pembatasan akses fitur bantuan) dan menunggu peninjauan oleh Admin.",
             default => "Pemberitahuan resmi moderasi kepatuhan pengguna platform SayaBantu.",
         };
     }
@@ -166,13 +205,31 @@ class Greylist extends Component
 
         $user = User::findOrFail($this->targetUserId);
         $admin = auth()->user();
+        $isSp3 = ((int) $this->newWarningLevel === 3);
 
-        $user->update([
+        $updateData = [
             'is_greylisted' => true,
             'warning_level' => (int) $this->newWarningLevel,
+            'greylist_reason' => $this->warningReason, // Menimpa alasan lama dengan alasan SP baru
             'latest_warning_message' => $this->warningMessage,
             'latest_warning_at' => now(),
-        ]);
+        ];
+
+        // Jika mencapai SP 3, otomatis kenakan Shadow Ban secara nyata
+        if ($isSp3) {
+            $updateData['is_shadow_banned'] = true;
+            $updateData['shadow_banned_at'] = now();
+            \App\Models\PartnerOnlineState::where('user_id', $user->id)->update([
+                'matching_status' => \App\Models\PartnerOnlineState::STATUS_OFFLINE,
+                'searching_since' => null,
+            ]);
+        }
+
+        $user->update($updateData);
+
+        if ($this->detailUserId === $user->id) {
+            $this->detailUser = $user->fresh(['city', 'greylistLogs.admin']);
+        }
 
         UserGreylistLog::create([
             'user_id' => $user->id,
@@ -183,10 +240,21 @@ class Greylist extends Component
             'message' => $this->warningMessage,
         ]);
 
+        if ($isSp3) {
+            UserGreylistLog::create([
+                'user_id' => $user->id,
+                'admin_id' => $admin->id,
+                'action' => 'shadow_ban_enabled',
+                'warning_level' => 3,
+                'reason' => 'Otomatis Shadow Ban karena telah mencapai batas SP 3',
+                'message' => "Akun {$user->name} otomatis dikenakan Shadow Ban setelah terbit SP 3.",
+            ]);
+        }
+
         \App\Models\ActivityLog::record(
             $admin,
             'warning_issued',
-            "Admin {$admin->name} menerbitkan Surat Peringatan SP {$this->newWarningLevel} untuk akun {$user->name} ({$user->role}). Alasan: {$this->warningReason}",
+            "Admin {$admin->name} menerbitkan Surat Peringatan SP {$this->newWarningLevel} untuk akun {$user->name} ({$user->role}). Alasan: {$this->warningReason}" . ($isSp3 ? " [Shadow Ban Otomatis Aktif]" : ""),
             [
                 'target_user_id' => $user->id,
                 'role'           => $user->role,
@@ -197,7 +265,7 @@ class Greylist extends Component
         );
 
         $this->showWarningModal = false;
-        session()->flash('success', "Surat Peringatan SP {$this->newWarningLevel} berhasil diterbitkan untuk {$user->name}.");
+        session()->flash('success', "Surat Peringatan SP {$this->newWarningLevel} berhasil diterbitkan untuk {$user->name}." . ($isSp3 ? " Status Shadow Ban telah otomatis diterapkan." : ""));
     }
 
     public function toggleShadowBan($userId)
@@ -211,6 +279,13 @@ class Greylist extends Component
             'shadow_banned_at' => $newStatus ? now() : null,
             'is_greylisted' => true,
         ]);
+
+        if ($newStatus) {
+            \App\Models\PartnerOnlineState::where('user_id', $user->id)->update([
+                'matching_status' => \App\Models\PartnerOnlineState::STATUS_OFFLINE,
+                'searching_since' => null,
+            ]);
+        }
 
         UserGreylistLog::create([
             'user_id' => $user->id,
@@ -240,6 +315,61 @@ class Greylist extends Component
         );
     }
 
+    public function blockUser($userId)
+    {
+        $user = User::findOrFail($userId);
+        $admin = auth()->user();
+        $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
+
+        // Validasi wilayah jika admin biasa
+        if (!$isSuperAdmin) {
+            $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
+            if (!empty($managedCityIds) && !in_array($user->city_id, $managedCityIds)) {
+                session()->flash('error', 'Anda tidak memiliki hak akses untuk memblokir pengguna di luar wilayah Anda.');
+                return;
+            } elseif (empty($managedCityIds)) {
+                session()->flash('error', 'Anda belum memiliki wilayah wewenang.');
+                return;
+            }
+        }
+
+        // Tombol blokir hanya dapat digunakan setelah user mencapai SP 3
+        if ($user->warning_level < 3 && !$isSuperAdmin) {
+            session()->flash('error', 'Pemblokiran akun hanya dapat dilakukan setelah user mencapai batas SP 3.');
+            return;
+        }
+
+        $user->update([
+            'status' => 'blocked',
+        ]);
+
+        \App\Models\PartnerOnlineState::where('user_id', $user->id)->update([
+            'matching_status' => \App\Models\PartnerOnlineState::STATUS_OFFLINE,
+            'searching_since' => null,
+        ]);
+
+        $roleLabel = ($user->role === 'mitra') ? 'Mitra' : 'Customer';
+        $userContact = $user->phone ?: $user->email;
+        $descText = "Admin {$admin->name} memblokir akun {$roleLabel} {$user->name} ({$userContact}) setelah mencapai SP 3.";
+
+        \App\Models\PartnerActivity::create([
+            'user_id'       => $user->id,
+            'activity_type' => 'partner_blocked',
+            'description'   => $descText,
+            'ip_address'    => request()->ip(),
+            'user_agent'    => request()->userAgent(),
+        ]);
+
+        \App\Models\ActivityLog::record(
+            $admin,
+            'partner_blocked',
+            $descText,
+            ['target_user_id' => $user->id, 'role' => $user->role, 'warning_level' => $user->warning_level]
+        );
+
+        session()->flash('success', "Akun {$roleLabel} {$user->name} berhasil DIBLOKIR secara permanen.");
+    }
+
     public function removeFromGreylist($userId)
     {
         $user = User::findOrFail($userId);
@@ -254,6 +384,7 @@ class Greylist extends Component
             'warning_level' => 0,
             'latest_warning_message' => null,
             'latest_warning_at' => null,
+            'status' => 'active',
         ]);
 
         UserGreylistLog::create([
@@ -262,7 +393,7 @@ class Greylist extends Component
             'action' => 'greylist_remove',
             'warning_level' => 0,
             'reason' => 'Dipulihkan oleh Admin',
-            'message' => "Akun {$user->name} telah dipulihkan dan dihapus dari Daftar Abu-Abu.",
+            'message' => "Akun {$user->name} telah dipulihkan dan status normal kembali.",
         ]);
 
         \App\Models\ActivityLog::record(
@@ -293,7 +424,7 @@ class Greylist extends Component
 
         // Filter kota jika admin wilayah
         if (! $isSuperAdmin) {
-            $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
+            $managedCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
             if (!empty($managedCityIds)) {
                 $baseQuery->whereIn('city_id', $managedCityIds);
             } elseif ($admin && $admin->role === 'admin') {
@@ -347,7 +478,7 @@ class Greylist extends Component
                 });
 
             if (! $isSuperAdmin) {
-                $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
+                $managedCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
                 if (!empty($managedCityIds)) {
                     $candQuery->whereIn('city_id', $managedCityIds);
                 } elseif ($admin && $admin->role === 'admin') {

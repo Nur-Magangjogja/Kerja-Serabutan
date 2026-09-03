@@ -29,6 +29,10 @@ class Blocked extends Component
         'roleFilter' => ['except' => 'all'],
     ];
 
+    protected $listeners = [
+        'admin-city-changed' => '$refresh',
+    ];
+
     public function updatingSearch()
     {
         $this->resetPage();
@@ -87,6 +91,11 @@ class Blocked extends Component
 
         $user->update(['status' => 'blocked']);
 
+        \App\Models\PartnerOnlineState::where('user_id', $user->id)->update([
+            'matching_status' => \App\Models\PartnerOnlineState::STATUS_OFFLINE,
+            'searching_since' => null,
+        ]);
+
         $roleLabel = ($user->role === 'mitra') ? 'Mitra' : 'Customer';
         $descText = "Admin {$admin->name} memblokir akun {$roleLabel} {$user->name} ({$user->email}). Alasan: {$this->blockReason}";
 
@@ -133,6 +142,13 @@ class Blocked extends Component
         $newStatus = ($user->status === 'blocked') ? 'active' : 'blocked';
         $user->update(['status' => $newStatus]);
 
+        if ($newStatus === 'blocked') {
+            \App\Models\PartnerOnlineState::where('user_id', $user->id)->update([
+                'matching_status' => \App\Models\PartnerOnlineState::STATUS_OFFLINE,
+                'searching_since' => null,
+            ]);
+        }
+
         $actionText = ($newStatus === 'blocked') ? 'partner_blocked' : 'partner_unblocked';
         $descText = ($newStatus === 'blocked')
             ? "Admin " . ($admin->name ?? 'Admin') . " memblokir akun {$user->name} ({$user->email})"
@@ -167,7 +183,7 @@ class Blocked extends Component
         $query = User::where('status', 'blocked')->with('city')->latest();
 
         if (! $isSuperAdmin) {
-            $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
+            $managedCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
             if (!empty($managedCityIds)) {
                 $query->whereIn('city_id', $managedCityIds);
             } elseif ($admin && $admin->role === 'admin') {
@@ -198,7 +214,7 @@ class Blocked extends Component
                 ->with('city');
 
             if (!$isSuperAdmin) {
-                $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
+                $managedCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
                 if (!empty($managedCityIds)) {
                     $userQuery->whereIn('city_id', $managedCityIds);
                 } elseif ($admin && $admin->role === 'admin') {

@@ -18,12 +18,15 @@ class Index extends Component
 {
     public $selectedMonth = '';
     public $selectedCity = 'all';
+    protected $listeners = [
+        'admin-city-changed' => 'onAdminCityChanged',
+    ];
 
     public function mount()
     {
         // Default to current month (e.g. 2026-09)
         $this->selectedMonth = Carbon::today()->format('Y-m');
-        $this->selectedCity = 'all';
+        $this->selectedCity = auth()->user()?->getActiveAdminCityFilter() ?? 'all';
     }
 
     public function updatedSelectedMonth()
@@ -40,6 +43,19 @@ class Index extends Component
     public function setCityFilter(string $city)
     {
         $this->selectedCity = $city;
+        auth()->user()?->setActiveAdminCityFilter($city);
+        $this->dispatch('chart-refresh');
+        $this->dispatch('admin-city-changed', cityId: $city);
+    }
+
+    public function onAdminCityChanged($cityId = null)
+    {
+        $admin = auth()->user();
+        $targetCity = (string) ($cityId ?? ($admin ? $admin->getActiveAdminCityFilter() : 'all'));
+        if ($admin && $admin->role === 'admin') {
+            $admin->setActiveAdminCityFilter($targetCity);
+        }
+        $this->selectedCity = $targetCity;
         $this->dispatch('chart-refresh');
     }
 
@@ -84,19 +100,18 @@ class Index extends Component
         $managedCities = ($user && $user->role === 'admin') ? $user->getAdminCities() : collect();
 
         // Determine active city scope
-        if ($this->selectedCity !== 'all' && in_array((int) $this->selectedCity, $allowedCityIds, true)) {
-            $activeCityIds = [(int) $this->selectedCity];
-            $selectedCityModel = $managedCities->firstWhere('id', (int) $this->selectedCity);
-            $activeCityLabel = $selectedCityModel ? $selectedCityModel->name : 'Wilayah Terpilih';
+        if ($user && $user->role === 'admin') {
+            if ($this->selectedCity !== 'all' && in_array((int) $this->selectedCity, $allowedCityIds, true)) {
+                $activeCityIds = [(int) $this->selectedCity];
+                $activeCityLabel = $managedCities->firstWhere('id', (int) $this->selectedCity)?->name ?? 'Wilayah Terpilih';
+            } else {
+                $this->selectedCity = $user->getActiveAdminCityFilter();
+                $activeCityIds = $user->getEffectiveAdminCityIds();
+                $activeCityLabel = $user->active_admin_city_label;
+            }
         } else {
             $activeCityIds = $allowedCityIds;
-            if ($managedCities->count() > 1) {
-                $activeCityLabel = 'Semua Wilayah Saya (' . $managedCities->count() . ' Kota)';
-            } elseif ($managedCities->count() === 1) {
-                $activeCityLabel = $managedCities->first()->name;
-            } else {
-                $activeCityLabel = $user->city_name ?: 'Semua Wilayah';
-            }
+            $activeCityLabel = 'Semua Wilayah';
         }
 
         // 1. Build Available Months list (Current month + past 11 months)

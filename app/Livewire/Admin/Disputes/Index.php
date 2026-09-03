@@ -34,6 +34,10 @@ class Index extends Component
         'search' => ['except' => ''],
     ];
 
+    protected $listeners = [
+        'admin-city-changed' => '$refresh',
+    ];
+
     public function updatingSearch()
     {
         $this->resetPage();
@@ -152,7 +156,7 @@ class Index extends Component
 
         // City scoping for Regional Admins
         if (!$isSuperAdmin) {
-            $cityIds = $admin ? $admin->getAdminCityIds() : [];
+            $cityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
 
             if (!empty($cityIds)) {
                 $query->whereIn('city_id', $cityIds);

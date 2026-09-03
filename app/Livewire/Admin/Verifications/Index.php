@@ -25,7 +25,6 @@ class Index extends Component
     #[Url(history: true)]
     public $roleFilter = '';
 
-    #[Url(history: true)]
     public $cityFilter = '';
 
     public $showModal = false;
@@ -33,6 +32,18 @@ class Index extends Component
     public $showRejectModal = false;
     public $rejectReason = '';
     public $rejectingId = null;
+
+    protected $listeners = [
+        'admin-city-changed' => 'onAdminCityChanged',
+    ];
+
+    public function mount()
+    {
+        $authUser = auth()->user();
+        if ($authUser && $authUser->role === 'admin') {
+            $this->cityFilter = $authUser->getActiveAdminCityFilter();
+        }
+    }
 
     public function updatingSearch()
     {
@@ -52,6 +63,25 @@ class Index extends Component
     public function updatingCityFilter()
     {
         $this->resetPage();
+    }
+
+    public function updatedCityFilter()
+    {
+        $authUser = auth()->user();
+        if ($authUser && $authUser->role === 'admin') {
+            $authUser->setActiveAdminCityFilter($this->cityFilter);
+            $this->dispatch('admin-city-changed', cityId: $this->cityFilter);
+        }
+        $this->resetPage();
+    }
+
+    public function onAdminCityChanged($cityId = null)
+    {
+        $authUser = auth()->user();
+        if ($authUser && $authUser->role === 'admin') {
+            $this->cityFilter = $authUser->getActiveAdminCityFilter();
+            $this->resetPage();
+        }
     }
 
     public function updatingPerPage()
@@ -224,13 +254,10 @@ class Index extends Component
 
         // Strict city isolation: Admin only sees registrations from their assigned city / cities
         if (!$isSuperAdmin && $authUser && $authUser->role === 'admin') {
-            $adminCityIds = $authUser->getAdminCityIds();
-            if (!empty($adminCityIds)) {
-                if ($this->cityFilter !== '' && $this->cityFilter !== 'all' && in_array((int) $this->cityFilter, $adminCityIds, true)) {
-                    $query->where('city_id', (int) $this->cityFilter);
-                } else {
-                    $query->whereIn('city_id', $adminCityIds);
-                }
+            $this->cityFilter = $authUser->getActiveAdminCityFilter();
+            $effectiveCityIds = $authUser->getEffectiveAdminCityIds();
+            if (!empty($effectiveCityIds)) {
+                $query->whereIn('city_id', $effectiveCityIds);
             } else {
                 $query->whereRaw('1 = 0');
             }

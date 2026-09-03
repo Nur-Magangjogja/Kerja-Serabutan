@@ -318,9 +318,12 @@ class HelpMatchingService
         $helpLng = (float) ($help->longitude ?? 0);
 
         $statesQuery = PartnerOnlineState::eligibleForMatching($ttl)
+            ->whereNull('current_help_id')
             ->whereHas('user', function ($q) use ($help, $excludeIds) {
                 $q->where('role', 'mitra')
+                  ->where('status', 'active')
                   ->where('is_shadow_banned', false)
+                  ->where('warning_level', '<', 3)
                   ->whereNotIn('id', $excludeIds);
 
                 if ($help->city_id) {
@@ -469,6 +472,11 @@ class HelpMatchingService
             }
 
             // 2. Lock record PartnerOnlineState dan verifikasi mitra masih searching dengan heartbeat segar
+            if ($mitra->isShadowBanned() || $mitra->warning_level >= 3 || $mitra->status !== 'active') {
+                Log::warning("[HelpMatchingService] Cannot lock Mitra #{$mitra->id}: account is restricted (shadow_banned, SP3, or not active).");
+                return false;
+            }
+
             $state = PartnerOnlineState::where('user_id', $mitra->id)->lockForUpdate()->first();
 
             if (!$state || $state->matching_status !== PartnerOnlineState::STATUS_SEARCHING || !$state->isHeartbeatFresh($ttl)) {

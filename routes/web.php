@@ -109,8 +109,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::get('/withdraw', \App\Livewire\Customer\Withdraw\WithdrawForm::class)->name('withdraw.form');
         Route::get('/withdraw/history', \App\Livewire\Customer\Withdraw\WithdrawHistory::class)->name('withdraw.history');
 
-        // Top Up Saldo (Old Midtrans - kept for backward compatibility)
-        Route::get('/top-up', \App\Livewire\Customer\Topup\Index::class)->name('topup');
+        // Top Up Saldo (Old Midtrans - Nonaktif / Disabled)
+        // Route::get('/top-up', \App\Livewire\Customer\Topup\Index::class)->name('topup');
 
         // Chat (optional help id for opening detail directly)
         Route::get('/chat/{help?}', \App\Livewire\Customer\Chat\Index::class)->name('chat');
@@ -370,16 +370,16 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 });
 
 // ========================================
-// MIDTRANS PAYMENT ROUTES (Public - No Auth)
+// MIDTRANS PAYMENT ROUTES (Nonaktif / Disabled)
 // ========================================
-Route::prefix('topup')->name('topup.')->group(function () {
-    Route::get('/finish', [\App\Http\Controllers\TopupController::class, 'finish'])->name('finish');
-    Route::get('/unfinish', [\App\Http\Controllers\TopupController::class, 'unfinish'])->name('unfinish');
-    Route::get('/error', [\App\Http\Controllers\TopupController::class, 'error'])->name('error');
-    Route::get('/success', [\App\Http\Controllers\TopupController::class, 'success'])->name('success');
-    Route::post('/notification', [\App\Http\Controllers\TopupController::class, 'notification'])->name('notification');
-    Route::post('/client-callback', [\App\Http\Controllers\TopupController::class, 'clientCallback'])->name('client-callback');
-});
+// Route::prefix('topup')->name('topup.')->group(function () {
+//     Route::get('/finish', [\App\Http\Controllers\TopupController::class, 'finish'])->name('finish');
+//     Route::get('/unfinish', [\App\Http\Controllers\TopupController::class, 'unfinish'])->name('unfinish');
+//     Route::get('/error', [\App\Http\Controllers\TopupController::class, 'error'])->name('error');
+//     Route::get('/success', [\App\Http\Controllers\TopupController::class, 'success'])->name('success');
+//     Route::post('/notification', [\App\Http\Controllers\TopupController::class, 'notification'])->name('notification');
+//     Route::post('/client-callback', [\App\Http\Controllers\TopupController::class, 'clientCallback'])->name('client-callback');
+// });
 
 // Public callback endpoint used by payment gateway integrations for withdraw disbursements
 Route::post('/gateway/callback', [\App\Http\Controllers\WithdrawController::class, 'gatewayCallback'])->name('gateway.callback');

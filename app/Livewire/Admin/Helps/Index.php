@@ -19,11 +19,19 @@ class Index extends Component
     public $selectedHelpId = null;
     public $showDetailModal = false;
 
+    protected $listeners = [
+        'admin-city-changed' => 'onAdminCityChanged',
+    ];
+
     protected $queryString = [
         'search' => ['except' => ''],
         'statusFilter' => ['except' => ''],
-        'cityFilter' => ['except' => 'all'],
     ];
+
+    public function mount()
+    {
+        $this->cityFilter = auth()->user()?->getActiveAdminCityFilter() ?? 'all';
+    }
 
     public function updatedSearch()
     {
@@ -37,6 +45,8 @@ class Index extends Component
 
     public function updatedCityFilter()
     {
+        auth()->user()?->setActiveAdminCityFilter($this->cityFilter);
+        $this->dispatch('admin-city-changed', cityId: $this->cityFilter);
         $this->resetPage();
     }
 
@@ -49,6 +59,14 @@ class Index extends Component
     public function setCityFilter(string $city)
     {
         $this->cityFilter = $city;
+        auth()->user()?->setActiveAdminCityFilter($city);
+        $this->dispatch('admin-city-changed', cityId: $city);
+        $this->resetPage();
+    }
+
+    public function onAdminCityChanged($cityId = null)
+    {
+        $this->cityFilter = auth()->user()?->getActiveAdminCityFilter() ?? 'all';
         $this->resetPage();
     }
 
@@ -99,11 +117,11 @@ class Index extends Component
         // Multi-City Resolution
         $allowedCityIds = ($admin && $admin->role === 'admin') ? $admin->getAdminCityIds() : [];
         $managedCities = ($admin && $admin->role === 'admin') ? $admin->getAdminCities() : collect();
-
-        if ($this->cityFilter !== 'all' && in_array((int) $this->cityFilter, $allowedCityIds, true)) {
-            $activeCityIds = [(int) $this->cityFilter];
+        if ($admin && $admin->role === 'admin') {
+            $this->cityFilter = $admin->getActiveAdminCityFilter();
+            $activeCityIds = $admin->getEffectiveAdminCityIds();
         } else {
-            $activeCityIds = $allowedCityIds;
+            $activeCityIds = [];
         }
 
         // Base Query

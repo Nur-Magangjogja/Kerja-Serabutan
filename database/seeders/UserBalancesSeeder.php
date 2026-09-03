@@ -16,46 +16,81 @@ class UserBalancesSeeder extends Seeder
      */
     public function run(): void
     {
-        $customer = User::where('email', 'customer@sayabantu.com')->first();
-        $mitra    = User::where('email', 'mitra@sayabantu.com')->first();
+        $customers = User::where('role', 'customer')->get();
+        $mitraUsers = User::where('role', 'mitra')->get();
+        $primaryCustomer = User::where('email', 'customer@sayabantu.com')->first() ?? $customers->first();
+        $primaryMitra    = User::where('email', 'mitra@sayabantu.com')->first() ?? $mitraUsers->first();
 
         // ─────────────────────────────────────────────────────────────────────
-        // 1. TRANSAKSI AWAL CUSTOMER (Top-Up Saldo)
+        // 1. TRANSAKSI AWAL TOP-UP CUSTOMER
         // ─────────────────────────────────────────────────────────────────────
-        if ($customer) {
+        foreach ($customers as $cust) {
+            // Top-Up 1 (Deposit Utama Rp 1.000.000 via QRIS)
             BalanceTransaction::updateOrCreate(
                 [
-                    'user_id'  => $customer->id,
-                    'order_id' => 'TOPUP-CUST-SLM-001',
+                    'user_id'  => $cust->id,
+                    'order_id' => 'TOPUP-CUST-' . $cust->id . '-001',
                 ],
                 [
-                    'amount'         => 500000.00,
-                    'type'           => 'topup',
-                    'description'    => 'Top-Up Saldo Akun via QRIS Midtrans',
-                    'payment_method' => 'qris',
-                    'status'         => 'completed',
-                    'processed_at'   => now()->subDays(4),
-                    'created_at'     => now()->subDays(4),
+                    'amount'          => 1000000.00,
+                    'direction'       => 'credit',
+                    'admin_fee'       => 0.00,
+                    'total_payment'   => 1000000.00,
+                    'type'            => 'topup',
+                    'description'     => 'Top-Up Saldo Akun via QRIS',
+                    'payment_method'  => 'qris',
+                    'customer_name'   => $cust->name,
+                    'customer_email'  => $cust->email,
+                    'customer_phone'  => $cust->phone ?? '081234567890',
+                    'status'          => 'completed',
+                    'processed_at'    => now()->subDays(6),
+                    'created_at'      => now()->subDays(6),
                 ]
             );
 
+            // Top-Up 2 (Deposit Tambahan Rp 500.000 via QRIS untuk primary customer)
+            if ($primaryCustomer && $cust->id === $primaryCustomer->id) {
+                BalanceTransaction::updateOrCreate(
+                    [
+                        'user_id'  => $cust->id,
+                        'order_id' => 'TOPUP-CUST-' . $cust->id . '-002',
+                    ],
+                    [
+                        'amount'          => 500000.00,
+                        'direction'       => 'credit',
+                        'admin_fee'       => 0.00,
+                        'total_payment'   => 500000.00,
+                        'type'            => 'topup',
+                        'description'     => 'Top-Up Saldo Akun via QRIS',
+                        'payment_method'  => 'qris',
+                        'customer_name'   => $cust->name,
+                        'customer_email'  => $cust->email,
+                        'customer_phone'  => $cust->phone ?? '081234567890',
+                        'status'          => 'completed',
+                        'processed_at'    => now()->subDays(3),
+                        'created_at'      => now()->subDays(3),
+                    ]
+                );
+            }
+
             // Escrow lock untuk bantuan yang aktif
-            $activeHelps = Help::where('user_id', $customer->id)->whereIn('status', [Help::STATUS_MENUNGGU_MITRA, Help::STATUS_TAKEN])->get();
+            $activeHelps = Help::where('user_id', $cust->id)->whereIn('status', [Help::STATUS_MENUNGGU_MITRA, Help::STATUS_TAKEN])->get();
             foreach ($activeHelps as $h) {
                 $totalEscrow = (float) ($h->amount + $h->platform_fee_amount);
                 $escrowTx = BalanceTransaction::updateOrCreate(
                     [
-                        'user_id'      => $customer->id,
+                        'user_id'      => $cust->id,
                         'reference_id' => $h->id,
                         'type'         => 'escrow_lock',
                     ],
                     [
-                        'order_id'     => $h->order_id,
-                        'amount'       => $totalEscrow,
-                        'description'  => "Dana Ditahan untuk Permintaan Bantuan '{$h->title}' (Nilai Jasa: Rp " . number_format($h->amount, 0, ',', '.') . " + Biaya Layanan: Rp " . number_format($h->platform_fee_amount, 0, ',', '.') . ")",
-                        'status'       => 'completed',
-                        'processed_at' => now()->subDays(3),
-                        'created_at'   => now()->subDays(3),
+                        'order_id'       => $h->order_id,
+                        'amount'         => $totalEscrow,
+                        'direction'      => 'debit',
+                        'description'    => "Dana Ditahan untuk Permintaan Bantuan '{$h->title}' (Nilai Jasa: Rp " . number_format($h->amount, 0, ',', '.') . " + Biaya Layanan: Rp " . number_format($h->platform_fee_amount, 0, ',', '.') . ")",
+                        'status'         => 'completed',
+                        'processed_at'   => now()->subDays(3),
+                        'created_at'     => now()->subDays(3),
                     ]
                 );
 
@@ -69,21 +104,22 @@ class UserBalancesSeeder extends Seeder
         $completedHelps = Help::where('status', Help::STATUS_SELESAI)->get();
         foreach ($completedHelps as $h) {
             // Escrow Lock Customer
-            if ($customer) {
+            if ($h->user_id) {
                 $totalEscrow = (float) ($h->amount + $h->platform_fee_amount);
                 $escrowTx = BalanceTransaction::updateOrCreate(
                     [
-                        'user_id'      => $customer->id,
+                        'user_id'      => $h->user_id,
                         'reference_id' => $h->id,
                         'type'         => 'escrow_lock',
                     ],
                     [
-                        'order_id'     => $h->order_id,
-                        'amount'       => $totalEscrow,
-                        'description'  => "Dana Ditahan untuk Permintaan Bantuan '{$h->title}' (Nilai Jasa: Rp " . number_format($h->amount, 0, ',', '.') . " + Biaya Layanan: Rp " . number_format($h->platform_fee_amount, 0, ',', '.') . ")",
-                        'status'       => 'completed',
-                        'processed_at' => $h->taken_at ?? now()->subDays(2),
-                        'created_at'   => $h->taken_at ?? now()->subDays(2),
+                        'order_id'       => $h->order_id,
+                        'amount'         => $totalEscrow,
+                        'direction'      => 'debit',
+                        'description'    => "Dana Ditahan untuk Permintaan Bantuan '{$h->title}' (Nilai Jasa: Rp " . number_format($h->amount, 0, ',', '.') . " + Biaya Layanan: Rp " . number_format($h->platform_fee_amount, 0, ',', '.') . ")",
+                        'status'         => 'completed',
+                        'processed_at'   => $h->taken_at ?? now()->subDays(2),
+                        'created_at'     => $h->taken_at ?? now()->subDays(2),
                     ]
                 );
 
@@ -91,20 +127,21 @@ class UserBalancesSeeder extends Seeder
             }
 
             // Net Earning Mitra
-            if ($mitra && $h->mitra_earning > 0) {
+            if ($h->mitra_id && $h->mitra_earning > 0) {
                 BalanceTransaction::updateOrCreate(
                     [
-                        'user_id'      => $mitra->id,
+                        'user_id'      => $h->mitra_id,
                         'reference_id' => $h->id,
                         'type'         => 'earning',
                     ],
                     [
-                        'order_id'     => $h->order_id,
-                        'amount'       => $h->mitra_earning,
-                        'description'  => "Pendapatan Bantuan '{$h->title}'",
-                        'status'       => 'completed',
-                        'processed_at' => $h->completed_at ?? now()->subDays(1),
-                        'created_at'   => $h->completed_at ?? now()->subDays(1),
+                        'order_id'       => $h->order_id,
+                        'amount'         => $h->mitra_earning,
+                        'direction'      => 'credit',
+                        'description'    => "Pendapatan Bantuan '{$h->title}'",
+                        'status'         => 'completed',
+                        'processed_at'   => $h->completed_at ?? now()->subDays(1),
+                        'created_at'     => $h->completed_at ?? now()->subDays(1),
                     ]
                 );
             }
@@ -118,12 +155,13 @@ class UserBalancesSeeder extends Seeder
                         'type'         => 'platform_fee',
                     ],
                     [
-                        'order_id'     => $h->order_id,
-                        'amount'       => $h->platform_fee_amount,
-                        'description'  => "Biaya Layanan Platform Rp " . number_format($h->platform_fee_amount, 0, ',', '.') . " dari Bantuan '{$h->title}'",
-                        'status'       => 'completed',
-                        'processed_at' => $h->completed_at ?? now()->subDays(1),
-                        'created_at'   => $h->completed_at ?? now()->subDays(1),
+                        'order_id'       => $h->order_id,
+                        'amount'         => $h->platform_fee_amount,
+                        'direction'      => 'credit',
+                        'description'    => "Biaya Layanan Platform Rp " . number_format($h->platform_fee_amount, 0, ',', '.') . " dari Bantuan '{$h->title}'",
+                        'status'         => 'completed',
+                        'processed_at'   => $h->completed_at ?? now()->subDays(1),
+                        'created_at'     => $h->completed_at ?? now()->subDays(1),
                     ]
                 );
             }
@@ -144,18 +182,7 @@ class UserBalancesSeeder extends Seeder
                     ->whereRaw("LOWER(TRIM(COALESCE(status, ''))) = 'completed'")
                     ->sum('amount');
 
-                $balance = (float) $credits - (float) $debits;
-
-                // Berikan saldo dasar awal yang wajar jika belum ada transaksi
-                if ($balance <= 0) {
-                    if ($user->isCustomer()) {
-                        $balance = 500000.00; // Rp 500.000
-                    } elseif ($user->isMitra()) {
-                        $balance = 200000.00; // Rp 200.000
-                    } else {
-                        $balance = 0.00;
-                    }
-                }
+                $balance = max(0.00, (float) $credits - (float) $debits);
 
                 UserBalance::updateOrCreate(
                     ['user_id' => $user->id],
@@ -164,6 +191,6 @@ class UserBalancesSeeder extends Seeder
             }
         });
 
-        $this->command->info('UserBalancesSeeder berhasil menyinkronkan saldo dan transaksi keuangan Sleman.');
+        $this->command->info('UserBalancesSeeder berhasil menyinkronkan saldo dan transaksi keuangan.');
     }
 }

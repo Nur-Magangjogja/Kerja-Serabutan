@@ -322,6 +322,83 @@ class User extends Authenticatable implements MustVerifyEmail
         return $cities->pluck('name')->join(', ');
     }
 
+    /**
+     * Ambil filter wilayah aktif admin dari sesi.
+     * Mengembalikan 'all' atau ID kota (string angka).
+     */
+    public function getActiveAdminCityFilter(): string
+    {
+        $cachedCity = cache()->get("admin_active_city_{$this->id}");
+        $sessionCity = session('admin_active_city_filter');
+
+        $active = $sessionCity ?? $cachedCity ?? 'all';
+        if ($active === 'all' || empty($active)) {
+            return 'all';
+        }
+
+        $allowedIds = $this->getAdminCityIds();
+        if (in_array((int) $active, $allowedIds, true)) {
+            return (string) $active;
+        }
+
+        return 'all';
+    }
+
+    /**
+     * Simpan filter wilayah aktif admin ke sesi dan cache.
+     */
+    public function setActiveAdminCityFilter(string $cityFilter): void
+    {
+        $allowedIds = $this->getAdminCityIds();
+
+        if ($cityFilter === 'all' || empty($cityFilter)) {
+            session(['admin_active_city_filter' => 'all']);
+            cache()->put("admin_active_city_{$this->id}", 'all', now()->addDays(7));
+        } elseif (in_array((int) $cityFilter, $allowedIds, true)) {
+            session(['admin_active_city_filter' => (string) $cityFilter]);
+            cache()->put("admin_active_city_{$this->id}", (string) $cityFilter, now()->addDays(7));
+        } else {
+            session(['admin_active_city_filter' => 'all']);
+            cache()->put("admin_active_city_{$this->id}", 'all', now()->addDays(7));
+        }
+
+        try {
+            session()->save();
+        } catch (\Throwable $e) {
+            // Silently ignore if session is not yet started in CLI
+        }
+    }
+
+    /**
+     * Ambil array ID kota yang sedang aktif berlaku untuk query data.
+     * Jika admin memfilter 1 kota tertentu, kembalikan [city_id].
+     * Jika 'all', kembalikan seluruh kota wewenangnya.
+     */
+    public function getEffectiveAdminCityIds(): array
+    {
+        $active = $this->getActiveAdminCityFilter();
+        if ($active !== 'all') {
+            return [(int) $active];
+        }
+
+        return $this->getAdminCityIds();
+    }
+
+    /**
+     * Label teks wilayah yang sedang dipantau saat ini.
+     */
+    public function getActiveAdminCityLabelAttribute(): string
+    {
+        $active = $this->getActiveAdminCityFilter();
+        if ($active === 'all') {
+            $count = count($this->getAdminCityIds());
+            return $count > 1 ? "Semua Wilayah ({$count} Kota)" : ($this->admin_city_names ?: 'Semua Wilayah');
+        }
+
+        $city = City::find((int) $active);
+        return $city ? $city->name : 'Semua Wilayah';
+    }
+
     public function helps()
     {
         return $this->hasMany(Help::class);

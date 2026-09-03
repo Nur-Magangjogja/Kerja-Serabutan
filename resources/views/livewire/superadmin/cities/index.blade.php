@@ -95,8 +95,12 @@
                         <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">
+                <tbody>
                     @forelse($cities as $city)
+                    {{-- tbody per kota agar Alpine scope benar (x-show pada district rows bisa akses open) --}}
+                    </tbody>
+                    <tbody x-data="{ open: false }" class="divide-y divide-gray-50 dark:divide-gray-700/50">
+                    {{-- Alpine accordion per baris kota --}}
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-150">
                         <td class="px-4 py-3.5 text-xs font-medium text-gray-400 dark:text-gray-500">#{{ $city->id }}</td>
                         <td class="px-4 py-3.5">
@@ -105,9 +109,26 @@
                                     <svg class="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                 </div>
                                 <div>
+                                    @if(!empty($loadDistricts) && $city->relationLoaded('districts') && $city->districts->isNotEmpty())
+                                    {{-- Nama kota bisa diklik untuk expand kecamatan --}}
+                                    <button type="button" @click="open = !open"
+                                        class="flex items-center gap-1.5 font-semibold text-gray-800 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 transition-colors text-left">
+                                        <span>{{ $city->name }}</span>
+                                        <svg class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200"
+                                            :class="open ? 'rotate-180' : ''"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500">
+                                        {{ $city->districts->count() }} kecamatan
+                                        <span x-show="!open" class="text-primary-500 text-[10px]">• klik untuk lihat</span>
+                                    </p>
+                                    @else
                                     <p class="font-semibold text-gray-800 dark:text-gray-100">{{ $city->name }}</p>
                                     @if(!empty($loadDistricts) && $city->relationLoaded('districts'))
                                     <p class="text-xs text-gray-400 dark:text-gray-500">{{ $city->districts->count() }} kecamatan</p>
+                                    @endif
                                     @endif
                                 </div>
                             </div>
@@ -182,16 +203,32 @@
                             </div>
                         </td>
                     </tr>
-                    {{-- District sub-rows --}}
+                    {{-- District sub-rows (accordion, expand saat nama kota diklik) --}}
                     @if(!empty($loadDistricts) && $city->relationLoaded('districts') && $city->districts->isNotEmpty())
                         @foreach($city->districts as $district)
-                        <tr class="bg-gray-50/80 dark:bg-gray-700/20 border-l-2 border-primary-200 dark:border-primary-800">
+                        <tr x-show="open" x-transition:enter="transition-all ease-out duration-200"
+                            x-transition:enter-start="opacity-0 -translate-y-1"
+                            x-transition:enter-end="opacity-100 translate-y-0"
+                            x-transition:leave="transition-all ease-in duration-150"
+                            x-transition:leave-start="opacity-100 translate-y-0"
+                            x-transition:leave-end="opacity-0 -translate-y-1"
+                            class="bg-primary-50/50 dark:bg-primary-900/10 border-l-2 border-primary-300 dark:border-primary-700">
                             <td></td>
-                            <td class="px-4 py-2 pl-14 text-sm text-gray-600 dark:text-gray-300">↳ {{ $district->name }}</td>
+                            <td class="px-4 py-2 pl-14">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-primary-400 dark:text-primary-500 text-xs">↳</span>
+                                    <span class="text-sm text-gray-700 dark:text-gray-200 font-medium">{{ $district->name }}</span>
+                                </div>
+                            </td>
                             <td class="px-4 py-2 text-xs text-gray-400 dark:text-gray-500">Kecamatan</td>
                             <td></td>
-                            <td class="px-4 py-2 text-xs {{ $district->is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400' }}">
-                                {{ $district->is_active ? 'Aktif' : 'Nonaktif' }}
+                            <td></td>
+                            <td class="px-4 py-2">
+                                <span class="inline-flex items-center gap-1 text-xs font-medium
+                                    {{ $district->is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400' }}">
+                                    <span class="w-1.5 h-1.5 rounded-full {{ $district->is_active ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
+                                    {{ $district->is_active ? 'Aktif' : 'Nonaktif' }}
+                                </span>
                             </td>
                             <td class="px-4 py-2 text-xs text-gray-400 dark:text-gray-500 hidden md:table-cell">{{ optional($district->created_at)->format('d M Y') }}</td>
                             <td></td>
@@ -199,8 +236,10 @@
                         @endforeach
                     @endif
                     @empty
+                    </tbody>
+                    <tbody>
                     <tr>
-                        <td colspan="7" class="px-4 py-16 text-center">
+                        <td colspan="8" class="px-4 py-16 text-center">
                             <div class="flex flex-col items-center">
                                 <div class="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3">
                                     <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
@@ -381,20 +420,12 @@
                 </button>
             </div>
             <div class="p-6">
+                {{-- canvas dijaga wire:ignore agar tidak di-reset Livewire --}}
                 <div wire:ignore>
-                    <canvas id="cityUsersChart" height="160"></canvas>
+                    <canvas id="cityUsersChart" style="height:200px;"></canvas>
                 </div>
-                <div id="cityChartData" class="hidden"
-                    data-labels='@json($chartLabels)'
-                    data-customers='@json($chartCustomerData)'
-                    data-mitras='@json($chartMitraData)'>
-                </div>
-                <div id="cityChartDebug" class="hidden"></div>
-                <script>
-                    try {
-                        if (typeof tryInitFromDom === 'function') { tryInitFromDom(); }
-                    } catch (err) { console.error('[city-chart] inline error', err); }
-                </script>
+                {{-- Grafik dirender oleh event listener 'city-chart-ready' di script global bawah --}}
+
             </div>
             <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 flex justify-end">
                 <button type="button" wire:click.prevent="closeDetailModal"
@@ -423,7 +454,7 @@
                 <div>
                     <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Status Override</label>
                     <select wire:model="overrideStatus"
-                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        class="w-full mt-1 px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700/80 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
                         <option value="open">OPEN (Pendaftaran Mitra Terbuka Bebas)</option>
                         <option value="limited">LIMITED (Kapasitas Terbatas)</option>
                         <option value="closed">CLOSED (Pendaftaran Ditutup / Masuk Antrean)</option>
@@ -432,15 +463,15 @@
 
                 <div>
                     <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Durasi Override (Jam)</label>
-                    <input type="number" wire:model="overrideHours" min="0" max="720"
-                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <p class="text-[11px] text-gray-400 mt-1">Isi 0 untuk berlaku tanpa batas waktu (sampai dihapus).</p>
+                    <input type="number" wire:model="overrideHours" min="0" max="720" placeholder="0"
+                        class="w-full mt-1 px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700/80 text-gray-800 dark:text-gray-100 placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
+                    <p class="text-[11px] text-gray-400 dark:text-gray-400 mt-1">Isi 0 untuk berlaku tanpa batas waktu (sampai dihapus).</p>
                 </div>
 
                 <div>
                     <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Catatan / Alasan Override</label>
-                    <textarea wire:model="overrideNotes" rows="2" placeholder="Contoh: Event festival kota, butuh supply mitra tambahan..."
-                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
+                    <textarea wire:model="overrideNotes" rows="3" placeholder="Contoh: Kebutuhan mitra tambahan event kota..."
+                        class="w-full mt-1 px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700/80 text-gray-800 dark:text-gray-100 placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none"></textarea>
                 </div>
 
                 <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
@@ -464,8 +495,7 @@
     </div>
     @endif
 
-    {{-- Chart.js scripts --}}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {{-- Chart.js sudah dimuat oleh layout superadmin.blade.php --}}
     <script>
     (function () {
         window.cityUsersChartInstance = null;
@@ -535,21 +565,21 @@
         }
         window.tryInitFromDom = tryInitFromDom;
 
-        const handler = () => tryInitFromDom();
-        if (window.Livewire && typeof window.Livewire.hook === 'function') window.Livewire.hook('message.processed', handler);
-        if (window.Livewire && typeof window.Livewire.on === 'function') {
-            window.Livewire.on('cityDetailReady', (labels, customerData, mitraData) => {
-                function tryInit() {
-                    const el = document.getElementById('cityUsersChart');
-                    if (!el) return false;
-                    createChartInstance(el, labels || [], customerData || [], mitraData || []); return true;
-                }
-                if (!tryInit()) {
-                    let i = 0;
-                    const t = setInterval(() => { if (tryInit() || ++i >= 15) clearInterval(t); }, 120);
-                }
+        // Livewire 3: dispatch('city-chart-ready', ...) menggunakan window event
+        window.addEventListener('city-chart-ready', function(e) {
+            const detail = e.detail || {};
+            // Livewire 3 wraps data in array: [{ labels, customers, mitras }]
+            const data = Array.isArray(detail) ? detail[0] : detail;
+            const labels       = data.labels    || [];
+            const customerData = data.customers || [];
+            const mitraData    = data.mitras    || [];
+
+            // Tunggu DOM selesai diupdate Livewire, lalu render
+            requestAnimationFrame(function() {
+                const el = document.getElementById('cityUsersChart');
+                if (el) createChartInstance(el, labels, customerData, mitraData);
             });
-        }
+        });
 
         window.addEventListener('theme-changed', function(e) {
             const dark = e.detail?.isDark ?? document.documentElement.classList.contains('dark');

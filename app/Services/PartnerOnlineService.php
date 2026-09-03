@@ -25,10 +25,33 @@ class PartnerOnlineService
             ]
         );
 
-        // Self-Healing Guard: Jika status BUSY tapi tidak memiliki active task di DB, pulihkan ke ONLINE/SEARCHING
-        if ($state->matching_status === PartnerOnlineState::STATUS_BUSY) {
-            $hasActiveTask = \App\Models\Help::where('mitra_id', $userId)->active()->exists();
-            if (!$hasActiveTask) {
+        // Guard: Jika Mitra sedang dalam pembatasan (Shadow Ban / SP 3 / Blocked), paksa status ke OFFLINE
+        $user = User::find($userId);
+        if ($user && ($user->isShadowBanned() || $user->warning_level >= 3 || $user->status === 'blocked')) {
+            if ($state->matching_status !== PartnerOnlineState::STATUS_OFFLINE) {
+                $state->update([
+                    'matching_status' => PartnerOnlineState::STATUS_OFFLINE,
+                    'searching_since' => null,
+                ]);
+                $state->refresh();
+            }
+            return $state;
+        }
+
+        // Self-Healing & Bidirectional Sync Guard:
+        $activeTask = \App\Models\Help::where('mitra_id', $userId)->active()->first();
+        if ($activeTask) {
+            if ($state->matching_status !== PartnerOnlineState::STATUS_BUSY || $state->current_help_id != $activeTask->id) {
+                $state->update([
+                    'matching_status' => PartnerOnlineState::STATUS_BUSY,
+                    'current_help_id' => $activeTask->id,
+                    'searching_since' => null,
+                ]);
+                $state->refresh();
+            }
+        } else {
+            // Jika status BUSY tapi tidak memiliki active task di DB, pulihkan ke ONLINE
+            if ($state->matching_status === PartnerOnlineState::STATUS_BUSY) {
                 $this->releaseBusy($userId, $state->current_help_id ?? 0);
                 $state->refresh();
             }
@@ -57,16 +80,27 @@ class PartnerOnlineService
                 ]);
             }
 
-            // Jika status BUSY tapi tidak ada active task, pulihkan otomatis
-            if ($state->matching_status === PartnerOnlineState::STATUS_BUSY) {
-                $hasActiveTask = \App\Models\Help::where('mitra_id', $mitra->id)->active()->exists();
-                if (!$hasActiveTask) {
-                    $state->matching_status = PartnerOnlineState::STATUS_ONLINE;
-                    $state->current_help_id = null;
-                } else {
-                    throw new \RuntimeException('Tidak dapat mengubah status saat sedang mengerjakan bantuan.');
-                }
-            } elseif ($state->matching_status === PartnerOnlineState::STATUS_OFFER_PENDING) {
+            // Guard: Validasi sanksi moderasi
+            if ($mitra->isShadowBanned() || $mitra->warning_level >= 3 || $mitra->status === 'blocked') {
+                $state->update([
+                    'matching_status' => PartnerOnlineState::STATUS_OFFLINE,
+                    'searching_since' => null,
+                ]);
+                throw new \RuntimeException('Akun Anda sedang dalam pembatasan fitur (Shadow Ban / SP 3) dan tidak diizinkan untuk online.');
+            }
+
+            // Guard: Jika memiliki active task, kunci status ke BUSY
+            $activeTask = \App\Models\Help::where('mitra_id', $mitra->id)->active()->first();
+            if ($activeTask) {
+                $state->update([
+                    'matching_status' => PartnerOnlineState::STATUS_BUSY,
+                    'current_help_id' => $activeTask->id,
+                    'searching_since' => null,
+                ]);
+                throw new \RuntimeException('Tidak dapat mengubah status saat sedang mengerjakan bantuan aktif.');
+            }
+
+            if ($state->matching_status === PartnerOnlineState::STATUS_OFFER_PENDING) {
                 throw new \RuntimeException('Tidak dapat mengubah status saat sedang menerima tawaran.');
             }
 
@@ -102,16 +136,27 @@ class PartnerOnlineService
                 ]);
             }
 
-            // Jika status BUSY tapi tidak ada active task, pulihkan otomatis
-            if ($state->matching_status === PartnerOnlineState::STATUS_BUSY) {
-                $hasActiveTask = \App\Models\Help::where('mitra_id', $mitra->id)->active()->exists();
-                if (!$hasActiveTask) {
-                    $state->matching_status = PartnerOnlineState::STATUS_ONLINE;
-                    $state->current_help_id = null;
-                } else {
-                    throw new \RuntimeException('Tidak dapat mencari order baru saat sedang mengerjakan bantuan.');
-                }
-            } elseif ($state->matching_status === PartnerOnlineState::STATUS_OFFER_PENDING) {
+            // Guard: Validasi sanksi moderasi
+            if ($mitra->isShadowBanned() || $mitra->warning_level >= 3 || $mitra->status === 'blocked') {
+                $state->update([
+                    'matching_status' => PartnerOnlineState::STATUS_OFFLINE,
+                    'searching_since' => null,
+                ]);
+                throw new \RuntimeException('Akun Anda sedang dalam pembatasan fitur (Shadow Ban / SP 3) dan tidak diizinkan mencari order bantuan.');
+            }
+
+            // Guard: Jika memiliki active task, kunci status ke BUSY
+            $activeTask = \App\Models\Help::where('mitra_id', $mitra->id)->active()->first();
+            if ($activeTask) {
+                $state->update([
+                    'matching_status' => PartnerOnlineState::STATUS_BUSY,
+                    'current_help_id' => $activeTask->id,
+                    'searching_since' => null,
+                ]);
+                throw new \RuntimeException('Tidak dapat mencari order baru saat sedang mengerjakan bantuan aktif.');
+            }
+
+            if ($state->matching_status === PartnerOnlineState::STATUS_OFFER_PENDING) {
                 throw new \RuntimeException('Tidak dapat mencari order baru saat sedang menerima tawaran.');
             }
 
@@ -205,6 +250,17 @@ class PartnerOnlineService
                 'latitude'        => $lat,
                 'longitude'       => $lng,
             ]);
+            return $state;
+        }
+
+        // Guard: Jika sedang dibatasi/shadow banned, paksa tetap OFFLINE
+        if ($mitra->isShadowBanned() || $mitra->warning_level >= 3 || $mitra->status === 'blocked') {
+            if ($state->matching_status !== PartnerOnlineState::STATUS_OFFLINE) {
+                $state->update([
+                    'matching_status' => PartnerOnlineState::STATUS_OFFLINE,
+                    'searching_since' => null,
+                ]);
+            }
             return $state;
         }
 

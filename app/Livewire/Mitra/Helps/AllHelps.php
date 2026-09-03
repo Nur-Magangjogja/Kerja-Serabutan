@@ -48,8 +48,9 @@ class AllHelps extends Component
      */
     public function takeHelp($helpId, $latitude = null, $longitude = null)
     {
-        if (auth()->user()?->isShadowBanned()) {
-            session()->flash('error', 'Akun Anda saat ini dibatasi dari mengambil tugas bantuan karena dalam peninjauan moderasi.');
+        $user = auth()->user();
+        if ($user && ($user->isShadowBanned() || $user->warning_level >= 3 || $user->status === 'blocked')) {
+            session()->flash('error', 'Akun Anda saat ini dibatasi dari mengambil tugas bantuan karena dalam pembatasan moderasi / sanksi.');
             return;
         }
 
@@ -89,8 +90,8 @@ class AllHelps extends Component
         $user            = auth()->user();
         $locationService = app(LocationTrackingService::class);
 
-        // Jika Mitra terkena shadow ban, jangan tampilkan daftar pekerjaan
-        if ($user && $user->isShadowBanned()) {
+        // Jika Mitra terkena shadow ban atau sanksi SP 3 / blocked, jangan tampilkan daftar pekerjaan
+        if ($user && ($user->isShadowBanned() || $user->warning_level >= 3 || $user->status === 'blocked')) {
             $emptyPaginator = new \Illuminate\Pagination\LengthAwarePaginator(
                 collect(),
                 0,

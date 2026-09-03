@@ -16,6 +16,7 @@ class Index extends Component
     public $search = '';
     public $status = 'all';
     public $roleFilter = 'all'; // all, mitra, customer
+    public $cityFilter = 'all'; // all or city_id
 
     // Approval Modal
     public $showApproveModal = false;
@@ -33,6 +34,18 @@ class Index extends Component
         'roleFilter' => ['except' => 'all'],
     ];
 
+    protected $listeners = [
+        'admin-city-changed' => 'onAdminCityChanged',
+    ];
+
+    public function mount()
+    {
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $this->cityFilter = $admin->getActiveAdminCityFilter();
+        }
+    }
+
     public function updatingSearch()
     {
         $this->resetPage();
@@ -48,10 +61,54 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function updatingCityFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedCityFilter()
+    {
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $admin->setActiveAdminCityFilter($this->cityFilter);
+            $this->dispatch('admin-city-changed', cityId: $this->cityFilter);
+        }
+        $this->resetPage();
+    }
+
+    public function onAdminCityChanged($cityId = null)
+    {
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $this->cityFilter = $admin->getActiveAdminCityFilter();
+            $this->resetPage();
+        }
+    }
+
+    protected function isAuthorizedForWithdraw(WithdrawRequest $withdraw): bool
+    {
+        $admin = auth()->user();
+        if (!$admin) return false;
+        if (in_array($admin->role, ['super_admin', 'superadmin'])) return true;
+        if ($admin->role === 'admin') {
+            $allowedCityIds = $admin->getAdminCityIds();
+            $userCityId = $withdraw->user?->city_id;
+            return !empty($userCityId) && in_array((int) $userCityId, $allowedCityIds, true);
+        }
+        return false;
+    }
+
     public function openApproveModal($id)
     {
         $this->selectedWithdrawId = $id;
-        $this->selectedWithdraw = WithdrawRequest::with(['user.balance'])->findOrFail($id);
+        $withdraw = WithdrawRequest::with(['user.balance', 'user.city'])->findOrFail($id);
+        
+        if (!$this->isAuthorizedForWithdraw($withdraw)) {
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah Anda.');
+            return;
+        }
+
+        $this->selectedWithdraw = $withdraw;
         $this->proofPhoto = null;
         $this->showApproveModal = true;
     }
@@ -70,7 +127,14 @@ class Index extends Component
             'proofPhoto.image' => 'File bukti harus berupa gambar.',
         ]);
 
-        $withdraw = WithdrawRequest::findOrFail($this->selectedWithdrawId);
+        $withdraw = WithdrawRequest::with(['user'])->findOrFail($this->selectedWithdrawId);
+
+        if (!$this->isAuthorizedForWithdraw($withdraw)) {
+            $this->showApproveModal = false;
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah Anda.');
+            return;
+        }
+
         $photoPath = $this->proofPhoto->store('withdraws/proofs', 'public');
 
         $withdraw->update([
@@ -103,7 +167,14 @@ class Index extends Component
     public function openRejectModal($id)
     {
         $this->selectedWithdrawId = $id;
-        $this->selectedWithdraw = WithdrawRequest::with(['user.balance'])->findOrFail($id);
+        $withdraw = WithdrawRequest::with(['user.balance', 'user.city'])->findOrFail($id);
+
+        if (!$this->isAuthorizedForWithdraw($withdraw)) {
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah Anda.');
+            return;
+        }
+
+        $this->selectedWithdraw = $withdraw;
         $this->rejectReason = '';
         $this->showRejectModal = true;
     }
@@ -122,7 +193,14 @@ class Index extends Component
             'rejectReason.min' => 'Alasan penolakan minimal 5 karakter.',
         ]);
 
-        $withdraw = WithdrawRequest::findOrFail($this->selectedWithdrawId);
+        $withdraw = WithdrawRequest::with(['user'])->findOrFail($this->selectedWithdrawId);
+
+        if (!$this->isAuthorizedForWithdraw($withdraw)) {
+            $this->showRejectModal = false;
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah Anda.');
+            return;
+        }
+
         $user = $withdraw->user;
         $refundAmount = (float) ($withdraw->amount + ($withdraw->admin_fee ?? 0));
 
@@ -165,15 +243,25 @@ class Index extends Component
         $admin = auth()->user();
         $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
 
+        // Ambil daftar kota untuk filter
+        if ($isSuperAdmin) {
+            $cities = \App\Models\City::orderBy('name')->get();
+        } else {
+            $cities = $admin ? $admin->getAdminCities() : collect();
+        }
+
         $query = WithdrawRequest::with(['user.city'])->latest();
 
         if (! $isSuperAdmin) {
-            $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
-            if (!empty($managedCityIds)) {
-                $query->whereHas('user', fn($q) => $q->whereIn('city_id', $managedCityIds));
+            $this->cityFilter = $admin ? $admin->getActiveAdminCityFilter() : 'all';
+            $effectiveCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
+            if (!empty($effectiveCityIds)) {
+                $query->whereHas('user', fn($q) => $q->whereIn('city_id', $effectiveCityIds));
             } elseif ($admin && $admin->role === 'admin') {
                 $query->whereRaw('1 = 0');
             }
+        } elseif ($this->cityFilter !== 'all') {
+            $query->whereHas('user', fn($q) => $q->where('city_id', (int) $this->cityFilter));
         }
 
         if ($this->status !== 'all') {
@@ -190,7 +278,11 @@ class Index extends Component
                 $q->where('bank_code', 'like', "%{$s}%")
                   ->orWhere('account_number', 'like', "%{$s}%")
                   ->orWhere('account_name', 'like', "%{$s}%")
-                  ->orWhereHas('user', fn($sq) => $sq->where('name', 'like', "%{$s}%")->orWhere('email', 'like', "%{$s}%"));
+                  ->orWhereHas('user', function ($sq) use ($s) {
+                      $sq->where('name', 'like', "%{$s}%")
+                        ->orWhere('email', 'like', "%{$s}%")
+                        ->orWhereHas('city', fn($cq) => $cq->where('name', 'like', "%{$s}%"));
+                  });
             });
         }
 
@@ -198,7 +290,9 @@ class Index extends Component
         $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 
         return view('livewire.admin.withdraws.index', [
-            'withdraws' => $withdraws,
+            'withdraws'    => $withdraws,
+            'cities'       => $cities,
+            'isSuperAdmin' => $isSuperAdmin,
         ])->layout($layout);
     }
 }

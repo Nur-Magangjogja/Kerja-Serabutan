@@ -28,10 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'approved' => \App\Http\Middleware\EnsureAccountApproved::class,
         ]);
 
-        // Exclude Midtrans webhook from CSRF verification
-        $middleware->validateCsrfTokens(except: [
-            'topup/notification',
-        ]);
+        // Exclude Midtrans webhook from CSRF verification (Nonaktif / Disabled)
+        // $middleware->validateCsrfTokens(except: [
+        //     'topup/notification',
+        // ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

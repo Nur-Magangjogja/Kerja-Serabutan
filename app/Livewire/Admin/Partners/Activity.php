@@ -46,13 +46,15 @@ class Activity extends Component
         'selectedUserId'     => ['except' => null],
         'userSearch'         => ['except' => ''],
         'userRoleFilter'     => ['except' => 'all'],
-        'userCityId'         => ['except' => 'all'],
         'search'             => ['except' => ''],
         'roleFilter'         => ['except' => 'all'],
         'activityTypeFilter' => ['except' => 'all'],
-        'cityId'             => ['except' => 'all'],
         'dateFrom'           => ['except' => ''],
         'dateTo'             => ['except' => ''],
+    ];
+
+    protected $listeners = [
+        'admin-city-changed' => '$refresh',
     ];
 
     public function mount()
@@ -169,8 +171,12 @@ class Activity extends Component
             ->withCount('partnerActivities as total_activities')
             ->withMax('partnerActivities as last_activity_at', 'created_at');
 
-        if (!$isSuperAdmin && $admin->city_id) {
-            $userQuery->where('city_id', $admin->city_id);
+        $effectiveCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
+
+        if (!$isSuperAdmin && !empty($effectiveCityIds)) {
+            $userQuery->whereIn('city_id', $effectiveCityIds);
+        } elseif (!$isSuperAdmin && $admin && $admin->role === 'admin') {
+            $userQuery->whereRaw('1 = 0');
         }
 
         if ($this->userRoleFilter !== 'all') {
@@ -209,12 +215,13 @@ class Activity extends Component
         })
         ->latest();
 
-        if (!$isSuperAdmin && $admin->city_id) {
-            $adminCityId = $admin->city_id;
-            $activityQuery->where(function ($q) use ($adminCityId) {
-                $q->whereHas('user', fn($uq) => $uq->where('city_id', $adminCityId))
-                  ->orWhereHas('help', fn($hq) => $hq->where('city_id', $adminCityId));
+        if (!$isSuperAdmin && !empty($effectiveCityIds)) {
+            $activityQuery->where(function ($q) use ($effectiveCityIds) {
+                $q->whereHas('user', fn($uq) => $uq->whereIn('city_id', $effectiveCityIds))
+                  ->orWhereHas('help', fn($hq) => $hq->whereIn('city_id', $effectiveCityIds));
             });
+        } elseif (!$isSuperAdmin && $admin && $admin->role === 'admin') {
+            $activityQuery->whereRaw('1 = 0');
         }
 
         if ($this->selectedUserId) {

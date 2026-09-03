@@ -306,8 +306,13 @@ class Index extends Component
         }
 
         $this->showDetailModal = true;
-        // Do not call emit/dispatch here to avoid compatibility issues with Livewire versions.
-        // The client will read the prepared arrays from the rendered DOM after Livewire updates.
+
+        // Dispatch browser event so JS can render the chart after Livewire updates the DOM
+        $this->dispatch('city-chart-ready',
+            labels: $this->chartLabels,
+            customers: $this->chartCustomerData,
+            mitras: $this->chartMitraData,
+        );
     }
 
     public function closeDetailModal()

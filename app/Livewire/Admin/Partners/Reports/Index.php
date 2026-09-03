@@ -25,6 +25,10 @@ class Index extends Component
         'search' => ['except' => ''],
     ];
 
+    protected $listeners = [
+        'admin-city-changed' => '$refresh',
+    ];
+
     public function updatingSearch()
     {
         $this->resetPage();
@@ -53,7 +57,7 @@ class Index extends Component
         $statsQuery = PartnerReport::query();
 
         if (! $isSuperAdmin) {
-            $cityIds = $admin ? $admin->getAdminCityIds() : [];
+            $cityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
 
             if (!empty($cityIds)) {
                 $statsQuery->where(function ($q) use ($cityIds) {

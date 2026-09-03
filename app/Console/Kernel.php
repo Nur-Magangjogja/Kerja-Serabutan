@@ -14,7 +14,7 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         \App\Console\Commands\RecalculateUserBalances::class,
-        \App\Console\Commands\MidtransRecheck::class,
+        // \App\Console\Commands\MidtransRecheck::class,
         \App\Console\Commands\BalanceSyncCheck::class,
         \App\Console\Commands\AutoConfirmHelps::class,
         \App\Console\Commands\AutoCancelExpiredHelps::class,
@@ -26,8 +26,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // Recheck pending Midtrans topups regularly to handle missed webhooks / user not returning
-        $schedule->command('midtrans:recheck --all')->everyFiveMinutes();
+        // Recheck pending Midtrans topups (Nonaktif / Disabled)
+        // $schedule->command('midtrans:recheck --all')->everyFiveMinutes();
 
         // Periodic balance synchronization check (auto-fix small deltas)
         $schedule->command('balances:sync-check --threshold=1000000')->everyFiveMinutes();

@@ -363,6 +363,9 @@
                             </button>
                         </div>
 
+                        <!-- Multi-Territory Switcher for Admin -->
+                        <livewire:admin.territory-switcher />
+
                         <!-- Notifications -->
                         <livewire:admin.notifications.dropdown />
 

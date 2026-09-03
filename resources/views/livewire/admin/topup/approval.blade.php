@@ -10,14 +10,6 @@
             <div>
                 <div class="flex items-center gap-2.5 flex-wrap">
                     <h1 class="text-xl font-bold text-gray-900 dark:text-white">Manajemen & Approval Top-Up Saldo</h1>
-                    @if($adminCityName)
-                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-primary-50 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 shadow-2xs">
-                            <svg class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
-                            </svg>
-                            Wilayah: {{ $adminCityName }}
-                        </span>
-                    @endif
                 </div>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Verifikasi, approve, dan kelola pembatalan (fraud/salah barcode) request top-up customer wilayah Anda</p>
             </div>
@@ -108,12 +100,25 @@
                 </button>
             </div>
 
-            <div class="relative w-full md:w-72">
-                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama, email, kode request..."
-                    class="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 outline-none transition">
-                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+            <div class="flex items-center gap-3 w-full md:w-auto flex-wrap">
+                @if(isset($cities) && $cities->count() > 1)
+                    <div>
+                        <select wire:model.live="cityFilter"
+                            class="py-2 pl-3 pr-8 text-xs font-bold rounded-xl bg-primary-50/50 dark:bg-primary-950/40 border border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-300 focus:ring-2 focus:ring-primary-500 outline-none transition cursor-pointer shadow-2xs">
+                            <option value="all">Semua Wilayah Saya ({{ $cities->count() }} Kota)</option>
+                            @foreach($cities as $c)
+                                <option value="{{ $c->id }}">{{ $c->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
+                <div class="relative w-full md:w-64">
+                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama, email, kode request..."
+                        class="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 outline-none transition">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
             </div>
         </div>
 
@@ -125,6 +130,7 @@
                         <tr class="bg-gray-50/80 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">#</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Customer</th>
+                            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Wilayah</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">Kode Request</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden sm:table-cell">Total Bayar</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">No. Pengguna</th>
@@ -147,9 +153,24 @@
                                         <div class="min-w-0">
                                             <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{{ $transaction->user->name ?? ($transaction->customer_name ?? 'User') }}</p>
                                             <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $transaction->customer_email ?? ($transaction->user->email ?? '—') }}</p>
-                                            <p class="text-[11px] text-gray-400 dark:text-gray-500">{{ $transaction->user->city_name ?? (is_object($transaction->user->city ?? null) ? $transaction->user->city->name : ($transaction->user->city ?? '—')) }}</p>
                                         </div>
                                     </div>
+                                </td>
+                                <td class="px-4 py-3.5 whitespace-nowrap">
+                                    @php
+                                        $txUser = $transaction->user;
+                                        $txCityName = $txUser?->city_name ?? (is_object($txUser?->city) ? $txUser?->city?->name : ($txUser?->city ?? null));
+                                    @endphp
+                                    @if($txCityName)
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
+                                            <svg class="w-3.5 h-3.5 text-primary-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                                            </svg>
+                                            <span>{{ $txCityName }}</span>
+                                        </span>
+                                    @else
+                                        <span class="text-gray-400 text-xs italic">Semua Wilayah</span>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-3.5 hidden md:table-cell">
                                     <code class="text-xs bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded font-mono">{{ $transaction->request_code ?? '#' . $transaction->id }}</code>
