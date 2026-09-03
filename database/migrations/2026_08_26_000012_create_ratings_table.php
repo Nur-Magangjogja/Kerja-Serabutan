@@ -21,6 +21,7 @@ return new class extends Migration
             $table->text('review')->nullable();
             $table->timestamps();
 
+            $table->unique(['help_id', 'rater_id', 'ratee_id'], 'unique_help_rating');
             $table->index('help_id');
             $table->index('rater_id');
             $table->index('ratee_id');

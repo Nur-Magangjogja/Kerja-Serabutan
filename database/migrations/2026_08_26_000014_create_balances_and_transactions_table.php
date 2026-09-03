@@ -20,9 +20,11 @@ return new class extends Migration
 
         Schema::create('balance_transactions', function (Blueprint $table) {
             $table->id();
+            $table->string('idempotency_key', 120)->nullable()->unique();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('order_id')->nullable()->index();
             $table->string('reference_id')->nullable()->index();
+            $table->string('reference_type', 50)->nullable()->index();
             $table->string('request_code')->nullable();
             $table->enum('type', [
                 'topup',
@@ -39,6 +41,7 @@ return new class extends Migration
                 'pg_fee_withdraw'
             ])->index();
             $table->decimal('amount', 15, 2);
+            $table->enum('direction', ['credit', 'debit'])->nullable()->index();
             $table->decimal('admin_fee', 15, 2)->default(0.00);
             $table->decimal('total_payment', 15, 2)->default(0.00);
             $table->string('payment_method')->nullable();

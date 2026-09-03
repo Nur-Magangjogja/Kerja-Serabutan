@@ -35,6 +35,12 @@ return new class extends Migration
             $table->string('equipment_provided')->nullable();
             $table->string('status')->default('menunggu_mitra');
 
+            // Escrow, Payment, Rating & Dispatch states
+            $table->string('escrow_status', 50)->default('uninitialized')->index();
+            $table->enum('payment_status', ['unpaid', 'paid', 'partially_refunded', 'refunded', 'failed'])->default('unpaid')->index();
+            $table->string('rating_status', 50)->default('pending')->index();
+            $table->enum('dispatch_mode', ['seeking', 'offered', 'pool', 'assigned', 'closed'])->default('seeking')->index();
+
             // Business & Commission Model (v2)
             $table->unsignedTinyInteger('model_version')->default(1);
             $table->decimal('platform_commission_rate', 5, 2)->default(0);
@@ -72,6 +78,17 @@ return new class extends Migration
             $table->timestamp('service_started_at')->nullable();
             $table->timestamp('service_completed_at')->nullable();
             $table->timestamp('completed_at')->nullable();
+            $table->timestamp('confirmation_deadline_at')->nullable()->index();
+            $table->timestamp('auto_confirmed_at')->nullable();
+            $table->timestamp('assigned_at')->nullable();
+            $table->timestamp('pool_opened_at')->nullable();
+
+            // Dispute tracking
+            $table->timestamp('disputed_at')->nullable()->index();
+            $table->text('dispute_reason')->nullable();
+            $table->timestamp('dispute_resolved_at')->nullable();
+            $table->foreignId('dispute_resolved_by')->nullable()->constrained('users')->nullOnDelete();
+
             $table->timestamps();
 
             // Performance Indexes

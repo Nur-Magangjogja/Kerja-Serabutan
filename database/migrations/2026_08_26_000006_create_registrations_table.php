@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->string('nik', 16)->nullable();
             $table->string('full_name')->nullable();
+            $table->string('phone', 30)->nullable();
             $table->string('place_of_birth')->nullable();
             $table->date('date_of_birth')->nullable();
             $table->enum('gender', ['Laki-laki', 'Perempuan'])->nullable();
