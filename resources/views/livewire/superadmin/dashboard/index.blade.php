@@ -15,7 +15,7 @@
     {{-- ===== Welcome Header ===== --}}
     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Selamat Datang, {{ auth()->user()->name ?? 'Super Admin' }} 👋</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Dashboard, {{ auth()->user()->name ?? 'Super Admin' }} </h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ now()->isoFormat('dddd, D MMMM Y') }} &mdash; Berikut ringkasan sistem saat ini.</p>
         </div>
         <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs font-medium text-emerald-700 dark:text-emerald-400">

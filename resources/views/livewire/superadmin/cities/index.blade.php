@@ -406,29 +406,243 @@
     </div>
     @endif
 
-    {{-- ===== Detail City Modal (Chart) ===== --}}
+    {{-- ===== Detail City Modal (Chart & Statistik) ===== --}}
     @if($showDetailModal)
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-                <div>
-                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Detail Kota: {{ $detailCityName }}</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Grafik pengguna aktif 30 hari terakhir</p>
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+         x-data="{
+            chart: null,
+            initChart() {
+                this.$nextTick(() => {
+                    this.render(@js($chartLabels), @js($chartCustomerData), @js($chartMitraData));
+                });
+            },
+            render(labels, customerData, mitraData) {
+                const canvas = this.$refs.chartCanvas;
+                if (!canvas) return;
+
+                const isDark = document.documentElement.classList.contains('dark');
+
+                // Destroy existing chart on this canvas or in Alpine state
+                if (typeof Chart !== 'undefined' && Chart.getChart) {
+                    const existing = Chart.getChart(canvas);
+                    if (existing) {
+                        try { existing.destroy(); } catch(e) {}
+                    }
+                }
+                if (this.chart) {
+                    try { this.chart.destroy(); } catch(e) {}
+                    this.chart = null;
+                }
+
+                const ctx = canvas.getContext('2d');
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels || [],
+                        datasets: [
+                            {
+                                label: 'Customer (Aktif)',
+                                data: customerData || [],
+                                borderColor: '#0ea5e9',
+                                backgroundColor: 'rgba(14,165,233,0.08)',
+                                borderWidth: 2,
+                                pointBackgroundColor: '#0ea5e9',
+                                pointRadius: (labels && labels.length > 30) ? 1 : 3,
+                                pointHoverRadius: 5,
+                                tension: 0.35,
+                                fill: true
+                            },
+                            {
+                                label: 'Mitra (Aktif)',
+                                data: mitraData || [],
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16,185,129,0.08)',
+                                borderWidth: 2,
+                                pointBackgroundColor: '#10b981',
+                                pointRadius: (labels && labels.length > 30) ? 1 : 3,
+                                pointHoverRadius: 5,
+                                tension: 0.35,
+                                fill: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: isDark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                                titleColor: isDark ? '#f3f4f6' : '#111827',
+                                bodyColor: isDark ? '#e5e7eb' : '#374151',
+                                borderColor: isDark ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 1)',
+                                borderWidth: 1,
+                                padding: 10,
+                                cornerRadius: 8,
+                                displayColors: true,
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    color: isDark ? '#9ca3af' : '#6b7280',
+                                    font: { size: 10 },
+                                    maxTicksLimit: 15
+                                },
+                                grid: {
+                                    color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: isDark ? '#9ca3af' : '#6b7280',
+                                    font: { size: 11 },
+                                    precision: 0
+                                },
+                                grid: {
+                                    color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+            cleanup() {
+                if (this.chart) {
+                    try { this.chart.destroy(); } catch(e) {}
+                    this.chart = null;
+                }
+            }
+         }"
+         x-init="initChart()"
+         @city-chart-ready.window="
+            const payload = Array.isArray($event.detail) ? $event.detail[0] : $event.detail;
+            if (payload) {
+                render(payload.labels || [], payload.customers || [], payload.mitras || []);
+            }
+         "
+         @city-chart-closed.window="cleanup()"
+         @theme-changed.window="
+            if (chart) {
+                chart.destroy();
+                initChart();
+            }
+         ">
+        <div class="w-full max-w-4xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200">
+            {{-- Modal Header --}}
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ $detailCityName }}</h3>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold {{ ($detailStats['is_active'] ?? true) ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' }}">
+                                {{ ($detailStats['is_active'] ?? true) ? 'Aktif' : 'Nonaktif' }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Provinsi {{ $detailProvince }} • Metrik & Pertumbuhan Pengguna</p>
+                    </div>
                 </div>
-                <button type="button" wire:click.prevent="closeDetailModal" class="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <button type="button" wire:click="closeDetailModal" class="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            <div class="p-6">
-                {{-- canvas dijaga wire:ignore agar tidak di-reset Livewire --}}
-                <div wire:ignore>
-                    <canvas id="cityUsersChart" style="height:200px;"></canvas>
-                </div>
-                {{-- Grafik dirender oleh event listener 'city-chart-ready' di script global bawah --}}
 
+            <div class="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+                {{-- Quick Summary Stats Cards --}}
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {{-- Total Users --}}
+                    <div class="p-3.5 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-100 dark:border-gray-700/60">
+                        <span class="text-[11px] font-medium text-gray-500 dark:text-gray-400 block mb-1">Total Pengguna</span>
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-lg font-bold text-gray-900 dark:text-white">{{ number_format($detailStats['total_users'] ?? 0) }}</span>
+                            <span class="text-[10px] text-gray-400">user</span>
+                        </div>
+                    </div>
+
+                    {{-- Customer Aktif --}}
+                    <div class="p-3.5 bg-sky-50/60 dark:bg-sky-950/20 rounded-xl border border-sky-100 dark:border-sky-900/40">
+                        <span class="text-[11px] font-medium text-sky-700 dark:text-sky-300 block mb-1">Customer Aktif</span>
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-lg font-bold text-sky-700 dark:text-sky-300">{{ number_format($detailStats['customers'] ?? 0) }}</span>
+                            <span class="text-[10px] text-sky-500">orang</span>
+                        </div>
+                    </div>
+
+                    {{-- Mitra Aktif --}}
+                    <div class="p-3.5 bg-emerald-50/60 dark:bg-emerald-950/20 rounded-xl border border-emerald-100 dark:border-emerald-900/40">
+                        <span class="text-[11px] font-medium text-emerald-700 dark:text-emerald-300 block mb-1">Mitra Aktif</span>
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-lg font-bold text-emerald-700 dark:text-emerald-300">{{ number_format($detailStats['mitras'] ?? 0) }}</span>
+                            <span class="text-[10px] text-emerald-500">orang</span>
+                        </div>
+                    </div>
+
+                    {{-- Kapasitas & Kecamatan --}}
+                    <div class="p-3.5 bg-indigo-50/60 dark:bg-indigo-950/20 rounded-xl border border-indigo-100 dark:border-indigo-900/40">
+                        <span class="text-[11px] font-medium text-indigo-700 dark:text-indigo-300 block mb-1">Kapasitas & Wilayah</span>
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase
+                                {{ ($detailStats['capacity_status'] ?? 'open') === 'open' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300' : (($detailStats['capacity_status'] ?? '') === 'limited' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300') }}">
+                                {{ $detailStats['capacity_status'] ?? 'OPEN' }}
+                            </span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">• {{ $detailStats['districts_count'] ?? 0 }} Kec</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Chart Card --}}
+                <div class="bg-gray-50/70 dark:bg-gray-700/30 rounded-xl p-4 border border-gray-100 dark:border-gray-700 relative">
+                    {{-- Chart Header & Timeframe Selector --}}
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100">Grafik Pengguna Baru</h4>
+                            <div class="flex items-center gap-3 mt-1 text-xs">
+                                <span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> Customer
+                                </span>
+                                <span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Mitra
+                                </span>
+                            </div>
+                        </div>
+
+                        {{-- Time Range Tabs --}}
+                        <div class="flex items-center p-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-xs">
+                            @foreach([7 => '7 Hari', 14 => '14 Hari', 30 => '30 Hari', 90 => '90 Hari'] as $days => $label)
+                            <button type="button" wire:click="setChartDays({{ $days }})"
+                                class="px-2.5 py-1 text-xs font-semibold rounded-md transition-all duration-150
+                                {{ $chartDays === $days ? 'bg-primary-600 text-white shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
+                                {{ $label }}
+                            </button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    {{-- Chart Canvas Container with wire:loading overlay --}}
+                    <div class="relative w-full" style="height: 230px;">
+                        <div wire:loading wire:target="setChartDays" class="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-[1px] flex items-center justify-center rounded-lg z-10">
+                            <div class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-700 shadow-md rounded-lg border border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-700 dark:text-gray-200">
+                                <svg class="w-4 h-4 animate-spin text-primary-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                                Memuat grafik...
+                            </div>
+                        </div>
+                        <canvas x-ref="chartCanvas" id="cityUsersChart" class="w-full h-full"></canvas>
+                    </div>
+                </div>
             </div>
-            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 flex justify-end">
-                <button type="button" wire:click.prevent="closeDetailModal"
+
+            {{-- Modal Footer --}}
+            <div class="px-6 py-3.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/20 flex items-center justify-between">
+                <span class="text-xs text-gray-400 dark:text-gray-500">Data dimuat langsung secara on-demand per kota</span>
+                <button type="button" wire:click="closeDetailModal"
                     class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     Tutup
                 </button>
@@ -494,103 +708,4 @@
         </div>
     </div>
     @endif
-
-    {{-- Chart.js sudah dimuat oleh layout superadmin.blade.php --}}
-    <script>
-    (function () {
-        window.cityUsersChartInstance = null;
-
-        function createChartInstance(el, labels, customerData, mitraData) {
-            const isDark = document.documentElement.classList.contains('dark');
-
-            if (window.cityUsersChartInstance && window.cityUsersChartInstance.ctx && document.getElementById('cityUsersChart')) {
-                window.cityUsersChartInstance.data.labels = labels;
-                if (window.cityUsersChartInstance.data.datasets && window.cityUsersChartInstance.data.datasets.length >= 2) {
-                    window.cityUsersChartInstance.data.datasets[0].data = customerData;
-                    window.cityUsersChartInstance.data.datasets[1].data = mitraData;
-                }
-                if (window.cityUsersChartInstance.options && window.cityUsersChartInstance.options.scales) {
-                    if (window.cityUsersChartInstance.options.scales.x && window.cityUsersChartInstance.options.scales.x.ticks) {
-                        window.cityUsersChartInstance.options.scales.x.ticks.color = isDark ? '#9ca3af' : '#6b7280';
-                    }
-                    if (window.cityUsersChartInstance.options.scales.y && window.cityUsersChartInstance.options.scales.y.ticks) {
-                        window.cityUsersChartInstance.options.scales.y.ticks.color = isDark ? '#9ca3af' : '#6b7280';
-                    }
-                }
-                window.cityUsersChartInstance.update('none');
-                return;
-            }
-
-            const ctx = el.getContext('2d');
-            if (typeof Chart !== 'undefined' && Chart.getChart) {
-                const existing = Chart.getChart(el) || Chart.getChart('cityUsersChart');
-                if (existing) {
-                    try { existing.destroy(); } catch (e) {}
-                }
-            }
-            if (window.cityUsersChartInstance) {
-                try { window.cityUsersChartInstance.destroy(); } catch (e) {}
-                window.cityUsersChartInstance = null;
-            }
-            window.cityUsersChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Customer (Aktif)', data: customerData, borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.08)', tension: 0.3, fill: true },
-                        { label: 'Mitra (Aktif)', data: mitraData, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)', tension: 0.3, fill: true }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        x: { ticks: { color: isDark ? '#9ca3af' : '#6b7280' }, grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' } },
-                        y: { beginAtZero: true, ticks: { color: isDark ? '#9ca3af' : '#6b7280' }, grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' } }
-                    }
-                }
-            });
-        }
-
-        function tryInitFromDom() {
-            const dataEl = document.getElementById('cityChartData');
-            const el = document.getElementById('cityUsersChart');
-            if (!dataEl || !el) return false;
-            try {
-                const labels = JSON.parse(dataEl.getAttribute('data-labels') || '[]');
-                const customerData = JSON.parse(dataEl.getAttribute('data-customers') || '[]');
-                const mitraData = JSON.parse(dataEl.getAttribute('data-mitras') || '[]');
-                if (typeof Chart !== 'undefined') { createChartInstance(el, labels, customerData, mitraData); return true; }
-            } catch (err) { console.error('[city-chart]', err); }
-            return false;
-        }
-        window.tryInitFromDom = tryInitFromDom;
-
-        // Livewire 3: dispatch('city-chart-ready', ...) menggunakan window event
-        window.addEventListener('city-chart-ready', function(e) {
-            const detail = e.detail || {};
-            // Livewire 3 wraps data in array: [{ labels, customers, mitras }]
-            const data = Array.isArray(detail) ? detail[0] : detail;
-            const labels       = data.labels    || [];
-            const customerData = data.customers || [];
-            const mitraData    = data.mitras    || [];
-
-            // Tunggu DOM selesai diupdate Livewire, lalu render
-            requestAnimationFrame(function() {
-                const el = document.getElementById('cityUsersChart');
-                if (el) createChartInstance(el, labels, customerData, mitraData);
-            });
-        });
-
-        window.addEventListener('theme-changed', function(e) {
-            const dark = e.detail?.isDark ?? document.documentElement.classList.contains('dark');
-            if (window.cityUsersChartInstance && window.cityUsersChartInstance.options && window.cityUsersChartInstance.options.scales) {
-                window.cityUsersChartInstance.options.scales.x.ticks.color = dark ? '#9ca3af' : '#6b7280';
-                window.cityUsersChartInstance.options.scales.y.ticks.color = dark ? '#9ca3af' : '#6b7280';
-                window.cityUsersChartInstance.options.scales.x.grid.color = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-                window.cityUsersChartInstance.options.scales.y.grid.color = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-                window.cityUsersChartInstance.update();
-            }
-        });
-    })();
-    </script>
 </div>

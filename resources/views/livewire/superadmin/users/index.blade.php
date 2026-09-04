@@ -239,140 +239,220 @@
 
             {{-- Body --}}
             <div class="p-5 sm:p-6 overflow-y-auto flex-1 space-y-5">
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                    {{-- Kolom Kiri: Informasi Akun & Identitas (7 cols) --}}
-                    <div class="lg:col-span-7 space-y-4">
-                        {{-- Identitas Utama --}}
+                @php
+                    $isStaff = in_array($selectedUser->role, ['admin', 'super_admin']);
+                @endphp
+
+                @if($isStaff)
+                    {{-- Layout Khusus Admin & Super Admin (Tanpa Dokumen KTP/Selfie) --}}
+                    <div class="space-y-4">
+                        {{-- Data Pribadi & Kontak --}}
                         <div class="bg-gray-50/70 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 sm:p-5 space-y-3.5">
                             <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                Data Pribadi & Kontak
+                                Data Akun & Kontak {{ $selectedUser->role === 'super_admin' ? 'Super Admin' : 'Admin' }}
                             </h4>
                             
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600">
-                                    <span class="text-gray-400 block text-[10px]">Nomor NIK KTP</span>
-                                    <span class="font-bold font-mono text-gray-900 dark:text-gray-100 text-sm block mt-0.5">{{ $selectedUser->nik ?: 'Belum diisi' }}</span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                <div class="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600">
+                                    <span class="text-gray-400 block text-[10px]">Peran Sistem</span>
+                                    <span class="font-bold text-gray-900 dark:text-gray-100 text-xs sm:text-sm block mt-0.5">{{ $selectedUser->role === 'super_admin' ? 'Super Admin' : 'Admin Wilayah' }}</span>
                                 </div>
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600">
+                                <div class="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600">
                                     <span class="text-gray-400 block text-[10px]">No. HP / WhatsApp</span>
                                     <span class="font-semibold text-gray-800 dark:text-gray-200 text-xs sm:text-sm block mt-0.5">{{ $selectedUser->phone ?: '—' }}</span>
                                 </div>
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600">
+                                <div class="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600">
                                     <span class="text-gray-400 block text-[10px]">Jenis Kelamin</span>
-                                    <span class="font-semibold text-gray-800 dark:text-gray-200 block mt-0.5">{{ $selectedUser->gender ?: '—' }}</span>
+                                    <span class="font-semibold text-gray-800 dark:text-gray-200 text-xs sm:text-sm block mt-0.5">{{ $selectedUser->gender ?: '—' }}</span>
                                 </div>
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600">
+                                <div class="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600">
                                     <span class="text-gray-400 block text-[10px]">Status Akun</span>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border mt-0.5 {{ $statusColors[$selectedUser->status] ?? 'bg-gray-100 text-gray-700' }}">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border mt-1 {{ $statusColors[$selectedUser->status] ?? 'bg-gray-100 text-gray-700' }}">
                                         {{ $selectedUser->status === 'blocked' ? 'Diblokir' : ($selectedUser->status === 'inactive' ? 'Nonaktif' : 'Aktif') }}
                                     </span>
                                 </div>
                             </div>
 
-                            <div class="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600 space-y-1">
-                                <span class="text-gray-400 block text-[10px]">Alamat Lengkap</span>
-                                <p class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200 leading-relaxed">{{ $selectedUser->full_address }}</p>
+                            <div class="bg-white dark:bg-gray-700 p-3.5 rounded-xl border border-gray-100 dark:border-gray-600 space-y-1">
+                                <span class="text-gray-400 block text-[10px]">Alamat Domisili</span>
+                                <p class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200 leading-relaxed">{{ $selectedUser->full_address ?: ($selectedUser->address ?: 'Belum ada data alamat yang diisi.') }}</p>
                             </div>
                         </div>
 
-                        {{-- Metadata Akun --}}
+                        {{-- Metadata Aktivitas --}}
                         <div class="bg-gray-50/70 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 sm:p-5 space-y-2.5">
                             <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                Informasi Aktivitas
+                                Informasi Aktivitas & Waktu
                             </h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                                <div class="p-2 bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                <div class="p-3 bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600">
                                     <span class="text-gray-400 block text-[10px]">Waktu Terdaftar</span>
-                                    <span class="font-medium text-gray-800 dark:text-gray-200">{{ optional($selectedUser->created_at)?->translatedFormat('d M Y, H:i') ?? '—' }} WIB</span>
+                                    <span class="font-medium text-gray-800 dark:text-gray-200 text-xs sm:text-sm block mt-0.5">{{ optional($selectedUser->created_at)?->translatedFormat('d M Y, H:i') ?? '—' }} WIB</span>
                                 </div>
-                                <div class="p-2 bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600">
+                                <div class="p-3 bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600">
                                     <span class="text-gray-400 block text-[10px]">Aktivitas Terakhir</span>
-                                    <span class="font-medium text-gray-800 dark:text-gray-200 truncate block">{{ $selectedUser->last_activity_at ? $selectedUser->last_activity_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Belum ada aktivitas' }}</span>
+                                    <span class="font-medium text-gray-800 dark:text-gray-200 text-xs sm:text-sm block mt-0.5 truncate">{{ $selectedUser->last_activity_at ? $selectedUser->last_activity_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Belum ada aktivitas' }}</span>
                                 </div>
                             </div>
                         </div>
 
-                        @if($selectedUser->role === 'admin' && $selectedUser->managedCities && $selectedUser->managedCities->count() > 0)
-                        <div class="bg-gray-50/70 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 space-y-2">
-                            <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kota yang Dikelola</h4>
-                            <div class="flex flex-wrap gap-1.5">
-                                @foreach($selectedUser->managedCities as $mc)
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800">{{ $mc->name }}</span>
-                                @endforeach
+                        @if($selectedUser->role === 'admin')
+                        <div class="bg-gray-50/70 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 sm:p-5 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    Wilayah Kota yang Dikelola
+                                </h4>
+                                <span class="text-xs font-semibold text-primary-600 dark:text-primary-400">
+                                    {{ $selectedUser->managedCities ? $selectedUser->managedCities->count() : ($selectedUser->city ? 1 : 0) }} Kota
+                                </span>
                             </div>
+                            @if($selectedUser->managedCities && $selectedUser->managedCities->count() > 0)
+                                <div class="flex flex-wrap gap-2 pt-1">
+                                    @foreach($selectedUser->managedCities as $mc)
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600 shadow-2xs">
+                                        <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+                                        {{ $mc->name }}
+                                        @if($mc->province)
+                                            <span class="text-[10px] text-gray-400 font-normal">({{ $mc->province }})</span>
+                                        @endif
+                                    </span>
+                                    @endforeach
+                                </div>
+                            @elseif($selectedUser->city || $selectedUser->city_id)
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600 shadow-2xs">
+                                    <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+                                    {{ $selectedUser->city_name ?? (is_object($selectedUser->city) ? $selectedUser->city->name : $selectedUser->city) }}
+                                </span>
+                            @else
+                                <p class="text-xs text-gray-400 italic">Belum ada kota yang ditugaskan ke admin ini.</p>
+                            @endif
                         </div>
                         @endif
                     </div>
-
-                    {{-- Kolom Kanan: Dokumen KTP & Verifikasi (5 cols) --}}
-                    <div class="lg:col-span-5 space-y-4">
-                        {{-- Kartu Foto KTP --}}
-                        <div class="bg-gray-50/70 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 sm:p-5 space-y-3">
-                            <div class="flex items-center justify-between">
+                @else
+                    {{-- Layout Pengguna Customer & Mitra (Dengan Dokumen KTP & Selfie) --}}
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                        {{-- Kolom Kiri: Informasi Akun & Identitas (7 cols) --}}
+                        <div class="lg:col-span-7 space-y-4">
+                            {{-- Identitas Utama --}}
+                            <div class="bg-gray-50/70 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 sm:p-5 space-y-3.5">
                                 <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <span>🪪</span> Foto e-KTP
+                                    <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                    Data Pribadi & Kontak
                                 </h4>
-                                @if($selectedUser->verified)
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
-                                        ✓ Terverifikasi
-                                    </span>
+                                
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                    <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600">
+                                        <span class="text-gray-400 block text-[10px]">Nomor NIK KTP</span>
+                                        <span class="font-bold font-mono text-gray-900 dark:text-gray-100 text-sm block mt-0.5">{{ $selectedUser->nik ?: 'Belum diisi' }}</span>
+                                    </div>
+                                    <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600">
+                                        <span class="text-gray-400 block text-[10px]">No. HP / WhatsApp</span>
+                                        <span class="font-semibold text-gray-800 dark:text-gray-200 text-xs sm:text-sm block mt-0.5">{{ $selectedUser->phone ?: '—' }}</span>
+                                    </div>
+                                    <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600">
+                                        <span class="text-gray-400 block text-[10px]">Jenis Kelamin</span>
+                                        <span class="font-semibold text-gray-800 dark:text-gray-200 block mt-0.5">{{ $selectedUser->gender ?: '—' }}</span>
+                                    </div>
+                                    <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600">
+                                        <span class="text-gray-400 block text-[10px]">Status Akun</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border mt-0.5 {{ $statusColors[$selectedUser->status] ?? 'bg-gray-100 text-gray-700' }}">
+                                            {{ $selectedUser->status === 'blocked' ? 'Diblokir' : ($selectedUser->status === 'inactive' ? 'Nonaktif' : 'Aktif') }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600 space-y-1">
+                                    <span class="text-gray-400 block text-[10px]">Alamat Lengkap</span>
+                                    <p class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200 leading-relaxed">{{ $selectedUser->full_address }}</p>
+                                </div>
+                            </div>
+
+                            {{-- Metadata Akun --}}
+                            <div class="bg-gray-50/70 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 sm:p-5 space-y-2.5">
+                                <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    Informasi Aktivitas
+                                </h4>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                    <div class="p-2 bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600">
+                                        <span class="text-gray-400 block text-[10px]">Waktu Terdaftar</span>
+                                        <span class="font-medium text-gray-800 dark:text-gray-200">{{ optional($selectedUser->created_at)?->translatedFormat('d M Y, H:i') ?? '—' }} WIB</span>
+                                    </div>
+                                    <div class="p-2 bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600">
+                                        <span class="text-gray-400 block text-[10px]">Aktivitas Terakhir</span>
+                                        <span class="font-medium text-gray-800 dark:text-gray-200 truncate block">{{ $selectedUser->last_activity_at ? $selectedUser->last_activity_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Belum ada aktivitas' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Kolom Kanan: Dokumen KTP & Verifikasi (5 cols) --}}
+                        <div class="lg:col-span-5 space-y-4">
+                            {{-- Kartu Foto KTP --}}
+                            <div class="bg-gray-50/70 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 sm:p-5 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        <span>🪪</span> Foto e-KTP
+                                    </h4>
+                                    @if($selectedUser->verified)
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                                            ✓ Terverifikasi
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                                            Belum Verifikasi
+                                        </span>
+                                    @endif
+                                </div>
+
+                                @if($selectedUser->ktp_url)
+                                    <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-900/10 dark:bg-gray-900/40 shadow-xs">
+                                        <img src="{{ $selectedUser->ktp_url }}" alt="Dokumen KTP {{ $selectedUser->name }}" class="w-full h-44 object-cover object-center">
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs pt-1">
+                                        <a href="{{ $selectedUser->ktp_url }}" target="_blank" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline flex items-center gap-1">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                            Buka Foto Asli
+                                        </a>
+                                        <a href="{{ $selectedUser->ktp_url }}" download class="text-gray-500 dark:text-gray-400 hover:underline flex items-center gap-1">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                            Unduh
+                                        </a>
+                                    </div>
                                 @else
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
-                                        Belum Verifikasi
-                                    </span>
+                                    <div class="rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-600 p-6 text-center space-y-2">
+                                        <div class="w-10 h-10 mx-auto rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                        </div>
+                                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">Belum Ada Dokumen KTP</p>
+                                        <p class="text-[11px] text-gray-400 dark:text-gray-500">Pengguna ini belum mengunggah foto identitas e-KTP.</p>
+                                    </div>
                                 @endif
                             </div>
 
-                            @if($selectedUser->ktp_url)
-                                <div class="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-900/10 dark:bg-gray-900/40 shadow-xs">
-                                    <img src="{{ $selectedUser->ktp_url }}" alt="Dokumen KTP {{ $selectedUser->name }}" class="w-full h-44 object-cover object-center group-hover:scale-105 transition duration-300">
-                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                        <a href="{{ $selectedUser->ktp_url }}" target="_blank" class="px-3 py-1.5 bg-white/90 hover:bg-white text-gray-900 text-xs font-bold rounded-lg shadow transition">
-                                            Buka Foto
-                                        </a>
-                                    </div>
+                            {{-- Kartu Foto Selfie jika ada --}}
+                            @if($selectedUser->selfie_url)
+                            <div class="bg-gray-50/70 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 space-y-2.5">
+                                <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>🤳</span> Foto Selfie Verifikasi
+                                </h4>
+                                <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-900/10 shadow-xs aspect-4/3">
+                                    <img src="{{ $selectedUser->selfie_url }}" alt="Selfie {{ $selectedUser->name }}" class="w-full h-full object-cover">
                                 </div>
-                                <div class="flex items-center justify-between text-xs pt-1">
-                                    <a href="{{ $selectedUser->ktp_url }}" target="_blank" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline flex items-center gap-1">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                                        Buka Foto Asli
-                                    </a>
-                                    <a href="{{ $selectedUser->ktp_url }}" download class="text-gray-500 dark:text-gray-400 hover:underline flex items-center gap-1">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                        Unduh
+                                <div class="text-right">
+                                    <a href="{{ $selectedUser->selfie_url }}" target="_blank" class="text-xs text-primary-600 dark:text-primary-400 font-semibold hover:underline">
+                                        Buka Foto Asli &rarr;
                                     </a>
                                 </div>
-                            @else
-                                <div class="rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-600 p-6 text-center space-y-2">
-                                    <div class="w-10 h-10 mx-auto rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    </div>
-                                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">Belum Ada Dokumen KTP</p>
-                                    <p class="text-[11px] text-gray-400 dark:text-gray-500">Pengguna ini belum mengunggah foto identitas e-KTP.</p>
-                                </div>
+                            </div>
                             @endif
                         </div>
-
-                        {{-- Kartu Foto Selfie jika ada --}}
-                        @if($selectedUser->selfie_url)
-                        <div class="bg-gray-50/70 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 space-y-2.5">
-                            <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <span>🤳</span> Foto Selfie Verifikasi
-                            </h4>
-                            <div class="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-900/10 shadow-xs aspect-4/3">
-                                <img src="{{ $selectedUser->selfie_url }}" alt="Selfie {{ $selectedUser->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
-                            </div>
-                            <div class="text-right">
-                                <a href="{{ $selectedUser->selfie_url }}" target="_blank" class="text-xs text-primary-600 dark:text-primary-400 font-semibold hover:underline">
-                                    Buka Foto Asli &rarr;
-                                </a>
-                            </div>
-                        </div>
-                        @endif
                     </div>
-                </div>
+                @endif
             </div>
 
             {{-- Footer Actions --}}

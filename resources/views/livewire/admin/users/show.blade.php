@@ -126,13 +126,8 @@
                 </div>
 
                 @if($user->ktp_url)
-                    <div class="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-900/10 dark:bg-gray-900/40 shadow-xs aspect-16/10">
-                        <img src="{{ $user->ktp_url }}" alt="Dokumen KTP {{ $user->name }}" class="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300">
-                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            <a href="{{ $user->ktp_url }}" target="_blank" class="px-3.5 py-1.5 bg-white/95 hover:bg-white text-gray-900 text-xs font-bold rounded-lg shadow transition">
-                                Buka Foto
-                            </a>
-                        </div>
+                    <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-900/10 dark:bg-gray-900/40 shadow-xs aspect-16/10">
+                        <img src="{{ $user->ktp_url }}" alt="Dokumen KTP {{ $user->name }}" class="w-full h-full object-cover object-center">
                     </div>
                     <div class="flex items-center justify-between text-xs pt-1">
                         <a href="{{ $user->ktp_url }}" target="_blank" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline flex items-center gap-1">

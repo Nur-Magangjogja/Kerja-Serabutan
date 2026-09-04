@@ -34,7 +34,18 @@ class Index extends Component
     public $deleteId = null;
     // detail modal + chart data
     public $showDetailModal = false;
+    public $detailCityId = null;
     public $detailCityName = null;
+    public $detailProvince = null;
+    public $detailStats = [
+        'customers' => 0,
+        'mitras' => 0,
+        'total_users' => 0,
+        'districts_count' => 0,
+        'capacity_status' => 'open',
+        'is_active' => true,
+    ];
+    public $chartDays = 30;
     public $chartLabels = [];
     public $chartCustomerData = [];
     public $chartMitraData = [];
@@ -267,61 +278,117 @@ class Index extends Component
     }
 
     /**
-     * Open detail modal for a city and prepare last-30-days chart data
+     * Open detail modal for a city and load stats and chart data on-demand
      */
     public function openDetailModal($cityId)
     {
-        $city = City::find($cityId);
+        $city = City::with(['capacity', 'districts'])->find($cityId);
         if (!$city) {
             session()->flash('error', 'Kota tidak ditemukan');
             return;
         }
 
+        $this->detailCityId = $city->id;
         $this->detailCityName = $city->name;
+        $this->detailProvince = $city->province;
+        $this->chartDays = 30;
+
+        // Query total active user counts by role (fast indexed single query)
+        $userCounts = User::where('city_id', $cityId)
+            ->where('status', 'active')
+            ->selectRaw("role, count(*) as count")
+            ->groupBy('role')
+            ->pluck('count', 'role');
+
+        $customersCount = (int) ($userCounts['customer'] ?? 0);
+        $mitrasCount = (int) ($userCounts['mitra'] ?? 0);
+
+        $this->detailStats = [
+            'customers' => $customersCount,
+            'mitras' => $mitrasCount,
+            'total_users' => $customersCount + $mitrasCount,
+            'districts_count' => $city->districts ? $city->districts->count() : 0,
+            'capacity_status' => $city->capacity?->getEffectiveStatus() ?? 'open',
+            'is_active' => (bool) $city->is_active,
+        ];
+
+        $this->loadChartData($city->id);
+        $this->showDetailModal = true;
+    }
+
+    /**
+     * Change chart timeframe (7, 14, 30, 90 days)
+     */
+    public function setChartDays($days)
+    {
+        $this->chartDays = in_array((int)$days, [7, 14, 30, 90]) ? (int)$days : 30;
+        if ($this->detailCityId) {
+            $this->loadChartData($this->detailCityId);
+        }
+    }
+
+    /**
+     * Load chart data for a city using a single aggregate query
+     */
+    public function loadChartData($cityId)
+    {
+        $days = $this->chartDays;
+        $startDate = now()->subDays($days - 1)->startOfDay();
+        $endDate = now()->endOfDay();
+
+        // 1 single query grouped by date and role
+        $records = User::query()
+            ->selectRaw("DATE(created_at) as date_val, role, COUNT(*) as count")
+            ->where('city_id', $cityId)
+            ->where('status', 'active')
+            ->whereIn('role', ['customer', 'mitra'])
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->groupBy('date_val', 'role')
+            ->get();
+
+        $indexedData = [];
+        foreach ($records as $r) {
+            $indexedData[$r->date_val][$r->role] = (int) $r->count;
+        }
+
         $this->chartLabels = [];
         $this->chartCustomerData = [];
         $this->chartMitraData = [];
 
-        $days = 30;
-        $today = now()->startOfDay();
-
         for ($i = $days - 1; $i >= 0; $i--) {
-            $date = $today->copy()->subDays($i);
-            $this->chartLabels[] = $date->format('d M');
-
-            $customerCount = User::where('role', 'customer')
-                ->where('status', 'active')
-                ->where('city_id', $cityId)
-                ->whereDate('created_at', $date->toDateString())
-                ->count();
-
-            $mitraCount = User::where('role', 'mitra')
-                ->where('status', 'active')
-                ->where('city_id', $cityId)
-                ->whereDate('created_at', $date->toDateString())
-                ->count();
-
-            $this->chartCustomerData[] = $customerCount;
-            $this->chartMitraData[] = $mitraCount;
+            $dateObj = now()->subDays($i);
+            $dateKey = $dateObj->format('Y-m-d');
+            $this->chartLabels[] = $dateObj->format('d M');
+            $this->chartCustomerData[] = $indexedData[$dateKey]['customer'] ?? 0;
+            $this->chartMitraData[] = $indexedData[$dateKey]['mitra'] ?? 0;
         }
 
-        $this->showDetailModal = true;
-
-        // Dispatch browser event so JS can render the chart after Livewire updates the DOM
-        $this->dispatch('city-chart-ready',
-            labels: $this->chartLabels,
-            customers: $this->chartCustomerData,
-            mitras: $this->chartMitraData,
-        );
+        // Dispatch browser event so JS can render the chart
+        $this->dispatch('city-chart-ready', [
+            'labels' => $this->chartLabels,
+            'customers' => $this->chartCustomerData,
+            'mitras' => $this->chartMitraData,
+        ]);
     }
 
     public function closeDetailModal()
     {
         $this->showDetailModal = false;
+        $this->detailCityId = null;
         $this->detailCityName = null;
+        $this->detailProvince = null;
+        $this->detailStats = [
+            'customers' => 0,
+            'mitras' => 0,
+            'total_users' => 0,
+            'districts_count' => 0,
+            'capacity_status' => 'open',
+            'is_active' => true,
+        ];
         $this->chartLabels = [];
         $this->chartCustomerData = [];
         $this->chartMitraData = [];
+        $this->dispatch('city-chart-closed');
     }
 
     public function evaluateCityCapacity($cityId)
