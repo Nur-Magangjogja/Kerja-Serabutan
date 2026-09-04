@@ -129,11 +129,12 @@
 
     <!-- Fonts (Loaded asynchronously / non-blocking) -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800,900|space-grotesk:400,500,600,700|dm-sans:400,500,700,800,900|syne:400,500,600,700,800|nunito:400,600,700,800,900|playfair-display:400,500,600,700,800,900|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     @livewireStyles
+    @stack('head')
 </head>
 
 <body class="antialiased bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100" 
@@ -434,7 +435,7 @@
                             <div class="w-9 h-9 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">{{ strtoupper(substr(auth()->user()->name ?? 'S', 0, 1)) }}</div>
                             <div class="hidden sm:block">
                                 <div class="text-sm font-bold text-gray-800 dark:text-gray-200 max-w-[120px] truncate">{{ auth()->user()->name ?? 'Super Admin' }}</div>
-                                <div class="text-[11px] text-gray-400 dark:text-gray-400">Super Admin</div>
+                                <div class="text-[11px] text-gray-400 dark:text-gray-400">Semua Wilayah</div>
                             </div>
                         </div>
                     </div>

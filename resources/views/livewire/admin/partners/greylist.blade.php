@@ -2,7 +2,7 @@
     {{-- Header Section --}}
     <div class="flex items-center justify-between gap-4 flex-wrap bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
         <div>
-            <h1 class="text-lg font-extrabold text-gray-900 dark:text-white flex items-center gap-2.5">
+            <h1 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
                 <span class="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl">⚠️</span>
                 <span>Daftar Abu-Abu (Pengawasan & Shadow Ban)</span>
             </h1>
@@ -265,7 +265,7 @@
             <div class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" wire:click="closeAddModal"></div>
             <div class="relative bg-white dark:bg-gray-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700 space-y-4 z-10">
                 <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
-                    <h3 class="text-sm font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+                    <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <span>⚠️</span> Masukkan User ke Daftar Abu-Abu
                     </h3>
                     <button type="button" wire:click="closeAddModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none cursor-pointer">&times;</button>

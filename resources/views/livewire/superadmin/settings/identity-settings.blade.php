@@ -3,6 +3,9 @@
     $breadcrumb = 'Super Admin / Pengaturan / Identitas Aplikasi';
 @endphp
 
+{{-- Google Fonts: Fallback langsung untuk font baru yang belum ada di Bunny Fonts CDN --}}
+{{-- Font-font ini juga sudah dimuat dari Bunny Fonts di superadmin.blade.php layout --}}
+
 <div class="py-2" 
      x-data="{}" 
      x-on:identity-saved.window="
@@ -128,21 +131,33 @@
                             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                                 @php
                                     $fonts = [
-                                        'Plus Jakarta Sans' => ['name' => 'Plus Jakarta Sans', 'desc' => 'Modern & Tech Indonesia', 'sample' => 'SayaBantu'],
-                                        'Outfit' => ['name' => 'Outfit', 'desc' => 'Rounded Geometric', 'sample' => 'SayaBantu'],
-                                        'Poppins' => ['name' => 'Poppins', 'desc' => 'Semi-Rounded & Bold', 'sample' => 'SayaBantu'],
-                                        'Lexend' => ['name' => 'Lexend', 'desc' => 'Minimalis & Futuristik', 'sample' => 'SayaBantu'],
-                                        'Montserrat' => ['name' => 'Montserrat', 'desc' => 'Elegan & Tegas', 'sample' => 'SayaBantu'],
-                                        'Inter' => ['name' => 'Inter', 'desc' => 'Clean & Neutral UI', 'sample' => 'SayaBantu'],
+                                        'Plus Jakarta Sans' => ['name' => 'Plus Jakarta Sans', 'desc' => 'Modern & Tech — Default', 'sample' => 'SayaBantu'],
+                                        'Space Grotesk'    => ['name' => 'Space Grotesk', 'desc' => 'Geometric Bold — Tegas', 'sample' => 'SayaBantu'],
+                                        'DM Sans'          => ['name' => 'DM Sans', 'desc' => 'Clean Rounded — Minimal', 'sample' => 'SayaBantu'],
+                                        'Syne'             => ['name' => 'Syne', 'desc' => 'Futuristik — Display', 'sample' => 'SayaBantu'],
+                                        'Nunito'           => ['name' => 'Nunito', 'desc' => 'Playful Rounded — Ramah', 'sample' => 'SayaBantu'],
+                                        'Playfair Display' => ['name' => 'Playfair Display', 'desc' => 'Serif Elegan — Premium', 'sample' => 'SayaBantu'],
                                     ];
                                 @endphp
 
                                 @foreach($fonts as $key => $f)
-                                    <label class="relative flex flex-col p-3 rounded-xl border cursor-pointer transition-all duration-200 {{ ($app_brand_font === $key || (!$app_brand_font && $key === 'Plus Jakarta Sans')) ? 'border-primary-500 bg-primary-50/40 dark:bg-primary-900/30 ring-2 ring-primary-500/20' : 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
+                                    @php
+                                        $isFontSelected = ($app_brand_font === $key || (!$app_brand_font && $key === 'Plus Jakarta Sans'));
+                                    @endphp
+                                    <label class="relative flex flex-col justify-between p-3 rounded-xl border cursor-pointer transition-all duration-200 {{ $isFontSelected ? 'border-primary-500 bg-primary-50/40 dark:bg-primary-900/30 ring-2 ring-primary-500/20 shadow-xs' : 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
                                         <input type="radio" wire:model.live="app_brand_font" value="{{ $key }}" class="sr-only" />
-                                        <span class="text-xs font-bold text-gray-900 dark:text-white" style="font-family: '{{ $key }}', sans-serif;">{{ $f['name'] }}</span>
-                                        <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{{ $f['desc'] }}</span>
-                                        <span class="text-sm font-black text-primary-600 dark:text-sky-400 mt-2 block" style="font-family: '{{ $key }}', sans-serif;">{{ $app_name ?: $f['sample'] }}</span>
+                                        <div>
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-xs font-bold text-gray-900 dark:text-white" style="font-family: '{{ $key }}', sans-serif;">{{ $f['name'] }}</span>
+                                                @if($isFontSelected)
+                                                    <span class="w-3.5 h-3.5 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0">
+                                                        <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 block">{{ $f['desc'] }}</span>
+                                        </div>
+                                        <span class="text-sm font-black text-primary-600 dark:text-sky-400 mt-2 block tracking-tight" style="font-family: '{{ $key }}', sans-serif;">{{ $app_name ?: $f['sample'] }}</span>
                                     </label>
                                 @endforeach
                             </div>
@@ -150,33 +165,128 @@
 
                         <!-- Pengaturan Gaya Warna Judul -->
                         <div class="pt-3">
+                            @php
+                                $styles = [
+                                    'two_tone' => [
+                                        'name' => 'Electric Cyan',
+                                        'badge' => 'from-sky-400 via-cyan-400 to-blue-500',
+                                        'desc' => 'Segar & Modern (Default)',
+                                        'text_class' => 'bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 bg-clip-text text-transparent font-black',
+                                        'dot_class' => 'bg-cyan-500',
+                                    ],
+                                    'gradient_indigo' => [
+                                        'name' => 'Royal Violet',
+                                        'badge' => 'from-indigo-500 via-purple-500 to-pink-500',
+                                        'desc' => 'Elegan, Mewah & Kreatif',
+                                        'text_class' => 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent font-black',
+                                        'dot_class' => 'bg-purple-600',
+                                    ],
+                                    'gradient_emerald' => [
+                                        'name' => 'Fresh Emerald',
+                                        'badge' => 'from-emerald-400 via-teal-400 to-emerald-600',
+                                        'desc' => 'Alami, Segar & Terpercaya',
+                                        'text_class' => 'bg-gradient-to-r from-emerald-500 via-teal-500 to-green-600 bg-clip-text text-transparent font-black',
+                                        'dot_class' => 'bg-emerald-500',
+                                    ],
+                                    'gradient_sunset' => [
+                                        'name' => 'Sunset Amber',
+                                        'badge' => 'from-amber-400 via-orange-500 to-rose-500',
+                                        'desc' => 'Hangat, Enerjik & Ramah',
+                                        'text_class' => 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 bg-clip-text text-transparent font-black',
+                                        'dot_class' => 'bg-orange-500',
+                                    ],
+                                    'gradient_gold' => [
+                                        'name' => 'Golden Sunburst',
+                                        'badge' => 'from-yellow-400 via-amber-400 to-orange-400',
+                                        'desc' => 'Berkelas & Prestisius',
+                                        'text_class' => 'bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 bg-clip-text text-transparent font-black',
+                                        'dot_class' => 'bg-amber-500',
+                                    ],
+                                    'gradient_crimson' => [
+                                        'name' => 'Ruby Crimson',
+                                        'badge' => 'from-red-500 via-rose-500 to-pink-600',
+                                        'desc' => 'Berani, Tegas & Menonjol',
+                                        'text_class' => 'bg-gradient-to-r from-red-600 via-rose-500 to-pink-600 bg-clip-text text-transparent font-black',
+                                        'dot_class' => 'bg-rose-600',
+                                    ],
+                                    'solid_primary' => [
+                                        'name' => 'Solid Sapphire',
+                                        'badge' => 'from-blue-600 to-indigo-600',
+                                        'desc' => 'Klasik Satu Warna Biru',
+                                        'text_class' => 'text-primary-600 dark:text-primary-400 font-black',
+                                        'dot_class' => 'bg-primary-600 dark:bg-primary-400',
+                                    ],
+                                    'solid_monochrome' => [
+                                        'name' => 'Monochrome Slate',
+                                        'badge' => 'from-slate-600 to-gray-800',
+                                        'desc' => 'Minimalis, Simpel & Netral',
+                                        'text_class' => 'text-slate-700 dark:text-slate-300 font-black',
+                                        'dot_class' => 'bg-slate-700 dark:bg-slate-300',
+                                    ],
+                                ];
+
+                                $rawPreviewName = $app_name ?: 'SayaBantu';
+                                if (str_contains($rawPreviewName, ' - ')) {
+                                    $rawPreviewName = trim(explode(' - ', $rawPreviewName)[0]);
+                                } elseif (str_contains($rawPreviewName, ' | ')) {
+                                    $rawPreviewName = trim(explode(' | ', $rawPreviewName)[0]);
+                                }
+                                
+                                $cleanNormalized = strtolower(str_replace(' ', '', $rawPreviewName));
+                                if ($cleanNormalized === 'sayabantu') {
+                                    $pFirst = 'Saya';
+                                    $pSecond = 'Bantu';
+                                } elseif (preg_match('/^([A-Z][a-z]+|[a-z]+)([A-Z].*)$/', $rawPreviewName, $matches)) {
+                                    $pFirst = $matches[1];
+                                    $pSecond = $matches[2];
+                                } elseif (str_contains($rawPreviewName, ' ')) {
+                                    $parts = explode(' ', $rawPreviewName, 2);
+                                    $pFirst = $parts[0];
+                                    $pSecond = $parts[1] ?? '';
+                                } else {
+                                    $pFirst = $rawPreviewName;
+                                    $pSecond = '';
+                                }
+
+                                $currentStyleKey = $app_brand_style ?: 'two_tone';
+                                $currentStyleName = $styles[$currentStyleKey]['name'] ?? ($styles['two_tone']['name'] ?? 'Electric Cyan');
+                            @endphp
+
                             <div class="flex items-center justify-between mb-1">
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
                                     Gaya & Kombinasi Warna Judul
                                 </label>
+                                <span class="text-[11px] font-medium text-primary-600 dark:text-sky-400">Pilihan Terpilih: {{ $currentStyleName }}</span>
                             </div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Pilih tema aksen warna untuk kata kedua judul (contoh: "Bantu").</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Pilih kombinasi aksen warna untuk kata kedua judul (contoh: "Bantu").</p>
 
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                                @php
-                                    $styles = [
-                                        'two_tone' => ['name' => 'Two-Tone Sky / Cyan', 'badge' => 'from-sky-400 to-cyan-500', 'desc' => 'Segar & Bersinar (Default)'],
-                                        'gradient_cyan' => ['name' => 'Ocean Blue Gradient', 'badge' => 'from-blue-500 to-sky-400', 'desc' => 'Biru Samudera'],
-                                        'gradient_emerald' => ['name' => 'Fresh Emerald / Mint', 'badge' => 'from-emerald-500 to-teal-400', 'desc' => 'Hijau Segar Ramah'],
-                                        'gradient_sunset' => ['name' => 'Sunset Amber / Rose', 'badge' => 'from-amber-500 to-rose-500', 'desc' => 'Hangat & Enerjik'],
-                                        'gradient_indigo' => ['name' => 'Royal Indigo / Purple', 'badge' => 'from-indigo-500 to-purple-500', 'desc' => 'Elegan & Mewah'],
-                                        'solid_primary' => ['name' => 'Solid Primary Blue', 'badge' => 'from-primary-600 to-primary-600', 'desc' => 'Satu Warna Klasik'],
-                                    ];
-                                @endphp
-
+                            <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
                                 @foreach($styles as $sKey => $s)
-                                    <label class="relative flex flex-col p-3 rounded-xl border cursor-pointer transition-all duration-200 {{ ($app_brand_style === $sKey || (!$app_brand_style && $sKey === 'two_tone')) ? 'border-primary-500 bg-primary-50/40 dark:bg-primary-900/30 ring-2 ring-primary-500/20' : 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
+                                    @php
+                                        $isStyleSelected = ($app_brand_style === $sKey || (!$app_brand_style && $sKey === 'two_tone'));
+                                    @endphp
+                                    <label class="relative flex flex-col justify-between p-3 rounded-xl border cursor-pointer transition-all duration-200 {{ $isStyleSelected ? 'border-primary-500 bg-primary-50/40 dark:bg-primary-900/30 ring-2 ring-primary-500/20 shadow-xs' : 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
                                         <input type="radio" wire:model.live="app_brand_style" value="{{ $sKey }}" class="sr-only" />
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <span class="w-3.5 h-3.5 rounded-full bg-gradient-to-r {{ $s['badge'] }} shadow-xs inline-block"></span>
-                                            <span class="text-xs font-bold text-gray-900 dark:text-white truncate">{{ $s['name'] }}</span>
+                                        <div>
+                                            <div class="flex items-center justify-between gap-1.5 mb-1">
+                                                <div class="flex items-center gap-1.5 min-w-0">
+                                                    <span class="w-3.5 h-3.5 rounded-full bg-gradient-to-r {{ $s['badge'] }} shadow-xs inline-block flex-shrink-0"></span>
+                                                    <span class="text-xs font-bold text-gray-900 dark:text-white truncate">{{ $s['name'] }}</span>
+                                                </div>
+                                                @if($isStyleSelected)
+                                                    <span class="w-3.5 h-3.5 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0">
+                                                        <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <span class="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1 block">{{ $s['desc'] }}</span>
                                         </div>
-                                        <span class="text-[10px] text-gray-500 dark:text-gray-400">{{ $s['desc'] }}</span>
+
+                                        <div class="mt-2.5 pt-2 border-t border-gray-100 dark:border-gray-700/60">
+                                            <span class="text-xs font-black text-slate-900 dark:text-white tracking-tight block truncate" style="font-family: '{{ $app_brand_font ?: 'Plus Jakarta Sans' }}', sans-serif;">
+                                                {{ $pFirst }}<span class="{{ $s['text_class'] }}">{{ $pSecond }}</span><span class="w-1.5 h-1.5 rounded-full {{ $s['dot_class'] }} inline-block ml-0.5 mb-0.5"></span>
+                                            </span>
+                                        </div>
                                     </label>
                                 @endforeach
                             </div>
@@ -302,7 +412,6 @@
                     <div class="pt-4 flex items-center justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
                         <button 
                             type="submit" 
-                            @click="window.scrollTo({ top: 0, behavior: 'smooth' })"
                             wire:loading.attr="disabled"
                             class="inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-primary-500/20 transition-all duration-200 disabled:opacity-50 cursor-pointer"
                         >

@@ -157,7 +157,7 @@
             <table class="w-full text-left text-sm">
                 <thead>
                     <tr class="bg-gray-50/80 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 uppercase text-xs font-semibold tracking-wider border-b border-gray-100 dark:border-gray-700">
-                        <th class="px-4 py-3">#ID</th>
+                        <th class="px-4 py-3 hidden">#ID</th>
                         <th class="px-4 py-3">Permohonan Bantuan</th>
                         <th class="px-4 py-3">Customer / Pemohon</th>
                         <th class="px-4 py-3 hidden md:table-cell">Mitra Pelaksana</th>
@@ -192,7 +192,7 @@
                         };
                         @endphp
                         <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-700/30 transition-colors duration-150">
-                            <td class="px-4 py-3.5 font-mono text-xs font-semibold text-gray-400 dark:text-gray-500">
+                            <td class="px-4 py-3.5 font-mono text-xs font-semibold text-gray-400 dark:text-gray-500 hidden">
                                 #{{ $help->order_id ?? $help->id }}
                             </td>
                             <td class="px-4 py-3.5">

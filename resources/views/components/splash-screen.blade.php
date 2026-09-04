@@ -10,7 +10,9 @@
 @endphp
 
 <!-- Reusable Splash Screen Loading Component -->
-<div x-data="{ 
+<div id="app-splash-screen"
+     wire:ignore
+     x-data="{ 
     showSplash: true,
     init() {
         setTimeout(() => {
