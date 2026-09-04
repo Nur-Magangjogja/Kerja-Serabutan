@@ -453,7 +453,7 @@
 
     function initUsersChart() {
         const canvas = document.getElementById('usersChart');
-        if (!canvas) return;
+        if (!canvas || !canvas.isConnected || !canvas.ownerDocument || !document.body.contains(canvas)) return;
         const ctx = canvas.getContext('2d');
         const chartData = @json($userChart);
         const isDark = () => document.documentElement.classList.contains('dark');
@@ -480,7 +480,7 @@
             const data = chartData[range]?.data || [];
 
             // If chart exists, update smoothly
-            if (usersChart && usersChart.ctx && document.getElementById('usersChart')) {
+            if (usersChart && usersChart.ctx && document.getElementById('usersChart') === usersChart.canvas) {
                 usersChart.data.labels = labels;
                 if (usersChart.data.datasets && usersChart.data.datasets[0]) {
                     usersChart.data.datasets[0].data = data;
@@ -562,8 +562,12 @@
                 window.usersChartInstance = null;
             }
 
-            usersChart = new Chart(ctx, cfg);
-            window.usersChartInstance = usersChart;
+            if (!canvas.isConnected || !canvas.ownerDocument || !document.body.contains(canvas)) return;
+
+            try {
+                usersChart = new Chart(ctx, cfg);
+                window.usersChartInstance = usersChart;
+            } catch(e) {}
         }
 
         const tabs = document.querySelectorAll('.chart-range-tab');
@@ -601,7 +605,9 @@
                 const currentDark = isDark();
                 if (currentDark !== lastKnownDark) {
                     lastKnownDark = currentDark;
-                    if (usersChart) renderRange(localStorage.getItem('superadmin.usersChart.range') || 'daily');
+                    if (usersChart && document.getElementById('usersChart')) {
+                        renderRange(localStorage.getItem('superadmin.usersChart.range') || 'daily');
+                    }
                 }
             });
             observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
@@ -609,7 +615,15 @@
     }
 
     function safeInit() {
-        waitForChart(initUsersChart);
+        const canvas = document.getElementById('usersChart');
+        if (!canvas || !canvas.isConnected || !document.body.contains(canvas)) {
+            return;
+        }
+        waitForChart(() => {
+            const c = document.getElementById('usersChart');
+            if (!c || !c.isConnected || !document.body.contains(c)) return;
+            initUsersChart();
+        });
     }
 
     if (document.readyState === 'loading') {
@@ -619,10 +633,25 @@
     }
     document.addEventListener('livewire:navigated', safeInit);
 
+    document.addEventListener('livewire:navigating', function() {
+        if (usersChart) {
+            try { usersChart.destroy(); } catch(e) {}
+            usersChart = null;
+        }
+        if (window.usersChartInstance) {
+            try { window.usersChartInstance.destroy(); } catch(e) {}
+            window.usersChartInstance = null;
+        }
+        if (observer) {
+            try { observer.disconnect(); } catch(e) {}
+            observer = null;
+        }
+    });
+
     window.addEventListener('theme-changed', function() {
-        if (usersChart && document.getElementById('usersChart')) {
-            const currentRange = localStorage.getItem('superadmin.usersChart.range') || 'daily';
-            initUsersChart();
+        const canvas = document.getElementById('usersChart');
+        if (canvas && canvas.isConnected && document.body.contains(canvas)) {
+            safeInit();
         }
     });
 })();

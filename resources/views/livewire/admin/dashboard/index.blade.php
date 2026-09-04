@@ -486,7 +486,7 @@
         function initAdminChart() {
             const container = document.getElementById('adminUnifiedChartContainer');
             const canvas = document.getElementById('adminUnifiedChartCanvas');
-            if (!container || !canvas) return;
+            if (!container || !canvas || !canvas.isConnected || !canvas.ownerDocument || !document.body.contains(canvas)) return;
 
             const isDark = document.documentElement.classList.contains('dark');
             let labels = [], totalHelps = [], completedHelps = [], cancelledHelps = [], verifications = [];
@@ -596,12 +596,14 @@
                 try { window._adminUnifiedChartInstance.destroy(); } catch(e) {}
                 window._adminUnifiedChartInstance = null;
             }
-            if (typeof Chart !== 'undefined') {
+            if (typeof Chart !== 'undefined' && Chart.getChart) {
                 const existing = Chart.getChart(canvas);
                 if (existing) {
                     try { existing.destroy(); } catch(e) {}
                 }
             }
+
+            if (!canvas.isConnected || !canvas.ownerDocument || !document.body.contains(canvas)) return;
 
             const config = {
                 type: 'line',
@@ -668,7 +670,7 @@
             } catch(err) {
                 console.warn('Canvas reset required for Admin Chart:', err);
                 const parent = canvas.parentNode;
-                if (parent) {
+                if (parent && document.body.contains(parent)) {
                     const newCanvas = document.createElement('canvas');
                     newCanvas.id = 'adminUnifiedChartCanvas';
                     newCanvas.className = 'w-full h-full block';
@@ -697,7 +699,7 @@
                     try { window._adminChartResizeObs.disconnect(); } catch(e) {}
                 }
                 window._adminChartResizeObs = new ResizeObserver(() => {
-                    if (adminChart && adminChart.ctx) {
+                    if (adminChart && adminChart.ctx && document.getElementById('adminUnifiedChartCanvas') === adminChart.canvas) {
                         adminChart.resize();
                     }
                 });
@@ -712,7 +714,7 @@
             window._adminChartVisibility[datasetIndex] = !window._adminChartVisibility[datasetIndex];
 
             const chart = window._adminUnifiedChartInstance || adminChart;
-            if (chart) {
+            if (chart && chart.ctx) {
                 chart.setDatasetVisibility(datasetIndex, window._adminChartVisibility[datasetIndex]);
                 chart.update();
             }
@@ -720,7 +722,13 @@
         };
 
         function safeInit() {
+            const canvas = document.getElementById('adminUnifiedChartCanvas');
+            if (!canvas || !canvas.isConnected || !document.body.contains(canvas)) {
+                return;
+            }
             waitForChart(() => {
+                const c = document.getElementById('adminUnifiedChartCanvas');
+                if (!c || !c.isConnected || !document.body.contains(c)) return;
                 initAdminChart();
                 syncLegendButtonsUI();
             });
@@ -733,15 +741,48 @@
         }
 
         document.addEventListener('livewire:navigated', safeInit);
-        window.addEventListener('admin-city-changed', () => setTimeout(safeInit, 50));
-        window.addEventListener('chart-refresh', () => setTimeout(safeInit, 50));
-        window.addEventListener('theme-changed', safeInit);
+
+        document.addEventListener('livewire:navigating', () => {
+            if (adminChart) {
+                try { adminChart.destroy(); } catch(e) {}
+                adminChart = null;
+            }
+            if (window._adminUnifiedChartInstance) {
+                try { window._adminUnifiedChartInstance.destroy(); } catch(e) {}
+                window._adminUnifiedChartInstance = null;
+            }
+            if (window._adminChartResizeObs) {
+                try { window._adminChartResizeObs.disconnect(); } catch(e) {}
+                window._adminChartResizeObs = null;
+            }
+        });
+
+        window.addEventListener('admin-city-changed', () => {
+            const canvas = document.getElementById('adminUnifiedChartCanvas');
+            if (canvas && canvas.isConnected && document.body.contains(canvas)) {
+                setTimeout(safeInit, 50);
+            }
+        });
+        window.addEventListener('chart-refresh', () => {
+            const canvas = document.getElementById('adminUnifiedChartCanvas');
+            if (canvas && canvas.isConnected && document.body.contains(canvas)) {
+                setTimeout(safeInit, 50);
+            }
+        });
+        window.addEventListener('theme-changed', () => {
+            const canvas = document.getElementById('adminUnifiedChartCanvas');
+            if (canvas && canvas.isConnected && document.body.contains(canvas)) {
+                safeInit();
+            }
+        });
 
         let resizeTimer;
         window.addEventListener('resize', () => {
+            const canvas = document.getElementById('adminUnifiedChartCanvas');
+            if (!canvas || !canvas.isConnected || !document.body.contains(canvas)) return;
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
-                if (adminChart && adminChart.ctx) {
+                if (adminChart && adminChart.ctx && document.getElementById('adminUnifiedChartCanvas') === adminChart.canvas) {
                     adminChart.resize();
                 }
                 syncLegendButtonsUI();

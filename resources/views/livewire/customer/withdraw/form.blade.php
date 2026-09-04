@@ -10,19 +10,19 @@
 
     <!-- Header Bar -->
     <div class="px-4 py-3.5 bg-gradient-to-r from-[#0098e7] via-[#0077cc] to-[#0060b0] text-white shadow-xs rounded-b-2xl">
-        <div class="flex items-center justify-between">
-            <a href="{{ route('customer.dashboard') }}" class="p-2 -ml-1 hover:bg-white/15 rounded-xl transition cursor-pointer" aria-label="Kembali ke Dashboard">
+        <div class="relative flex items-center justify-center min-h-[40px]">
+            <a href="{{ route('customer.dashboard') }}" class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/15 rounded-xl transition cursor-pointer" aria-label="Kembali ke Dashboard">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
 
-            <div class="text-center">
-                <h1 class="text-sm font-bold tracking-tight">Tarik Saldo Customer</h1>
-                <p class="text-[11px] text-white/80">Tarik sisa dana ke rekening / e-wallet Anda</p>
+            <div class="text-center w-full min-w-0 px-12">
+                <h1 class="text-sm font-bold tracking-tight truncate">Tarik Saldo Customer</h1>
+                <p class="text-[11px] text-white/80 truncate">Tarik sisa dana ke rekening / e-wallet Anda</p>
             </div>
 
-            <a href="{{ route('customer.withdraw.history') }}" class="p-2 -mr-1 hover:bg-white/15 rounded-xl transition cursor-pointer" title="Riwayat Penarikan" aria-label="Riwayat">
+            <a href="{{ route('customer.withdraw.history') }}" class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/15 rounded-xl transition cursor-pointer" title="Riwayat Penarikan" aria-label="Riwayat">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>

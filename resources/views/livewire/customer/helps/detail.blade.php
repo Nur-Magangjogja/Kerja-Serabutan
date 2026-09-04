@@ -89,19 +89,13 @@
         <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
         <div class="relative z-10 max-w-md mx-auto">
-            <div class="flex items-center justify-between text-white">
-                <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-
-                <div class="text-center flex-1 min-w-0 px-2">
+            <div class="relative flex items-center justify-center min-h-[40px] text-white">
+                <div class="text-center w-full min-w-0 px-12">
                     <h1 class="text-base font-bold truncate">Detail Pesanan</h1>
                     <p class="text-xs text-white/90 truncate mt-0.5">Detail permintaan bantuan Anda</p>
                 </div>
 
-                <div class="w-9 flex items-center justify-end flex-shrink-0">
+                <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center justify-end">
                     <button wire:click="loadHelp" wire:loading.attr="disabled" title="Segarkan Status" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center">
                         <svg wire:loading.remove wire:target="loadHelp" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -119,65 +113,81 @@
     <!-- Content -->
     <div class="px-5 pt-5 pb-8 max-w-md mx-auto">
         {{-- Order ID --}}
-        <div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
-            <span class="text-sm text-gray-600 dark:text-gray-400">ID Pesanan: <span class="font-semibold text-gray-900 dark:text-white">{{ $help->order_id }}</span></span>
-            <button wire:click="copyOrderId" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 text-sm font-semibold flex items-center gap-1">
-                Salin
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700/70">
+            <span class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-sky-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                ID Pesanan: <span class="font-bold text-gray-900 dark:text-white font-mono ml-0.5">{{ $help->order_id }}</span>
+            </span>
+            <button wire:click="copyOrderId" class="text-sky-600 hover:text-sky-700 dark:text-sky-400 text-xs sm:text-sm font-bold flex items-center gap-1 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 px-2.5 py-1 rounded-xl transition cursor-pointer">
+                <span>Salin</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                 </svg>
             </button>
         </div>
 
         {{-- Service Info --}}
-        <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
-            <div class="flex items-start gap-3">
-                <div class="w-12 h-12 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center flex-shrink-0">
+        <div class="bg-white dark:bg-gray-800 mt-2.5 p-4 sm:p-5 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700/70 space-y-4">
+            <div class="flex items-start gap-3.5">
+                <div class="w-13 h-13 rounded-2xl bg-gradient-to-br from-sky-100 to-blue-50 dark:from-sky-950/60 dark:to-blue-900/40 border border-sky-200/70 dark:border-sky-800/60 flex items-center justify-center flex-shrink-0 shadow-2xs overflow-hidden">
                     @if($help->photo)
-                        <img src="{{ asset('storage/' . $help->photo) }}" alt="{{ $help->title }}" class="w-full h-full object-cover rounded-lg">
+                        <img src="{{ asset('storage/' . $help->photo) }}" alt="{{ $help->title }}" class="w-full h-full object-cover">
                     @else
-                        <svg class="w-6 h-6 text-pink-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
+                        <svg class="w-6 h-6 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                     @endif
                 </div>
-                <div class="flex-1">
-                    <h2 class="font-semibold text-base text-gray-900 dark:text-white">{{ $help->title }}</h2>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2 mb-1 flex-wrap">
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200/60 dark:border-sky-800/60">
+                            {{ $help->category->name ?? 'Jasa / Bantuan' }}
+                        </span>
+                        <span class="text-sm font-black text-sky-600 dark:text-sky-400">
+                            Rp {{ number_format($help->amount, 0, ',', '.') }}
+                        </span>
+                    </div>
+                    <h2 class="font-bold text-base text-gray-900 dark:text-white leading-snug">{{ $help->title }}</h2>
                 </div>
             </div>
 
             {{-- Partner Info --}}
             @if($help->mitra)
-                <div class="mt-4 p-3 bg-white dark:bg-gray-700/50 rounded-xl flex items-center justify-between shadow-sm border border-gray-100 dark:border-gray-600">
-                    <div class="flex items-center gap-3">
+                <div class="p-3.5 bg-gray-50/80 dark:bg-gray-750/70 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-gray-700/60 shadow-2xs">
+                    <div class="flex items-center gap-3 min-w-0">
                         @if($help->mitra->selfie_photo)
-                            <img src="{{ asset('storage/' . $help->mitra->selfie_photo) }}" alt="{{ $help->mitra->name }}" class="w-10 h-10 rounded-full object-cover border-2 border-blue-100 dark:border-blue-900">
+                            <img src="{{ asset('storage/' . $help->mitra->selfie_photo) }}" alt="{{ $help->mitra->name }}" class="w-11 h-11 rounded-full object-cover border-2 border-sky-200 dark:border-sky-800 shrink-0">
                         @else
-                            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
+                            <div class="w-11 h-11 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold shrink-0 shadow-2xs">
                                 {{ strtoupper(substr($help->mitra->name ?? 'M', 0, 1)) }}
                             </div>
                         @endif
-                        <div>
-                            <h3 class="font-semibold text-sm text-gray-900 dark:text-white">{{ $help->mitra->name ?? 'Mitra' }}</h3>
-                            <div class="flex items-center gap-1 mt-0.5">
-                                <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                </svg>
-                                @php
-                                    $mitra = $help->mitra;
-                                    $avgRating = $mitra ? ($mitra->mitra_average_rating ?? ($mitra->rating ?? 0)) : 0;
-                                    $ratingCount = $mitra ? ($mitra->mitra_rating_count ?? null) : null;
-                                @endphp
-                                <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ number_format($avgRating, 2) }}</span>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <h3 class="font-bold text-sm text-gray-900 dark:text-white truncate">{{ $help->mitra->name ?? 'Mitra' }}</h3>
+                                <span class="text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded-md">Mitra</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <div class="flex items-center gap-0.5 text-amber-500">
+                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                    </svg>
+                                    @php
+                                        $mitra = $help->mitra;
+                                        $avgRating = $mitra ? ($mitra->mitra_average_rating ?? ($mitra->rating ?? 0)) : 0;
+                                        $ratingCount = $mitra ? ($mitra->mitra_rating_count ?? null) : null;
+                                    @endphp
+                                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ number_format($avgRating, 1) }}</span>
+                                </div>
                                 @if($ratingCount)
-                                    <span class="text-xs text-gray-400 dark:text-gray-400 ml-2">({{ $ratingCount }})</span>
+                                    <span class="text-[11px] text-gray-400 dark:text-gray-400">({{ $ratingCount }} ulasan)</span>
                                 @endif
                             </div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <a href="{{ route('customer.chat', $help->id) }}" class="w-10 h-10 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition text-gray-700 dark:text-gray-200">
-                            <svg class="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center gap-2 shrink-0">
+                        <a href="{{ route('customer.chat', $help->id) }}" class="w-10 h-10 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-sky-50 dark:hover:bg-gray-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-2xs text-gray-700 dark:text-gray-200 cursor-pointer">
+                            <svg class="w-5 h-5 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                             </svg>
                         </a>
@@ -186,53 +196,74 @@
             @endif
 
             {{-- Description & Additional Details --}}
-            <div class="bg-white dark:bg-gray-800 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60">
-                <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-3">Deskripsi & Detail</h3>
+            <div class="pt-3 border-t border-gray-100 dark:border-gray-700/60 space-y-3">
+                <div>
+                    <h3 class="font-bold text-xs uppercase tracking-wider text-gray-400 dark:text-gray-400 mb-1.5">Deskripsi Bantuan</h3>
+                    @if(!empty($help->description))
+                        <p class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-line break-words bg-gray-50/50 dark:bg-gray-750/40 p-3 rounded-xl border border-gray-100 dark:border-gray-700/40">{{ $help->description }}</p>
+                    @else
+                        <p class="text-xs text-gray-400 italic">Tidak ada keterangan tambahan.</p>
+                    @endif
+                </div>
 
-                @if(!empty($help->description))
-                    <div class="mb-3">
-                        <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line break-words break-all">{{ $help->description }}</p>
-                    </div>
-                @endif
-
-                <div class="grid grid-cols-2 gap-3 text-sm text-gray-700 dark:text-gray-300">
+                {{-- Detail Grid Pills --}}
+                <div class="grid grid-cols-2 gap-2 text-xs">
                     @if(!empty($help->equipment_provided))
-                        <div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">Perlengkapan</div>
-                            <div class="font-semibold break-words break-all text-gray-900 dark:text-white">{{ $help->equipment_provided }}</div>
+                        <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
+                            <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-400 block mb-0.5">Perlengkapan:</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200 break-words">{{ $help->equipment_provided }}</span>
                         </div>
                     @endif
 
                     @if($help->mitra && !empty($help->mitra->phone))
-                        <div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">Kontak Mitra</div>
-                            <div class="font-semibold"><a href="tel:{{ $help->mitra->phone }}" class="text-blue-600 dark:text-blue-400">{{ $help->mitra->phone }}</a></div>
+                        <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
+                            <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-400 block mb-0.5">Kontak Mitra:</span>
+                            <a href="tel:{{ $help->mitra->phone }}" class="font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 truncate">
+                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                                <span>{{ $help->mitra->phone }}</span>
+                            </a>
                         </div>
                     @endif
 
                     @if(!empty($help->city->name) || !empty($help->province->name))
-                        <div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">Kota / Provinsi</div>
-                            <div class="font-semibold text-gray-900 dark:text-white">{{ $help->city->name ?? '-' }}{{ $help->province ? (', ' . $help->province->name) : '' }}</div>
+                        <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
+                            <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-400 block mb-0.5">Lokasi Wilayah:</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200 truncate block">{{ $help->city->name ?? '-' }}{{ $help->province ? (', ' . $help->province->name) : '' }}</span>
+                        </div>
+                    @endif
+
+                    @if(!empty($help->scheduled_at))
+                        <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
+                            <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-400 block mb-0.5">Jadwal Tugas:</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200 block">{{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') }} WIB</span>
                         </div>
                     @endif
                 </div>
 
+                {{-- Order Photo Attachment --}}
                 @if(!empty($help->photo))
-                    <div class="mt-3">
-                        <div class="text-xs text-gray-500 dark:text-gray-400">Foto Pesanan</div>
-                        <img src="{{ asset('storage/' . $help->photo) }}" alt="Foto bantuan" class="w-full mt-2 rounded-lg object-cover">
+                    <div class="mt-3 pt-2">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                Foto Lampiran Pesanan
+                            </span>
+                            <a href="{{ asset('storage/' . $help->photo) }}" target="_blank" rel="noopener" class="text-[11px] font-semibold text-sky-600 dark:text-sky-400 hover:underline">Lihat Gambar Penuh ↗</a>
+                        </div>
+                        <div class="relative rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-xs group bg-gray-100 dark:bg-gray-900 max-h-64 flex items-center justify-center">
+                            <img src="{{ asset('storage/' . $help->photo) }}" alt="Foto pesanan" class="w-full h-auto max-h-64 object-contain group-hover:scale-105 transition-transform duration-300">
+                        </div>
                     </div>
                 @endif
 
-                <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                    <div>Dibuat: {{ \Carbon\Carbon::parse($help->created_at)->translatedFormat('d F Y, H:i') }}</div>
-                    <div>Terakhir diperbarui: {{ \Carbon\Carbon::parse($help->updated_at)->translatedFormat('d F Y, H:i') }}</div>
-                    @if(!empty($help->scheduled_at))
-                        <div>Jadwal: {{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d F Y, H:i') }}</div>
-                    @endif
+                <div class="flex items-center justify-between text-[11px] text-gray-400 dark:text-gray-400 pt-1 border-t border-gray-100 dark:border-gray-700/50">
+                    <span>Dibuat: {{ \Carbon\Carbon::parse($help->created_at)->translatedFormat('d M Y, H:i') }}</span>
+                    <span>Diperbarui: {{ \Carbon\Carbon::parse($help->updated_at)->diffForHumans() }}</span>
                 </div>
             </div>
+        </div>
 
         {{-- Progress Stepper Card --}}
         <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60">
@@ -512,30 +543,30 @@
                     </div>
                 </div>
             @elseif($isWithin24H)
-                <div class="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-yellow-950/30 mt-2.5 p-4 rounded-2xl border border-amber-200 dark:border-amber-800/70 shadow-xs space-y-3">
+                <div class="bg-gradient-to-br from-sky-50/90 via-blue-50/50 to-indigo-50/40 dark:from-sky-950/40 dark:via-blue-950/30 dark:to-gray-800/60 mt-2.5 p-4 sm:p-5 rounded-2xl border border-sky-200/80 dark:border-sky-800/60 shadow-xs space-y-3.5">
                     <div class="flex items-start gap-3">
-                        <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-amber-500/20">
-                            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        <div class="w-9 h-9 rounded-xl bg-sky-500/15 dark:bg-sky-500/25 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-sky-500/20 shadow-2xs">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                             </svg>
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
-                                <h4 class="text-xs sm:text-sm font-bold text-amber-950 dark:text-amber-100">
+                                <h4 class="text-xs sm:text-sm font-bold text-sky-950 dark:text-sky-100">
                                     Garansi Perlindungan Layanan 1x24 Jam
                                 </h4>
-                                <span class="text-[10px] bg-amber-200/90 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 px-2 py-0.5 rounded-full font-bold shadow-2xs">
+                                <span class="text-[10px] bg-sky-100 dark:bg-sky-900/70 text-sky-700 dark:text-sky-300 px-2 py-0.5 rounded-full font-extrabold border border-sky-200/80 dark:border-sky-700 shadow-2xs">
                                     Aktif
                                 </span>
                             </div>
-                            <p class="text-xs text-amber-900/85 dark:text-amber-300/90 leading-relaxed">
-                                Jika mitra berbohong, tidak menyelesaikan tugas, atau melanggar aturan, Anda dapat mengajukan laporan refund sebelum: <strong class="font-bold text-amber-950 dark:text-amber-200">{{ \Carbon\Carbon::parse($help->completed_at)->addHours(24)->translatedFormat('d M Y, H:i') }} WIB</strong>.
+                            <p class="text-xs text-sky-900/80 dark:text-sky-200/85 leading-relaxed">
+                                Jika mitra berbohong, tidak menyelesaikan tugas, atau melanggar aturan, Anda dapat mengajukan laporan refund sebelum: <strong class="font-bold text-sky-950 dark:text-sky-100">{{ \Carbon\Carbon::parse($help->completed_at)->addHours(24)->translatedFormat('d M Y, H:i') }} WIB</strong>.
                             </p>
                         </div>
                     </div>
 
                     <a href="{{ route('customer.reports.create', ['help_id' => $help->id, 'user_id' => $help->mitra_id, 'type' => 'klaim_refund_pekerjaan_fiktif']) }}" 
-                       class="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
+                       class="w-full py-2.5 px-4 bg-gradient-to-r from-sky-600 to-[#0077cc] hover:from-sky-700 hover:to-[#0060b0] text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                         </svg>
@@ -579,9 +610,9 @@
                 $remHours = floor($remainingMin / 60);
                 $remMins = $remainingMin % 60;
             @endphp
-            <div class="bg-white dark:bg-gray-800 mt-2 px-5 py-5 border border-blue-200/80 dark:border-blue-500/30 rounded-2xl shadow-xs">
+            <div class="bg-white dark:bg-gray-800 mt-2.5 p-5 border border-sky-200/80 dark:border-sky-500/30 rounded-2xl shadow-xs">
                 <div class="flex items-start gap-3 mb-3">
-                    <div class="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 text-white shadow-xs">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center flex-shrink-0 text-white shadow-2xs">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
@@ -589,7 +620,7 @@
                     <div class="flex-1">
                         <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
                             <h3 class="font-bold text-sm text-gray-900 dark:text-white">Menunggu Konfirmasi Anda</h3>
-                            <span class="text-[11px] font-bold bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200 px-2.5 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                            <span class="text-[11px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-sky-200 dark:border-sky-800 animate-pulse">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/></svg>
                                 Sisa: {{ $remHours }}j {{ $remMins }}m
                             </span>
@@ -601,16 +632,16 @@
                 </div>
 
                 @if($help->proof_photo)
-                    <div class="mb-4 p-3 bg-slate-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block mb-1.5 flex items-center gap-1">
-                            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-750/70 rounded-2xl border border-gray-100 dark:border-gray-700">
+                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block mb-2 flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                             Foto Bukti Hasil Pengerjaan:
                         </span>
-                        <a href="{{ asset('storage/' . $help->proof_photo) }}" target="_blank" rel="noopener">
-                            <img src="{{ asset('storage/' . $help->proof_photo) }}" alt="Bukti Pengerjaan" class="w-full max-h-52 object-cover rounded-lg border border-gray-100 dark:border-gray-700 hover:opacity-95 transition cursor-pointer shadow-xs">
+                        <a href="{{ asset('storage/' . $help->proof_photo) }}" target="_blank" rel="noopener" class="block rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-900/10 max-h-56 flex items-center justify-center group">
+                            <img src="{{ asset('storage/' . $help->proof_photo) }}" alt="Bukti Pengerjaan" class="w-full h-auto max-h-56 object-contain group-hover:scale-105 transition-transform duration-300">
                         </a>
                         @if($help->completion_notes)
-                            <p class="text-xs text-gray-600 dark:text-gray-300 mt-2 italic bg-white dark:bg-gray-800 p-2 rounded-md border border-gray-100 dark:border-gray-700">"{{ $help->completion_notes }}"</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-300 mt-2 italic bg-white dark:bg-gray-800 p-2.5 rounded-xl border border-gray-100 dark:border-gray-700">"{{ $help->completion_notes }}"</p>
                         @endif
                     </div>
                 @endif
@@ -618,7 +649,7 @@
                 <div class="space-y-2">
                     <button wire:click="confirmCompletion" 
                             wire:loading.attr="disabled"
-                            class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl transition shadow-sm flex items-center justify-center gap-2 cursor-pointer">
+                            class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
@@ -648,84 +679,88 @@
 
             @if($customerRating)
                 {{-- Already Rated - Show Rating --}}
-                <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 border border-emerald-200/80 dark:border-emerald-500/30 rounded-2xl shadow-xs">
-                    <div class="flex items-start gap-3">
-                        <div class="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                <div class="bg-white dark:bg-gray-800 mt-2.5 px-5 py-4 border border-emerald-200/80 dark:border-emerald-500/30 rounded-2xl shadow-xs">
+                    <div class="flex items-start gap-3.5">
+                        <div class="w-11 h-11 rounded-2xl bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 shadow-2xs">
                             <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                             </svg>
                         </div>
-                        <div class="flex-1">
-                            <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-2">Rating Anda</h3>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <h3 class="font-bold text-sm text-gray-900 dark:text-white">Penilaian Anda</h3>
+                                <span class="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800">
+                                    {{ $customerRating->rating }}.0 / 5
+                                </span>
+                            </div>
                             <div class="flex items-center gap-1 mb-2">
                                 @for($i = 1; $i <= 5; $i++)
-                                    <svg class="w-5 h-5 {{ $i <= $customerRating->rating ? 'text-amber-400' : 'text-gray-300 dark:text-gray-600' }}" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg class="w-4 h-4 {{ $i <= $customerRating->rating ? 'text-amber-400 fill-current' : 'text-gray-200 dark:text-gray-700' }}" viewBox="0 0 20 20">
                                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                     </svg>
                                 @endfor
-                                <span class="ml-2 text-sm font-semibold text-gray-900 dark:text-white">{{ $customerRating->rating }}/5</span>
                             </div>
                             @if($customerRating->review)
-                                <p class="text-sm text-gray-700 dark:text-gray-300 italic">"{{ $customerRating->review }}"</p>
+                                <p class="text-xs text-gray-700 dark:text-gray-300 italic bg-gray-50/60 dark:bg-gray-750/40 p-2.5 rounded-xl border border-gray-100 dark:border-gray-700">"{{ $customerRating->review }}"</p>
                             @endif
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">{{ $customerRating->created_at->diffForHumans() }}</p>
+                            <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">{{ $customerRating->created_at->diffForHumans() }}</p>
                         </div>
                     </div>
                 </div>
             @else
                 {{-- Rating Form --}}
-                <div class="bg-white dark:bg-gray-800 mt-2 px-5 py-5 border border-amber-200/80 dark:border-amber-500/30 rounded-2xl shadow-xs">
-                    <div class="flex items-start gap-3 mb-4">
-                        <div class="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                <div class="bg-white dark:bg-gray-800 mt-2.5 px-5 py-5 border border-gray-100 dark:border-gray-700/80 rounded-2xl shadow-xs">
+                    <div class="flex items-start gap-3.5 mb-4">
+                        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-2xs">
                             <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                             </svg>
                         </div>
-                        <div class="flex-1">
-                            <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Bagaimana Pengalaman Anda?</h3>
-                            <p class="text-xs text-gray-600 dark:text-gray-300">Berikan rating untuk {{ $help->mitra->name ?? 'mitra' }}</p>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-sm text-gray-900 dark:text-white">Bagaimana Pengalaman Anda?</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Beri rating & ulasan untuk {{ $help->mitra->name ?? 'mitra' }}</p>
                         </div>
                     </div>
 
                     {{-- Star Rating --}}
                     <div class="mb-4">
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Rating *</label>
-                        <div class="flex items-center gap-2">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Pilih Rating Bintang *</label>
+                        <div class="flex items-center gap-2 justify-center py-2 bg-gray-50/70 dark:bg-gray-750/50 rounded-2xl border border-gray-100 dark:border-gray-700/60">
                             @for($i = 1; $i <= 5; $i++)
                                 <button 
                                     type="button"
                                     wire:click="setRating({{ $i }})"
-                                    class="focus:outline-none transition-transform hover:scale-110">
-                                    <svg class="w-9 h-9 {{ $rating >= $i ? 'text-amber-400' : 'text-gray-300 dark:text-gray-600' }}" fill="currentColor" viewBox="0 0 20 20">
+                                    class="p-1 focus:outline-none transition-transform hover:scale-125 cursor-pointer">
+                                    <svg class="w-8 h-8 {{ $rating >= $i ? 'text-amber-400 fill-current drop-shadow-xs' : 'text-gray-300 dark:text-gray-600 fill-current hover:text-amber-300' }}" viewBox="0 0 20 20">
                                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                     </svg>
                                 </button>
                             @endfor
                             @if($rating > 0)
-                                <span class="ml-2 text-sm font-semibold text-gray-900 dark:text-white">{{ $rating }}/5</span>
+                                <span class="ml-2 text-xs font-black text-sky-600 dark:text-sky-400 bg-white dark:bg-gray-800 px-2.5 py-1 rounded-full border border-sky-200 dark:border-sky-800 shadow-2xs">{{ $rating }}.0 / 5</span>
                             @endif
                         </div>
                         @error('rating')
-                            <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>
+                            <p class="text-xs text-rose-600 dark:text-rose-400 mt-1.5 text-center">{{ $message }}</p>
                         @enderror
                     </div>
 
                     {{-- Review Text --}}
                     <div class="mb-4">
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Ulasan (Opsional)</label>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Ulasan (Opsional)</label>
                         <textarea 
                             wire:model="review"
                             rows="3"
-                            placeholder="Ceritakan pengalaman Anda..."
-                            class="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400"
+                            placeholder="Ceritakan pengalaman Anda dengan mitra ini..."
+                            class="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-750/70 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent text-xs text-gray-900 dark:text-white placeholder-gray-400 transition"
                             maxlength="500"></textarea>
                         <div class="flex justify-between items-center mt-1">
                             @error('review')
-                                <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                                <p class="text-[11px] text-rose-600 dark:text-rose-400">{{ $message }}</p>
                             @else
-                                <p class="text-xs text-gray-400">Maksimal 500 karakter</p>
+                                <p class="text-[10px] text-gray-400">Maksimal 500 karakter</p>
                             @enderror
-                            <p class="text-xs text-gray-400">{{ strlen($review ?? '') }}/500</p>
+                            <p class="text-[10px] text-gray-400">{{ strlen($review ?? '') }}/500</p>
                         </div>
                     </div>
 
@@ -733,9 +768,12 @@
                     <button 
                         wire:click="submitRating"
                         wire:loading.attr="disabled"
-                        class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-xl transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span wire:loading.remove>Kirim Rating</span>
-                        <span wire:loading>Mengirim...</span>
+                        class="w-full bg-gradient-to-r from-[#0098e7] to-[#0077cc] hover:from-sky-600 hover:to-blue-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span wire:loading.remove wire:target="submitRating">Kirim Rating</span>
+                        <span wire:loading wire:target="submitRating" class="inline-flex items-center gap-1.5">
+                            <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <span>Mengirim...</span>
+                        </span>
                     </button>
                 </div>
             @endif

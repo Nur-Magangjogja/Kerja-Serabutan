@@ -56,17 +56,19 @@
     }
 
     /**
-     * Suppress ALL transitions on sidebar/header during Livewire SPA navigation
-     * to prevent dark-mode color flash between pages.
-     * Livewire adds [wire\:loading] and dispatches livewire:navigating — our JS
-     * injects a <style> tag, but this CSS class acts as a belt-and-suspenders backup.
+     * Suppress ALL transitions on sidebar/header during Livewire SPA navigation & Theme Toggles
+     * to prevent dark-mode color flash between pages and theme changes.
      */
     body.navigating aside,
     body.navigating header,
     body.navigating main,
     body.navigating aside *,
     body.navigating header *,
-    body.navigating main * {
+    body.navigating main *,
+    html.theme-transitioning,
+    html.theme-transitioning *,
+    html.theme-transitioning *::before,
+    html.theme-transitioning *::after {
         transition: none !important;
         animation-duration: 0.01ms !important;
     }

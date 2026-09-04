@@ -15,10 +15,14 @@ class EnsureMitra
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
+        if (!auth()->check()) {
+            return redirect()->route('login');
+        }
 
-        if (!$user || !$user->isMitra()) {
-            abort(403, 'Unauthorized. Mitra access only.');
+        $user = auth()->user();
+
+        if ($user->role !== 'mitra') {
+            abort(403, 'Akses ditolak. Halaman ini khusus untuk Mitra.');
         }
 
         // 1. Pastikan email terverifikasi

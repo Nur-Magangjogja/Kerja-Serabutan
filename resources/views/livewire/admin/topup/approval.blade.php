@@ -221,23 +221,7 @@
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                         </button>
 
-                                        @if($transaction->status === 'waiting_approval' || $transaction->status === 'pending')
-                                            <!-- Tolak -->
-                                            <button type="button" wire:click="openRejectModal({{ $transaction->id }})"
-                                                wire:loading.attr="disabled"
-                                                class="p-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition cursor-pointer" title="Tolak Request">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                                            </button>
-                                            <!-- Approve -->
-                                            <button type="button" wire:loading.attr="disabled"
-                                                data-id="{{ $transaction->id }}"
-                                                data-name="{{ $transaction->user->name ?? ($transaction->customer_name ?? 'User') }}"
-                                                data-amount="{{ 'Rp ' . number_format($transaction->amount, 0, ',', '.') }}"
-                                                @click.prevent="openFromEl($event)"
-                                                class="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition cursor-pointer" title="Setujui (Approve)">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                                            </button>
-                                        @elseif($transaction->status === 'completed' || $transaction->status === 'approved')
+                                        @if($transaction->status === 'completed' || $transaction->status === 'approved')
                                             <!-- Batalkan Approval (Kasus Barcode Salah / Penipuan / Fraud) -->
                                             <button type="button" wire:click="openCancelApprovalModal({{ $transaction->id }})"
                                                 wire:loading.attr="disabled"

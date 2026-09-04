@@ -4,19 +4,19 @@
 <div class="min-h-screen text-gray-900 dark:text-gray-100 pb-20">
     <!-- Header Bar -->
     <div class="px-4 py-3.5 bg-gradient-to-r from-[#0098e7] via-[#0077cc] to-[#0060b0] text-white shadow-xs rounded-b-2xl">
-        <div class="flex items-center justify-between">
-            <a href="{{ route('customer.withdraw.form') }}" class="p-2 -ml-1 hover:bg-white/15 rounded-xl transition cursor-pointer" aria-label="Kembali ke Form">
+        <div class="relative flex items-center justify-center min-h-[40px]">
+            <a href="{{ route('customer.withdraw.form') }}" class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/15 rounded-xl transition cursor-pointer" aria-label="Kembali ke Form">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
 
-            <div class="text-center">
-                <h1 class="text-sm font-bold tracking-tight">Riwayat Tarik Saldo</h1>
-                <p class="text-[11px] text-white/80">Daftar permintaan pencairan dana Anda</p>
+            <div class="text-center w-full min-w-0 px-12">
+                <h1 class="text-sm font-bold tracking-tight truncate">Riwayat Tarik Saldo</h1>
+                <p class="text-[11px] text-white/80 truncate">Daftar permintaan pencairan dana Anda</p>
             </div>
 
-            <a href="{{ route('customer.dashboard') }}" class="p-2 -mr-1 hover:bg-white/15 rounded-xl transition cursor-pointer" title="Dashboard" aria-label="Dashboard">
+            <a href="{{ route('customer.dashboard') }}" class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/15 rounded-xl transition cursor-pointer" title="Dashboard" aria-label="Dashboard">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>

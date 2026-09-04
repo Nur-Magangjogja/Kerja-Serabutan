@@ -2,7 +2,7 @@
     <!-- Notification Bell Button -->
     <button 
         wire:click="toggleDropdown"
-        class="relative p-2 rounded-xl bg-gray-100/80 dark:bg-gray-700/60 border border-gray-200/60 dark:border-gray-600/60 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 focus:outline-none focus:ring-2 focus:ring-primary-500 transition cursor-pointer text-gray-600 dark:text-gray-200"
+        class="relative inline-flex items-center justify-center p-2 rounded-xl bg-gray-500/10 dark:bg-gray-400/10 border border-gray-500/15 dark:border-gray-400/15 text-gray-700 dark:text-gray-200 hover:bg-gray-500/15 dark:hover:bg-gray-400/20 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer shadow-2xs active:scale-95 transition-transform"
         type="button"
         aria-label="Notifikasi Admin">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

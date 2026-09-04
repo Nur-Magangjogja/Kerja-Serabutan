@@ -27,11 +27,7 @@
     {{-- Info Counter Kiri --}}
     <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
         <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-700/60 border border-gray-200/60 dark:border-gray-600/60 font-medium">
-            <svg class="w-3.5 h-3.5 text-primary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-            </svg>
             <span>
-                Menampilkan
                 <strong class="text-gray-800 dark:text-gray-200">{{ number_format($paginator->firstItem()) }}</strong>
                 &ndash;
                 <strong class="text-gray-800 dark:text-gray-200">{{ number_format($paginator->lastItem()) }}</strong>

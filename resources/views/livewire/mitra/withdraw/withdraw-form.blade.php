@@ -5,19 +5,13 @@
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
             <div class="relative z-10">
-                <div class="flex items-center justify-between text-white">
-                    <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-
-                    <div class="text-center flex-1 min-w-0 px-2">
+                <div class="relative flex items-center justify-center min-h-[40px] text-white">
+                    <div class="text-center w-full min-w-0 px-12">
                         <h1 class="text-base font-bold truncate">Cairkan Penghasilan</h1>
                         <p class="text-xs text-white/90 truncate mt-0.5">Tarik saldo ke rekening bank / e-wallet</p>
                     </div>
 
-                    <a href="{{ route('mitra.withdraw.history') }}" class="p-2 hover:bg-white/20 rounded-xl transition text-xs font-bold flex-shrink-0 flex items-center gap-1" title="Riwayat Pencairan">
+                    <a href="{{ route('mitra.withdraw.history') }}" class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/20 rounded-xl transition text-xs font-bold flex items-center gap-1" title="Riwayat Pencairan">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -39,9 +33,9 @@
 
             {{-- Kartu Info Saldo --}}
             <div class="bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#005da6] rounded-2xl p-5 text-white shadow-md flex items-center justify-between">
-                <div>
+                <div class="min-w-0 pr-2">
                     <span class="text-xs font-medium text-white/80">Saldo Penghasilan Tersedia</span>
-                    <div class="text-2xl font-black mt-1 tracking-tight">Rp {{ number_format($balance, 0, ',', '.') }}</div>
+                    <div class="{{ ($balance ?? 0) >= 10000000 ? 'text-lg sm:text-xl' : (($balance ?? 0) >= 1000000 ? 'text-xl sm:text-2xl' : 'text-2xl') }} font-black mt-1 tracking-tight whitespace-nowrap">Rp {{ number_format($balance, 0, ',', '.') }}</div>
                     <span class="text-[10px] text-white/70 block mt-0.5">Penghasilan dari jasa yang telah diselesaikan</span>
                 </div>
                 <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl shadow-inner flex-shrink-0">

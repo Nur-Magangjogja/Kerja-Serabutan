@@ -60,10 +60,6 @@ Route::middleware('auth')->group(function () {
     Volt::route('confirm-password', 'pages.auth.confirm-password')
         ->name('password.confirm');
 
-    // Admin: registration verification page
-    Volt::route('admin/verification', 'pages.admin.verification')
-        ->name('admin.verification');
-
     Route::post('logout', function () {
         Auth::logout();
         request()->session()->invalidate();

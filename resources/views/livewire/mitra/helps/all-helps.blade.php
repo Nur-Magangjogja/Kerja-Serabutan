@@ -62,34 +62,16 @@
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
             
             <div class="relative z-10 space-y-3">
-                <div class="flex items-center justify-between text-white">
-                    <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-
-                    <div class="text-center flex-1 min-w-0 px-2">
+                <div class="relative flex items-center justify-center min-h-[40px] text-white">
+                    <div class="text-center w-full min-w-0 px-12">
                         <h1 class="text-base font-bold truncate">Semua Bantuan</h1>
                         <p class="text-xs text-white/90 truncate mt-0.5">Cari bantuan yang tersedia</p>
                     </div>
 
-                    <div class="flex items-center gap-2 flex-shrink-0">
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center gap-2">
                         @include('components.notification-icon', ['route' => route('mitra.notifications.index'), 'class' => 'bg-white/15 backdrop-blur-md p-2 rounded-xl hover:bg-white/25 transition cursor-pointer text-white'])
                     </div>
                 </div>
-
-                <!-- Search Bar -->
-                <div class="relative">
-                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama bantuan, lokasi, atau customer..."
-                        class="w-full px-4 py-2.5 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-white/60 outline-none transition text-xs sm:text-sm shadow-sm border-0">
-                    <svg class="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-
 
                 <!-- Distance Radius Filter Grid (No Overflow) -->
                 <div class="grid {{ $userCity ? 'grid-cols-5' : 'grid-cols-4' }} gap-1 bg-black/15 backdrop-blur-md p-1 rounded-xl border border-white/20 text-center">

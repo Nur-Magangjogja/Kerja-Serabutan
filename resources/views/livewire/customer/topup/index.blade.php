@@ -5,16 +5,9 @@
 <div class="min-h-screen bg-gradient-to-b from-gray-50 to-white">
     <div class="max-w-md mx-auto px-4 py-6">
         <div class="bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 rounded-2xl p-4 mb-4 shadow-lg">
-            <div class="flex items-center gap-3">
-                <button onclick="history.back()" class="p-2 rounded-md text-white/90 bg-white/10">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-                <div>
-                    <h1 class="text-lg font-extrabold text-white">Top Up Saldo</h1>
-                    <p class="text-sm text-white/90">Tambah saldo untuk melakukan pembayaran layanan</p>
-                </div>
+            <div>
+                <h1 class="text-lg font-extrabold text-white">Top Up Saldo</h1>
+                <p class="text-sm text-white/90">Tambah saldo untuk melakukan pembayaran layanan</p>
             </div>
         </div>
 
@@ -29,8 +22,6 @@
         @endif
 
         <form wire:submit="submit" 
-              x-data="{ isSubmitting: false }" 
-              @submit="if(isSubmitting) { $event.preventDefault(); return false; } isSubmitting = true" 
               class="bg-white dark:bg-gray-800 rounded-2xl shadow border border-gray-100 dark:border-gray-700 p-5">
             @csrf
 
@@ -49,14 +40,42 @@
                 </div>
             </div>
 
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Nominal lain</label>
-                <input id="amount" wire:model.defer="amount" name="amount" type="number" min="10000" step="100"
-                    placeholder="Masukkan nominal (mis. 50000)"
-                    class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+            <div class="mb-4" x-data="{
+                rawAmount: @entangle('amount').live,
+                formatRupiah(val) {
+                    if (val === null || val === undefined || val === '') return '';
+                    let num = parseInt(val.toString().replace(/[^0-9]/g, ''), 10);
+                    if (isNaN(num)) return '';
+                    return new Intl.NumberFormat('id-ID').format(num);
+                },
+                onInput(e) {
+                    let clean = e.target.value.replace(/[^0-9]/g, '');
+                    let num = clean ? parseInt(clean, 10) : '';
+                    this.rawAmount = num;
+                    e.target.value = this.formatRupiah(num);
+                }
+            }" x-init="
+                $nextTick(() => {
+                    if ($refs.amountInput && rawAmount) {
+                        $refs.amountInput.value = formatRupiah(rawAmount);
+                    }
+                });
+                $watch('rawAmount', val => {
+                    if ($refs.amountInput && document.activeElement !== $refs.amountInput) {
+                        $refs.amountInput.value = formatRupiah(val);
+                    }
+                });
+            ">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-sm font-semibold text-gray-700">Nominal lain</label>
+                </div>
+                <input id="amount"
+                    x-ref="amountInput"
+                    inputmode="numeric"
+                    @input="onInput($event)"
+                    placeholder="Masukkan nominal (mis. 50.000)"
+                    class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent font-semibold">
                 @error('amount') <div class="text-xs text-red-600 mt-2">{{ $message }}</div> @enderror
-                <div class="text-sm text-gray-500 mt-2 text-right">Preview: <span class="font-semibold">Rp
-                        {{ number_format($amount ?? 0, 0, ',', '.') }}</span></div>
             </div>
 
             <div class="mb-4">
@@ -88,8 +107,7 @@
                 <button type="submit"
                     class="w-full bg-primary-600 text-white rounded-lg px-4 py-3 font-bold hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                     wire:loading.attr="disabled"
-                    wire:target="submit"
-                    :disabled="isSubmitting || $wire.isSubmitting">
+                    wire:target="submit">
                     <svg wire:loading wire:target="submit" class="animate-spin h-5 w-5 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>

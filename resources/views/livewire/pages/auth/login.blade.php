@@ -61,6 +61,27 @@ new #[Layout('layouts.blank')] class extends Component {
             $redirect = route('dashboard', absolute: false);
         }
 
+        // Validate intended URL to prevent cross-role leaks/jumps
+        $intended = session()->get('url.intended');
+        if ($intended) {
+            $path = parse_url($intended, PHP_URL_PATH) ?? '';
+            $isValidIntended = false;
+
+            if ($user->role === 'super_admin' && (str_starts_with($path, '/superadmin') || $path === '/dashboard')) {
+                $isValidIntended = true;
+            } elseif ($user->role === 'admin' && (str_starts_with($path, '/admin') || $path === '/dashboard')) {
+                $isValidIntended = true;
+            } elseif ($user->role === 'mitra' && (str_starts_with($path, '/mitra') || $path === '/dashboard')) {
+                $isValidIntended = true;
+            } elseif ($user->role === 'customer' && (str_starts_with($path, '/customer') || $path === '/dashboard' || str_starts_with($path, '/chat') || str_starts_with($path, '/profile'))) {
+                $isValidIntended = true;
+            }
+
+            if (!$isValidIntended) {
+                session()->forget('url.intended');
+            }
+        }
+
         $this->redirectIntended(default: $redirect, navigate: false);
     }
 }; ?>

@@ -20,9 +20,9 @@ class EnsureAdmin
             return redirect()->route('login');
         }
 
-        // Allow admin and super_admin
-        if (!in_array(auth()->user()->role, ['admin', 'super_admin', 'superadmin'])) {
-            abort(403, 'Unauthorized. Admin access only.');
+        // Strict: ONLY admin role allowed. Super Admin must use /superadmin/*
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Halaman ini khusus untuk Admin Wilayah.');
         }
 
         return $next($request);

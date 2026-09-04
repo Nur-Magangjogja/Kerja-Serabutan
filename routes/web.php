@@ -320,7 +320,6 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
     Route::get('/settings/help', \App\Livewire\SuperAdmin\Settings\HelpSettings::class)->name('settings.help');
     Route::get('/settings/withdraw', \App\Livewire\SuperAdmin\Settings\WithdrawSettings::class)->name('settings.withdraw');
     Route::get('/settings/banners', \App\Livewire\SuperAdmin\Banners\Index::class)->name('settings.banners');
-    Route::view('/settings/transactions', 'superadmin.transactions')->name('settings.transactions');
     Route::get('/topup/approvals', \App\Livewire\SuperAdmin\Topup\Approval::class)->name('topup.approvals');
     Route::get('/verifications', \App\Livewire\Admin\Verifications\Index::class)->name('verifications');
     Route::get('/admin-users', \App\Livewire\SuperAdmin\Users\AdminUsers::class)->name('admin.users');
@@ -338,7 +337,7 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
     Route::get('/partners/greylist', \App\Livewire\Admin\Partners\Greylist::class)->name('partners.greylist');
     Route::get('/disputes', \App\Livewire\Admin\Disputes\Index::class)->name('disputes.index');
 
-    Route::view('/settings/appearance', 'superadmin.settings.appearance')->name('settings.appearance');
+    Route::get('/settings/appearance', \App\Livewire\SuperAdmin\Settings\Appearance::class)->name('settings.appearance');
     Route::get('/settings', function () {
         return redirect()->route('superadmin.settings.identity');
     });
@@ -349,7 +348,7 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
 // ========================================
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', \App\Livewire\Admin\Dashboard\Index::class)->name('dashboard');
-    Route::view('/settings/appearance', 'livewire.admin.settings.appearance')->name('settings.appearance');
+    Route::get('/settings/appearance', \App\Livewire\Admin\Settings\Appearance::class)->name('settings.appearance');
     Route::get('/helps', \App\Livewire\Admin\Helps\Index::class)->name('helps');
     Route::get('/verifications', \App\Livewire\Admin\Verifications\Index::class)->name('verifications');
     Route::get('/users', \App\Livewire\SuperAdmin\Users\Index::class)->name('users.index');

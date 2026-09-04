@@ -3,19 +3,9 @@
     <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
         <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
-        <div class="relative z-10 max-w-md mx-auto">
-            <div class="flex items-center justify-between text-white">
-                <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-
-                <div class="text-center flex-1 min-w-0 px-2">
-                    <h1 class="text-base font-bold truncate">Top-Up Saldo</h1>
-                    <p class="text-xs text-white/90 truncate mt-0.5">Isi saldo via QRIS (Bebas Biaya Admin)</p>
-                </div>
-            </div>
+        <div class="relative z-10 max-w-md mx-auto text-white text-center">
+            <h1 class="text-base font-bold truncate">Top-Up Saldo</h1>
+            <p class="text-xs text-white/90 truncate mt-0.5">Isi saldo via QRIS (Bebas Biaya Admin)</p>
         </div>
     </div>
 
@@ -68,16 +58,46 @@
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
                 <form wire:submit="nextStep" class="space-y-4">
                     <!-- Nominal -->
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Nominal Top-Up *</label>
+                    <div x-data="{
+                        rawAmount: @entangle('amount').live,
+                        formatRupiah(val) {
+                            if (val === null || val === undefined || val === '') return '';
+                            let num = parseInt(val.toString().replace(/[^0-9]/g, ''), 10);
+                            if (isNaN(num)) return '';
+                            return new Intl.NumberFormat('id-ID').format(num);
+                        },
+                        onInput(e) {
+                            let clean = e.target.value.replace(/[^0-9]/g, '');
+                            let num = clean ? parseInt(clean, 10) : '';
+                            this.rawAmount = num;
+                            e.target.value = this.formatRupiah(num);
+                        }
+                    }" x-init="
+                        $nextTick(() => {
+                            if ($refs.amountInput && rawAmount) {
+                                $refs.amountInput.value = formatRupiah(rawAmount);
+                            }
+                        });
+                        $watch('rawAmount', val => {
+                            if ($refs.amountInput && document.activeElement !== $refs.amountInput) {
+                                $refs.amountInput.value = formatRupiah(val);
+                            }
+                        });
+                    ">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100">Nominal Top-Up *</label>
+                        </div>
                         <div class="relative">
-                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">Rp</span>
-                            <input type="number" wire:model.live="amount" wire:change="calculateFees"
-                                class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400 dark:placeholder-gray-500 font-semibold"
-                                placeholder="50000" min="100" max="10000000" step="100">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-bold">Rp</span>
+                            <input type="text"
+                                x-ref="amountInput"
+                                inputmode="numeric"
+                                @input="onInput($event)"
+                                class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400 dark:placeholder-gray-500 font-bold text-base"
+                                placeholder="50.000">
                         </div>
                         @error('amount') <span class="text-xs text-red-600 dark:text-red-400 mt-1 block font-medium">{{ $message }}</span> @enderror
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Minimal Rp. 10.000 - 10.000.000</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Minimal Rp 10.000 - Rp 10.000.000</p>
                     </div>
 
                     <!-- Quick Amount Buttons -->
@@ -303,10 +323,7 @@
                         </div>
                     </div>
 
-                    <form wire:submit="submitRequest" 
-                          x-data="{ isSubmitting: false }" 
-                          @submit="if(isSubmitting) { $event.preventDefault(); return false; } isSubmitting = true" 
-                          class="space-y-4">
+                    <form wire:submit="submitRequest" class="space-y-4">
                         <!-- Upload Bukti Transfer -->
                         <div>
                             <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
@@ -346,8 +363,8 @@
                                     </label>
                                 @endif
                             </div>
-                            @error('proofOfPayment') <span class="text-xs text-red-600 dark:text-red-400 mt-1.5 block">{{ $message }}</span> @enderror
-                            <div wire:loading wire:target="proofOfPayment" class="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                            @error('proofOfPayment') <span class="text-xs text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ $message }}</span> @enderror
+                            <div wire:loading wire:target="proofOfPayment" class="text-xs text-blue-600 dark:text-blue-400 mt-1 font-medium">
                                 Memproses unggahan bukti...
                             </div>
                         </div>
@@ -361,8 +378,7 @@
                             <button type="submit"
                                 class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl font-semibold transition shadow-md shadow-blue-500/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 wire:loading.attr="disabled"
-                                wire:target="submitRequest, proofOfPayment"
-                                :disabled="isSubmitting || $wire.isSubmitting">
+                                wire:target="submitRequest, proofOfPayment">
                                 <svg wire:loading wire:target="submitRequest" class="animate-spin h-4 w-4 text-white shrink-0" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>

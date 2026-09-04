@@ -25,21 +25,24 @@ class RedirectBasedOnRole
         if (Auth::check()) {
             $user = Auth::user();
 
+            // Redirect super_admin
+            if ($user->role === 'super_admin' && !$request->routeIs(['superadmin.*', 'logout', 'profile', 'profile.*', 'notifications.*', 'password.*', 'verification.*'])) {
+                return redirect()->route('superadmin.dashboard');
+            }
+
+            // Redirect admin
+            if ($user->role === 'admin' && !$request->routeIs(['admin.*', 'logout', 'profile', 'profile.*', 'notifications.*', 'password.*', 'verification.*'])) {
+                return redirect()->route('admin.dashboard');
+            }
+
             // Redirect mitra to mitra dashboard
-            if ($user->role === 'mitra' && !$request->routeIs(['mitra.*', 'logout'])) {
+            if ($user->role === 'mitra' && !$request->routeIs(['mitra.*', 'logout', 'profile', 'profile.*', 'notifications.*', 'password.*', 'verification.*'])) {
                 return redirect()->route('mitra.dashboard');
             }
 
-            // Redirect admin/super_admin based on their role
-            if (in_array($user->role, ['admin', 'super_admin']) && !$request->routeIs(['admin.*', 'superadmin.*', 'logout'])) {
-                $dashboardRoute = $user->role === 'super_admin' ? 'superadmin.dashboard' : 'admin.dashboard';
-                return redirect()->route($dashboardRoute);
-            }
-
             // Allow customer to access dashboard and other authenticated routes
-            if ($user->role === 'customer') {
-                // Customer can access most routes normally
-                return $next($request);
+            if ($user->role === 'customer' && !$request->routeIs(['customer.*', 'dashboard', 'chat.*', 'ajax.*', 'logout', 'profile', 'profile.*', 'notifications.*', 'password.*', 'verification.*'])) {
+                return redirect()->route('customer.dashboard');
             }
         }
 

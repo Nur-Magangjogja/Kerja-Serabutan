@@ -15,8 +15,12 @@ class EnsureSuperAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check() || !auth()->user()->isSuperAdmin()) {
-            abort(403, 'Unauthorized. Super Admin access only.');
+        if (!auth()->check()) {
+            return redirect()->route('login');
+        }
+
+        if (auth()->user()->role !== 'super_admin') {
+            abort(403, 'Akses ditolak. Halaman ini khusus untuk Super Admin.');
         }
 
         return $next($request);

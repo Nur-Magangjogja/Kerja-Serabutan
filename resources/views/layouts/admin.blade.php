@@ -24,9 +24,26 @@
     </style>
     <script>
         (function() {
+            var _noTransEl = null;
+
+            function _disableTransitions() {
+                if (_noTransEl) return;
+                _noTransEl = document.createElement('style');
+                _noTransEl.textContent = '*,*::before,*::after{-webkit-transition:none!important;-moz-transition:none!important;-o-transition:none!important;-ms-transition:none!important;transition:none!important;animation:none!important;}';
+                document.head.appendChild(_noTransEl);
+            }
+
+            function _enableTransitions() {
+                setTimeout(function() {
+                    if (_noTransEl && _noTransEl.parentNode) _noTransEl.parentNode.removeChild(_noTransEl);
+                    _noTransEl = null;
+                }, 50);
+            }
+
             window.applyTheme = function(mode, opts) {
                 try {
                     var skipIfSame = opts && opts.skipIfSame;
+                    var disableTrans = opts && opts.disableTrans;
                     mode = mode || localStorage.getItem('theme') || localStorage.getItem('color-theme') || 'system';
                     if (mode !== 'dark' && mode !== 'light') mode = 'system';
                     var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -40,16 +57,27 @@
                         return;
                     }
 
-                    if (isDark) {
-                        d.classList.add('dark');
-                        d.style.colorScheme = 'dark';
-                        d.style.backgroundColor = '#111827';
-                        if (document.body) document.body.style.backgroundColor = '#111827';
-                    } else {
-                        d.classList.remove('dark');
-                        d.style.colorScheme = 'light';
-                        d.style.backgroundColor = '#f3f4f6';
-                        if (document.body) document.body.style.backgroundColor = '#f3f4f6';
+                    if (isDark !== currentlyDark) {
+                        if (disableTrans) {
+                            _disableTransitions();
+                        }
+
+                        if (isDark) {
+                            d.classList.add('dark');
+                            d.style.colorScheme = 'dark';
+                            d.style.backgroundColor = '#111827';
+                            if (document.body) document.body.style.backgroundColor = '#111827';
+                        } else {
+                            d.classList.remove('dark');
+                            d.style.colorScheme = 'light';
+                            d.style.backgroundColor = '#f3f4f6';
+                            if (document.body) document.body.style.backgroundColor = '#f3f4f6';
+                        }
+
+                        if (disableTrans) {
+                            void document.documentElement.offsetHeight;
+                            _enableTransitions();
+                        }
                     }
 
                     window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: mode, isDark: isDark } }));
@@ -61,7 +89,7 @@
                 localStorage.setItem('theme', mode);
                 localStorage.setItem('color-theme', mode);
                 document.cookie = "theme=" + mode + "; path=/; max-age=31536000; SameSite=Lax";
-                window.applyTheme(mode);
+                window.applyTheme(mode, { disableTrans: false });
             };
 
             window.getTheme = function() {
@@ -70,35 +98,15 @@
                 return 'system';
             };
 
-            // Execute immediately on page load - skip if HTML already has correct class
-            // (server renders class from cookie, localStorage should match)
-            window.applyTheme(null, { skipIfSame: true });
-
-            // --- Livewire SPA navigation: freeze transitions during page morph ---
-            var _noTransEl = null;
-
-            function _disableTransitions() {
-                if (_noTransEl) return;
-                _noTransEl = document.createElement('style');
-                _noTransEl.textContent = '*,*::before,*::after{transition:none!important;animation-duration:0.01ms!important;}';
-                document.head.appendChild(_noTransEl);
-            }
-
-            function _enableTransitions() {
-                requestAnimationFrame(function() {
-                    requestAnimationFrame(function() {
-                        if (_noTransEl && _noTransEl.parentNode) _noTransEl.parentNode.removeChild(_noTransEl);
-                        _noTransEl = null;
-                    });
-                });
-            }
+            // Execute immediately on page load
+            window.applyTheme(null, { skipIfSame: true, disableTrans: true });
 
             document.addEventListener('livewire:navigating', function() {
                 _disableTransitions();
-                window.applyTheme(null, { skipIfSame: true });
+                window.applyTheme(null, { skipIfSame: true, disableTrans: true });
             });
             document.addEventListener('livewire:navigated', function() {
-                window.applyTheme(null, { skipIfSame: false });
+                window.applyTheme(null, { skipIfSame: false, disableTrans: true });
                 _enableTransitions();
             });
         })();
@@ -114,7 +122,7 @@
 
     <!-- Fonts (Loaded asynchronously / non-blocking) -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800,900|space-grotesk:400,500,600,700|dm-sans:400,500,700,800,900|syne:400,500,600,700,800|nunito:400,600,700,800,900|playfair-display:400,500,600,700,800,900|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800|poppins:400,500,600,700,800|lexend:400,500,600,700,800|montserrat:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -326,17 +334,13 @@
                     default => (View::hasSection('page-title') ? trim(View::getSection('page-title')) : ($title ?? 'Dashboard')),
                 };
             @endphp
-            <header x-data="{ isScrolled: false }"
-                    x-init="isScrolled = (window.pageYOffset > 10 || document.documentElement.scrollTop > 10)"
-                    @scroll.window.passive="isScrolled = (window.pageYOffset > 10 || document.documentElement.scrollTop > 10)"
-                    class="sticky top-0 z-30 border-b w-full transition-all duration-300"
-                    :class="isScrolled ? 'bg-white/20 dark:bg-gray-800/40 backdrop-blur-md border-gray-200/50 dark:border-gray-700/60 shadow-xs' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'">
+            <header class="sticky top-0 z-30 border-b w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-gray-200/80 dark:border-gray-700/80 shadow-xs">
                 <div class="px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
                         <!-- Menu Toggle Button (Always visible on all screens: Desktop, Tablet & Mobile) -->
                         <button @click="toggleSidebar()" 
                                 type="button" 
-                                class="inline-flex items-center justify-center p-2 rounded-xl bg-gray-100/80 dark:bg-gray-700/60 border border-gray-200/60 dark:border-gray-600/60 text-gray-600 dark:text-gray-200 hover:bg-gray-200/80 dark:hover:bg-gray-600/80 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all flex-shrink-0 cursor-pointer" 
+                                class="inline-flex items-center justify-center p-2 rounded-xl bg-gray-500/10 dark:bg-gray-400/10 border border-gray-500/15 dark:border-gray-400/15 text-gray-700 dark:text-gray-200 hover:bg-gray-500/15 dark:hover:bg-gray-400/20 focus:outline-none focus:ring-2 focus:ring-primary-500 flex-shrink-0 cursor-pointer shadow-2xs active:scale-95 transition-transform" 
                                 title="Toggle Menu Sidebar"
                                 aria-label="Toggle Menu Sidebar">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -346,18 +350,18 @@
 
                         <!-- Single Breadcrumb Line Format -->
                         <div class="flex items-center gap-2 min-w-0 text-sm font-bold truncate">
-                            <span class="text-gray-400 dark:text-gray-400 flex-shrink-0">Admin</span>
+                            <span class="text-gray-400 dark:text-gray-400 flex-shrink-0 font-medium">Admin</span>
                             <svg class="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
-                            <span class="text-gray-900 dark:text-white truncate">{{ $currentMenuName }}</span>
+                            <span class="text-gray-900 dark:text-white truncate font-bold">{{ $currentMenuName }}</span>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                         <!-- Quick actions (Refresh) -->
-                        <div class="hidden sm:flex items-center gap-2">
-                            <button onclick="location.reload()" class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100/80 dark:bg-gray-700/60 border border-gray-200/60 dark:border-gray-600/60 text-xs font-semibold text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200/80 dark:hover:bg-gray-600/80 transition cursor-pointer">
+                        <div class="hidden sm:flex items-center">
+                            <button onclick="location.reload()" class="inline-flex items-center gap-2 px-3 py-2 bg-gray-500/10 dark:bg-gray-400/10 border border-gray-500/15 dark:border-gray-400/15 text-xs font-semibold text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-500/15 dark:hover:bg-gray-400/20 shadow-2xs cursor-pointer active:scale-95 transition-transform" title="Muat ulang halaman">
                                 <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6"/></svg>
                                 <span class="hidden md:inline">Refresh</span>
                             </button>
@@ -370,12 +374,16 @@
                         <livewire:admin.notifications.dropdown />
 
                         <!-- User Profile -->
-                        <div class="flex items-center gap-2 sm:gap-3">
-                            <div class="w-9 h-9 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">{{ strtoupper(substr(auth()->user()->name ?? 'A',0,1)) }}</div>
-                                <div class="text-sm font-bold text-gray-800 dark:text-gray-200 max-w-[140px] truncate">{{ auth()->user()->name ?? 'Admin' }}</div>
-                                <div class="text-[11px] text-primary-600 dark:text-primary-400 font-semibold max-w-[160px] truncate" title="{{ auth()->user()->admin_city_names ?? 'Admin' }}">
+                        <div class="flex items-center gap-2.5 pl-1.5 sm:pl-2 border-l border-gray-200/80 dark:border-gray-700/80">
+                            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-600 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-xs flex-shrink-0">
+                                {{ strtoupper(substr(auth()->user()->name ?? 'A', 0, 1)) }}
+                            </div>
+                            <div class="hidden sm:flex flex-col text-left min-w-0">
+                                <span class="text-xs font-bold text-gray-800 dark:text-gray-100 max-w-[130px] truncate leading-tight">{{ auth()->user()->name ?? 'Admin' }}</span>
+                                <span class="text-[10px] font-semibold text-primary-600 dark:text-primary-400 max-w-[140px] truncate leading-tight mt-0.5" title="{{ auth()->user()->admin_city_names ?? 'Admin' }}">
                                     Admin ({{ auth()->user()->admin_city_names ?? 'Wilayah' }})
-                                </div>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>

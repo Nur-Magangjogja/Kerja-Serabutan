@@ -72,23 +72,9 @@
             <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
                 <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
-                <div class="relative z-10">
-                    <div class="flex items-center justify-between text-white">
-                        <button onclick="sessionStorage.removeItem('sayabantu_create_help_draft'); localStorage.removeItem('sayabantu_create_help_draft'); window.history.back()" aria-label="Kembali"
-                            class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </button>
-
-                        <div class="text-center flex-1 min-w-0 px-2">
-                            <h1 class="text-base font-bold truncate">Buat Permintaan Baru</h1>
-                            <p class="text-xs text-white/90 truncate mt-0.5">Isi form di bawah untuk membuat permintaan</p>
-                        </div>
-
-                        <div class="w-9 flex-shrink-0"></div>
-                    </div>
+                <div class="relative z-10 text-white text-center">
+                    <h1 class="text-base font-bold truncate">Buat Permintaan Baru</h1>
+                    <p class="text-xs text-white/90 truncate mt-0.5">Isi form di bawah untuk membuat permintaan</p>
                 </div>
             </div>
 
@@ -142,6 +128,25 @@
                         @enderror
                     </div>
 
+                        @php
+                            $feeCalc = \App\Models\AppSetting::calculatePlatformFee((float) ($amount ?: 0));
+                        @endphp
+                        @if((float) ($amount ?: 0) > 0)
+                            <div class="mt-3 p-3 bg-blue-50/70 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900/40 text-xs space-y-1.5">
+                                <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                                    <span>Imbalan Rekan Jasa :</span>
+                                    <span class="font-semibold text-gray-900 dark:text-gray-100">Rp {{ number_format((float)$amount, 0, ',', '.') }}</span>
+                                </div>
+                                <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                                    <span>Biaya Layanan Platform (Tetap) :</span>
+                                    <span class="font-semibold text-primary-600 dark:text-primary-400">+ Rp {{ number_format($feeCalc['fee_amount'], 0, ',', '.') }}</span>
+                                </div>
+                                <div class="flex justify-between font-bold text-gray-900 dark:text-white pt-1.5 border-t border-blue-200/60 dark:border-blue-800/40 text-sm">
+                                    <span>Total Saldo yang Dibutuhkan:</span>
+                                    <span class="text-blue-600 dark:text-blue-400">Rp {{ number_format($feeCalc['total'], 0, ',', '.') }}</span>
+                                </div>
+                            </div>
+                        @endif
                     <!-- Amount (Nominal Uang) -->
                     <div id="group-amount">
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -227,26 +232,6 @@
                                 {{ $message }}
                             </span>
                         @enderror
-
-                        @php
-                            $feeCalc = \App\Models\AppSetting::calculatePlatformFee((float) ($amount ?: 0));
-                        @endphp
-                        @if((float) ($amount ?: 0) > 0)
-                            <div class="mt-3 p-3 bg-blue-50/70 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900/40 text-xs space-y-1.5">
-                                <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                                    <span>Imbalan Rekan Jasa :</span>
-                                    <span class="font-semibold text-gray-900 dark:text-gray-100">Rp {{ number_format((float)$amount, 0, ',', '.') }}</span>
-                                </div>
-                                <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                                    <span>Biaya Layanan Platform (Tetap) :</span>
-                                    <span class="font-semibold text-primary-600 dark:text-primary-400">+ Rp {{ number_format($feeCalc['fee_amount'], 0, ',', '.') }}</span>
-                                </div>
-                                <div class="flex justify-between font-bold text-gray-900 dark:text-white pt-1.5 border-t border-blue-200/60 dark:border-blue-800/40 text-sm">
-                                    <span>Total Saldo yang Dibutuhkan:</span>
-                                    <span class="text-blue-600 dark:text-blue-400">Rp {{ number_format($feeCalc['total'], 0, ',', '.') }}</span>
-                                </div>
-                            </div>
-                        @endif
                     </div>
 
                     <!-- City -->

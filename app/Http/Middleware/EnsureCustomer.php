@@ -15,10 +15,14 @@ class EnsureCustomer
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
+        if (!auth()->check()) {
+            return redirect()->route('login');
+        }
 
-        if (!$user || !$user->isCustomer()) {
-            abort(403, 'Unauthorized. Customer access only.');
+        $user = auth()->user();
+
+        if ($user->role !== 'customer') {
+            abort(403, 'Akses ditolak. Halaman ini khusus untuk Customer.');
         }
 
         // 1. Pastikan email terverifikasi

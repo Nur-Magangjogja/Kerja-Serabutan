@@ -5,16 +5,8 @@
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
             
             <div class="relative z-10 space-y-4">
-                <div class="flex items-center justify-between text-white">
-                    <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-
-                    <h1 class="text-base font-bold flex-1 text-center truncate px-2">Ulasan Saya</h1>
-
-                    <div class="w-9 flex-shrink-0"></div>
+                <div class="text-white text-center">
+                    <h1 class="text-base font-bold truncate">Ulasan Saya</h1>
                 </div>
 
                 <!-- Rating Summary Card (compact) -->

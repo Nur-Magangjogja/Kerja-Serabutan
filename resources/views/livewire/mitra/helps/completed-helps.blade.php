@@ -5,19 +5,13 @@
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
             
             <div class="relative z-10 space-y-3">
-                <div class="flex items-center justify-between text-white">
-                    <button onclick="window.history.back()" aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-
-                    <div class="text-center flex-1 min-w-0 px-2">
+                <div class="relative flex items-center justify-center min-h-[40px] text-white">
+                    <div class="text-center w-full min-w-0 px-12">
                         <h1 class="text-base font-bold truncate">Riwayat Bantuan</h1>
                         <p class="text-xs text-white/90 truncate mt-0.5">Bantuan selesai & catatan pembatalan</p>
                     </div>
 
-                    <div class="flex items-center gap-2 flex-shrink-0">
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center gap-2">
                         <x-notification-icon :route="route('mitra.notifications.index')" />
                     </div>
                 </div>

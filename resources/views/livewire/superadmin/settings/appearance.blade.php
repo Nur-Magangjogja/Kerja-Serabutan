@@ -1,6 +1,3 @@
-@extends('layouts.superadmin')
-
-@section('content')
 <div class="py-2 space-y-6">
     <!-- Sub-navigation tabs -->
     <x-superadmin-settings-nav active="appearance" />
@@ -16,4 +13,3 @@
         </div>
     </div>
 </div>
-@endsection

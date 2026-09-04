@@ -15,8 +15,12 @@ class EnsureKustomer
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check() || !auth()->user()->isKustomer()) {
-            abort(403, 'Unauthorized. Customer access only.');
+        if (!auth()->check()) {
+            return redirect()->route('login');
+        }
+
+        if (auth()->user()->role !== 'customer') {
+            abort(403, 'Akses ditolak. Halaman ini khusus untuk Customer.');
         }
 
         return $next($request);

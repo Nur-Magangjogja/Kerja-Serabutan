@@ -61,7 +61,7 @@
                     class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $filterStatus === 'cancelled' ? 'bg-purple-600 text-white shadow-sm ring-2 ring-purple-500/20' : 'bg-gray-50 dark:bg-gray-750 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200/60 dark:border-gray-700/60' }}">
                     <span class="w-2 h-2 rounded-full {{ $filterStatus === 'cancelled' ? 'bg-white' : 'bg-purple-500' }}"></span>
                     <span>Dibatalkan / Fraud</span>
-                    <span class="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold {{ $filterStatus === 'cancelled' ? 'bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300' }}">
+                    <span class="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold {{ $filterStatus === 'cancelled' ? 'bg-white/25 text-white' : 'bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300' }}">
                         {{ $totalCancelled }}
                     </span>
                 </button>
@@ -216,23 +216,7 @@
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                         </button>
 
-                                        @if($transaction->status === 'waiting_approval' || $transaction->status === 'pending')
-                                            <!-- Tolak -->
-                                            <button type="button" wire:click="openRejectModal({{ $transaction->id }})"
-                                                wire:loading.attr="disabled"
-                                                class="p-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition cursor-pointer" title="Tolak Request">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                                            </button>
-                                            <!-- Approve -->
-                                            <button type="button" wire:loading.attr="disabled"
-                                                data-id="{{ $transaction->id }}"
-                                                data-name="{{ $transaction->user->name ?? ($transaction->customer_name ?? 'User') }}"
-                                                data-amount="{{ 'Rp ' . number_format($transaction->amount, 0, ',', '.') }}"
-                                                @click.prevent="openFromEl($event)"
-                                                class="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition cursor-pointer" title="Setujui (Approve)">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                                            </button>
-                                        @elseif($transaction->status === 'completed' || $transaction->status === 'approved')
+                                        @if($transaction->status === 'completed' || $transaction->status === 'approved')
                                             <!-- Batalkan Approval (Kasus Barcode Salah / Penipuan / Fraud) -->
                                             <button type="button" wire:click="openCancelApprovalModal({{ $transaction->id }})"
                                                 wire:loading.attr="disabled"

@@ -1,10 +1,10 @@
 <div class="relative" x-data="{ open: false }" @click.away="open = false">
     <button type="button" @click="open = !open"
-        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold shadow-2xs cursor-pointer active:scale-95 transition-transform
         @if($activeFilter !== 'all')
-            bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 ring-2 ring-emerald-500/20
+            bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 dark:border-emerald-500/30 ring-2 ring-emerald-500/20
         @else
-            bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 hover:bg-primary-100 dark:hover:bg-primary-900/50
+            bg-primary-500/15 dark:bg-primary-500/20 text-primary-700 dark:text-primary-300 border border-primary-500/30 dark:border-primary-500/30 hover:bg-primary-500/20 dark:hover:bg-primary-500/30
         @endif"
         title="Pilih Wilayah Pantauan">
         <svg class="w-3.5 h-3.5 @if($activeFilter !== 'all') text-emerald-600 dark:text-emerald-400 @else text-primary-600 dark:text-primary-400 @endif shrink-0" fill="currentColor" viewBox="0 0 20 20">

@@ -32,10 +32,7 @@
                 @endif
 
                 <!-- Form -->
-                <form wire:submit="addBalance" 
-                      x-data="{ isSubmitting: false }" 
-                      @submit="if(isSubmitting) { $event.preventDefault(); return false; } isSubmitting = true" 
-                      class="space-y-4">
+                <form wire:submit="addBalance" class="space-y-4">
                     <!-- Amount Input -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -73,7 +70,6 @@
                         <button type="submit" 
                             wire:loading.attr="disabled"
                             wire:target="addBalance"
-                            :disabled="isSubmitting || $wire.isSubmitting"
                             class="flex-1 py-2.5 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer">
                             <svg wire:loading wire:target="addBalance" class="animate-spin h-4 w-4 text-white shrink-0" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

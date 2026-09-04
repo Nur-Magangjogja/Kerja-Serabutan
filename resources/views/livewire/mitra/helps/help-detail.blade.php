@@ -60,20 +60,13 @@
         <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
         <div class="relative z-10 max-w-md mx-auto">
-            <div class="flex items-center justify-between text-white">
-                <button onclick="window.history.back()" aria-label="Kembali"
-                    class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-
-                <div class="text-center flex-1 min-w-0 px-2">
+            <div class="relative flex items-center justify-center min-h-[40px] text-white">
+                <div class="text-center w-full min-w-0 px-12">
                     <h1 class="text-base font-bold truncate">Detail Pesanan</h1>
                     <p class="text-xs text-white/90 truncate mt-0.5">Informasi lengkap pesanan Anda</p>
                 </div>
 
-                <div class="w-9 flex items-center justify-end flex-shrink-0">
+                <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center justify-end">
                     <button wire:click="loadHelp" wire:loading.attr="disabled" title="Segarkan Status" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center">
                         <svg wire:loading.remove wire:target="loadHelp" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -251,32 +244,32 @@
                 ->first();
         @endphp
         @if($mitraReport)
-            <div class="bg-amber-50 dark:bg-amber-950/40 px-4 py-4 rounded-xl shadow-sm border border-amber-200/80 dark:border-amber-700 mb-3 space-y-3">
-                <div class="flex items-start gap-2.5">
-                    <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <div class="bg-gradient-to-br from-purple-50 to-indigo-50/50 dark:from-purple-950/40 dark:to-indigo-950/30 px-4 py-4 rounded-2xl shadow-xs border border-purple-200/80 dark:border-purple-800/60 mb-3 space-y-3">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-purple-500/20 shadow-2xs">
+                        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     </div>
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <h4 class="text-xs font-bold text-amber-950 dark:text-amber-100">Klarifikasi Laporan Aduan (#{{ $mitraReport->id }})</h4>
-                            <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full {{ $mitraReport->status === 'resolved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-200 text-amber-900' }}">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap mb-1">
+                            <h4 class="text-xs font-bold text-purple-950 dark:text-purple-100">Klarifikasi Laporan Aduan (#{{ $mitraReport->id }})</h4>
+                            <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full {{ $mitraReport->status === 'resolved' ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300' : 'bg-purple-100 dark:bg-purple-900/80 text-purple-800 dark:text-purple-300' }}">
                                 {{ ucfirst($mitraReport->status) }}
                             </span>
                         </div>
-                        <p class="text-[11px] text-amber-900/90 dark:text-amber-300 mt-1">
+                        <p class="text-xs text-purple-900/85 dark:text-purple-300/90 leading-relaxed break-words">
                             Customer mengajukan klaim/aduan pada bantuan ini: <em>"{{ $mitraReport->message }}"</em>
                         </p>
                     </div>
                 </div>
 
                 {{-- Tombol Buka Ruang Chat Klarifikasi Khusus --}}
-                <div class="pt-2 border-t border-amber-200/60 dark:border-amber-800/60 flex items-center justify-between gap-2 flex-wrap">
-                    <div class="text-[11px] text-amber-800 dark:text-amber-300">
+                <div class="pt-2.5 border-t border-purple-200/60 dark:border-purple-800/60 flex items-center justify-between gap-2 flex-wrap">
+                    <div class="text-[11px] text-purple-800 dark:text-purple-300">
                         @php $mitraMsgCount = $mitraReport->messages()->count(); @endphp
                         <span>{{ $mitraMsgCount > 0 ? $mitraMsgCount . ' pesan klarifikasi tersedia' : 'Ruang klarifikasi dengan Admin aktif' }}</span>
                     </div>
                     <a href="{{ route('mitra.chat', ['admin' => 1, 'report' => $mitraReport->id]) }}"
-                        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+                        class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                         <span>Buka Ruang Chat Klarifikasi</span>
                     </a>
@@ -515,44 +508,29 @@
         @endif
 
         @if ($help->status === 'waiting_customer_confirmation')
-            <div class="bg-amber-50 dark:bg-amber-950/40 px-4 py-4 rounded-2xl border border-amber-200 dark:border-amber-800 mb-3">
-                <div class="flex items-start gap-3">
-                    <div class="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-white flex-shrink-0">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
+            <div class="bg-gradient-to-br from-sky-50/90 via-blue-50/50 to-indigo-50/40 dark:from-sky-950/40 dark:via-blue-950/30 dark:to-gray-800/60 p-4 sm:p-5 rounded-2xl border border-sky-200/80 dark:border-sky-800/60 shadow-xs mb-3 space-y-3">
+                <div class="flex items-start ">
+                    
                     <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Menunggu Konfirmasi Customer</h4>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700">
-                                🛡️ Escrow Rp {{ number_format($help->amount, 0, ',', '.') }} Diamankan
+                        <div class="flex items-center justify-between gap-4 flex-wrap mb-1">
+                            <h4 class="font-bold text-sm text-sky-950 dark:text-sky-100">Menunggu Konfirmasi Customer</h4>
+                            <span class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 shadow-2xs">
+                                🛡️ Dana Rp {{ number_format($help->amount, 0, ',', '.') }} Diamankan
                             </span>
                         </div>
-                        <p class="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
-                            Bukti pengerjaan telah berhasil dikirim. Dana otomatis cair ke saldo Anda saat customer mengonfirmasi atau dalam batas waktu 24 jam.
+                        <p class="text-xs text-sky-900/80 dark:text-sky-200/85 leading-relaxed">
+                            Bukti pengerjaan telah terkirim. Dana otomatis cair ke saldo Anda saat customer mengonfirmasi atau dalam batas waktu 24 jam.
                         </p>
-
-                        <!-- Status Bebas Tugas & Quick Action -->
-                        <div class="mt-3 p-3 rounded-xl bg-white/80 dark:bg-gray-800/80 border border-amber-200/80 dark:border-amber-800/60 flex items-center justify-between gap-3 flex-wrap">
-                            <div>
-                                <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 block uppercase">Status Mitra Saat Ini</span>
-                                <span class="text-xs font-black text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                    BEBAS TUGAS (STANDBY)
-                                </span>
-                            </div>
-                            <a href="{{ route('mitra.helps.all') }}" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5">
-                                <span>Cari Order Baru</span>
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                            </a>
-                        </div>
                         
                         @if($help->proof_photo)
-                            <div class="mt-3 pt-3 border-t border-amber-200/60 dark:border-amber-800/40">
-                                <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 block mb-1.5">Foto Bukti yang Terkirim:</span>
-                                <img src="{{ asset('storage/' . $help->proof_photo) }}" alt="Bukti Pekerjaan" class="w-full max-h-48 object-cover rounded-xl border border-amber-200 shadow-sm">
+                            <div class="mt-3 pt-3 border-t border-sky-200/60 dark:border-sky-800/40">
+                                <span class="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-2 flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    Foto Bukti yang Terkirim:
+                                </span>
+                                <a href="{{ asset('storage/' . $help->proof_photo) }}" target="_blank" rel="noopener" class="block rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-900/10 max-h-52 flex items-center justify-center group">
+                                    <img src="{{ asset('storage/' . $help->proof_photo) }}" alt="Bukti Pekerjaan" class="w-full h-auto max-h-52 object-contain group-hover:scale-105 transition-transform duration-300">
+                                </a>
                             </div>
                         @endif
                     </div>
@@ -561,11 +539,16 @@
         @endif
 
         @if (in_array($help->status, ['completed', 'selesai']) && $help->proof_photo)
-            <div class="bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3.5 rounded-2xl border border-emerald-200 dark:border-emerald-800 mb-3">
-                <span class="text-xs font-bold text-emerald-800 dark:text-emerald-300 block mb-2">📸 Foto Bukti Penyelesaian Pekerjaan:</span>
-                <img src="{{ asset('storage/' . $help->proof_photo) }}" alt="Bukti Selesai" class="w-full max-h-48 object-cover rounded-xl border border-emerald-200 shadow-sm">
+            <div class="bg-emerald-50 dark:bg-emerald-950/30 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800 mb-3 space-y-2">
+                <span class="text-xs font-bold text-emerald-800 dark:text-emerald-300 block flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Foto Bukti Penyelesaian Pekerjaan:
+                </span>
+                <a href="{{ asset('storage/' . $help->proof_photo) }}" target="_blank" rel="noopener" class="block rounded-xl overflow-hidden border border-emerald-200/80 dark:border-emerald-800 bg-gray-900/10 max-h-52 flex items-center justify-center group">
+                    <img src="{{ asset('storage/' . $help->proof_photo) }}" alt="Bukti Selesai" class="w-full h-auto max-h-52 object-contain group-hover:scale-105 transition-transform duration-300">
+                </a>
                 @if($help->completion_notes)
-                    <p class="text-xs text-gray-600 dark:text-gray-300 mt-2 italic">"{{ $help->completion_notes }}"</p>
+                    <p class="text-xs text-gray-700 dark:text-gray-300 italic bg-white dark:bg-gray-800 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-900/40">"{{ $help->completion_notes }}"</p>
                 @endif
             </div>
         @endif
@@ -577,22 +560,22 @@
             @endphp
 
             @if ($customerReview)
-                <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-amber-200/70 dark:border-amber-500/30 shadow-xs mb-3">
-                    <div class="flex items-center justify-between mb-2.5 pb-2.5 border-b border-amber-200/60 dark:border-amber-800/40">
-                        <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-700/80 shadow-xs mb-3">
+                    <div class="flex items-center justify-between mb-3 pb-2.5 border-b border-gray-100 dark:border-gray-700/60">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
                                 ⭐
                             </div>
                             <div>
                                 <h4 class="font-bold text-sm text-gray-900 dark:text-white">Ulasan dari Customer</h4>
-                                <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ optional($customerReview->created_at)->translatedFormat('d M Y, H:i') }}</p>
+                                <p class="text-[11px] text-gray-400 dark:text-gray-400">{{ optional($customerReview->created_at)->translatedFormat('d M Y, H:i') }} WIB</p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/60 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-800/60">
-                            <span class="text-sm font-extrabold text-amber-700 dark:text-amber-300">{{ $customerReview->rating }}.0</span>
-                            <div class="flex">
+                        <div class="flex items-center gap-1 bg-gray-50 dark:bg-gray-750 px-2.5 py-1 rounded-full border border-gray-100 dark:border-gray-700">
+                            <span class="text-xs font-black text-gray-900 dark:text-white">{{ $customerReview->rating }}.0</span>
+                            <div class="flex ml-0.5">
                                 @for ($i = 1; $i <= 5; $i++)
-                                    <svg class="w-3.5 h-3.5 {{ $i <= $customerReview->rating ? 'text-amber-500 fill-current' : 'text-gray-300 dark:text-gray-600 fill-current' }}" viewBox="0 0 20 20">
+                                    <svg class="w-3.5 h-3.5 {{ $i <= $customerReview->rating ? 'text-amber-400 fill-current' : 'text-gray-200 dark:text-gray-700 fill-current' }}" viewBox="0 0 20 20">
                                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                     </svg>
                                 @endfor
@@ -601,15 +584,15 @@
                     </div>
 
                     @if(!empty($customerReview->review))
-                        <div class="bg-white/80 dark:bg-gray-800/80 rounded-xl p-3 border border-amber-100 dark:border-amber-900/40 text-sm text-gray-800 dark:text-gray-200 italic leading-relaxed">
+                        <div class="bg-gray-50/70 dark:bg-gray-750/50 rounded-xl p-3 border border-gray-100 dark:border-gray-700/60 text-xs text-gray-800 dark:text-gray-200 italic leading-relaxed">
                             "{{ $customerReview->review }}"
                         </div>
                     @else
-                        <p class="text-xs text-gray-500 italic">Customer memberikan rating {{ $customerReview->rating }} bintang tanpa ulasan tertulis.</p>
+                        <p class="text-xs text-gray-400 italic">Customer memberikan rating {{ $customerReview->rating }} bintang tanpa ulasan tertulis.</p>
                     @endif
                 </div>
             @else
-                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-3.5 border border-gray-200 dark:border-gray-700 text-center mb-3">
+                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-3.5 border border-gray-100 dark:border-gray-700/70 text-center mb-3">
                     <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1.5">
                         <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                         <span>Menunggu customer memberikan penilaian & ulasan</span>
@@ -756,14 +739,16 @@
                     </p>
 
                     {{-- Catatan Kepatuhan Pembatalan --}}
-                    <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-3.5 mb-4 text-left">
-                        <div class="flex items-start gap-2.5">
-                            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                            </svg>
+                    <div class="bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 mb-4 text-left">
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-xl bg-amber-500/15 dark:bg-amber-500/25 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5 border border-amber-500/20">
+                                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                            </div>
                             <div>
-                                <p class="text-xs font-bold text-amber-900 dark:text-amber-200 mb-0.5">Ketentuan Pembatalan Tugas:</p>
-                                <p class="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                                <p class="text-xs font-bold text-gray-900 dark:text-white mb-0.5">Ketentuan Pembatalan Tugas:</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
                                     Pembatalan tugas yang sudah diambil dapat dicatat oleh sistem. Pelanggaran berulang dapat menyebabkan akun masuk ke <strong>Daftar Abu-Abu</strong> dan menerima <strong>Surat Peringatan (SP)</strong> dari Admin.
                                 </p>
                             </div>
@@ -839,9 +824,9 @@
                  style="padding-bottom: env(safe-area-inset-bottom,24px);">
                 
                 {{-- Header --}}
-                <div class="sticky top-0 bg-amber-600 px-5 py-4 rounded-t-3xl">
+                <div class="sticky top-0 bg-gradient-to-r from-sky-600 to-[#0077cc] px-5 py-4 rounded-t-3xl shadow-xs">
                     <div class="flex items-center justify-between text-white">
-                        <h3 class="text-lg font-bold">Menunggu Konfirmasi</h3>
+                        <h3 class="text-base font-bold">Menunggu Konfirmasi</h3>
                         <div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
                     </div>
                 </div>
@@ -850,46 +835,46 @@
                 <div class="p-5 pb-6">
                     {{-- Icon & Animation --}}
                     <div class="flex items-center justify-center mb-4">
-                        <div class="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/40 rounded-full flex items-center justify-center relative">
-                            <svg class="w-10 h-10 text-yellow-600 dark:text-yellow-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-20 h-20 bg-sky-50 dark:bg-sky-950/60 rounded-full flex items-center justify-center relative border border-sky-100 dark:border-sky-800/60 shadow-2xs">
+                            <svg class="w-10 h-10 text-sky-600 dark:text-sky-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <div class="absolute -top-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
-                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <div class="absolute -top-1 -right-1 w-6 h-6 bg-sky-500 rounded-full flex items-center justify-center text-white shadow-xs">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                                 </svg>
                             </div>
                         </div>
                     </div>
 
-                    <h4 class="text-center font-bold text-lg text-gray-900 dark:text-white mb-2">Permintaan Pembatalan Terkirim</h4>
-                    <p class="text-sm text-gray-700 dark:text-gray-300 text-center mb-5">
-                        Anda telah mengajukan pembatalan pesanan ini. Menunggu konfirmasi dari customer.
+                    <h4 class="text-center font-bold text-base text-gray-900 dark:text-white mb-1.5">Permintaan Pembatalan Terkirim</h4>
+                    <p class="text-xs text-gray-600 dark:text-gray-300 text-center mb-5 leading-relaxed">
+                        Anda telah mengajukan pembatalan pesanan ini. Menunggu respon & konfirmasi dari customer.
                     </p>
 
                     {{-- Detail Info --}}
-                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 mb-5 space-y-3">
+                    <div class="bg-gray-50 dark:bg-gray-750/70 rounded-2xl p-4 mb-5 space-y-2.5 border border-gray-100 dark:border-gray-700/60">
                         @if ($help->partner_cancel_reason)
                             <div>
-                                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Alasan Pembatalan:</p>
-                                <p class="text-sm text-gray-900 dark:text-white">{{ $help->partner_cancel_reason }}</p>
+                                <p class="text-[11px] font-bold text-gray-400 dark:text-gray-400 mb-0.5">Alasan Pembatalan:</p>
+                                <p class="text-xs font-semibold text-gray-800 dark:text-gray-200">"{{ $help->partner_cancel_reason }}"</p>
                             </div>
                         @endif
                         @if ($help->partner_cancel_requested_at)
-                            <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400 pt-1 border-t border-gray-100 dark:border-gray-700/50">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                Diajukan: {{ \Carbon\Carbon::parse($help->partner_cancel_requested_at)->translatedFormat('d F Y, H:i') }} WIB
+                                Diajukan: {{ \Carbon\Carbon::parse($help->partner_cancel_requested_at)->translatedFormat('d M Y, H:i') }} WIB
                             </div>
                         @endif
                     </div>
 
                     {{-- Loading Animation --}}
                     <div class="flex items-center justify-center gap-2 mb-5">
-                        <div class="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" style="animation-delay: 0s"></div>
-                        <div class="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
-                        <div class="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        <div class="w-2 h-2 bg-sky-500 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                        <div class="w-2 h-2 bg-sky-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                        <div class="w-2 h-2 bg-sky-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
                     </div>
 
                     {{-- Info Text --}}
