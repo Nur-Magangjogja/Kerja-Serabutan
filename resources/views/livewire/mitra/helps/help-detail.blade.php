@@ -1435,6 +1435,17 @@
                 setTimeout(initMitraRouteMap, 200);
             });
 
+            document.addEventListener('livewire:navigating', () => {
+                if (mapInstance) {
+                    try { mapInstance.remove(); } catch(e){}
+                    mapInstance = null;
+                }
+                const mapContainer = document.getElementById('mitra-route-map');
+                if (mapContainer && mapContainer._leaflet_id) {
+                    mapContainer._leaflet_id = null;
+                }
+            });
+
             document.addEventListener('livewire:navigated', () => {
                 setTimeout(initMitraRouteMap, 200);
             });

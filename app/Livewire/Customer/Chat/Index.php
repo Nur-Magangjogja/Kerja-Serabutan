@@ -128,23 +128,35 @@ class Index extends Component
             }
 
             $mitras = $mitrasQuery->get();
+            $filteredMitraIds = $mitras->pluck('id');
 
-            $conversations = $mitras->map(function ($mitra) use ($userId) {
-                $lastMessage = ChatModel::where('customer_id', $userId)
-                    ->where('mitra_id', $mitra->id)
-                    ->latest('created_at')
-                    ->first();
+            // Bulk eager load last messages in a single query
+            $allChats = ChatModel::where('customer_id', $userId)
+                ->whereIn('mitra_id', $filteredMitraIds)
+                ->orderByDesc('created_at')
+                ->get()
+                ->groupBy('mitra_id');
 
-                $unreadCount = ChatModel::where('customer_id', $userId)
-                    ->where('mitra_id', $mitra->id)
-                    ->where('sender_type', 'mitra')
-                    ->whereNull('read_at')
-                    ->count();
+            // Bulk eager load unread counts in a single query
+            $unreadCounts = ChatModel::where('customer_id', $userId)
+                ->whereIn('mitra_id', $filteredMitraIds)
+                ->where('sender_type', 'mitra')
+                ->whereNull('read_at')
+                ->selectRaw('mitra_id, count(*) as total')
+                ->groupBy('mitra_id')
+                ->pluck('total', 'mitra_id');
 
-                $latestHelp = Help::where('user_id', $userId)
-                    ->where('mitra_id', $mitra->id)
-                    ->latest('updated_at')
-                    ->first();
+            // Bulk eager load latest helps in a single query
+            $latestHelps = Help::where('user_id', $userId)
+                ->whereIn('mitra_id', $filteredMitraIds)
+                ->orderByDesc('updated_at')
+                ->get()
+                ->groupBy('mitra_id');
+
+            $conversations = $mitras->map(function ($mitra) use ($allChats, $unreadCounts, $latestHelps) {
+                $lastMessage = $allChats->get($mitra->id)?->first();
+                $unreadCount = (int) ($unreadCounts->get($mitra->id) ?? 0);
+                $latestHelp = $latestHelps->get($mitra->id)?->first();
 
                 return (object) [
                     'partner'      => $mitra,

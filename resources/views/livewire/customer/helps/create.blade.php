@@ -1225,6 +1225,19 @@
             
             let customerMap = null;
             let customerMarker = null;
+            let mapResizeTimer = null;
+
+            function safeInvalidateSize(mapObj, containerId = 'map') {
+                if (!mapObj) return;
+                try {
+                    const el = typeof containerId === 'string' ? document.getElementById(containerId) : containerId;
+                    if (el && document.body.contains(el) && mapObj._mapPane && mapObj._loaded && typeof mapObj.invalidateSize === 'function') {
+                        mapObj.invalidateSize();
+                    }
+                } catch (e) {
+                    // Suppress Leaflet detached element errors
+                }
+            }
 
             function locateUserGPS() {
                 if (!navigator.geolocation) {
@@ -1366,6 +1379,11 @@
                     return;
                 }
 
+                if (mapResizeTimer) {
+                    clearTimeout(mapResizeTimer);
+                    mapResizeTimer = null;
+                }
+
                 // If a previous map instance exists globally on window or locally, remove it cleanly
                 if (window._activeCustomerMap) {
                     try { window._activeCustomerMap.remove(); } catch(e){}
@@ -1400,7 +1418,9 @@
                         maxZoom: 19,
                     }).addTo(customerMap);
                     
-                    setTimeout(() => { if (customerMap) customerMap.invalidateSize(); }, 250);
+                    mapResizeTimer = setTimeout(() => {
+                        safeInvalidateSize(customerMap, mapContainer);
+                    }, 250);
 
                     // Existing coordinates marker
                     if (existingLat && existingLng) {
@@ -1436,6 +1456,14 @@
 
             // Cleanup map before Livewire navigation
             document.addEventListener('livewire:navigating', () => {
+                if (mapResizeTimer) {
+                    clearTimeout(mapResizeTimer);
+                    mapResizeTimer = null;
+                }
+                if (customerMap) {
+                    try { customerMap.remove(); } catch(e){}
+                    customerMap = null;
+                }
                 if (window._activeCustomerMap) {
                     try { window._activeCustomerMap.remove(); } catch(e){}
                     window._activeCustomerMap = null;

@@ -118,23 +118,35 @@ class Index extends Component
             }
 
             $customers = $customersQuery->get();
+            $filteredCustomerIds = $customers->pluck('id');
 
-            $conversations = $customers->map(function ($customer) use ($mitraId) {
-                $lastMessage = ChatModel::where('mitra_id', $mitraId)
-                    ->where('customer_id', $customer->id)
-                    ->latest('created_at')
-                    ->first();
+            // Bulk eager load last messages in a single query
+            $allChats = ChatModel::where('mitra_id', $mitraId)
+                ->whereIn('customer_id', $filteredCustomerIds)
+                ->orderByDesc('created_at')
+                ->get()
+                ->groupBy('customer_id');
 
-                $unreadCount = ChatModel::where('mitra_id', $mitraId)
-                    ->where('customer_id', $customer->id)
-                    ->where('sender_type', 'customer')
-                    ->whereNull('read_at')
-                    ->count();
+            // Bulk eager load unread counts in a single query
+            $unreadCounts = ChatModel::where('mitra_id', $mitraId)
+                ->whereIn('customer_id', $filteredCustomerIds)
+                ->where('sender_type', 'customer')
+                ->whereNull('read_at')
+                ->selectRaw('customer_id, count(*) as total')
+                ->groupBy('customer_id')
+                ->pluck('total', 'customer_id');
 
-                $latestHelp = Help::where('user_id', $customer->id)
-                    ->where('mitra_id', $mitraId)
-                    ->latest('updated_at')
-                    ->first();
+            // Bulk eager load latest helps in a single query
+            $latestHelps = Help::where('mitra_id', $mitraId)
+                ->whereIn('user_id', $filteredCustomerIds)
+                ->orderByDesc('updated_at')
+                ->get()
+                ->groupBy('user_id');
+
+            $conversations = $customers->map(function ($customer) use ($allChats, $unreadCounts, $latestHelps) {
+                $lastMessage = $allChats->get($customer->id)?->first();
+                $unreadCount = (int) ($unreadCounts->get($customer->id) ?? 0);
+                $latestHelp = $latestHelps->get($customer->id)?->first();
 
                 return (object) [
                     'partner'      => $customer,

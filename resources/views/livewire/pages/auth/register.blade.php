@@ -187,8 +187,7 @@ new #[Layout('layouts.guest')] class extends Component {
         <!-- 3. Alamat Email Google (Gmail) -->
         <div class="space-y-1">
             <label for="email" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center justify-between">
-                <span>Alamat Email Google</span>
-                <span class="text-[10px] text-primary-600 dark:text-primary-400 font-bold bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded-md border border-primary-200/60 dark:border-primary-800/60">@gmail.com</span>
+                <span>Alamat Email </span>
             </label>
             <div class="relative">
                 <input wire:model="email" id="email" type="email" required placeholder="nama@gmail.com"

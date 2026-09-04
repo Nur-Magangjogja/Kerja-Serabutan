@@ -145,6 +145,6 @@ class WithdrawForm extends Component
             'totalDeduction' => $totalDeduction,
             'isPlatform' => $feeCalc['is_platform_account'],
             'selectedBankName' => $feeCalc['bank_name'],
-        ])->layout('layouts.app');
+        ])->layout('layouts.mitra');
     }
 }

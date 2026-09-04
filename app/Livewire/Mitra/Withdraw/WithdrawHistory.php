@@ -51,6 +51,6 @@ class WithdrawHistory extends Component
 
         return view('livewire.mitra.withdraw.withdraw-history', [
             'withdraws' => $withdraws,
-        ])->layout('layouts.app');
+        ])->layout('layouts.mitra');
     }
 }

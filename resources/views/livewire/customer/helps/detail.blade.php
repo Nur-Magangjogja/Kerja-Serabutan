@@ -1059,6 +1059,19 @@
             let initAttempts = 0;
             const maxAttempts = 50;
             let mapInitialized = false; // Flag untuk track map status
+            let mapResizeTimer = null;
+
+            function safeInvalidateSize(mapObj, containerId = 'tracking-map') {
+                if (!mapObj) return;
+                try {
+                    const el = typeof containerId === 'string' ? document.getElementById(containerId) : containerId;
+                    if (el && document.body.contains(el) && mapObj._mapPane && mapObj._loaded && typeof mapObj.invalidateSize === 'function') {
+                        mapObj.invalidateSize();
+                    }
+                } catch (e) {
+                    // Suppress Leaflet detached element errors
+                }
+            }
 
             function showError(message) {
                 console.error('❌ Error:', message);
@@ -1298,11 +1311,9 @@
             mapInitialized = true;
 
             // Force map to refresh tiles after short delay
-            setTimeout(() => {
-                if (map) {
-                    map.invalidateSize();
-                    console.log('🔄 Map size recalculated');
-                }
+            mapResizeTimer = setTimeout(() => {
+                safeInvalidateSize(map, 'tracking-map');
+                console.log('🔄 Map size recalculated');
             }, 100);
 
             // Update akan otomatis dari Livewire polling + Alpine hook
@@ -1695,7 +1706,22 @@
                 });
             });
 
-            // Stop polling on page unload
+            // Stop polling and cleanup map on Livewire navigation and page unload
+            document.addEventListener('livewire:navigating', () => {
+                if (mapResizeTimer) {
+                    clearTimeout(mapResizeTimer);
+                    mapResizeTimer = null;
+                }
+                stopPolling();
+                if (map) {
+                    try { map.remove(); } catch(e){}
+                    map = null;
+                }
+                const mapEl = document.getElementById('tracking-map');
+                if (mapEl && mapEl._leaflet_id) {
+                    mapEl._leaflet_id = null;
+                }
+            });
             window.addEventListener('beforeunload', stopPolling);
         })();
     </script>
