@@ -251,7 +251,7 @@
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 flex-wrap mb-1">
-                            <h4 class="text-xs font-bold text-purple-950 dark:text-purple-100">Klarifikasi Laporan Aduan (#{{ $mitraReport->id }})</h4>
+                            <h4 class="text-xs font-bold text-purple-950 dark:text-purple-100">Klarifikasi Laporan Aduan ({{ $mitraReport->id }})</h4>
                             <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full {{ $mitraReport->status === 'resolved' ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300' : 'bg-purple-100 dark:bg-purple-900/80 text-purple-800 dark:text-purple-300' }}">
                                 {{ ucfirst($mitraReport->status) }}
                             </span>

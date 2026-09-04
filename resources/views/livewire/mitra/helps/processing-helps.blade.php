@@ -51,8 +51,8 @@
                         <p class="text-xs text-white/90 truncate mt-0.5">Kelola pekerjaan yang sedang berjalan</p>
                     </div>
 
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center gap-2">
-                        <x-notification-icon :route="route('mitra.notifications.index')" />
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                        <x-mitra.notification-icon />
                     </div>
                 </div>
             </div>

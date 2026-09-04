@@ -68,8 +68,8 @@
                         <p class="text-xs text-white/90 truncate mt-0.5">Cari bantuan yang tersedia</p>
                     </div>
 
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center gap-2">
-                        @include('components.notification-icon', ['route' => route('mitra.notifications.index'), 'class' => 'bg-white/15 backdrop-blur-md p-2 rounded-xl hover:bg-white/25 transition cursor-pointer text-white'])
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                        <x-mitra.notification-icon />
                     </div>
                 </div>
 

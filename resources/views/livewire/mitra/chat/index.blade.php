@@ -181,7 +181,7 @@
                                     <h3 class="font-bold text-sm text-gray-900 dark:text-white truncate">{{ $selected_partner->name }}</h3>
                                     @if($active_help)
                                         <a href="{{ route('mitra.helps.detail', $active_help->id) }}" class="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 truncate font-medium" title="Lihat Tugas">
-                                            <span>Bantuan #{{ $active_help->id }}: {{ Str::limit($active_help->title, 25) }}</span>
+                                            <span>Bantuan {{ $active_help->id }}: {{ Str::limit($active_help->title, 25) }}</span>
                                         </a>
                                     @else
                                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Customer</p>
@@ -228,7 +228,7 @@
                                     @php $lastHelpContextId = $msg->help_id; @endphp
                                     <div class="flex items-center justify-center my-3">
                                         <div class="bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/80 px-3 py-1 rounded-full text-[11px] text-blue-700 dark:text-blue-300 font-semibold shadow-xs flex items-center gap-1">
-                                            <span>📌 Konteks: Bantuan #{{ $msg->help_id }} — {{ Str::limit($msg->help->title, 35) }}</span>
+                                            <span>📌 Konteks: Bantuan {{ $msg->help_id }} — {{ Str::limit($msg->help->title, 35) }}</span>
                                         </div>
                                     </div>
                                 @endif

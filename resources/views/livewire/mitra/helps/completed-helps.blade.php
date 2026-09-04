@@ -11,8 +11,8 @@
                         <p class="text-xs text-white/90 truncate mt-0.5">Bantuan selesai & catatan pembatalan</p>
                     </div>
 
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center gap-2">
-                        <x-notification-icon :route="route('mitra.notifications.index')" />
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                        <x-mitra.notification-icon />
                     </div>
                 </div>
 
@@ -230,7 +230,7 @@
                                                 @if($activity->help?->order_id)
                                                     Order: <span class="font-mono">{{ $activity->help->order_id }}</span> • 
                                                 @elseif($activity->help_id ?? $activity->reference_id)
-                                                    ID: #{{ $activity->help_id ?? $activity->reference_id }} • 
+                                                    ID: {{ $activity->help_id ?? $activity->reference_id }} • 
                                                 @endif
                                                 {{ $activity->created_at ? $activity->created_at->format('d M Y • H:i') : '-' }}
                                             </p>

@@ -67,7 +67,8 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    @include('components.notification-icon', ['route' => route('customer.notifications.index'), 'class' => 'bg-white/15 backdrop-blur-md p-2.5 rounded-xl hover:bg-white/25 transition shadow-xs cursor-pointer text-white'])
+                    <x-customer.chat-icon />
+                    <x-customer.notification-icon />
                 </div>
             </div>
 
@@ -203,25 +204,6 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Chat Quick Shortcut -->
-    <div class="px-5 mt-2.5 sm:mt-3 flex items-center justify-end relative z-10">
-        <a
-            href="{{ route('customer.chat') }}"
-            class="relative w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700 shadow-xs hover:shadow-md hover:scale-105 active:scale-95 hover:border-sky-300 dark:hover:border-sky-600 transition flex items-center justify-center group cursor-pointer"
-            title="Buka Chat"
-            aria-label="Buka Chat"
-        >
-            <svg class="w-6 h-6 text-[#0098e7] dark:text-[#38bdf8] group-hover:scale-110 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-5 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-1l-4 4z" />
-            </svg>
-            @if(!empty($unreadChatCount) && $unreadChatCount > 0)
-                <span class="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center text-[10px] font-bold bg-rose-500 text-white rounded-full min-w-[18px] h-[18px] px-1 shadow-xs ring-2 ring-white dark:ring-gray-800 animate-pulse">
-                    {{ $unreadChatCount > 99 ? '99+' : $unreadChatCount }}
-                </span>
-            @endif
-        </a>
     </div>
 
     {{-- Official Warning / Shadow Ban Alert Banner for Customer --}}

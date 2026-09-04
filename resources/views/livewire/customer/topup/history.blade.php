@@ -50,7 +50,7 @@
                         <div class="flex items-start justify-between mb-3">
                             <div class="flex-1">
                                 <div class="flex items-center gap-2 mb-1 flex-wrap">
-                                    <h3 class="font-bold text-gray-900 dark:text-gray-100 text-sm">{{ $transaction->request_code ?? '#'.$transaction->id }}</h3>
+                                    <h3 class="font-bold text-gray-900 dark:text-gray-100 text-sm">{{ $transaction->request_code ?? $transaction->id }}</h3>
                                     @if($transaction->status === 'waiting_approval' || $transaction->status === 'pending')
                                         <span class="px-2.5 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-xs font-semibold rounded-full flex items-center gap-1.5 border border-amber-200 dark:border-amber-800/50">
                                             <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
@@ -210,7 +210,7 @@
                     <div class="bg-gray-50 dark:bg-gray-900/60 rounded-xl p-4 space-y-3 border border-gray-100 dark:border-gray-700/60">
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500 dark:text-gray-400">Kode Request:</span>
-                            <span class="font-semibold text-gray-900 dark:text-gray-100">{{ $selectedTransaction->request_code ?? '#'.$selectedTransaction->id }}</span>
+                            <span class="font-semibold text-gray-900 dark:text-gray-100">{{ $selectedTransaction->request_code ?? $selectedTransaction->id }}</span>
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500 dark:text-gray-400">Tanggal Request:</span>

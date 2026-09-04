@@ -18,6 +18,10 @@
                         <h1 class="text-base font-bold truncate">Bantuan & Dukungan</h1>
                         <p class="text-xs text-white/90 truncate mt-0.5">Kami siap membantu Anda</p>
                     </div>
+
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                        <x-mitra.notification-icon />
+                    </div>
                 </div>
             </div>
         </div>

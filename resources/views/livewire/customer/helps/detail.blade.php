@@ -518,7 +518,7 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
-                                <h4 class="text-xs sm:text-sm font-bold text-purple-950 dark:text-purple-100">Laporan Aduan (#{{ $existingReport->id }})</h4>
+                                <h4 class="text-xs sm:text-sm font-bold text-purple-950 dark:text-purple-100">Laporan Aduan ({{ $existingReport->id }})</h4>
                                 <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full {{ $existingReport->status === 'resolved' ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300' }}">
                                     {{ $existingReport->refund_status === 'approved' ? 'Refund Disetujui' : ucfirst($existingReport->status) }}
                                 </span>

@@ -73,7 +73,7 @@
                             {{-- Card Header --}}
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <span class="font-mono font-bold text-xs text-gray-900 dark:text-white">#WD-{{ $wd->id }}</span>
+                                    <span class="font-mono font-bold text-xs text-gray-900 dark:text-white">WD-{{ $wd->id }}</span>
                                     <p class="text-[10px] text-gray-400 mt-0.5">{{ $wd->created_at->format('d M Y • H:i') }}</p>
                                 </div>
 
@@ -177,7 +177,7 @@
             <div class="bg-white dark:bg-gray-800 rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-150">
                 <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                     <div>
-                        <h3 class="text-xs font-bold text-gray-900 dark:text-white">Bukti Transfer #WD-{{ $selectedWithdrawId }}</h3>
+                        <h3 class="text-xs font-bold text-gray-900 dark:text-white">Bukti Transfer WD-{{ $selectedWithdrawId }}</h3>
                         <p class="text-[10px] text-gray-500 dark:text-gray-400">Diunggah oleh Super Admin / Admin</p>
                     </div>
                     <button wire:click="closeProofModal" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center transition cursor-pointer">

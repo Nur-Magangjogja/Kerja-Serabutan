@@ -61,7 +61,8 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    @include('components.notification-icon', ['route' => route('mitra.notifications.index'), 'class' => 'bg-white/15 backdrop-blur-md p-2.5 rounded-xl hover:bg-white/25 transition shadow-xs cursor-pointer text-white'])
+                    <x-mitra.chat-icon />
+                    <x-mitra.notification-icon />
                 </div>
             </div>
 

@@ -1,5 +1,5 @@
 @props([
-    'route' => null,
+    'route' => route('mitra.notifications.index'),
     'class' => 'w-10 h-10 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 hover:bg-white/25 active:scale-95 transition-all flex items-center justify-center text-white shadow-xs cursor-pointer relative',
 ])
 
@@ -11,14 +11,6 @@
         }
     } catch (\Exception $e) {
         $unread = 0;
-    }
-
-    if (!$route) {
-        if (auth()->check() && auth()->user()->role === 'mitra') {
-            $route = route('mitra.notifications.index');
-        } else {
-            $route = route('customer.notifications.index');
-        }
     }
 @endphp
 

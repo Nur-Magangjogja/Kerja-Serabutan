@@ -63,13 +63,13 @@
                                     <div class="text-xs text-gray-400 mt-0.5">
                                         💼 Pembatalan tugas
                                         @if($transaction->reference_id)
-                                            · Bantuan #{{ $transaction->reference_id }}
+                                            · Bantuan {{ $transaction->reference_id }}
                                         @endif
                                     </div>
                                 @else
                                     {{-- deduction: show reference help id if present --}}
                                     @if($transaction->reference_id)
-                                        Untuk Bantuan #{{ $transaction->reference_id }}
+                                        Untuk Bantuan {{ $transaction->reference_id }}
                                     @else
                                         {{ $transaction->description ?? 'Pengurangan' }}
                                     @endif

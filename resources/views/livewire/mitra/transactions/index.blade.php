@@ -11,8 +11,8 @@
                         <p class="text-xs text-white/90 truncate mt-0.5">Pendapatan & penarikan saldo</p>
                     </div>
 
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center gap-2">
-                        <x-notification-icon :route="route('mitra.notifications.index')" />
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                        <x-mitra.notification-icon />
                     </div>
                 </div>
             </div>
@@ -137,7 +137,7 @@
                                         @if($type === 'cancellation' || $type === 'penalty')
                                             {{ $t->description ?? 'Pembatalan Tugas Bantuan' }}
                                         @elseif($type === 'earning')
-                                            {{ $t->description ?? ($t->help?->title ? 'Pendapatan: ' . $t->help->title : 'Pendapatan Bantuan #' . $t->reference_id) }}
+                                            {{ $t->description ?? ($t->help?->title ? 'Pendapatan: ' . $t->help->title : 'Pendapatan Bantuan ' . $t->reference_id) }}
                                         @elseif($type === 'withdraw')
                                             {{ $t->description ?? 'Penarikan Saldo Dompet Mitra' }}
                                         @else
@@ -325,7 +325,7 @@
                         @if($selectedTransaction['reference_id'])
                             <div class="flex justify-between items-center text-xs sm:text-sm">
                                 <span class="text-gray-500 dark:text-gray-400">ID Referensi</span>
-                                <span class="font-mono font-bold text-xs text-gray-800 dark:text-gray-200">#{{ $selectedTransaction['reference_id'] }}</span>
+                                <span class="font-mono font-bold text-xs text-gray-800 dark:text-gray-200">{{ $selectedTransaction['reference_id'] }}</span>
                             </div>
                         @endif
 

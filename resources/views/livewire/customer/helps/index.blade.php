@@ -26,8 +26,8 @@
                         <p class="text-xs text-white/90 truncate mt-0.5">Kelola permintaan bantuan Anda</p>
                     </div>
 
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center gap-2">
-                        <x-notification-icon :route="route('customer.notifications.index')" />
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                        <x-customer.notification-icon />
                     </div>
                 </div>
 

@@ -11,8 +11,8 @@
                         <p class="text-xs text-white/90 truncate mt-0.5">Mutasi saldo & pengembalian dana</p>
                     </div>
 
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center gap-2">
-                        @include('components.notification-icon', ['route' => route('customer.notifications.index'), 'class' => 'bg-white/15 backdrop-blur-md p-2 rounded-xl hover:bg-white/25 transition cursor-pointer text-white'])
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                        <x-customer.notification-icon />
                     </div>
                 </div>
             </div>
@@ -184,9 +184,9 @@
                                                 • {{ $t->order_id }}
                                             @endif
                                         @elseif($type === 'refund')
-                                            {{ $t->description ?? ($t->help?->title ? 'Refund: ' . $t->help->title : 'Pengembalian Dana Bantuan #' . $t->reference_id) }}
+                                            {{ $t->description ?? ($t->help?->title ? 'Refund: ' . $t->help->title : 'Pengembalian Dana Bantuan ' . $t->reference_id) }}
                                         @elseif($type === 'escrow_lock')
-                                            {{ $t->description ?? ($t->help?->title ? 'Bantuan: ' . $t->help->title : 'Pembayaran Bantuan #' . $t->reference_id) }}
+                                            {{ $t->description ?? ($t->help?->title ? 'Bantuan: ' . $t->help->title : 'Pembayaran Bantuan ' . $t->reference_id) }}
                                         @else
                                             {{ $t->description ?? 'Mutasi Saldo' }}
                                         @endif
@@ -403,7 +403,7 @@
                         @if($selectedTransaction['reference_id'])
                             <div class="flex justify-between items-center text-xs sm:text-sm">
                                 <span class="text-gray-500 dark:text-gray-400">ID Referensi</span>
-                                <span class="font-mono font-bold text-xs text-gray-800 dark:text-gray-200">#{{ $selectedTransaction['reference_id'] }}</span>
+                                <span class="font-mono font-bold text-xs text-gray-800 dark:text-gray-200">{{ $selectedTransaction['reference_id'] }}</span>
                             </div>
                         @endif
 

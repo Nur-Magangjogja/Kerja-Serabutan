@@ -32,7 +32,7 @@
                         </div>
                         <div>
                             <span class="text-[10px] uppercase font-bold tracking-wider text-gray-400">Bantuan Terpilih</span>
-                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">#{{ $selectedHelp->id }} - {{ $selectedHelp->title }}</h3>
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">{{ $selectedHelp->title }}</h3>
                         </div>
                     </div>
 
@@ -89,7 +89,7 @@
                     <option value="">-- Pilih Permintaan Bantuan Anda --</option>
                     @foreach ($helps as $h)
                         <option value="{{ $h->id }}">
-                            #{{ $h->id }} - {{ Str::limit($h->title, 40) }} (Rp {{ number_format($h->total_amount ?: $h->amount, 0, ',', '.') }})
+                            {{ Str::limit($h->title, 40) }} (Rp {{ number_format($h->total_amount ?: $h->amount, 0, ',', '.') }})
                         </option>
                     @endforeach
                 </select>

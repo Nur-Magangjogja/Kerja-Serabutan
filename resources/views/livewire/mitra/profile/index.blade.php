@@ -56,7 +56,7 @@
                     </div>
 
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
-                        <x-notification-icon :route="route('mitra.notifications.index')" />
+                        <x-mitra.notification-icon />
                     </div>
                 </div>
 
