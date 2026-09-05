@@ -189,7 +189,7 @@
                             </div>
                             <p class="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 leading-snug mt-0.5">
                                 @if(($onlineState?->matching_status ?? 'offline') === 'searching')
-                                    Radar aktif mencari order terdekat di lokasi Anda.
+                                    Sedang aktif mencari order terdekat di lokasi Anda.
                                 @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
                                     Siap menerima order. Klik "Cari Order" untuk mengaktifkan radar.
                                 @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
