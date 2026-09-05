@@ -11,17 +11,21 @@ class DatabaseSeeder extends Seeder
 
     /**
      * Seed the application's database.
-     * Mengisi data awal sistem sesuai struktur migration database terbaru.
+     * Mengisi seluruh data awal sistem SayaBantu secara lengkap, terstruktur, dan realistis.
      */
     public function run(): void
     {
         $this->call([
             AppSettingsSeeder::class,
-            Cityseeder::class,
+            CitySeeder::class,
             UserSeeder::class,
             AdminCitySeeder::class,
+            RegistrationsSeeder::class,
             HelpsSeeder::class,
             UserBalancesSeeder::class,
+            PartnerHistorySeeder::class,
+            PartnerOnlineStateSeeder::class,
+            ActivityLogsSeeder::class,
             AdminNotificationSeeder::class,
             NotificationSeeder::class,
         ]);

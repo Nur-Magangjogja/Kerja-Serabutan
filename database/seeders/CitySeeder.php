@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\City;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\CityCapacity;
 use Illuminate\Database\Seeder;
 
 class CitySeeder extends Seeder
@@ -13,28 +13,72 @@ class CitySeeder extends Seeder
      */
     public function run(): void
     {
-        $citiesPath = database_path('seeders/data/cities.json');
-        if (file_exists($citiesPath)) {
-            $this->call(IndonesiaRegionsSeeder::class);
-            return;
-        }
-
         $cities = [
-            ['name' => 'Jakarta', 'province' => 'DKI Jakarta', 'code' => '3171', 'type' => 'Kota'],
-            ['name' => 'Ponorogo', 'province' => 'Jawa Timur', 'code' => '3502', 'type' => 'Kabupaten'],
-            ['name' => 'Surabaya', 'province' => 'Jawa Timur', 'code' => '3578', 'type' => 'Kota'],
-            ['name' => 'Bandung', 'province' => 'Jawa Barat', 'code' => '3273', 'type' => 'Kota'],
-            ['name' => 'Medan', 'province' => 'Sumatera Utara', 'code' => '1271', 'type' => 'Kota'],
-            ['name' => 'Semarang', 'province' => 'Jawa Tengah', 'code' => '3374', 'type' => 'Kota'],
-            ['name' => 'Yogyakarta', 'province' => 'DI Yogyakarta', 'code' => '3471', 'type' => 'Kota'],
-            ['name' => 'Makassar', 'province' => 'Sulawesi Selatan', 'code' => '7371', 'type' => 'Kota'],
-            ['name' => 'Palembang', 'province' => 'Sumatera Selatan', 'code' => '1671', 'type' => 'Kota'],
-            ['name' => 'Denpasar', 'province' => 'Bali', 'code' => '5171', 'type' => 'Kota'],
-            ['name' => 'Malang', 'province' => 'Jawa Timur', 'code' => '3573', 'type' => 'Kota'],
+            [
+                'name'        => 'Kabupaten Sleman',
+                'province'    => 'D.I. Yogyakarta',
+                'province_id' => '34',
+                'code'        => '3404',
+                'type'        => 'Kabupaten',
+                'postal_code' => '55511',
+                'latitude'    => -7.7155600,
+                'longitude'   => 110.3555600,
+                'is_active'   => true,
+            ],
+            [
+                'name'        => 'Kota Surakarta',
+                'province'    => 'Jawa Tengah',
+                'province_id' => '33',
+                'code'        => '3372',
+                'type'        => 'Kota',
+                'postal_code' => '57111',
+                'latitude'    => -7.5666700,
+                'longitude'   => 110.8166700,
+                'is_active'   => true,
+            ],
+            [
+                'name'        => 'Kota Yogyakarta',
+                'province'    => 'D.I. Yogyakarta',
+                'province_id' => '34',
+                'code'        => '3471',
+                'type'        => 'Kota',
+                'postal_code' => '55000',
+                'latitude'    => -7.7956000,
+                'longitude'   => 110.3695000,
+                'is_active'   => true,
+            ],
+            [
+                'name'        => 'Kota Semarang',
+                'province'    => 'Jawa Tengah',
+                'province_id' => '33',
+                'code'        => '3374',
+                'type'        => 'Kota',
+                'postal_code' => '50134',
+                'latitude'    => -6.9932000,
+                'longitude'   => 110.4203000,
+                'is_active'   => true,
+            ],
         ];
 
-        foreach ($cities as $city) {
-            City::firstOrCreate(['name' => $city['name']], $city);
+        foreach ($cities as $cityData) {
+            $city = City::updateOrCreate(
+                ['name' => $cityData['name']],
+                $cityData
+            );
+
+            // Inisialisasi kapasitas kota
+            CityCapacity::firstOrCreate(
+                ['city_id' => $city->id],
+                [
+                    'capacity_status'          => 'open',
+                    'online_total'             => 25,
+                    'busy_now'                 => 0,
+                    'searching_now'            => 0,
+                    'partner_utilization_rate' => 15.0,
+                ]
+            );
         }
+
+        $this->command->info('CitySeeder berhasil menyiapkan wilayah Sleman (D.I. Yogyakarta) & Surakarta (Jawa Tengah).');
     }
 }

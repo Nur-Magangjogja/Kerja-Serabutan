@@ -12,38 +12,45 @@ class AdminCitySeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     * Menghubungkan akun Admin ke Kota/Kabupaten Sleman.
+     * Menghubungkan akun Admin ke Kota/Kabupaten Sleman & Surakarta.
      */
     public function run(): void
     {
-        $admin = User::where('email', 'admin@sayabantu.com')->first();
-        $slemanCity = City::where('name', 'like', '%Sleman%')->first();
+        $adminSleman = User::whereIn('email', ['admin.sleman@sayabantu.com', 'admin@sayabantu.com'])->first();
+        $adminSolo   = User::where('email', 'admin.surakarta@sayabantu.com')->first();
 
-        if (!$admin || !$slemanCity) {
-            $this->command->warn('Admin user atau Kota Sleman tidak ditemukan.');
-            return;
+        $slemanCity  = City::where('name', 'like', '%Sleman%')->first();
+        $soloCity    = City::where('name', 'like', '%Surakarta%')->first();
+
+        // 1. Hubungkan Admin Sleman
+        if ($adminSleman && $slemanCity) {
+            if (Schema::hasTable('admin_city')) {
+                DB::table('admin_city')->updateOrInsert(
+                    ['city_id' => $slemanCity->id, 'user_id' => $adminSleman->id],
+                    ['created_at' => now(), 'updated_at' => now()]
+                );
+            }
+            $slemanCity->update([
+                'admin_id' => $adminSleman->id,
+                'is_active' => true,
+            ]);
+            $this->command->info("Admin '{$adminSleman->name}' berhasil ditugaskan mengurusi Kota/Kabupaten '{$slemanCity->name}'.");
         }
 
-        // 1. Hubungkan di tabel pivot `admin_city`
-        if (Schema::hasTable('admin_city')) {
-            DB::table('admin_city')->updateOrInsert(
-                [
-                    'city_id' => $slemanCity->id,
-                    'user_id' => $admin->id,
-                ],
-                [
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
-            );
+        // 2. Hubungkan Admin Surakarta
+        if ($adminSolo && $soloCity) {
+            if (Schema::hasTable('admin_city')) {
+                DB::table('admin_city')->updateOrInsert(
+                    ['city_id' => $soloCity->id, 'user_id' => $adminSolo->id],
+                    ['created_at' => now(), 'updated_at' => now()]
+                );
+            }
+            $soloCity->update([
+                'admin_id' => $adminSolo->id,
+                'is_active' => true,
+            ]);
+            $this->command->info("Admin '{$adminSolo->name}' berhasil ditugaskan mengurusi Kota/Kabupaten '{$soloCity->name}'.");
         }
-
-        // 2. Set admin_id di tabel `cities`
-        $slemanCity->update([
-            'admin_id' => $admin->id,
-            'is_active' => true,
-        ]);
-
-        $this->command->info("Admin '{$admin->name}' berhasil ditugaskan mengurusi Kota/Kabupaten '{$slemanCity->name}'.");
     }
 }
+
