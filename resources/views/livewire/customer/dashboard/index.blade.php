@@ -86,11 +86,11 @@
 
     <!-- Balance Card (Smooth Controlled Overlap) -->
     <div class="px-5 -mt-8 relative z-20">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden">
-            <div class="flex items-center justify-between gap-3">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-3.5 sm:p-4 shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div class="grid grid-cols-[1fr_auto] items-center justify-between gap-3 sm:gap-4">
                 <!-- Balance Information -->
                 <div
-                    class="min-w-0 flex-1"
+                    class="min-w-0"
                     x-data="{
                         show: sessionStorage.getItem('balance_visible') === 'true',
 
@@ -104,41 +104,22 @@
                         }
                     }"
                 >
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                        Total Saldo
-                    </p>
-
-                    <div class="flex items-center gap-2 min-w-0">
-                        <!-- SALDO TERLIHAT -->
-                        <h2
-                            class="{{ ($balance ?? 0) >= 10000000 ? 'text-sm sm:text-base md:text-lg' : (($balance ?? 0) >= 1000000 ? 'text-base sm:text-lg md:text-xl' : 'text-lg sm:text-xl') }} font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap tracking-tight"
-                            x-show="show"
-                            x-cloak
-                        >
-                            Rp {{ number_format($balance ?? 0, 0, ',', '.') }}
-                        </h2>
-
-                        <!-- SALDO TERSEMBUNYI -->
-                        <h2
-                            class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight whitespace-nowrap"
-                            x-show="!show"
-                            x-cloak
-                        >
-                            Rp ••••••
-                        </h2>
-
+                    <div class="flex items-center gap-1.5 mb-0.5">
+                        <p class="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
+                            Total Saldo
+                        </p>
                         <!-- TOGGLE VISIBILITY -->
                         <button
                             type="button"
                             @click="toggleBalance()"
-                            class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition cursor-pointer text-gray-500 dark:text-gray-400 flex-shrink-0"
+                            class="p-0.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
                             aria-label="Tampilkan atau sembunyikan saldo"
                         >
                             <!-- ICON MATA TERTUTUP -->
                             <svg
                                 x-show="!show"
                                 x-cloak
-                                class="w-4 h-4"
+                                class="w-3.5 h-3.5"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -161,7 +142,7 @@
                             <svg
                                 x-show="show"
                                 x-cloak
-                                class="w-4 h-4"
+                                class="w-3.5 h-3.5"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -175,16 +156,36 @@
                             </svg>
                         </button>
                     </div>
+
+                    <div class="flex items-center min-w-0">
+                        <!-- SALDO TERLIHAT -->
+                        <h2
+                            class="{{ ($balance ?? 0) >= 10000000 ? 'text-sm sm:text-base md:text-lg' : (($balance ?? 0) >= 1000000 ? 'text-base sm:text-lg md:text-xl' : 'text-lg sm:text-xl') }} font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap tracking-tight"
+                            x-show="show"
+                            x-cloak
+                        >
+                            Rp {{ number_format($balance ?? 0, 0, ',', '.') }}
+                        </h2>
+
+                        <!-- SALDO TERSEMBUNYI -->
+                        <h2
+                            class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight whitespace-nowrap"
+                            x-show="!show"
+                            x-cloak
+                        >
+                            Rp ••••••
+                        </h2>
+                    </div>
                 </div>
 
-                <!-- ACTIONS: TARIK DANA & TOP UP -->
-                <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                <!-- ACTIONS: TARIK DANA & TOP UP (Compact & Neat) -->
+                <div class="flex items-center gap-1.5 flex-shrink-0">
                     <!-- TARIK DANA -->
                     <a
                         href="{{ route('customer.withdraw.form') }}"
-                        class="px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl text-xs font-bold transition border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/60 text-gray-700 dark:text-gray-200 flex items-center gap-1 sm:gap-1.5 cursor-pointer flex-shrink-0 shadow-xs whitespace-nowrap"
+                        class="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 active:scale-95 shadow-2xs whitespace-nowrap"
                     >
-                        <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                         <span>Tarik Dana</span>
@@ -193,11 +194,10 @@
                     <!-- TOP UP -->
                     <a
                         href="{{ route('customer.topup.request') }}"
-                        class="text-white px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl text-xs font-bold transition shadow-md hover:shadow-lg flex items-center gap-1 sm:gap-1.5 cursor-pointer flex-shrink-0 whitespace-nowrap"
-                        style="background: linear-gradient(to bottom right, #0098e7, #0060b0);"
+                        class="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold text-white transition-all duration-200 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 shadow-xs active:scale-95 whitespace-nowrap"
                     >
-                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4" />
                         </svg>
                         <span>Top Up</span>
                     </a>

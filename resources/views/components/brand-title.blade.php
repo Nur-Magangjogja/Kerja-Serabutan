@@ -84,7 +84,7 @@
         'gradient_gold'    => 'text-yellow-300 drop-shadow-sm',
         'gradient_crimson' => 'text-rose-300 drop-shadow-sm',
         'solid_primary'    => 'text-sky-200 drop-shadow-sm',
-        'solid_monochrome' => 'text-white/95 drop-shadow-sm',
+        'solid_monochrome' => 'text-slate-200 drop-shadow-sm',
         // Legacy support
         'gradient_cyan'    => 'text-cyan-300 drop-shadow-sm',
         default            => 'text-cyan-300 drop-shadow-sm', // two_tone
@@ -96,65 +96,65 @@
         'gradient_sunset'  => 'bg-amber-300 shadow-amber-400/50',
         'gradient_gold'    => 'bg-yellow-300 shadow-yellow-400/50',
         'gradient_crimson' => 'bg-rose-300 shadow-rose-400/50',
-        'solid_primary'    => 'bg-sky-200',
-        'solid_monochrome' => 'bg-white',
+        'solid_primary'    => 'bg-sky-200 shadow-sky-300/50',
+        'solid_monochrome' => 'bg-slate-200 shadow-slate-300/50',
         // Legacy support
-        'gradient_cyan'    => 'bg-cyan-300',
+        'gradient_cyan'    => 'bg-cyan-300 shadow-cyan-400/50',
         default            => 'bg-cyan-300 shadow-cyan-400/50', // two_tone
     };
 
     // Color Styles for Dark Theme (on white/light background)
     $accentDark = match($selectedStyle) {
-        'gradient_indigo'  => 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent',
-        'gradient_emerald' => 'bg-gradient-to-r from-emerald-500 via-teal-500 to-green-600 bg-clip-text text-transparent',
-        'gradient_sunset'  => 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 bg-clip-text text-transparent',
-        'gradient_gold'    => 'bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 bg-clip-text text-transparent',
-        'gradient_crimson' => 'bg-gradient-to-r from-red-600 via-rose-500 to-pink-600 bg-clip-text text-transparent',
+        'gradient_indigo'  => 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent',
+        'gradient_emerald' => 'bg-gradient-to-r from-emerald-500 via-teal-500 to-green-600 dark:from-emerald-400 dark:via-teal-400 dark:to-green-400 bg-clip-text text-transparent',
+        'gradient_sunset'  => 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 dark:from-amber-400 dark:via-orange-400 dark:to-rose-400 bg-clip-text text-transparent',
+        'gradient_gold'    => 'bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 dark:from-amber-400 dark:via-yellow-400 dark:to-orange-400 bg-clip-text text-transparent',
+        'gradient_crimson' => 'bg-gradient-to-r from-red-600 via-rose-500 to-pink-600 dark:from-red-400 dark:via-rose-400 dark:to-pink-400 bg-clip-text text-transparent',
         'solid_primary'    => 'text-primary-600 dark:text-primary-400',
         'solid_monochrome' => 'text-slate-700 dark:text-slate-300',
         // Legacy support
-        'gradient_cyan'    => 'bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400 bg-clip-text text-transparent',
-        default            => 'bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 bg-clip-text text-transparent', // two_tone
+        'gradient_cyan'    => 'bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 dark:from-sky-400 dark:via-cyan-400 dark:to-blue-400 bg-clip-text text-transparent',
+        default            => 'bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 dark:from-sky-400 dark:via-cyan-400 dark:to-blue-400 bg-clip-text text-transparent', // two_tone
     };
 
     $dotDark = match($selectedStyle) {
-        'gradient_indigo'  => 'bg-purple-600',
-        'gradient_emerald' => 'bg-emerald-500',
-        'gradient_sunset'  => 'bg-orange-500',
-        'gradient_gold'    => 'bg-amber-500',
-        'gradient_crimson' => 'bg-rose-600',
+        'gradient_indigo'  => 'bg-purple-600 dark:bg-purple-400',
+        'gradient_emerald' => 'bg-emerald-500 dark:bg-teal-400',
+        'gradient_sunset'  => 'bg-orange-500 dark:bg-amber-400',
+        'gradient_gold'    => 'bg-amber-500 dark:bg-yellow-400',
+        'gradient_crimson' => 'bg-rose-600 dark:bg-rose-400',
         'solid_primary'    => 'bg-primary-600 dark:bg-primary-400',
         'solid_monochrome' => 'bg-slate-700 dark:bg-slate-300',
         // Legacy support
-        'gradient_cyan'    => 'bg-sky-500',
-        default            => 'bg-cyan-500', // two_tone
+        'gradient_cyan'    => 'bg-cyan-500 dark:bg-cyan-400',
+        default            => 'bg-cyan-500 dark:bg-cyan-400', // two_tone
     };
 
     // Color Styles for Admin Theme
     $accentAdmin = match($selectedStyle) {
-        'gradient_indigo'  => 'text-indigo-600 dark:text-purple-400',
-        'gradient_emerald' => 'text-emerald-600 dark:text-teal-400',
-        'gradient_sunset'  => 'text-orange-600 dark:text-amber-400',
-        'gradient_gold'    => 'text-amber-600 dark:text-yellow-400',
-        'gradient_crimson' => 'text-rose-600 dark:text-rose-400',
+        'gradient_indigo'  => 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent',
+        'gradient_emerald' => 'bg-gradient-to-r from-emerald-500 via-teal-500 to-green-600 dark:from-emerald-400 dark:via-teal-400 dark:to-green-400 bg-clip-text text-transparent',
+        'gradient_sunset'  => 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 dark:from-amber-400 dark:via-orange-400 dark:to-rose-400 bg-clip-text text-transparent',
+        'gradient_gold'    => 'bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 dark:from-amber-400 dark:via-yellow-400 dark:to-orange-400 bg-clip-text text-transparent',
+        'gradient_crimson' => 'bg-gradient-to-r from-red-600 via-rose-500 to-pink-600 dark:from-red-400 dark:via-rose-400 dark:to-pink-400 bg-clip-text text-transparent',
         'solid_primary'    => 'text-primary-600 dark:text-primary-400',
-        'solid_monochrome' => 'text-slate-600 dark:text-slate-300',
+        'solid_monochrome' => 'text-slate-700 dark:text-slate-300',
         // Legacy support
-        'gradient_cyan'    => 'text-blue-600 dark:text-sky-400',
-        default            => 'text-sky-600 dark:text-cyan-400', // two_tone
+        'gradient_cyan'    => 'bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 dark:from-sky-400 dark:via-cyan-400 dark:to-blue-400 bg-clip-text text-transparent',
+        default            => 'bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 dark:from-sky-400 dark:via-cyan-400 dark:to-blue-400 bg-clip-text text-transparent', // two_tone
     };
 
     $dotAdmin = match($selectedStyle) {
-        'gradient_indigo'  => 'bg-indigo-500 dark:bg-purple-400',
+        'gradient_indigo'  => 'bg-purple-600 dark:bg-purple-400',
         'gradient_emerald' => 'bg-emerald-500 dark:bg-teal-400',
         'gradient_sunset'  => 'bg-orange-500 dark:bg-amber-400',
         'gradient_gold'    => 'bg-amber-500 dark:bg-yellow-400',
-        'gradient_crimson' => 'bg-rose-500 dark:bg-rose-400',
-        'solid_primary'    => 'bg-primary-500 dark:bg-primary-400',
-        'solid_monochrome' => 'bg-slate-600 dark:bg-slate-400',
+        'gradient_crimson' => 'bg-rose-600 dark:bg-rose-400',
+        'solid_primary'    => 'bg-primary-600 dark:bg-primary-400',
+        'solid_monochrome' => 'bg-slate-700 dark:bg-slate-300',
         // Legacy support
-        'gradient_cyan'    => 'bg-blue-500 dark:bg-sky-400',
-        default            => 'bg-sky-500 dark:bg-cyan-400', // two_tone
+        'gradient_cyan'    => 'bg-cyan-500 dark:bg-cyan-400',
+        default            => 'bg-cyan-500 dark:bg-cyan-400', // two_tone
     };
 @endphp
 

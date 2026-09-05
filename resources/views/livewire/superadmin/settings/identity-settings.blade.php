@@ -131,12 +131,12 @@
                             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                                 @php
                                     $fonts = [
-                                        'Plus Jakarta Sans' => ['name' => 'Plus Jakarta Sans', 'desc' => 'Modern & Tech — Default', 'sample' => 'SayaBantu'],
-                                        'Space Grotesk'    => ['name' => 'Space Grotesk', 'desc' => 'Geometric Bold — Tegas', 'sample' => 'SayaBantu'],
-                                        'DM Sans'          => ['name' => 'DM Sans', 'desc' => 'Clean Rounded — Minimal', 'sample' => 'SayaBantu'],
-                                        'Syne'             => ['name' => 'Syne', 'desc' => 'Futuristik — Display', 'sample' => 'SayaBantu'],
-                                        'Nunito'           => ['name' => 'Nunito', 'desc' => 'Playful Rounded — Ramah', 'sample' => 'SayaBantu'],
-                                        'Playfair Display' => ['name' => 'Playfair Display', 'desc' => 'Serif Elegan — Premium', 'sample' => 'SayaBantu'],
+                                        'Plus Jakarta Sans' => ['name' => 'Plus Jakarta Sans', 'desc' => 'Modern & Tech — Default', 'sample' => 'SayaBantu', 'family' => "'Plus Jakarta Sans', sans-serif"],
+                                        'Space Grotesk'    => ['name' => 'Space Grotesk', 'desc' => 'Geometric Bold — Tegas', 'sample' => 'SayaBantu', 'family' => "'Space Grotesk', sans-serif"],
+                                        'DM Sans'          => ['name' => 'DM Sans', 'desc' => 'Clean Rounded — Minimal', 'sample' => 'SayaBantu', 'family' => "'DM Sans', sans-serif"],
+                                        'Syne'             => ['name' => 'Syne', 'desc' => 'Futuristik — Display', 'sample' => 'SayaBantu', 'family' => "'Syne', sans-serif"],
+                                        'Nunito'           => ['name' => 'Nunito', 'desc' => 'Playful Rounded — Ramah', 'sample' => 'SayaBantu', 'family' => "'Nunito', sans-serif"],
+                                        'Playfair Display' => ['name' => 'Playfair Display', 'desc' => 'Serif Elegan — Premium', 'sample' => 'SayaBantu', 'family' => "'Playfair Display', serif"],
                                     ];
                                 @endphp
 
@@ -148,7 +148,7 @@
                                         <input type="radio" wire:model.live="app_brand_font" value="{{ $key }}" class="sr-only" />
                                         <div>
                                             <div class="flex items-center justify-between">
-                                                <span class="text-xs font-bold text-gray-900 dark:text-white" style="font-family: '{{ $key }}', sans-serif;">{{ $f['name'] }}</span>
+                                                <span class="text-xs font-bold text-gray-900 dark:text-white" style="font-family: {{ $f['family'] }};">{{ $f['name'] }}</span>
                                                 @if($isFontSelected)
                                                     <span class="w-3.5 h-3.5 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0">
                                                         <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
@@ -157,7 +157,7 @@
                                             </div>
                                             <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 block">{{ $f['desc'] }}</span>
                                         </div>
-                                        <span class="text-sm font-black text-primary-600 dark:text-sky-400 mt-2 block tracking-tight" style="font-family: '{{ $key }}', sans-serif;">{{ $app_name ?: $f['sample'] }}</span>
+                                        <span class="text-sm font-black text-primary-600 dark:text-sky-400 mt-2 block tracking-tight" style="font-family: {{ $f['family'] }};">{{ $app_name ?: $f['sample'] }}</span>
                                     </label>
                                 @endforeach
                             </div>
@@ -171,43 +171,43 @@
                                         'name' => 'Electric Cyan',
                                         'badge' => 'from-sky-400 via-cyan-400 to-blue-500',
                                         'desc' => 'Segar & Modern (Default)',
-                                        'text_class' => 'bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 bg-clip-text text-transparent font-black',
-                                        'dot_class' => 'bg-cyan-500',
+                                        'text_class' => 'bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 dark:from-sky-400 dark:via-cyan-400 dark:to-blue-400 bg-clip-text text-transparent font-black',
+                                        'dot_class' => 'bg-cyan-500 dark:bg-cyan-400',
                                     ],
                                     'gradient_indigo' => [
                                         'name' => 'Royal Violet',
                                         'badge' => 'from-indigo-500 via-purple-500 to-pink-500',
                                         'desc' => 'Elegan, Mewah & Kreatif',
-                                        'text_class' => 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent font-black',
-                                        'dot_class' => 'bg-purple-600',
+                                        'text_class' => 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent font-black',
+                                        'dot_class' => 'bg-purple-600 dark:bg-purple-400',
                                     ],
                                     'gradient_emerald' => [
                                         'name' => 'Fresh Emerald',
                                         'badge' => 'from-emerald-400 via-teal-400 to-emerald-600',
                                         'desc' => 'Alami, Segar & Terpercaya',
-                                        'text_class' => 'bg-gradient-to-r from-emerald-500 via-teal-500 to-green-600 bg-clip-text text-transparent font-black',
-                                        'dot_class' => 'bg-emerald-500',
+                                        'text_class' => 'bg-gradient-to-r from-emerald-500 via-teal-500 to-green-600 dark:from-emerald-400 dark:via-teal-400 dark:to-green-400 bg-clip-text text-transparent font-black',
+                                        'dot_class' => 'bg-emerald-500 dark:bg-teal-400',
                                     ],
                                     'gradient_sunset' => [
                                         'name' => 'Sunset Amber',
                                         'badge' => 'from-amber-400 via-orange-500 to-rose-500',
                                         'desc' => 'Hangat, Enerjik & Ramah',
-                                        'text_class' => 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 bg-clip-text text-transparent font-black',
-                                        'dot_class' => 'bg-orange-500',
+                                        'text_class' => 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 dark:from-amber-400 dark:via-orange-400 dark:to-rose-400 bg-clip-text text-transparent font-black',
+                                        'dot_class' => 'bg-orange-500 dark:bg-amber-400',
                                     ],
                                     'gradient_gold' => [
                                         'name' => 'Golden Sunburst',
                                         'badge' => 'from-yellow-400 via-amber-400 to-orange-400',
                                         'desc' => 'Berkelas & Prestisius',
-                                        'text_class' => 'bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 bg-clip-text text-transparent font-black',
-                                        'dot_class' => 'bg-amber-500',
+                                        'text_class' => 'bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 dark:from-amber-400 dark:via-yellow-400 dark:to-orange-400 bg-clip-text text-transparent font-black',
+                                        'dot_class' => 'bg-amber-500 dark:bg-yellow-400',
                                     ],
                                     'gradient_crimson' => [
                                         'name' => 'Ruby Crimson',
                                         'badge' => 'from-red-500 via-rose-500 to-pink-600',
                                         'desc' => 'Berani, Tegas & Menonjol',
-                                        'text_class' => 'bg-gradient-to-r from-red-600 via-rose-500 to-pink-600 bg-clip-text text-transparent font-black',
-                                        'dot_class' => 'bg-rose-600',
+                                        'text_class' => 'bg-gradient-to-r from-red-600 via-rose-500 to-pink-600 dark:from-red-400 dark:via-rose-400 dark:to-pink-400 bg-clip-text text-transparent font-black',
+                                        'dot_class' => 'bg-rose-600 dark:bg-rose-400',
                                     ],
                                     'solid_primary' => [
                                         'name' => 'Solid Sapphire',
@@ -250,6 +250,20 @@
 
                                 $currentStyleKey = $app_brand_style ?: 'two_tone';
                                 $currentStyleName = $styles[$currentStyleKey]['name'] ?? ($styles['two_tone']['name'] ?? 'Electric Cyan');
+
+                                $selectedFontFamily = match($app_brand_font) {
+                                    'Space Grotesk'    => "'Space Grotesk', sans-serif",
+                                    'DM Sans'          => "'DM Sans', sans-serif",
+                                    'Syne'             => "'Syne', sans-serif",
+                                    'Nunito'           => "'Nunito', sans-serif",
+                                    'Playfair Display' => "'Playfair Display', serif",
+                                    'Outfit'           => "'Outfit', sans-serif",
+                                    'Poppins'          => "'Poppins', sans-serif",
+                                    'Lexend'           => "'Lexend', sans-serif",
+                                    'Montserrat'       => "'Montserrat', sans-serif",
+                                    'Inter'            => "'Inter', sans-serif",
+                                    default            => "'Plus Jakarta Sans', sans-serif",
+                                };
                             @endphp
 
                             <div class="flex items-center justify-between mb-1">
@@ -283,7 +297,7 @@
                                         </div>
 
                                         <div class="mt-2.5 pt-2 border-t border-gray-100 dark:border-gray-700/60">
-                                            <span class="text-xs font-black text-slate-900 dark:text-white tracking-tight block truncate" style="font-family: '{{ $app_brand_font ?: 'Plus Jakarta Sans' }}', sans-serif;">
+                                            <span class="text-xs font-black text-slate-900 dark:text-white tracking-tight block truncate" style="font-family: {{ $selectedFontFamily }};">
                                                 {{ $pFirst }}<span class="{{ $s['text_class'] }}">{{ $pSecond }}</span><span class="w-1.5 h-1.5 rounded-full {{ $s['dot_class'] }} inline-block ml-0.5 mb-0.5"></span>
                                             </span>
                                         </div>

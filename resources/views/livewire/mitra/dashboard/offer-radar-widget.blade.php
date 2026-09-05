@@ -91,63 +91,75 @@
     <!-- Card Status Mitra Online / Offline / Searching / Busy -->
     <div class="px-5 mt-3.5 sm:mt-4 relative z-10">
         @if(!empty($isRestricted))
-            <div class="bg-rose-50/90 dark:bg-rose-950/60 rounded-2xl p-4 shadow-sm border border-rose-200 dark:border-rose-800/80">
-                <div class="flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-10 h-10 rounded-2xl bg-rose-500 text-white flex items-center justify-center flex-shrink-0 text-lg shadow-sm">
+            <div class="bg-rose-50/90 dark:bg-rose-950/60 rounded-2xl p-3.5 sm:p-4 shadow-sm border border-rose-200 dark:border-rose-800/80 transition-all">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                        <div class="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center flex-shrink-0 text-base shadow-xs">
                             🚫
                         </div>
-                        <div class="min-w-0">
+                        <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-1.5 flex-wrap">
-                                <h3 class="text-xs font-black text-rose-900 dark:text-rose-100">
+                                <h3 class="text-xs sm:text-sm font-bold text-rose-900 dark:text-rose-100">
                                     Radar Pencarian Dinonaktifkan
                                 </h3>
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-rose-200 text-rose-900 dark:bg-rose-900 dark:text-rose-100">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-rose-200 text-rose-900 dark:bg-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-800">
                                     🚫 AKSES DIBATASI
                                 </span>
                             </div>
-                            <p class="text-[11px] text-rose-700 dark:text-rose-300 leading-tight mt-0.5">
+                            <p class="text-[11px] sm:text-xs text-rose-700 dark:text-rose-300 leading-snug mt-0.5">
                                 Akun Anda sedang dalam pembatasan fitur (Shadow Ban / SP 3). Akses radar pencarian order dinonaktifkan oleh sistem.
                             </p>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
-                        <span class="px-3 py-1.5 bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold border border-rose-200 dark:border-rose-800">
-                            Radar Terkunci
+                    <div class="flex items-center gap-1.5 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-rose-200/60 dark:border-rose-800/60 justify-end">
+                        <span class="w-full sm:w-auto text-center px-3 py-1.5 bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold border border-rose-200 dark:border-rose-800">
+                            🔒 Radar Terkunci
                         </span>
                     </div>
                 </div>
             </div>
         @else
-            <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700/80">
-                <div class="flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 transition-colors
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-3.5 sm:p-4 shadow-sm border transition-all
+                @if(($onlineState?->matching_status ?? 'offline') === 'searching')
+                    border-emerald-200/90 dark:border-emerald-800/70 ring-1 ring-emerald-500/15
+                @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
+                    border-amber-300/90 dark:border-amber-700/80 ring-2 ring-amber-500/20
+                @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
+                    border-indigo-200/80 dark:border-indigo-800/60
+                @else
+                    border-gray-100 dark:border-gray-700/80
+                @endif">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <!-- Status Icon & Information (Simple 1 Icon Saja) -->
+                    <div class="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors shadow-2xs
                             @if(($onlineState?->matching_status ?? 'offline') === 'searching')
-                                bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 ring-2 ring-emerald-500/20
+                                bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40
                             @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
-                                bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400
+                                bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40
                             @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
-                                bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 ring-2 ring-amber-500/30 animate-pulse
+                                bg-amber-500 text-white shadow-xs
                             @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
-                                bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400
+                                bg-indigo-500 text-white shadow-xs
                             @else
-                                bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500
+                                bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border border-gray-200/60 dark:border-gray-600/50
                             @endif">
                             @if(($onlineState?->matching_status ?? 'offline') === 'searching')
-                                <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                             @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                             @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                            @else
+                            @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            @else
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                             @endif
                         </div>
-                        <div class="min-w-0">
+                        <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-1.5 flex-wrap">
-                                <h3 class="text-xs font-bold text-gray-900 dark:text-white">
+                                <h3 class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">
                                     @if(($onlineState?->matching_status ?? 'offline') === 'searching')
                                         Mencari Order
                                     @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
@@ -157,83 +169,95 @@
                                     @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
                                         Sedang Bertugas
                                     @else
-                                        Offline
+                                        Status Offline
                                     @endif
                                 </h3>
-                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border
                                     @if(($onlineState?->matching_status ?? 'offline') === 'searching')
-                                        bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300
+                                        bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60
                                     @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
-                                        bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300
+                                        bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/60
                                     @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
-                                        bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 animate-pulse
+                                        bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60
                                     @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
-                                        bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300
+                                        bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/60
                                     @else
-                                        bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400
+                                        bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-600/60
                                     @endif">
-                                    <span class="w-1.5 h-1.5 rounded-full
-                                        @if(($onlineState?->matching_status ?? 'offline') === 'searching')
-                                            bg-emerald-500 animate-ping
-                                        @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
-                                            bg-blue-500
-                                        @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
-                                            bg-amber-500 animate-ping
-                                        @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
-                                            bg-indigo-500
-                                        @else
-                                            bg-gray-400
-                                        @endif"></span>
                                     {{ strtoupper($onlineState?->matching_status ?? 'OFFLINE') }}
                                 </span>
                             </div>
-                            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">
+                            <p class="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 leading-snug mt-0.5">
                                 @if(($onlineState?->matching_status ?? 'offline') === 'searching')
-                                    Radar aktif mencari order di sekitar Anda
+                                    Radar aktif mencari order terdekat di lokasi Anda.
                                 @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
-                                    Siap menerima pekerjaan. Klik "Cari Order" untuk mengaktifkan radar.
+                                    Siap menerima order. Klik "Cari Order" untuk mengaktifkan radar.
                                 @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
-                                    Ada tawaran order khusus untuk Anda!
+                                    Ada tawaran order khusus untuk Anda! Silakan cek & respon tiket di bawah.
                                 @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
-                                    Anda sedang memiliki tugas aktif yang berjalan
+                                    Anda sedang menjalankan tugas aktif. Selesaikan pesanan dengan baik.
                                 @else
-                                    Aktifkan status online untuk mulai menerima bantuan
+                                    Aktifkan status online untuk mulai menerima tawaran order bantuan.
                                 @endif
                             </p>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <!-- Action Controls -->
+                    <div class="flex-shrink-0 w-full sm:w-auto">
                         @if(($onlineState?->matching_status ?? 'offline') === 'searching')
-                            <button wire:click="stopSearching"
-                                    wire:loading.attr="disabled"
-                                    class="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-xl text-xs font-bold hover:bg-amber-100 transition cursor-pointer">
-                                Jeda Cari
-                            </button>
-                            <button wire:click="goOffline"
-                                    wire:loading.attr="disabled"
-                                    class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-200 transition cursor-pointer">
-                                Offline
-                            </button>
+                            <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700/60">
+                                <button wire:click="stopSearching"
+                                        wire:loading.attr="disabled"
+                                        class="w-full sm:w-auto px-3 py-2 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-98">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>Jeda Cari</span>
+                                </button>
+                                <button wire:click="goOffline"
+                                        wire:loading.attr="disabled"
+                                        class="w-full sm:w-auto px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-gray-600/60 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-98">
+                                    <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                    <span>Offline</span>
+                                </button>
+                            </div>
                         @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
-                            <button @click="triggerAction('startSearching')"
-                                    :disabled="isGettingLocation"
-                                    class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1">
-                                <span x-show="!isGettingLocation">Cari Order</span>
-                                <span x-show="isGettingLocation" x-cloak>GPS...</span>
-                            </button>
-                            <button wire:click="goOffline"
-                                    wire:loading.attr="disabled"
-                                    class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-200 transition cursor-pointer">
-                                Offline
-                            </button>
+                            <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700/60">
+                                <button @click="triggerAction('startSearching')"
+                                        :disabled="isGettingLocation"
+                                        class="w-full sm:w-auto px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                    <span x-show="!isGettingLocation">Cari Order</span>
+                                    <span x-show="isGettingLocation" x-cloak>GPS...</span>
+                                </button>
+                                <button wire:click="goOffline"
+                                        wire:loading.attr="disabled"
+                                        class="w-full sm:w-auto px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-gray-600/60 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-98">
+                                    <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                    <span>Offline</span>
+                                </button>
+                            </div>
                         @elseif(($onlineState?->matching_status ?? 'offline') === 'offline')
-                            <button @click="triggerAction('goOnline')"
-                                    :disabled="isGettingLocation"
-                                    class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5">
-                                <span x-show="!isGettingLocation">Aktifkan Online</span>
-                                <span x-show="isGettingLocation" x-cloak>Memuat GPS...</span>
-                            </button>
+                            <div class="pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700/60">
+                                <button @click="triggerAction('goOnline')"
+                                        :disabled="isGettingLocation"
+                                        class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.072 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
+                                    <span x-show="!isGettingLocation">Aktifkan Online</span>
+                                    <span x-show="isGettingLocation" x-cloak>Memuat GPS...</span>
+                                </button>
+                            </div>
+                        @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
+                            <div class="pt-2 sm:pt-0 border-t sm:border-t-0 border-amber-200/60 dark:border-amber-800/60 flex justify-end">
+                                <span class="w-full sm:w-auto text-center px-3 py-1.5 bg-amber-200/80 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 rounded-xl text-xs font-bold border border-amber-300 dark:border-amber-700 flex items-center justify-center gap-1">
+                                    Tinjau di Bawah ↓
+                                </span>
+                            </div>
+                        @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
+                            <div class="pt-2 sm:pt-0 border-t sm:border-t-0 border-indigo-200/60 dark:border-indigo-800/60 flex justify-end">
+                                <span class="w-full sm:w-auto text-center px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 rounded-xl text-xs font-bold border border-indigo-200 dark:border-indigo-800 flex items-center justify-center gap-1">
+                                    Tugas Berjalan
+                                </span>
+                            </div>
                         @endif
                     </div>
                 </div>
@@ -246,11 +270,11 @@
                         $waitMinutes    = (int) floor($totalSeconds / 60);
 
                         if ($totalSeconds < 60) {
-                            $formattedWaitTime = (int) $totalSeconds . ' Second';
+                            $formattedWaitTime = (int) $totalSeconds . ' dtk';
                         } elseif ($waitMinutes < 60) {
-                            $formattedWaitTime = (int) $waitMinutes . ' Minute';
+                            $formattedWaitTime = (int) $waitMinutes . ' mnt';
                         } else {
-                            $formattedWaitTime = '1 Hour';
+                            $formattedWaitTime = '1+ jam';
                         }
 
                         $boostDays = \App\Models\AppSetting::getNewbieBoostDays();
@@ -262,31 +286,28 @@
                                 && \App\Models\Help::where('mitra_id', auth()->id())->where('status', 'selesai')->count() < $threshold
                             );
                     @endphp
-                    <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between text-xs flex-wrap gap-2">
-                        <div class="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
-                            <svg class="w-3.5 h-3.5 text-emerald-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-                            <span>Menunggu: <strong>{{ $formattedWaitTime }}</strong></span>
+                    <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between text-xs gap-2">
+                        <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                            <span>Waktu Menunggu: <strong class="text-gray-800 dark:text-gray-200 font-mono font-bold">{{ $formattedWaitTime }}</strong></span>
                             @if($isNewbie)
-                                <span class="bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
-                                    🚀 Newbie Boost Aktif
+                                <span class="bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
+                                    🚀 Newbie Boost
                                 </span>
                             @endif
                         </div>
-                        <div class="flex items-center gap-1">
-                            @if($waitMinutes >= 45)
-                                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1">
-                                    🔥 Prioritas Maksimal
-                                </span>
-                            @elseif($waitMinutes >= 15)
-                                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1">
-                                    ⚡ Prioritas Meningkat
-                                </span>
-                            @else
-                                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
-                                    🟢 Radar Aktif
-                                </span>
-                            @endif
-                        </div>
+                        @if($waitMinutes >= 15)
+                            <div class="flex items-center gap-1">
+                                @if($waitMinutes >= 45)
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                        Prioritas Maksimal
+                                    </span>
+                                @else
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                        Prioritas Meningkat
+                                    </span>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 @endif
             </div>
@@ -354,15 +375,14 @@
                 <div class="flex items-center justify-between gap-3 mb-2 relative z-10">
                     <div class="flex items-center gap-2">
                         <span class="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-black bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 px-2.5 py-1 rounded-full shadow-xs">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping"></span>
-                            🔒 Tawaran Eksklusif (Khusus Anda)
+                            Tawaran Khusus Anda
                         </span>
                     </div>
 
                     <!-- Countdown Timer Pill -->
                     <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl font-mono text-xs sm:text-sm font-black shadow-xs border transition-colors"
                          :class="timeLeft <= 10 ? 'bg-rose-100 border-rose-400 text-rose-800 dark:bg-rose-950 dark:border-rose-700 dark:text-rose-200 animate-pulse' : 'bg-amber-50 border-amber-300 text-amber-800 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200'">
-                        <svg class="w-3.5 h-3.5" :class="timeLeft <= 10 ? 'text-rose-600 animate-spin' : 'text-amber-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                        <svg class="w-3.5 h-3.5" :class="timeLeft <= 10 ? 'text-rose-600' : 'text-amber-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span x-text="Math.floor(timeLeft) + ' Detik'"></span>
                     </div>
                 </div>
