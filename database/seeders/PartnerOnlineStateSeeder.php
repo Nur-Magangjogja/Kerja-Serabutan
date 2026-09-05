@@ -17,10 +17,14 @@ class PartnerOnlineStateSeeder extends Seeder
         $mitraUsers = User::where('role', 'mitra')->get();
 
         $coords = [
-            'mitra.sleman1@sayabantu.com' => ['lat' => -7.7712000, 'lng' => 110.3854000],
-            'mitra.sleman2@sayabantu.com' => ['lat' => -7.7610000, 'lng' => 110.3725000],
-            'mitra.solo1@sayabantu.com'   => ['lat' => -7.5645000, 'lng' => 110.8142000],
-            'mitra.solo2@sayabantu.com'   => ['lat' => -7.5582000, 'lng' => 110.8521000],
+            'mitra.sleman1@sayabantu.com'   => ['lat' => -7.7712000, 'lng' => 110.3854000],
+            'mitra.sleman2@sayabantu.com'   => ['lat' => -7.7610000, 'lng' => 110.3725000],
+            'mitra@sayabantu.com'           => ['lat' => -7.7845000, 'lng' => 110.3341000],
+            'mitra.jogja1@sayabantu.com'    => ['lat' => -7.7942000, 'lng' => 110.3689000],
+            'mitra.surakarta1@sayabantu.com'=> ['lat' => -7.5645000, 'lng' => 110.8142000],
+            'mitra.surakarta2@sayabantu.com'=> ['lat' => -7.5582000, 'lng' => 110.8521000],
+            'mitra.sukoharjo1@sayabantu.com'=> ['lat' => -7.5521000, 'lng' => 110.7482000],
+            'mitra.sukoharjo2@sayabantu.com'=> ['lat' => -7.5912000, 'lng' => 110.8123000],
         ];
 
         foreach ($mitraUsers as $mitra) {
@@ -41,6 +45,6 @@ class PartnerOnlineStateSeeder extends Seeder
             );
         }
 
-        $this->command->info('PartnerOnlineStateSeeder berhasil menyiapkan status online untuk seluruh mitra.');
+        $this->command->info('PartnerOnlineStateSeeder berhasil menyiapkan status online untuk seluruh mitra di 4 wilayah.');
     }
 }

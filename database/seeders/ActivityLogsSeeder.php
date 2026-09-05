@@ -17,9 +17,9 @@ class ActivityLogsSeeder extends Seeder
      */
     public function run(): void
     {
-        $superAdmin  = User::where('email', 'superadmin@sayabantu.com')->first();
-        $adminSleman = User::whereIn('email', ['admin.sleman@sayabantu.com', 'admin@sayabantu.com'])->first();
-        $adminSolo   = User::where('email', 'admin.surakarta@sayabantu.com')->first();
+        $superAdmin     = User::where('email', 'superadmin@sayabantu.com')->first();
+        $adminSleman    = User::whereIn('email', ['admin.sleman@sayabantu.com', 'admin@sayabantu.com'])->first();
+        $adminSurakarta = User::where('email', 'admin.surakarta@sayabantu.com')->first();
 
         // 1. Log Registrasi dan Verifikasi (04 Agustus 2026)
         if ($adminSleman) {
@@ -33,9 +33,9 @@ class ActivityLogsSeeder extends Seeder
             ]);
         }
 
-        if ($adminSolo) {
+        if ($adminSurakarta) {
             ActivityLog::create([
-                'user_id'     => $adminSolo->id,
+                'user_id'     => $adminSurakarta->id,
                 'action'      => 'verify_user',
                 'description' => 'Admin Surakarta memverifikasi KTP dan data identitas Mitra Eko Saputra.',
                 'ip_address'  => '127.0.0.1',
@@ -73,7 +73,7 @@ class ActivityLogsSeeder extends Seeder
         // 3. Log Persetujuan Withdraw
         $withdraws = WithdrawRequest::all();
         foreach ($withdraws as $w) {
-            $admin = ($w->user && str_contains($w->user->email, 'solo')) ? $adminSolo : $adminSleman;
+            $admin = ($w->user && (str_contains($w->user->email, 'surakarta') || str_contains($w->user->email, 'sukoharjo'))) ? $adminSurakarta : $adminSleman;
             if ($admin) {
                 ActivityLog::create([
                     'user_id'     => $admin->id,

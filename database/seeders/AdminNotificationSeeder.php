@@ -15,8 +15,8 @@ class AdminNotificationSeeder extends Seeder
      */
     public function run(): void
     {
-        $adminSleman = User::whereIn('email', ['admin.sleman@sayabantu.com', 'admin@sayabantu.com'])->first();
-        $adminSolo   = User::where('email', 'admin.surakarta@sayabantu.com')->first();
+        $adminSleman    = User::where('email', 'admin.sleman@sayabantu.com')->first();
+        $adminSurakarta = User::where('email', 'admin.surakarta@sayabantu.com')->first();
         
         $notifications = [];
 
@@ -28,6 +28,17 @@ class AdminNotificationSeeder extends Seeder
                     'type'    => 'new_registration',
                     'message' => 'Pendaftaran mitra baru (Agus Prasetyo - Sleman) telah diverifikasi.',
                 ],
+                'read_at'    => Carbon::parse('2026-08-04 10:00:00'),
+                'created_at' => Carbon::parse('2026-08-04 09:00:00'),
+            ];
+
+            $notifications[] = [
+                'admin_id' => $adminSleman->id,
+                'type'     => 'App\Notifications\CustomNotification',
+                'data'     => [
+                    'type'    => 'new_registration',
+                    'message' => 'Pendaftaran mitra baru (Danang Saputra - Kota Yogyakarta) telah diverifikasi.',
+                ],
                 'read_at'    => Carbon::parse('2026-08-05 10:00:00'),
                 'created_at' => Carbon::parse('2026-08-05 09:00:00'),
             ];
@@ -37,48 +48,63 @@ class AdminNotificationSeeder extends Seeder
                 'type'     => 'App\Notifications\CustomNotification',
                 'data'     => [
                     'type'    => 'help_completed',
-                    'message' => 'Bantuan "Bantu Pindahan & Angkat Kasur Kos Dekat Kampus UNY/UGM" telah selesai dikonfirmasi.',
+                    'message' => 'Bantuan "Bantu Pindahan & Angkat Kasur Busa Gejayan" telah selesai dikonfirmasi.',
                 ],
-                'read_at'    => Carbon::parse('2026-08-05 12:00:00'),
-                'created_at' => Carbon::parse('2026-08-05 11:30:00'),
+                'read_at'    => Carbon::parse('2026-08-04 12:00:00'),
+                'created_at' => Carbon::parse('2026-08-04 11:30:00'),
             ];
         }
 
-        if ($adminSolo) {
+        if ($adminSurakarta) {
             $notifications[] = [
-                'admin_id' => $adminSolo->id,
+                'admin_id' => $adminSurakarta->id,
                 'type'     => 'App\Notifications\CustomNotification',
                 'data'     => [
                     'type'    => 'new_registration',
                     'message' => 'Pendaftaran mitra baru (Eko Saputra - Surakarta) telah diverifikasi.',
                 ],
-                'read_at'    => Carbon::parse('2026-08-07 10:00:00'),
-                'created_at' => Carbon::parse('2026-08-07 09:00:00'),
+                'read_at'    => Carbon::parse('2026-08-04 10:00:00'),
+                'created_at' => Carbon::parse('2026-08-04 09:00:00'),
             ];
 
             $notifications[] = [
-                'admin_id' => $adminSolo->id,
+                'admin_id' => $adminSurakarta->id,
+                'type'     => 'App\Notifications\CustomNotification',
+                'data'     => [
+                    'type'    => 'new_registration',
+                    'message' => 'Pendaftaran mitra baru (Tri Wahyudi - Sukoharjo) telah diverifikasi.',
+                ],
+                'read_at'    => Carbon::parse('2026-08-05 10:00:00'),
+                'created_at' => Carbon::parse('2026-08-05 09:00:00'),
+            ];
+
+            $notifications[] = [
+                'admin_id' => $adminSurakarta->id,
                 'type'     => 'App\Notifications\CustomNotification',
                 'data'     => [
                     'type'    => 'help_completed',
-                    'message' => 'Bantuan "Bantu Angkut & Penataan Etalase Toko di Banjarsari" telah selesai dikonfirmasi.',
+                    'message' => 'Bantuan "Pemasangan Lampu Gantung Hias Ruang Tamu" telah selesai dikonfirmasi.',
                 ],
-                'read_at'    => Carbon::parse('2026-08-07 13:00:00'),
-                'created_at' => Carbon::parse('2026-08-07 12:45:00'),
+                'read_at'    => Carbon::parse('2026-08-04 16:00:00'),
+                'created_at' => Carbon::parse('2026-08-04 15:30:00'),
             ];
         }
 
-        foreach ($notifications as $n) {
-            DB::table('notifications')->insert([
-                'id'              => Str::uuid(),
-                'type'            => $n['type'],
-                'notifiable_type' => User::class,
-                'notifiable_id'   => $n['admin_id'],
-                'data'            => json_encode($n['data']),
-                'read_at'         => $n['read_at'],
-                'created_at'      => $n['created_at'],
-                'updated_at'      => $n['created_at'],
-            ]);
+        foreach ($notifications as $notif) {
+            DB::table('notifications')->updateOrInsert(
+                [
+                    'notifiable_type' => 'App\Models\User',
+                    'notifiable_id'   => $notif['admin_id'],
+                    'data'            => json_encode($notif['data']),
+                ],
+                [
+                    'id'         => (string) Str::uuid(),
+                    'type'       => $notif['type'],
+                    'read_at'    => $notif['read_at'],
+                    'created_at' => $notif['created_at'],
+                    'updated_at' => $notif['created_at'],
+                ]
+            );
         }
 
         $this->command->info('AdminNotificationSeeder berhasil membuat notifikasi untuk Admin Sleman & Admin Surakarta.');

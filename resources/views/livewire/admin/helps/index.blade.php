@@ -95,59 +95,40 @@
         </div>
     @endif
 
-    {{-- ===== Filter Tabs Bar & Search ===== --}}
+    {{-- ===== Search & Filters Bar ===== --}}
     <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-        {{-- Status Tabs --}}
-        <div class="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-none">
-            <button type="button" wire:click="filterByStatus('all')"
-                class="px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $statusFilter === '' ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                Semua ({{ $totalHelps }})
-            </button>
-            <button type="button" wire:click="filterByStatus('pending')"
-                class="px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $statusFilter === 'pending' ? 'bg-amber-500 text-white shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                Menunggu ({{ $pendingHelps }})
-            </button>
-            <button type="button" wire:click="filterByStatus('active')"
-                class="px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $statusFilter === 'active' ? 'bg-blue-600 text-white shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                Sedang Aktif ({{ $activeHelps }})
-            </button>
-            <button type="button" wire:click="filterByStatus('completed')"
-                class="px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $statusFilter === 'completed' ? 'bg-emerald-600 text-white shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                Selesai ({{ $completedHelps }})
-            </button>
-            <button type="button" wire:click="filterByStatus('cancelled')"
-                class="px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $statusFilter === 'cancelled' ? 'bg-rose-600 text-white shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                Dibatalkan ({{ $cancelledHelps }})
-            </button>
-        </div>
-
         {{-- Search & City Filter & Per Page --}}
-        <div class="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
-            @if(isset($managedCities) && $managedCities->count() > 1)
-                <select wire:model.live="cityFilter"
-                    class="py-2 pl-3 pr-8 text-xs font-bold border border-primary-200 dark:border-primary-800 rounded-xl bg-primary-50/50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer shadow-2xs">
-                    <option value="all">Semua Wilayah Saya ({{ $managedCities->count() }} Kota)</option>
-                    @foreach($managedCities as $mc)
-                        <option value="{{ $mc->id }}">{{ $mc->name }}</option>
-                    @endforeach
-                </select>
-            @endif
-
-            <div class="relative w-full md:w-64">
-                <input wire:model.live.debounce.300ms="search" type="text"
-                    placeholder="Cari judul, order ID, pemohon..."
-                    class="w-full pl-9 pr-4 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+        <div class="flex items-center gap-2.5 w-full justify-between flex-wrap">
+            <div class="flex items-center gap-2.5 flex-1 min-w-[280px]">
+                <div class="relative w-full max-w-md">
+                    <input wire:model.live.debounce.300ms="search" type="text"
+                        placeholder="Cari judul, order ID, pemohon..."
+                        class="w-full pl-9 pr-4 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
                 </div>
+
+                @if(isset($managedCities) && $managedCities->count() > 1)
+                    <select wire:model.live="cityFilter"
+                        class="py-2 pl-3 pr-8 text-xs font-bold border border-primary-200 dark:border-primary-800 rounded-xl bg-primary-50/50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer shadow-2xs">
+                        <option value="all">Semua Wilayah Saya ({{ $managedCities->count() }} Kota)</option>
+                        @foreach($managedCities as $mc)
+                            <option value="{{ $mc->id }}">{{ $mc->name }}</option>
+                        @endforeach
+                    </select>
+                @endif
             </div>
 
-            <select wire:model.live="perPage"
-                class="py-2 pl-3 pr-8 text-xs font-semibold border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer">
-                <option value="10">10 / hal</option>
-                <option value="25">25 / hal</option>
-                <option value="50">50 / hal</option>
-            </select>
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">Tampilkan:</span>
+                <select wire:model.live="perPage"
+                    class="py-2 pl-3 pr-8 text-xs font-semibold border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer">
+                    <option value="10">10 / hal</option>
+                    <option value="25">25 / hal</option>
+                    <option value="50">50 / hal</option>
+                </select>
+            </div>
         </div>
     </div>
 

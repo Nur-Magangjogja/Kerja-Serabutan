@@ -178,7 +178,8 @@ class User extends Authenticatable implements MustVerifyEmail
         $cutoff = now()->subMinutes(10);
         $query = static::whereNull('email_verified_at')
             ->where('verified', false)
-            ->where('created_at', '<', $cutoff);
+            ->where('created_at', '<', $cutoff)
+            ->whereNotIn('role', ['admin', 'super_admin']);
 
         if ($email) {
             $query->where('email', strtolower(trim($email)));
@@ -258,7 +259,7 @@ class User extends Authenticatable implements MustVerifyEmail
     // Relationships
     public function city()
     {
-        return $this->belongsTo(City::class);
+        return $this->belongsTo(City::class, 'city_id');
     }
 
     // Cities managed by this admin (many-to-many)
@@ -280,18 +281,22 @@ class User extends Authenticatable implements MustVerifyEmail
             return [];
         }
 
-        $ids = [];
-        if (!empty($this->city_id)) {
-            $ids[] = (int) $this->city_id;
-        }
-
         if ($this->relationLoaded('managedCities')) {
             $managedIds = $this->managedCities->pluck('id')->all();
         } else {
             $managedIds = $this->managedCities()->allRelatedIds()->all();
         }
 
-        return array_values(array_unique(array_merge($ids, array_map('intval', $managedIds))));
+        if (!empty($managedIds)) {
+            return array_values(array_unique(array_map('intval', $managedIds)));
+        }
+
+        // Fallback ke primary city_id hanya jika belum ada relasi pivot managedCities
+        if (!empty($this->city_id)) {
+            return [(int) $this->city_id];
+        }
+
+        return [];
     }
 
     /**

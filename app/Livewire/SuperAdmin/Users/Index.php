@@ -111,7 +111,7 @@ class Index extends Component
 
     public function editUser($id)
     {
-        $user = User::find($id);
+        $user = User::with(['city', 'managedCities'])->find($id);
         if (!$user) {
             session()->flash('error', 'User not found');
             return;
@@ -124,8 +124,13 @@ class Index extends Component
         $this->role = $user->role;
         $this->status = $user->status ?? 'inactive';
         $this->verified = (bool) ($user->verified ?? false);
+        
+        $managedIds = $user->managedCities->pluck('id')->map(fn($cid) => (int)$cid)->toArray();
+        if (empty($managedIds) && $user->city_id && $user->role === 'admin') {
+            $managedIds = [(int)$user->city_id];
+        }
+        $this->managed_city_ids = $managedIds;
         $this->city_id = $user->city_id;
-        $this->managed_city_ids = $user->managedCities->pluck('id')->toArray();
         $this->address = $user->address;
         $this->nik = $user->nik;
         $this->place_of_birth = $user->place_of_birth;
@@ -222,6 +227,11 @@ class Index extends Component
 
         $this->validate($rules);
 
+        $managedCityIds = array_values(array_unique(array_filter(array_map('intval', (array)($this->managed_city_ids ?? [])))));
+        if ($this->role === 'admin') {
+            $this->city_id = !empty($managedCityIds) ? $managedCityIds[0] : null;
+        }
+
         $cityName = null;
         if ($this->city_id) {
             $cityRec = City::find($this->city_id);
@@ -233,13 +243,17 @@ class Index extends Component
             }
         }
 
+        $isPrivileged = in_array($this->role, ['admin', 'super_admin']);
+        $isVerified = $isPrivileged ? true : (bool)$this->verified;
+
         $data = [
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
             'role' => $this->role,
             'status' => $this->status,
-            'verified' => $this->verified,
+            'verified' => $isVerified,
+            'email_verified_at' => $isVerified ? ($userId && ($user = User::find($userId)) && $user->email_verified_at ? $user->email_verified_at : now()) : null,
             'city_id' => $this->city_id,
             'city_name' => $cityName,
             'address' => $this->address,
@@ -252,12 +266,6 @@ class Index extends Component
             'marital_status' => $this->marital_status,
             'occupation' => $this->occupation,
         ];
-
-        if ($this->verified) {
-            $data['email_verified_at'] = now();
-        } else {
-            $data['email_verified_at'] = null;
-        }
 
         if ($userId) {
             $user = User::find($userId);
@@ -275,7 +283,7 @@ class Index extends Component
             
             // Sync managed cities for admin role
             if ($this->role === 'admin') {
-                $user->managedCities()->sync($this->managed_city_ids ?? []);
+                $user->managedCities()->sync($managedCityIds);
             } else {
                 $user->managedCities()->sync([]);
             }
@@ -294,7 +302,7 @@ class Index extends Component
             
             // Sync managed cities for admin role
             if ($this->role === 'admin') {
-                $user->managedCities()->sync($this->managed_city_ids ?? []);
+                $user->managedCities()->sync($managedCityIds);
             }
             
             session()->flash('message', 'User created successfully');

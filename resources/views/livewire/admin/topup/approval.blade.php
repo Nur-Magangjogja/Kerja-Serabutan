@@ -38,10 +38,10 @@
             <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                 {{-- Menunggu --}}
                 <button wire:click="filterByStatus('waiting_approval')"
-                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $filterStatus === 'waiting_approval' ? 'bg-amber-500 text-white shadow-sm ring-2 ring-amber-400/20' : 'bg-gray-50 dark:bg-gray-750 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200/60 dark:border-gray-700/60' }}">
-                    <span class="w-2 h-2 rounded-full {{ $filterStatus === 'waiting_approval' ? 'bg-white' : 'bg-amber-500' }} animate-pulse"></span>
+                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $filterStatus === 'waiting_approval' ? 'bg-sky-500 text-white shadow-sm ring-2 ring-sky-400/20' : 'bg-gray-50 dark:bg-gray-750 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200/60 dark:border-gray-700/60' }}">
+                    <span class="w-2 h-2 rounded-full {{ $filterStatus === 'waiting_approval' ? 'bg-white' : 'bg-sky-500' }} animate-pulse"></span>
                     <span>Menunggu (Pending)</span>
-                    <span class="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold {{ $filterStatus === 'waiting_approval' ? 'bg-white/25 text-white' : 'bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300' }}">
+                    <span class="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold {{ $filterStatus === 'waiting_approval' ? 'bg-white/25 text-white' : 'bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300' }}">
                         {{ $totalPending }}
                     </span>
                 </button>
@@ -183,8 +183,8 @@
                                 </td>
                                 <td class="px-4 py-3.5">
                                     @if($transaction->status === 'waiting_approval' || $transaction->status === 'pending')
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
                                             Menunggu
                                         </span>
                                     @elseif($transaction->status === 'completed' || $transaction->status === 'approved')
@@ -304,7 +304,7 @@
                         </div>
                         <div>
                             <p class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Status Saat Ini</p>
-                            <p class="text-sm font-bold {{ $selectedTransaction->status === 'completed' ? 'text-emerald-600' : ($selectedTransaction->status === 'cancelled' ? 'text-purple-600' : ($selectedTransaction->status === 'rejected' ? 'text-rose-600' : 'text-amber-600')) }}">
+                            <p class="text-sm font-bold {{ $selectedTransaction->status === 'completed' ? 'text-emerald-600' : ($selectedTransaction->status === 'cancelled' ? 'text-purple-600' : ($selectedTransaction->status === 'rejected' ? 'text-rose-600' : 'text-sky-600 dark:text-sky-400')) }}">
                                 {{ strtoupper($selectedTransaction->status) }}
                             </p>
                         </div>

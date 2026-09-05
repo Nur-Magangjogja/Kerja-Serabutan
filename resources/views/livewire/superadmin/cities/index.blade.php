@@ -85,7 +85,6 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-12 hidden">#</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nama Kota</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Provinsi</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pengguna</th>
@@ -95,14 +94,10 @@
                         <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @forelse($cities as $city)
-                    {{-- tbody per kota agar Alpine scope benar (x-show pada district rows bisa akses open) --}}
-                    </tbody>
-                    <tbody x-data="{ open: false }" class="divide-y divide-gray-50 dark:divide-gray-700/50">
-                    {{-- Alpine accordion per baris kota --}}
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-150">
-                        <td class="px-4 py-3.5 text-xs font-medium text-gray-400 dark:text-gray-500 hidden">#{{ $city->id }}</td>
+                @forelse($cities as $city)
+                <tbody x-data="{ open: false }" class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                    {{-- Baris Utama Kota --}}
+                    <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors duration-150">
                         <td class="px-4 py-3.5">
                             <div class="flex items-center gap-3">
                                 <div class="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
@@ -112,17 +107,17 @@
                                     @if(!empty($loadDistricts) && $city->relationLoaded('districts') && $city->districts->isNotEmpty())
                                     {{-- Nama kota bisa diklik untuk expand kecamatan --}}
                                     <button type="button" @click="open = !open"
-                                        class="flex items-center gap-1.5 font-semibold text-gray-800 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 transition-colors text-left">
-                                        <span>{{ $city->name }}</span>
+                                        class="flex items-center gap-1.5 font-semibold text-gray-800 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 transition-colors text-left group">
+                                        <span class="group-hover:underline">{{ $city->name }}</span>
                                         <svg class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200"
-                                            :class="open ? 'rotate-180' : ''"
+                                            :class="open ? 'rotate-180 text-primary-600' : ''"
                                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                         </svg>
                                     </button>
-                                    <p class="text-xs text-gray-400 dark:text-gray-500">
-                                        {{ $city->districts->count() }} kecamatan
-                                        <span x-show="!open" class="text-primary-500 text-[10px]">• klik untuk lihat</span>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5">
+                                        <span>{{ $city->districts->count() }} kecamatan</span>
+                                        <button type="button" @click="open = !open" class="text-primary-600 dark:text-primary-400 hover:underline text-[10px] font-medium" x-text="open ? '• tutup' : '• lihat daftar'"></button>
                                     </p>
                                     @else
                                     <p class="font-semibold text-gray-800 dark:text-gray-100">{{ $city->name }}</p>
@@ -203,43 +198,66 @@
                             </div>
                         </td>
                     </tr>
-                    {{-- District sub-rows (accordion, expand saat nama kota diklik) --}}
+
+                    {{-- Expanded Districts Panel (Colspan 7 Sinkron Sempurna) --}}
                     @if(!empty($loadDistricts) && $city->relationLoaded('districts') && $city->districts->isNotEmpty())
-                        @foreach($city->districts as $district)
-                        <tr x-show="open" x-transition:enter="transition-all ease-out duration-200"
-                            x-transition:enter-start="opacity-0 -translate-y-1"
-                            x-transition:enter-end="opacity-100 translate-y-0"
-                            x-transition:leave="transition-all ease-in duration-150"
-                            x-transition:leave-start="opacity-100 translate-y-0"
-                            x-transition:leave-end="opacity-0 -translate-y-1"
-                            class="bg-primary-50/50 dark:bg-primary-900/10 border-l-2 border-primary-300 dark:border-primary-700">
-                            <td></td>
-                            <td class="px-4 py-2 pl-14">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-primary-400 dark:text-primary-500 text-xs">↳</span>
-                                    <span class="text-sm text-gray-700 dark:text-gray-200 font-medium">{{ $district->name }}</span>
+                    <tr x-show="open" x-cloak
+                        x-transition:enter="transition-all ease-out duration-200"
+                        x-transition:enter-start="opacity-0 -translate-y-1"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        x-transition:leave="transition-all ease-in duration-150"
+                        x-transition:leave-start="opacity-100 translate-y-0"
+                        x-transition:leave-end="opacity-0 -translate-y-1"
+                        class="bg-gray-50/70 dark:bg-gray-750/50">
+                        <td colspan="7" class="p-3 sm:p-4">
+                            <div class="bg-white dark:bg-gray-800 rounded-xl border border-primary-100 dark:border-primary-900/40 p-4 shadow-xs">
+                                <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded-lg bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center text-primary-600 dark:text-primary-400">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                        </div>
+                                        <h4 class="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
+                                            Daftar Kecamatan di {{ $city->name }}
+                                        </h4>
+                                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950 text-primary-700 dark:text-primary-300 border border-primary-200/80 dark:border-primary-800">
+                                            {{ $city->districts->count() }} Kecamatan
+                                        </span>
+                                    </div>
+                                    <button type="button" @click="open = false" class="text-xs font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex items-center gap-1 transition-colors">
+                                        <span>Tutup</span>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
                                 </div>
-                            </td>
-                            <td class="px-4 py-2 text-xs text-gray-400 dark:text-gray-500">Kecamatan</td>
-                            <td></td>
-                            <td></td>
-                            <td class="px-4 py-2">
-                                <span class="inline-flex items-center gap-1 text-xs font-medium
-                                    {{ $district->is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400' }}">
-                                    <span class="w-1.5 h-1.5 rounded-full {{ $district->is_active ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
-                                    {{ $district->is_active ? 'Aktif' : 'Nonaktif' }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-2 text-xs text-gray-400 dark:text-gray-500 hidden md:table-cell">{{ optional($district->created_at)->format('d M Y') }}</td>
-                            <td></td>
-                        </tr>
-                        @endforeach
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1">
+                                    @foreach($city->districts as $district)
+                                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-gray-50/80 dark:bg-gray-750/80 border border-gray-100 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 transition-colors">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span class="text-primary-500 dark:text-primary-400 text-xs font-bold">↳</span>
+                                            <div class="truncate">
+                                                <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{{ $district->name }}</p>
+                                                @if($district->code)
+                                                <p class="text-[10px] text-gray-400 font-mono">Kode: {{ $district->code }}</p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold flex-shrink-0
+                                            {{ $district->is_active ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/50' : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-900/50' }}">
+                                            <span class="w-1.5 h-1.5 rounded-full {{ $district->is_active ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
+                                            {{ $district->is_active ? 'Aktif' : 'Nonaktif' }}
+                                        </span>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
                     @endif
-                    @empty
-                    </tbody>
-                    <tbody>
+                </tbody>
+                @empty
+                <tbody>
                     <tr>
-                        <td colspan="8" class="px-4 py-16 text-center">
+                        <td colspan="7" class="px-4 py-16 text-center">
                             <div class="flex flex-col items-center">
                                 <div class="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3">
                                     <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
@@ -249,8 +267,8 @@
                             </div>
                         </td>
                     </tr>
-                    @endforelse
                 </tbody>
+                @endforelse
             </table>
         </div>
 
@@ -410,7 +428,6 @@
     @if($showDetailModal)
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
          x-data="{
-            chart: null,
             initChart() {
                 this.$nextTick(() => {
                     this.render(@js($chartLabels), @js($chartCustomerData), @js($chartMitraData));
@@ -422,20 +439,15 @@
 
                 const isDark = document.documentElement.classList.contains('dark');
 
-                // Destroy existing chart on this canvas or in Alpine state
-                if (typeof Chart !== 'undefined' && Chart.getChart) {
-                    const existing = Chart.getChart(canvas);
-                    if (existing) {
-                        try { existing.destroy(); } catch(e) {}
-                    }
-                }
-                if (this.chart) {
-                    try { this.chart.destroy(); } catch(e) {}
-                    this.chart = null;
+                // Destroy existing chart on this canvas
+                const existing = (typeof Chart !== 'undefined' && Chart.getChart ? Chart.getChart(canvas) : null) || canvas._chartInstance;
+                if (existing) {
+                    try { existing.destroy(); } catch(e) {}
+                    canvas._chartInstance = null;
                 }
 
                 const ctx = canvas.getContext('2d');
-                this.chart = new Chart(ctx, {
+                canvas._chartInstance = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: labels || [],
@@ -513,9 +525,11 @@
                 });
             },
             cleanup() {
-                if (this.chart) {
-                    try { this.chart.destroy(); } catch(e) {}
-                    this.chart = null;
+                const canvas = this.$refs.chartCanvas;
+                const existing = (canvas && typeof Chart !== 'undefined' && Chart.getChart ? Chart.getChart(canvas) : null) || (canvas ? canvas._chartInstance : null);
+                if (existing) {
+                    try { existing.destroy(); } catch(e) {}
+                    if (canvas) canvas._chartInstance = null;
                 }
             }
          }"
@@ -527,12 +541,7 @@
             }
          "
          @city-chart-closed.window="cleanup()"
-         @theme-changed.window="
-            if (chart) {
-                chart.destroy();
-                initChart();
-            }
-         ">
+         @theme-changed.window="initChart()">
         <div class="w-full max-w-4xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200">
             {{-- Modal Header --}}
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/20">

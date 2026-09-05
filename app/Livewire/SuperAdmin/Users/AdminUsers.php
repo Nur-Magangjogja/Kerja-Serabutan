@@ -131,11 +131,14 @@ class AdminUsers extends Component
         $this->role = $user->role ?? 'admin';
         $this->status = $user->status ?? 'active';
         $this->verified = (bool) ($user->verified ?? true);
-        $this->city_id = $user->city_id;
-        $this->managed_city_ids = $user->managedCities->pluck('id')->toArray();
-        if ($this->city_id && !in_array($this->city_id, $this->managed_city_ids)) {
-            $this->managed_city_ids[] = $this->city_id;
+        
+        $managedIds = $user->managedCities->pluck('id')->map(fn($cid) => (int)$cid)->toArray();
+        if (empty($managedIds) && $user->city_id) {
+            $managedIds = [(int)$user->city_id];
         }
+        $this->managed_city_ids = $managedIds;
+        $this->city_id = !empty($managedIds) ? $managedIds[0] : null;
+
         $this->address = $user->address;
         $this->nik = $user->nik;
         $this->place_of_birth = $user->place_of_birth;
@@ -243,14 +246,10 @@ class AdminUsers extends Component
             }
         }
 
-        // Compute primary city_id
-        $primaryCityId = $this->city_id;
-        if (!$primaryCityId && !empty($this->managed_city_ids)) {
-            $primaryCityId = $this->managed_city_ids[0];
-        }
-        if ($primaryCityId && !in_array($primaryCityId, $this->managed_city_ids)) {
-            $this->managed_city_ids[] = $primaryCityId;
-        }
+        // Process managed cities
+        $managedCityIds = array_values(array_unique(array_filter(array_map('intval', (array)($this->managed_city_ids ?? [])))));
+        $primaryCityId = !empty($managedCityIds) ? $managedCityIds[0] : null;
+        $primaryCity = $primaryCityId ? City::find($primaryCityId) : null;
 
         $data = [
             'name' => $this->name,
@@ -258,24 +257,20 @@ class AdminUsers extends Component
             'phone' => $this->phone,
             'role' => $this->role ?: 'admin',
             'status' => $this->status ?: 'active',
-            'verified' => (bool) $this->verified,
+            'verified' => true,
+            'email_verified_at' => now(),
             'city_id' => $primaryCityId,
+            'city_name' => $primaryCity ? $primaryCity->name : null,
             'address' => $this->address,
             'nik' => $this->nik,
             'place_of_birth' => $this->place_of_birth,
             'date_of_birth' => $this->date_of_birth,
             'gender' => $this->gender,
-            'province' => $this->province,
+            'province' => $this->province ?? ($primaryCity ? $primaryCity->province : null),
             'religion' => $this->religion,
             'marital_status' => $this->marital_status,
             'occupation' => $this->occupation,
         ];
-
-        if ($this->verified) {
-            $data['email_verified_at'] = now();
-        } else {
-            $data['email_verified_at'] = null;
-        }
 
         if ($userId) {
             $user = User::find($userId);
@@ -289,7 +284,7 @@ class AdminUsers extends Component
             $user->update($data);
 
             if ($this->role === 'admin') {
-                $user->managedCities()->sync($this->managed_city_ids ?? []);
+                $user->managedCities()->sync($managedCityIds);
             } else {
                 $user->managedCities()->sync([]);
             }
@@ -308,7 +303,7 @@ class AdminUsers extends Component
             }
 
             if ($this->role === 'admin') {
-                $user->managedCities()->sync($this->managed_city_ids ?? []);
+                $user->managedCities()->sync($managedCityIds);
             }
 
             session()->flash('message', 'Admin baru ' . $user->name . ' berhasil dibuat dan terverifikasi.');

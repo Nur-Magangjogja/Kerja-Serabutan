@@ -591,7 +591,7 @@
                             <div class="grid grid-cols-2 gap-2">
                                 @forelse($cities as $c)
                                 <label class="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:border-primary-400 cursor-pointer transition-colors">
-                                    <input type="checkbox" wire:model.defer="managed_city_ids" value="{{ $c->id }}"
+                                    <input type="checkbox" wire:model="managed_city_ids" value="{{ $c->id }}"
                                         class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 cursor-pointer">
                                     <span class="text-sm text-gray-700 dark:text-gray-200">{{ $c->name }}</span>
                                 </label>

@@ -80,8 +80,8 @@ class LoginForm extends Form
             // ignore lookup errors
         }
 
-        // Jika belum verifikasi email
-        if (!$user->hasVerifiedEmail()) {
+        // Jika belum verifikasi email (hanya berlaku untuk customer & mitra)
+        if (!$isPrivileged && !$user->hasVerifiedEmail()) {
             if ($user->created_at && $user->created_at->diffInSeconds(now()) >= 600) {
                 User::purgeExpiredUnverified($user->email);
                 Auth::logout();

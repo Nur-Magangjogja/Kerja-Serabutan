@@ -692,9 +692,10 @@
     </div>
 
     <script>
+    (function() {
         let currentHelpId = null;
 
-        function showHelpPreview(data) {
+        window.showHelpPreview = function(data) {
             if (!data) return;
             if (typeof data === 'number' || typeof data === 'string') {
                 data = { id: data, title: arguments[1] || '-', amount: arguments[2] || 0, scheduled_at: arguments[3] || null };
@@ -770,14 +771,14 @@
             }
 
             document.getElementById('helpPreviewModal').classList.remove('hidden');
-        }
+        };
 
-        function closePreviewModal() {
-            document.getElementById('helpPreviewModal').classList.add('hidden');
+        window.closePreviewModal = function() {
+            document.getElementById('helpPreviewModal')?.classList.add('hidden');
             currentHelpId = null;
-        }
+        };
 
-        async function takeHelpFromModal() {
+        window.takeHelpFromModal = async function() {
             if (!currentHelpId) return;
 
             const btn = document.getElementById('previewTakeBtn');
@@ -800,7 +801,7 @@
                     } else {
                         await @this.takeHelp(currentHelpId);
                     }
-                    closePreviewModal();
+                    window.closePreviewModal();
                 } catch (error) {
                     console.error('Gagal mengambil bantuan:', error);
                 } finally {
@@ -825,12 +826,12 @@
             } else {
                 await executeTake();
             }
-        }
+        };
 
         // Close modal when clicking outside
         document.getElementById('helpPreviewModal')?.addEventListener('click', function(e) {
             if (e.target === this) {
-                closePreviewModal();
+                window.closePreviewModal();
             }
         });
 
@@ -839,5 +840,6 @@
             // Reload page to show updated list
             window.location.reload();
         });
+    })();
     </script>
 </div>

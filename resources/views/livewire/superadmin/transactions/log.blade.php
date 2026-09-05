@@ -769,216 +769,215 @@
 </div>
 
 <script>
-let _financialChart = null;
-
-function financialChartController() {
-    return {
-        activeDatasets: {
-            topup: true,
-            platform_fee: true,
-            earning: true,
-            withdraw: true,
-            escrow_lock: false,
-            refund: false
-        },
-        init() {
-            this.$nextTick(() => {
-                this.renderChart();
-            });
-            if (this.$wire && typeof this.$wire.$watch === 'function') {
-                this.$wire.$watch('chartData', () => {
+(function() {
+    window.financialChartController = function() {
+        return {
+            activeDatasets: {
+                topup: true,
+                platform_fee: true,
+                earning: true,
+                withdraw: true,
+                escrow_lock: false,
+                refund: false
+            },
+            init() {
+                this.$nextTick(() => {
                     this.renderChart();
                 });
-            }
-        },
-        destroy() {
-            if (_financialChart) {
-                try { _financialChart.destroy(); } catch (e) {}
-                _financialChart = null;
-            }
-        },
-        toggleDataset(key) {
-            this.activeDatasets[key] = !this.activeDatasets[key];
-            this.renderChart();
-        },
-        toggleAllDatasets(state) {
-            Object.keys(this.activeDatasets).forEach(k => this.activeDatasets[k] = state);
-            this.renderChart();
-        },
-        renderChart() {
-            const canvas = document.getElementById('superadminMultiFinancialChart');
-            if (!canvas || !document.body.contains(canvas)) return;
-
-            if (typeof Chart === 'undefined') {
-                setTimeout(() => {
-                    if (document.getElementById('superadminMultiFinancialChart')) {
+                if (this.$wire && typeof this.$wire.$watch === 'function') {
+                    this.$wire.$watch('chartData', () => {
                         this.renderChart();
-                    }
-                }, 100);
-                return;
-            }
-
-            let dataObj = { labels: [] };
-            try {
-                if (!this.$el || !document.body.contains(this.$el)) return;
-                dataObj = (this.$wire && typeof this.$wire.get === 'function') ? (this.$wire.get('chartData') || { labels: [] }) : { labels: [] };
-            } catch (e) {
-                return;
-            }
-
-            const isDark = document.documentElement.classList.contains('dark');
-            const labels = dataObj.labels || [];
-
-            const datasets = [
-                {
-                    key: 'topup',
-                    label: 'Deposit (Top Up)',
-                    data: dataObj.topup || [],
-                    borderColor: '#10b981',
-                    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.4)' : 'rgba(16, 185, 129, 0.25)',
-                    borderWidth: 2,
-                    borderRadius: 4,
-                    hidden: !this.activeDatasets.topup
-                },
-                {
-                    key: 'platform_fee',
-                    label: 'Komisi Platform (Kas)',
-                    data: dataObj.platform_fee || [],
-                    borderColor: '#2563eb',
-                    backgroundColor: isDark ? 'rgba(37, 99, 235, 0.45)' : 'rgba(37, 99, 235, 0.3)',
-                    borderWidth: 2,
-                    borderRadius: 4,
-                    hidden: !this.activeDatasets.platform_fee
-                },
-                {
-                    key: 'earning',
-                    label: 'Earning Mitra',
-                    data: dataObj.earning || [],
-                    borderColor: '#8b5cf6',
-                    backgroundColor: isDark ? 'rgba(139, 92, 246, 0.4)' : 'rgba(139, 92, 246, 0.25)',
-                    borderWidth: 2,
-                    borderRadius: 4,
-                    hidden: !this.activeDatasets.earning
-                },
-                {
-                    key: 'withdraw',
-                    label: 'Withdraw',
-                    data: dataObj.withdraw || [],
-                    borderColor: '#f43f5e',
-                    backgroundColor: isDark ? 'rgba(244, 63, 94, 0.4)' : 'rgba(244, 63, 94, 0.25)',
-                    borderWidth: 2,
-                    borderRadius: 4,
-                    hidden: !this.activeDatasets.withdraw
-                },
-                {
-                    key: 'escrow_lock',
-                    label: 'Escrow Lock',
-                    data: dataObj.escrow_lock || [],
-                    borderColor: '#f59e0b',
-                    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.35)' : 'rgba(245, 158, 11, 0.2)',
-                    borderWidth: 2,
-                    borderRadius: 4,
-                    hidden: !this.activeDatasets.escrow_lock
-                },
-                {
-                    key: 'refund',
-                    label: 'Refund',
-                    data: dataObj.refund || [],
-                    borderColor: '#06b6d4',
-                    backgroundColor: isDark ? 'rgba(6, 182, 212, 0.35)' : 'rgba(6, 182, 212, 0.2)',
-                    borderWidth: 2,
-                    borderRadius: 4,
-                    hidden: !this.activeDatasets.refund
+                    });
                 }
-            ].filter(d => !d.hidden);
-
-            // If chart instance already exists and valid, update smoothly
-            if (_financialChart && _financialChart.ctx && document.getElementById('superadminMultiFinancialChart')) {
-                _financialChart.data.labels = labels;
-                _financialChart.data.datasets = datasets;
-                if (_financialChart.options && _financialChart.options.scales) {
-                    if (_financialChart.options.scales.x && _financialChart.options.scales.x.ticks) {
-                        _financialChart.options.scales.x.ticks.color = isDark ? '#9ca3af' : '#6b7280';
-                    }
-                    if (_financialChart.options.scales.y && _financialChart.options.scales.y.ticks) {
-                        _financialChart.options.scales.y.ticks.color = isDark ? '#9ca3af' : '#6b7280';
-                    }
+            },
+            destroy() {
+                const canvas = document.getElementById('superadminMultiFinancialChart');
+                const existingChart = (canvas && typeof Chart !== 'undefined' && Chart.getChart ? Chart.getChart(canvas) : null) || (canvas ? canvas._chartInstance : null);
+                if (existingChart) {
+                    try { existingChart.destroy(); } catch (e) {}
+                    if (canvas) canvas._chartInstance = null;
                 }
-                _financialChart.update('none');
-                return;
-            }
+            },
+            toggleDataset(key) {
+                this.activeDatasets[key] = !this.activeDatasets[key];
+                this.renderChart();
+            },
+            toggleAllDatasets(state) {
+                Object.keys(this.activeDatasets).forEach(k => this.activeDatasets[k] = state);
+                this.renderChart();
+            },
+            renderChart() {
+                const canvas = document.getElementById('superadminMultiFinancialChart');
+                if (!canvas || !document.body.contains(canvas)) return;
 
-            if (Chart.getChart) {
-                const existing = Chart.getChart(canvas);
-                if (existing) {
-                    try { existing.destroy(); } catch(e) {}
+                if (typeof Chart === 'undefined') {
+                    setTimeout(() => {
+                        if (document.getElementById('superadminMultiFinancialChart')) {
+                            this.renderChart();
+                        }
+                    }, 100);
+                    return;
                 }
-            }
-            if (_financialChart) {
-                try { _financialChart.destroy(); } catch(e) {}
-                _financialChart = null;
-            }
 
-            const ctx = canvas.getContext('2d');
-            _financialChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
+                let dataObj = { labels: [] };
+                try {
+                    if (!this.$el || !document.body.contains(this.$el)) return;
+                    dataObj = (this.$wire && typeof this.$wire.get === 'function') ? (this.$wire.get('chartData') || { labels: [] }) : { labels: [] };
+                } catch (e) {
+                    return;
+                }
+
+                const isDark = document.documentElement.classList.contains('dark');
+                const labels = dataObj.labels || [];
+
+                const datasets = [
+                    {
+                        key: 'topup',
+                        label: 'Deposit (Top Up)',
+                        data: dataObj.topup || [],
+                        borderColor: '#10b981',
+                        backgroundColor: isDark ? 'rgba(16, 185, 129, 0.4)' : 'rgba(16, 185, 129, 0.25)',
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        hidden: !this.activeDatasets.topup
                     },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: isDark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(15, 23, 42, 0.95)',
-                            padding: 12,
-                            titleColor: '#fff',
-                            bodyColor: '#e2e8f0',
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: function(c) {
-                                    const v = c.raw ?? (c.parsed ? c.parsed.y : 0) ?? 0;
-                                    return (c.dataset?.label || 'Total') + ': Rp ' + Number(v).toLocaleString('id-ID');
+                    {
+                        key: 'platform_fee',
+                        label: 'Komisi Platform (Kas)',
+                        data: dataObj.platform_fee || [],
+                        borderColor: '#2563eb',
+                        backgroundColor: isDark ? 'rgba(37, 99, 235, 0.45)' : 'rgba(37, 99, 235, 0.3)',
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        hidden: !this.activeDatasets.platform_fee
+                    },
+                    {
+                        key: 'earning',
+                        label: 'Earning Mitra',
+                        data: dataObj.earning || [],
+                        borderColor: '#8b5cf6',
+                        backgroundColor: isDark ? 'rgba(139, 92, 246, 0.4)' : 'rgba(139, 92, 246, 0.25)',
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        hidden: !this.activeDatasets.earning
+                    },
+                    {
+                        key: 'withdraw',
+                        label: 'Withdraw',
+                        data: dataObj.withdraw || [],
+                        borderColor: '#f43f5e',
+                        backgroundColor: isDark ? 'rgba(244, 63, 94, 0.4)' : 'rgba(244, 63, 94, 0.25)',
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        hidden: !this.activeDatasets.withdraw
+                    },
+                    {
+                        key: 'escrow_lock',
+                        label: 'Escrow Lock',
+                        data: dataObj.escrow_lock || [],
+                        borderColor: '#f59e0b',
+                        backgroundColor: isDark ? 'rgba(245, 158, 11, 0.35)' : 'rgba(245, 158, 11, 0.2)',
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        hidden: !this.activeDatasets.escrow_lock
+                    },
+                    {
+                        key: 'refund',
+                        label: 'Refund',
+                        data: dataObj.refund || [],
+                        borderColor: '#06b6d4',
+                        backgroundColor: isDark ? 'rgba(6, 182, 212, 0.35)' : 'rgba(6, 182, 212, 0.2)',
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        hidden: !this.activeDatasets.refund
+                    }
+                ].filter(d => !d.hidden);
+
+                // Get unproxied existing chart instance from Chart registry or canvas
+                let existingChart = (typeof Chart.getChart === 'function' ? Chart.getChart(canvas) : null) || canvas._chartInstance;
+
+                // If chart instance already exists and valid, update smoothly
+                if (existingChart && existingChart.ctx && document.getElementById('superadminMultiFinancialChart')) {
+                    existingChart.data.labels = labels;
+                    existingChart.data.datasets = datasets;
+                    if (existingChart.options && existingChart.options.scales) {
+                        if (existingChart.options.scales.x && existingChart.options.scales.x.ticks) {
+                            existingChart.options.scales.x.ticks.color = isDark ? '#9ca3af' : '#6b7280';
+                        }
+                        if (existingChart.options.scales.y && existingChart.options.scales.y.ticks) {
+                            existingChart.options.scales.y.ticks.color = isDark ? '#9ca3af' : '#6b7280';
+                        }
+                    }
+                    existingChart.update('none');
+                    return;
+                }
+
+                if (existingChart) {
+                    try { existingChart.destroy(); } catch(e) {}
+                    existingChart = null;
+                }
+
+                const ctx = canvas.getContext('2d');
+                canvas._chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: isDark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(15, 23, 42, 0.95)',
+                                padding: 12,
+                                titleColor: '#fff',
+                                bodyColor: '#e2e8f0',
+                                cornerRadius: 8,
+                                callbacks: {
+                                    label: function(c) {
+                                        const v = c.raw ?? (c.parsed ? c.parsed.y : 0) ?? 0;
+                                        return (c.dataset?.label || 'Total') + ': Rp ' + Number(v).toLocaleString('id-ID');
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: {
+                                    autoSkip: true,
+                                    maxRotation: 45,
+                                    font: { size: 11, weight: '500' },
+                                    color: isDark ? '#9ca3af' : '#6b7280'
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(v) { 
+                                        if (v >= 1000000) return 'Rp ' + (v / 1000000).toFixed(1) + 'M';
+                                        if (v >= 1000) return 'Rp ' + (v / 1000).toFixed(0) + 'K';
+                                        return 'Rp ' + Number(v).toLocaleString('id-ID'); 
+                                    },
+                                    font: { size: 11, weight: '500' },
+                                    color: isDark ? '#9ca3af' : '#6b7280'
+                                },
+                                grid: {
+                                    color: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(156, 163, 175, 0.15)'
                                 }
                             }
                         }
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: {
-                                autoSkip: true,
-                                maxRotation: 45,
-                                font: { size: 11, weight: '500' },
-                                color: isDark ? '#9ca3af' : '#6b7280'
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(v) { 
-                                    if (v >= 1000000) return 'Rp ' + (v / 1000000).toFixed(1) + 'M';
-                                    if (v >= 1000) return 'Rp ' + (v / 1000).toFixed(0) + 'K';
-                                    return 'Rp ' + Number(v).toLocaleString('id-ID'); 
-                                },
-                                font: { size: 11, weight: '500' },
-                                color: isDark ? '#9ca3af' : '#6b7280'
-                            },
-                            grid: {
-                                color: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(156, 163, 175, 0.15)'
-                            }
-                        }
                     }
-                }
-            });
-        }
+                });
+            }
+        };
     };
-}
+})();
 </script>
