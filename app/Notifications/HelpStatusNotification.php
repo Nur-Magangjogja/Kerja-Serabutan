@@ -43,6 +43,8 @@ class HelpStatusNotification extends Notification
             'partner_cancel_requested'      => "Permintaan Pembatalan Rekan Jasa",
             'cancel_accepted'               => "Pembatalan Diterima",
             'cancel_rejected'               => "Pembatalan Ditolak",
+            'customer_cancelled_during_matching', 'customer_cancelled' => "Pesanan Bantuan Dibatalkan Pemesan",
+            'dibatalkan'                    => "Bantuan Dibatalkan",
             default                         => "Pembaruan Status Bantuan"
         };
 
@@ -57,6 +59,8 @@ class HelpStatusNotification extends Notification
             'partner_cancel_requested'      => "$mitraName mengajukan permintaan pembatalan. Silakan tinjau dan berikan keputusan Anda.",
             'cancel_accepted'               => "Permintaan pembatalan telah diterima. Kami sedang mencari Rekan Jasa lain untuk Anda.",
             'cancel_rejected'               => "Permintaan pembatalan ditolak. Pekerjaan akan tetap dilanjutkan.",
+            'customer_cancelled_during_matching', 'customer_cancelled' => "Permintaan bantuan '{$this->help->title}' telah dibatalkan oleh pemesan saat proses pencarian. Radar Anda otomatis kembali mencari order lain.",
+            'dibatalkan'                    => "Permintaan bantuan '{$this->help->title}' telah dibatalkan.",
             default                         => "Status bantuan '{$this->help->title}' kini menjadi: {$this->newStatus}."
         };
 

@@ -31,7 +31,7 @@ class Realtime extends Component
 
         // Check for new chat messages
         $new = ChatModel::where('customer_id', auth()->id())
-            ->where('sender_type', 'mitra')
+            ->whereIn('sender_type', ['mitra', 'system'])
             ->where('id', '>', $this->last_chat_id)
             ->orderBy('id', 'asc')
             ->first();
@@ -41,11 +41,13 @@ class Realtime extends Component
 
             $this->last_chat_id = $new->id;
 
+            $senderName = $new->sender_type === 'system' ? 'Sistem SayaBantu' : (optional($new->mitra)->name ?? 'Mitra');
+
             $this->dispatch(
                 'help-new-message',
                 helpId: $new->help_id,
                 message: Str::limit($new->message, 150),
-                from: optional($new->mitra)->name ?? 'Mitra'
+                from: $senderName
             );
         }
 

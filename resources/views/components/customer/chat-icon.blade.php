@@ -9,9 +9,9 @@
         if (auth()->check()) {
             $customerId = auth()->id();
             
-            // 1. Unread chat from mitras
+            // 1. Unread chat from mitras & system
             $unreadMitra = \App\Models\Chat::where('customer_id', $customerId)
-                ->where('sender_type', 'mitra')
+                ->whereIn('sender_type', ['mitra', 'system'])
                 ->whereNull('read_at')
                 ->count();
                 

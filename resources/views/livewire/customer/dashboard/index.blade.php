@@ -423,11 +423,11 @@
                         <a href="{{ route('customer.helps.detail', $help->id) }}"
                             class="block w-full text-left bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-xs hover:shadow-md border border-gray-100 dark:border-gray-700/70 transition-all group">
                             <div class="flex items-start gap-3.5">
-                                <div class="w-13 h-13 rounded-2xl overflow-hidden bg-gradient-to-br from-sky-100 to-blue-50 dark:from-sky-950/60 dark:to-blue-900/40 border border-sky-200/60 dark:border-sky-800/60 flex-shrink-0 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform duration-300">
+                                <div class="w-16 h-16 rounded-2xl overflow-hidden bg-gradient-to-br from-sky-100 to-blue-50 dark:from-sky-950/60 dark:to-blue-900/40 border border-sky-200/60 dark:border-sky-800/60 flex-shrink-0 flex items-center justify-center shadow-2xs">
                                     @if($help->photo)
                                         <img src="{{ asset('storage/' . $help->photo) }}" alt="{{ $help->title }}" class="w-full h-full object-cover">
                                     @else
-                                        <svg class="w-6 h-6 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-7 h-7 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                         </svg>
                                     @endif

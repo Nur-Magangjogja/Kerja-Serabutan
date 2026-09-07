@@ -21,7 +21,7 @@ class HelpSettings extends Component
     public $admin_fee; // legacy
 
     // Matching & Fairness Calibration Properties
-    public $offer_timeout_seconds = 45;
+    public $offer_timeout_seconds = 120;
     public $max_dispatch_candidates = 5;
     public $heartbeat_ttl_seconds = 60;
     public $max_matching_radius_km = 15.0;
@@ -46,7 +46,7 @@ class HelpSettings extends Component
             'min_help_nominal'           => 'required|numeric|min:0',
             'platform_service_fee'       => 'required|numeric|min:0',
             'admin_fee'                  => 'nullable|numeric|min:0',
-            'offer_timeout_seconds'      => 'required|integer|min:15|max:120',
+            'offer_timeout_seconds'      => 'required|integer|min:15|max:300',
             'max_dispatch_candidates'    => 'required|integer|min:1|max:30',
             'heartbeat_ttl_seconds'      => 'required|integer|min:30|max:300',
             'max_matching_radius_km'     => 'required|numeric|min:1|max:100',
@@ -72,7 +72,7 @@ class HelpSettings extends Component
             'platform_service_fee.required' => 'Biaya layanan platform tidak boleh kosong.',
             'platform_service_fee.numeric'  => 'Biaya layanan platform harus berupa angka.',
             'offer_timeout_seconds.min'     => 'Batas waktu respon penawaran minimal 15 detik.',
-            'offer_timeout_seconds.max'     => 'Batas waktu respon penawaran maksimal 120 detik.',
+            'offer_timeout_seconds.max'     => 'Batas waktu respon penawaran maksimal 300 detik.',
             'qris_image.image'              => 'File QRIS harus berupa gambar.',
             'qris_image.max'                => 'Ukuran gambar QRIS maksimal 3MB.',
             'qris_image.mimes'              => 'Format gambar QRIS harus JPG, JPEG, PNG, atau WEBP.',

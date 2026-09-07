@@ -233,7 +233,22 @@
                                     </div>
                                 @endif
 
-                                @if(str_contains($msg->message, '🛡️') || str_contains($msg->message, '[Pesan Resmi Admin') || str_contains($msg->message, '[Sistem Moderasi'))
+                                @if($msg->sender_type === 'system' || str_starts_with($msg->message, 'Sistem SayaBantu:'))
+                                    <div class="flex justify-center my-3">
+                                        <div class="w-full max-w-lg bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/80 p-3.5 rounded-2xl shadow-xs text-center">
+                                            <div class="flex items-center justify-center gap-1.5 mb-1 text-blue-800 dark:text-blue-300 font-bold text-xs uppercase tracking-wider">
+                                                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                <span>Pemberitahuan Sistem SayaBantu</span>
+                                            </div>
+                                            <p class="text-xs text-blue-950 dark:text-blue-100 whitespace-pre-line leading-relaxed font-medium">
+                                                {{ str_replace('Sistem SayaBantu: ', '', $msg->message) }}
+                                            </p>
+                                            <div class="text-[10px] text-blue-600/80 dark:text-blue-400 mt-1.5 text-center">
+                                                {{ $msg->created_at->format('d M Y, H:i') }} WIB
+                                            </div>
+                                        </div>
+                                    </div>
+                                @elseif(str_contains($msg->message, '🛡️') || str_contains($msg->message, '[Pesan Resmi Admin') || str_contains($msg->message, '[Sistem Moderasi'))
                                     <div class="flex justify-center my-3">
                                         <div class="w-full max-w-lg bg-gradient-to-br from-amber-50 to-amber-100/70 dark:from-amber-950/60 dark:to-gray-800 p-4 rounded-2xl border-2 border-amber-300 dark:border-amber-700 shadow-xs">
                                             <div class="flex items-center gap-1.5 mb-1.5 text-amber-900 dark:text-amber-200">

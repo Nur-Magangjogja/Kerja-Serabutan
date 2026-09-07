@@ -227,7 +227,7 @@ class AppSetting extends Model
 
     public static function getOfferTimeoutSeconds(): int
     {
-        $val = (int) static::get('offer_timeout_seconds', 45);
+        $val = (int) static::get('offer_timeout_seconds', 120);
         return max(15, min(600, $val));
     }
 

@@ -129,15 +129,6 @@
         {{-- Service Info --}}
         <div class="bg-white dark:bg-gray-800 mt-2.5 p-4 sm:p-5 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700/70 space-y-4">
             <div class="flex items-start gap-3.5">
-                <div class="w-13 h-13 rounded-2xl bg-gradient-to-br from-sky-100 to-blue-50 dark:from-sky-950/60 dark:to-blue-900/40 border border-sky-200/70 dark:border-sky-800/60 flex items-center justify-center flex-shrink-0 shadow-2xs overflow-hidden">
-                    @if($help->photo)
-                        <img src="{{ asset('storage/' . $help->photo) }}" alt="{{ $help->title }}" class="w-full h-full object-cover">
-                    @else
-                        <svg class="w-6 h-6 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                    @endif
-                </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between gap-2 mb-1 flex-wrap">
                         <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200/60 dark:border-sky-800/60">
@@ -339,19 +330,48 @@
         </div>
 
         {{-- Location --}}
-        <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
+        <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 space-y-3">
             <div class="flex items-start gap-3">
-                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                <div class="flex-1">
-                    <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Lokasi</h3>
-                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ $help->location ?? $help->full_address ?? 'Rumah warna coklat' }}</p>
-                    @if($help->full_address)
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><span class="font-semibold">Detail :</span> {{ $help->full_address }}</p>
-                    @endif
+                <div class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-red-100 dark:border-red-900/50 shadow-2xs">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                    </svg>
                 </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2 flex-wrap mb-0.5">
+                        <h3 class="text-[11px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400">Titik Alamat Anda</h3>
+                        <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/60 px-2 py-0.5 rounded-md border border-gray-200/60 dark:border-gray-700">
+                            <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                            {{ $help->city->name ?? 'Kota Lokasi' }}
+                        </span>
+                    </div>
+                    <p class="font-bold text-sm text-gray-900 dark:text-white leading-snug break-words">
+                        {{ $help->location ?? 'Alamat sesuai titik peta' }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Detail Patokan Tempat / Ciri Rumah (Opsional) -->
+            <div class="rounded-xl border p-3 transition-colors {{ !empty($help->full_address) ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-800/60' : 'bg-gray-50 dark:bg-gray-700/20 border-gray-200/70 dark:border-gray-700/60' }}">
+                <div class="flex items-center gap-1.5 mb-1.5">
+                    <svg class="w-3.5 h-3.5 {{ !empty($help->full_address) ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500' }}" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+                    </svg>
+                    <h4 class="text-xs font-bold {{ !empty($help->full_address) ? 'text-amber-900 dark:text-amber-200' : 'text-gray-600 dark:text-gray-400' }}">
+                        Detail Patokan Tempat / Ciri Rumah
+                    </h4>
+                    <span class="text-[11px] font-normal text-gray-400 dark:text-gray-500">(Opsional)</span>
+                </div>
+
+                @if(!empty($help->full_address))
+                    <p class="text-xs text-amber-950 dark:text-amber-100 font-medium leading-relaxed whitespace-pre-line break-words pl-5">
+                        {{ $help->full_address }}
+                    </p>
+                @else
+                    <p class="text-xs text-gray-400 dark:text-gray-500 italic pl-5">
+                        Anda tidak menyertakan patokan/ciri khusus rumah. Rekan jasa akan mengikuti navigasi GPS.
+                    </p>
+                @endif
             </div>
         </div>
 

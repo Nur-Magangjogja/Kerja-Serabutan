@@ -132,7 +132,7 @@ class Index extends Component
         try {
             $unreadChatCount = \App\Models\Chat::where('customer_id', $user->id)
                 ->whereNull('read_at')
-                ->where('sender_type', 'mitra')
+                ->whereIn('sender_type', ['mitra', 'system'])
                 ->count();
         } catch (\Exception $e) {
             // ignore if Chat model or columns missing

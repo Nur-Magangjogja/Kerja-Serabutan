@@ -201,8 +201,12 @@ class OfferRadarWidget extends Component
                 ->latest()
                 ->first();
 
-            if ($candidateOffer && (!$candidateOffer->expires_at || $candidateOffer->expires_at->isFuture())) {
+            if ($candidateOffer && (!$candidateOffer->expires_at || $candidateOffer->expires_at->isFuture()) && $candidateOffer->help && !in_array($candidateOffer->help->status, ['dibatalkan', 'selesai'])) {
                 $activeOffer = $candidateOffer;
+            } else {
+                // Self-healing jika bantuan dibatalkan atau status berubah saat mitra offline/lag
+                app(PartnerOnlineService::class)->releaseCancelledOffer($userId, $onlineState->current_help_id);
+                $onlineState = $onlineState->fresh();
             }
         }
 

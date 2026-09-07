@@ -368,6 +368,36 @@ class PartnerOnlineService
     }
 
     /**
+     * Membebaskan status mitra jika penawaran dibatalkan oleh customer (Instant Release, Zero Penalty).
+     * Tidak menambah consecutive_declines dan mempertahankan waktu antrean pencarian (searching_since).
+     */
+    public function releaseCancelledOffer(int $mitraId, int $helpId, ?int $heartbeatTtlSeconds = null): void
+    {
+        $ttl = $heartbeatTtlSeconds ?? \App\Models\AppSetting::getHeartbeatTtlSeconds();
+
+        DB::transaction(function () use ($mitraId, $helpId, $ttl) {
+            $state = PartnerOnlineState::where('user_id', $mitraId)->lockForUpdate()->first();
+
+            if (!$state || $state->matching_status !== PartnerOnlineState::STATUS_OFFER_PENDING || $state->current_help_id != $helpId) {
+                return;
+            }
+
+            $state->current_help_id = null;
+
+            // Zero penalty: Tidak menambah consecutive_declines karena pembatalan dilakukan oleh customer
+            if ($state->isHeartbeatFresh($ttl)) {
+                $state->matching_status = PartnerOnlineState::STATUS_SEARCHING;
+            } else {
+                $state->matching_status = PartnerOnlineState::STATUS_ONLINE;
+                $state->searching_since = null;
+            }
+
+            $state->save();
+            Log::info("[PartnerOnlineService] Mitra #{$mitraId} released from cancelled Help #{$helpId} -> '{$state->matching_status}' (Zero penalty, queue preserved).");
+        });
+    }
+
+    /**
      * Menetapkan mitra ke status BUSY saat penawaran diterima atau bantuan diambil (Atomic Lock).
      * Transisi yang Diizinkan: SEARCHING / ONLINE / OFFER_PENDING -> BUSY.
      * Invariant Guards:

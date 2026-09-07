@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('help_id')->constrained('helps')->cascadeOnDelete();
             $table->foreignId('mitra_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('customer_id')->constrained('users')->cascadeOnDelete();
-            $table->enum('sender_type', ['mitra', 'customer']);
+            $table->enum('sender_type', ['mitra', 'customer', 'system']);
             $table->text('message');
             $table->string('photo')->nullable();
             $table->boolean('is_read')->default(false);

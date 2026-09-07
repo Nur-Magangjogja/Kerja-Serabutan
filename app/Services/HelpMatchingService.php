@@ -565,8 +565,8 @@ class HelpMatchingService
                 $lockedHelp = Help::where('id', $dispatchPeek->help_id)->lockForUpdate()->firstOrFail();
 
                 if ($lockedHelp->mitra_id !== null || !in_array($lockedHelp->status, [Help::STATUS_MENUNGGU_MITRA, 'menunggu_mitra'])) {
-                    $this->onlineService->revertFromOfferPending($mitra->id, $dispatchPeek->help_id);
-                    throw new \RuntimeException('Bantuan ini sudah diambil atau tidak lagi tersedia.');
+                    $this->onlineService->releaseCancelledOffer($mitra->id, $dispatchPeek->help_id);
+                    throw new \RuntimeException('Bantuan ini sudah diambil, dibatalkan oleh pemesan, atau tidak lagi tersedia.');
                 }
 
                 // STEP 2 (Tier 2): Lock baris HelpDispatch
@@ -692,13 +692,12 @@ class HelpMatchingService
 
         if ($dispatchData) {
             Log::info("[HelpMatchingService] Mitra #{$mitra->id} REJECTED Dispatch #{$dispatchId}. Advancing to Rank " . ($dispatchData['rank'] + 1));
-            app(\App\Services\PartnerDisciplineService::class)->recordPartnerDecline($mitra, Help::find($dispatchData['help_id']), $reason);
             $this->dispatchNextCandidate($dispatchData['help_id'], $dispatchData['round'], $dispatchData['rank'] + 1);
         }
     }
 
     /**
-     * Menangani kadaluarsa tawaran jika batas 45 detik terlewati tanpa respon.
+     * Menangani kadaluarsa tawaran jika batas waktu terlewati tanpa respon.
      */
     public function handleExpiry(int $dispatchId, bool $force = false): void
     {
@@ -731,10 +730,6 @@ class HelpMatchingService
 
         if ($dispatchData) {
             Log::info("[HelpMatchingService] Dispatch #{$dispatchId} EXPIRED. Advancing to Rank " . ($dispatchData['rank'] + 1));
-            $mitra = User::find($dispatchData['mitra_id']);
-            if ($mitra) {
-                app(\App\Services\PartnerDisciplineService::class)->recordPartnerDecline($mitra, Help::find($dispatchData['help_id']), 'Tawaran waktu habis / tidak direspon');
-            }
             $this->dispatchNextCandidate($dispatchData['help_id'], $dispatchData['round'], $dispatchData['rank'] + 1);
         }
     }

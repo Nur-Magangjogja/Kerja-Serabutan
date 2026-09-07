@@ -30,7 +30,7 @@ class Realtime extends Component
         Log::info('[RealtimeNotifications] polling for mitra_id=' . auth()->id() . ' last_chat_id=' . $this->last_chat_id);
 
         $new = ChatModel::where('mitra_id', auth()->id())
-            ->where('sender_type', 'customer')
+            ->whereIn('sender_type', ['customer', 'system'])
             ->where('id', '>', $this->last_chat_id)
             ->orderBy('id', 'asc')
             ->first();
@@ -40,12 +40,14 @@ class Realtime extends Component
 
             $this->last_chat_id = $new->id;
 
+            $senderName = $new->sender_type === 'system' ? 'Sistem SayaBantu' : (optional($new->customer)->name ?? 'Customer');
+
             // Dispatch with named parameters so Livewire exposes them as event detail in the browser
             $this->dispatch(
                 'help-new-message',
                 helpId: $new->help_id,
                 message: Str::limit($new->message, 150),
-                from: optional($new->customer)->name ?? 'Customer'
+                from: $senderName
             );
         }
 

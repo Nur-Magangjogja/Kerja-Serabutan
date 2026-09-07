@@ -111,9 +111,9 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Timeout Penawaran (Detik)</label>
-                        <input type="number" wire:model="offer_timeout_seconds" min="15" max="120"
+                        <input type="number" wire:model="offer_timeout_seconds" min="15" max="300"
                                class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
-                        <p class="text-[11px] text-gray-400 mt-1">Batas waktu respon mitra (15 - 120 detik).</p>
+                        <p class="text-[11px] text-gray-400 mt-1">Batas waktu respon mitra (15 - 300 detik, default: 120 detik / 2 menit).</p>
                     </div>
 
                     <div>

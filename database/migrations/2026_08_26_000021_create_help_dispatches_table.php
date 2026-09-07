@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('mitra_id')->constrained('users')->cascadeOnDelete();
             $table->unsignedTinyInteger('round')->default(1);
             $table->unsignedTinyInteger('rank');
-            $table->enum('status', ['offered', 'accepted', 'rejected', 'expired'])->default('offered')->index();
+            $table->enum('status', ['offered', 'accepted', 'rejected', 'expired', 'cancelled'])->default('offered')->index();
             $table->timestamp('offered_at')->index();
             $table->timestamp('expires_at')->index();
             $table->timestamp('responded_at')->nullable();

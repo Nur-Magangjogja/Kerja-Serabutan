@@ -133,20 +133,9 @@
         <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3">
             {{-- Header Row: Photo & Title --}}
             <div class="flex items-center gap-3.5 mb-3">
-                <div class="w-12 h-12 rounded-xl bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center flex-shrink-0 overflow-hidden border border-pink-200/50 dark:border-pink-800/40">
-                    @if ($help->photo)
-                        <img src="{{ asset('storage/' . $help->photo) }}" alt="{{ $help->title }}"
-                            class="w-full h-full object-cover">
-                    @else
-                        <svg class="w-6 h-6 text-pink-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path
-                                d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                        </svg>
-                    @endif
-                </div>
                 <div class="flex-1 min-w-0">
                     <h2 class="font-bold text-base text-gray-900 dark:text-white truncate leading-snug">{{ $help->title }}</h2>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium truncate mt-0.5">Bantuan Tugas</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium truncate mt-0.5">Tugas yang sedang dikerjakan</p>
                 </div>
             </div>
 
@@ -387,25 +376,48 @@
 
             {{-- Address Text & Navigation CTA --}}
             <div class="p-4 space-y-3 bg-white dark:bg-gray-800">
-                <div class="flex items-start gap-2.5">
-                    <div class="w-6 h-6 rounded-full bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <!-- Titik Alamat Utama GPS -->
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-red-100 dark:border-red-900/50 shadow-2xs">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Titik Tujuan Customer</p>
-                        @if ($help->location)
-                            <p class="font-bold text-sm text-gray-900 dark:text-white mt-0.5 leading-snug">{{ $help->location }}</p>
-                        @endif
-                        @if ($help->full_address)
-                            <p class="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">{{ $help->full_address }}</p>
-                        @endif
-                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-1">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                            {{ $help->city->name ?? 'Kota Lokasi' }}
+                        <div class="flex items-center justify-between gap-2 flex-wrap mb-0.5">
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400">Titik Alamat Customer</span>
+                            <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/60 px-2 py-0.5 rounded-md border border-gray-200/60 dark:border-gray-700">
+                                <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                {{ $help->city->name ?? 'Kota Lokasi' }}
+                            </span>
+                        </div>
+                        <p class="font-bold text-sm text-gray-900 dark:text-white leading-snug break-words">
+                            {{ $help->location ?? 'Alamat sesuai titik peta' }}
                         </p>
                     </div>
+                </div>
+
+                <!-- Detail Patokan Tempat / Ciri Rumah (Opsional) -->
+                <div class="rounded-xl border p-3 transition-colors {{ !empty($help->full_address) ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-800/60' : 'bg-gray-50 dark:bg-gray-700/20 border-gray-200/70 dark:border-gray-700/60' }}">
+                    <div class="flex items-center gap-1.5 mb-1.5">
+                        <svg class="w-3.5 h-3.5 {{ !empty($help->full_address) ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500' }}" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+                        </svg>
+                        <h4 class="text-xs font-bold {{ !empty($help->full_address) ? 'text-amber-900 dark:text-amber-200' : 'text-gray-600 dark:text-gray-400' }}">
+                            Detail Patokan Tempat / Ciri Rumah
+                        </h4>
+                        <span class="text-[11px] font-normal text-gray-400 dark:text-gray-500"></span>
+                    </div>
+
+                    @if(!empty($help->full_address))
+                        <p class="text-xs text-amber-950 dark:text-amber-100 font-medium leading-relaxed whitespace-pre-line break-words pl-5">
+                            {{ $help->full_address }}
+                        </p>
+                    @else
+                        <p class="text-xs text-gray-400 dark:text-gray-500 italic pl-5">
+                            Customer tidak menyertakan patokan/ciri khusus rumah. Silakan gunakan navigasi peta ke titik koordinat.
+                        </p>
+                    @endif
                 </div>
 
                 {{-- Action Buttons: Google Maps Turn-by-Turn Nav --}}

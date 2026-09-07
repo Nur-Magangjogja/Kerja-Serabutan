@@ -140,7 +140,7 @@ class Index extends Component
             // Bulk eager load unread counts in a single query
             $unreadCounts = ChatModel::where('customer_id', $userId)
                 ->whereIn('mitra_id', $filteredMitraIds)
-                ->where('sender_type', 'mitra')
+                ->whereIn('sender_type', ['mitra', 'system'])
                 ->whereNull('read_at')
                 ->selectRaw('mitra_id, count(*) as total')
                 ->groupBy('mitra_id')
@@ -246,7 +246,7 @@ class Index extends Component
 
         ChatModel::where('customer_id', Auth::id())
             ->where('mitra_id', $mitraId)
-            ->where('sender_type', 'mitra')
+            ->whereIn('sender_type', ['mitra', 'system'])
             ->whereNull('read_at')
             ->update([
                 'is_read' => true,

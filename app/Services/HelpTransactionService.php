@@ -6,6 +6,7 @@ use App\Models\AppSetting;
 use App\Models\BalanceTransaction;
 use App\Models\Chat;
 use App\Models\Help;
+use App\Models\HelpDispatch;
 use App\Models\PartnerActivity;
 use App\Models\PartnerReport;
 use App\Models\User;
@@ -944,6 +945,30 @@ class HelpTransactionService
             'help_cancelled',
             "Customer {$customer->name} membatalkan bantuan (Refund dana Rp " . number_format($help->amount, 0, ',', '.') . " ke saldo customer)"
         );
+
+        // Bebaskan mitra jika saat ini order sedang ditawarkan ke mitra (offer_pending)
+        try {
+            $offeredDispatches = HelpDispatch::with('mitra')
+                ->where('help_id', $help->id)
+                ->where('status', HelpDispatch::STATUS_OFFERED)
+                ->get();
+
+            foreach ($offeredDispatches as $dispatch) {
+                $dispatch->update([
+                    'status'           => HelpDispatch::STATUS_CANCELLED,
+                    'responded_at'     => now(),
+                    'rejection_reason' => 'Permintaan bantuan dibatalkan oleh pemesan saat proses pencarian.',
+                ]);
+
+                app(PartnerOnlineService::class)->releaseCancelledOffer($dispatch->mitra_id, $help->id);
+
+                if ($dispatch->mitra) {
+                    $dispatch->mitra->notify(new HelpStatusNotification($help, null, 'customer_cancelled_during_matching', null));
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[HelpTransactionService] Failed to release offered dispatches on cancel: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -993,6 +1018,30 @@ class HelpTransactionService
             } catch (\Throwable $e) {
                 // ignore notification delivery error
             }
+        }
+
+        // Bebaskan mitra jika saat ini order sedang ditawarkan ke mitra (offer_pending)
+        try {
+            $offeredDispatches = HelpDispatch::with('mitra')
+                ->where('help_id', $help->id)
+                ->where('status', HelpDispatch::STATUS_OFFERED)
+                ->get();
+
+            foreach ($offeredDispatches as $dispatch) {
+                $dispatch->update([
+                    'status'           => HelpDispatch::STATUS_CANCELLED,
+                    'responded_at'     => now(),
+                    'rejection_reason' => "Permintaan bantuan dibatalkan otomatis oleh sistem. Alasan: {$reason}",
+                ]);
+
+                app(PartnerOnlineService::class)->releaseCancelledOffer($dispatch->mitra_id, $help->id);
+
+                if ($dispatch->mitra) {
+                    $dispatch->mitra->notify(new HelpStatusNotification($help, null, 'customer_cancelled_during_matching', null));
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[HelpTransactionService] Failed to release offered dispatches on autoCancel: ' . $e->getMessage());
         }
 
         Log::info('[HelpTransactionService] autoCancelExpiredHelp success', ['help_id' => $help->id]);
@@ -1514,22 +1563,45 @@ class HelpTransactionService
             if ($action === 'partner_cancelled_redispatched') {
                 $reasonText = $help->partner_cancel_reason ? " (Alasan: {$help->partner_cancel_reason})" : "";
                 $message = "Sistem SayaBantu: Rekan Jasa {$mitra->name} telah membatalkan penugasan bantuan ini{$reasonText}. Sistem saat ini sedang otomatis mencari Rekan Jasa pengganti untuk Anda.";
+
+                Chat::create([
+                    'help_id'     => $help->id,
+                    'mitra_id'    => $mitra->id,
+                    'customer_id' => $customer->id,
+                    'message'     => $message,
+                    'sender_type' => 'system',
+                    'read_at'     => null,
+                ]);
+
+                // Notifikasi ke Customer dari pihak Sistem SayaBantu
+                $customer->notify(new ChatMessageNotification($help->id, $message, $customer->id, 'Sistem SayaBantu'));
             } elseif ($action === 'accepted') {
-                $message = "Permintaan pembatalan untuk bantuan '{$help->title}' telah disetujui oleh Customer. Pesanan ini telah dikembalikan ke pencarian Rekan Jasa lain.";
+                $message = "Sistem SayaBantu: Permintaan pembatalan untuk bantuan '{$help->title}' telah disetujui oleh Customer. Pesanan ini telah dikembalikan ke pencarian Rekan Jasa lain.";
+
+                Chat::create([
+                    'help_id'     => $help->id,
+                    'mitra_id'    => $mitra->id,
+                    'customer_id' => $customer->id,
+                    'message'     => $message,
+                    'sender_type' => 'system',
+                    'read_at'     => null,
+                ]);
+
+                $mitra->notify(new ChatMessageNotification($help->id, $message, $customer->id, 'Sistem SayaBantu'));
             } else {
                 $message = "Halo Rekan Jasa {$mitra->name}, permintaan pembatalan Anda untuk bantuan '{$help->title}' ditolak oleh Customer. Mohon untuk melanjutkan pengerjaan bantuan ini.";
+
+                Chat::create([
+                    'help_id'     => $help->id,
+                    'mitra_id'    => $mitra->id,
+                    'customer_id' => $customer->id,
+                    'message'     => $message,
+                    'sender_type' => 'customer',
+                    'read_at'     => null,
+                ]);
+
+                $mitra->notify(new ChatMessageNotification($help->id, $message, $customer->id, $customer->name));
             }
-
-            Chat::create([
-                'help_id'     => $help->id,
-                'mitra_id'    => $mitra->id,
-                'customer_id' => $customer->id,
-                'message'     => $message,
-                'sender_type' => 'customer',
-                'read_at'     => null,
-            ]);
-
-            $mitra->notify(new ChatMessageNotification($help->id, $message, $customer->id, $customer->name));
         } catch (\Throwable $e) {
             Log::warning('[HelpTransactionService] Failed to send cancellation resolution chat: ' . $e->getMessage());
         }
