@@ -16,12 +16,12 @@ class AllHelps extends Component
 
     protected $queryString = [
         'search'         => ['except' => ''],
-        'distanceRadius' => ['except' => 'all'],
+        'districtFilter' => ['except' => 'all'],
         'sortBy'         => ['except' => 'nearby'],
     ];
 
     public $search         = '';
-    public $distanceRadius = 'all'; // all, 5, 15, 60, city
+    public $districtFilter = 'all'; // all, my_district, or district_id
     public $sortBy         = 'nearby'; // nearby, latest, oldest, price_high, price_low
     public $mitraLat       = null;
     public $mitraLng       = null;
@@ -31,7 +31,7 @@ class AllHelps extends Component
         $this->resetPage();
     }
 
-    public function updatingDistanceRadius()
+    public function updatingDistrictFilter()
     {
         $this->resetPage();
     }
@@ -89,6 +89,7 @@ class AllHelps extends Component
     {
         $user            = auth()->user();
         $locationService = app(LocationTrackingService::class);
+        $maxOperationalKm = \App\Models\AppSetting::MAX_OPERATIONAL_RADIUS_KM; // Baku 10.0 KM
 
         // Jika Mitra terkena shadow ban atau sanksi SP 3 / blocked, jangan tampilkan daftar pekerjaan
         if ($user && ($user->isShadowBanned() || $user->warning_level >= 3 || $user->status === 'blocked')) {
@@ -103,8 +104,9 @@ class AllHelps extends Component
             return view('livewire.mitra.helps.all-helps', [
                 'helps'          => $emptyPaginator,
                 'needsCity'      => false,
+                'userDistrict'   => $user->district_id ? \App\Models\District::find($user->district_id) : null,
                 'userCity'       => $user->city_id ? \App\Models\City::find($user->city_id) : null,
-                'distanceRadius' => $this->distanceRadius,
+                'districtFilter' => $this->districtFilter,
                 'sortBy'         => $this->sortBy,
                 'search'         => $this->search,
                 'mitraLat'       => $this->mitraLat,
@@ -127,9 +129,11 @@ class AllHelps extends Component
                   ->orWhere('scheduled_at', '<=', now());
             });
 
-        // Filter Kota Saya
-        if ($this->distanceRadius === 'city' && $user && !empty($user->city_id)) {
-            $query->where('city_id', $user->city_id);
+        // Filter Wilayah Kecamatan
+        if ($this->districtFilter === 'my_district' && $user && !empty($user->district_id)) {
+            $query->where('district_id', $user->district_id);
+        } elseif (is_numeric($this->districtFilter) && (int) $this->districtFilter > 0) {
+            $query->where('district_id', (int) $this->districtFilter);
         }
 
         // Search
@@ -138,6 +142,7 @@ class AllHelps extends Component
                 $q->where('title', 'like', '%' . $this->search . '%')
                   ->orWhere('description', 'like', '%' . $this->search . '%')
                   ->orWhereHas('user', fn($u) => $u->where('name', 'like', '%' . $this->search . '%'))
+                  ->orWhereHas('district', fn($d) => $d->where('name', 'like', '%' . $this->search . '%'))
                   ->orWhereHas('city', fn($c) => $c->where('name', 'like', '%' . $this->search . '%'));
             });
         }
@@ -149,14 +154,10 @@ class AllHelps extends Component
             $lat = (float) $this->mitraLat;
             $lng = (float) $this->mitraLng;
 
-            // 1. Tentukan batas radius filter (KM): Pilihan eksplisit pengguna (5/15/25/30/60) atau batas maksimal platform pool (60 KM)
-            $maxPoolRadiusKm = (float) \App\Models\AppSetting::getMaxPoolRadiusKm();
-            $filterRadius = in_array($this->distanceRadius, ['5', '15', '25', '30', '60'])
-                ? (float) $this->distanceRadius
-                : $maxPoolRadiusKm;
+            // 1. Batas jangkauan operasional baku: 10.0 KM
+            $filterRadius = $maxOperationalKm;
 
-            // 2. Bounding Box Pre-Filter (Menggunakan Index Database B-Tree untuk memotong 99% data di luar area)
-            // 1 deg Lat ~ 111.045 KM; 1 deg Lng ~ 111.045 * cos(Lat) KM
+            // 2. Bounding Box Pre-Filter (Index B-Tree)
             $latDelta = $filterRadius / 111.045;
             $lngDelta = $filterRadius / (111.045 * max(0.01, cos(deg2rad($lat))));
 
@@ -165,29 +166,35 @@ class AllHelps extends Component
             $minLng = $lng - $lngDelta;
             $maxLng = $lng + $lngDelta;
 
-            // 3. Formula Haversine SQL Presisi (Hanya dievaluasi untuk data di dalam Bounding Box)
+            // 3. Formula Haversine SQL Presisi
             $haversineSql = "(6371 * acos(least(1.0, greatest(-1.0, cos(radians($lat)) * cos(radians(latitude)) * cos(radians(longitude) - radians($lng)) + sin(radians($lat)) * sin(radians(latitude))))))";
 
             $query->select('helps.*')
                   ->selectRaw("$haversineSql AS distance_km");
 
-            // Filter: Bounding Box terindeks terlebih dahulu, lalu presisi Haversine
-            $query->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $filterRadius) {
+            // Filter: Jarak fisik GPS maksimal <= 10.0 KM
+            $query->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $filterRadius, $user) {
                 $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $filterRadius) {
                     $sub->whereBetween('latitude', [$minLat, $maxLat])
                         ->whereBetween('longitude', [$minLng, $maxLng])
                         ->whereRaw("$haversineSql <= ?", [$filterRadius]);
-                })->orWhere(function ($sub) {
-                    $sub->whereNull('latitude')->orWhereNull('longitude');
+                })->orWhere(function ($sub) use ($user) {
+                    // Jika order belum ada koordinat, sertakan hanya jika dalam kecamatan yang sama
+                    $sub->where(function($s) {
+                        $s->whereNull('latitude')->orWhereNull('longitude');
+                    });
+                    if ($user && $user->district_id) {
+                        $sub->where('district_id', $user->district_id);
+                    }
                 });
             });
         }
 
-        // Database-Level Sorting
+        // Database-Level Sorting: Prioritaskan terdekat GPS <= 10 KM
         match ($this->sortBy) {
             'nearby' => $hasGps
                 ? $query->orderByRaw("CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN $haversineSql ELSE 99999 END ASC")
-                : ($user && $user->city_id ? $query->orderByRaw("(city_id = ?) DESC", [$user->city_id])->latest() : $query->latest()),
+                : ($user && $user->district_id ? $query->orderByRaw("(district_id = ?) DESC", [$user->district_id])->latest() : $query->latest()),
             'latest'     => $query->latest(),
             'oldest'     => $query->oldest(),
             'price_high' => $query->orderByDesc('amount'),
@@ -197,8 +204,8 @@ class AllHelps extends Component
                 : $query->latest(),
         };
 
-        // Native Database Pagination (Hanya mengambil 15 record per halaman langsung dari SQL)
-        $helps = $query->with(['user', 'city'])->paginate(15);
+        // Native Database Pagination
+        $helps = $query->with(['user', 'city', 'district'])->paginate(15);
 
         // Format angka distance_km jika dihitung dari SQL
         if ($hasGps) {
@@ -215,8 +222,9 @@ class AllHelps extends Component
         return view('livewire.mitra.helps.all-helps', [
             'helps'          => $helps,
             'needsCity'      => false,
+            'userDistrict'   => $user && $user->district_id ? \App\Models\District::find($user->district_id) : null,
             'userCity'       => $user && $user->city_id ? \App\Models\City::find($user->city_id) : null,
-            'distanceRadius' => $this->distanceRadius,
+            'districtFilter' => $this->districtFilter,
             'sortBy'         => $this->sortBy,
             'search'         => $this->search,
             'mitraLat'       => $this->mitraLat,

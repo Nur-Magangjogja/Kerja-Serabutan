@@ -96,10 +96,12 @@ class DashboardStatsService
                     $q->whereNull('scheduled_at')
                       ->orWhere('scheduled_at', '<=', now());
                 })
-                ->when($cityId, function ($query, $cId) {
-                    return $query->where('city_id', $cId);
+                ->when($user->district_id, function ($query, $dId) {
+                    return $query->where('district_id', $dId);
+                }, function ($query) use ($cityId) {
+                    return $query->when($cityId, fn($q, $cId) => $q->where('city_id', $cId));
                 })
-                ->with(['user', 'city'])
+                ->with(['user', 'city', 'district'])
                 ->latest()
                 ->take($limit)
                 ->get();
@@ -129,7 +131,7 @@ class DashboardStatsService
                     $q->whereNull('scheduled_at')
                       ->orWhere('scheduled_at', '<=', now());
                 })
-                ->with(['user', 'city'])
+                ->with(['user', 'city', 'district'])
                 ->latest()
                 ->take($limit)
                 ->get();
@@ -137,7 +139,7 @@ class DashboardStatsService
     }
 
     /**
-     * Nearby open pool jobs within the partner's city.
+     * Nearby open pool jobs within the partner's city or district.
      */
     public function getNearbyHelps(User $user, int $limit = 3, bool $forceFresh = false): Collection
     {
@@ -160,10 +162,12 @@ class DashboardStatsService
                     $q->whereNull('scheduled_at')
                       ->orWhere('scheduled_at', '<=', now());
                 })
-                ->when($cityId, function ($query, $cId) {
-                    return $query->where('city_id', $cId);
+                ->when($user->district_id, function ($query, $dId) {
+                    return $query->where('district_id', $dId);
+                }, function ($query) use ($cityId) {
+                    return $query->when($cityId, fn($q, $cId) => $q->where('city_id', $cId));
                 })
-                ->with(['user', 'city'])
+                ->with(['user', 'city', 'district'])
                 ->take($limit)
                 ->get();
         });

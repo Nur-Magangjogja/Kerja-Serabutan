@@ -195,8 +195,9 @@ class AppSetting extends Model
         });
 
         if ($matched) {
-            $fee = (int) ($matched['fee'] ?? 0);
             $isPlatform = !empty($matched['is_platform_account']);
+            // Jika rekening adalah Rekening Platform, biaya admin otomatis Rp 0 (gratis admin) sesuai settingan saat ini
+            $fee = $isPlatform ? 0 : (int) ($matched['fee'] ?? 0);
             $bankName = $matched['name'] ?? $bankCode;
             $bankIcon = $matched['icon'] ?? '🏦';
         } else {
@@ -220,6 +221,7 @@ class AppSetting extends Model
             'fee_mode' => 'deduct_from_balance',
         ];
     }
+
 
     // ─────────────────────────────────────────────────────────────────────────
     // TAHAP 4: TYPED MATCHING & FAIRNESS CONFIGURATION
@@ -249,16 +251,24 @@ class AppSetting extends Model
         return max(30, min(300, $val));
     }
 
+    public const MAX_OPERATIONAL_RADIUS_KM = 10.0;
+
+    /**
+     * Batas radius matching baku (10.0 KM).
+     */
     public static function getMaxMatchingRadiusKm(): float
     {
-        $val = (float) static::get('max_matching_radius_km', 15.0);
-        return max(1.0, min(100.0, $val));
+        $val = (float) static::get('max_matching_radius_km', self::MAX_OPERATIONAL_RADIUS_KM);
+        return max(1.0, min(self::MAX_OPERATIONAL_RADIUS_KM, $val));
     }
 
+    /**
+     * Batas radius pool baku (10.0 KM).
+     */
     public static function getMaxPoolRadiusKm(): float
     {
-        $val = (float) static::get('max_pool_radius_km', 60.0);
-        return max(1.0, min(150.0, $val));
+        $val = (float) static::get('max_pool_radius_km', self::MAX_OPERATIONAL_RADIUS_KM);
+        return max(1.0, min(self::MAX_OPERATIONAL_RADIUS_KM, $val));
     }
 
     public static function getNeutralRatingPrior(): float
@@ -342,4 +352,49 @@ class AppSetting extends Model
     {
         return (float) static::get('capacity_oversupply_util', 30.0);
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TAHAP 5: REVISI 3 SYSTEM CONFIGURATIONS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public static function getTravelFreeRadiusKm(): float
+    {
+        return (float) static::get('travel_free_radius_km', 2.0);
+    }
+
+    public static function getTravelBaseFee(): float
+    {
+        return (float) static::get('travel_base_fee', 5000.0);
+    }
+
+    public static function getTravelPricePerKm(): float
+    {
+        return (float) static::get('travel_price_per_km', 2500.0);
+    }
+
+    public static function getArrivalRadiusMeters(): float
+    {
+        return (float) static::get('arrival_radius_meters', 50.0);
+    }
+
+    public static function getAcceptableGpsAccuracy(): float
+    {
+        return (float) static::get('arrival_acceptable_gps_accuracy', 50.0);
+    }
+
+    public static function getMovementMinMeters(): float
+    {
+        return (float) static::get('movement_min_meters', 30.0);
+    }
+
+    public static function getAdvanceLimitDefault(): float
+    {
+        return (float) static::get('advance_limit_default', 100000.0);
+    }
+
+    public static function isAdjacentDistrictMatchingEnabled(): bool
+    {
+        return (bool) static::get('adjacent_district_matching_enabled', true);
+    }
 }
+

@@ -19,20 +19,44 @@ class Create extends Component
 {
     use WithFileUploads;
 
-    // ─── Form fields ─────────────────────────────────────────────────────────
+    // ─── Form fields (Revisi 3) ──────────────────────────────────────────────
+    public $service_type       = 'on_site_service'; // 'on_site_service', 'pickup_delivery', 'buy_for_customer'
+    public $order_mode         = 'instant'; // 'instant', 'scheduled'
+    public $service_category   = 'general';
+    public $service_duration_hours = 1.0;
     public $title              = '';
     public $description        = '';
     public $equipment_provided = '';
     public $amount             = '';
+    public $material_fee       = 0;
+    public $item_fund          = 0;
+    public $item_fund_mode     = 'customer_paid_in_app'; // 'customer_paid_in_app', 'partner_advance', 'cash_on_delivery'
+    public $customer_reimbursement_method = 'cash'; // 'cash', 'wallet'
+    public $advance_limit      = 100000;
     public $minHelpNominal     = 10000;
     public $city_id            = '';
     public $cityQuery          = '';
+    public $district_id        = '';
+    public $districtQuery      = '';
+    public $districtsList      = [];
     public $searchResults      = [];
     public $location           = '';
     public $full_address       = '';
     public $latitude           = null;
     public $longitude          = null;
     public $photo;
+
+    // ─── Multi-Point Locations (Pickup / Delivery / Store) ───────────────────
+    public $pickup_address     = '';
+    public $pickup_latitude    = null;
+    public $pickup_longitude   = null;
+    public $delivery_address   = '';
+    public $delivery_latitude  = null;
+    public $delivery_longitude = null;
+    public $store_name         = '';
+    public $store_address      = '';
+    public $store_latitude     = null;
+    public $store_longitude    = null;
 
     // ─── Req province/regency/district selectors ─────────────────────────────
     public $req_province_id = '';
@@ -53,19 +77,23 @@ class Create extends Component
     public $custom_expiry_date = null;
     public $custom_expiry_time = null;
 
-    // ─── Confirm modal (model v2: tampilkan komisi + earning + deadline) ────────
+    // ─── Confirm modal (model v3: breakdown biaya lengkap) ───────────────────
     public $showConfirmModal      = false;
-    public $confirmAmount         = 0; // Nilai tugas = total yang didebit dari customer
-    public $confirmAdminFee       = 0; // Legacy — selalu 0 di model v2
-    public $confirmTotal          = 0; // = confirmAmount (Seller-Pays: customer bayar full)
+    public $confirmAmount         = 0;
+    public $confirmServiceFee     = 0;
+    public $confirmTravelFee      = 0;
+    public $confirmMaterialFee    = 0;
+    public $confirmItemFund       = 0;
+    public $confirmAdminFee       = 0;
+    public $confirmTotal          = 0;
     public $confirmScheduled      = null;
     public $confirmExpiresAt      = null;
-    // Model v2 — transparansi komisi
-    public $confirmCommissionRate = 0;  // persentase, contoh: 10
-    public $confirmPlatformFee    = 0;  // nominal komisi platform
-    public $confirmFeeType        = 'fixed'; // 'fixed'
-    public $confirmFeeLabel       = 'Rp 2.000'; // e.g. 'Rp 2.000'
-    public $confirmMitraEarning   = 0;  // nominal bersih mitra
+    public $confirmCommissionRate = 0;
+    public $confirmPlatformFee    = 0;
+    public $confirmFeeType        = 'fixed';
+    public $confirmFeeLabel       = 'Rp 2.000';
+    public $confirmMitraEarning   = 0;
+    public $confirmMinServiceFee  = 0;
 
     protected $listeners = [
         'citySelected' => 'setCityId',
@@ -96,7 +124,7 @@ class Create extends Component
             $this->amount = $this->minHelpNominal;
         }
 
-        // Otomatis isi kota / kabupaten dari akun Customer
+        // Otomatis isi kota & kecamatan dari akun Customer
         $user = auth()->user();
         if ($user) {
             if (!empty($user->city_id)) {
@@ -106,6 +134,10 @@ class Create extends Component
                 if ($matchedCity) {
                     $this->setCityId($matchedCity->id);
                 }
+            }
+
+            if (!empty($user->district_id)) {
+                $this->setDistrictId($user->district_id);
             }
         }
 
@@ -195,8 +227,20 @@ class Create extends Component
                 $this->cityQuery = $city->name . ($city->province ? ', ' . $city->province : '');
             }
 
-            $zone              = $this->computeTimezoneLabelFromCity($city);
-            $iana              = $this->ianaForZone($zone);
+            // Muat daftar kecamatan untuk kota ini
+            $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $id);
+
+            // Jika district_id sebelumnya tidak ada di kota baru ini, reset
+            if ($this->district_id) {
+                $existsInNewCity = collect($this->districtsList)->contains('id', (int) $this->district_id);
+                if (!$existsInNewCity) {
+                    $this->district_id   = '';
+                    $this->districtQuery = '';
+                }
+            }
+
+            $zone                = $this->computeTimezoneLabelFromCity($city);
+            $iana                = $this->ianaForZone($zone);
             $this->timezoneLabel = $zone;
             $this->timezoneIana  = $iana;
             $this->dispatch('help:timezone-changed', zone: $zone, iana: $iana);
@@ -209,7 +253,32 @@ class Create extends Component
     {
         $this->city_id       = '';
         $this->cityQuery     = '';
+        $this->district_id   = '';
+        $this->districtQuery = '';
+        $this->districtsList = [];
         $this->searchResults = [];
+    }
+
+    public function setDistrictId($id, $name = null)
+    {
+        $this->district_id = (int) $id;
+        if ($name) {
+            $this->districtQuery = $name;
+        } else {
+            $dist = \App\Models\District::find($id);
+            if ($dist) {
+                $this->districtQuery = $dist->name;
+                if (!$this->city_id && $dist->city_id) {
+                    $this->setCityId($dist->city_id);
+                }
+            }
+        }
+    }
+
+    public function clearDistrict()
+    {
+        $this->district_id   = '';
+        $this->districtQuery = '';
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -219,9 +288,9 @@ class Create extends Component
     public function updatedReqProvinceId($value)
     {
         if (!Schema::hasTable('req_regencies') || empty($value)) {
-            $this->req_regencies  = [];
-            $this->req_regency_id = '';
-            $this->req_districts  = [];
+            $this->req_regencies   = [];
+            $this->req_regency_id  = '';
+            $this->req_districts   = [];
             $this->req_district_id = '';
             return;
         }
@@ -275,6 +344,21 @@ class Create extends Component
         $this->cityQuery       = $row->district . ', ' . $row->regency . ', ' . $row->province;
         $this->searchResults   = [];
         $this->req_district_id = $row->district_id;
+
+        $districtModel = \App\Models\District::where('name', $row->district)
+            ->where('city_id', $city->id)
+            ->first();
+        if (!$districtModel) {
+            $districtModel = \App\Models\District::firstOrCreate(
+                ['code' => 'reqd-' . $row->district_id],
+                ['city_id' => $city->id, 'name' => $row->district, 'is_active' => true]
+            );
+        }
+        if ($districtModel) {
+            $this->district_id   = $districtModel->id;
+            $this->districtQuery = $districtModel->name;
+        }
+        $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $city->id);
 
         $zone             = $this->computeTimezoneLabelFromCity($city);
         $iana             = $this->ianaForZone($zone);
@@ -379,6 +463,7 @@ class Create extends Component
         'equipment_provided' => 'nullable|string|max:1000',
         'amount'             => 'required|numeric|min:0|max:100000000',
         'city_id'            => 'required|exists:cities,id',
+        'district_id'        => 'required|exists:districts,id',
         'location'           => 'nullable|string|max:255',
         'full_address'       => 'nullable|string|max:1000',
         'latitude'           => 'required|numeric|between:-90,90',
@@ -389,16 +474,18 @@ class Create extends Component
     ];
 
     protected $messages = [
-        'title.required'       => 'Judul bantuan wajib diisi',
-        'description.required' => 'Deskripsi bantuan wajib diisi',
-        'city_id.required'     => 'Silakan pilih kota lokasi bantuan',
-        'city_id.exists'       => 'Kota yang dipilih tidak valid atau belum terdaftar',
-        'amount.required'      => 'Nominal uang harus diisi',
-        'amount.numeric'       => 'Nominal harus berupa angka',
-        'amount.min'           => 'Nominal tidak boleh kurang dari nilai minimal yang ditetapkan',
-        'amount.max'           => 'Nominal maksimal Rp 100.000.000',
-        'latitude.required'    => 'Titik lokasi pada peta wajib ditentukan. Silakan klik pada peta atau gunakan tombol GPS.',
-        'longitude.required'   => 'Titik lokasi pada peta wajib ditentukan. Silakan klik pada peta atau gunakan tombol GPS.',
+        'title.required'        => 'Judul bantuan wajib diisi',
+        'description.required'  => 'Deskripsi bantuan wajib diisi',
+        'city_id.required'      => 'Silakan pilih kota lokasi bantuan',
+        'city_id.exists'        => 'Kota yang dipilih tidak valid atau belum terdaftar',
+        'district_id.required'  => 'Silakan pilih kecamatan lokasi bantuan',
+        'district_id.exists'    => 'Kecamatan yang dipilih tidak valid atau belum terdaftar',
+        'amount.required'       => 'Nominal uang harus diisi',
+        'amount.numeric'        => 'Nominal harus berupa angka',
+        'amount.min'            => 'Nominal tidak boleh kurang dari nilai minimal yang ditetapkan',
+        'amount.max'            => 'Nominal maksimal Rp 100.000.000',
+        'latitude.required'     => 'Titik lokasi pada peta wajib ditentukan. Silakan klik pada peta atau gunakan tombol GPS.',
+        'longitude.required'    => 'Titik lokasi pada peta wajib ditentukan. Silakan klik pada peta atau gunakan tombol GPS.',
         'scheduled_date.date'  => 'Format tanggal tidak valid',
         'scheduled_time.regex' => 'Format waktu tidak valid. Gunakan format 24-jam HH:MM, contoh: 9:30 atau 09:30',
         'photo.image'          => 'File harus berupa gambar (JPG, PNG, JPEG)',
@@ -409,6 +496,10 @@ class Create extends Component
     // CONFIRM MODAL — tanpa cek saldo
     // ─────────────────────────────────────────────────────────────────────────
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // CONFIRM MODAL — dengan Pricing Engine & Schedule Engine Terintegrasi
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function prepareConfirm()
     {
         if (!auth()->check() || !auth()->user()->isCustomer()) {
@@ -416,15 +507,21 @@ class Create extends Component
         }
 
         $this->minHelpNominal = (int) AppSetting::get('min_help_nominal', 10000);
-        $minNominal           = (float) $this->minHelpNominal;
 
-        $this->rules['amount']      = 'required|numeric|min:' . $minNominal . '|max:100000000';
         $this->rules['city_id']     = 'required|exists:cities,id';
+        $this->rules['district_id'] = 'required|exists:districts,id';
         $this->rules['title']       = 'required|string|max:255';
         $this->rules['description'] = 'required|string';
         $this->rules['latitude']    = 'required|numeric|between:-90,90';
         $this->rules['longitude']   = 'required|numeric|between:-180,180';
-        
+
+        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+            $this->rules['pickup_address']   = 'nullable|string';
+            $this->rules['delivery_address'] = 'nullable|string';
+        } elseif ($this->service_type === Help::SERVICE_TYPE_BUY_FOR_CUSTOMER) {
+            $this->rules['item_fund'] = 'nullable|numeric|min:0';
+        }
+
         if (auth()->user()->isShadowBanned()) {
             $this->addError('amount', 'Akun Anda saat ini dibatasi dari membuat pesanan bantuan baru karena dalam peninjauan moderasi.');
             $this->dispatch('scroll-to-first-error');
@@ -438,6 +535,37 @@ class Create extends Component
             throw $e;
         }
 
+        // Kalkulasi Estimasi Awal berbasis Pricing Engine (Fase 1)
+        $pricingService = app(\App\Services\HelpPricingService::class);
+        $estimate = $pricingService->calculateInitialOrderEstimate([
+            'service_type'                  => $this->service_type,
+            'service_category'              => $this->service_category ?: 'general',
+            'service_duration_hours'        => (float) ($this->service_duration_hours ?: 1.0),
+            'amount'                        => (float) ($this->amount ?: 0),
+            'material_fee'                  => (float) ($this->material_fee ?: 0),
+            'item_fund'                     => (float) ($this->item_fund ?: 0),
+            'item_fund_mode'                => $this->item_fund_mode,
+            'customer_reimbursement_method' => $this->customer_reimbursement_method,
+            'advance_limit'                 => (float) ($this->advance_limit ?: 100000),
+            'pickup_latitude'               => $this->pickup_latitude,
+            'pickup_longitude'              => $this->pickup_longitude,
+            'delivery_latitude'             => $this->delivery_latitude,
+            'delivery_longitude'            => $this->delivery_longitude,
+        ]);
+
+        $totalAmount = (float) $estimate['total_amount'];
+
+        // Validasi saldo customer mencukupi total pembayaran
+        $customer        = auth()->user();
+        $customerBalance = \App\Models\UserBalance::where('user_id', $customer->id)->first();
+        $currentBalance  = $customerBalance ? (float) $customerBalance->balance : 0;
+
+        if ($currentBalance < $totalAmount) {
+            $this->addError('amount', 'Saldo tidak mencukupi. Total yang dibutuhkan (termasuk kompensasi perjalanan & biaya layanan): Rp ' . number_format($totalAmount, 0, ',', '.') . '. Saldo Anda: Rp ' . number_format($currentBalance, 0, ',', '.') . '. Silakan top up terlebih dahulu.');
+            $this->dispatch('scroll-to-first-error');
+            return;
+        }
+
         // Validasi dan normalisasi jadwal
         if ($this->scheduled_date) {
             $dateStr = trim($this->scheduled_date);
@@ -456,57 +584,25 @@ class Create extends Component
                 $this->dispatch('scroll-to-first-error');
                 return;
             }
-        } elseif (!empty($this->scheduled_time)) {
-            $this->addError('scheduled_date', 'Silakan pilih tanggal untuk jadwal bantuan');
-            $this->dispatch('scroll-to-first-error');
-            return;
         }
 
-        $amount      = (float) $this->amount;
-        $calc        = AppSetting::calculatePlatformFee($amount);
-        $feeAmount   = $calc['fee_amount'];
-        $commissionRate = $calc['rate'];
-        $totalAmount = $amount + $feeAmount;
-        $earning     = $amount; // Mitra menerima 100% penuh tanpa potongan komisi
-
-        // Validasi saldo customer mencukupi total pembayaran (nominal + biaya layanan platform)
-        $customer        = auth()->user();
-        $customerBalance = \App\Models\UserBalance::where('user_id', $customer->id)->first();
-        $currentBalance  = $customerBalance ? (float) $customerBalance->balance : 0;
-
-        if ($currentBalance < $totalAmount) {
-            $this->addError('amount', 'Saldo tidak mencukupi. Total yang dibutuhkan (termasuk biaya layanan platform): Rp ' . number_format($totalAmount, 0, ',', '.') . '. Saldo Anda: Rp ' . number_format($currentBalance, 0, ',', '.') . '. Silakan top up terlebih dahulu.');
-            $this->dispatch('scroll-to-first-error');
-            return;
-        }
-
-        // Confirm modal data (Customer-Pays: customer membayar imbalan + biaya layanan platform)
-        $this->confirmAmount         = $amount;
-        $this->confirmAdminFee       = $feeAmount;
+        // Confirm modal data
+        $this->confirmServiceFee     = $estimate['service_fee'];
+        $this->confirmTravelFee      = $estimate['travel_fee'];
+        $this->confirmMaterialFee    = $estimate['material_fee'];
+        $this->confirmItemFund       = $estimate['item_fund'];
+        $this->confirmAmount         = $estimate['service_fee'];
+        $this->confirmAdminFee       = $estimate['platform_fee'];
         $this->confirmTotal          = $totalAmount;
-        $this->confirmCommissionRate = $commissionRate;
-        $this->confirmPlatformFee    = $feeAmount;
-        $this->confirmFeeLabel       = $calc['label'];
-        $this->confirmFeeType        = $calc['type'];
-        $this->confirmMitraEarning   = $earning;
+        $this->confirmPlatformFee    = $estimate['platform_fee'];
+        $this->confirmFeeLabel       = 'Rp ' . number_format($estimate['platform_fee'], 0, ',', '.');
+        $this->confirmMitraEarning   = $estimate['mitra_earning'];
+        $this->confirmMinServiceFee  = $estimate['minimum_service_fee'];
         $this->confirmScheduled      = $this->scheduled_date
             ? (date('d M Y', strtotime($this->scheduled_date)) . ($this->scheduled_time ? ' Pukul ' . $this->scheduled_time . ' ' . $this->timezoneLabel : ''))
             : null;
 
-        // Validasi dan normalisasi batas waktu pencarian (auto-cancel expiry)
         $expiresAt = $this->computeExpiresAt();
-        if ($this->expiry_option === 'custom') {
-            if (empty($this->custom_expiry_date)) {
-                $this->addError('custom_expiry_date', 'Silakan pilih tanggal batas waktu pencarian bantuan');
-                $this->dispatch('scroll-to-first-error');
-                return;
-            }
-            if ($expiresAt->lt(Carbon::now()->addMinutes(10))) {
-                $this->addError('custom_expiry_date', 'Batas waktu minimal 10 menit dari sekarang');
-                $this->dispatch('scroll-to-first-error');
-                return;
-            }
-        }
         $this->confirmExpiresAt = $expiresAt->translatedFormat('d M Y, H:i') . ' ' . $this->timezoneLabel;
 
         $this->showConfirmModal = true;
@@ -518,7 +614,7 @@ class Create extends Component
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // SAVE — Model v2: Escrow Lock + Biaya Layanan Platform dari Customer
+    // SAVE — Model v3: Escrow Lock + Dynamic Pricing & Timestamps
     // ─────────────────────────────────────────────────────────────────────────
 
     public function save()
@@ -528,22 +624,34 @@ class Create extends Component
             return;
         }
 
-        $this->minHelpNominal = (int) AppSetting::get('min_help_nominal', 10000);
-        $minNominal           = (float) $this->minHelpNominal;
-
-        $this->rules['amount']      = 'required|numeric|min:' . $minNominal . '|max:100000000';
+        $this->rules['city_id']     = 'required|exists:cities,id';
+        $this->rules['district_id'] = 'required|exists:districts,id';
         $this->rules['latitude']    = 'required|numeric|between:-90,90';
         $this->rules['longitude']   = 'required|numeric|between:-180,180';
         $this->validate();
 
-        $userId      = auth()->id();
-        $customer    = auth()->user();
-        $amount      = (float) $this->amount;
-        $calc        = AppSetting::calculatePlatformFee($amount);
-        $feeAmount   = $calc['fee_amount'];
-        $commissionRate = $calc['rate'];
-        $totalAmount = $amount + $feeAmount;
-        $earning     = $amount; // Mitra menerima 100% penuh tanpa potongan
+        $userId   = auth()->id();
+        $customer = auth()->user();
+
+        // 1. Jalankan Kalkulasi Pricing Engine (Fase 1)
+        $pricingService = app(\App\Services\HelpPricingService::class);
+        $estimate = $pricingService->calculateInitialOrderEstimate([
+            'service_type'                  => $this->service_type,
+            'service_category'              => $this->service_category ?: 'general',
+            'service_duration_hours'        => (float) ($this->service_duration_hours ?: 1.0),
+            'amount'                        => (float) ($this->amount ?: 0),
+            'material_fee'                  => (float) ($this->material_fee ?: 0),
+            'item_fund'                     => (float) ($this->item_fund ?: 0),
+            'item_fund_mode'                => $this->item_fund_mode,
+            'customer_reimbursement_method' => $this->customer_reimbursement_method,
+            'advance_limit'                 => (float) ($this->advance_limit ?: 100000),
+            'pickup_latitude'               => $this->pickup_latitude,
+            'pickup_longitude'              => $this->pickup_longitude,
+            'delivery_latitude'             => $this->delivery_latitude,
+            'delivery_longitude'            => $this->delivery_longitude,
+        ]);
+
+        $totalAmount = (float) $estimate['total_amount'];
 
         // Validasi saldo customer mencukupi total pembayaran
         $customerBalance = \App\Models\UserBalance::where('user_id', $userId)->first();
@@ -554,85 +662,110 @@ class Create extends Component
             return;
         }
 
-        // Validasi dan normalisasi jadwal
+        // 2. Jalankan Schedule Engine
+        $targetScheduledAt = null;
         if ($this->scheduled_date) {
-            $dateStr = trim($this->scheduled_date);
-            $timeStr = $this->scheduled_time ? trim($this->scheduled_time) : null;
-            
-            if ($timeStr) {
-                $scheduledAt = Carbon::parse($dateStr . ' ' . $timeStr);
-            } else {
-                $scheduledAt = ($dateStr === Carbon::now()->format('Y-m-d'))
-                    ? Carbon::now()
-                    : Carbon::parse($dateStr . ' 08:00');
-            }
-
-            if ($scheduledAt->lt(Carbon::now()->subMinutes(5))) {
-                $this->addError('scheduled_date', 'Waktu jadwal tidak boleh berada di masa lalu');
-                return;
-            }
-        } elseif (!empty($this->scheduled_time)) {
-            $this->addError('scheduled_date', 'Silakan pilih tanggal untuk jadwal bantuan');
-            return;
+            $time = $this->scheduled_time ?: '08:00';
+            $targetScheduledAt = Carbon::parse($this->scheduled_date . ' ' . $time);
         }
+
+        $scheduleService = app(\App\Services\HelpScheduleService::class);
+        $orderMode = $targetScheduledAt ? Help::ORDER_MODE_SCHEDULED : Help::ORDER_MODE_INSTANT;
+        $scheduleData = $scheduleService->computeScheduleTimestamps(
+            $orderMode,
+            $targetScheduledAt,
+            0.0,
+            $this->service_type,
+            (float) ($estimate['service_route_distance_km'] ?? 0)
+        );
 
         $expiresAt = $this->computeExpiresAt();
-        if ($this->expiry_option === 'custom' && $expiresAt->lt(Carbon::now()->addMinutes(5))) {
-            $this->addError('custom_expiry_date', 'Batas waktu pencarian tidak boleh berada di masa lalu');
-            return;
-        }
 
-        $createdHelp = DB::transaction(function () use ($userId, $customer, $amount, $commissionRate, $feeAmount, $totalAmount, $earning, $expiresAt) {
-            $photoPath   = $this->photo ? $this->photo->store('helps', 'public') : null;
-            $orderId     = $this->generateOrderId();
-            $scheduledAt = null;
-            if ($this->scheduled_date) {
-                $time        = $this->scheduled_time ?: '08:00';
-                $scheduledAt = date('Y-m-d H:i:s', strtotime($this->scheduled_date . ' ' . $time));
-            }
+        $createdHelp = DB::transaction(function () use ($userId, $customer, $estimate, $totalAmount, $scheduleData, $expiresAt) {
+            $photoPath = $this->photo ? $this->photo->store('helps', 'public') : null;
+            $orderId   = $this->generateOrderId();
 
-            // Simpan data bantuan dengan rincian biaya layanan platform & batas waktu pembatalan otomatis
+            // Simpan data bantuan dengan rincian model v3 (Layanan, Jarak, Multi-Point, dan Item Fund)
             $help = Help::create([
-                'user_id'                    => $userId,
-                'order_id'                   => $orderId,
-                'city_id'                    => $this->city_id,
-                'title'                      => $this->title,
-                'amount'                     => $amount,
-                'admin_fee'                  => $feeAmount,
-                'total_amount'               => $totalAmount,
-                'description'                => $this->description,
-                'equipment_provided'         => $this->equipment_provided,
-                'location'                   => $this->location,
-                'full_address'               => $this->full_address,
-                'scheduled_at'               => $scheduledAt,
-                'expires_at'                 => $expiresAt->format('Y-m-d H:i:s'),
-                'latitude'                   => $this->latitude,
-                'longitude'                  => $this->longitude,
-                'photo'                      => $photoPath,
-                'status'                     => Help::STATUS_MENUNGGU_MITRA,
-                // Status Arsitektur v2.3.4
-                'payment_status'             => Help::PAYMENT_STATUS_PAID,
-                'escrow_status'              => Help::ESCROW_STATUS_HELD,
-                'dispatch_mode'              => Help::DISPATCH_MODE_SEEKING,
-                'rating_status'              => Help::RATING_STATUS_PENDING,
-                // Kolom model v2
-                'model_version'              => 2,
-                'platform_commission_rate'   => $commissionRate,
-                'platform_fee_amount'        => $feeAmount,
-                'mitra_earning'              => $earning,
-                'escrow_locked_at'           => now(),
+                'user_id'                       => $userId,
+                'order_id'                      => $orderId,
+                'city_id'                       => $this->city_id,
+                'district_id'                   => $this->district_id ?: null,
+                'title'                         => $this->title,
+                'service_type'                  => $this->service_type,
+                'service_stage'                 => null,
+                'order_mode'                    => $scheduleData['order_mode'],
+                'service_category'              => $this->service_category ?: 'general',
+                'service_duration_hours'        => (float) ($this->service_duration_hours ?: 1.0),
+                'amount'                        => $estimate['service_fee'] + $estimate['travel_fee'] + $estimate['material_fee'],
+                'service_fee'                   => $estimate['service_fee'],
+                'travel_fee'                    => $estimate['travel_fee'],
+                'material_fee'                  => $estimate['material_fee'],
+                'item_fund'                     => $estimate['item_fund'],
+                'item_fund_mode'                => $this->item_fund_mode,
+                'customer_reimbursement_method' => $this->customer_reimbursement_method,
+                'advance_limit'                 => (float) ($this->advance_limit ?: 100000),
+                'minimum_service_fee'           => $estimate['minimum_service_fee'],
+                'minimum_order_value'           => $estimate['minimum_order_value'],
+                'admin_fee'                     => $estimate['platform_fee'],
+                'platform_fee_amount'           => $estimate['platform_fee'],
+                'total_amount'                  => $totalAmount,
+                'mitra_earning'                 => $estimate['mitra_earning'],
+                'description'                   => $this->description,
+                'equipment_provided'            => $this->equipment_provided,
+                'location'                      => $this->location,
+                'full_address'                  => $this->full_address,
+                'latitude'                      => $this->latitude,
+                'longitude'                     => $this->longitude,
+                'pickup_address'                => $this->pickup_address,
+                'pickup_latitude'               => $this->pickup_latitude,
+                'pickup_longitude'              => $this->pickup_longitude,
+                'delivery_address'              => $this->delivery_address,
+                'delivery_latitude'             => $this->delivery_latitude,
+                'delivery_longitude'            => $this->delivery_longitude,
+                'store_name'                    => $this->store_name,
+                'store_address'                 => $this->store_address,
+                'store_latitude'                => $this->store_latitude,
+                'store_longitude'               => $this->store_longitude,
+                'scheduled_at'                  => $scheduleData['service_scheduled_at'],
+                'published_at'                  => $scheduleData['published_at'],
+                'departure_at'                  => $scheduleData['departure_at'],
+                'service_scheduled_at'          => $scheduleData['service_scheduled_at'],
+                'pickup_scheduled_at'           => $scheduleData['pickup_scheduled_at'],
+                'delivery_deadline_at'          => $scheduleData['delivery_deadline_at'],
+                'expires_at'                    => $expiresAt->format('Y-m-d H:i:s'),
+                'photo'                         => $photoPath,
+                'status'                        => Help::STATUS_MENUNGGU_MITRA,
+                'payment_status'                => Help::PAYMENT_STATUS_PAID,
+                'escrow_status'                 => Help::ESCROW_STATUS_HELD,
+                'dispatch_mode'                 => Help::DISPATCH_MODE_SEEKING,
+                'rating_status'                 => Help::RATING_STATUS_PENDING,
+                'model_version'                 => 3,
+                'escrow_locked_at'              => now(),
             ]);
 
-            // Escrow Lock: tahan dana total customer (nominal bantuan + biaya layanan) ke Holding
+            // Escrow Lock: tahan dana total customer ke Holding
             $customerBalance = \App\Models\UserBalance::firstOrCreate(
                 ['user_id' => $userId],
                 ['balance' => 0]
             );
+
+            $descParts = [];
+            $descParts[] = "Jasa: Rp " . number_format($estimate['service_fee'], 0, ',', '.');
+            if (($estimate['travel_fee'] ?? 0) > 0) {
+                $descParts[] = "Ongkos: Rp " . number_format($estimate['travel_fee'], 0, ',', '.');
+            }
+            if (($estimate['item_fund'] ?? 0) > 0) {
+                $descParts[] = "Titipan Belanja: Rp " . number_format($estimate['item_fund'], 0, ',', '.');
+            }
+            $descParts[] = "Layanan: Rp " . number_format($estimate['platform_fee'], 0, ',', '.');
+            $lockDescription = "Dana Ditahan untuk Permintaan Bantuan '{$help->title}' (" . implode(' + ', $descParts) . ")";
+
             $escrowTx = $customerBalance->lockForEscrow(
                 $totalAmount,
                 $help->id,
                 $help->order_id,
-                "Dana Ditahan untuk Permintaan Bantuan '{$help->title}' (Nilai Jasa: Rp " . number_format($amount, 0, ',', '.') . " + Biaya Layanan Platform: Rp " . number_format($feeAmount, 0, ',', '.') . ")"
+                $lockDescription
             );
             $help->update(['escrow_transaction_id' => $escrowTx->id]);
 
@@ -644,7 +777,7 @@ class Create extends Component
             try {
                 app(\App\Services\HelpMatchingService::class)->initiateMatching($createdHelp);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error('[Customer/Helps/Create] Gagal initiate matching: ' . $e->getMessage(), [
+                Log::error('[Customer/Helps/Create] Gagal initiate matching: ' . $e->getMessage(), [
                     'help_id' => $createdHelp->id,
                 ]);
             }
@@ -664,6 +797,9 @@ class Create extends Component
         if (isset($data['amount']) && is_numeric($data['amount'])) $this->amount = (int) $data['amount'];
         if (isset($data['city_id']) && !empty($data['city_id'])) {
             $this->setCityId($data['city_id']);
+        }
+        if (isset($data['district_id']) && !empty($data['district_id'])) {
+            $this->setDistrictId($data['district_id']);
         }
         if (isset($data['cityQuery']) && is_string($data['cityQuery']) && empty($this->cityQuery)) {
             $this->cityQuery = $data['cityQuery'];

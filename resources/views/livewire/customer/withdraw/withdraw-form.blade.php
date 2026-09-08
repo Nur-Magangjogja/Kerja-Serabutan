@@ -52,8 +52,15 @@
                     </div>
                     <div class="flex items-center justify-between text-gray-500 dark:text-gray-400">
                         <span>Biaya Admin ({{ $selectedBankName }}):</span>
-                        @if($adminFee == 0)
-                            <span class="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md">Rp 0 (Bebas Biaya)</span>
+                        @if($adminFee == 0 || $isPlatform)
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                <span>Rp 0</span>
+                                @if($isPlatform)
+                                    <span class="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-300">(Rekening Platform - Bebas Biaya)</span>
+                                @else
+                                    <span class="text-[10px] font-semibold">(Gratis)</span>
+                                @endif
+                            </span>
                         @else
                             <span class="font-semibold text-gray-700 dark:text-gray-300">+ Rp {{ number_format($adminFee, 0, ',', '.') }}</span>
                         @endif
@@ -81,8 +88,12 @@
                         @foreach($banks->groupBy('category') as $category => $categoryBanks)
                             <optgroup label="{{ $category }}">
                                 @foreach($categoryBanks as $b)
+                                    @php
+                                        $isPlat = !empty($b['is_platform_account']);
+                                        $bFee = $isPlat ? 0 : (int) ($b['fee'] ?? 0);
+                                    @endphp
                                     <option value="{{ $b['code'] }}">
-                                        {{ $b['icon'] ?? '🏦' }} {{ $b['name'] }} ({{ ($b['fee'] ?? 0) == 0 ? 'Bebas Biaya' : 'Biaya: Rp ' . number_format($b['fee'], 0, ',', '.') }})
+                                        {{ $b['icon'] ?? '🏦' }} {{ $b['name'] }} ({{ $isPlat ? '✨ Rekening Platform - Bebas Biaya' : ($bFee == 0 ? 'Bebas Biaya' : 'Biaya Admin: Rp ' . number_format($bFee, 0, ',', '.')) }})
                                     </option>
                                 @endforeach
                             </optgroup>
@@ -90,6 +101,7 @@
                     </select>
                     @error('bankCode') <span class="text-rose-500 text-xs mt-1 block font-medium">{{ $message }}</span> @enderror
                 </div>
+
 
                 <div>
                     <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nomor Rekening / No. E-Wallet *</label>

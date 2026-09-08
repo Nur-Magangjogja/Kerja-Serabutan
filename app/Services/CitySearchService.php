@@ -311,4 +311,56 @@ class CitySearchService
             return null;
         }
     }
+
+    /**
+     * Cari Kecamatan (District) berdasarkan nama query dan/atau filter city_id.
+     */
+    public function searchDistricts(string $query, ?int $cityId = null, int $limit = 15): array
+    {
+        $q = trim($query);
+        $districtQuery = \App\Models\District::with('city')->where('is_active', true);
+
+        if ($cityId) {
+            $districtQuery->where('city_id', $cityId);
+        }
+
+        if ($q !== '') {
+            $districtQuery->where(function ($b) use ($q) {
+                $b->where('name', 'like', "%{$q}%")
+                  ->orWhere('code', 'like', "%{$q}%")
+                  ->orWhereHas('city', function ($sq) use ($q) {
+                      $sq->where('name', 'like', "%{$q}%")
+                         ->orWhere('province', 'like', "%{$q}%");
+                  });
+            });
+        }
+
+        return $districtQuery->orderBy('name')
+            ->limit($limit)
+            ->get()
+            ->map(function ($d) {
+                return [
+                    'id'          => $d->id,
+                    'name'        => $d->name,
+                    'city_id'     => $d->city_id,
+                    'city_name'   => $d->city?->name,
+                    'province'    => $d->city?->province,
+                    'display'     => 'Kec. ' . $d->name . ', ' . ($d->city?->name ?? '') . ($d->city?->province ? ', ' . $d->city->province : ''),
+                ];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Ambil seluruh Kecamatan aktif untuk sebuah Kota.
+     */
+    public function getDistrictsByCity(int $cityId): array
+    {
+        return \App\Models\District::where('city_id', $cityId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'city_id', 'name', 'code'])
+            ->toArray();
+    }
 }
+

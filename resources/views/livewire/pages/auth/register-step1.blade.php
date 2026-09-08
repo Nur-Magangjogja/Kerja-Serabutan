@@ -2,6 +2,8 @@
 
 use App\Models\Registration;
 use App\Models\City;
+use App\Models\District;
+use App\Services\CitySearchService;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
@@ -15,9 +17,12 @@ new #[Layout('layouts.guest')] class extends Component {
     public string $gender = '';
     public string $city = '';
     public ?int $city_id = null;
+    public ?int $district_id = null;
+    public string $kecamatan = '';
     public string $province = '';
     
     public $cities = [];
+    public array $districtsList = [];
     // realtime city search (for nicer UX)
     public string $cityQuery = '';
     public array $searchResults = [];
@@ -46,6 +51,8 @@ new #[Layout('layouts.guest')] class extends Component {
                 $this->gender = $registration->gender ?? $this->gender;
                 $this->city = $registration->city ?? $this->city;
                 $this->city_id = $registration->city_id ? (int) $registration->city_id : null;
+                $this->district_id = $registration->district_id ? (int) $registration->district_id : null;
+                $this->kecamatan = $registration->kecamatan ?? $this->kecamatan;
                 $this->province = $registration->province ?? $this->province;
 
                 if ($this->city) {
@@ -56,6 +63,16 @@ new #[Layout('layouts.guest')] class extends Component {
                         $this->city = $c->name;
                         $this->province = $c->province;
                         $this->cityQuery = $c->name . ($c->province ? " — {$c->province}" : '');
+                    }
+                }
+
+                if ($this->city_id) {
+                    $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $this->city_id);
+                    if ($this->district_id && empty($this->kecamatan)) {
+                        $dist = District::find($this->district_id);
+                        if ($dist) {
+                            $this->kecamatan = $dist->name;
+                        }
                     }
                 }
             }
@@ -92,6 +109,18 @@ new #[Layout('layouts.guest')] class extends Component {
             if (empty($this->nik) && !empty($user->nik)) {
                 $this->nik = $user->nik;
             }
+            if (empty($this->city_id) && !empty($user->city_id)) {
+                $this->city_id = (int) $user->city_id;
+                $this->city = $user->city ?? '';
+                $this->province = $user->province ?? '';
+            }
+            if (empty($this->district_id) && !empty($user->district_id)) {
+                $this->district_id = (int) $user->district_id;
+                $this->kecamatan = $user->kecamatan ?? '';
+            }
+            if ($this->city_id && empty($this->districtsList)) {
+                $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $this->city_id);
+            }
         }
 
         // Restore draft from cookie if available
@@ -104,7 +133,9 @@ new #[Layout('layouts.guest')] class extends Component {
                 $this->phone = $draft['phone'] ?? $this->phone;
                 $this->gender = $draft['gender'] ?? $this->gender;
                 $this->city = $draft['city'] ?? $this->city;
-                $this->city_id = isset($draft['city_id']) && $draft['city_id'] ? (int) $draft['city_id'] : null;
+                $this->city_id = isset($draft['city_id']) && $draft['city_id'] ? (int) $draft['city_id'] : $this->city_id;
+                $this->district_id = isset($draft['district_id']) && $draft['district_id'] ? (int) $draft['district_id'] : $this->district_id;
+                $this->kecamatan = $draft['kecamatan'] ?? $this->kecamatan;
                 $this->province = $draft['province'] ?? $this->province;
 
                 if (!empty($draft['cityQuery'])) {
@@ -118,6 +149,10 @@ new #[Layout('layouts.guest')] class extends Component {
                         $this->province = $c->province;
                         $this->cityQuery = $c->name . ($c->province ? " — {$c->province}" : '');
                     }
+                }
+
+                if ($this->city_id) {
+                    $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $this->city_id);
                 }
             }
         }
@@ -138,6 +173,17 @@ new #[Layout('layouts.guest')] class extends Component {
             }
         }
 
+        if ($propertyName === 'district_id') {
+            if ($this->district_id) {
+                $dist = District::find((int) $this->district_id);
+                if ($dist) {
+                    $this->kecamatan = $dist->name;
+                }
+            } else {
+                $this->kecamatan = '';
+            }
+        }
+
         $draft = [
             'nik' => $this->nik,
             'full_name' => $this->full_name,
@@ -146,8 +192,11 @@ new #[Layout('layouts.guest')] class extends Component {
             'city_id' => $this->city_id,
             'city' => $this->city,
             'cityQuery' => $this->cityQuery,
+            'district_id' => $this->district_id,
+            'kecamatan' => $this->kecamatan,
             'province' => $this->province,
         ];
+
         Cookie::queue('registration_step1_draft', json_encode($draft), 60 * 24 * 7);
     }
 
@@ -210,6 +259,9 @@ new #[Layout('layouts.guest')] class extends Component {
             'city_id.exists' => 'Kota yang dipilih tidak valid dalam sistem.',
             'city.required' => 'Nama Kota / Kabupaten wajib diisi.',
             'city.min' => 'Nama Kota / Kabupaten minimal 2 karakter.',
+            'district_id.required' => 'Kecamatan (Wilayah Operasional) wajib dipilih.',
+            'district_id.exists' => 'Kecamatan yang dipilih tidak valid dalam sistem.',
+            'kecamatan.required' => 'Nama Kecamatan wajib diisi.',
             'province.required' => 'Nama Provinsi wajib diisi.',
             'province.min' => 'Nama Provinsi minimal 2 karakter.',
         ];
@@ -229,6 +281,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 if (empty($this->province) && !empty($matched->province)) {
                     $this->province = $matched->province;
                 }
+                $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $matched->id);
             }
         }
 
@@ -248,6 +301,14 @@ new #[Layout('layouts.guest')] class extends Component {
                 $rules['city'] = ['required', 'string', 'min:2', 'max:100'];
             }
 
+            if (!empty($this->districtsList) && count($this->districtsList) > 0) {
+                $rules['district_id'] = ['required', 'exists:districts,id'];
+            } elseif (!empty($this->city_id)) {
+                $rules['district_id'] = ['required', 'exists:districts,id'];
+            } else {
+                $rules['kecamatan'] = ['required', 'string', 'min:2', 'max:100'];
+            }
+
             $validated = $this->validate($rules, $this->getValidationMessages());
         } catch (\Illuminate\Validation\ValidationException $e) {
             $this->dispatch('scroll-to-error-alert');
@@ -264,8 +325,8 @@ new #[Layout('layouts.guest')] class extends Component {
         Session::put('registration_role', $role);
         Cookie::queue('registration_role', $role, 60 * 24 * 7);
 
-        // Use selected city_id if provided; also store city name for readability
-        $cityId = $validated['city_id'] ?? null;
+        // Resolve city and district records
+        $cityId = $validated['city_id'] ?? $this->city_id;
         $cityName = null;
         if ($cityId) {
             $cityRec = City::find($cityId);
@@ -274,7 +335,24 @@ new #[Layout('layouts.guest')] class extends Component {
             }
         }
 
-        $dataToSave = $validated + ['status' => 'in_progress', 'role' => $role, 'email' => $email, 'city_id' => $cityId, 'city' => $cityName];
+        $districtId = $validated['district_id'] ?? $this->district_id;
+        $kecamatanName = $this->kecamatan;
+        if ($districtId) {
+            $distRec = District::find($districtId);
+            if ($distRec) {
+                $kecamatanName = $distRec->name;
+            }
+        }
+
+        $dataToSave = array_merge($validated, [
+            'status' => 'in_progress',
+            'role' => $role,
+            'email' => $email,
+            'city_id' => $cityId,
+            'city' => $cityName,
+            'district_id' => $districtId,
+            'kecamatan' => $kecamatanName,
+        ]);
 
         if ($registration) {
             $registration->update($dataToSave);
@@ -292,13 +370,15 @@ new #[Layout('layouts.guest')] class extends Component {
                 'gender' => $validated['gender'],
                 'city_id' => $cityId,
                 'city' => $cityName,
+                'district_id' => $districtId,
+                'kecamatan' => $kecamatanName,
                 'province' => $validated['province'],
             ]);
         }
 
         Session::put('registration_uuid', $registration->uuid);
         Cookie::queue('registration_uuid', $registration->uuid, 60 * 24 * 7);
-        Cookie::queue('registration_step1_draft', json_encode($validated), 60 * 24 * 7);
+        Cookie::queue('registration_step1_draft', json_encode($dataToSave), 60 * 24 * 7);
 
         $this->redirect(route('register.step2'), navigate: true);
     }
@@ -326,7 +406,7 @@ new #[Layout('layouts.guest')] class extends Component {
             ->get()
             ->toArray();
 
-            if (count($results) < $limit) {
+        if (count($results) < $limit) {
             $remaining = $limit - count($results);
             $regRows = collect();
 
@@ -410,6 +490,18 @@ new #[Layout('layouts.guest')] class extends Component {
             $this->province = $city->province;
             // show chosen city in the search input so user sees selection
             $this->cityQuery = $city->name . ' — ' . $city->province;
+            
+            // Load districts for this city
+            $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $id);
+            
+            // Reset district selection if previous district is not in this new city
+            if ($this->district_id) {
+                $exists = collect($this->districtsList)->contains('id', (int) $this->district_id);
+                if (!$exists) {
+                    $this->district_id = null;
+                    $this->kecamatan = '';
+                }
+            }
         }
         $this->searchResults = [];
         $this->updated('city_id');
@@ -571,6 +663,38 @@ new #[Layout('layouts.guest')] class extends Component {
                             class="w-full px-4 py-3 rounded-xl border @error('city') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Daftar kota belum tersedia. Ketik nama kota secara manual.</p>
                         <x-input-error :messages="$errors->get('city')" />
+                    @endif
+                </div>
+
+                <!-- Kecamatan (Patokan Wilayah Operasional Utama) -->
+                <div>
+                    <label for="district_id" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Kecamatan (Patokan Wilayah Utama) <span class="text-red-500">*</span>
+                    </label>
+                    @if(!empty($city_id) && !empty($districtsList))
+                        <div class="relative">
+                            <select wire:model.live="district_id" id="district_id"
+                                class="w-full px-4 py-3 rounded-xl border @error('district_id') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm cursor-pointer">
+                                <option value="">-- Pilih Kecamatan --</option>
+                                @foreach($districtsList as $d)
+                                    <option value="{{ $d['id'] }}">{{ $d['name'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Patokan wilayah operasional akun Anda untuk penugasan dan bantuan terdekat.</p>
+                        <x-input-error :messages="$errors->get('district_id')" />
+                    @elseif(empty($city_id))
+                        <div class="p-3.5 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 text-xs text-gray-400 dark:text-gray-500 flex items-center gap-2.5">
+                            <svg class="w-4 h-4 text-primary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Pilih Kota / Kabupaten terlebih dahulu untuk memuat daftar Kecamatan.</span>
+                        </div>
+                        @error('district_id')
+                            <p class="text-xs text-rose-500 mt-1 font-medium">{{ $message }}</p>
+                        @enderror
+                    @else
+                        <input wire:model="kecamatan" id="kecamatan" type="text" placeholder="Ketik nama Kecamatan"
+                            class="w-full px-4 py-3 rounded-xl border @error('kecamatan') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                        <x-input-error :messages="$errors->get('kecamatan')" />
                     @endif
                 </div>
 

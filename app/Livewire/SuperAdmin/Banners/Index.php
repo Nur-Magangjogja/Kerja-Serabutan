@@ -13,7 +13,7 @@ class Index extends Component
 {
     use WithFileUploads;
 
-    // store arrays of stored paths
+    // store arrays of stored banners: [['image' => '...', 'link' => '...'], ...]
     public $customerBanners = [];
     public $mitraBanners = [];
 
@@ -21,22 +21,46 @@ class Index extends Component
     public $customerUploads = [];
     public $mitraUploads = [];
 
+    // links for new uploads
+    public $customerNewLinks = [];
+    public $mitraNewLinks = [];
+
     protected function rules()
     {
         return [
-            'customerUploads.*' => 'image|mimes:png,jpg,jpeg|max:5120',
-            'mitraUploads.*' => 'image|mimes:png,jpg,jpeg|max:5120',
+            'customerUploads.*'      => 'image|mimes:png,jpg,jpeg|max:5120',
+            'mitraUploads.*'         => 'image|mimes:png,jpg,jpeg|max:5120',
+            'customerBanners.*.link' => 'nullable|string|max:1000',
+            'mitraBanners.*.link'    => 'nullable|string|max:1000',
+            'customerNewLinks.*'     => 'nullable|string|max:1000',
+            'mitraNewLinks.*'        => 'nullable|string|max:1000',
         ];
     }
 
     protected $messages = [
         'customerUploads.*.image' => 'File yang diunggah harus berupa gambar (bukan PDF, dokumen, atau file lain).',
         'customerUploads.*.mimes' => 'Format file banner yang diizinkan hanya PNG, JPG, atau JPEG.',
-        'customerUploads.*.max' => 'Ukuran file banner maksimal 5MB.',
-        'mitraUploads.*.image' => 'File yang diunggah harus berupa gambar (bukan PDF, dokumen, atau file lain).',
-        'mitraUploads.*.mimes' => 'Format file banner yang diizinkan hanya PNG, JPG, atau JPEG.',
-        'mitraUploads.*.max' => 'Ukuran file banner maksimal 5MB.',
+        'customerUploads.*.max'   => 'Ukuran file banner maksimal 5MB.',
+        'mitraUploads.*.image'    => 'File yang diunggah harus berupa gambar (bukan PDF, dokumen, atau file lain).',
+        'mitraUploads.*.mimes'    => 'Format file banner yang diizinkan hanya PNG, JPG, atau JPEG.',
+        'mitraUploads.*.max'      => 'Ukuran file banner maksimal 5MB.',
     ];
+
+    private function normalizeBanners(array $banners): array
+    {
+        $normalized = [];
+        foreach ($banners as $b) {
+            if (is_string($b)) {
+                $normalized[] = ['image' => $b, 'link' => ''];
+            } elseif (is_array($b)) {
+                $normalized[] = [
+                    'image' => $b['image'] ?? ($b['path'] ?? ''),
+                    'link'  => $b['link'] ?? ($b['url'] ?? ''),
+                ];
+            }
+        }
+        return $normalized;
+    }
 
     public function updatedCustomerUploads()
     {
@@ -57,7 +81,7 @@ class Index extends Component
 
         if (!empty($invalidFiles)) {
             $this->customerUploads = $validFiles;
-            $this->addError('customerUploads', 'Format file tidak diizinkan (' . implode(', ', $invalidFiles) . '). Hanya file gambar PNG, JPG, atau JPEG yang diperbolehkan (bukan PDF, DOC, atau Excel).');
+            $this->addError('customerUploads', 'Format file tidak diizinkan (' . implode(', ', $invalidFiles) . '). Hanya file gambar PNG, JPG, atau JPEG yang diperbolehkan.');
         } else {
             $this->resetErrorBag('customerUploads');
             $this->validateOnly('customerUploads.*');
@@ -83,7 +107,7 @@ class Index extends Component
 
         if (!empty($invalidFiles)) {
             $this->mitraUploads = $validFiles;
-            $this->addError('mitraUploads', 'Format file tidak diizinkan (' . implode(', ', $invalidFiles) . '). Hanya file gambar PNG, JPG, atau JPEG yang diperbolehkan (bukan PDF, DOC, atau Excel).');
+            $this->addError('mitraUploads', 'Format file tidak diizinkan (' . implode(', ', $invalidFiles) . '). Hanya file gambar PNG, JPG, atau JPEG yang diperbolehkan.');
         } else {
             $this->resetErrorBag('mitraUploads');
             $this->validateOnly('mitraUploads.*');
@@ -92,8 +116,8 @@ class Index extends Component
 
     public function mount()
     {
-        $this->customerBanners = json_decode((string) AppSetting::get('banner_customer', '[]'), true) ?: [];
-        $this->mitraBanners = json_decode((string) AppSetting::get('banner_mitra', '[]'), true) ?: [];
+        $this->customerBanners = $this->normalizeBanners(json_decode((string) AppSetting::get('banner_customer', '[]'), true) ?: []);
+        $this->mitraBanners    = $this->normalizeBanners(json_decode((string) AppSetting::get('banner_mitra', '[]'), true) ?: []);
     }
 
     public const MAX_BANNERS = 5;
@@ -102,12 +126,12 @@ class Index extends Component
     {
         $this->validate();
         $errors = [];
-        $successCount = 0;
+        $hasChanges = false;
 
         $custUploads = is_array($this->customerUploads) ? $this->customerUploads : ($this->customerUploads ? [$this->customerUploads] : []);
-        $mitUploads = is_array($this->mitraUploads) ? $this->mitraUploads : ($this->mitraUploads ? [$this->mitraUploads] : []);
+        $mitUploads  = is_array($this->mitraUploads) ? $this->mitraUploads : ($this->mitraUploads ? [$this->mitraUploads] : []);
 
-        // process customer uploads
+        // 1. Process customer uploads
         if (!empty($custUploads)) {
             $customerRemaining = max(0, self::MAX_BANNERS - count($this->customerBanners));
             if ($customerRemaining <= 0) {
@@ -118,30 +142,27 @@ class Index extends Component
                     $custUploads = array_slice($custUploads, 0, $customerRemaining);
                 }
                 try {
-                    foreach ($custUploads as $f) {
+                    foreach ($custUploads as $idx => $f) {
                         if ($f) {
                             $path = $f->store('banners', 'public');
-                            $this->customerBanners[] = $path;
+                            $link = isset($this->customerNewLinks[$idx]) ? trim((string)$this->customerNewLinks[$idx]) : '';
+                            $this->customerBanners[] = [
+                                'image' => $path,
+                                'link'  => $link,
+                            ];
                         }
                     }
-                    $this->customerUploads = [];
+                    $this->customerUploads  = [];
+                    $this->customerNewLinks = [];
+                    $hasChanges = true;
                 } catch (\Exception $e) {
                     \Log::error('Error storing customer upload files: ' . $e->getMessage());
                     $errors[] = 'Gagal menyimpan file banner customer.';
                 }
-
-                // persist setting
-                try {
-                    AppSetting::set('banner_customer', json_encode(array_values($this->customerBanners)));
-                    $successCount++;
-                } catch (\Exception $e) {
-                    \Log::error('Error setting banner_customer: ' . $e->getMessage());
-                    $errors[] = 'Gagal menyimpan konfigurasi banner customer.';
-                }
             }
         }
 
-        // process mitra uploads
+        // 2. Process mitra uploads
         if (!empty($mitUploads)) {
             $mitraRemaining = max(0, self::MAX_BANNERS - count($this->mitraBanners));
             if ($mitraRemaining <= 0) {
@@ -152,47 +173,63 @@ class Index extends Component
                     $mitUploads = array_slice($mitUploads, 0, $mitraRemaining);
                 }
                 try {
-                    foreach ($mitUploads as $f) {
+                    foreach ($mitUploads as $idx => $f) {
                         if ($f) {
                             $path = $f->store('banners', 'public');
-                            $this->mitraBanners[] = $path;
+                            $link = isset($this->mitraNewLinks[$idx]) ? trim((string)$this->mitraNewLinks[$idx]) : '';
+                            $this->mitraBanners[] = [
+                                'image' => $path,
+                                'link'  => $link,
+                            ];
                         }
                     }
-                    $this->mitraUploads = [];
+                    $this->mitraUploads  = [];
+                    $this->mitraNewLinks = [];
+                    $hasChanges = true;
                 } catch (\Exception $e) {
                     \Log::error('Error storing mitra upload files: ' . $e->getMessage());
                     $errors[] = 'Gagal menyimpan file banner mitra.';
                 }
-
-                try {
-                    AppSetting::set('banner_mitra', json_encode(array_values($this->mitraBanners)));
-                    $successCount++;
-                } catch (\Exception $e) {
-                    \Log::error('Error setting banner_mitra: ' . $e->getMessage());
-                    $errors[] = 'Gagal menyimpan konfigurasi banner mitra.';
-                }
             }
         }
 
-        if ($successCount > 0) {
-            session()->flash('message', 'Banner berhasil disimpan.');
+        // 3. Persist current banners and any edited links
+        try {
+            // Clean structure
+            $cleanedCustomer = array_values(array_map(function($b) {
+                return [
+                    'image' => (string) ($b['image'] ?? ''),
+                    'link'  => trim((string) ($b['link'] ?? '')),
+                ];
+            }, $this->customerBanners));
+
+            $cleanedMitra = array_values(array_map(function($b) {
+                return [
+                    'image' => (string) ($b['image'] ?? ''),
+                    'link'  => trim((string) ($b['link'] ?? '')),
+                ];
+            }, $this->mitraBanners));
+
+            AppSetting::set('banner_customer', json_encode($cleanedCustomer));
+            AppSetting::set('banner_mitra', json_encode($cleanedMitra));
+            $this->customerBanners = $cleanedCustomer;
+            $this->mitraBanners    = $cleanedMitra;
+            $hasChanges = true;
+        } catch (\Exception $e) {
+            \Log::error('Error saving banner settings: ' . $e->getMessage());
+            $errors[] = 'Gagal memperbarui konfigurasi banner.';
+        }
+
+        if ($hasChanges && empty($errors)) {
+            session()->flash('message', 'Konfigurasi gambar banner dan link tujuan berhasil disimpan.');
             $this->dispatch('bannersSaved', [
-                'customer' => array_values($this->customerBanners),
-                'mitra' => array_values($this->mitraBanners),
+                'customer' => $this->customerBanners,
+                'mitra'    => $this->mitraBanners,
             ]);
-            if (!empty($errors)) {
-                $errMsg = implode(' ', $errors);
-                session()->flash('error', $errMsg);
-                $this->dispatch('bannersError', ['message' => $errMsg]);
-            }
-        } else {
-            if (!empty($errors)) {
-                $errMsg = implode(' ', $errors);
-                session()->flash('error', $errMsg);
-                $this->dispatch('bannersError', ['message' => $errMsg]);
-            } else {
-                session()->flash('info', 'Tidak ada file yang diunggah.');
-            }
+        } elseif (!empty($errors)) {
+            $errMsg = implode(' ', $errors);
+            session()->flash('error', $errMsg);
+            $this->dispatch('bannersError', ['message' => $errMsg]);
         }
     }
 
@@ -200,26 +237,30 @@ class Index extends Component
     {
         if (!isset($this->customerBanners[$index]))
             return;
-        $path = $this->customerBanners[$index];
+        $banner = $this->customerBanners[$index];
+        $path   = is_array($banner) ? ($banner['image'] ?? '') : $banner;
         if ($path && Storage::disk('public')->exists($path)) {
             Storage::disk('public')->delete($path);
         }
         array_splice($this->customerBanners, $index, 1);
-        AppSetting::set('banner_customer', json_encode(array_values($this->customerBanners)));
-        session()->flash('message', 'Banner customer dihapus.');
+        $this->customerBanners = array_values($this->customerBanners);
+        AppSetting::set('banner_customer', json_encode($this->customerBanners));
+        session()->flash('message', 'Banner customer berhasil dihapus.');
     }
 
     public function removeMitra($index)
     {
         if (!isset($this->mitraBanners[$index]))
             return;
-        $path = $this->mitraBanners[$index];
+        $banner = $this->mitraBanners[$index];
+        $path   = is_array($banner) ? ($banner['image'] ?? '') : $banner;
         if ($path && Storage::disk('public')->exists($path)) {
             Storage::disk('public')->delete($path);
         }
         array_splice($this->mitraBanners, $index, 1);
-        AppSetting::set('banner_mitra', json_encode(array_values($this->mitraBanners)));
-        session()->flash('message', 'Banner mitra dihapus.');
+        $this->mitraBanners = array_values($this->mitraBanners);
+        AppSetting::set('banner_mitra', json_encode($this->mitraBanners));
+        session()->flash('message', 'Banner mitra berhasil dihapus.');
     }
 
     public function render()

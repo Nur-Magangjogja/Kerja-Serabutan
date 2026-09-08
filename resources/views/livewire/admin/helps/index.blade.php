@@ -4,23 +4,23 @@
         <div>
             <div class="flex items-center gap-2.5 flex-wrap">
                 <h1 class="text-xl font-bold text-gray-900 dark:text-white">Moderasi Bantuan</h1>
-                @if(isset($managedCities) && $managedCities->count() > 1)
+                @if(isset($managedDistricts) && $managedDistricts->count() > 1)
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary-50 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 shadow-2xs">
                         <svg class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
                         </svg>
-                        Wilayah: {{ auth()->user()->admin_city_names }}
+                        Wilayah: {{ auth()->user()->admin_district_names }}
                     </span>
-                @elseif(auth()->user() && (auth()->user()->city_name || auth()->user()->city_id || auth()->user()->city))
+                @elseif(auth()->user() && (auth()->user()->kecamatan || auth()->user()->district_id || auth()->user()->district))
                     <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-primary-50 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 shadow-2xs">
                         <svg class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
                         </svg>
-                        Wilayah: {{ auth()->user()->city_name ?? (is_object(auth()->user()->city) ? auth()->user()->city->name : auth()->user()->city) }}
+                        Wilayah: Kec. {{ auth()->user()->kecamatan ?? (is_object(auth()->user()->district) ? auth()->user()->district->name : auth()->user()->district) }}
                     </span>
                 @endif
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Tinjau, pantau, dan kelola seluruh permintaan bantuan di wilayah wewenang Anda</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Tinjau, pantau, dan kelola seluruh permintaan bantuan di wilayah kecamatan wewenang Anda</p>
         </div>
     </div>
 
@@ -97,7 +97,7 @@
 
     {{-- ===== Search & Filters Bar ===== --}}
     <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-        {{-- Search & City Filter & Per Page --}}
+        {{-- Search & District Filter & Per Page --}}
         <div class="flex items-center gap-2.5 w-full justify-between flex-wrap">
             <div class="flex items-center gap-2.5 flex-1 min-w-[280px]">
                 <div class="relative w-full max-w-md">
@@ -109,12 +109,12 @@
                     </div>
                 </div>
 
-                @if(isset($managedCities) && $managedCities->count() > 1)
-                    <select wire:model.live="cityFilter"
+                @if(isset($managedDistricts) && $managedDistricts->count() > 1)
+                    <select wire:model.live="districtFilter"
                         class="py-2 pl-3 pr-8 text-xs font-bold border border-primary-200 dark:border-primary-800 rounded-xl bg-primary-50/50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer shadow-2xs">
-                        <option value="all">Semua Wilayah Saya ({{ $managedCities->count() }} Kota)</option>
-                        @foreach($managedCities as $mc)
-                            <option value="{{ $mc->id }}">{{ $mc->name }}</option>
+                        <option value="all">Semua Wilayah Saya ({{ $managedDistricts->count() }} Kecamatan)</option>
+                        @foreach($managedDistricts as $md)
+                            <option value="{{ $md->id }}">Kec. {{ $md->name }}</option>
                         @endforeach
                     </select>
                 @endif
@@ -142,7 +142,7 @@
                         <th class="px-4 py-3">Permohonan Bantuan</th>
                         <th class="px-4 py-3">Customer / Pemohon</th>
                         <th class="px-4 py-3 hidden md:table-cell">Mitra Pelaksana</th>
-                        <th class="px-4 py-3 hidden lg:table-cell">Kota</th>
+                        <th class="px-4 py-3 hidden lg:table-cell">Kecamatan / Wilayah</th>
                         <th class="px-4 py-3 text-right">Nominal</th>
                         <th class="px-4 py-3">Status</th>
                         <th class="px-4 py-3 hidden xl:table-cell">Waktu</th>
@@ -193,10 +193,10 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3.5 text-xs text-gray-600 dark:text-gray-300 hidden lg:table-cell">
-                                {{ $help->city->name ?? ($help->customer?->city_name ?? '-') }}
+                                {{ $help->district ? 'Kec. ' . $help->district->name : ($help->customer?->district ? 'Kec. ' . $help->customer->district->name : ($help->city->name ?? ($help->customer?->city_name ?? '-'))) }}
                             </td>
                             <td class="px-4 py-3.5 font-black text-gray-900 dark:text-white text-right whitespace-nowrap">
-                                Rp {{ number_format($help->amount ?? 0, 0, ',', '.') }}
+                                Rp {{ number_format($help->total_amount > 0 ? $help->total_amount : $help->amount, 0, ',', '.') }}
                             </td>
                             <td class="px-4 py-3.5 whitespace-nowrap">
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold {{ $stClass }}">
@@ -219,14 +219,12 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-4 py-16 text-center">
-                                <div class="flex flex-col items-center">
-                                    <div class="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700/60 flex items-center justify-center mb-3 text-gray-400">
-                                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                    </div>
-                                    <p class="text-sm font-bold text-gray-700 dark:text-gray-300">Tidak ada data bantuan</p>
-                                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Tidak ditemukan permintaan bantuan pada filter status atau pencarian ini</p>
+                            <td colspan="8" class="px-4 py-12 text-center text-gray-400 dark:text-gray-500">
+                                <div class="w-12 h-12 rounded-2xl bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center mx-auto mb-2 text-gray-300 dark:text-gray-600">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                                 </div>
+                                <p class="text-xs font-bold">Tidak ada data permohonan bantuan</p>
+                                <p class="text-[11px] text-gray-400 mt-0.5">Coba sesuaikan kata kunci pencarian atau filter status Anda</p>
                             </td>
                         </tr>
                     @endforelse
@@ -234,19 +232,19 @@
             </table>
         </div>
 
-        <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
-            {{ $helps->links('vendor.pagination.superadmin') }}
-        </div>
+        @if($helps->hasPages())
+            <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+                {{ $helps->links() }}
+            </div>
+        @endif
     </div>
 
-    {{-- ===== Help Detail & Activity History Modal for Admin ===== --}}
+    {{-- ===== Detail Modal (Comprehensive Overview & Activity Timeline) ===== --}}
     @if($showDetailModal && $selectedHelp)
-        <div class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" wire:click="closeDetailModal">
-            <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 max-h-[90vh] flex flex-col animate-scale-in"
-                 @click.stop>
-                
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+            <div class="bg-white dark:bg-gray-800 rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 {{-- Header --}}
-                <div class="bg-gradient-to-r from-primary-600 to-blue-700 px-6 py-5 text-white flex items-center justify-between flex-shrink-0">
+                <div class="px-6 py-4 bg-gradient-to-r from-primary-600 to-blue-600 text-white flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-black text-sm">
                             #{{ $selectedHelp->order_id ?? $selectedHelp->id }}
@@ -257,9 +255,7 @@
                         </div>
                     </div>
                     <button type="button" wire:click="closeDetailModal" class="p-1.5 rounded-lg hover:bg-white/20 transition cursor-pointer">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
 
@@ -278,11 +274,36 @@
                             <span class="text-xs text-gray-500">{{ $selectedHelp->mitra->phone ?? '-' }}</span>
                         </div>
                         <div class="p-3.5 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-700">
-                            <span class="text-[11px] font-bold text-gray-400 dark:text-gray-400 block uppercase">Nominal & Status</span>
-                            <span class="font-black text-gray-900 dark:text-white mt-0.5 block">Rp {{ number_format($selectedHelp->amount ?? 0, 0, ',', '.') }}</span>
+                            <span class="text-[11px] font-bold text-gray-400 dark:text-gray-400 block uppercase">Total Terbayar & Status</span>
+                            <span class="font-black text-gray-900 dark:text-white mt-0.5 block">Rp {{ number_format($selectedHelp->total_amount > 0 ? $selectedHelp->total_amount : $selectedHelp->amount, 0, ',', '.') }}</span>
                             <span class="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400">
                                 {{ ucfirst(str_replace('_', ' ', $selectedHelp->status)) }}
                             </span>
+                        </div>
+                    </div>
+
+                    {{-- Financial Breakdown (Revisi 3) --}}
+                    <div class="p-3.5 bg-gray-50/80 dark:bg-gray-700/30 rounded-2xl border border-gray-100 dark:border-gray-700 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div>
+                            <span class="text-[10px] text-gray-400 block font-medium">Biaya Jasa</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200">Rp {{ number_format($selectedHelp->service_fee ?: $selectedHelp->amount, 0, ',', '.') }}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-400 block font-medium">Biaya Perjalanan</span>
+                            <span class="font-bold text-blue-600 dark:text-blue-400">
+                                Rp {{ number_format($selectedHelp->travel_fee ?? 0, 0, ',', '.') }}
+                                @if($selectedHelp->travel_distance_km)
+                                    <span class="text-[9px] font-normal text-gray-500">({{ number_format($selectedHelp->travel_distance_km, 1) }} km)</span>
+                                @endif
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-400 block font-medium">Titipan Belanja</span>
+                            <span class="font-bold text-amber-700 dark:text-amber-300">Rp {{ number_format($selectedHelp->item_fund ?? 0, 0, ',', '.') }}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-400 block font-medium">Biaya Layanan Platform</span>
+                            <span class="font-bold text-emerald-700 dark:text-emerald-300">Rp {{ number_format($selectedHelp->platform_fee_amount ?? 2000, 0, ',', '.') }}</span>
                         </div>
                     </div>
 

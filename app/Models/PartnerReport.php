@@ -63,18 +63,19 @@ class PartnerReport extends Model
 
         $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
         $version = \Illuminate\Support\Facades\Cache::get('active_reports_count_version', 1);
-        $cacheKey = 'active_reports_count_v' . $version . '_' . ($isSuperAdmin ? 'sa' : 'admin_' . $user->id . '_' . ($user->city_id ?? 'all'));
+        $cacheKey = 'active_reports_count_v' . $version . '_' . ($isSuperAdmin ? 'sa' : 'admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
 
         return \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin) {
             $query = static::whereIn('status', ['pending', 'in_progress', 'investigating']);
 
             if (!$isSuperAdmin) {
-                $cityIds = $user->getAdminCityIds();
+                $districtIds = $user->getEffectiveAdminDistrictIds();
 
-                if (!empty($cityIds)) {
-                    $query->where(function ($q) use ($cityIds) {
-                        $q->whereHas('reporter', fn($sq) => $sq->whereIn('city_id', $cityIds))
-                          ->orWhereHas('reportedUser', fn($sq) => $sq->whereIn('city_id', $cityIds));
+                if (!empty($districtIds)) {
+                    $query->where(function ($q) use ($districtIds) {
+                        $q->whereHas('reporter', fn($sq) => $sq->whereIn('district_id', $districtIds))
+                          ->orWhereHas('reportedUser', fn($sq) => $sq->whereIn('district_id', $districtIds))
+                          ->orWhereHas('reportedHelp', fn($sq) => $sq->whereIn('district_id', $districtIds));
                     });
                 } else {
                     $query->whereRaw('1 = 0');

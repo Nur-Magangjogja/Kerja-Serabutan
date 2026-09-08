@@ -255,7 +255,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    Manajemen Kota
+                    Kelola Wilayah
                 </a>
 
                 <a href="{{ route('superadmin.admin.users') }}" wire:navigate
@@ -426,6 +426,9 @@
                     </div>
 
                     <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                        <!-- Super Admin Territory Switcher (Kabupaten/Kota -> Kecamatan + Search) -->
+                        <livewire:superadmin.territory-switcher />
+
                         <!-- Quick actions (Refresh) -->
                         <div class="hidden sm:flex items-center">
                             <button onclick="location.reload()" class="inline-flex items-center gap-2 px-3 py-2 bg-gray-500/10 dark:bg-gray-400/10 border border-gray-500/15 dark:border-gray-400/15 text-xs font-semibold text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-500/15 dark:hover:bg-gray-400/20 shadow-2xs cursor-pointer active:scale-95 transition-transform" title="Muat ulang halaman">
@@ -445,7 +448,7 @@
                             <div class="hidden sm:flex flex-col text-left min-w-0">
                                 <span class="text-xs font-bold text-gray-800 dark:text-gray-100 max-w-[130px] truncate leading-tight">{{ auth()->user()->name ?? 'Super Admin' }}</span>
                                 <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-400 max-w-[140px] truncate leading-tight mt-0.5">
-                                    Semua Wilayah
+                                    {{ auth()->user()->active_superadmin_territory['label'] ?? 'Semua Wilayah' }}
                                 </span>
                             </div>
                         </div>
@@ -548,6 +551,15 @@
         </div>
     </div>
     <script>
+        window.USER_SOUND_ENABLED = {{ (auth()->check() && (auth()->user()->notification_settings['sound_enabled'] ?? true)) ? 'true' : 'false' }};
+        window.DEFAULT_NOTIFICATION_SOUND = "{{ asset('sfx/mixkit-software-interface-start-2574.mp3') }}";
+        window.getNotificationSoundEnabled = function() {
+            if (typeof window.USER_SOUND_ENABLED !== 'undefined') {
+                return window.USER_SOUND_ENABLED;
+            }
+            return true;
+        };
+
         // Safe fallback for Laravel Echo when WebSocket is not active
         if (typeof window !== 'undefined' && typeof window.Echo === 'undefined') {
             window.Echo = {

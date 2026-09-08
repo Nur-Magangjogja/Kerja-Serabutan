@@ -1,19 +1,21 @@
 @php
-    $title = 'Manajemen Kota';
+    $title = 'Manajemen Wilayah & Kecamatan';
 @endphp
 
 <div>
     {{-- ===== Page Header ===== --}}
     <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div>
-            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Manajemen Kota</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola kota dan provinsi layanan SayaBantu</p>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Manajemen Wilayah & Kecamatan</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola kecamatan, kabupaten/kota, dan provinsi layanan SayaBantu</p>
         </div>
-        <button wire:click="openCreateModal"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors shadow-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Tambah Kota
-        </button>
+        <div class="flex items-center gap-2">
+            <button wire:click="openCreateModal"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Kota / Kab
+            </button>
+        </div>
     </div>
 
     {{-- ===== Provinces Panel ===== --}}
@@ -63,7 +65,7 @@
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
-                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama kota atau provinsi..."
+                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari nama kecamatan, kota, atau provinsi..."
                     class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
             </div>
             <select wire:model.live="perPage"
@@ -85,7 +87,7 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nama Kota</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kota / Wilayah</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Provinsi</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pengguna</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kapasitas</th>
@@ -117,13 +119,13 @@
                                     </button>
                                     <p class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5">
                                         <span>{{ $city->districts->count() }} kecamatan</span>
-                                        <button type="button" @click="open = !open" class="text-primary-600 dark:text-primary-400 hover:underline text-[10px] font-medium" x-text="open ? '• tutup' : '• lihat daftar'"></button>
+                                        <button type="button" @click="open = !open" class="text-primary-600 dark:text-primary-400 hover:underline text-[10px] font-medium" x-text="open ? '• tutup' : '• kelola kecamatan'"></button>
                                     </p>
                                     @else
                                     <p class="font-semibold text-gray-800 dark:text-gray-100">{{ $city->name }}</p>
-                                    @if(!empty($loadDistricts) && $city->relationLoaded('districts'))
-                                    <p class="text-xs text-gray-400 dark:text-gray-500">{{ $city->districts->count() }} kecamatan</p>
-                                    @endif
+                                    <div class="flex items-center gap-1 mt-0.5">
+                                        <button type="button" wire:click="openDistrictModal({{ $city->id }})" class="text-[10px] text-primary-600 hover:underline font-medium">+ Tambah Kecamatan</button>
+                                    </div>
                                     @endif
                                 </div>
                             </div>
@@ -179,6 +181,10 @@
                         <td class="px-4 py-3.5 text-xs text-gray-500 dark:text-gray-400 hidden md:table-cell whitespace-nowrap">{{ $city->created_at->format('d M Y') }}</td>
                         <td class="px-4 py-3.5">
                             <div class="flex items-center justify-center gap-1">
+                                <button wire:click="openDistrictModal({{ $city->id }})" title="Tambah Kecamatan Baru"
+                                    class="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                </button>
                                 <button wire:click="openCapacityModal({{ $city->id }})" title="Kelola Kapasitas & Override"
                                     class="p-1.5 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -200,7 +206,7 @@
                     </tr>
 
                     {{-- Expanded Districts Panel (Colspan 7 Sinkron Sempurna) --}}
-                    @if(!empty($loadDistricts) && $city->relationLoaded('districts') && $city->districts->isNotEmpty())
+                    @if(!empty($loadDistricts) && $city->relationLoaded('districts'))
                     <tr x-show="open" x-cloak
                         x-transition:enter="transition-all ease-out duration-200"
                         x-transition:enter-start="opacity-0 -translate-y-1"
@@ -223,31 +229,54 @@
                                             {{ $city->districts->count() }} Kecamatan
                                         </span>
                                     </div>
-                                    <button type="button" @click="open = false" class="text-xs font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex items-center gap-1 transition-colors">
-                                        <span>Tutup</span>
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" wire:click="openDistrictModal({{ $city->id }})"
+                                            class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 transition-colors">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                            Tambah Kecamatan
+                                        </button>
+                                        <button type="button" @click="open = false" class="text-xs font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex items-center gap-1 transition-colors ml-2">
+                                            <span>Tutup</span>
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1">
-                                    @foreach($city->districts as $district)
-                                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-gray-50/80 dark:bg-gray-750/80 border border-gray-100 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 transition-colors">
+                                    @forelse($city->districts as $district)
+                                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-gray-50/80 dark:bg-gray-750/80 border border-gray-100 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 transition-colors group">
                                         <div class="flex items-center gap-2 min-w-0">
                                             <span class="text-primary-500 dark:text-primary-400 text-xs font-bold">↳</span>
                                             <div class="truncate">
-                                                <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{{ $district->name }}</p>
+                                                <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">Kec. {{ $district->name }}</p>
                                                 @if($district->code)
                                                 <p class="text-[10px] text-gray-400 font-mono">Kode: {{ $district->code }}</p>
                                                 @endif
                                             </div>
                                         </div>
-                                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold flex-shrink-0
-                                            {{ $district->is_active ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/50' : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-900/50' }}">
-                                            <span class="w-1.5 h-1.5 rounded-full {{ $district->is_active ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
-                                            {{ $district->is_active ? 'Aktif' : 'Nonaktif' }}
-                                        </span>
+                                        <div class="flex items-center gap-1">
+                                            <button type="button" wire:click="toggleDistrictStatus({{ $district->id }})" title="Klik untuk ubah status aktif kecamatan"
+                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold flex-shrink-0 transition-colors
+                                                {{ $district->is_active ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/50' : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-900/50' }}">
+                                                <span class="w-1.5 h-1.5 rounded-full {{ $district->is_active ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
+                                                {{ $district->is_active ? 'Aktif' : 'Nonaktif' }}
+                                            </button>
+                                            <button type="button" wire:click="openDistrictModal({{ $city->id }}, {{ $district->id }})" title="Edit Kecamatan"
+                                                class="p-1 text-primary-600 hover:text-primary-800 dark:hover:text-primary-300 opacity-0 group-hover:opacity-100 transition">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            </button>
+                                            <button type="button" wire:click="confirmDeleteDistrict({{ $district->id }})" title="Hapus Kecamatan"
+                                                class="p-1 text-rose-500 hover:text-rose-700 dark:hover:text-rose-300 opacity-0 group-hover:opacity-100 transition">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            </button>
+                                        </div>
                                     </div>
-                                    @endforeach
+                                    @empty
+                                    <div class="col-span-full text-center py-4">
+                                        <p class="text-xs text-gray-400">Belum ada kecamatan di kota ini.</p>
+                                        <button type="button" wire:click="openDistrictModal({{ $city->id }})" class="mt-1 text-xs text-primary-600 font-semibold hover:underline">+ Tambah Kecamatan Sekarang</button>
+                                    </div>
+                                    @endforelse
                                 </div>
                             </div>
                         </td>
@@ -714,6 +743,82 @@
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+    @endif
+
+    {{-- ===== District Create / Edit Modal ===== --}}
+    @if($showDistrictModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                <div>
+                    <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ $districtEditId ? 'Edit Kecamatan' : 'Tambah Kecamatan Baru' }}</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ $districtEditId ? 'Perbarui data kecamatan' : 'Tambahkan kecamatan baru pada kota ini' }}</p>
+                </div>
+                <button type="button" wire:click="$set('showDistrictModal', false)" class="p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form wire:submit.prevent="saveDistrict" class="px-6 py-5 space-y-4">
+                <div>
+                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Nama Kecamatan <span class="text-red-500">*</span></label>
+                    <input type="text" wire:model.defer="districtName" placeholder="Contoh: Coblong"
+                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    @error('districtName') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Kode Wilayah / Kemendagri (opsional)</label>
+                    <input type="text" wire:model.defer="districtCode" placeholder="Contoh: 32.73.01"
+                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    @error('districtCode') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                </div>
+                <label class="flex items-center gap-2 cursor-pointer pt-1">
+                    <input type="checkbox" wire:model.defer="districtIsActive" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                    <span class="text-sm text-gray-700 dark:text-gray-200">Kecamatan Aktif (Dapat dipilih pengguna)</span>
+                </label>
+
+                <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-3">
+                    <button type="button" wire:click="$set('showDistrictModal', false)"
+                        class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" wire:loading.attr="disabled"
+                        class="px-4 py-2 text-sm font-semibold bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2 disabled:opacity-60">
+                        <svg wire:loading class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                        {{ $districtEditId ? 'Perbarui Kecamatan' : 'Simpan Kecamatan' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+
+    {{-- ===== Confirm Delete District Modal ===== --}}
+    @if($showDistrictDeleteModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Hapus Kecamatan?</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Data kecamatan ini akan dihapus dari sistem.</p>
+                </div>
+            </div>
+            @if($deletingDistrictName)
+            <p class="text-sm bg-gray-50 dark:bg-gray-750 text-gray-700 dark:text-gray-200 px-4 py-3 rounded-lg mb-4 font-semibold">Kec. {{ $deletingDistrictName }}</p>
+            @endif
+            <div class="flex items-center justify-end gap-3">
+                <button type="button" wire:click="$set('showDistrictDeleteModal', false)"
+                    class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    Batal
+                </button>
+                <button wire:click.prevent="deleteDistrict" class="px-4 py-2 text-sm font-semibold bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors">
+                    Hapus
+                </button>
+            </div>
         </div>
     </div>
     @endif

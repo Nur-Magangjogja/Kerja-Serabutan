@@ -28,7 +28,8 @@ class Approval extends Component
     public $cancellationReason = '';
     public $filterStatus = 'waiting_approval';
     public $search = '';
-    public $cityFilter = 'all';
+    public $districtFilter = 'all';
+    public $cityFilter = 'all'; // Backward compatibility alias
 
     protected $queryString = [
         'filterStatus' => ['except' => 'waiting_approval'],
@@ -36,16 +37,18 @@ class Approval extends Component
     ];
 
     protected $listeners = [
-        'topupRequestCreated' => '$refresh',
-        'confirmApprove' => 'approve',
-        'admin-city-changed' => 'onAdminCityChanged',
+        'topupRequestCreated'    => '$refresh',
+        'confirmApprove'         => 'approve',
+        'admin-district-changed' => 'onAdminDistrictChanged',
+        'admin-city-changed'     => 'onAdminDistrictChanged',
     ];
 
     public function mount()
     {
         $admin = auth()->user();
         if ($admin && $admin->role === 'admin') {
-            $this->cityFilter = $admin->getActiveAdminCityFilter();
+            $this->districtFilter = $admin->getActiveAdminDistrictFilter();
+            $this->cityFilter = $this->districtFilter;
         }
     }
 
@@ -54,28 +57,41 @@ class Approval extends Component
         $this->resetPage();
     }
 
-    public function updatingCityFilter()
+    public function updatingDistrictFilter()
     {
+        $this->resetPage();
+    }
+
+    public function updatedDistrictFilter()
+    {
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $admin->setActiveAdminDistrictFilter($this->districtFilter);
+            $this->cityFilter = $this->districtFilter;
+            $this->dispatch('admin-district-changed', districtId: $this->districtFilter);
+        }
         $this->resetPage();
     }
 
     public function updatedCityFilter()
     {
+        $this->districtFilter = $this->cityFilter;
+        $this->updatedDistrictFilter();
+    }
+
+    public function onAdminDistrictChanged($districtId = null)
+    {
         $admin = auth()->user();
         if ($admin && $admin->role === 'admin') {
-            $admin->setActiveAdminCityFilter($this->cityFilter);
-            $this->dispatch('admin-city-changed', cityId: $this->cityFilter);
+            $this->districtFilter = $admin->getActiveAdminDistrictFilter();
+            $this->cityFilter = $this->districtFilter;
+            $this->resetPage();
         }
-        $this->resetPage();
     }
 
     public function onAdminCityChanged($cityId = null)
     {
-        $admin = auth()->user();
-        if ($admin && $admin->role === 'admin') {
-            $this->cityFilter = $admin->getActiveAdminCityFilter();
-            $this->resetPage();
-        }
+        $this->onAdminDistrictChanged($cityId);
     }
 
     public function filterByStatus($status)
@@ -90,16 +106,16 @@ class Approval extends Component
         if (!$admin) return false;
         if (in_array($admin->role, ['super_admin', 'superadmin'])) return true;
         if ($admin->role === 'admin') {
-            $allowedCityIds = $admin->getAdminCityIds();
-            $userCityId = $tx->user?->city_id;
-            return !empty($userCityId) && in_array((int) $userCityId, $allowedCityIds, true);
+            $allowedDistrictIds = $admin->getAdminDistrictIds();
+            $userDistrictId = $tx->user?->district_id;
+            return !empty($userDistrictId) && in_array((int) $userDistrictId, $allowedDistrictIds, true);
         }
         return false;
     }
 
     public function viewDetail($transactionId)
     {
-        $tx = BalanceTransaction::with(['user', 'user.city', 'approvedBy'])->find($transactionId);
+        $tx = BalanceTransaction::with(['user', 'user.district', 'user.city', 'approvedBy'])->find($transactionId);
         
         if (!$tx || !$this->isAuthorizedForTransaction($tx)) {
             session()->flash('error', 'Transaksi tidak ditemukan atau berada di luar wilayah wewenang Anda.');
@@ -122,7 +138,7 @@ class Approval extends Component
 
     public function openRejectModal($transactionId)
     {
-        $tx = BalanceTransaction::with(['user', 'user.city'])->find($transactionId);
+        $tx = BalanceTransaction::with(['user', 'user.district', 'user.city'])->find($transactionId);
 
         if (!$tx || !$this->isAuthorizedForTransaction($tx)) {
             session()->flash('error', 'Transaksi tidak ditemukan atau berada di luar wilayah wewenang Anda.');
@@ -136,7 +152,7 @@ class Approval extends Component
 
     public function openCancelApprovalModal($transactionId)
     {
-        $tx = BalanceTransaction::with(['user', 'user.city', 'approvedBy'])->find($transactionId);
+        $tx = BalanceTransaction::with(['user', 'user.district', 'user.city', 'approvedBy'])->find($transactionId);
 
         if (!$tx || !$this->isAuthorizedForTransaction($tx)) {
             session()->flash('error', 'Transaksi tidak ditemukan atau berada di luar wilayah wewenang Anda.');
@@ -177,17 +193,18 @@ class Approval extends Component
             $userBalance->increment('balance', $transaction->amount);
 
             try {
+                $districtLabel = auth()->user()->kecamatan ?? (auth()->user()->district?->name ?? 'Wilayah Kecamatan');
                 ActivityLog::create([
                     'user_id' => auth()->id(),
                     'action' => 'topup_approved',
-                    'description' => 'Admin (' . (auth()->user()->city->name ?? 'Wilayah') . ') menyetujui top-up #' . ($transaction->request_code ?? $transaction->id) . ' milik ' . ($transaction->user->name ?? 'Customer') . ' sebesar Rp ' . number_format($transaction->amount, 0, ',', '.'),
+                    'description' => 'Admin (Kec. ' . $districtLabel . ') menyetujui top-up #' . ($transaction->request_code ?? $transaction->id) . ' milik ' . ($transaction->user->name ?? 'Customer') . ' sebesar Rp ' . number_format($transaction->amount, 0, ',', '.'),
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                     'properties' => [
                         'transaction_id' => $transaction->id,
                         'customer_id' => $transaction->user_id,
                         'amount' => $transaction->amount,
-                        'admin_city' => auth()->user()->city->name ?? null,
+                        'admin_district' => $districtLabel,
                     ],
                 ]);
             } catch (\Throwable $e) {
@@ -227,7 +244,7 @@ class Approval extends Component
         }
 
         if (!$this->isAuthorizedForTransaction($this->selectedTransaction)) {
-            session()->flash('error', 'Anda tidak memiliki wewenang untuk menolak transaksi di luar wilayah Anda.');
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk menolak transaksi di luar wilayah wewenang Anda.');
             $this->closeModal();
             return;
         }
@@ -241,10 +258,11 @@ class Approval extends Component
             ]);
 
             try {
+                $districtLabel = auth()->user()->kecamatan ?? (auth()->user()->district?->name ?? 'Wilayah Kecamatan');
                 ActivityLog::create([
                     'user_id' => auth()->id(),
                     'action' => 'topup_rejected',
-                    'description' => 'Admin (' . (auth()->user()->city->name ?? 'Wilayah') . ') menolak top-up #' . ($this->selectedTransaction->request_code ?? $this->selectedTransaction->id) . ' milik ' . ($this->selectedTransaction->user->name ?? 'Customer') . '. Alasan: ' . $this->rejectionReason,
+                    'description' => 'Admin (Kec. ' . $districtLabel . ') menolak top-up #' . ($this->selectedTransaction->request_code ?? $this->selectedTransaction->id) . ' milik ' . ($this->selectedTransaction->user->name ?? 'Customer') . '. Alasan: ' . $this->rejectionReason,
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                 ]);
@@ -282,7 +300,7 @@ class Approval extends Component
         }
 
         if (!$this->isAuthorizedForTransaction($this->selectedTransaction)) {
-            session()->flash('error', 'Anda tidak memiliki wewenang untuk membatalkan transaksi di luar wilayah Anda.');
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk membatalkan transaksi di luar wilayah wewenang Anda.');
             $this->closeModal();
             return;
         }
@@ -320,10 +338,11 @@ class Approval extends Component
 
             // 4. Activity Log
             try {
+                $districtLabel = auth()->user()->kecamatan ?? (auth()->user()->district?->name ?? 'Wilayah Kecamatan');
                 ActivityLog::create([
                     'user_id' => auth()->id(),
                     'action' => 'topup_approval_cancelled',
-                    'description' => 'Admin (' . (auth()->user()->city->name ?? 'Wilayah') . ') membatalkan approval top-up #' . ($this->selectedTransaction->request_code ?? $this->selectedTransaction->id) . ' milik ' . ($customer->name ?? 'Customer') . ' (Rp ' . number_format($amount, 0, ',', '.') . '). Alasan: ' . $this->cancellationReason,
+                    'description' => 'Admin (Kec. ' . $districtLabel . ') membatalkan approval top-up #' . ($this->selectedTransaction->request_code ?? $this->selectedTransaction->id) . ' milik ' . ($customer->name ?? 'Customer') . ' (Rp ' . number_format($amount, 0, ',', '.') . '). Alasan: ' . $this->cancellationReason,
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                 ]);
@@ -353,15 +372,16 @@ class Approval extends Component
     {
         $admin = auth()->user();
         if ($admin && $admin->role === 'admin') {
-            $this->cityFilter = $admin->getActiveAdminCityFilter();
+            $this->districtFilter = $admin->getActiveAdminDistrictFilter();
+            $this->cityFilter = $this->districtFilter;
         }
-        $adminCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
-        $adminCityName = $admin ? $admin->admin_city_names : null;
+        $adminDistrictIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
+        $adminDistrictName = $admin ? $admin->admin_district_names : null;
 
         // Base scoped query for counts
         $baseQuery = BalanceTransaction::where('type', 'topup');
-        if (!empty($adminCityIds)) {
-            $baseQuery->whereHas('user', fn($q) => $q->whereIn('city_id', $adminCityIds));
+        if (!empty($adminDistrictIds)) {
+            $baseQuery->whereHas('user', fn($q) => $q->whereIn('district_id', $adminDistrictIds));
         } elseif ($admin && $admin->role === 'admin') {
             $baseQuery->whereRaw('1 = 0');
         }
@@ -373,10 +393,10 @@ class Approval extends Component
         $totalAll = (clone $baseQuery)->count();
 
         $query = BalanceTransaction::where('type', 'topup')
-            ->with(['user', 'user.city', 'approvedBy']);
+            ->with(['user', 'user.district', 'user.city', 'approvedBy']);
 
-        if (!empty($adminCityIds)) {
-            $query->whereHas('user', fn($q) => $q->whereIn('city_id', $adminCityIds));
+        if (!empty($adminDistrictIds)) {
+            $query->whereHas('user', fn($q) => $q->whereIn('district_id', $adminDistrictIds));
         } elseif ($admin && $admin->role === 'admin') {
             $query->whereRaw('1 = 0');
         }
@@ -408,18 +428,20 @@ class Approval extends Component
             });
         }
 
-        $cities = $admin ? $admin->getAdminCities() : collect();
+        $districts = $admin ? $admin->getAdminDistricts() : collect();
         $transactions = $query->orderBy('created_at', 'desc')->paginate(15);
 
         return view('livewire.admin.topup.approval', [
-            'transactions' => $transactions,
-            'cities' => $cities,
-            'adminCityName' => $adminCityName,
-            'totalPending' => $totalPending,
-            'totalCompleted' => $totalCompleted,
-            'totalCancelled' => $totalCancelled,
-            'totalRejected' => $totalRejected,
-            'totalAll' => $totalAll,
+            'transactions'      => $transactions,
+            'districts'         => $districts,
+            'cities'            => $districts, // Backward compatibility
+            'adminDistrictName' => $adminDistrictName,
+            'adminCityName'     => $adminDistrictName,
+            'totalPending'      => $totalPending,
+            'totalCompleted'    => $totalCompleted,
+            'totalCancelled'    => $totalCancelled,
+            'totalRejected'     => $totalRejected,
+            'totalAll'          => $totalAll,
         ]);
     }
 }

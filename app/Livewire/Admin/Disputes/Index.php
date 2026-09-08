@@ -16,10 +16,11 @@ class Index extends Component
 {
     use WithPagination;
 
-    public $status = 'frozen'; // 'frozen', 'resolved', 'all'
+    public $activeTab = 'disputes'; // 'disputes' | 'cancellations'
+    public $status = 'frozen'; // 'frozen', 'resolved', 'all' (or 'pending', 'approved', 'rejected' for cancellations)
     public $search = '';
 
-    // Modal state
+    // Modal state (Disputes)
     public $showResolveModal = false;
     public $selectedHelpId   = null;
     public $selectedHelp     = null;
@@ -29,13 +30,25 @@ class Index extends Component
     public $customerRefund   = 0;
     public $adminNotes       = '';
 
+    // Modal state (Cancellation Requests Revisi 3)
+    public $showCancelReviewModal     = false;
+    public $selectedCancelRequestId   = null;
+    public $selectedCancelRequest     = null;
+    public $cancelDecision           = 'approved'; // 'approved' | 'rejected'
+    public $settlementType           = 'full_refund'; // 'full_refund' | 'item_settled' | 'partial_settlement'
+    public $cancelRefundAmount       = 0;
+    public $cancelPartnerAmount      = 0;
+    public $cancelAdminNotes         = '';
+
     protected $queryString = [
-        'status' => ['except' => 'frozen'],
-        'search' => ['except' => ''],
+        'activeTab' => ['except' => 'disputes'],
+        'status'    => ['except' => 'frozen'],
+        'search'    => ['except' => ''],
     ];
 
     protected $listeners = [
-        'admin-city-changed' => '$refresh',
+        'admin-district-changed' => '$refresh',
+        'admin-city-changed'     => '$refresh',
     ];
 
     public function updatingSearch()
@@ -48,10 +61,30 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function updatingActiveTab()
+    {
+        $this->resetPage();
+        $this->status = ($this->activeTab === 'cancellations') ? 'pending' : 'frozen';
+    }
+
+    // ─── DISPUTE ACTIONS ─────────────────────────────────────────────────────
+
     public function openResolveModal(int $helpId)
     {
         $this->selectedHelpId = $helpId;
-        $this->selectedHelp   = Help::with(['user', 'mitra', 'city'])->findOrFail($helpId);
+        $this->selectedHelp   = Help::with(['user.district', 'mitra.district', 'district', 'city'])->findOrFail($helpId);
+
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $effectiveDistricts = $admin->getEffectiveAdminDistrictIds();
+            $targetDistrictId = $this->selectedHelp->district_id ?? $this->selectedHelp->user?->district_id;
+            if ($targetDistrictId && !in_array((int)$targetDistrictId, $effectiveDistricts, true)) {
+                session()->flash('error', 'Anda tidak memiliki wewenang untuk menyelesaikan sengketa di luar wilayah kecamatan Anda.');
+                $this->selectedHelp = null;
+                $this->selectedHelpId = null;
+                return;
+            }
+        }
 
         $gross = (float) ($this->selectedHelp->total_amount > 0 ? $this->selectedHelp->total_amount : $this->selectedHelp->amount);
         $fee   = (float) $this->selectedHelp->getPlatformFee();
@@ -143,23 +176,134 @@ class Index extends Component
         }
     }
 
+    // ─── CANCELLATION REQUEST ACTIONS (Revisi 3) ─────────────────────────────
+
+    public function openCancelReviewModal(int $cancelRequestId)
+    {
+        $this->selectedCancelRequestId = $cancelRequestId;
+        $this->selectedCancelRequest   = \App\Models\HelpCancelRequest::with(['help.user', 'help.mitra', 'requestedBy', 'district'])->findOrFail($cancelRequestId);
+
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $effectiveDistricts = $admin->getEffectiveAdminDistrictIds();
+            $targetDistrictId = $this->selectedCancelRequest->district_id ?? $this->selectedCancelRequest->help?->district_id;
+            if ($targetDistrictId && !in_array((int)$targetDistrictId, $effectiveDistricts, true)) {
+                session()->flash('error', 'Anda tidak memiliki wewenang untuk meninjau pembatalan di luar wilayah kecamatan Anda.');
+                $this->selectedCancelRequest = null;
+                $this->selectedCancelRequestId = null;
+                return;
+            }
+        }
+
+        $help = $this->selectedCancelRequest->help;
+        $gross = (float) ($help->total_amount > 0 ? $help->total_amount : $help->amount);
+
+        $this->cancelDecision     = 'approved';
+        $this->settlementType     = $this->selectedCancelRequest->item_purchased ? 'item_settled' : 'full_refund';
+        $this->cancelRefundAmount = $gross;
+        $this->cancelPartnerAmount= $this->selectedCancelRequest->item_purchase_amount ?: 0;
+        $this->cancelAdminNotes   = '';
+        $this->showCancelReviewModal = true;
+    }
+
+    public function closeCancelReviewModal()
+    {
+        $this->showCancelReviewModal = false;
+        $this->reset(['selectedCancelRequestId', 'selectedCancelRequest', 'cancelDecision', 'settlementType', 'cancelRefundAmount', 'cancelPartnerAmount', 'cancelAdminNotes']);
+    }
+
+    public function executeCancelReview()
+    {
+        if (!$this->selectedCancelRequest) {
+            return;
+        }
+
+        $this->validate([
+            'cancelDecision' => 'required|in:approved,rejected',
+            'settlementType' => 'required_if:cancelDecision,approved|in:full_refund,item_settled,partial_settlement',
+            'cancelRefundAmount' => 'nullable|numeric|min:0',
+            'cancelPartnerAmount'=> 'nullable|numeric|min:0',
+        ]);
+
+        try {
+            $isApproved = ($this->cancelDecision === 'approved');
+            app(\App\Services\HelpCancellationService::class)->reviewByAdmin(
+                $this->selectedCancelRequest,
+                auth()->user(),
+                $isApproved,
+                $this->settlementType,
+                [
+                    'refund_amount'  => (float) $this->cancelRefundAmount,
+                    'partner_amount' => (float) $this->cancelPartnerAmount,
+                    'admin_notes'    => $this->cancelAdminNotes,
+                ]
+            );
+
+            session()->flash('message', "Permintaan pembatalan #{$this->selectedCancelRequest->id} berhasil diproses.");
+            $this->closeCancelReviewModal();
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[AdminDisputes] executeCancelReview error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat memproses permintaan pembatalan: ' . $e->getMessage());
+        }
+    }
+
     public function render()
     {
         $admin        = auth()->user();
         $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
 
-        $query = Help::with(['user', 'mitra', 'city', 'disputeResolvedBy'])
+        if ($this->activeTab === 'cancellations') {
+            $query = \App\Models\HelpCancelRequest::with(['help.user', 'help.mitra', 'requestedBy', 'district', 'reviewedBy']);
+
+            if (!$isSuperAdmin) {
+                $districtIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
+                if (!empty($districtIds)) {
+                    $query->where(function ($q) use ($districtIds) {
+                        $q->whereIn('district_id', $districtIds)
+                          ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $districtIds));
+                    });
+                } else {
+                    $query->whereRaw('1 = 0');
+                }
+            }
+
+            if ($this->status !== 'all') {
+                $query->where('status', $this->status);
+            }
+
+            if (!empty($this->search)) {
+                $query->where(function ($q) {
+                    $q->where('reason', 'like', "%{$this->search}%")
+                      ->orWhereHas('help', fn($hq) => $hq->where('title', 'like', "%{$this->search}%")->orWhere('order_id', 'like', "%{$this->search}%"))
+                      ->orWhereHas('requestedBy', fn($uq) => $uq->where('name', 'like', "%{$this->search}%"));
+                });
+            }
+
+            $cancellations = $query->latest()->paginate(10);
+
+            return view('livewire.admin.disputes.index', [
+                'cancellations' => $cancellations,
+                'disputes'      => collect(),
+            ]);
+        }
+
+        $query = Help::with(['user.district', 'mitra.district', 'district', 'city', 'disputeResolvedBy'])
             ->where(function ($q) {
                 $q->where('escrow_status', Help::ESCROW_STATUS_DISPUTED_FREEZE)
                   ->orWhereNotNull('disputed_at');
             });
 
-        // City scoping for Regional Admins
+        // District scoping for Regional Admins
         if (!$isSuperAdmin) {
-            $cityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
+            $districtIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
 
-            if (!empty($cityIds)) {
-                $query->whereIn('city_id', $cityIds);
+            if (!empty($districtIds)) {
+                $query->where(function ($q) use ($districtIds) {
+                    $q->whereIn('district_id', $districtIds)
+                      ->orWhereHas('user', fn($uq) => $uq->whereIn('district_id', $districtIds));
+                });
             } else {
                 $query->whereRaw('1 = 0');
             }
@@ -186,7 +330,8 @@ class Index extends Component
         $disputes = $query->latest('disputed_at')->paginate(10);
 
         return view('livewire.admin.disputes.index', [
-            'disputes' => $disputes,
+            'disputes'      => $disputes,
+            'cancellations' => collect(),
         ]);
     }
 }

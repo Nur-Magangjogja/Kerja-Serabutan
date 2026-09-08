@@ -50,7 +50,8 @@ class Index extends Component
 
 
     protected $listeners = [
-        'admin-city-changed' => '$refresh',
+        'admin-district-changed' => '$refresh',
+        'admin-city-changed'     => '$refresh',
     ];
 
     public function updatedSearch()
@@ -79,7 +80,7 @@ class Index extends Component
         $user->verified = !$user->verified;
         $user->save();
 
-        session()->flash('message', 'User verification updated.');
+        session()->flash('message', 'User verification status updated.');
     }
 
     public function toggleStatus($id)
@@ -98,7 +99,7 @@ class Index extends Component
 
     public function viewUser($id)
     {
-        $user = User::with(['city', 'managedCities'])->find($id);
+        $user = User::with(['district', 'city', 'managedDistricts'])->find($id);
         if (!$user) {
             session()->flash('error', 'User not found');
             return;
@@ -111,7 +112,7 @@ class Index extends Component
 
     public function editUser($id)
     {
-        $user = User::with(['city', 'managedCities'])->find($id);
+        $user = User::with(['district', 'city', 'managedDistricts'])->find($id);
         if (!$user) {
             session()->flash('error', 'User not found');
             return;
@@ -125,9 +126,9 @@ class Index extends Component
         $this->status = $user->status ?? 'inactive';
         $this->verified = (bool) ($user->verified ?? false);
         
-        $managedIds = $user->managedCities->pluck('id')->map(fn($cid) => (int)$cid)->toArray();
-        if (empty($managedIds) && $user->city_id && $user->role === 'admin') {
-            $managedIds = [(int)$user->city_id];
+        $managedIds = $user->managedDistricts->pluck('id')->map(fn($cid) => (int)$cid)->toArray();
+        if (empty($managedIds) && $user->district_id && $user->role === 'admin') {
+            $managedIds = [(int)$user->district_id];
         }
         $this->managed_city_ids = $managedIds;
         $this->city_id = $user->city_id;
@@ -375,15 +376,15 @@ class Index extends Component
         $currentUser = auth()->user();
         $isSuperAdmin = in_array($currentUser->role ?? '', ['super_admin', 'superadmin']);
 
-        $query = User::with(['city', 'managedCities'])
+        $query = User::with(['district', 'city', 'managedDistricts'])
             ->withMax('helps', 'updated_at')
             ->withMax('takenHelps', 'updated_at')
             ->where('verified', true);
 
         if (! $isSuperAdmin) {
-            $managedCityIds = $currentUser ? $currentUser->getEffectiveAdminCityIds() : [];
-            if (!empty($managedCityIds)) {
-                $query->whereIn('city_id', $managedCityIds);
+            $managedDistrictIds = $currentUser ? $currentUser->getEffectiveAdminDistrictIds() : [];
+            if (!empty($managedDistrictIds)) {
+                $query->whereIn('district_id', $managedDistrictIds);
             } elseif ($currentUser && $currentUser->role === 'admin') {
                 $query->whereRaw('1 = 0');
             }

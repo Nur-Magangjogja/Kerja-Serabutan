@@ -23,6 +23,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'role',
         'city_id',
+        'district_id',
         'ktp_path',
         'verified',
         'status',
@@ -108,6 +109,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getFullAddressAttribute(): string
     {
         $parts = [];
+        if (!empty($this->kecamatan)) {
+            $parts[] = 'Kec. ' . $this->kecamatan;
+        } elseif ($this->district_id && $this->relationLoaded('district') && $this->district) {
+            $parts[] = 'Kec. ' . $this->district->name;
+        }
         if (!empty($this->city)) {
             $parts[] = $this->city;
         } elseif (!empty($this->city_name)) {
@@ -262,7 +268,274 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(City::class, 'city_id');
     }
 
-    // Cities managed by this admin (many-to-many)
+    public function district()
+    {
+        return $this->belongsTo(District::class, 'district_id');
+    }
+
+    // Districts managed by this admin (many-to-many)
+    public function managedDistricts()
+    {
+        return $this->belongsToMany(District::class, 'admin_district', 'user_id', 'district_id')
+                    ->withTimestamps();
+    }
+
+    public function districts()
+    {
+        return $this->managedDistricts();
+    }
+
+    /**
+     * Get all unique district IDs that this admin is authorized to manage.
+     * Merges the primary district_id with any districts in the admin_district pivot table.
+     *
+     * @return array<int>
+     */
+    public function getAdminDistrictIds(): array
+    {
+        if ($this->role !== 'admin') {
+            return [];
+        }
+
+        if ($this->relationLoaded('managedDistricts')) {
+            $managedIds = $this->managedDistricts->pluck('id')->all();
+        } else {
+            $managedIds = $this->managedDistricts()->allRelatedIds()->all();
+        }
+
+        if (!empty($managedIds)) {
+            return array_values(array_unique(array_map('intval', $managedIds)));
+        }
+
+        if (!empty($this->district_id)) {
+            return [(int) $this->district_id];
+        }
+
+        return [];
+    }
+
+    /**
+     * Check if admin has authority over a given district.
+     */
+    public function hasAccessToDistrict($districtId): bool
+    {
+        if (in_array($this->role, ['superadmin', 'super_admin'])) {
+            return true;
+        }
+
+        if ($this->role !== 'admin') {
+            return false;
+        }
+
+        $allowedIds = $this->getAdminDistrictIds();
+        return !empty($districtId) && in_array((int) $districtId, $allowedIds, true);
+    }
+
+    /**
+     * Get Collection of District models managed by this admin.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getAdminDistricts()
+    {
+        $districtIds = $this->getAdminDistrictIds();
+        if (empty($districtIds)) {
+            return collect();
+        }
+
+        return District::whereIn('id', $districtIds)->with('city')->orderBy('name')->get();
+    }
+
+    /**
+     * Get comma-separated names of all districts managed by this admin.
+     */
+    public function getAdminDistrictNamesAttribute(): string
+    {
+        $districts = $this->getAdminDistricts();
+        if ($districts->isEmpty()) {
+            return $this->kecamatan ?: ($this->district?->name ?: 'Semua Wilayah');
+        }
+
+        return $districts->pluck('name')->map(fn($n) => 'Kec. ' . $n)->join(', ');
+    }
+
+    /**
+     * Ambil filter wilayah kecamatan aktif admin dari sesi/cache.
+     * Mengembalikan 'all' atau ID kecamatan (string angka).
+     */
+    public function getActiveAdminDistrictFilter(): string
+    {
+        $cachedDistrict = cache()->get("admin_active_district_{$this->id}");
+        $sessionDistrict = session('admin_active_district_filter');
+
+        $active = $sessionDistrict ?? $cachedDistrict ?? 'all';
+        if ($active === 'all' || empty($active)) {
+            return 'all';
+        }
+
+        $allowedIds = $this->getAdminDistrictIds();
+        if (!in_array((int) $active, $allowedIds, true)) {
+            return 'all';
+        }
+
+        return (string) $active;
+    }
+
+    /**
+     * Set filter wilayah kecamatan aktif admin.
+     */
+    public function setActiveAdminDistrictFilter(?string $districtId): void
+    {
+        $val = ($districtId === null || $districtId === '' || $districtId === 'all') ? 'all' : (string) (int) $districtId;
+        if ($val !== 'all') {
+            $allowedIds = $this->getAdminDistrictIds();
+            if (!in_array((int) $val, $allowedIds, true)) {
+                $val = 'all';
+            }
+        }
+
+        session(['admin_active_district_filter' => $val]);
+        try {
+            cache()->put("admin_active_district_{$this->id}", $val, now()->addDays(7));
+        } catch (\Throwable $e) {
+            // ignore
+        }
+    }
+
+    /**
+     * Ambil array ID kecamatan yang sedang aktif berlaku untuk query data.
+     * Jika admin memfilter 1 kecamatan tertentu, kembalikan [district_id].
+     * Jika 'all', kembalikan seluruh kecamatan wewenangnya.
+     */
+    public function getEffectiveAdminDistrictIds(): array
+    {
+        $active = $this->getActiveAdminDistrictFilter();
+        if ($active !== 'all') {
+            return [(int) $active];
+        }
+
+        return $this->getAdminDistrictIds();
+    }
+
+    /**
+     * Label wilayah kecamatan aktif untuk header navbar admin.
+     */
+    public function getActiveAdminDistrictLabelAttribute(): string
+    {
+        $active = $this->getActiveAdminDistrictFilter();
+        if ($active === 'all') {
+            $districts = $this->getAdminDistricts();
+            if ($districts->count() === 1) {
+                return 'Kec. ' . $districts->first()->name;
+            } elseif ($districts->count() > 1) {
+                return "Semua Wilayah ({$districts->count()} Kecamatan)";
+            }
+            return 'Semua Wilayah Kecamatan';
+        }
+
+        $district = District::find((int) $active);
+        return $district ? 'Kec. ' . $district->name : 'Semua Wilayah Kecamatan';
+    }
+
+    /**
+     * Ambil konfigurasi wilayah aktif pantauan Super Admin.
+     *
+     * @return array{type: string, id: int|null, label: string}
+     */
+    public function getActiveSuperadminTerritory(): array
+    {
+        $sessionType = session('superadmin_active_territory_type');
+        $sessionId   = session('superadmin_active_territory_id');
+
+        $cachedType = cache()->get("superadmin_active_territory_type_{$this->id}");
+        $cachedId   = cache()->get("superadmin_active_territory_id_{$this->id}");
+
+        $type = $sessionType ?? $cachedType ?? 'all';
+        $id   = $sessionId ?? $cachedId ?? null;
+
+        if ($type === 'district' && $id) {
+            $district = District::with('city')->find((int) $id);
+            if ($district) {
+                $cityLabel = $district->city ? " ({$district->city->name})" : '';
+                return [
+                    'type'  => 'district',
+                    'id'    => (int) $id,
+                    'label' => "Kec. {$district->name}{$cityLabel}",
+                ];
+            }
+        } elseif ($type === 'city' && $id) {
+            $city = City::find((int) $id);
+            if ($city) {
+                return [
+                    'type'  => 'city',
+                    'id'    => (int) $id,
+                    'label' => "Kota {$city->name} (Semua Kec.)",
+                ];
+            }
+        }
+
+        return [
+            'type'  => 'all',
+            'id'    => null,
+            'label' => 'Semua Wilayah (Nasional)',
+        ];
+    }
+
+    /**
+     * Set wilayah aktif pantauan Super Admin ke sesi dan cache.
+     */
+    public function setActiveSuperadminTerritory(string $type, $id = null): void
+    {
+        $type = in_array($type, ['city', 'district'], true) ? $type : 'all';
+        $id   = ($type !== 'all' && $id) ? (int) $id : null;
+
+        session([
+            'superadmin_active_territory_type' => $type,
+            'superadmin_active_territory_id'   => $id,
+        ]);
+
+        try {
+            cache()->put("superadmin_active_territory_type_{$this->id}", $type, now()->addDays(7));
+            cache()->put("superadmin_active_territory_id_{$this->id}", $id, now()->addDays(7));
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        // Sync admin filter session for backwards compatibility
+        if ($type === 'district' && $id) {
+            session(['admin_active_district_filter' => (string) $id]);
+            $cityId = District::where('id', $id)->value('city_id');
+            session(['admin_active_city_filter' => $cityId ? (string) $cityId : 'all']);
+        } elseif ($type === 'city' && $id) {
+            session(['admin_active_district_filter' => 'all']);
+            session(['admin_active_city_filter' => (string) $id]);
+        } else {
+            session(['admin_active_district_filter' => 'all']);
+            session(['admin_active_city_filter' => 'all']);
+        }
+    }
+
+    /**
+     * Ambil array ID kecamatan yang sedang aktif berlaku untuk Super Admin.
+     * Jika 'all', kembalikan [] (artinya seluruh wilayah tanpa batas).
+     * Jika 'city', kembalikan seluruh ID kecamatan di kota tersebut.
+     * Jika 'district', kembalikan [district_id].
+     */
+    public function getEffectiveSuperadminDistrictIds(): array
+    {
+        $territory = $this->getActiveSuperadminTerritory();
+        if ($territory['type'] === 'district' && $territory['id']) {
+            return [(int) $territory['id']];
+        }
+
+        if ($territory['type'] === 'city' && $territory['id']) {
+            return District::where('city_id', (int) $territory['id'])->pluck('id')->map(fn($id) => (int)$id)->all();
+        }
+
+        return [];
+    }
+
+    // Cities managed by this admin (derived from managed districts)
     public function managedCities()
     {
         return $this->belongsToMany(City::class, 'admin_city', 'user_id', 'city_id')
@@ -270,8 +543,7 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Get all unique city IDs that this admin is authorized to manage.
-     * Merges the primary city_id with any cities in the admin_city pivot table.
+     * Get parent city IDs of districts managed by this admin.
      *
      * @return array<int>
      */
@@ -281,17 +553,11 @@ class User extends Authenticatable implements MustVerifyEmail
             return [];
         }
 
-        if ($this->relationLoaded('managedCities')) {
-            $managedIds = $this->managedCities->pluck('id')->all();
-        } else {
-            $managedIds = $this->managedCities()->allRelatedIds()->all();
+        $districtIds = $this->getAdminDistrictIds();
+        if (!empty($districtIds)) {
+            return District::whereIn('id', $districtIds)->pluck('city_id')->unique()->filter()->map(fn($id) => (int)$id)->values()->all();
         }
 
-        if (!empty($managedIds)) {
-            return array_values(array_unique(array_map('intval', $managedIds)));
-        }
-
-        // Fallback ke primary city_id hanya jika belum ada relasi pivot managedCities
         if (!empty($this->city_id)) {
             return [(int) $this->city_id];
         }
@@ -300,7 +566,7 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Get Collection of City models managed by this admin.
+     * Get Collection of City models derived from districts managed by this admin.
      *
      * @return \Illuminate\Database\Eloquent\Collection
      */
@@ -311,7 +577,7 @@ class User extends Authenticatable implements MustVerifyEmail
             return collect();
         }
 
-        return City::whereIn('id', $cityIds)->get();
+        return City::whereIn('id', $cityIds)->orderBy('name')->get();
     }
 
     /**

@@ -8,6 +8,9 @@
             this.message = event.detail.message || 'Success!';
             this.type = event.detail.type || 'success';
             this.show = true;
+            if (window.playNotificationSound) {
+                window.playNotificationSound();
+            }
             setTimeout(() => { this.show = false }, 3000);
         });
     }

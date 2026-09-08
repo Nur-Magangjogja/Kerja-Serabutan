@@ -13,16 +13,18 @@ class CompletedHelpsSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get budi@example.com user (customer)
-        $customer = User::where('email', 'budi@example.com')->first();
+        // Get customer user
+        $customer = User::where('email', 'customer@sayabantu.com')->first() 
+            ?? User::where('role', 'customer')->first();
         
         if (!$customer) {
-            $this->command->error('User budi@example.com not found. Run UserSeeder first.');
+            $this->command->error('No customer user found. Run UserSeeder first.');
             return;
         }
 
         // Get a mitra user
-        $mitra = User::where('role', 'mitra')->first();
+        $mitra = User::where('email', 'mitra@sayabantu.com')->first()
+            ?? User::where('role', 'mitra')->first();
         
         if (!$mitra) {
             $this->command->error('No mitra user found. Run UserSeeder first.');
@@ -41,10 +43,15 @@ class CompletedHelpsSeeder extends Seeder
         }
 
         foreach ($helps as $help) {
+            $completedDate = now()->subDays(rand(1, 7));
             $help->update([
-                'status' => 'selesai',
-                'mitra_id' => $mitra->id,
-                'updated_at' => now()->subDays(rand(1, 7)),
+                'status'         => Help::STATUS_SELESAI,
+                'escrow_status'  => Help::ESCROW_STATUS_RELEASED,
+                'payment_status' => Help::PAYMENT_STATUS_PAID,
+                'rating_status'  => Help::RATING_STATUS_RATED,
+                'mitra_id'       => $mitra->id,
+                'completed_at'   => $completedDate,
+                'updated_at'     => $completedDate,
             ]);
         }
 

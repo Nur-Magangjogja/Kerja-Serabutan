@@ -5,6 +5,7 @@ namespace App\Livewire\Admin\Dashboard;
 use App\Models\Help;
 use App\Models\Registration;
 use App\Models\User;
+use App\Models\District;
 use App\Models\City;
 use App\Models\BalanceTransaction;
 use Livewire\Component;
@@ -17,16 +18,20 @@ use Carbon\Carbon;
 class Index extends Component
 {
     public $selectedMonth = '';
-    public $selectedCity = 'all';
+    public $selectedDistrict = 'all';
+    public $selectedCity = 'all'; // Backward compatibility alias
+
     protected $listeners = [
-        'admin-city-changed' => 'onAdminCityChanged',
+        'admin-district-changed' => 'onAdminDistrictChanged',
+        'admin-city-changed'     => 'onAdminDistrictChanged',
     ];
 
     public function mount()
     {
         // Default to current month (e.g. 2026-09)
         $this->selectedMonth = Carbon::today()->format('Y-m');
-        $this->selectedCity = auth()->user()?->getActiveAdminCityFilter() ?? 'all';
+        $this->selectedDistrict = auth()->user()?->getActiveAdminDistrictFilter() ?? 'all';
+        $this->selectedCity = $this->selectedDistrict;
     }
 
     public function updatedSelectedMonth()
@@ -40,23 +45,36 @@ class Index extends Component
         $this->dispatch('chart-refresh');
     }
 
+    public function setDistrictFilter(string $district)
+    {
+        $this->selectedDistrict = $district;
+        $this->selectedCity = $district;
+        auth()->user()?->setActiveAdminDistrictFilter($district);
+        $this->dispatch('chart-refresh');
+        $this->dispatch('admin-district-changed', districtId: $district);
+    }
+
+    // Alias for backward compatibility
     public function setCityFilter(string $city)
     {
-        $this->selectedCity = $city;
-        auth()->user()?->setActiveAdminCityFilter($city);
+        $this->setDistrictFilter($city);
+    }
+
+    public function onAdminDistrictChanged($districtId = null)
+    {
+        $admin = auth()->user();
+        $target = (string) ($districtId ?? ($admin ? $admin->getActiveAdminDistrictFilter() : 'all'));
+        if ($admin && $admin->role === 'admin') {
+            $admin->setActiveAdminDistrictFilter($target);
+        }
+        $this->selectedDistrict = $target;
+        $this->selectedCity = $target;
         $this->dispatch('chart-refresh');
-        $this->dispatch('admin-city-changed', cityId: $city);
     }
 
     public function onAdminCityChanged($cityId = null)
     {
-        $admin = auth()->user();
-        $targetCity = (string) ($cityId ?? ($admin ? $admin->getActiveAdminCityFilter() : 'all'));
-        if ($admin && $admin->role === 'admin') {
-            $admin->setActiveAdminCityFilter($targetCity);
-        }
-        $this->selectedCity = $targetCity;
-        $this->dispatch('chart-refresh');
+        $this->onAdminDistrictChanged($cityId);
     }
 
     public function prevMonth()
@@ -95,23 +113,24 @@ class Index extends Component
     {
         $user = auth()->user();
         
-        // Multi-City Resolution
-        $allowedCityIds = ($user && $user->role === 'admin') ? $user->getAdminCityIds() : [];
-        $managedCities = ($user && $user->role === 'admin') ? $user->getAdminCities() : collect();
+        // District Resolution for Admin
+        $allowedDistrictIds = ($user && $user->role === 'admin') ? $user->getAdminDistrictIds() : [];
+        $managedDistricts = ($user && $user->role === 'admin') ? $user->getAdminDistricts() : collect();
 
-        // Determine active city scope
+        // Determine active district scope
         if ($user && $user->role === 'admin') {
-            if ($this->selectedCity !== 'all' && in_array((int) $this->selectedCity, $allowedCityIds, true)) {
-                $activeCityIds = [(int) $this->selectedCity];
-                $activeCityLabel = $managedCities->firstWhere('id', (int) $this->selectedCity)?->name ?? 'Wilayah Terpilih';
+            if ($this->selectedDistrict !== 'all' && in_array((int) $this->selectedDistrict, $allowedDistrictIds, true)) {
+                $activeDistrictIds = [(int) $this->selectedDistrict];
+                $districtObj = $managedDistricts->firstWhere('id', (int) $this->selectedDistrict);
+                $activeDistrictLabel = $districtObj ? 'Kec. ' . $districtObj->name : 'Wilayah Terpilih';
             } else {
-                $this->selectedCity = $user->getActiveAdminCityFilter();
-                $activeCityIds = $user->getEffectiveAdminCityIds();
-                $activeCityLabel = $user->active_admin_city_label;
+                $this->selectedDistrict = $user->getActiveAdminDistrictFilter();
+                $activeDistrictIds = $user->getEffectiveAdminDistrictIds();
+                $activeDistrictLabel = $user->active_admin_district_label;
             }
         } else {
-            $activeCityIds = $allowedCityIds;
-            $activeCityLabel = 'Semua Wilayah';
+            $activeDistrictIds = $allowedDistrictIds;
+            $activeDistrictLabel = 'Semua Wilayah';
         }
 
         // 1. Build Available Months list (Current month + past 11 months)
@@ -153,13 +172,13 @@ class Index extends Component
             $endOfMonth = null;
         }
 
-        // 2. Base Help Query (Multi-City Scoped)
+        // 2. Base Help Query (District Scoped)
         $baseHelpQuery = Help::query();
-        if (!empty($activeCityIds)) {
-            $baseHelpQuery->where(function ($q) use ($activeCityIds) {
-                $q->whereIn('city_id', $activeCityIds)
-                  ->orWhereHas('customer', function ($cq) use ($activeCityIds) {
-                      $cq->whereIn('city_id', $activeCityIds);
+        if (!empty($activeDistrictIds)) {
+            $baseHelpQuery->where(function ($q) use ($activeDistrictIds) {
+                $q->whereIn('district_id', $activeDistrictIds)
+                  ->orWhereHas('customer', function ($cq) use ($activeDistrictIds) {
+                      $cq->whereIn('district_id', $activeDistrictIds);
                   });
             });
         } elseif ($user && $user->role === 'admin') {
@@ -180,8 +199,8 @@ class Index extends Component
 
         // 3. KTP / Registration Verifications
         $baseRegQuery = Registration::query();
-        if (!empty($activeCityIds)) {
-            $baseRegQuery->whereIn('city_id', $activeCityIds);
+        if (!empty($activeDistrictIds)) {
+            $baseRegQuery->whereIn('district_id', $activeDistrictIds);
         } elseif ($user && $user->role === 'admin') {
             $baseRegQuery->whereRaw('1 = 0');
         }
@@ -194,8 +213,8 @@ class Index extends Component
 
         // Total Verified Mitras
         $mitraQuery = User::where('role', 'mitra');
-        if (!empty($activeCityIds)) {
-            $mitraQuery->whereIn('city_id', $activeCityIds);
+        if (!empty($activeDistrictIds)) {
+            $mitraQuery->whereIn('district_id', $activeDistrictIds);
         } elseif ($user && $user->role === 'admin') {
             $mitraQuery->whereRaw('1 = 0');
         }
@@ -208,9 +227,9 @@ class Index extends Component
         // 4. Pending Top-Up Approvals
         $topupQuery = BalanceTransaction::where('type', 'topup')
             ->where('status', 'waiting_approval');
-        if (!empty($activeCityIds)) {
-            $topupQuery->whereHas('user', function ($q) use ($activeCityIds) {
-                $q->whereIn('city_id', $activeCityIds);
+        if (!empty($activeDistrictIds)) {
+            $topupQuery->whereHas('user', function ($q) use ($activeDistrictIds) {
+                $q->whereIn('district_id', $activeDistrictIds);
             });
         } elseif ($user && $user->role === 'admin') {
             $topupQuery->whereRaw('1 = 0');
@@ -219,9 +238,9 @@ class Index extends Component
 
         // 5. Pending Withdraw Requests
         $withdrawQuery = \App\Models\WithdrawRequest::where('status', \App\Models\WithdrawRequest::STATUS_PENDING);
-        if (!empty($activeCityIds)) {
-            $withdrawQuery->whereHas('user', function ($q) use ($activeCityIds) {
-                $q->whereIn('city_id', $activeCityIds);
+        if (!empty($activeDistrictIds)) {
+            $withdrawQuery->whereHas('user', function ($q) use ($activeDistrictIds) {
+                $q->whereIn('district_id', $activeDistrictIds);
             });
         } elseif ($user && $user->role === 'admin') {
             $withdrawQuery->whereRaw('1 = 0');
@@ -230,7 +249,7 @@ class Index extends Component
 
         // 6. Latest 6 Helps in Selected Period
         $latestHelps = (clone $helpQuery)
-            ->with(['customer', 'user', 'city'])
+            ->with(['customer', 'user', 'district', 'city'])
             ->latest()
             ->take(6)
             ->get();
@@ -337,9 +356,12 @@ class Index extends Component
         }
 
         return view('livewire.admin.dashboard.index', [
-            'managedCities'          => $managedCities,
-            'selectedCity'           => $this->selectedCity,
-            'activeCityLabel'        => $activeCityLabel,
+            'managedDistricts'       => $managedDistricts,
+            'managedCities'          => $managedDistricts, // For backward view compatibility
+            'selectedDistrict'       => $this->selectedDistrict,
+            'selectedCity'           => $this->selectedDistrict,
+            'activeDistrictLabel'    => $activeDistrictLabel,
+            'activeCityLabel'        => $activeDistrictLabel,
             'selectedMonth'          => $this->selectedMonth,
             'availableMonths'        => $availableMonths,
             'periodLabel'            => $periodLabel,

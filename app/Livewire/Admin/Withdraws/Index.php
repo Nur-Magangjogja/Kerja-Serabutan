@@ -5,6 +5,7 @@ namespace App\Livewire\Admin\Withdraws;
 use App\Models\WithdrawRequest;
 use App\Models\BalanceTransaction;
 use App\Models\UserBalance;
+use App\Models\District;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -16,7 +17,8 @@ class Index extends Component
     public $search = '';
     public $status = 'all';
     public $roleFilter = 'all'; // all, mitra, customer
-    public $cityFilter = 'all'; // all or city_id
+    public $districtFilter = 'all'; // all or district_id
+    public $cityFilter = 'all'; // Backward compatibility alias
 
     // Approval Modal
     public $showApproveModal = false;
@@ -35,14 +37,16 @@ class Index extends Component
     ];
 
     protected $listeners = [
-        'admin-city-changed' => 'onAdminCityChanged',
+        'admin-district-changed' => 'onAdminDistrictChanged',
+        'admin-city-changed'     => 'onAdminDistrictChanged',
     ];
 
     public function mount()
     {
         $admin = auth()->user();
         if ($admin && $admin->role === 'admin') {
-            $this->cityFilter = $admin->getActiveAdminCityFilter();
+            $this->districtFilter = $admin->getActiveAdminDistrictFilter();
+            $this->cityFilter = $this->districtFilter;
         }
     }
 
@@ -61,28 +65,41 @@ class Index extends Component
         $this->resetPage();
     }
 
-    public function updatingCityFilter()
+    public function updatingDistrictFilter()
     {
+        $this->resetPage();
+    }
+
+    public function updatedDistrictFilter()
+    {
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $admin->setActiveAdminDistrictFilter($this->districtFilter);
+            $this->cityFilter = $this->districtFilter;
+            $this->dispatch('admin-district-changed', districtId: $this->districtFilter);
+        }
         $this->resetPage();
     }
 
     public function updatedCityFilter()
     {
+        $this->districtFilter = $this->cityFilter;
+        $this->updatedDistrictFilter();
+    }
+
+    public function onAdminDistrictChanged($districtId = null)
+    {
         $admin = auth()->user();
         if ($admin && $admin->role === 'admin') {
-            $admin->setActiveAdminCityFilter($this->cityFilter);
-            $this->dispatch('admin-city-changed', cityId: $this->cityFilter);
+            $this->districtFilter = $admin->getActiveAdminDistrictFilter();
+            $this->cityFilter = $this->districtFilter;
+            $this->resetPage();
         }
-        $this->resetPage();
     }
 
     public function onAdminCityChanged($cityId = null)
     {
-        $admin = auth()->user();
-        if ($admin && $admin->role === 'admin') {
-            $this->cityFilter = $admin->getActiveAdminCityFilter();
-            $this->resetPage();
-        }
+        $this->onAdminDistrictChanged($cityId);
     }
 
     protected function isAuthorizedForWithdraw(WithdrawRequest $withdraw): bool
@@ -91,9 +108,9 @@ class Index extends Component
         if (!$admin) return false;
         if (in_array($admin->role, ['super_admin', 'superadmin'])) return true;
         if ($admin->role === 'admin') {
-            $allowedCityIds = $admin->getAdminCityIds();
-            $userCityId = $withdraw->user?->city_id;
-            return !empty($userCityId) && in_array((int) $userCityId, $allowedCityIds, true);
+            $allowedDistrictIds = $admin->getAdminDistrictIds();
+            $userDistrictId = $withdraw->user?->district_id;
+            return !empty($userDistrictId) && in_array((int) $userDistrictId, $allowedDistrictIds, true);
         }
         return false;
     }
@@ -101,10 +118,10 @@ class Index extends Component
     public function openApproveModal($id)
     {
         $this->selectedWithdrawId = $id;
-        $withdraw = WithdrawRequest::with(['user.balance', 'user.city'])->findOrFail($id);
+        $withdraw = WithdrawRequest::with(['user.balance', 'user.district', 'user.city'])->findOrFail($id);
         
         if (!$this->isAuthorizedForWithdraw($withdraw)) {
-            session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah Anda.');
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah wewenang Anda.');
             return;
         }
 
@@ -131,7 +148,7 @@ class Index extends Component
 
         if (!$this->isAuthorizedForWithdraw($withdraw)) {
             $this->showApproveModal = false;
-            session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah Anda.');
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah wewenang Anda.');
             return;
         }
 
@@ -167,10 +184,10 @@ class Index extends Component
     public function openRejectModal($id)
     {
         $this->selectedWithdrawId = $id;
-        $withdraw = WithdrawRequest::with(['user.balance', 'user.city'])->findOrFail($id);
+        $withdraw = WithdrawRequest::with(['user.balance', 'user.district', 'user.city'])->findOrFail($id);
 
         if (!$this->isAuthorizedForWithdraw($withdraw)) {
-            session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah Anda.');
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah wewenang Anda.');
             return;
         }
 
@@ -197,7 +214,7 @@ class Index extends Component
 
         if (!$this->isAuthorizedForWithdraw($withdraw)) {
             $this->showRejectModal = false;
-            session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah Anda.');
+            session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah wewenang Anda.');
             return;
         }
 
@@ -243,25 +260,26 @@ class Index extends Component
         $admin = auth()->user();
         $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
 
-        // Ambil daftar kota untuk filter
+        // Ambil daftar kecamatan untuk filter
         if ($isSuperAdmin) {
-            $cities = \App\Models\City::orderBy('name')->get();
+            $districts = District::with('city')->orderBy('name')->get();
         } else {
-            $cities = $admin ? $admin->getAdminCities() : collect();
+            $districts = $admin ? $admin->getAdminDistricts() : collect();
         }
 
-        $query = WithdrawRequest::with(['user.city'])->latest();
+        $query = WithdrawRequest::with(['user.district', 'user.city'])->latest();
 
         if (! $isSuperAdmin) {
-            $this->cityFilter = $admin ? $admin->getActiveAdminCityFilter() : 'all';
-            $effectiveCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
-            if (!empty($effectiveCityIds)) {
-                $query->whereHas('user', fn($q) => $q->whereIn('city_id', $effectiveCityIds));
+            $this->districtFilter = $admin ? $admin->getActiveAdminDistrictFilter() : 'all';
+            $this->cityFilter = $this->districtFilter;
+            $effectiveDistrictIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
+            if (!empty($effectiveDistrictIds)) {
+                $query->whereHas('user', fn($q) => $q->whereIn('district_id', $effectiveDistrictIds));
             } elseif ($admin && $admin->role === 'admin') {
                 $query->whereRaw('1 = 0');
             }
-        } elseif ($this->cityFilter !== 'all') {
-            $query->whereHas('user', fn($q) => $q->where('city_id', (int) $this->cityFilter));
+        } elseif ($this->districtFilter !== 'all') {
+            $query->whereHas('user', fn($q) => $q->where('district_id', (int) $this->districtFilter));
         }
 
         if ($this->status !== 'all') {
@@ -281,6 +299,7 @@ class Index extends Component
                   ->orWhereHas('user', function ($sq) use ($s) {
                       $sq->where('name', 'like', "%{$s}%")
                         ->orWhere('email', 'like', "%{$s}%")
+                        ->orWhereHas('district', fn($dq) => $dq->where('name', 'like', "%{$s}%"))
                         ->orWhereHas('city', fn($cq) => $cq->where('name', 'like', "%{$s}%"));
                   });
             });
@@ -290,9 +309,12 @@ class Index extends Component
         $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 
         return view('livewire.admin.withdraws.index', [
-            'withdraws'    => $withdraws,
-            'cities'       => $cities,
-            'isSuperAdmin' => $isSuperAdmin,
+            'withdraws'        => $withdraws,
+            'districts'        => $districts,
+            'cities'           => $districts, // Backward compatibility
+            'districtFilter'   => $this->districtFilter,
+            'cityFilter'       => $this->districtFilter,
+            'isSuperAdmin'     => $isSuperAdmin,
         ])->layout($layout);
     }
 }

@@ -6,17 +6,21 @@ use Livewire\Component;
 
 class TerritorySwitcher extends Component
 {
-    protected $listeners = ['admin-city-changed' => '$refresh'];
+    protected $listeners = [
+        'admin-district-changed' => '$refresh',
+        'admin-city-changed'     => '$refresh',
+    ];
 
-    public function selectCity($cityId)
+    public function selectDistrict($districtId)
     {
         $user = auth()->user();
         if (!$user || $user->role !== 'admin') {
             return;
         }
 
-        $user->setActiveAdminCityFilter((string) $cityId);
-        $this->dispatch('admin-city-changed', cityId: $cityId);
+        $user->setActiveAdminDistrictFilter((string) $districtId);
+        $this->dispatch('admin-district-changed', districtId: $districtId);
+        $this->dispatch('admin-city-changed', cityId: $districtId);
         $this->dispatch('chart-refresh');
     }
 
@@ -29,20 +33,21 @@ class TerritorySwitcher extends Component
             HTML;
         }
 
-        $managedCities = $user->getAdminCities();
-        if ($managedCities->count() <= 1) {
+        $managedDistricts = $user->getAdminDistricts();
+
+        if ($managedDistricts->count() <= 1) {
             return <<<'HTML'
             <div></div>
             HTML;
         }
 
-        $activeFilter = $user->getActiveAdminCityFilter();
-        $activeLabel  = $user->active_admin_city_label;
+        $activeDistrictFilter = $user->getActiveAdminDistrictFilter();
+        $activeLabel          = $user->active_admin_district_label;
 
         return view('livewire.admin.territory-switcher', [
-            'managedCities' => $managedCities,
-            'activeFilter'  => $activeFilter,
-            'activeLabel'   => $activeLabel,
+            'managedDistricts'     => $managedDistricts,
+            'activeDistrictFilter' => $activeDistrictFilter,
+            'activeLabel'          => $activeLabel,
         ]);
     }
 }

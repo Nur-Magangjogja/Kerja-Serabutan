@@ -39,6 +39,9 @@
     @show-status-notification.window="
         notificationMessage = $event.detail.message;
         showNotification = true;
+        if (window.playNotificationSound) {
+            window.playNotificationSound();
+        }
         setTimeout(() => showNotification = false, 5000);
     "
 >
@@ -134,12 +137,38 @@
                         <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200/60 dark:border-sky-800/60">
                             {{ $help->category->name ?? 'Jasa / Bantuan' }}
                         </span>
-                        <span class="text-sm font-black text-sky-600 dark:text-sky-400">
-                            Rp {{ number_format($help->amount, 0, ',', '.') }}
-                        </span>
+                        <div class="text-right">
+                            <span class="text-[10px] text-gray-400 block font-medium">Total Terbayar (Escrow)</span>
+                            <span class="text-base font-black text-sky-600 dark:text-sky-400">
+                                Rp {{ number_format($help->amount, 0, ',', '.') }}
+                            </span>
+                        </div>
                     </div>
                     <h2 class="font-bold text-base text-gray-900 dark:text-white leading-snug">{{ $help->title }}</h2>
                 </div>
+            </div>
+
+            {{-- Financial Breakdown (Revisi 3) --}}
+            <div class="bg-gray-50/80 dark:bg-gray-750/70 p-3 rounded-xl border border-gray-100 dark:border-gray-700/60 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                <div>
+                    <span class="text-[10px] text-gray-400 block font-medium">Biaya Jasa</span>
+                    <span class="font-bold text-gray-800 dark:text-gray-200">Rp {{ number_format($help->service_fee ?: $help->amount, 0, ',', '.') }}</span>
+                </div>
+                <div>
+                    <span class="text-[10px] text-gray-400 block font-medium">Biaya Perjalanan</span>
+                    <span class="font-bold text-blue-600 dark:text-blue-400">
+                        Rp {{ number_format($help->travel_fee, 0, ',', '.') }}
+                        @if($help->travel_distance_km || $help->route_distance_km)
+                            <span class="text-[9px] font-normal text-gray-500">({{ number_format($help->travel_distance_km ?? $help->route_distance_km, 1) }} km)</span>
+                        @endif
+                    </span>
+                </div>
+                @if($help->service_type === 'buy_for_customer' && $help->item_fund > 0)
+                    <div class="col-span-2 sm:col-span-1">
+                        <span class="text-[10px] text-amber-600 dark:text-amber-400 block font-medium">Titipan Belanja (Escrow)</span>
+                        <span class="font-bold text-amber-700 dark:text-amber-300">Rp {{ number_format($help->item_fund, 0, ',', '.') }}</span>
+                    </div>
+                @endif
             </div>
 
             {{-- Partner Info --}}
@@ -256,11 +285,11 @@
             </div>
         </div>
 
-        {{-- Progress Stepper Card --}}
+        {{-- Progress Stepper Card (Revisi 3 Dynamic Multi-Stage Stepper) --}}
         <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60">
             <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100 dark:border-gray-700/50">
                 <div>
-                    <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Progres Pesanan</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Progres & Tahapan Layanan</span>
                     <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5 mt-0.5">
                         <span>{{ $help->progress_icon }}</span>
                         <span>{{ $help->progress_summary }}</span>
@@ -268,39 +297,43 @@
                 </div>
                 <div class="text-right">
                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-extrabold bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800">
-                        {{ $help->progress_percentage }}%
+                        {{ $help->multi_stage_progress_percentage }}%
                     </span>
                 </div>
             </div>
 
-            <!-- Stepper 5-Steps Horizontal -->
+            <!-- Dynamic Stepper -->
+            @php
+                $multiSteps = $help->multi_stage_steps ?? [];
+                $stepCount = is_countable($multiSteps) ? count($multiSteps) : 0;
+                $isDone = in_array($help->status, ['selesai', 'completed']);
+                
+                $activeIndex = 0;
+                foreach ($multiSteps as $idx => $st) {
+                    if (!empty($st['active'])) {
+                        $activeIndex = $idx;
+                        break;
+                    }
+                }
+                if ($isDone && $stepCount > 0) $activeIndex = $stepCount - 1;
+            @endphp
+
             <div class="relative pt-2 pb-1">
                 <!-- Connecting Line -->
                 <div class="absolute top-6 left-6 right-6 h-1 bg-gray-100 dark:bg-gray-700 -z-0">
                     <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-700 rounded-full"
-                         style="width: {{ max(0, min(100, ($help->progress_step - 1) * 25)) }}%;"></div>
+                         style="width: {{ $stepCount > 1 ? max(0, min(100, ($activeIndex / ($stepCount - 1)) * 100)) : 0 }}%;"></div>
                 </div>
 
                 <!-- Step Nodes -->
                 <div class="flex items-start justify-between relative z-10">
-                    @php
-                        $steps = [
-                            ['step' => 1, 'icon' => '🔍', 'title' => 'Mencari'],
-                            ['step' => 2, 'icon' => '🤝', 'title' => 'Diambil'],
-                            ['step' => 3, 'icon' => '🛵', 'title' => 'Menuju Lokasi'],
-                            ['step' => 4, 'icon' => '⚡', 'title' => 'Pengerjaan'],
-                            ['step' => 5, 'icon' => '✅', 'title' => 'Selesai'],
-                        ];
-                        $currentStep = $help->progress_step;
-                        $isDone = in_array($help->status, ['selesai', 'completed']);
-                    @endphp
-
-                    @foreach($steps as $s)
+                    @foreach($multiSteps as $idx => $s)
                         @php
-                            $isPassed = $s['step'] < $currentStep || ($s['step'] === 5 && $isDone);
-                            $isCurrent = $s['step'] === $currentStep && !$isDone;
+                            $isPassed = $idx < $activeIndex || ($idx === $stepCount - 1 && $isDone);
+                            $isCurrent = $idx === $activeIndex && !$isDone;
+                            $colWidth = $stepCount > 0 ? (100 / $stepCount) : 20;
                         @endphp
-                        <div class="flex flex-col items-center text-center" style="width: 18%;">
+                        <div class="flex flex-col items-center text-center" style="width: {{ $colWidth }}%;">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 shadow-xs
                                 {{ $isPassed ? 'bg-blue-600 text-white shadow-blue-500/30' : ($isCurrent ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 dark:ring-indigo-900/50 animate-pulse' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500') }}">
                                 @if($isPassed)
@@ -328,6 +361,56 @@
                 </button>
             @endif
         </div>
+
+        {{-- Countdown Multi-Timer Display (Revisi 3) --}}
+        @if($help->departure_at || $help->estimated_arrival_at || $help->service_scheduled_at)
+            <div class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-4 rounded-2xl shadow-md border border-indigo-900/50 mt-2 space-y-3"
+                 x-data="{
+                     now: new Date().getTime(),
+                     depTime: {{ $help->departure_at ? "'" . $help->departure_at->toIso8601String() . "'" : "null" }},
+                     arrTime: {{ $help->estimated_arrival_at ? "'" . $help->estimated_arrival_at->toIso8601String() . "'" : "null" }},
+                     schedTime: {{ $help->service_scheduled_at ? "'" . $help->service_scheduled_at->toIso8601String() . "'" : "null" }},
+                     formatDiff(target) {
+                         if (!target) return '--';
+                         const diff = new Date(target).getTime() - this.now;
+                         if (diff <= 0) return 'Waktu Terlewati';
+                         const m = Math.floor(diff / 60000);
+                         const s = Math.floor((diff % 60000) / 1000);
+                         const h = Math.floor(m / 60);
+                         if (h > 0) return `${h} jam ${m % 60} mnt`;
+                         return `${m} mnt ${s} dtk`;
+                     }
+                 }"
+                 x-init="setInterval(() => now = new Date().getTime(), 1000)">
+                <div class="flex items-center justify-between border-b border-indigo-800/60 pb-2">
+                    <span class="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Estimasi Waktu Layanan
+                    </span>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-900/80 text-indigo-200">Live Client Sync</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
+                    @if($help->departure_at && !in_array($help->status, ['in_progress', 'waiting_customer_confirmation', 'completed', 'selesai']))
+                        <div class="bg-white/10 rounded-xl p-2.5">
+                            <span class="text-[10px] text-indigo-200 block">Jadwal Keberangkatan</span>
+                            <span class="text-xs font-extrabold text-amber-300 font-mono" x-text="formatDiff(depTime)"></span>
+                        </div>
+                    @endif
+                    @if($help->estimated_arrival_at && in_array($help->status, ['partner_on_the_way', 'taken']))
+                        <div class="bg-white/10 rounded-xl p-2.5">
+                            <span class="text-[10px] text-indigo-200 block">Estimasi Tiba (ETA)</span>
+                            <span class="text-xs font-extrabold text-emerald-300 font-mono" x-text="formatDiff(arrTime)"></span>
+                        </div>
+                    @endif
+                    @if($help->service_scheduled_at)
+                        <div class="bg-white/10 rounded-xl p-2.5">
+                            <span class="text-[10px] text-indigo-200 block">Jadwal Dimulai</span>
+                            <span class="text-xs font-extrabold text-white font-mono" x-text="formatDiff(schedTime)"></span>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
 
         {{-- Location --}}
         <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 space-y-3">

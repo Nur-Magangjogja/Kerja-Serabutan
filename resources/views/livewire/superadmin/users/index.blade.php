@@ -128,17 +128,17 @@
                             </div>
                         </td>
                         <td class="px-4 py-3.5 hidden lg:table-cell">
-                            @if($user->role === 'admin' && $user->managedCities && $user->managedCities->count() > 0)
+                            @if($user->role === 'admin' && $user->managedDistricts && $user->managedDistricts->count() > 0)
                                 <div class="flex flex-wrap gap-1">
-                                    @foreach($user->managedCities->take(2) as $mc)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">{{ $mc->name }}</span>
+                                    @foreach($user->managedDistricts->take(2) as $md)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">Kec. {{ $md->name }}</span>
                                     @endforeach
-                                    @if($user->managedCities->count() > 2)
-                                    <span class="text-xs text-gray-400 dark:text-gray-500">+{{ $user->managedCities->count() - 2 }}</span>
+                                    @if($user->managedDistricts->count() > 2)
+                                    <span class="text-xs text-gray-400 dark:text-gray-500">+{{ $user->managedDistricts->count() - 2 }}</span>
                                     @endif
                                 </div>
                             @else
-                                <span class="text-gray-500 dark:text-gray-400">{{ $user->city_name ?? '—' }}</span>
+                                <span class="text-gray-500 dark:text-gray-400">{{ $user->district ? 'Kec. ' . $user->district->name : ($user->city_name ?? '—') }}</span>
                             @endif
                         </td>
                         <td class="px-4 py-3.5 text-xs text-gray-500 dark:text-gray-400 hidden lg:table-cell whitespace-nowrap">{{ $user->created_at->format('d M Y') }}</td>
@@ -303,31 +303,31 @@
                             <div class="flex items-center justify-between">
                                 <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                                     <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                    Wilayah Kota yang Dikelola
+                                    Wilayah Kecamatan yang Dikelola
                                 </h4>
                                 <span class="text-xs font-semibold text-primary-600 dark:text-primary-400">
-                                    {{ $selectedUser->managedCities ? $selectedUser->managedCities->count() : ($selectedUser->city ? 1 : 0) }} Kota
+                                    {{ $selectedUser->managedDistricts ? $selectedUser->managedDistricts->count() : ($selectedUser->district ? 1 : 0) }} Kecamatan
                                 </span>
                             </div>
-                            @if($selectedUser->managedCities && $selectedUser->managedCities->count() > 0)
+                            @if($selectedUser->managedDistricts && $selectedUser->managedDistricts->count() > 0)
                                 <div class="flex flex-wrap gap-2 pt-1">
-                                    @foreach($selectedUser->managedCities as $mc)
+                                    @foreach($selectedUser->managedDistricts as $md)
                                     <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600 shadow-2xs">
                                         <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
-                                        {{ $mc->name }}
-                                        @if($mc->province)
-                                            <span class="text-[10px] text-gray-400 font-normal">({{ $mc->province }})</span>
+                                        Kec. {{ $md->name }}
+                                        @if($md->city)
+                                            <span class="text-[10px] text-gray-400 font-normal">({{ $md->city->name }})</span>
                                         @endif
                                     </span>
                                     @endforeach
                                 </div>
-                            @elseif($selectedUser->city || $selectedUser->city_id)
+                            @elseif($selectedUser->district || $selectedUser->district_id)
                                 <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600 shadow-2xs">
                                     <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
-                                    {{ $selectedUser->city_name ?? (is_object($selectedUser->city) ? $selectedUser->city->name : $selectedUser->city) }}
+                                    Kec. {{ is_object($selectedUser->district) ? $selectedUser->district->name : $selectedUser->kecamatan }}
                                 </span>
                             @else
-                                <p class="text-xs text-gray-400 italic">Belum ada kota yang ditugaskan ke admin ini.</p>
+                                <p class="text-xs text-gray-400 italic">Belum ada kecamatan yang ditugaskan ke admin ini.</p>
                             @endif
                         </div>
                         @endif

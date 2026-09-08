@@ -16,13 +16,19 @@ class UpdateProfileInformationForm extends Component
     public string $cityQuery = '';
     public array $searchResults = [];
 
+    public $district_id;
+    public $kecamatan;
+    public array $districtsList = [];
+
     protected $rules = [
         'name' => ['required', 'string', 'max:255'],
         'email' => ['required', 'email', 'max:255'],
         'phone' => ['required', 'string', 'min:9', 'max:20', 'regex:/^[0-9+\s\-]+$/'],
         'city_id' => ['nullable', 'exists:cities,id'],
+        'district_id' => ['nullable', 'exists:districts,id'],
         'city' => ['required', 'string', 'max:100'],
         'province' => ['required', 'string', 'max:100'],
+        'kecamatan' => ['nullable', 'string', 'max:100'],
     ];
 
     protected $messages = [
@@ -44,8 +50,10 @@ class UpdateProfileInformationForm extends Component
         $this->email = $user->email;
         $this->phone = $user->phone;
         $this->city_id = $user->city_id;
+        $this->district_id = $user->district_id;
         $this->city = $user->city;
         $this->province = $user->province;
+        $this->kecamatan = $user->kecamatan ?? $user->district?->name;
 
         if ($this->city_id) {
             $cityRec = \App\Models\City::find($this->city_id);
@@ -54,6 +62,7 @@ class UpdateProfileInformationForm extends Component
                 $this->city = $cityRec->name;
                 $this->province = $cityRec->province ?? $this->province;
             }
+            $this->districtsList = app(\App\Services\CitySearchService::class)->getDistrictsByCity((int) $this->city_id);
         } elseif (!empty($user->city)) {
             $this->cityQuery = $user->city;
         }
@@ -88,6 +97,16 @@ class UpdateProfileInformationForm extends Component
             $this->cityQuery = $city->name . ($city->province ? " — {$city->province}" : '');
             $this->city = $city->name;
             $this->province = $city->province;
+            $this->districtsList = app(\App\Services\CitySearchService::class)->getDistrictsByCity((int) $id);
+            
+            // Reset district_id jika tidak termasuk dalam kota baru
+            if ($this->district_id) {
+                $exists = collect($this->districtsList)->contains('id', (int) $this->district_id);
+                if (!$exists) {
+                    $this->district_id = null;
+                    $this->kecamatan = null;
+                }
+            }
         }
         $this->searchResults = [];
         $this->resetErrorBag('city');
@@ -95,11 +114,26 @@ class UpdateProfileInformationForm extends Component
         $this->resetErrorBag('city_id');
     }
 
+    public function updatedDistrictId($value): void
+    {
+        if ($value) {
+            $dist = \App\Models\District::find($value);
+            if ($dist) {
+                $this->kecamatan = $dist->name;
+            }
+        } else {
+            $this->kecamatan = null;
+        }
+    }
+
     public function clearCity(): void
     {
         $this->city_id = null;
+        $this->district_id = null;
         $this->cityQuery = '';
         $this->city = '';
+        $this->kecamatan = '';
+        $this->districtsList = [];
         $this->searchResults = [];
     }
 
@@ -133,13 +167,23 @@ class UpdateProfileInformationForm extends Component
             }
         }
 
+        $kecamatanName = $this->kecamatan;
+        if ($this->district_id) {
+            $distRec = \App\Models\District::find($this->district_id);
+            if ($distRec) {
+                $kecamatanName = $distRec->name;
+            }
+        }
+
         $user->update([
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
             'city_id' => $this->city_id,
+            'district_id' => $this->district_id,
             'city' => $cityName,
             'province' => $provinceName,
+            'kecamatan' => $kecamatanName,
         ]);
 
         session()->flash('message', 'Profil Anda berhasil diperbarui!');

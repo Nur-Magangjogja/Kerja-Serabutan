@@ -73,7 +73,8 @@ class PaymentGatewayService
                 $withdraw->update(['status' => WithdrawRequest::STATUS_FAILED, 'processed_at' => now()]);
                 $user = $withdraw->user;
                 if ($user) {
-                    $user->adjustBalance($withdraw->amount);
+                    $refundTotal = (int) ($withdraw->amount + ($withdraw->admin_fee ?? 0));
+                    $user->adjustBalance($refundTotal);
                 }
                 Log::info('PaymentGatewayService: withdraw failed and refunded', ['withdraw_id' => $withdraw->id]);
             }

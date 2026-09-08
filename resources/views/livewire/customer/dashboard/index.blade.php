@@ -246,7 +246,10 @@
     <div class="px-5 pt-6 sm:pt-8 pb-6">
         <!-- Banner Section (Spacious, Modern & Interactive) -->
         @php
-            $customerBanners = json_decode((string) \App\Models\AppSetting::get('banner_customer', '[]'), true) ?: [];
+            $rawCustomerBanners = json_decode((string) \App\Models\AppSetting::get('banner_customer', '[]'), true) ?: [];
+            $customerBanners = array_map(function($b) {
+                return is_array($b) ? $b : ['image' => $b, 'link' => ''];
+            }, $rawCustomerBanners);
         @endphp
         <div class="mt-2 mb-8" wire:ignore x-data="{
             active: 0,
@@ -286,9 +289,23 @@
                 @if(!empty($customerBanners) && count($customerBanners))
                     <div class="flex h-full transition-transform duration-700 ease-out" :style="'transform: translateX(-' + (active * 100) + '%)'">
                         @foreach($customerBanners as $b)
-                            <div class="flex-shrink-0 w-full h-full relative">
-                                <img src="{{ asset('storage/' . $b) }}" alt="Banner" class="w-full h-full object-cover" />
-                                <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                            @php
+                                $imgPath = is_array($b) ? ($b['image'] ?? '') : $b;
+                                $linkUrl = is_array($b) ? ($b['link'] ?? '') : '';
+                                $isExternal = str_starts_with($linkUrl, 'http://') || str_starts_with($linkUrl, 'https://');
+                            @endphp
+                            <div class="flex-shrink-0 w-full h-full relative group/slide">
+                                @if(!empty($linkUrl))
+                                    <a href="{{ $linkUrl }}"
+                                       @if($isExternal) target="_blank" rel="noopener noreferrer" @endif
+                                       class="block w-full h-full cursor-pointer relative overflow-hidden">
+                                        <img src="{{ asset('storage/' . $imgPath) }}" alt="Banner" class="w-full h-full object-cover transition-transform duration-500 group-hover/slide:scale-[1.02]" />
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                                    </a>
+                                @else
+                                    <img src="{{ asset('storage/' . $imgPath) }}" alt="Banner" class="w-full h-full object-cover" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                                @endif
                             </div>
                         @endforeach
                     </div>

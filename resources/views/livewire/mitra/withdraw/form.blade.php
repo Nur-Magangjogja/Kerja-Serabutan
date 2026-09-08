@@ -139,8 +139,8 @@
                         this.bankName = match.name;
                         this.bankCategory = match.category;
                         this.bankIcon = match.icon;
-                        this.selectedBankFee = Number(match.fee || 0);
                         this.isPlatformAccount = Boolean(match.is_platform_account);
+                        this.selectedBankFee = this.isPlatformAccount ? 0 : Number(match.fee || 0);
                     }
                 },
                 get filteredBanks() {
@@ -156,10 +156,11 @@
                     this.bankName = item.name;
                     this.bankCategory = item.category;
                     this.bankIcon = item.icon;
-                    this.selectedBankFee = Number(item.fee || 0);
                     this.isPlatformAccount = Boolean(item.is_platform_account);
+                    this.selectedBankFee = this.isPlatformAccount ? 0 : Number(item.fee || 0);
                     this.openBankModal = false;
                 },
+
                 setAmount(val) {
                     if (val === 'all') {
                         this.amount = this.maxBalance;

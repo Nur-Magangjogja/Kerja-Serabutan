@@ -7,6 +7,40 @@ use Illuminate\Database\Eloquent\Model;
 class Help extends Model
 {
     // ─────────────────────────────────────────────────────────────────────────
+    // SERVICE TYPES & ORDER MODES (REVISI 3)
+    // ─────────────────────────────────────────────────────────────────────────
+    public const SERVICE_TYPE_ON_SITE           = 'on_site_service';
+    public const SERVICE_TYPE_PICKUP_DELIVERY   = 'pickup_delivery';
+    public const SERVICE_TYPE_BUY_FOR_CUSTOMER  = 'buy_for_customer';
+
+    public const ORDER_MODE_INSTANT             = 'instant';
+    public const ORDER_MODE_SCHEDULED           = 'scheduled';
+
+    // Sub-stages for Pickup & Delivery
+    public const STAGE_GOING_TO_PICKUP          = 'going_to_pickup';
+    public const STAGE_AT_PICKUP                = 'at_pickup';
+    public const STAGE_ITEM_COLLECTED           = 'item_collected';
+    public const STAGE_GOING_TO_DESTINATION     = 'going_to_destination';
+    public const STAGE_AT_DESTINATION           = 'at_destination';
+
+    // Sub-stages for Buy for Customer
+    public const STAGE_GOING_TO_STORE           = 'going_to_store';
+    public const STAGE_AT_STORE                 = 'at_store';
+    public const STAGE_PURCHASING               = 'purchasing';
+    public const STAGE_GOING_TO_CUSTOMER        = 'going_to_customer';
+    public const STAGE_AT_CUSTOMER              = 'at_customer';
+    public const STAGE_DELIVERED                = 'delivered';
+
+    // Item Fund Modes
+    public const ITEM_FUND_CUSTOMER_PAID        = 'customer_paid_in_app';
+    public const ITEM_FUND_PARTNER_ADVANCE      = 'partner_advance';
+    public const ITEM_FUND_COD                  = 'cash_on_delivery';
+
+    // Route Sources
+    public const ROUTE_SOURCE_ACTUAL_PROVIDER   = 'actual_provider';
+    public const ROUTE_SOURCE_FALLBACK          = 'fallback_estimation';
+
+    // ─────────────────────────────────────────────────────────────────────────
     // STATE MACHINE
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -93,6 +127,7 @@ class Help extends Model
         ],
         self::STATUS_PARTNER_ON_THE_WAY => [
             self::STATUS_PARTNER_ARRIVED,
+            self::STATUS_IN_PROGRESS,       // transisi langsung untuk stage khusus
             self::STATUS_PARTNER_CANCEL_REQUESTED,
         ],
         self::STATUS_PARTNER_ARRIVED => [
@@ -110,12 +145,14 @@ class Help extends Model
         self::STATUS_IN_PROGRESS => [
             self::STATUS_SELESAI,
             self::STATUS_WAITING_CONFIRMATION,
+            self::STATUS_PARTNER_CANCEL_REQUESTED,
         ],
         self::STATUS_WAITING_CONFIRMATION => [
             self::STATUS_SELESAI,
         ],
         self::STATUS_PARTNER_CANCEL_REQUESTED => [
-            self::STATUS_MENUNGGU_MITRA,    // customer accept
+            self::STATUS_MENUNGGU_MITRA,    // customer accept / admin rematch
+            self::STATUS_DIBATALKAN,        // admin approve cancellation
             // Kembali ke status sebelumnya (dinamis, ditangani di service)
             self::STATUS_TAKEN,
             self::STATUS_PARTNER_ON_THE_WAY,
@@ -189,6 +226,7 @@ class Help extends Model
     protected $fillable = [
         'user_id',
         'city_id',
+        'district_id',
         'title',
         'amount',
         'admin_fee',
@@ -247,6 +285,46 @@ class Help extends Model
         'mitra_earning',
         'escrow_transaction_id',
         'escrow_locked_at',
+        // Kolom model v3 (Revisi 3: Multi-Service, 3-Context Distances, Stages, Pricing Rules)
+        'service_type',
+        'service_stage',
+        'order_mode',
+        'service_category',
+        'service_duration_hours',
+        'published_at',
+        'departure_at',
+        'service_scheduled_at',
+        'pickup_scheduled_at',
+        'delivery_deadline_at',
+        'matching_distance_km',
+        'travel_distance_km',
+        'service_route_distance_km',
+        'route_source',
+        'estimated_duration_minutes',
+        'estimated_arrival_at',
+        'service_fee',
+        'travel_fee',
+        'material_fee',
+        'item_fund',
+        'item_fund_mode',
+        'customer_reimbursement_method',
+        'advance_limit',
+        'handling_fee',
+        'minimum_service_fee',
+        'minimum_order_value',
+        'pickup_latitude',
+        'pickup_longitude',
+        'pickup_address',
+        'delivery_latitude',
+        'delivery_longitude',
+        'delivery_address',
+        'store_name',
+        'store_address',
+        'store_latitude',
+        'store_longitude',
+        'gps_accuracy',
+        'last_movement_at',
+        'arrived_at',
     ];
 
     protected $casts = [
@@ -285,6 +363,35 @@ class Help extends Model
         'platform_fee_amount'        => 'decimal:2',
         'mitra_earning'              => 'decimal:2',
         'escrow_locked_at'           => 'datetime',
+        // Model v3 casts
+        'published_at'               => 'datetime',
+        'departure_at'               => 'datetime',
+        'service_scheduled_at'       => 'datetime',
+        'pickup_scheduled_at'        => 'datetime',
+        'delivery_deadline_at'       => 'datetime',
+        'matching_distance_km'       => 'decimal:2',
+        'travel_distance_km'         => 'decimal:2',
+        'service_route_distance_km'  => 'decimal:2',
+        'estimated_duration_minutes' => 'integer',
+        'estimated_arrival_at'       => 'datetime',
+        'service_duration_hours'     => 'decimal:2',
+        'service_fee'                => 'decimal:2',
+        'travel_fee'                 => 'decimal:2',
+        'material_fee'               => 'decimal:2',
+        'item_fund'                  => 'decimal:2',
+        'advance_limit'              => 'decimal:2',
+        'handling_fee'               => 'decimal:2',
+        'minimum_service_fee'        => 'decimal:2',
+        'minimum_order_value'        => 'decimal:2',
+        'pickup_latitude'            => 'decimal:8',
+        'pickup_longitude'           => 'decimal:8',
+        'delivery_latitude'          => 'decimal:8',
+        'delivery_longitude'         => 'decimal:8',
+        'store_latitude'             => 'decimal:8',
+        'store_longitude'            => 'decimal:8',
+        'gps_accuracy'               => 'decimal:2',
+        'last_movement_at'           => 'datetime',
+        'arrived_at'                 => 'datetime',
     ];
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -307,10 +414,24 @@ class Help extends Model
         return $this->belongsTo(City::class);
     }
 
+    public function district()
+    {
+        return $this->belongsTo(District::class, 'district_id');
+    }
 
     public function mitra()
     {
         return $this->belongsTo(User::class, 'mitra_id');
+    }
+
+    public function cancelRequests()
+    {
+        return $this->hasMany(HelpCancelRequest::class);
+    }
+
+    public function activeCancelRequest()
+    {
+        return $this->hasOne(HelpCancelRequest::class)->where('status', HelpCancelRequest::STATUS_PENDING)->latestOfMany();
     }
 
     public function ratings()
@@ -398,6 +519,50 @@ class Help extends Model
     }
 
     /**
+     * Scope untuk menyaring bantuan dalam satu wilayah Kecamatan.
+     */
+    public function scopeInDistrict($query, $districtId)
+    {
+        if (empty($districtId)) {
+            return $query;
+        }
+        return $query->where('district_id', $districtId);
+    }
+
+    /**
+     * Scope untuk menyaring bantuan dalam daftar wilayah Kecamatan.
+     */
+    public function scopeInDistricts($query, array $districtIds)
+    {
+        $filtered = array_values(array_filter(array_map('intval', $districtIds)));
+        if (empty($filtered)) {
+            return $query;
+        }
+        return $query->whereIn('district_id', $filtered);
+    }
+
+    /**
+     * Scope menyaring bantuan dalam batas operasional baku (maks. 10.0 KM) menggunakan bounding box GPS.
+     */
+    public function scopeWithinOperationalDistance($query, ?float $lat, ?float $lng, float $maxKm = 10.0)
+    {
+        if (!$lat || !$lng) {
+            return $query;
+        }
+
+        $latDelta = $maxKm / 111.045;
+        $lngDelta = $maxKm / (111.045 * max(0.01, cos(deg2rad($lat))));
+
+        $minLat = $lat - $latDelta;
+        $maxLat = $lat + $latDelta;
+        $minLng = $lng - $lngDelta;
+        $maxLng = $lng + $lngDelta;
+
+        return $query->whereBetween('latitude', [$minLat, $maxLat])
+                     ->whereBetween('longitude', [$minLng, $maxLng]);
+    }
+
+    /**
      * Scope untuk menyaring bantuan yang berhak diambil oleh mitra tertentu
      * (mengecualikan bantuan yang pernah dibatalkan oleh mitra tersebut via tabel relasional terindeks).
      */
@@ -468,36 +633,122 @@ class Help extends Model
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // COMPUTED / HELPERS
+    // COMPUTED / HELPERS (REVISI 3)
     // ─────────────────────────────────────────────────────────────────────────
 
+    public function isPickup(): bool
+    {
+        return $this->service_type === self::SERVICE_TYPE_PICKUP_DELIVERY;
+    }
+
+    public function isBuy(): bool
+    {
+        return $this->service_type === self::SERVICE_TYPE_BUY_FOR_CUSTOMER;
+    }
+
+    public function isOnSite(): bool
+    {
+        return empty($this->service_type) || $this->service_type === self::SERVICE_TYPE_ON_SITE;
+    }
+
+    public function isScheduled(): bool
+    {
+        return $this->order_mode === self::ORDER_MODE_SCHEDULED;
+    }
+
+    public function isInstant(): bool
+    {
+        return empty($this->order_mode) || $this->order_mode === self::ORDER_MODE_INSTANT;
+    }
+
     /**
-     * Label status dalam bahasa Indonesia.
+     * Label tahapan sub-layanan (service_stage) dalam Bahasa Indonesia.
+     */
+    public function getStageLabelAttribute(): ?string
+    {
+        if (empty($this->service_stage)) {
+            return null;
+        }
+
+        return match($this->service_stage) {
+            self::STAGE_GOING_TO_PICKUP      => 'Menuju Lokasi Pengambilan',
+            self::STAGE_AT_PICKUP            => 'Tiba di Lokasi Pengambilan',
+            self::STAGE_ITEM_COLLECTED       => 'Barang Telah Diambil',
+            self::STAGE_GOING_TO_DESTINATION => 'Mengantar ke Tujuan',
+            self::STAGE_AT_DESTINATION       => 'Tiba di Lokasi Tujuan',
+            self::STAGE_GOING_TO_STORE       => 'Menuju Toko / Tempat Belanja',
+            self::STAGE_AT_STORE             => 'Tiba di Toko / Tempat Belanja',
+            self::STAGE_PURCHASING           => 'Sedang Membeli Barang Pesanan',
+            self::STAGE_GOING_TO_CUSTOMER    => 'Mengantar Belanjaan ke Pemesan',
+            self::STAGE_AT_CUSTOMER          => 'Tiba di Lokasi Pemesan',
+            self::STAGE_DELIVERED            => 'Barang Belanjaan Telah Diserahkan',
+            default                          => ucwords(str_replace('_', ' ', $this->service_stage)),
+        };
+    }
+
+    /**
+     * Label status dalam bahasa Indonesia kontekstual dengan jenis layanan dan stage.
      */
     public function getStatusLabelAttribute(): string
     {
+        if ($this->service_stage && $stageLabel = $this->stage_label) {
+            if ($this->status === self::STATUS_IN_PROGRESS || $this->status === self::STATUS_PARTNER_ON_THE_WAY) {
+                return $stageLabel;
+            }
+        }
+
         return match($this->status) {
             'menunggu_mitra'               => 'Menunggu Rekan Jasa',
             'taken', 'memperoleh_mitra'   => 'Rekan Jasa Mengambil Pesanan',
-            'partner_on_the_way'           => 'Rekan Jasa Menuju Lokasi',
-            'partner_arrived'              => 'Rekan Jasa Tiba di Lokasi',
-            'in_progress', 'sedang_diproses' => 'Pelayanan Dalam Proses',
+            'partner_on_the_way'           => $this->isBuy() ? 'Menuju Toko' : ($this->isPickup() ? 'Menuju Titik Jemput' : 'Rekan Jasa Menuju Lokasi'),
+            'partner_arrived'              => $this->isBuy() ? 'Tiba di Toko' : ($this->isPickup() ? 'Tiba di Titik Jemput' : 'Rekan Jasa Tiba di Lokasi'),
+            'in_progress', 'sedang_diproses' => $this->isBuy() ? 'Membeli & Mengantar Barang' : ($this->isPickup() ? 'Mengantar Barang ke Tujuan' : 'Pelayanan Dalam Proses'),
             'waiting_customer_confirmation'=> 'Menunggu Konfirmasi Anda',
             'selesai', 'completed'         => 'Selesai',
             'dibatalkan', 'cancelled'      => 'Dibatalkan',
-            'partner_cancel_requested'     => 'Mitra Mengajukan Pembatalan',
+            'partner_cancel_requested'     => 'Mitra Mengajukan Kendala/Pembatalan',
             default                        => ucfirst(str_replace('_', ' ', $this->status)),
         };
     }
 
     /**
-     * Langkah progres saat ini (1 sampai 5).
+     * Langkah progres saat ini (1 sampai 5) yang dinamis mengikuti konteks jenis layanan.
      */
     public function getProgressStepAttribute(): int
     {
+        if (in_array($this->status, ['dibatalkan', 'cancelled'])) {
+            return 0;
+        }
+
+        if (in_array($this->status, ['menunggu_mitra', 'mencari_mitra', 'menunggu_pembayaran'])) {
+            return 1;
+        }
+
+        if (in_array($this->status, ['taken', 'memperoleh_mitra'])) {
+            return 2;
+        }
+
+        if ($this->isPickup()) {
+            return match($this->service_stage) {
+                self::STAGE_GOING_TO_PICKUP      => 2,
+                self::STAGE_AT_PICKUP            => 3,
+                self::STAGE_ITEM_COLLECTED, self::STAGE_GOING_TO_DESTINATION => 3,
+                self::STAGE_AT_DESTINATION       => 4,
+                default                          => $this->status === self::STATUS_WAITING_CONFIRMATION ? 4 : ($this->isDone() ? 5 : 3),
+            };
+        }
+
+        if ($this->isBuy()) {
+            return match($this->service_stage) {
+                self::STAGE_GOING_TO_STORE       => 2,
+                self::STAGE_AT_STORE, self::STAGE_PURCHASING => 3,
+                self::STAGE_GOING_TO_CUSTOMER, self::STAGE_AT_CUSTOMER => 4,
+                self::STAGE_DELIVERED            => 4,
+                default                          => $this->status === self::STATUS_WAITING_CONFIRMATION ? 4 : ($this->isDone() ? 5 : 3),
+            };
+        }
+
         return match($this->status) {
-            'menunggu_mitra', 'mencari_mitra', 'menunggu_pembayaran' => 1,
-            'taken', 'memperoleh_mitra'                             => 2,
             'partner_on_the_way'                                    => 3,
             'partner_arrived', 'in_progress', 'sedang_diproses'     => 4,
             'waiting_customer_confirmation', 'selesai', 'completed' => 5,
@@ -510,17 +761,173 @@ class Help extends Model
      */
     public function getProgressPercentageAttribute(): int
     {
+        if (in_array($this->status, ['dibatalkan', 'cancelled'])) {
+            return 0;
+        }
+
+        if ($this->isDone()) {
+            return 100;
+        }
+
+        if ($this->status === self::STATUS_WAITING_CONFIRMATION) {
+            return 90;
+        }
+
+        if ($this->isPickup()) {
+            return match($this->service_stage) {
+                self::STAGE_GOING_TO_PICKUP      => 30,
+                self::STAGE_AT_PICKUP            => 45,
+                self::STAGE_ITEM_COLLECTED       => 60,
+                self::STAGE_GOING_TO_DESTINATION => 75,
+                self::STAGE_AT_DESTINATION       => 85,
+                default                          => 40,
+            };
+        }
+
+        if ($this->isBuy()) {
+            return match($this->service_stage) {
+                self::STAGE_GOING_TO_STORE       => 25,
+                self::STAGE_AT_STORE             => 40,
+                self::STAGE_PURCHASING           => 55,
+                self::STAGE_GOING_TO_CUSTOMER    => 70,
+                self::STAGE_AT_CUSTOMER          => 85,
+                self::STAGE_DELIVERED            => 90,
+                default                          => 35,
+            };
+        }
+
         return match($this->status) {
             'menunggu_mitra', 'mencari_mitra', 'menunggu_pembayaran' => 20,
             'taken', 'memperoleh_mitra'                             => 40,
             'partner_on_the_way'                                    => 60,
-            'partner_arrived', 'in_progress', 'sedang_diproses'     => 80,
-            'waiting_customer_confirmation'                         => 90,
-            'selesai', 'completed'                                  => 100,
-            'dibatalkan', 'cancelled'                               => 0,
+            'partner_arrived'                                       => 75,
+            'in_progress', 'sedang_diproses'                        => 85,
             'partner_cancel_requested'                              => 50,
             default                                                 => 20,
         };
+    }
+
+    /**
+     * Daftar tahapan dinamis (stepper) berdasarkan jenis layanan & status/stage.
+     *
+     * @return array<int, array{key: string, title: string, icon: string, active: bool}>
+     */
+    public function getMultiStageStepsAttribute(): array
+    {
+        $status = $this->status;
+        $stage = $this->service_stage;
+
+        if ($this->isPickup()) {
+            return [
+                [
+                    'key'    => 'taken',
+                    'title'  => 'Pesanan Diterima',
+                    'icon'   => '🤝',
+                    'active' => in_array($status, [self::STATUS_TAKEN, 'memperoleh_mitra']),
+                ],
+                [
+                    'key'    => 'pickup_otw',
+                    'title'  => 'Ke Titik Jemput',
+                    'icon'   => '🛵',
+                    'active' => $stage === self::STAGE_GOING_TO_PICKUP || ($status === self::STATUS_PARTNER_ON_THE_WAY && !$stage),
+                ],
+                [
+                    'key'    => 'at_pickup',
+                    'title'  => 'Ambil Barang',
+                    'icon'   => '📦',
+                    'active' => in_array($stage, [self::STAGE_AT_PICKUP, self::STAGE_ITEM_COLLECTED]) || ($status === self::STATUS_PARTNER_ARRIVED && !$stage),
+                ],
+                [
+                    'key'    => 'delivery_otw',
+                    'title'  => 'Antar ke Tujuan',
+                    'icon'   => '🚚',
+                    'active' => in_array($stage, [self::STAGE_GOING_TO_DESTINATION, self::STAGE_AT_DESTINATION]) || ($status === self::STATUS_IN_PROGRESS && !$stage),
+                ],
+                [
+                    'key'    => 'done',
+                    'title'  => 'Selesai',
+                    'icon'   => '✅',
+                    'active' => in_array($status, [self::STATUS_WAITING_CONFIRMATION, self::STATUS_SELESAI, 'completed']),
+                ],
+            ];
+        }
+
+        if ($this->isBuy()) {
+            return [
+                [
+                    'key'    => 'taken',
+                    'title'  => 'Pesanan Diterima',
+                    'icon'   => '🤝',
+                    'active' => in_array($status, [self::STATUS_TAKEN, 'memperoleh_mitra']),
+                ],
+                [
+                    'key'    => 'to_store',
+                    'title'  => 'Ke Toko / Pasar',
+                    'icon'   => '🛵',
+                    'active' => $stage === self::STAGE_GOING_TO_STORE || ($status === self::STATUS_PARTNER_ON_THE_WAY && !$stage),
+                ],
+                [
+                    'key'    => 'purchasing',
+                    'title'  => 'Beli Belanjaan',
+                    'icon'   => '🛒',
+                    'active' => in_array($stage, [self::STAGE_AT_STORE, self::STAGE_PURCHASING]) || ($status === self::STATUS_PARTNER_ARRIVED && !$stage),
+                ],
+                [
+                    'key'    => 'delivering',
+                    'title'  => 'Antar ke Pemesan',
+                    'icon'   => '🚚',
+                    'active' => in_array($stage, [self::STAGE_GOING_TO_CUSTOMER, self::STAGE_AT_CUSTOMER, self::STAGE_DELIVERED]) || ($status === self::STATUS_IN_PROGRESS && !$stage),
+                ],
+                [
+                    'key'    => 'done',
+                    'title'  => 'Selesai',
+                    'icon'   => '✅',
+                    'active' => in_array($status, [self::STATUS_WAITING_CONFIRMATION, self::STATUS_SELESAI, 'completed']),
+                ],
+            ];
+        }
+
+        // On-Site Service / Default
+        return [
+            [
+                'key'    => 'taken',
+                'title'  => 'Pesanan Diterima',
+                'icon'   => '🤝',
+                'active' => in_array($status, [self::STATUS_TAKEN, 'memperoleh_mitra']),
+            ],
+            [
+                'key'    => 'otw',
+                'title'  => 'Menuju Lokasi',
+                'icon'   => '🛵',
+                'active' => $status === self::STATUS_PARTNER_ON_THE_WAY,
+            ],
+            [
+                'key'    => 'arrived',
+                'title'  => 'Tiba di Lokasi',
+                'icon'   => '📍',
+                'active' => $status === self::STATUS_PARTNER_ARRIVED,
+            ],
+            [
+                'key'    => 'in_progress',
+                'title'  => 'Pengerjaan Jasa',
+                'icon'   => '⚡',
+                'active' => in_array($status, [self::STATUS_IN_PROGRESS, 'sedang_diproses']),
+            ],
+            [
+                'key'    => 'done',
+                'title'  => 'Selesai',
+                'icon'   => '✅',
+                'active' => in_array($status, [self::STATUS_WAITING_CONFIRMATION, self::STATUS_SELESAI, 'completed']),
+            ],
+        ];
+    }
+
+    /**
+     * Persentase progres multi-stage (0 - 100).
+     */
+    public function getMultiStageProgressPercentageAttribute(): int
+    {
+        return $this->progress_percentage;
     }
 
     /**
@@ -528,6 +935,29 @@ class Help extends Model
      */
     public function getProgressIconAttribute(): string
     {
+        if ($this->isBuy()) {
+            return match($this->service_stage) {
+                self::STAGE_GOING_TO_STORE    => '🛵',
+                self::STAGE_AT_STORE          => '🏪',
+                self::STAGE_PURCHASING        => '🛒',
+                self::STAGE_GOING_TO_CUSTOMER => '🚚',
+                self::STAGE_AT_CUSTOMER       => '📍',
+                self::STAGE_DELIVERED         => '📦',
+                default                       => '🛍️',
+            };
+        }
+
+        if ($this->isPickup()) {
+            return match($this->service_stage) {
+                self::STAGE_GOING_TO_PICKUP      => '🛵',
+                self::STAGE_AT_PICKUP            => '📍',
+                self::STAGE_ITEM_COLLECTED       => '📦',
+                self::STAGE_GOING_TO_DESTINATION => '🚚',
+                self::STAGE_AT_DESTINATION       => '🏁',
+                default                          => '📦',
+            };
+        }
+
         return match($this->status) {
             'menunggu_mitra', 'mencari_mitra'                       => '🔍',
             'taken', 'memperoleh_mitra'                             => '🤝',
@@ -551,15 +981,19 @@ class Help extends Model
             return 'Pesanan Dibatalkan';
         }
         if ($this->status === 'partner_cancel_requested') {
-            return 'Pengajuan Pembatalan';
+            return 'Pengajuan Kendala / Pembatalan';
         }
         if (in_array($this->status, ['selesai', 'completed'])) {
             return 'Pesanan Selesai';
         }
 
+        if ($this->service_stage && $stageLabel = $this->stage_label) {
+            return "Tahap: {$stageLabel}";
+        }
+
         $step = $this->progress_step;
         $label = match($step) {
-            1 => 'Mencari Mitra',
+            1 => 'Mencari Rekan Jasa',
             2 => 'Pesanan Diambil',
             3 => 'Menuju Lokasi',
             4 => 'Pelayanan Dalam Proses',
@@ -651,7 +1085,50 @@ class Help extends Model
         if ($this->isV2Model() && $this->mitra_earning > 0) {
             return (float) $this->mitra_earning;
         }
+        if ($this->service_fee > 0 || $this->travel_fee > 0) {
+            return (float) ($this->service_fee + $this->travel_fee + $this->material_fee);
+        }
         return (float) $this->amount;
+    }
+
+    /**
+     * Hitung total nilai pesanan secara komprehensif (Layanan + Travel + Material + Item Fund + Admin Fee).
+     */
+    public function getCalculatedTotalAttribute(): float
+    {
+        if ($this->service_fee > 0 || $this->travel_fee > 0 || $this->item_fund > 0) {
+            return (float) ($this->service_fee + $this->travel_fee + $this->material_fee + $this->item_fund + $this->handling_fee + $this->getPlatformFee());
+        }
+        return (float) ($this->total_amount > 0 ? $this->total_amount : ($this->amount + $this->getPlatformFee()));
+    }
+
+    /**
+     * Pendapatan bersih mitra (Service Fee + Travel Fee + Material Fee) tanpa item fund.
+     */
+    public function getNetPartnerEarningAttribute(): float
+    {
+        return $this->getNetEarning();
+    }
+
+    /**
+     * Apakah dana belanjaan (item fund) dipisahkan dari pendapatan mitra.
+     */
+    public function isItemFundSeparated(): bool
+    {
+        return $this->isBuy() && (float) $this->item_fund > 0;
+    }
+
+    /**
+     * Label mode pengadaan dana barang belanjaan.
+     */
+    public function getItemFundModeLabelAttribute(): string
+    {
+        return match($this->item_fund_mode) {
+            self::ITEM_FUND_CUSTOMER_PAID   => 'Dibayar Pemesan di Aplikasi (Escrow)',
+            self::ITEM_FUND_PARTNER_ADVANCE => 'Ditalangi Mitra Terlebih Dahulu (Reimburse)',
+            self::ITEM_FUND_COD             => 'Bayar Tunai di Tempat (COD)',
+            default                         => 'Dalam Aplikasi',
+        };
     }
 
     /**

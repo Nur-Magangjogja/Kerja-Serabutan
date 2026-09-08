@@ -41,7 +41,7 @@ class Detail extends Component
     public function loadHelp(): void
     {
         $this->help = Help::with([
-            'user', 'mitra', 'city', 'ratings',
+            'user', 'mitra', 'city', 'district', 'ratings',
         ])->findOrFail($this->helpId);
 
         if ($this->help->user_id !== auth()->id()) {

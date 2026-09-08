@@ -98,6 +98,85 @@
                 @endif
 
                 <form wire:submit.prevent="prepareConfirm" enctype="multipart/form-data" class="space-y-5">
+                    <!-- Service Type Selector (Revisi 3) -->
+                    <div class="space-y-2" id="group-service-type">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
+                            Pilih Jenis Layanan <span class="text-red-500">*</span>
+                        </label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" wire:click="$set('service_type', 'on_site_service')"
+                                class="p-3 rounded-xl border text-left transition-all {{ $service_type === 'on_site_service' ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-950/40 ring-2 ring-blue-500/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' }}">
+                                <div class="text-xl mb-1">🛠️</div>
+                                <div class="text-xs font-bold text-gray-900 dark:text-white">On-Site</div>
+                                <div class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">Kerja di lokasi</div>
+                            </button>
+                            <button type="button" wire:click="$set('service_type', 'pickup_delivery')"
+                                class="p-3 rounded-xl border text-left transition-all {{ $service_type === 'pickup_delivery' ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-950/40 ring-2 ring-blue-500/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' }}">
+                                <div class="text-xl mb-1">📦</div>
+                                <div class="text-xs font-bold text-gray-900 dark:text-white">Pickup</div>
+                                <div class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">Antar / jemput</div>
+                            </button>
+                            <button type="button" wire:click="$set('service_type', 'buy_for_customer')"
+                                class="p-3 rounded-xl border text-left transition-all {{ $service_type === 'buy_for_customer' ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-950/40 ring-2 ring-blue-500/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' }}">
+                                <div class="text-xl mb-1">🛍️</div>
+                                <div class="text-xs font-bold text-gray-900 dark:text-white">Titip Beli</div>
+                                <div class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">Belanja barang</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Kategori Layanan & Estimasi Durasi -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Kategori Pekerjaan</label>
+                            <select wire:model.live="service_category" class="w-full px-3 py-2.5 text-xs rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                                <option value="general">Umum / Serabutan</option>
+                                <option value="cleaning">Kebersihan / Cuci</option>
+                                <option value="moving">Pindahan / Angkut</option>
+                                <option value="repair">Pertukangan / Bengkel</option>
+                                <option value="gardening">Taman / Kebun</option>
+                                <option value="technical">Teknis / Elektronik / IT</option>
+                                <option value="delivery">Antar / Jemput</option>
+                                <option value="shopping">Belanja / Titip Beli</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Estimasi Durasi (Jam)</label>
+                            <select wire:model.live="service_duration_hours" class="w-full px-3 py-2.5 text-xs rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                                <option value="0.5">30 Menit</option>
+                                <option value="1.0">1 Jam</option>
+                                <option value="2.0">2 Jam</option>
+                                <option value="3.0">3 Jam</option>
+                                <option value="4.0">4 Jam (Setengah Hari)</option>
+                                <option value="6.0">6 Jam</option>
+                                <option value="8.0">8 Jam (1 Hari Penuh)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Titip Beli Khusus: Dana Belanjaan Barang -->
+                    @if($service_type === 'buy_for_customer')
+                        <div class="p-4 bg-amber-50/60 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-900/40 space-y-3">
+                            <div class="flex items-center gap-2 text-xs font-bold text-amber-900 dark:text-amber-200">
+                                <span>🛒 Informasi Belanjaan & Dana Barang</span>
+                            </div>
+                            <div class="grid grid-cols-1 gap-2.5">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Nama Toko / Tempat Belanja (Opsional)</label>
+                                    <input type="text" wire:model="store_name" placeholder="Contoh: Toko Berkah / Indomaret Kaliurang" class="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Estimasi Total Harga Barang (Item Fund)</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-2 text-xs font-bold text-gray-400">Rp</span>
+                                        <input type="number" wire:model.live="item_fund" placeholder="50000" class="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+                                    </div>
+                                    <p class="text-[10px] text-gray-500 mt-1">Dana barang dilindungi Escrow dan dipisahkan dari pendapatan jasa mitra.</p>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
                     <!-- Title -->
                     <div class="pt-1 pb-1" id="group-title">
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
@@ -324,6 +403,55 @@
                             </svg>
                             Ketik minimal 2 karakter untuk mencari kota Anda
                         </p>
+                    </div>
+
+                    <!-- District (Kecamatan) -->
+                    <div id="group-district" class="transition-all duration-200">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                            <span class="flex items-center">
+                                <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                Kecamatan Wilayah Operasional
+                                <span class="text-red-500 ml-1">*</span>
+                            </span>
+                        </label>
+
+                        @if(empty($city_id))
+                            <div class="px-4 py-3 text-xs rounded-lg border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Pilih Kota / Kabupaten di atas terlebih dahulu untuk memuat daftar Kecamatan.
+                            </div>
+                        @else
+                            <div class="relative">
+                                <select wire:model.live="district_id" id="district-select"
+                                    class="w-full px-4 py-3 text-sm rounded-lg border @error('district_id') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 cursor-pointer">
+                                    <option value="">-- Pilih Kecamatan --</option>
+                                    @foreach($districtsList as $dist)
+                                        <option value="{{ $dist['id'] }}">{{ $dist['name'] }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            @error('district_id')
+                                <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block flex items-center font-medium">
+                                    <svg class="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    {{ $message }}
+                                </span>
+                            @enderror
+                            
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 flex items-center">
+                                <svg class="w-3 h-3 mr-1 flex-shrink-0 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                </svg>
+                                Sistem memprioritaskan Rekan Jasa di kecamatan ini dan dalam radius maksimal 10 KM.
+                            </p>
+                        @endif
                     </div>
 
                     <!-- Tandai Lokasi di Peta -->
@@ -1017,22 +1145,40 @@
                 <div class="p-5 pb-6">
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Periksa ringkasan pesanan bantuan sebelum mempublikasikan.</p>
 
-                    <!-- Breakdown Pembayaran -->
+                    <!-- Breakdown Pembayaran (Revisi 3) -->
                     <div class="bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 mb-4 space-y-2.5">
                         <div class="flex items-center justify-between text-xs sm:text-sm">
-                            <span class="text-gray-600 dark:text-gray-400">Imbalan Rekan Jasa</span>
-                            <span class="font-bold text-gray-900 dark:text-white">Rp {{ number_format($confirmAmount ?? 0, 0, ',', '.') }}</span>
+                            <span class="text-gray-600 dark:text-gray-400">Biaya Jasa Layanan</span>
+                            <span class="font-bold text-gray-900 dark:text-white">Rp {{ number_format($confirmServiceFee ?? $confirmAmount ?? 0, 0, ',', '.') }}</span>
                         </div>
+                        @if(($confirmTravelFee ?? 0) > 0)
+                            <div class="flex items-center justify-between text-xs sm:text-sm">
+                                <span class="text-gray-600 dark:text-gray-400">Estimasi Ongkos Perjalanan</span>
+                                <span class="font-bold text-gray-900 dark:text-white">+ Rp {{ number_format($confirmTravelFee ?? 0, 0, ',', '.') }}</span>
+                            </div>
+                        @endif
+                        @if(($confirmMaterialFee ?? 0) > 0)
+                            <div class="flex items-center justify-between text-xs sm:text-sm">
+                                <span class="text-gray-600 dark:text-gray-400">Biaya Bahan / Material</span>
+                                <span class="font-bold text-gray-900 dark:text-white">+ Rp {{ number_format($confirmMaterialFee ?? 0, 0, ',', '.') }}</span>
+                            </div>
+                        @endif
+                        @if(($confirmItemFund ?? 0) > 0)
+                            <div class="flex items-center justify-between text-xs sm:text-sm bg-amber-50/70 dark:bg-amber-950/30 p-2 rounded-lg border border-amber-200/60 dark:border-amber-900/40">
+                                <span class="text-amber-800 dark:text-amber-300 font-medium">Dana Belanjaan Barang</span>
+                                <span class="font-bold text-amber-900 dark:text-amber-200">+ Rp {{ number_format($confirmItemFund ?? 0, 0, ',', '.') }}</span>
+                            </div>
+                        @endif
                         <div class="flex items-center justify-between text-xs sm:text-sm">
-                            <span class="text-gray-600 dark:text-gray-400">Biaya Layanan Platform ({{ $confirmCommissionRate ?? 10 }}%)</span>
+                            <span class="text-gray-600 dark:text-gray-400">Biaya Layanan Platform</span>
                             <span class="font-bold text-blue-600 dark:text-blue-400">+ Rp {{ number_format($confirmPlatformFee ?? 0, 0, ',', '.') }}</span>
                         </div>
                         <div class="border-t border-gray-200 dark:border-gray-700 pt-2.5 flex items-center justify-between">
                             <div>
-                                <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 block">Total Pembayaran</span>
+                                <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 block">Total Saldo Ditahan</span>
                                 <span class="text-[10px] text-gray-400 dark:text-gray-500">Saldo ditahan aman (Escrow)</span>
                             </div>
-                            <div class="text-xl font-extrabold text-primary-600 dark:text-primary-400">
+                            <div class="text-xl font-extrabold text-blue-600 dark:text-blue-400">
                                 Rp {{ number_format($confirmTotal ?? 0, 0, ',', '.') }}
                             </div>
                         </div>

@@ -171,10 +171,10 @@ class Activity extends Component
             ->withCount('partnerActivities as total_activities')
             ->withMax('partnerActivities as last_activity_at', 'created_at');
 
-        $effectiveCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
+        $effectiveDistrictIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
 
-        if (!$isSuperAdmin && !empty($effectiveCityIds)) {
-            $userQuery->whereIn('city_id', $effectiveCityIds);
+        if (!$isSuperAdmin && !empty($effectiveDistrictIds)) {
+            $userQuery->whereIn('district_id', $effectiveDistrictIds);
         } elseif (!$isSuperAdmin && $admin && $admin->role === 'admin') {
             $userQuery->whereRaw('1 = 0');
         }
@@ -184,7 +184,10 @@ class Activity extends Component
         }
 
         if ($this->userCityId !== 'all') {
-            $userQuery->where('city_id', $this->userCityId);
+            $userQuery->where(function($q) {
+                $q->where('district_id', $this->userCityId)
+                  ->orWhere('city_id', $this->userCityId);
+            });
         }
 
         if (!empty($this->userSearch)) {
@@ -205,9 +208,11 @@ class Activity extends Component
         // 2. QUERY DAFTAR LOG ALIRAN AKTIVITAS REAL-TIME
         // ─────────────────────────────────────────────────────────────────────
         $activityQuery = PartnerActivity::with([
+            'user.district',
             'user.city',
             'help.customer',
             'help.mitra',
+            'help.district',
             'help.city'
         ])
         ->whereHas('user', function ($q) {
@@ -215,10 +220,10 @@ class Activity extends Component
         })
         ->latest();
 
-        if (!$isSuperAdmin && !empty($effectiveCityIds)) {
-            $activityQuery->where(function ($q) use ($effectiveCityIds) {
-                $q->whereHas('user', fn($uq) => $uq->whereIn('city_id', $effectiveCityIds))
-                  ->orWhereHas('help', fn($hq) => $hq->whereIn('city_id', $effectiveCityIds));
+        if (!$isSuperAdmin && !empty($effectiveDistrictIds)) {
+            $activityQuery->where(function ($q) use ($effectiveDistrictIds) {
+                $q->whereHas('user', fn($uq) => $uq->whereIn('district_id', $effectiveDistrictIds))
+                  ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $effectiveDistrictIds));
             });
         } elseif (!$isSuperAdmin && $admin && $admin->role === 'admin') {
             $activityQuery->whereRaw('1 = 0');
@@ -239,8 +244,8 @@ class Activity extends Component
         if ($this->cityId !== 'all') {
             $cId = $this->cityId;
             $activityQuery->where(function ($q) use ($cId) {
-                $q->whereHas('user', fn($uq) => $uq->where('city_id', $cId))
-                  ->orWhereHas('help', fn($hq) => $hq->where('city_id', $cId));
+                $q->whereHas('user', fn($uq) => $uq->where('district_id', $cId)->orWhere('city_id', $cId))
+                  ->orWhereHas('help', fn($hq) => $hq->where('district_id', $cId)->orWhere('city_id', $cId));
             });
         }
 
@@ -274,17 +279,19 @@ class Activity extends Component
         $activities = $activityQuery->paginate($this->perPage);
 
         // ─────────────────────────────────────────────────────────────────────
-        // 3. DAFTAR KOTA & STATISTIK
+        // 3. DAFTAR WILAYAH & STATISTIK
         // ─────────────────────────────────────────────────────────────────────
         if ($isSuperAdmin) {
             $cities = City::orderBy('name')->get();
         } else {
-            $cities = City::where('id', $admin->city_id)->get();
+            $cities = $admin ? $admin->getAdminDistricts() : collect();
         }
 
         $baseStats = PartnerActivity::whereHas('user', fn($q) => $q->whereIn('role', ['customer', 'mitra']));
-        if (!$isSuperAdmin && $admin->city_id) {
-            $baseStats->whereHas('user', fn($q) => $q->where('city_id', $admin->city_id));
+        if (!$isSuperAdmin && !empty($effectiveDistrictIds)) {
+            $baseStats->whereHas('user', fn($q) => $q->whereIn('district_id', $effectiveDistrictIds));
+        } elseif (!$isSuperAdmin && $admin && $admin->role === 'admin') {
+            $baseStats->whereRaw('1 = 0');
         }
 
         $stats = [

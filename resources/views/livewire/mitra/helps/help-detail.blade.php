@@ -27,6 +27,9 @@
     @show-status-notification.window="
         notificationMessage = $event.detail.message;
         showNotification = true;
+        if (window.playNotificationSound) {
+            window.playNotificationSound();
+        }
         setTimeout(() => showNotification = false, 5000);
     "
 >
@@ -139,14 +142,48 @@
                 </div>
             </div>
 
-            {{-- Earnings Display (Clean & Transparent) --}}
-            <div class="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded-2xl p-3.5 mb-3 flex items-center justify-between shadow-2xs">
-                <div>
-                    <span class="text-xs font-bold text-emerald-900 dark:text-emerald-200 block">Upah Bersih Diterima:</span>
+            {{-- Earnings Display (Clean & Transparent Breakdown - Revisi 3) --}}
+            <div class="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded-2xl p-4 mb-3 shadow-2xs space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-emerald-900 dark:text-emerald-200 block">Upah Bersih Mitra:</span>
+                        <span class="text-[11px] text-emerald-700/80 dark:text-emerald-300/80">Jasa + Kompensasi Jarak</span>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">
+                        Rp {{ number_format($help->getNetEarning(), 0, ',', '.') }}
+                    </div>
                 </div>
-                <div class="text-lg sm:text-xl font-black text-emerald-700 dark:text-emerald-300">
-                    Rp {{ number_format($help->getNetEarning(), 0, ',', '.') }}
+
+                <div class="pt-2 border-t border-emerald-200/60 dark:border-emerald-800/40 grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-white/70 dark:bg-gray-800/60 rounded-xl p-2 border border-emerald-100 dark:border-emerald-900/40">
+                        <span class="text-[10px] text-gray-500 dark:text-gray-400 block font-medium">Upah Pekerjaan (Jasa)</span>
+                        <span class="font-bold text-gray-900 dark:text-white">Rp {{ number_format($help->service_fee ?: $help->amount, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="bg-white/70 dark:bg-gray-800/60 rounded-xl p-2 border border-emerald-100 dark:border-emerald-900/40">
+                        <span class="text-[10px] text-gray-500 dark:text-gray-400 block font-medium">Ongkos Perjalanan</span>
+                        <span class="font-bold text-blue-600 dark:text-blue-400">
+                            Rp {{ number_format($help->travel_fee, 0, ',', '.') }}
+                            @if($help->travel_distance_km || $help->route_distance_km)
+                                <span class="text-[10px] font-normal text-gray-500">({{ number_format($help->travel_distance_km ?? $help->route_distance_km, 1) }} km)</span>
+                            @endif
+                        </span>
+                    </div>
                 </div>
+
+                @if($help->service_type === 'buy_for_customer' && $help->item_fund > 0)
+                    <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">🛒</span>
+                            <div>
+                                <span class="font-bold text-amber-900 dark:text-amber-200 block">Dana Titipan Belanja (Escrow)</span>
+                                <span class="text-[10px] text-amber-700/80 dark:text-amber-300/80">Bukan penghasilan - dana pembelian barang</span>
+                            </div>
+                        </div>
+                        <div class="font-black text-amber-800 dark:text-amber-200">
+                            Rp {{ number_format($help->item_fund, 0, ',', '.') }}
+                        </div>
+                    </div>
+                @endif
             </div>
 
             {{-- Order ID Row (Full Width & Overflow-Safe) --}}
@@ -164,11 +201,11 @@
             </div>
         </div>
 
-        {{-- Progress Stepper Card --}}
-        <div class="bg-white dark:bg-gray-800 mt-3 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60">
-            <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100 dark:border-gray-700/50">
+        {{-- Progress Section (Revisi 3 Dynamic Multi-Stage Stepper) --}}
+        <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3">
+            <div class="flex items-center justify-between mb-3">
                 <div>
-                    <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Progres Pengerjaan</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Progres & Tahapan Layanan</span>
                     <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5 mt-0.5">
                         <span>{{ $help->progress_icon }}</span>
                         <span>{{ $help->progress_summary }}</span>
@@ -176,39 +213,44 @@
                 </div>
                 <div class="text-right">
                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-extrabold bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800">
-                        {{ $help->progress_percentage }}%
+                        {{ $help->multi_stage_progress_percentage }}%
                     </span>
                 </div>
             </div>
 
-            <!-- Stepper 5-Steps Horizontal -->
+            <!-- Dynamic Stepper -->
+            @php
+                $multiSteps = $help->multi_stage_steps ?? [];
+                $stepCount = is_countable($multiSteps) ? count($multiSteps) : 0;
+                $isDone = in_array($help->status, ['selesai', 'completed']);
+                
+                // Cari index aktif
+                $activeIndex = 0;
+                foreach ($multiSteps as $idx => $st) {
+                    if (!empty($st['active'])) {
+                        $activeIndex = $idx;
+                        break;
+                    }
+                }
+                if ($isDone && $stepCount > 0) $activeIndex = $stepCount - 1;
+            @endphp
+
             <div class="relative pt-2 pb-1">
                 <!-- Connecting Line -->
                 <div class="absolute top-6 left-6 right-6 h-1 bg-gray-100 dark:bg-gray-700 -z-0">
                     <div class="h-full bg-blue-600 dark:bg-blue-500 transition-all duration-700 rounded-full"
-                         style="width: {{ max(0, min(100, ($help->progress_step - 1) * 25)) }}%;"></div>
+                         style="width: {{ $stepCount > 1 ? max(0, min(100, ($activeIndex / ($stepCount - 1)) * 100)) : 0 }}%;"></div>
                 </div>
 
                 <!-- Step Nodes -->
                 <div class="flex items-start justify-between relative z-10">
-                    @php
-                        $steps = [
-                            ['step' => 1, 'icon' => '🔍', 'title' => 'Mencari'],
-                            ['step' => 2, 'icon' => '🤝', 'title' => 'Diambil'],
-                            ['step' => 3, 'icon' => '🛵', 'title' => 'Menuju Lokasi'],
-                            ['step' => 4, 'icon' => '⚡', 'title' => 'Pengerjaan'],
-                            ['step' => 5, 'icon' => '✅', 'title' => 'Selesai'],
-                        ];
-                        $currentStep = $help->progress_step;
-                        $isDone = in_array($help->status, ['selesai', 'completed']);
-                    @endphp
-
-                    @foreach($steps as $s)
+                    @foreach($multiSteps as $idx => $s)
                         @php
-                            $isPassed = $s['step'] < $currentStep || ($s['step'] === 5 && $isDone);
-                            $isCurrent = $s['step'] === $currentStep && !$isDone;
+                            $isPassed = $idx < $activeIndex || ($idx === $stepCount - 1 && $isDone);
+                            $isCurrent = $idx === $activeIndex && !$isDone;
+                            $colWidth = $stepCount > 0 ? (100 / $stepCount) : 20;
                         @endphp
-                        <div class="flex flex-col items-center text-center" style="width: 18%;">
+                        <div class="flex flex-col items-center text-center" style="width: {{ $colWidth }}%;">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 shadow-xs
                                 {{ $isPassed ? 'bg-blue-600 text-white shadow-blue-500/30' : ($isCurrent ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 dark:ring-indigo-900/50 animate-pulse' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500') }}">
                                 @if($isPassed)
@@ -225,6 +267,56 @@
                 </div>
             </div>
         </div>
+
+        {{-- Countdown Multi-Timer Display (Revisi 3) --}}
+        @if($help->departure_at || $help->estimated_arrival_at || $help->service_scheduled_at)
+            <div class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-4 rounded-2xl shadow-md border border-indigo-900/50 mb-3 space-y-3"
+                 x-data="{
+                     now: new Date().getTime(),
+                     depTime: {{ $help->departure_at ? "'" . $help->departure_at->toIso8601String() . "'" : "null" }},
+                     arrTime: {{ $help->estimated_arrival_at ? "'" . $help->estimated_arrival_at->toIso8601String() . "'" : "null" }},
+                     schedTime: {{ $help->service_scheduled_at ? "'" . $help->service_scheduled_at->toIso8601String() . "'" : "null" }},
+                     formatDiff(target) {
+                         if (!target) return '--';
+                         const diff = new Date(target).getTime() - this.now;
+                         if (diff <= 0) return 'Waktu Terlewati';
+                         const m = Math.floor(diff / 60000);
+                         const s = Math.floor((diff % 60000) / 1000);
+                         const h = Math.floor(m / 60);
+                         if (h > 0) return `${h} jam ${m % 60} mnt`;
+                         return `${m} mnt ${s} dtk`;
+                     }
+                 }"
+                 x-init="setInterval(() => now = new Date().getTime(), 1000)">
+                <div class="flex items-center justify-between border-b border-indigo-800/60 pb-2">
+                    <span class="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Estimasi Waktu & Countdown Layanan
+                    </span>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-900/80 text-indigo-200">Live Client Sync</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
+                    @if($help->departure_at && !in_array($help->status, ['in_progress', 'waiting_customer_confirmation', 'completed', 'selesai']))
+                        <div class="bg-white/10 rounded-xl p-2.5">
+                            <span class="text-[10px] text-indigo-200 block">Jadwal Keberangkatan</span>
+                            <span class="text-xs font-extrabold text-amber-300 font-mono" x-text="formatDiff(depTime)"></span>
+                        </div>
+                    @endif
+                    @if($help->estimated_arrival_at && in_array($help->status, ['partner_on_the_way', 'taken']))
+                        <div class="bg-white/10 rounded-xl p-2.5">
+                            <span class="text-[10px] text-indigo-200 block">Estimasi Tiba (ETA)</span>
+                            <span class="text-xs font-extrabold text-emerald-300 font-mono" x-text="formatDiff(arrTime)"></span>
+                        </div>
+                    @endif
+                    @if($help->service_scheduled_at)
+                        <div class="bg-white/10 rounded-xl p-2.5">
+                            <span class="text-[10px] text-indigo-200 block">Jadwal Dimulai</span>
+                            <span class="text-xs font-extrabold text-white font-mono" x-text="formatDiff(schedTime)"></span>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
 
         {{-- Card Klarifikasi Laporan Aduan / Sengketa Admin --}}
         @php
@@ -485,35 +577,129 @@
             </div>
         @endif
 
-        {{-- Update Status Section --}}
-        @if ($help->status === 'partner_arrived')
+        {{-- Update Status Section (Revisi 3: Multi-Stage Action Controls) --}}
+        @if (in_array($help->status, ['taken', 'memperoleh_mitra']) && $help->mitra_id === auth()->id())
+            <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3 space-y-2">
+                @if ($help->service_type === 'pickup_delivery')
+                    <button wire:click="advanceStage('going_to_pickup')" wire:loading.attr="disabled"
+                        class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        <span>Mulai Menuju Lokasi Penjemputan</span>
+                    </button>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda mulai bergerak menuju titik barang yang akan dijemput</p>
+                @elseif ($help->service_type === 'buy_for_customer')
+                    <button wire:click="advanceStage('going_to_store')" wire:loading.attr="disabled"
+                        class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        <span>Mulai Menuju Toko / Merchant</span>
+                    </button>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda mulai berangkat menuju toko/tempat belanja</p>
+                @else
+                    <button wire:click="markPartnerStarted" wire:loading.attr="disabled"
+                        class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        <span>Mulai Berangkat ke Lokasi Customer</span>
+                    </button>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda mulai jalan menuju lokasi pengerjaan</p>
+                @endif
+            </div>
+        @endif
+
+        @if ($help->status === 'partner_on_the_way' && $help->mitra_id === auth()->id())
+            <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3 space-y-2">
+                @if ($help->service_type === 'pickup_delivery')
+                    @if (!$help->service_stage || $help->service_stage === 'going_to_pickup')
+                        <button wire:click="advanceStage('at_pickup')" wire:loading.attr="disabled"
+                            class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+                            <span>Saya Sudah Tiba di Lokasi Penjemputan</span>
+                        </button>
+                    @elseif ($help->service_stage === 'at_pickup')
+                        <button wire:click="advanceStage('item_collected')" wire:loading.attr="disabled"
+                            class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                            <span>Barang Sudah Diambil (Mulai Pengantaran)</span>
+                        </button>
+                    @elseif ($help->service_stage === 'item_collected' || $help->service_stage === 'going_to_destination')
+                        <button wire:click="advanceStage('at_destination')" wire:loading.attr="disabled"
+                            class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>Tiba di Lokasi Tujuan Customer</span>
+                        </button>
+                    @endif
+                @elseif ($help->service_type === 'buy_for_customer')
+                    @if (!$help->service_stage || $help->service_stage === 'going_to_store')
+                        <button wire:click="advanceStage('at_store')" wire:loading.attr="disabled"
+                            class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                            <span>Saya Sudah Tiba di Toko / Merchant</span>
+                        </button>
+                    @elseif ($help->service_stage === 'at_store')
+                        <button wire:click="advanceStage('purchasing')" wire:loading.attr="disabled"
+                            class="w-full py-3.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            <span>Mulai Pembelian / Belanja Barang</span>
+                        </button>
+                    @elseif ($help->service_stage === 'purchasing')
+                        <button wire:click="advanceStage('going_to_customer')" wire:loading.attr="disabled"
+                            class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            <span>Barang Selesai Dibeli (Menuju Customer)</span>
+                        </button>
+                    @elseif ($help->service_stage === 'going_to_customer')
+                        <button wire:click="advanceStage('at_customer')" wire:loading.attr="disabled"
+                            class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>Tiba di Lokasi Customer</span>
+                        </button>
+                    @endif
+                @else
+                    <button wire:click="markPartnerArrived" wire:loading.attr="disabled"
+                        class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span>Saya Sudah Tiba di Lokasi</span>
+                    </button>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda telah sampai di titik lokasi customer</p>
+                @endif
+            </div>
+        @endif
+
+        @if ($help->status === 'partner_arrived' || in_array($help->service_stage, ['at_customer', 'at_destination']))
             <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3">
-                <button wire:click="startService"
-                    class="w-full py-3 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 transition flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Mulai Pekerjaan
-                </button>
-                <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">Klik tombol ini setelah Anda sampai di lokasi dan
-                    siap memulai pekerjaan</p>
+                @if ($help->service_type === 'on_site_service')
+                    <button wire:click="startService"
+                        class="w-full py-3.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 transition flex items-center justify-center gap-2 cursor-pointer shadow-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Mulai Pekerjaan</span>
+                    </button>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">Klik tombol ini setelah Anda siap memulai pengerjaan</p>
+                @else
+                    <button wire:click="openCompletionModal"
+                        class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg>
+                        <span>Selesaikan & Unggah Bukti Serah Terima</span>
+                    </button>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">Upload foto serah terima barang/hasil pesanan kepada customer</p>
+                @endif
             </div>
         @endif
 
         @if ($help->status === 'in_progress' || $help->status === 'sedang_diproses')
             <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-3">
                 <button wire:click="openCompletionModal"
-                    class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2">
+                    class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    Selesaikan & Upload Bukti Pekerjaan
+                    <span>Selesaikan & Upload Bukti Pekerjaan</span>
                 </button>
                 <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">Upload foto hasil pengerjaan sebagai bukti penyelesaian kepada customer</p>
             </div>
@@ -615,17 +801,18 @@
 
         @if (in_array($help->status, ['memperoleh_mitra', 'taken', 'partner_on_the_way', 'partner_arrived']) &&
                 $help->mitra_id === auth()->id())
-            <div class="bg-white px-4 py-4 rounded-xl shadow-sm border border-gray-100 mb-3">
+            <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3">
                 <button wire:click="openPartnerCancelModal"
-                    class="w-full py-3 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 transition flex items-center justify-center gap-2">
+                    class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 shadow-xs active:scale-98 cursor-pointer">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                    Batalkan Bantuan
+                    Batalkan Penugasan (Sepihak)
                 </button>
-                <p class="text-xs text-gray-500 text-center mt-2">Ajukan pembatalan ke customer. Menunggu konfirmasi
-                    customer.</p>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-2">
+                    Pembatalan langsung melepaskan tugas tanpa menunggu customer (berkonsekuensi poin SP).
+                </p>
             </div>
         @endif
 
@@ -724,7 +911,10 @@
                 {{-- Header --}}
                 <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 rounded-t-3xl">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Ajukan Pembatalan</h3>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <span class="text-red-500">⚠️</span>
+                            <span>Batalkan Penugasan (Sepihak)</span>
+                        </h3>
                         <button type="button" 
                                 wire:click="$set('showPartnerCancelModal', false)" 
                                 class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition text-gray-600 dark:text-gray-300">
@@ -737,63 +927,58 @@
 
                 {{-- Content --}}
                 <div class="p-5 pb-6">
-                    {{-- Info Icon --}}
-                    <div class="flex items-center justify-center mb-4">
-                        <div class="w-16 h-16 bg-red-100 dark:bg-red-950/60 rounded-full flex items-center justify-center">
-                            <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
+                    {{-- Info Warning Box --}}
+                    <div class="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-2xl p-3.5 mb-4 text-xs space-y-2">
+                        <div class="flex items-start gap-2.5">
+                            <span class="text-lg leading-none mt-0.5">🛑</span>
+                            <div class="text-red-900 dark:text-red-200 leading-relaxed">
+                                <strong class="block font-bold mb-0.5">Pembatalan Langsung Tanpa Menunggu Customer:</strong>
+                                Penugasan Anda akan langsung dilepas dan pesanan otomatis dikembalikan ke sistem pencarian agar customer tidak tertahan.
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-red-200/60 dark:border-red-800/60 text-[11px] text-red-800 dark:text-red-300">
+                            <strong>Konsekuensi Poin Kedisiplinan:</strong> Pembatalan sepihak dicatat oleh sistem (Akumulasi: 3x pembatalan &rarr; <strong>SP 1</strong>, 6x &rarr; <strong>SP 2</strong>, 9x &rarr; <strong>SP 3 / Shadow Ban</strong>). Status Anda: <span class="font-bold underline">{{ auth()->user()->warning_level_label }}</span>.
                         </div>
                     </div>
 
-                    <p class="text-sm text-gray-700 dark:text-gray-300 text-center mb-3">
-                        Tulis alasan singkat kenapa Anda ingin membatalkan bantuan ini. Customer akan menerima permintaan pembatalan dan dapat menyetujui atau menolak.
-                    </p>
-
-                    {{-- Catatan Kepatuhan Pembatalan --}}
-                    <div class="bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 mb-4 text-left">
-                        <div class="flex items-start gap-3">
-                            <div class="w-8 h-8 rounded-xl bg-amber-500/15 dark:bg-amber-500/25 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5 border border-amber-500/20">
-                                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-xs font-bold text-gray-900 dark:text-white mb-0.5">Ketentuan Pembatalan Tugas:</p>
-                                <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-                                    Pembatalan tugas yang sudah diambil dapat dicatat oleh sistem. Pelanggaran berulang dapat menyebabkan akun masuk ke <strong>Daftar Abu-Abu</strong> dan menerima <strong>Surat Peringatan (SP)</strong> dari Admin.
-                                </p>
-                            </div>
+                    {{-- Form Fields --}}
+                    <div class="space-y-3 mb-5">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1">Alasan Pembatalan <span class="text-red-500">*</span></label>
+                            <select wire:model.defer="partnerCancelReason" 
+                                    class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition">
+                                <option value="">-- Pilih Alasan --</option>
+                                <option value="Kendaraan / Transportasi Bermasalah">Kendaraan / Transportasi Bermasalah</option>
+                                <option value="Kondisi Darurat Pribadi">Kondisi Darurat Pribadi</option>
+                                <option value="Barang / Toko Tidak Ditemukan / Tutup">Barang / Toko Tidak Ditemukan / Tutup</option>
+                                <option value="Customer Tidak Dapat Dihubungi">Customer Tidak Dapat Dihubungi</option>
+                                <option value="Lokasi Tidak Memungkinkan Dijangkau">Lokasi Tidak Memungkinkan Dijangkau</option>
+                                <option value="Lainnya">Lainnya (Tuliskan di catatan)</option>
+                            </select>
+                            @error('partnerCancelReason') <span class="text-[11px] text-red-500 font-semibold">{{ $message }}</span> @enderror
                         </div>
-                    </div>
 
-                    {{-- Textarea --}}
-                    <div class="mb-5">
-                        <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Alasan Pembatalan</label>
-                        <textarea wire:model.defer="partnerCancelReason" 
-                                  rows="4" 
-                                  class="w-full p-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
-                                  placeholder="Contoh: kendaraan rusak, alat tidak tersedia, kendala darurat..."></textarea>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">*Opsional - tetapi disarankan mengisi alasan</p>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1">Catatan Tambahan (Opsional)</label>
+                            <textarea wire:model.defer="partnerCancelNotes" rows="2"
+                                      class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-red-500 transition"
+                                      placeholder="Jelaskan kendala yang dialami..."></textarea>
+                        </div>
                     </div>
 
                     {{-- Buttons --}}
                     <div class="flex gap-3">
-                        <button wire:click="$set('showPartnerCancelModal', false)"
-                                class="flex-1 px-5 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-pointer">
+                        <button type="button"
+                                wire:click="$set('showPartnerCancelModal', false)"
+                                class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-semibold hover:bg-gray-200 transition cursor-pointer">
                             Kembali
                         </button>
-                        <button wire:click="requestPartnerCancel" 
+                        <button type="button"
+                                wire:click="requestPartnerCancel" 
                                 wire:loading.attr="disabled"
-                                class="flex-1 px-5 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-xs">
-                            <span wire:loading.remove wire:target="requestPartnerCancel">Ya, Batalkan</span>
-                            <span wire:loading wire:target="requestPartnerCancel">
-                                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Memproses...
-                            </span>
+                                class="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98">
+                            <span wire:loading.remove wire:target="requestPartnerCancel">Konfirmasi Batalkan Sepihak</span>
+                            <span wire:loading wire:target="requestPartnerCancel">Memproses...</span>
                         </button>
                     </div>
                 </div>

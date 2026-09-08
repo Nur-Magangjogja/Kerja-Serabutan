@@ -26,7 +26,8 @@ class Index extends Component
     ];
 
     protected $listeners = [
-        'admin-city-changed' => '$refresh',
+        'admin-district-changed' => '$refresh',
+        'admin-city-changed'     => '$refresh',
     ];
 
     public function updatingSearch()
@@ -57,14 +58,16 @@ class Index extends Component
         $statsQuery = PartnerReport::query();
 
         if (! $isSuperAdmin) {
-            $cityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
+            $districtIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
 
-            if (!empty($cityIds)) {
-                $statsQuery->where(function ($q) use ($cityIds) {
-                    $q->whereHas('reporter', function ($sq) use ($cityIds) {
-                        $sq->whereIn('city_id', $cityIds);
-                    })->orWhereHas('reportedUser', function ($sq) use ($cityIds) {
-                        $sq->whereIn('city_id', $cityIds);
+            if (!empty($districtIds)) {
+                $statsQuery->where(function ($q) use ($districtIds) {
+                    $q->whereHas('reporter', function ($sq) use ($districtIds) {
+                        $sq->whereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedUser', function ($sq) use ($districtIds) {
+                        $sq->whereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedHelp', function ($sq) use ($districtIds) {
+                        $sq->whereIn('district_id', $districtIds);
                     });
                 });
             } else {
@@ -87,15 +90,17 @@ class Index extends Component
         })->count();
 
         // Main Query
-        $query = PartnerReport::with(['reporter', 'reportedUser', 'reportedHelp.city', 'resolvedBy'])->withCount('messages');
+        $query = PartnerReport::with(['reporter.district', 'reportedUser.district', 'reportedHelp.district', 'reportedHelp.city', 'resolvedBy'])->withCount('messages');
 
         if (! $isSuperAdmin) {
-            if (!empty($cityIds)) {
-                $query->where(function ($q) use ($cityIds) {
-                    $q->whereHas('reporter', function ($sq) use ($cityIds) {
-                        $sq->whereIn('city_id', $cityIds);
-                    })->orWhereHas('reportedUser', function ($sq) use ($cityIds) {
-                        $sq->whereIn('city_id', $cityIds);
+            if (!empty($districtIds)) {
+                $query->where(function ($q) use ($districtIds) {
+                    $q->whereHas('reporter', function ($sq) use ($districtIds) {
+                        $sq->whereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedUser', function ($sq) use ($districtIds) {
+                        $sq->whereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedHelp', function ($sq) use ($districtIds) {
+                        $sq->whereIn('district_id', $districtIds);
                     });
                 });
             } else {

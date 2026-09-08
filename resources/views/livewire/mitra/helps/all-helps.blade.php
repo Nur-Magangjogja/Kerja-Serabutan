@@ -73,29 +73,24 @@
                     </div>
                 </div>
 
-                <!-- Distance Radius Filter Grid (No Overflow) -->
-                <div class="grid {{ $userCity ? 'grid-cols-5' : 'grid-cols-4' }} gap-1 bg-black/15 backdrop-blur-md p-1 rounded-xl border border-white/20 text-center">
-                    <button type="button" wire:click="$set('distanceRadius', 'all')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center {{ $distanceRadius === 'all' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
-                        <span>Semua</span>
+                <!-- District & 10 KM Unified Filter Grid -->
+                <div class="grid {{ $userDistrict ? 'grid-cols-3' : ($userCity ? 'grid-cols-2' : 'grid-cols-1') }} gap-1 bg-black/15 backdrop-blur-md p-1 rounded-xl border border-white/20 text-center">
+                    <button type="button" wire:click="$set('districtFilter', 'all')" role="tab"
+                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center {{ $districtFilter === 'all' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
+                        <span>Semua (≤ 10 km)</span>
                     </button>
-                    <button type="button" wire:click="$set('distanceRadius', '5')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center {{ $distanceRadius === '5' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
-                        <span>≤ 5 km</span>
+                    @if($userDistrict)
+                    <button type="button" wire:click="$set('districtFilter', 'my_district')" role="tab"
+                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center truncate {{ $districtFilter === 'my_district' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}"
+                        title="Kecamatan {{ $userDistrict->name }}">
+                        <span class="truncate">Kec. {{ $userDistrict->name }}</span>
                     </button>
-                    <button type="button" wire:click="$set('distanceRadius', '15')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center {{ $distanceRadius === '15' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
-                        <span>≤ 15 km</span>
-                    </button>
-                    <button type="button" wire:click="$set('distanceRadius', '60')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center {{ $distanceRadius === '60' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
-                        <span>≤ 60 km</span>
-                    </button>
+                    @endif
                     @if($userCity)
-                    <button type="button" wire:click="$set('distanceRadius', 'city')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center truncate {{ $distanceRadius === 'city' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}"
-                        title="Kota {{ $userCity->name }}">
-                        <span class="truncate">Kota</span>
+                    <button type="button" wire:click="$set('districtFilter', 'all')" role="tab"
+                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center truncate text-white/80 hover:bg-white/10"
+                        title="Radius Baku: 10 KM">
+                        <span class="truncate">📍 Max 10 KM</span>
                     </button>
                     @endif
                 </div>

@@ -167,4 +167,43 @@ document.addEventListener('wheel', function(e) {
     });
 })();
 
+/**
+ * Global Utility: Play Notification Sound
+ * Plays notification sound from /sfx/ when notification events arrive
+ */
+window.playNotificationSound = function(options = {}) {
+    try {
+        const force = options && options.force === true;
+        const soundEnabled = (typeof window.getNotificationSoundEnabled === 'function')
+            ? window.getNotificationSoundEnabled()
+            : (window.USER_SOUND_ENABLED !== false);
+
+        if (!force && soundEnabled === false) {
+            return;
+        }
+
+        const defaultUrl = window.DEFAULT_NOTIFICATION_SOUND || '/sfx/mixkit-software-interface-start-2574.mp3';
+        const soundUrl = options.url || defaultUrl;
+        const audio = new Audio(soundUrl);
+        audio.volume = typeof options.volume === 'number' ? Math.max(0, Math.min(1, options.volume)) : 0.85;
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(err => {
+                // Autoplay restrictions or missing audio file handled silently
+                console.debug('Notification audio playback prevented:', err);
+            });
+        }
+    } catch (err) {
+        console.debug('playNotificationSound error:', err);
+    }
+};
+
+// Global event listener for Livewire or Alpine dispatches
+window.addEventListener('play-notification-sound', function(e) {
+    const detail = e && e.detail ? e.detail : {};
+    window.playNotificationSound(detail);
+});
+
+
 

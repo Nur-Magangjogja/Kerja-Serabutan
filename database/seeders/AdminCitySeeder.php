@@ -3,82 +3,170 @@
 namespace Database\Seeders;
 
 use App\Models\City;
+use App\Models\District;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AdminCitySeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     * Menghubungkan akun Admin ke Kota/Kabupaten:
-     * - Admin Dian Wahyuni mengelola 2 WILAYAH (Kabupaten Sleman & Kota Yogyakarta)
-     * - Admin Siti Nurhaliza mengelola 2 WILAYAH (Kabupaten Sleman & Kota Yogyakarta)
-     * - Admin Bambang Haryanto mengelola 2 WILAYAH (Kota Surakarta & Kabupaten Sukoharjo)
+     * Menghubungkan seluruh akun Admin Wilayah ke Kecamatan (`admin_district`) dan Kota (`admin_city`) binaannya se-Indonesia.
      */
     public function run(): void
     {
-        $adminSleman    = User::where('email', 'admin.sleman@sayabantu.com')->first();
-        $adminJogja     = User::where('email', 'admin@sayabantu.com')->first();
-        $adminSurakarta = User::where('email', 'admin.surakarta@sayabantu.com')->first();
+        $adminAssignments = [
+            // 1. Admin Sleman
+            [
+                'email'     => 'admin.sleman@sayabantu.com',
+                'cityName'  => 'Sleman',
+                'districts' => ['Depok', 'Mlati', 'Ngaglik', 'Gamping', 'Kalasan', 'Sleman'],
+            ],
+            // 2. Admin Yogyakarta
+            [
+                'email'     => 'admin@sayabantu.com',
+                'cityName'  => 'Yogyakarta',
+                'districts' => ['Gondomanan', 'Danurejan', 'Umbulharjo', 'Mantrijeron', 'Kotagede', 'Gedongtengen'],
+            ],
+            // 3. Admin Surakarta (Solo & Sukoharjo)
+            [
+                'email'     => 'admin.surakarta@sayabantu.com',
+                'cityName'  => 'Surakarta',
+                'districts' => ['Banjarsari', 'Jebres', 'Laweyan', 'Pasar Kliwon', 'Serengan', 'Kartasura', 'Baki'],
+            ],
+            // 4. Admin Jakarta Selatan
+            [
+                'email'     => 'admin.jaksel@sayabantu.com',
+                'cityName'  => 'Jakarta Selatan',
+                'districts' => ['Tebet', 'Kebayoran Baru', 'Setiabudi', 'Mampang Prapatan', 'Cilandak', 'Pancoran'],
+            ],
+            // 5. Admin Kota Bandung
+            [
+                'email'     => 'admin.bandung@sayabantu.com',
+                'cityName'  => 'Bandung',
+                'districts' => ['Coblong', 'Sukajadi', 'Lengkong', 'Sumur Bandung', 'Antapani', 'Cicendo'],
+            ],
+            // 6. Admin Kota Surabaya
+            [
+                'email'     => 'admin.surabaya@sayabantu.com',
+                'cityName'  => 'Surabaya',
+                'districts' => ['Wonokromo', 'Gubeng', 'Tegalsari', 'Sukolilo', 'Rungkut', 'Genteng'],
+            ],
+            // 7. Admin Kota Semarang
+            [
+                'email'     => 'admin.semarang@sayabantu.com',
+                'cityName'  => 'Semarang',
+                'districts' => ['Banyumanik', 'Tembalang', 'Semarang Tengah', 'Semarang Barat', 'Pedurungan', 'Gajahmungkur'],
+            ],
+            // 8. Admin Kota Denpasar
+            [
+                'email'     => 'admin.denpasar@sayabantu.com',
+                'cityName'  => 'Denpasar',
+                'districts' => ['Denpasar Selatan', 'Denpasar Barat', 'Denpasar Utara', 'Denpasar Timur'],
+            ],
+            // 9. Admin Kota Medan
+            [
+                'email'     => 'admin.medan@sayabantu.com',
+                'cityName'  => 'Medan',
+                'districts' => ['Medan Kota', 'Medan Petisah', 'Medan Baru', 'Medan Sunggal', 'Medan Helvetia', 'Medan Tembung'],
+            ],
+            // 10. Admin Kota Makassar
+            [
+                'email'     => 'admin.makassar@sayabantu.com',
+                'cityName'  => 'Makassar',
+                'districts' => ['Panakkukang', 'Rappocini', 'Ujung Pandang', 'Tamalanrea', 'Mariso', 'Bontoala'],
+            ],
+            // 11. Admin Kota Jakarta Barat
+            [
+                'email'     => 'admin.jakbar@sayabantu.com',
+                'cityName'  => 'Jakarta Barat',
+                'districts' => ['Kebon Jeruk', 'Kembangan', 'Palmerah', 'Grogol Petamburan', 'Cengkareng'],
+            ],
+            // 12. Admin Kota Jakarta Timur
+            [
+                'email'     => 'admin.jaktim@sayabantu.com',
+                'cityName'  => 'Jakarta Timur',
+                'districts' => ['Duren Sawit', 'Jatinegara', 'Matraman', 'Cakung', 'Pulogadung'],
+            ],
+            // 13. Admin Kota Malang
+            [
+                'email'     => 'admin.malang@sayabantu.com',
+                'cityName'  => 'Malang',
+                'districts' => ['Lowokwaru', 'Klojen', 'Blimbing', 'Sukun', 'Kedungkandang'],
+            ],
+            // 14. Admin Kota Palembang
+            [
+                'email'     => 'admin.palembang@sayabantu.com',
+                'cityName'  => 'Palembang',
+                'districts' => ['Ilir Barat I', 'Ilir Timur II', 'Kemuning', 'Sukarami', 'Bukit Kecil'],
+            ],
+            // 15. Admin Kota Tangerang Selatan
+            [
+                'email'     => 'admin.tangsel@sayabantu.com',
+                'cityName'  => 'Tangerang Selatan',
+                'districts' => ['Serpong', 'Ciputat Timur', 'Pondok Aren', 'Pamulang', 'Setu', 'Serpong Utara'],
+            ],
+        ];
 
-        $slemanCity    = City::where('code', '3404')->orWhere('name', 'like', '%Sleman%')->first();
-        $jogjaCity     = City::where('code', '3471')->orWhere('name', 'like', '%Yogyakarta%')->first();
-        $surakartaCity = City::where('code', '3372')->orWhere('name', 'like', '%Surakarta%')->first();
-        $sukoharjoCity = City::where('code', '3311')->orWhere('name', 'like', '%Sukoharjo%')->first();
+        $now = now();
+        $hasAdminDistrict = Schema::hasTable('admin_district');
+        $hasAdminCity = Schema::hasTable('admin_city');
 
-        // 1. Hubungkan Admin Sleman & Yogyakarta (Dian Wahyuni)
-        if ($adminSleman) {
-            if ($slemanCity) {
-                DB::table('admin_city')->updateOrInsert(
-                    ['city_id' => $slemanCity->id, 'user_id' => $adminSleman->id],
-                    ['created_at' => now(), 'updated_at' => now()]
-                );
-                $slemanCity->update(['admin_id' => $adminSleman->id, 'is_active' => true]);
+        foreach ($adminAssignments as $assign) {
+            $admin = User::where('email', $assign['email'])->first();
+            if (!$admin) {
+                continue;
             }
-            if ($jogjaCity) {
-                DB::table('admin_city')->updateOrInsert(
-                    ['city_id' => $jogjaCity->id, 'user_id' => $adminSleman->id],
-                    ['created_at' => now(), 'updated_at' => now()]
-                );
-                $jogjaCity->update(['admin_id' => $adminSleman->id, 'is_active' => true]);
+
+            $city = City::where('name', 'like', "%{$assign['cityName']}%")->first();
+            $cityIds = $city ? [$city->id] : [];
+            $districtIds = [];
+
+            foreach ($assign['districts'] as $distName) {
+                $query = District::where('name', 'like', "%{$distName}%");
+                if ($city) {
+                    $query->where('city_id', $city->id);
+                }
+                $dist = $query->first();
+
+                // If not found in primary city, lookup across any matching district
+                if (!$dist) {
+                    $dist = District::where('name', 'like', "%{$distName}%")->first();
+                }
+
+                if ($dist) {
+                    $districtIds[] = $dist->id;
+                    if ($dist->city_id && !in_array($dist->city_id, $cityIds, true)) {
+                        $cityIds[] = $dist->city_id;
+                    }
+                }
             }
-            $this->command->info("Admin '{$adminSleman->name}' berhasil ditugaskan mengurusi 2 Wilayah: '{$slemanCity->name}' & '{$jogjaCity->name}'.");
+
+            // Sync pivot `admin_district`
+            if ($hasAdminDistrict && !empty($districtIds)) {
+                $admin->managedDistricts()->sync($districtIds);
+            }
+
+            // Sync pivot `admin_city` (backward compatibility)
+            if ($hasAdminCity && !empty($cityIds)) {
+                $admin->managedCities()->sync($cityIds);
+            }
+
+            // Ensure primary district_id and city_id on user model are set
+            if (!empty($districtIds)) {
+                $admin->district_id = $districtIds[0];
+            }
+            if (!empty($cityIds)) {
+                $admin->city_id = $cityIds[0];
+            }
+            $admin->save();
+
+            $distCount = count($districtIds);
+            $this->command->info("✓ Admin '{$admin->name}' ({$admin->email}) berhasil ditugaskan mengelola {$distCount} Kecamatan di {$assign['cityName']}.");
         }
 
-        // 2. Hubungkan Admin Pendamping (Siti Nurhaliza)
-        if ($adminJogja) {
-            if ($jogjaCity) {
-                DB::table('admin_city')->updateOrInsert(
-                    ['city_id' => $jogjaCity->id, 'user_id' => $adminJogja->id],
-                    ['created_at' => now(), 'updated_at' => now()]
-                );
-            }
-            if ($slemanCity) {
-                DB::table('admin_city')->updateOrInsert(
-                    ['city_id' => $slemanCity->id, 'user_id' => $adminJogja->id],
-                    ['created_at' => now(), 'updated_at' => now()]
-                );
-            }
-        }
-
-        // 3. Hubungkan Admin Surakarta & Sukoharjo (Bambang Haryanto)
-        if ($adminSurakarta) {
-            if ($surakartaCity) {
-                DB::table('admin_city')->updateOrInsert(
-                    ['city_id' => $surakartaCity->id, 'user_id' => $adminSurakarta->id],
-                    ['created_at' => now(), 'updated_at' => now()]
-                );
-                $surakartaCity->update(['admin_id' => $adminSurakarta->id, 'is_active' => true]);
-            }
-            if ($sukoharjoCity) {
-                DB::table('admin_city')->updateOrInsert(
-                    ['city_id' => $sukoharjoCity->id, 'user_id' => $adminSurakarta->id],
-                    ['created_at' => now(), 'updated_at' => now()]
-                );
-                $sukoharjoCity->update(['admin_id' => $adminSurakarta->id, 'is_active' => true]);
-            }
-            $this->command->info("Admin '{$adminSurakarta->name}' berhasil ditugaskan mengurusi Wilayah '{$surakartaCity->name}' & '{$sukoharjoCity->name}'.");
-        }
+        $this->command->info('AdminCitySeeder berhasil menghubungkan seluruh Admin Wilayah ke Kecamatan wewenangnya.');
     }
 }

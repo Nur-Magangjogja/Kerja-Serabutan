@@ -23,11 +23,16 @@ class HelpDetail extends Component
     public $help;
     public $currentStatus;
 
-    // ─── Cancel modal ─────────────────────────────────────────────────────────
-    public $showPartnerCancelModal      = false;
-    public $partnerCancelReason         = '';
+    // ─── Cancel modal (Revisi 3) ─────────────────────────────────────────────
+    public $showPartnerCancelModal       = false;
+    public $partnerCancelReason          = '';
+    public $partnerCancelNotes           = '';
+    public $cancel_evidence_photo        = null;
+    public $item_purchased               = false;
+    public $item_purchase_amount         = 0;
+    public $work_completed_percentage    = 0;
     public $showPartnerCancelStatusModal = false;
-    public $partnerCancelStatus         = null; // 'pending' | 'accepted' | 'rejected'
+    public $partnerCancelStatus          = null; // 'pending' | 'accepted' | 'rejected'
 
     // ─── Completion modal ────────────────────────────────────────────────────
     public $proof_photo;
@@ -170,6 +175,39 @@ class HelpDetail extends Component
         }
     }
 
+    // ─── Revision 3: Multi-Stage Tracking & Advance ──────────────────────────
+
+    public function advanceStage(string $stage): void
+    {
+        try {
+            app(\App\Services\HelpTrackingService::class)->advanceStage($this->help, auth()->user(), $stage);
+            $this->loadHelp();
+            $this->dispatch('show-status-notification', message: 'Tahapan berhasil diperbarui!');
+            session()->flash('message', 'Tahapan berhasil diperbarui: ' . str_replace('_', ' ', ucfirst($stage)));
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[MitraHelpDetail] advanceStage error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat memperbarui tahapan.');
+        }
+    }
+
+    public function updatePartnerGps($lat, $lng, $accuracy = null): void
+    {
+        try {
+            app(\App\Services\HelpTrackingService::class)->updatePartnerLocation(
+                $this->help,
+                auth()->user(),
+                (float) $lat,
+                (float) $lng,
+                $accuracy ? (float) $accuracy : null
+            );
+            $this->loadHelp();
+        } catch (\Throwable $e) {
+            Log::warning('[MitraHelpDetail] updatePartnerGps warning: ' . $e->getMessage());
+        }
+    }
+
     // ─── Completion ──────────────────────────────────────────────────────────
 
     public function openCompletionModal()
@@ -224,36 +262,47 @@ class HelpDetail extends Component
         $this->openCompletionModal();
     }
 
-    // ─── Partner Cancel ──────────────────────────────────────────────────────
+    // ─── Partner Cancel (Revisi 3: State-Aware Cancel Request) ───────────────
 
     public function openPartnerCancelModal()
     {
-        $this->partnerCancelReason    = '';
-        $this->showPartnerCancelModal = true;
+        $this->partnerCancelReason       = '';
+        $this->partnerCancelNotes        = '';
+        $this->cancel_evidence_photo     = null;
+        $this->item_purchased            = false;
+        $this->item_purchase_amount      = 0;
+        $this->work_completed_percentage = 0;
+        $this->showPartnerCancelModal    = true;
     }
 
     public function requestPartnerCancel()
     {
+        $this->validate([
+            'partnerCancelReason' => 'required|string|min:5|max:255',
+            'partnerCancelNotes'  => 'nullable|string|max:1000',
+        ], [
+            'partnerCancelReason.required' => 'Pilih atau isi alasan pembatalan sepihak.',
+            'partnerCancelReason.min'      => 'Alasan pembatalan minimal 5 karakter.',
+        ]);
+
         try {
-            app(HelpTransactionService::class)->requestPartnerCancel(
+            app(\App\Services\HelpCancellationService::class)->cancelByPartnerUnilaterally(
                 $this->help,
                 auth()->user(),
-                $this->partnerCancelReason ?: null
+                $this->partnerCancelReason,
+                $this->partnerCancelNotes ?: null
             );
 
-            $this->showPartnerCancelModal       = false;
-            $this->showPartnerCancelStatusModal = false;
-            $this->partnerCancelStatus          = null;
-
-            session()->flash('message', 'Pembatalan berhasil. Tugas telah dilepaskan dan dikembalikan ke sistem pencarian untuk Rekan Jasa lain.');
-            return redirect()->route('mitra.helps.all');
+            $this->showPartnerCancelModal = false;
+            session()->flash('message', 'Penugasan telah dibatalkan sepihak. Catatan pelanggaran telah ditambahkan ke akun Anda.');
+            return redirect()->route('mitra.dashboard');
         } catch (\RuntimeException $e) {
             $this->showPartnerCancelModal = false;
             session()->flash('error', $e->getMessage());
         } catch (\Throwable $e) {
             $this->showPartnerCancelModal = false;
             Log::error('[MitraHelpDetail] requestPartnerCancel error: ' . $e->getMessage());
-            session()->flash('error', 'Terjadi kesalahan saat membatalkan tugas.');
+            session()->flash('error', 'Terjadi kesalahan saat membatalkan tugas: ' . $e->getMessage());
         }
     }
 

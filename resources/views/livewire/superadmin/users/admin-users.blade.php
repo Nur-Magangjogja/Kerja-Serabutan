@@ -69,7 +69,7 @@
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">No. HP</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Verifikasi</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Kota Dikelola</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Kecamatan Dikelola</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden xl:table-cell">Terdaftar</th>
                         <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
                     </tr>
@@ -106,19 +106,23 @@
                             </button>
                         </td>
                         <td class="px-4 py-3.5 hidden lg:table-cell">
-                            @if($user->managedCities && $user->managedCities->count() > 0)
+                            @if($user->managedDistricts && $user->managedDistricts->count() > 0)
                             <div class="flex flex-wrap gap-1 items-center">
-                                @foreach($user->managedCities->take(2) as $mc)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">{{ $mc->name }}</span>
+                                @foreach($user->managedDistricts->take(2) as $md)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
+                                    Kec. {{ $md->name }}
+                                </span>
                                 @endforeach
-                                @if($user->managedCities->count() > 2)
-                                <span class="text-[11px] font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-1.5 py-0.5 rounded-md border border-primary-200/50 dark:border-primary-800/50">+{{ $user->managedCities->count() - 2 }}</span>
+                                @if($user->managedDistricts->count() > 2)
+                                <span class="text-[11px] font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-1.5 py-0.5 rounded-md border border-primary-200/50 dark:border-primary-800/50">+{{ $user->managedDistricts->count() - 2 }}</span>
                                 @endif
                             </div>
-                            @elseif($user->city || $user->city_id)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">{{ $user->city_name ?? (is_object($user->city) ? $user->city->name : $user->city) }}</span>
+                            @elseif($user->district || $user->kecamatan)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
+                                    Kec. {{ $user->kecamatan ?? optional($user->district)->name }}
+                                </span>
                             @else
-                            <span class="text-xs text-gray-400 dark:text-gray-500 italic">Belum ada kota</span>
+                            <span class="text-xs text-gray-400 dark:text-gray-500 italic">Belum ada kecamatan</span>
                             @endif
                         </td>
                         <td class="px-4 py-3.5 text-xs text-gray-500 dark:text-gray-400 hidden xl:table-cell whitespace-nowrap">{{ optional($user->created_at)->format('d M Y') ?? '—' }}</td>
@@ -228,33 +232,36 @@
                     </p>
                 </div>
 
-                {{-- Wilayah Kota yang Dikelola --}}
+                {{-- Wilayah Kecamatan yang Dikelola --}}
                 <div class="p-4 bg-gray-50/80 dark:bg-gray-750/50 rounded-2xl border border-gray-100 dark:border-gray-700 space-y-2.5">
                     <div class="flex items-center justify-between">
-                        <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Wilayah Kota yang Dikelola</p>
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Wilayah Kecamatan yang Dikelola</p>
                         <span class="text-xs font-semibold text-primary-600 dark:text-primary-400">
-                            {{ $selectedUser->managedCities ? $selectedUser->managedCities->count() : ($selectedUser->city ? 1 : 0) }} Kota
+                            {{ $selectedUser->managedDistricts ? $selectedUser->managedDistricts->count() : ($selectedUser->district_id ? 1 : 0) }} Kecamatan
                         </span>
                     </div>
-                    @if($selectedUser->managedCities && $selectedUser->managedCities->count() > 0)
+                    @if($selectedUser->managedDistricts && $selectedUser->managedDistricts->count() > 0)
                         <div class="flex flex-wrap gap-2 pt-1">
-                            @foreach($selectedUser->managedCities as $mc)
+                            @foreach($selectedUser->managedDistricts as $md)
                             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600 shadow-2xs">
                                 <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
-                                {{ $mc->name }}
-                                @if($mc->province)
-                                    <span class="text-[10px] text-gray-400 font-normal">({{ $mc->province }})</span>
+                                Kec. {{ $md->name }}
+                                @if($md->city)
+                                    <span class="text-[10px] text-gray-400 font-normal">({{ $md->city->name }})</span>
                                 @endif
                             </span>
                             @endforeach
                         </div>
-                    @elseif($selectedUser->city || $selectedUser->city_id)
+                    @elseif($selectedUser->district || $selectedUser->district_id || $selectedUser->kecamatan)
                         <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600 shadow-2xs">
                             <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
-                            {{ $selectedUser->city_name ?? (is_object($selectedUser->city) ? $selectedUser->city->name : $selectedUser->city) }}
+                            Kec. {{ $selectedUser->kecamatan ?? optional($selectedUser->district)->name }}
+                            @if($selectedUser->city_name || optional($selectedUser->district?->city)->name)
+                                <span class="text-[10px] text-gray-400 font-normal">({{ $selectedUser->city_name ?? optional($selectedUser->district?->city)->name }})</span>
+                            @endif
                         </span>
                     @else
-                        <p class="text-xs text-gray-400 italic">Belum ada kota yang ditugaskan ke admin ini.</p>
+                        <p class="text-xs text-gray-400 italic">Belum ada kecamatan yang ditugaskan ke admin ini.</p>
                     @endif
                 </div>
             </div>
@@ -272,7 +279,7 @@
     </div>
     @endif
 
-    {{-- ===== Create / Edit Admin Modal with Searchable City Picker ===== --}}
+    {{-- ===== Create / Edit Admin Modal with Searchable District Picker ===== --}}
     @if($showCreateModal || $showEditModal)
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" wire:click.self="closeModal">
         <div class="w-full max-w-4xl bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200">
@@ -294,7 +301,7 @@
                                 {{ $showEditModal ? 'Mode Edit' : 'Admin Baru' }}
                             </span>
                         </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ $showEditModal ? 'Perbarui informasi akun, kredensial, dan penugasan wilayah kota' : 'Admin baru akan langsung aktif dan terverifikasi untuk mengelola wilayah yang dipilih' }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ $showEditModal ? 'Perbarui informasi akun, kredensial, dan penugasan wilayah kecamatan' : 'Admin baru akan langsung aktif dan terverifikasi untuk mengelola kecamatan yang dipilih' }}</p>
                     </div>
                 </div>
                 <button type="button" wire:click.prevent="closeModal" class="p-2 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 transition">
@@ -389,13 +396,8 @@
                         </div>
                     </div>
 
-                    {{-- Section 2: Penugasan Kota dengan Fitur Pencarian Cepat --}}
-                    <div class="bg-gray-50/60 dark:bg-gray-750/30 p-5 sm:p-6 rounded-2xl border border-gray-200/80 dark:border-gray-700 space-y-4 shadow-2xs"
-                         x-data="{
-                            citySearch: '',
-                            filterTab: 'all'
-                         }">
-                        
+                    {{-- Section 2: Penugasan Kecamatan dengan Fitur Filter Kota & Pencarian --}}
+                    <div class="bg-gray-50/60 dark:bg-gray-750/30 p-5 sm:p-6 rounded-2xl border border-gray-200/80 dark:border-gray-700 space-y-4 shadow-2xs">
                         <div class="flex items-center justify-between flex-wrap gap-3 pb-3.5 border-b border-gray-200/70 dark:border-gray-700/70">
                             <div class="flex items-center gap-2.5">
                                 <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs shadow-2xs">
@@ -403,9 +405,9 @@
                                 </div>
                                 <div>
                                     <label class="text-xs font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider block">
-                                        2. Penugasan Wilayah Kota yang Dikelola <span class="text-rose-500">*</span>
+                                        2. Penugasan Wilayah Kecamatan yang Dikelola <span class="text-rose-500">*</span>
                                     </label>
-                                    <p class="text-[11px] text-gray-400 dark:text-gray-500">Admin hanya berwenang memoderasi data bantuan & mitra di kota-kota yang dipilih</p>
+                                    <p class="text-[11px] text-gray-400 dark:text-gray-500">Admin hanya berwenang memoderasi data bantuan & mitra di kecamatan yang dipilih</p>
                                 </div>
                             </div>
 
@@ -413,77 +415,76 @@
                             <div class="flex items-center gap-2">
                                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800/60 shadow-2xs">
                                     <span class="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></span>
-                                    {{ count($managed_city_ids) }} Kota Dipilih
+                                    {{ count($managed_district_ids) }} Kecamatan Dipilih
                                 </span>
                             </div>
                         </div>
 
-                        {{-- Search Bar & Filter Bar --}}
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <div class="relative flex-1 min-w-[220px]">
+                        {{-- Filter Kota & Search Bar Kecamatan --}}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            {{-- Filter Parent Kota --}}
+                            <div>
+                                <select wire:model.live="cityFilter"
+                                    class="w-full py-2 px-3 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
+                                    <option value="all">-- Semua Kota / Kabupaten --</option>
+                                    @foreach($cities as $c)
+                                        <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->province }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- Search Kecamatan --}}
+                            <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                 </div>
-                                <input type="text" x-model="citySearch" placeholder="Cari nama kota atau provinsi..."
+                                <input type="text" wire:model.live.debounce.300ms="districtSearch" placeholder="Cari nama kecamatan..."
                                     class="w-full pl-9 pr-8 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
-                                <button type="button" x-show="citySearch" @click="citySearch = ''" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                </button>
-                            </div>
-
-                            {{-- Filter Pill Buttons --}}
-                            <div class="flex items-center p-0.5 bg-white dark:bg-gray-700/80 rounded-xl border border-gray-200 dark:border-gray-600 shadow-2xs">
-                                <button type="button" @click="filterTab = 'all'"
-                                    class="px-3 py-1.5 text-xs font-semibold rounded-lg transition"
-                                    :class="filterTab === 'all' ? 'bg-primary-600 text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'">
-                                    Semua ({{ count($cities) }})
-                                </button>
-                                <button type="button" @click="filterTab = 'selected'"
-                                    class="px-3 py-1.5 text-xs font-semibold rounded-lg transition"
-                                    :class="filterTab === 'selected' ? 'bg-primary-600 text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'">
-                                    Terpilih ({{ count($managed_city_ids) }})
-                                </button>
+                                @if(!empty($districtSearch))
+                                    <button type="button" wire:click="$set('districtSearch', '')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                @endif
                             </div>
                         </div>
 
-                        {{-- Daftar Kota Berkotak / Grid Card --}}
-                        <div class="max-h-60 overflow-y-auto rounded-2xl border border-gray-200 dark:border-gray-700 p-3 bg-white/70 dark:bg-gray-800/60 custom-scrollbar shadow-inner">
+                        {{-- Daftar Kecamatan Berkotak / Grid Card --}}
+                        <div class="max-h-64 overflow-y-auto rounded-2xl border border-gray-200 dark:border-gray-700 p-3 bg-white/70 dark:bg-gray-800/60 custom-scrollbar shadow-inner">
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                                @forelse($cities as $c)
+                                @forelse($districts as $d)
                                 @php
-                                    $isSelected = in_array((int)$c->id, array_map('intval', (array)($managed_city_ids ?? [])));
+                                    $isSelected = in_array((int)$d->id, array_map('intval', (array)($managed_district_ids ?? [])));
                                 @endphp
-                                <label x-show="(filterTab === 'all' || {{ $isSelected ? 'true' : 'false' }}) && (!citySearch || '{{ strtolower($c->name . ' ' . ($c->province ?? '')) }}'.includes(citySearch.toLowerCase()))"
-                                    class="relative flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-150 select-none
+                                <label class="relative flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-150 select-none
                                     {{ $isSelected ? 'bg-primary-50/90 dark:bg-primary-950/40 border-primary-400 dark:border-primary-500 shadow-xs' : 'bg-gray-50/50 dark:bg-gray-700/40 border-gray-200/80 dark:border-gray-600/70 hover:bg-gray-100/80 dark:hover:bg-gray-700 hover:border-gray-300' }}">
                                     
-                                    <input type="checkbox" wire:model.live="managed_city_ids" value="{{ $c->id }}"
+                                    <input type="checkbox" wire:model.live="managed_district_ids" value="{{ $d->id }}"
                                         class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 cursor-pointer flex-shrink-0">
                                     
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-center justify-between gap-1">
                                             <p class="text-xs font-bold truncate {{ $isSelected ? 'text-primary-900 dark:text-primary-200' : 'text-gray-800 dark:text-gray-200' }}">
-                                                {{ $c->name }}
+                                                Kec. {{ $d->name }}
                                             </p>
                                             @if($isSelected)
                                                 <span class="text-[9px] font-bold text-primary-600 dark:text-primary-400 bg-primary-100/80 dark:bg-primary-900/60 px-1.5 py-0.2 rounded">Ditugaskan</span>
                                             @endif
                                         </div>
-                                        @if($c->province)
+                                        @if($d->city)
                                             <p class="text-[10px] text-gray-400 dark:text-gray-400 truncate mt-0.5 flex items-center gap-1">
-                                                <span>📍</span> {{ $c->province }}
+                                                <span>📍</span> {{ $d->city->name }}
                                             </p>
                                         @endif
                                     </div>
                                 </label>
                                 @empty
                                 <div class="col-span-full text-center py-6">
-                                    <p class="text-xs text-gray-400 dark:text-gray-500">Belum ada kota yang terdaftar dalam sistem.</p>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500">Tidak ada data kecamatan yang cocok dengan filter.</p>
                                 </div>
                                 @endforelse
                             </div>
                         </div>
-                        @error('managed_city_ids') <p class="text-xs text-rose-500 mt-1 font-medium">{{ $message }}</p> @enderror
+                        @error('managed_district_ids') <p class="text-xs text-rose-500 mt-1 font-medium">{{ $message }}</p> @enderror
                     </div>
 
                     {{-- Konfirmasi Kata Sandi Superadmin saat Edit Admin --}}
@@ -566,15 +567,15 @@
                     <span class="font-medium text-gray-800 dark:text-gray-200">{{ $userToDelete->email }}</span>
                 </div>
                 <div class="flex justify-between">
-                    <span class="text-gray-500 dark:text-gray-400">Kota Dikelola:</span>
+                    <span class="text-gray-500 dark:text-gray-400">Kecamatan Dikelola:</span>
                     <span class="font-semibold text-primary-600 dark:text-primary-400">
-                        {{ $userToDelete->managedCities->pluck('name')->join(', ') ?: ($userToDelete->city_name ?: 'Tidak ada') }}
+                        {{ $userToDelete->managedDistricts->pluck('name')->map(fn($n) => 'Kec. ' . $n)->join(', ') ?: ($userToDelete->kecamatan ?: ($userToDelete->city_name ?: 'Tidak ada')) }}
                     </span>
                 </div>
             </div>
 
             <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-                Seluruh hak akses admin ke kota-kota yang ditugaskan akan otomatis dicabut.
+                Seluruh hak akses admin ke kecamatan-kecamatan yang ditugaskan akan otomatis dicabut.
             </p>
 
             <!-- Superadmin Password Confirmation Input -->

@@ -671,3 +671,8 @@ a[wire\:navigate].nav-loading svg {
     100% { transform: scale(0.85); opacity: 0.55; }
 }
 
+/* Soundbar animation for notification sound preview */
+@keyframes soundbar {
+    0%, 100% { transform: scaleY(0.4); }
+    50%       { transform: scaleY(1.0); }
+}

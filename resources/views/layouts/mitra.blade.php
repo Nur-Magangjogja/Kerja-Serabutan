@@ -155,10 +155,24 @@
     @livewire('mitra.notifications.realtime')
 
     <script>
+        window.USER_SOUND_ENABLED = {{ (auth()->check() && (auth()->user()->notification_settings['sound_enabled'] ?? true)) ? 'true' : 'false' }};
+        window.DEFAULT_NOTIFICATION_SOUND = "{{ asset('sfx/mixkit-software-interface-start-2574.mp3') }}";
+        window.getNotificationSoundEnabled = function() {
+            if (typeof window.USER_SOUND_ENABLED !== 'undefined') {
+                return window.USER_SOUND_ENABLED;
+            }
+            return true;
+        };
+
         (function () {
             if (!window.showMitraNotification) {
                 window.showMitraNotification = function({ title = 'Notifikasi', message = '', url = '#' , timeout = 4000, type = 'success' }) {
                     try {
+                        // Mainkan audio notifikasi jika aktif
+                        if (typeof window.playNotificationSound === 'function') {
+                            window.playNotificationSound();
+                        }
+
                         const container = document.getElementById('mitra-global-notification-inner');
                         if (!container) return;
                         container.innerHTML = '';

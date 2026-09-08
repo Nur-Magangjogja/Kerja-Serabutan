@@ -456,40 +456,60 @@
 
                     <!-- Biaya Admin -->
                     <div>
-                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                            Biaya Admin Transfer (Rp)
-                        </label>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block font-semibold text-gray-700 dark:text-gray-300">
+                                Biaya Admin Transfer (Rp)
+                            </label>
+                            @if($is_platform_account)
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                    ✨ Otomatis Gratis (Rekening Platform)
+                                </span>
+                            @endif
+                        </div>
                         <div class="relative">
                             <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-semibold text-gray-400">Rp</span>
                             <input
                                 type="number"
-                                wire:model.defer="bank_fee"
+                                wire:model="bank_fee"
                                 step="100"
                                 min="0"
                                 placeholder="0"
-                                class="w-full pl-10 pr-3.5 py-2.5 bg-gray-50 dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 rounded-xl font-medium text-gray-900 dark:text-white placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-xs sm:text-sm outline-none transition"
+                                @if($is_platform_account) readonly @endif
+                                class="w-full pl-10 pr-3.5 py-2.5 {{ $is_platform_account ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 font-bold' : 'bg-gray-50 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 font-medium text-gray-900 dark:text-white' }} border rounded-xl placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-xs sm:text-sm outline-none transition"
                             />
                         </div>
                         @error('bank_fee') <span class="text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-                        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Isi 0 jika bank ini gratis atau merupakan rekening pengirim utama platform.</p>
+                        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                            @if($is_platform_account)
+                                Rekening Platform otomatis bebas biaya admin transfer (Rp 0).
+                            @else
+                                Isi 0 jika transfer ke bank ini gratis, atau isi biaya transfer BI-FAST (contoh: Rp 2.500).
+                            @endif
+                        </p>
                     </div>
 
                     <!-- Checkbox Platform Account -->
-                    <div class="p-3 bg-gray-50 dark:bg-gray-750 rounded-xl border border-gray-200 dark:border-gray-700 space-y-2">
+                    <div class="p-3 bg-gray-50 dark:bg-gray-750 rounded-xl border {{ $is_platform_account ? 'border-emerald-300 dark:border-emerald-700/70 bg-emerald-50/30 dark:bg-emerald-950/20' : 'border-gray-200 dark:border-gray-700' }} space-y-2">
                         <label class="flex items-start gap-2.5 cursor-pointer">
                             <input
                                 type="checkbox"
-                                wire:model.defer="is_platform_account"
-                                class="mt-0.5 rounded text-primary-600 focus:ring-primary-500"
+                                wire:model.live="is_platform_account"
+                                class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500"
                             />
                             <div>
-                                <span class="font-bold text-gray-800 dark:text-gray-200 block">Jadikan Rekening Utama Platform</span>
+                                <span class="font-bold text-gray-800 dark:text-gray-200 block flex items-center gap-1.5">
+                                    <span>Jadikan Rekening Utama Platform</span>
+                                    @if($is_platform_account)
+                                        <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">✓ Aktif</span>
+                                    @endif
+                                </span>
                                 <span class="text-[10px] text-gray-400 block mt-0.5">
-                                    Platform memiliki akun bank/e-wallet ini sehingga transfer ke tujuan yang sama bebas biaya admin (Rp 0) dan ditandai badge rekomendasi.
+                                    Platform memiliki akun bank/e-wallet ini sehingga penarikan dana ke tujuan yang sama otomatis bebas biaya admin (Rp 0 / Gratis Admin) dan ditandai badge rekomendasi.
                                 </span>
                             </div>
                         </label>
                     </div>
+
 
                     <!-- Buttons -->
                     <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">

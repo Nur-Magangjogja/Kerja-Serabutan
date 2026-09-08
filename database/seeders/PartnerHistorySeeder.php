@@ -20,32 +20,16 @@ class PartnerHistorySeeder extends Seeder
      */
     public function run(): void
     {
-        // Admin
-        $adminSleman = User::whereIn('email', ['admin.sleman@sayabantu.com', 'admin@sayabantu.com'])->first();
-        $adminSolo   = User::where('email', 'admin.surakarta@sayabantu.com')->first();
+        // Admins
+        $admins = User::where('role', 'admin')->get()->keyBy('email');
+        $adminSleman = $admins->get('admin.sleman@sayabantu.com') ?? User::where('role', 'admin')->first();
+        $adminSolo   = $admins->get('admin.surakarta@sayabantu.com') ?? $adminSleman;
+        $adminJaksel = $admins->get('admin.jaksel@sayabantu.com') ?? $adminSleman;
+        $adminBdg    = $admins->get('admin.bandung@sayabantu.com') ?? $adminSleman;
+        $adminSby    = $admins->get('admin.surabaya@sayabantu.com') ?? $adminSleman;
 
-        // Sleman Users
-        $custSleman1  = User::where('email', 'customer.sleman1@sayabantu.com')->first();
-        $custSleman2  = User::where('email', 'customer.sleman2@sayabantu.com')->first();
-        $mitraSleman1 = User::where('email', 'mitra.sleman1@sayabantu.com')->first();
-        $mitraSleman2 = User::where('email', 'mitra.sleman2@sayabantu.com')->first();
-        $mitraSleman3 = User::where('email', 'mitra@sayabantu.com')->first();
-
-        // Yogyakarta Users
-        $custJogja1   = User::where('email', 'customer.jogja1@sayabantu.com')->first();
-        $mitraJogja1  = User::where('email', 'mitra.jogja1@sayabantu.com')->first();
-
-        // Surakarta Users
-        $custSolo1    = User::where('email', 'customer.surakarta1@sayabantu.com')->first();
-        $custSolo2    = User::where('email', 'customer.surakarta2@sayabantu.com')->first();
-        $mitraSolo1   = User::where('email', 'mitra.surakarta1@sayabantu.com')->first();
-        $mitraSolo2   = User::where('email', 'mitra.surakarta2@sayabantu.com')->first();
-
-        // Sukoharjo Users
-        $custSkh1     = User::where('email', 'customer.sukoharjo1@sayabantu.com')->first();
-        $custSkh2     = User::where('email', 'customer.sukoharjo2@sayabantu.com')->first();
-        $mitraSkh1    = User::where('email', 'mitra.sukoharjo1@sayabantu.com')->first();
-        $mitraSkh2    = User::where('email', 'mitra.sukoharjo2@sayabantu.com')->first();
+        // Users
+        $users = User::all()->keyBy('email');
 
         // ─────────────────────────────────────────────────────────────────────
         // 1. RIWAYAT LAPORAN PENGADUAN (RESOLVED 100%)
@@ -57,9 +41,9 @@ class PartnerHistorySeeder extends Seeder
             // Laporan 1: Sleman (18 Agustus 2026)
             [
                 'title'         => 'Klarifikasi Estimasi Waktu Kedatangan Mitra Pompa Air',
-                'reporter'      => $custSleman1,
-                'reported_user' => $mitraSleman2,
-                'help_order_id' => 'HELP-20260818-SLM11',
+                'reporter'      => $users->get('customer.sleman1@sayabantu.com'),
+                'reported_user' => $users->get('mitra.sleman2@sayabantu.com'),
+                'help_order_id' => 'HELP-20260810-SLM02',
                 'admin'         => $adminSleman,
                 'type'          => 'pelayanan_tidak_sesuai',
                 'category'      => 'dari_customer',
@@ -68,255 +52,61 @@ class PartnerHistorySeeder extends Seeder
                 'created_at'    => '2026-08-18 13:00:00',
                 'resolved_at'   => '2026-08-18 15:30:00',
                 'messages'      => [
-                    // Jalur Pelapor (Admin <-> Customer)
-                    [
-                        'sender'         => $custSleman1,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Halo Admin SayaBantu, apakah bisa dibantu konfirmasi posisi mitra? Belum ada kabar setelah 20 menit dari waktu janji temu.',
-                        'time'           => '2026-08-18 13:05:00',
-                    ],
-                    [
-                        'sender'         => $adminSleman,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Halo Bu Rina, laporan aduan Anda telah kami terima. Kami segera menghubungi Mas Budi untuk verifikasi posisi saat ini.',
-                        'time'           => '2026-08-18 13:12:00',
-                    ],
-                    [
-                        'sender'         => $adminSleman,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Update dari Admin: Mas Budi mengonfirmasi ada kendala ban bocor di Jl. Kaliurang dan saat ini sudah selesai tambal ban, langsung menuju ke lokasi Anda.',
-                        'time'           => '2026-08-18 13:25:00',
-                    ],
-                    [
-                        'sender'         => $custSleman1,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Terima kasih banyak infonya Min, Mas Budi sudah tiba di lokasi dan sedang memperbaiki shower pompa air.',
-                        'time'           => '2026-08-18 13:40:00',
-                    ],
-
-                    // Jalur Terlapor (Admin <-> Mitra)
-                    [
-                        'sender'         => $adminSleman,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Halo Mas Budi, ada aduan dari customer Bu Rina terkait keterlambatan 20 menit. Mohon segera berikan konfirmasi status posisi dan kendala Anda saat ini.',
-                        'time'           => '2026-08-18 13:08:00',
-                    ],
-                    [
-                        'sender'         => $mitraSleman2,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Mohon maaf Admin SayaBantu, motor saya mengalami ban bocor mendadak di dekat Ringroad Kaliurang. Ini baru selesai tambal dan langsung saya gas ke lokasi customer.',
-                        'time'           => '2026-08-18 13:20:00',
-                    ],
-                    [
-                        'sender'         => $adminSleman,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Baik Mas Budi, info telah kami teruskan ke customer. Tetap utamakan keselamatan dan kabari kami saat pekerjaan selesai.',
-                        'time'           => '2026-08-18 13:22:00',
-                    ],
-                    [
-                        'sender'         => $mitraSleman2,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Lapor Admin, pekerjaan pompa air telah selesai dengan baik dan sudah diuji coba bersama customer.',
-                        'time'           => '2026-08-18 15:15:00',
-                    ],
+                    ['sender' => $users->get('customer.sleman1@sayabantu.com'), 'recipient_type' => 'customer', 'msg' => 'Halo Admin SayaBantu, apakah bisa dibantu konfirmasi posisi mitra? Belum ada kabar setelah 20 menit dari waktu janji temu.', 'time' => '2026-08-18 13:05:00'],
+                    ['sender' => $adminSleman, 'recipient_type' => 'customer', 'msg' => 'Halo Bu Rina, laporan aduan Anda telah kami terima. Kami segera menghubungi Mas Budi untuk verifikasi posisi saat ini.', 'time' => '2026-08-18 13:12:00'],
+                    ['sender' => $adminSleman, 'recipient_type' => 'customer', 'msg' => 'Update dari Admin: Mas Budi mengonfirmasi ada kendala ban bocor di Jl. Kaliurang dan saat ini sudah selesai tambal ban, langsung menuju ke lokasi Anda.', 'time' => '2026-08-18 13:25:00'],
+                    ['sender' => $users->get('customer.sleman1@sayabantu.com'), 'recipient_type' => 'customer', 'msg' => 'Terima kasih banyak infonya Min, Mas Budi sudah tiba di lokasi dan sedang memperbaiki AC kamar.', 'time' => '2026-08-18 13:40:00'],
+                    ['sender' => $adminSleman, 'recipient_type' => 'mitra', 'msg' => 'Halo Mas Budi, ada aduan dari customer Bu Rina terkait keterlambatan 20 menit. Mohon segera berikan konfirmasi status posisi dan kendala Anda saat ini.', 'time' => '2026-08-18 13:08:00'],
+                    ['sender' => $users->get('mitra.sleman2@sayabantu.com'), 'recipient_type' => 'mitra', 'msg' => 'Mohon maaf Admin SayaBantu, motor saya mengalami ban bocor mendadak di dekat Ringroad Kaliurang. Ini baru selesai tambal dan langsung saya gas ke lokasi customer.', 'time' => '2026-08-18 13:20:00'],
+                    ['sender' => $adminSleman, 'recipient_type' => 'mitra', 'msg' => 'Baik Mas Budi, info telah kami teruskan ke customer. Tetap utamakan keselamatan dan kabari kami saat pekerjaan selesai.', 'time' => '2026-08-18 13:22:00'],
+                    ['sender' => $users->get('mitra.sleman2@sayabantu.com'), 'recipient_type' => 'mitra', 'msg' => 'Lapor Admin, pekerjaan AC telah selesai dengan baik dan sudah diuji coba bersama customer.', 'time' => '2026-08-18 15:15:00'],
                 ],
             ],
 
             // Laporan 2: Solo (20 Agustus 2026)
             [
-                'title'         => 'Konsultasi Lapisan Cat Primer Anti Karat Pagar Depan',
-                'reporter'      => $custSolo1,
-                'reported_user' => $mitraSolo2,
-                'help_order_id' => 'HELP-20260820-SKT09',
+                'title'         => 'Konsultasi Lapisan Cat Tembok Kamar & Plafon',
+                'reporter'      => $users->get('customer.surakarta2@sayabantu.com'),
+                'reported_user' => $users->get('mitra.surakarta2@sayabantu.com'),
+                'help_order_id' => 'HELP-20260812-SKT02',
                 'admin'         => $adminSolo,
                 'type'          => 'pelayanan_tidak_sesuai',
                 'category'      => 'dari_customer',
-                'message'       => 'Ingin memastikan apakah cat pelapis anti karat sudah diaplikasikan merata pada seluruh sudut sambungan besi pagar sebelum cat finishing.',
-                'admin_notes'   => 'Mitra Hendra telah mendokumentasikan lapisan primer anti karat kepada admin dan customer sangat puas dengan hasil akhirnya.',
+                'message'       => 'Ingin memastikan apakah cat tembok sudah diaplikasikan 2 lapis merata pada sudut plafon.',
+                'admin_notes'   => 'Mitra Dwi telah mendokumentasikan hasil lapisan kedua kepada admin dan customer sangat puas dengan hasil akhirnya.',
                 'created_at'    => '2026-08-20 13:30:00',
                 'resolved_at'   => '2026-08-20 16:00:00',
                 'messages'      => [
-                    // Jalur Pelapor (Admin <-> Customer)
-                    [
-                        'sender'         => $custSolo1,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Halo Admin Solo, saya ingin memastikan apakah pengecatan pagar besi depan sudah diberi lapisan cat primer anti karat sebelum cat warna utama?',
-                        'time'           => '2026-08-20 13:35:00',
-                    ],
-                    [
-                        'sender'         => $adminSolo,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Halo Bu Dewi, terima kasih laporannya. Kami segera meminta dokumentasi teknis lapisan primer dari Mas Hendra.',
-                        'time'           => '2026-08-20 13:42:00',
-                    ],
-                    [
-                        'sender'         => $adminSolo,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Update: Mas Hendra telah mengonfirmasi dan melampirkan bukti aplikasi zinkromat 2 lapis pada seluruh sambungan las.',
-                        'time'           => '2026-08-20 14:28:00',
-                    ],
-                    [
-                        'sender'         => $custSolo1,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Hasilnya sangat memuaskan dan rapi sekali. Terima kasih bantuan koordinasinya Admin SayaBantu.',
-                        'time'           => '2026-08-20 15:55:00',
-                    ],
-
-                    // Jalur Terlapor (Admin <-> Mitra)
-                    [
-                        'sender'         => $adminSolo,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Halo Mas Hendra, mohon kirimkan konfirmasi dan dokumentasi foto aplikasi lapisan primer zinkromat pada pagar Bu Dewi sebelum lanjut pengecatan warna.',
-                        'time'           => '2026-08-20 13:40:00',
-                    ],
-                    [
-                        'sender'         => $mitraSolo2,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Halo Admin Solo, siap sudah saya lapisi primer zinkromat 2 lapis di semua sudut las dan pagar. Sudah saya dokumentasikan sesuai SOP.',
-                        'time'           => '2026-08-20 14:15:00',
-                    ],
-                    [
-                        'sender'         => $adminSolo,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Dokumentasi telah kami verifikasi dan sesuai standar. Silakan lanjut ke finishing cat hitam doff.',
-                        'time'           => '2026-08-20 14:25:00',
-                    ],
-                    [
-                        'sender'         => $mitraSolo2,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Pengecatan finishing selesai 100% dan sudah serah terima dengan customer.',
-                        'time'           => '2026-08-20 15:50:00',
-                    ],
+                    ['sender' => $users->get('customer.surakarta2@sayabantu.com'), 'recipient_type' => 'customer', 'msg' => 'Halo Admin Solo, saya ingin memastikan apakah pengecatan plafon sudah diberi 2 lapis agar tidak berbayang?', 'time' => '2026-08-20 13:35:00'],
+                    ['sender' => $adminSolo, 'recipient_type' => 'customer', 'msg' => 'Halo Mas Rizky, terima kasih laporannya. Kami segera meminta dokumentasi teknis lapisan cat dari Mas Dwi.', 'time' => '2026-08-20 13:42:00'],
+                    ['sender' => $adminSolo, 'recipient_type' => 'customer', 'msg' => 'Update: Mas Dwi telah mengonfirmasi dan melampirkan bukti pengecatan 2 lapis tebal merata.', 'time' => '2026-08-20 14:28:00'],
+                    ['sender' => $users->get('customer.surakarta2@sayabantu.com'), 'recipient_type' => 'customer', 'msg' => 'Hasilnya sangat memuaskan dan rapi sekali. Terima kasih bantuan koordinasinya Admin SayaBantu.', 'time' => '2026-08-20 15:55:00'],
+                    ['sender' => $adminSolo, 'recipient_type' => 'mitra', 'msg' => 'Halo Mas Dwi, mohon kirimkan konfirmasi dan dokumentasi foto aplikasi lapisan kedua cat pada plafon Mas Rizky.', 'time' => '2026-08-20 13:40:00'],
+                    ['sender' => $users->get('mitra.surakarta2@sayabantu.com'), 'recipient_type' => 'mitra', 'msg' => 'Halo Admin Solo, siap sudah saya lapisi cat 2 lapis di semua sudut plafon dan dinding.', 'time' => '2026-08-20 14:15:00'],
+                    ['sender' => $adminSolo, 'recipient_type' => 'mitra', 'msg' => 'Dokumentasi telah kami verifikasi dan sesuai standar. Silakan lanjut ke pembersihan area kerja.', 'time' => '2026-08-20 14:25:00'],
+                    ['sender' => $users->get('mitra.surakarta2@sayabantu.com'), 'recipient_type' => 'mitra', 'msg' => 'Pekerjaan selesai 100% dan sudah serah terima dengan customer.', 'time' => '2026-08-20 15:50:00'],
                 ],
             ],
 
-            // Laporan 3: Sukoharjo (23 Agustus 2026)
+            // Laporan 3: Jakarta Selatan (22 Agustus 2026)
             [
-                'title'         => 'Konfirmasi Jarak Titik Bor Ambalan Rak Dinding Farmasi',
-                'reporter'      => $custSkh2,
-                'reported_user' => $mitraSkh1,
-                'help_order_id' => 'HELP-20260823-SKH10',
-                'admin'         => $adminSolo,
+                'title'         => 'Konfirmasi Pipa Siphon Wastafel Dapur',
+                'reporter'      => $users->get('customer.jaksel2@sayabantu.com'),
+                'reported_user' => $users->get('mitra.jaksel2@sayabantu.com'),
+                'help_order_id' => 'HELP-20260822-JKT02',
+                'admin'         => $adminJaksel,
                 'type'          => 'pelayanan_tidak_sesuai',
                 'category'      => 'dari_customer',
-                'message'       => 'Ingin memastikan ulang ketinggian ambalan buku agar tidak membentur kotak P3K dinding.',
-                'admin_notes'   => 'Admin memfasilitasi koordinasi denah dinding. Mitra Tri telah menggeser posisi ambalan 10 cm lebih tinggi dan hasil sangat rapi.',
-                'created_at'    => '2026-08-23 09:30:00',
-                'resolved_at'   => '2026-08-23 11:15:00',
+                'message'       => 'Ingin memastikan karet seal pipa siphon terpasang kedap tanpa rembesan air ke bawah kabinet kitchen set.',
+                'admin_notes'   => 'Admin Tebet/Kebayoran memfasilitasi pengujian aliran air debit kencang. Pipa siphon terpasang presisi dan kedap air.',
+                'created_at'    => '2026-08-22 14:00:00',
+                'resolved_at'   => '2026-08-22 15:00:00',
                 'messages'      => [
-                    // Jalur Pelapor (Admin <-> Customer)
-                    [
-                        'sender'         => $custSkh2,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Halo Admin, mohon bantuan koordinasi ke teknisi di tempat agar titik bor ambalan rak farmasi dinaikkan sedikit agar tidak mepet kotak P3K dinding.',
-                        'time'           => '2026-08-23 09:35:00',
-                    ],
-                    [
-                        'sender'         => $adminSolo,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Halo Pak Bayu, pesan penyesuaian telah kami sampaikan langsung ke Mas Tri untuk menaikkan posisi bor.',
-                        'time'           => '2026-08-23 09:42:00',
-                    ],
-                    [
-                        'sender'         => $custSkh2,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Posisi ambalan sudah disesuaikan dan sangat presisi. Terima kasih atas respon cepat admin.',
-                        'time'           => '2026-08-23 10:45:00',
-                    ],
-
-                    // Jalur Terlapor (Admin <-> Mitra)
-                    [
-                        'sender'         => $adminSolo,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Mas Tri, customer Pak Bayu meminta ketinggian titik bor ambalan dinaikkan sekitar 10 cm agar tidak membentur kotak obat. Mohon disesuaikan ya.',
-                        'time'           => '2026-08-23 09:38:00',
-                    ],
-                    [
-                        'sender'         => $mitraSkh1,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Siap Min, titik bor sudah saya ukur ulang dengan waterpass dan dinaikkan 10 cm sesuai permintaan customer.',
-                        'time'           => '2026-08-23 09:50:00',
-                    ],
-                    [
-                        'sender'         => $adminSolo,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Bagus Mas Tri, pastikan dynabolt terpasang kokoh dan bersihkan serbuk bor sebelum selesai.',
-                        'time'           => '2026-08-23 09:55:00',
-                    ],
-                    [
-                        'sender'         => $mitraSkh1,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Ambalan sudah terpasang kokoh dan area kerja sudah bersih. Pekerjaan selesai.',
-                        'time'           => '2026-08-23 10:40:00',
-                    ],
-                ],
-            ],
-
-            // Laporan 4: Yogyakarta (25 Agustus 2026)
-            [
-                'title'         => 'Konfirmasi Kunci Gembok Tambahan Pintu Gerbang Butik',
-                'reporter'      => $custJogja1,
-                'reported_user' => $mitraJogja1,
-                'help_order_id' => 'HELP-20260825-JOG07',
-                'admin'         => $adminSleman,
-                'type'          => 'pelayanan_tidak_sesuai',
-                'category'      => 'dari_customer',
-                'message'       => 'Memastikan ketebalan plat las kupingan gembok tahan cuaca hujan di pintu gerbang toko.',
-                'admin_notes'   => 'Mitra Danang melampirkan foto hasil las dobel dan pengecatan anti karat kepada admin. Aduan diselesaikan.',
-                'created_at'    => '2026-08-25 14:15:00',
-                'resolved_at'   => '2026-08-25 15:30:00',
-                'messages'      => [
-                    // Jalur Pelapor (Admin <-> Customer)
-                    [
-                        'sender'         => $custJogja1,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Siang Admin, ingin konfirmasi apakah plat las kupingan gembok gerbang butik sudah diberi pelapis anti-karat agar tidak mudah korosi kena hujan?',
-                        'time'           => '2026-08-25 14:20:00',
-                    ],
-                    [
-                        'sender'         => $adminSleman,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Siang Mbak Nia, kami akan minta Mas Danang mengonfirmasi spesifikasi pelapisan dan pengelasan plat kupingan tersebut.',
-                        'time'           => '2026-08-25 14:26:00',
-                    ],
-                    [
-                        'sender'         => $adminSleman,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Mas Danang telah mengonfirmasi bahwa plat besi tebal 4mm telah dilas dobel luar-dalam dan disemprot primer anti-karat tahan air.',
-                        'time'           => '2026-08-25 14:52:00',
-                    ],
-                    [
-                        'sender'         => $custJogja1,
-                        'recipient_type' => 'customer',
-                        'msg'            => 'Mantap min, sudah saya coba kuncian gemboknya kokoh sekali. Terima kasih banyak.',
-                        'time'           => '2026-08-25 15:25:00',
-                    ],
-
-                    // Jalur Terlapor (Admin <-> Mitra)
-                    [
-                        'sender'         => $adminSleman,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Halo Mas Danang, mohon konfirmasi ketebalan plat dan lapisan anti-karat untuk kupingan gembok di lokasi Mbak Nia.',
-                        'time'           => '2026-08-25 14:22:00',
-                    ],
-                    [
-                        'sender'         => $mitraJogja1,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Halo Admin, plat tebal 4mm sudah saya las penuh dobel luar-dalam dan sudah disemprot primer anti-karat hitam tahan hujan.',
-                        'time'           => '2026-08-25 14:45:00',
-                    ],
-                    [
-                        'sender'         => $adminSleman,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Sip Mas Danang, pastikan tes buka-tutup gembok lancar sebelum serah terima kunci.',
-                        'time'           => '2026-08-25 14:50:00',
-                    ],
-                    [
-                        'sender'         => $mitraJogja1,
-                        'recipient_type' => 'mitra',
-                        'msg'            => 'Sudah dicoba dengan gembok bawaan customer dan sangat lancar. Pemasangan tuntas 100%.',
-                        'time'           => '2026-08-25 15:20:00',
-                    ],
+                    ['sender' => $users->get('customer.jaksel2@sayabantu.com'), 'recipient_type' => 'customer', 'msg' => 'Min, tolong pastikan seal tape drat kran dapur dililit tebal agar tidak merembes ya.', 'time' => '2026-08-22 14:05:00'],
+                    ['sender' => $adminJaksel, 'recipient_type' => 'customer', 'msg' => 'Baik Pak Kevin, pesan sudah diteruskan ke teknisi Doni.', 'time' => '2026-08-22 14:10:00'],
+                    ['sender' => $adminJaksel, 'recipient_type' => 'mitra', 'msg' => 'Pak Doni, pastikan tes alirkan air 5 menit untuk memastikan tidak ada tetesan di bawah kabinet dapur.', 'time' => '2026-08-22 14:12:00'],
+                    ['sender' => $users->get('mitra.jaksel2@sayabantu.com'), 'recipient_type' => 'mitra', 'msg' => 'Siap Admin, sudah diuji coba air kencang dan bawah wastafel kering sempurna.', 'time' => '2026-08-22 14:40:00'],
+                    ['sender' => $users->get('customer.jaksel2@sayabantu.com'), 'recipient_type' => 'customer', 'msg' => 'Pemasangan mantap dan tidak ada bocor sama sekali. Terima kasih!', 'time' => '2026-08-22 14:55:00'],
                 ],
             ],
         ];
@@ -352,7 +142,7 @@ class PartnerHistorySeeder extends Seeder
                 ]
             );
 
-            // Bersihkan pesan lama agar tidak ada residu recipient_type = 'all'
+            // Bersihkan pesan lama agar rapi
             PartnerReportMessage::where('partner_report_id', $report->id)->delete();
 
             foreach ($r['messages'] as $m) {
@@ -378,64 +168,55 @@ class PartnerHistorySeeder extends Seeder
         // 2. RIWAYAT DAFTAR ABU-ABU / GREYLIST LOGS (EVALUASI TANPA BLOKIR)
         // ─────────────────────────────────────────────────────────────────────
         $greylistRecords = [
-            // Mitra 1 Sleman (Agus Prasetyo)
+            // Sleman (Agus Prasetyo)
             [
-                'user'          => $mitraSleman1,
+                'email'         => 'mitra.sleman1@sayabantu.com',
                 'admin'         => $adminSleman,
                 'warning_level' => 1,
                 'reason'        => 'Keterlambatan konfirmasi kehadiran pesanan akibat kendala sinyal seluler.',
                 'action_taken'  => 'Pemberian SP1 & Peringatan Ringan untuk meningkatkan keaktifan GPS.',
                 'logged_at'     => '2026-08-08 14:00:00',
             ],
-            // Mitra 2 Sleman (Budi Santoso)
+            // Sleman (Budi Santoso)
             [
-                'user'          => $mitraSleman2,
+                'email'         => 'mitra.sleman2@sayabantu.com',
                 'admin'         => $adminSleman,
                 'warning_level' => 1,
                 'reason'        => 'Klarifikasi estimasi waktu perjalanan akibat penambalan ban darurat.',
                 'action_taken'  => 'Verifikasi log perjalanan dan edukasi fitur komunikasi darurat aplikasi.',
                 'logged_at'     => '2026-08-18 16:00:00',
             ],
-            // Mitra 1 Solo (Eko Saputra)
+            // Surakarta (Eko Saputra)
             [
-                'user'          => $mitraSolo1,
+                'email'         => 'mitra.surakarta1@sayabantu.com',
                 'admin'         => $adminSolo,
                 'warning_level' => 1,
                 'reason'        => 'Penundaan pembatalan awal sebelum penugasan diambil.',
                 'action_taken'  => 'Konseling standar operasional & refresh pelatihan mitra.',
                 'logged_at'     => '2026-08-12 11:30:00',
             ],
-            // Mitra 2 Solo (Hendra Wijaya)
+            // Jakarta Selatan (Fahmi Ramadhan)
             [
-                'user'          => $mitraSolo2,
-                'admin'         => $adminSolo,
-                'warning_level' => 2,
-                'reason'        => 'Evaluasi dokumentasi foto sebelum dan sesudah pengerjaan.',
-                'action_taken'  => 'Pemberian SP2 dan peninjauan berkas foto. Mitra telah melengkapi standar SOP.',
-                'logged_at'     => '2026-08-20 17:00:00',
-            ],
-            // Mitra 1 Sukoharjo (Tri Wahyudi)
-            [
-                'user'          => $mitraSkh1,
-                'admin'         => $adminSolo,
+                'email'         => 'mitra.jaksel1@sayabantu.com',
+                'admin'         => $adminJaksel,
                 'warning_level' => 1,
-                'reason'        => 'Evaluasi komunikasi kesepakatan titik pengerjaan rak apotek.',
-                'action_taken'  => 'Konseling komunikasi sopan dan koordinasi lancar dengan customer.',
-                'logged_at'     => '2026-08-23 12:00:00',
+                'reason'        => 'Pengecekan sertifikat freon dan kelengkapan manifold gauge AC.',
+                'action_taken'  => 'Verifikasi sertifikasi teknisi pendingin udara oleh Admin Jakarta Selatan.',
+                'logged_at'     => '2026-08-19 15:00:00',
             ],
-            // Mitra 1 Jogja (Danang Saputra)
+            // Bandung (Asep Sunandar)
             [
-                'user'          => $mitraJogja1,
-                'admin'         => $adminSleman,
+                'email'         => 'mitra.bandung1@sayabantu.com',
+                'admin'         => $adminBdg,
                 'warning_level' => 1,
-                'reason'        => 'Pengecekan kelengkapan sertifikasi alat las portabel.',
-                'action_taken'  => 'Verifikasi sertifikat keahlian teknik elektro & pengelasan oleh Admin.',
-                'logged_at'     => '2026-08-25 16:00:00',
+                'reason'        => 'Evaluasi waktu perakitan mebel knockdown lemari 3 pintu.',
+                'action_taken'  => 'Edukasi panduan buku instruksi dan checklist alat perkakas bor baterai.',
+                'logged_at'     => '2026-08-26 14:30:00',
             ],
         ];
 
         foreach ($greylistRecords as $g) {
-            $user  = $g['user'];
+            $user  = $users->get($g['email']);
             $admin = $g['admin'];
 
             if (!$user) {
@@ -468,6 +249,6 @@ class PartnerHistorySeeder extends Seeder
             'warning_level'    => 0,
         ]);
 
-        $this->command->info('PartnerHistorySeeder berhasil membuat riwayat laporan resolved & log evaluasi greylist di 4 wilayah.');
+        $this->command->info('PartnerHistorySeeder berhasil membuat riwayat laporan resolved & log evaluasi greylist se-Indonesia.');
     }
 }

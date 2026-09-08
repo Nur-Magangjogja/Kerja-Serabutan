@@ -490,6 +490,15 @@
         </div>
     </div>
     <script>
+        window.USER_SOUND_ENABLED = {{ (auth()->check() && (auth()->user()->notification_settings['sound_enabled'] ?? true)) ? 'true' : 'false' }};
+        window.DEFAULT_NOTIFICATION_SOUND = "{{ asset('sfx/mixkit-software-interface-start-2574.mp3') }}";
+        window.getNotificationSoundEnabled = function() {
+            if (typeof window.USER_SOUND_ENABLED !== 'undefined') {
+                return window.USER_SOUND_ENABLED;
+            }
+            return true;
+        };
+
         // Safe fallback for Laravel Echo when WebSocket is not active
         if (typeof window !== 'undefined' && typeof window.Echo === 'undefined') {
             window.Echo = {

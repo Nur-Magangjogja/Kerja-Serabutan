@@ -18,10 +18,17 @@ use Illuminate\Support\Facades\Log;
 class HelpMatchingService
 {
     protected PartnerOnlineService $onlineService;
+    protected GeoService $geoService;
+    protected HelpPricingService $pricingService;
 
-    public function __construct(PartnerOnlineService $onlineService)
-    {
-        $this->onlineService = $onlineService;
+    public function __construct(
+        PartnerOnlineService $onlineService,
+        GeoService $geoService,
+        HelpPricingService $pricingService
+    ) {
+        $this->onlineService  = $onlineService;
+        $this->geoService     = $geoService;
+        $this->pricingService = $pricingService;
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -243,21 +250,31 @@ class HelpMatchingService
         ?object $prefetchedHelp = null, 
         ?array $config = null
     ): array {
-        $maxRadius = (float) ($config['max_radius'] ?? AppSetting::getMaxMatchingRadiusKm());
+        $maxRadius = (float) ($config['max_radius'] ?? AppSetting::MAX_OPERATIONAL_RADIUS_KM);
         $weights   = $config['weights'] ?? AppSetting::getMatchingWeights();
 
-        // 1. Distance Score
-        $helpLat  = (float) ($help->latitude ?? 0);
-        $helpLng  = (float) ($help->longitude ?? 0);
+        // 1. Distance & District Alignment Score (Maksimal 10.0 KM dari Titik Awal Layanan)
+        if ($help->isPickup()) {
+            $targetLat = (float) ($help->pickup_latitude ?: $help->latitude);
+            $targetLng = (float) ($help->pickup_longitude ?: $help->longitude);
+        } elseif ($help->isBuy()) {
+            $targetLat = (float) ($help->store_latitude ?: $help->latitude);
+            $targetLng = (float) ($help->store_longitude ?: $help->longitude);
+        } else {
+            $targetLat = (float) ($help->latitude ?: 0);
+            $targetLng = (float) ($help->longitude ?: 0);
+        }
+
         $mitraLat = (float) ($state->latitude ?? $mitra->latitude ?? 0);
         $mitraLng = (float) ($state->longitude ?? $mitra->longitude ?? 0);
 
-        if ($helpLat != 0 && $helpLng != 0 && $mitraLat != 0 && $mitraLng != 0) {
-            $distKm = $this->calculateDistance($helpLat, $helpLng, $mitraLat, $mitraLng);
+        if ($targetLat != 0 && $targetLng != 0 && $mitraLat != 0 && $mitraLng != 0) {
+            $distKm = $this->geoService->calculateStraightDistance($targetLat, $targetLng, $mitraLat, $mitraLng);
             $distScore = max(0.0, 1.0 - min($distKm / max(0.1, $maxRadius), 1.0));
         } else {
+            // Jika koordinat belum lengkap, gunakan kedekatan administratif Kecamatan
             $distKm = 0.0;
-            $distScore = 0.8; // Default jika lokasi belum lengkap
+            $distScore = ($help->district_id && $mitra->district_id && $help->district_id === $mitra->district_id) ? 1.0 : 0.8;
         }
 
         // 2. Rating Bayesian Score (In-Memory)
@@ -288,13 +305,12 @@ class HelpMatchingService
 
     /**
      * Dapatkan daftar kandidat mitra terurut (Top N) untuk order tertentu.
-     * Menggunakan pipeline efisien:
-     * Data Retrieval Terfilter (Bounding Box + Index) -> Bulk Aggregate + Cache -> Top-N Pre-selection -> In-Memory Scoring.
+     * Menggunakan kombinasi: Primary District + Adjacent District Expansion + GPS aktual <= 10 KM + Status + Kemampuan + Jadwal.
      */
     public function getRankedCandidates(Help $help, array $excludeMitraIds = []): Collection
     {
         $ttl = AppSetting::getHeartbeatTtlSeconds();
-        $maxMatchingRadius = AppSetting::getMaxMatchingRadiusKm();
+        $maxMatchingRadius = AppSetting::MAX_OPERATIONAL_RADIUS_KM; // Baku 10.0 KM
 
         $excludedPartnerIds = [];
         try {
@@ -313,33 +329,63 @@ class HelpMatchingService
         }
         $excludeIds = array_unique(array_merge($excludeMitraIds, $cancelledIds, $excludedPartnerIds));
 
-        // 1. Data Retrieval: Query Kandidat Utama dengan Bounding Box Pre-Filter (Single Indexed Query)
-        $helpLat = (float) ($help->latitude ?? 0);
-        $helpLng = (float) ($help->longitude ?? 0);
+        // 1. Tentukan Titik Koordinat Sasaran Pencocokan (Matching Target)
+        if ($help->isPickup()) {
+            $targetLat = (float) ($help->pickup_latitude ?: $help->latitude);
+            $targetLng = (float) ($help->pickup_longitude ?: $help->longitude);
+        } elseif ($help->isBuy()) {
+            $targetLat = (float) ($help->store_latitude ?: $help->latitude);
+            $targetLng = (float) ($help->store_longitude ?: $help->longitude);
+        } else {
+            $targetLat = (float) ($help->latitude ?: 0);
+            $targetLng = (float) ($help->longitude ?: 0);
+        }
+
+        // Tentukan daftar kecamatan yang eligible (Primary + Adjacent Districts)
+        $eligibleDistrictIds = [];
+        if ($help->district_id) {
+            $eligibleDistrictIds[] = (int) $help->district_id;
+            if (AppSetting::isAdjacentDistrictMatchingEnabled()) {
+                $district = $help->relationLoaded('district') ? $help->district : \App\Models\District::find($help->district_id);
+                if ($district) {
+                    $adjacentIds = $district->getAdjacentDistricts()->pluck('id')->all();
+                    $eligibleDistrictIds = array_unique(array_merge($eligibleDistrictIds, $adjacentIds));
+                }
+            }
+        }
 
         $statesQuery = PartnerOnlineState::eligibleForMatching($ttl)
             ->whereNull('current_help_id')
-            ->whereHas('user', function ($q) use ($help, $excludeIds) {
+            ->whereHas('user', function ($q) use ($help, $excludeIds, $eligibleDistrictIds) {
                 $q->where('role', 'mitra')
                   ->where('status', 'active')
                   ->where('is_shadow_banned', false)
                   ->where('warning_level', '<', 3)
                   ->whereNotIn('id', $excludeIds);
 
-                if ($help->city_id) {
+                if (!empty($eligibleDistrictIds)) {
+                    $q->where(function ($sub) use ($eligibleDistrictIds, $help) {
+                        $sub->whereIn('district_id', $eligibleDistrictIds)
+                            ->orWhere(function ($s2) use ($help) {
+                                if ($help->city_id) {
+                                    $s2->where('city_id', $help->city_id);
+                                }
+                            });
+                    });
+                } elseif ($help->city_id) {
                     $q->where('city_id', $help->city_id);
                 }
             });
 
-        // Bounding Box Pre-Filter: Batasi kandidat secara instan berbasis rentang koordinat kotak bujur sangkar
-        if ($helpLat != 0 && $helpLng != 0) {
+        // Bounding Box Pre-Filter: Batasi kandidat secara instan berbasis rentang 10 KM
+        if ($targetLat != 0 && $targetLng != 0) {
             $latDelta = $maxMatchingRadius / 111.045;
-            $lngDelta = $maxMatchingRadius / (111.045 * max(0.01, cos(deg2rad($helpLat))));
+            $lngDelta = $maxMatchingRadius / (111.045 * max(0.01, cos(deg2rad($targetLat))));
 
-            $minLat = $helpLat - $latDelta;
-            $maxLat = $helpLat + $latDelta;
-            $minLng = $helpLng - $lngDelta;
-            $maxLng = $helpLng + $lngDelta;
+            $minLat = $targetLat - $latDelta;
+            $maxLat = $targetLat + $latDelta;
+            $minLng = $targetLng - $lngDelta;
+            $maxLng = $targetLng + $lngDelta;
 
             $statesQuery->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng) {
                 $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng) {
@@ -349,8 +395,8 @@ class HelpMatchingService
             });
         }
 
-        // Top-N Candidate Pre-selection (Batasi kandidat aktif hingga 50 untuk performa maksimal)
-        $eligibleStates = $statesQuery->with('user')->limit(50)->get();
+        // Top-N Candidate Pre-selection
+        $eligibleStates = $statesQuery->with(['user', 'user.district'])->limit(50)->get();
 
         if ($eligibleStates->isEmpty()) {
             return collect();
@@ -364,7 +410,7 @@ class HelpMatchingService
 
         // 3. Batch Pre-fetch All System Configs (In-Memory)
         $config = [
-            'max_radius'           => (float) AppSetting::getMaxMatchingRadiusKm(),
+            'max_radius'           => AppSetting::MAX_OPERATIONAL_RADIUS_KM,
             'weights'              => AppSetting::getMatchingWeights(),
             'rating_min_votes'     => (float) AppSetting::getRatingMinVotes(),
             'neutral_rating_prior' => (float) AppSetting::getNeutralRatingPrior(),
@@ -375,8 +421,8 @@ class HelpMatchingService
             'newbie_min_score'     => (float) AppSetting::getNewbieMinFairnessScore(),
         ];
 
-        // 4. In-Memory Mathematical Scoring Calculation (0 DB queries inside loop)
-        $scoredCandidates = $eligibleStates->map(function ($state) use ($help, $ratingStats, $helpStats, $config) {
+        // 4. In-Memory Mathematical Scoring & Hard Filter MAX_MATCHING_DISTANCE <= 10.0 KM
+        $scoredCandidates = $eligibleStates->map(function ($state) use ($help, $ratingStats, $helpStats, $config, $maxMatchingRadius) {
             $userRating = $ratingStats->get($state->user_id);
             $userHelp   = $helpStats->get($state->user_id);
 
@@ -389,6 +435,11 @@ class HelpMatchingService
                 $config
             );
 
+            // HARD LIMIT RULE: Jika jarak matching mitra ke titik awal > 10.0 KM, eliminasi kandidat
+            if ($scoreDetails['distance_km'] > $maxMatchingRadius && $scoreDetails['distance_km'] > 0) {
+                return null;
+            }
+
             return (object) [
                 'user'            => $state->user,
                 'state'           => $state,
@@ -397,7 +448,7 @@ class HelpMatchingService
                 'searching_since' => $state->searching_since ?? now(),
                 'user_id'         => $state->user_id,
             ];
-        });
+        })->filter()->values();
 
         // 5. Deterministic Sorting: Total Score DESC, Waiting Time DESC (searching_since ASC), User ID ASC
         return $scoredCandidates->sort(function ($a, $b) {
@@ -630,19 +681,29 @@ class HelpMatchingService
                 throw new \RuntimeException('Anda tidak dapat menerima tawaran ini karena sedang memiliki tugas aktif yang berjalan.');
             }
 
-            // STEP 4: Mutasi Atomik Bersama
+            // STEP 4: Finalisasi Tarif & Jarak Perjalanan Aktual Mitra (Fase 2 Pricing)
+            $partnerLat = (float) ($partnerState->latitude ?? $mitra->latitude ?? 0);
+            $partnerLng = (float) ($partnerState->longitude ?? $mitra->longitude ?? 0);
+
+            $finalPricing = $this->pricingService->finalizePartnerPricing($lockedHelp, $partnerLat, $partnerLng);
+
+            // STEP 5: Mutasi Atomik Bersama
             $dispatch->update([
                 'status'       => HelpDispatch::STATUS_ACCEPTED,
                 'responded_at' => now(),
             ]);
 
-            $lockedHelp->update([
-                'mitra_id'      => $mitra->id,
-                'status'        => Help::STATUS_TAKEN,
-                'dispatch_mode' => Help::DISPATCH_MODE_ASSIGNED,
-                'assigned_at'   => now(),
-                'taken_at'      => now(),
-            ]);
+            $lockedHelp->update(array_merge([
+                'mitra_id'            => $mitra->id,
+                'status'              => Help::STATUS_TAKEN,
+                'dispatch_mode'       => Help::DISPATCH_MODE_ASSIGNED,
+                'assigned_at'         => now(),
+                'taken_at'            => now(),
+                'partner_initial_lat' => $partnerLat,
+                'partner_initial_lng' => $partnerLng,
+                'partner_current_lat' => $partnerLat,
+                'partner_current_lng' => $partnerLng,
+            ], $finalPricing));
 
             $partnerState->update([
                 'matching_status'      => PartnerOnlineState::STATUS_BUSY,

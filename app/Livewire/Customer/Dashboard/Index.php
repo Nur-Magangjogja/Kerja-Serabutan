@@ -28,7 +28,7 @@ class Index extends Component
 
     public function showHelp($id)
     {
-        $help = Help::with(['user', 'city', 'mitra'])->find($id);
+        $help = Help::with(['user', 'city', 'district', 'mitra'])->find($id);
         if (!$help) {
             $this->selectedHelp = null;
             $this->selectedHelpData = null;
@@ -41,10 +41,12 @@ class Index extends Component
             'title' => $help->title,
             'description' => $help->description,
             'amount' => $help->amount,
+            'total_amount' => $help->total_amount > 0 ? $help->total_amount : $help->amount,
             'photo' => $help->photo,
             'location' => $help->location,
             'user_name' => $help->user?->name,
             'city_name' => $help->city?->name,
+            'district_name' => $help->district?->name,
             'created_at_human' => $help->created_at?->diffForHumans(),
         ];
     }
@@ -69,14 +71,14 @@ class Index extends Component
         if ($this->activeTab === 'latest') {
             // Ambil bantuan user sendiri (5 bantuan terakhir)
             $availableHelps = Help::where('user_id', $user->id)
-                ->with(['user', 'city', 'mitra'])
+                ->with(['user', 'city', 'district', 'mitra'])
                 ->latest()
                 ->take(5)
                 ->get();
         } elseif ($this->activeTab === 'all') {
             // Ambil semua bantuan milik user sendiri (pakai pagination)
             $availableHelps = Help::where('user_id', $user->id)
-                ->with(['user', 'city', 'mitra'])
+                ->with(['user', 'city', 'district', 'mitra'])
                 ->latest()
                 ->paginate(10);
         } else { // history
@@ -84,7 +86,7 @@ class Index extends Component
             if ($user->isMitra()) {
                 // Untuk mitra, tampilkan bantuan yang sudah dikerjakan
                 $availableHelps = Help::where('mitra_id', $user->id)
-                    ->with(['user', 'city'])
+                    ->with(['user', 'city', 'district'])
                     ->latest()
                     ->take(10)
                     ->get();
@@ -92,7 +94,7 @@ class Index extends Component
                 // Untuk customer, tampilkan bantuan yang sudah selesai atau dibatalkan
                 $availableHelps = Help::where('user_id', $user->id)
                     ->whereIn('status', ['selesai', 'dibatalkan'])
-                    ->with(['mitra', 'city'])
+                    ->with(['mitra', 'city', 'district'])
                     ->latest()
                     ->take(10)
                     ->get();
@@ -107,7 +109,7 @@ class Index extends Component
             ];
 
             $myHelps = Help::where('user_id', $user->id)
-                ->with(['city', 'mitra'])
+                ->with(['city', 'district', 'mitra'])
                 ->latest()
                 ->take(5)
                 ->get();

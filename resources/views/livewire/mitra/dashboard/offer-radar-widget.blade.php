@@ -368,6 +368,9 @@
                  },
                  init() {
                      if (this.timer) clearInterval(this.timer);
+                     if (window.playNotificationSound) {
+                         window.playNotificationSound();
+                     }
                      this.syncCountdown();
                      this.timer = setInterval(() => this.syncCountdown(), 1000);
                  },

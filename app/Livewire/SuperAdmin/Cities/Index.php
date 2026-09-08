@@ -8,6 +8,7 @@ use Livewire\Attributes\Layout;
 use App\Models\City;
 use App\Models\User;
 use App\Models\Province;
+use App\Models\District;
 use Illuminate\Support\Facades\Schema;
 
 #[Layout('layouts.superadmin')]
@@ -32,6 +33,17 @@ class Index extends Component
     public $admin_id = null;
     public $is_active = true;
     public $deleteId = null;
+
+    // district management fields
+    public $showDistrictModal = false;
+    public $districtEditId = null;
+    public $districtCityId = null;
+    public $districtName = '';
+    public $districtCode = '';
+    public $districtIsActive = true;
+    public $showDistrictDeleteModal = false;
+    public $deleteDistrictId = null;
+    public $deletingDistrictName = null;
     // detail modal + chart data
     public $showDetailModal = false;
     public $detailCityId = null;
@@ -117,7 +129,7 @@ class Index extends Component
     {
         $rules = [
             'name' => 'required|string|max:255',
-            'admin_id' => 'required|exists:users,id',
+            'admin_id' => 'nullable|exists:users,id',
             'is_active' => 'boolean',
         ];
 
@@ -130,11 +142,13 @@ class Index extends Component
 
         $validated = $this->validate($rules);
 
-        // Ensure selected user is actually an admin
-        $admin = User::find($validated['admin_id']);
-        if (!$admin || $admin->role !== 'admin') {
-            $this->addError('admin_id', 'Pilih user dengan role admin sebagai pengelola kota');
-            return;
+        $admin = null;
+        if (!empty($validated['admin_id'])) {
+            $admin = User::find($validated['admin_id']);
+            if (!$admin || $admin->role !== 'admin') {
+                $this->addError('admin_id', 'Pilih user dengan role admin');
+                return;
+            }
         }
 
         if ($this->editMode && $this->cityId) {
@@ -158,9 +172,10 @@ class Index extends Component
                 }
             }
 
-            // assign new admin's city_id
-            $admin->city_id = $city->id;
-            $admin->save();
+            if ($admin) {
+                $admin->city_id = $city->id;
+                $admin->save();
+            }
 
             session()->flash('message', 'Kota berhasil diperbarui');
         } else {
@@ -172,11 +187,12 @@ class Index extends Component
 
             $city = City::create($validated);
 
-            // assign admin to this new city
-            $admin->city_id = $city->id;
-            $admin->save();
+            if ($admin) {
+                $admin->city_id = $city->id;
+                $admin->save();
+            }
 
-            session()->flash('message', 'Kota berhasil dibuat dan admin ditetapkan');
+            session()->flash('message', 'Kota berhasil dibuat');
         }
 
         $this->showModal = false;
@@ -435,6 +451,85 @@ class Index extends Component
         session()->flash('message', "Override kapasitas {$city->name} berhasil dihapus (kembali ke auto-manage).");
     }
 
+    /** Districts management */
+    public function toggleDistrictStatus($id)
+    {
+        $district = District::findOrFail($id);
+        $district->update(['is_active' => !$district->is_active]);
+        session()->flash('message', "Status kecamatan {$district->name} berhasil diubah.");
+    }
+
+    public function openDistrictModal($cityId, $districtId = null)
+    {
+        $this->districtCityId = $cityId;
+        if ($districtId) {
+            $dist = District::findOrFail($districtId);
+            $this->districtEditId = $dist->id;
+            $this->districtName = $dist->name;
+            $this->districtCode = $dist->code ?? '';
+            $this->districtIsActive = (bool)$dist->is_active;
+        } else {
+            $this->districtEditId = null;
+            $this->districtName = '';
+            $this->districtCode = '';
+            $this->districtIsActive = true;
+        }
+        $this->showDistrictModal = true;
+    }
+
+    public function saveDistrict()
+    {
+        $this->validate([
+            'districtCityId' => 'required|exists:cities,id',
+            'districtName' => 'required|string|max:255',
+            'districtCode' => 'nullable|string|max:50',
+            'districtIsActive' => 'boolean',
+        ]);
+
+        if ($this->districtEditId) {
+            $dist = District::findOrFail($this->districtEditId);
+            $dist->update([
+                'city_id' => $this->districtCityId,
+                'name' => $this->districtName,
+                'code' => $this->districtCode ?: null,
+                'is_active' => $this->districtIsActive,
+            ]);
+            session()->flash('message', "Kecamatan {$this->districtName} berhasil diperbarui.");
+        } else {
+            District::create([
+                'city_id' => $this->districtCityId,
+                'name' => $this->districtName,
+                'code' => $this->districtCode ?: null,
+                'is_active' => $this->districtIsActive,
+            ]);
+            session()->flash('message', "Kecamatan {$this->districtName} berhasil ditambahkan.");
+        }
+
+        $this->showDistrictModal = false;
+        $this->reset(['districtEditId', 'districtCityId', 'districtName', 'districtCode', 'districtIsActive']);
+    }
+
+    public function confirmDeleteDistrict($id)
+    {
+        $this->deleteDistrictId = $id;
+        $dist = District::find($id);
+        $this->deletingDistrictName = $dist ? $dist->name : null;
+        $this->showDistrictDeleteModal = true;
+    }
+
+    public function deleteDistrict()
+    {
+        if ($this->deleteDistrictId) {
+            $dist = District::findOrFail($this->deleteDistrictId);
+            $name = $dist->name;
+            $dist->delete();
+            session()->flash('message', "Kecamatan {$name} berhasil dihapus.");
+        }
+        $this->showDistrictDeleteModal = false;
+        $this->deleteDistrictId = null;
+        $this->deletingDistrictName = null;
+    }
+
     public function render()
     {
         $loadDistricts = Schema::hasTable('districts');
@@ -444,7 +539,10 @@ class Index extends Component
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('province', 'like', '%' . $this->search . '%');
+                        ->orWhere('province', 'like', '%' . $this->search . '%')
+                        ->orWhereHas('districts', function($dq) {
+                            $dq->where('name', 'like', '%' . $this->search . '%');
+                        });
                 });
             })
             ->when($this->filterProvinceId, function ($q) {

@@ -14,13 +14,15 @@ class Index extends Component
 
     public $search = '';
     public $statusFilter = '';
-    public $cityFilter = 'all';
+    public $districtFilter = 'all';
+    public $cityFilter = 'all'; // Backward compatibility alias
     public $perPage = 10;
     public $selectedHelpId = null;
     public $showDetailModal = false;
 
     protected $listeners = [
-        'admin-city-changed' => 'onAdminCityChanged',
+        'admin-district-changed' => 'onAdminDistrictChanged',
+        'admin-city-changed'     => 'onAdminDistrictChanged',
     ];
 
     protected $queryString = [
@@ -30,7 +32,8 @@ class Index extends Component
 
     public function mount()
     {
-        $this->cityFilter = auth()->user()?->getActiveAdminCityFilter() ?? 'all';
+        $this->districtFilter = auth()->user()?->getActiveAdminDistrictFilter() ?? 'all';
+        $this->cityFilter = $this->districtFilter;
     }
 
     public function updatedSearch()
@@ -43,11 +46,18 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function updatedDistrictFilter()
+    {
+        auth()->user()?->setActiveAdminDistrictFilter($this->districtFilter);
+        $this->cityFilter = $this->districtFilter;
+        $this->dispatch('admin-district-changed', districtId: $this->districtFilter);
+        $this->resetPage();
+    }
+
     public function updatedCityFilter()
     {
-        auth()->user()?->setActiveAdminCityFilter($this->cityFilter);
-        $this->dispatch('admin-city-changed', cityId: $this->cityFilter);
-        $this->resetPage();
+        $this->districtFilter = $this->cityFilter;
+        $this->updatedDistrictFilter();
     }
 
     public function filterByStatus(string $status)
@@ -56,18 +66,30 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function setDistrictFilter(string $district)
+    {
+        $this->districtFilter = $district;
+        $this->cityFilter = $district;
+        auth()->user()?->setActiveAdminDistrictFilter($district);
+        $this->dispatch('admin-district-changed', districtId: $district);
+        $this->resetPage();
+    }
+
     public function setCityFilter(string $city)
     {
-        $this->cityFilter = $city;
-        auth()->user()?->setActiveAdminCityFilter($city);
-        $this->dispatch('admin-city-changed', cityId: $city);
+        $this->setDistrictFilter($city);
+    }
+
+    public function onAdminDistrictChanged($districtId = null)
+    {
+        $this->districtFilter = auth()->user()?->getActiveAdminDistrictFilter() ?? 'all';
+        $this->cityFilter = $this->districtFilter;
         $this->resetPage();
     }
 
     public function onAdminCityChanged($cityId = null)
     {
-        $this->cityFilter = auth()->user()?->getActiveAdminCityFilter() ?? 'all';
-        $this->resetPage();
+        $this->onAdminDistrictChanged($cityId);
     }
 
     public function updatedPerPage()
@@ -114,26 +136,27 @@ class Index extends Component
     {
         $admin = auth()->user();
         
-        // Multi-City Resolution
-        $allowedCityIds = ($admin && $admin->role === 'admin') ? $admin->getAdminCityIds() : [];
-        $managedCities = ($admin && $admin->role === 'admin') ? $admin->getAdminCities() : collect();
+        // District Resolution for Admin
+        $allowedDistrictIds = ($admin && $admin->role === 'admin') ? $admin->getAdminDistrictIds() : [];
+        $managedDistricts = ($admin && $admin->role === 'admin') ? $admin->getAdminDistricts() : collect();
         if ($admin && $admin->role === 'admin') {
-            $this->cityFilter = $admin->getActiveAdminCityFilter();
-            $activeCityIds = $admin->getEffectiveAdminCityIds();
+            $this->districtFilter = $admin->getActiveAdminDistrictFilter();
+            $this->cityFilter = $this->districtFilter;
+            $activeDistrictIds = $admin->getEffectiveAdminDistrictIds();
         } else {
-            $activeCityIds = [];
+            $activeDistrictIds = [];
         }
 
         // Base Query
         $query = Help::query()
-            ->with(['customer', 'customer.city', 'mitra', 'city'])
-            ->when(!empty($activeCityIds), function ($q) use ($activeCityIds) {
-                $q->where(function ($sq) use ($activeCityIds) {
-                    $sq->whereIn('city_id', $activeCityIds)
-                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('city_id', $activeCityIds));
+            ->with(['customer', 'customer.district', 'customer.city', 'mitra', 'district', 'city'])
+            ->when(!empty($activeDistrictIds), function ($q) use ($activeDistrictIds) {
+                $q->where(function ($sq) use ($activeDistrictIds) {
+                    $sq->whereIn('district_id', $activeDistrictIds)
+                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $activeDistrictIds));
                 });
             })
-            ->when(empty($activeCityIds) && $admin && $admin->role === 'admin', function ($q) {
+            ->when(empty($activeDistrictIds) && $admin && $admin->role === 'admin', function ($q) {
                 $q->whereRaw('1 = 0');
             })
             ->when($this->search !== '', function ($q) {
@@ -166,12 +189,12 @@ class Index extends Component
 
         $helps = $query->latest()->paginate($this->perPage);
 
-        // Statistics - filtered by active city scope
+        // Statistics - filtered by active district scope
         $statsQuery = Help::query();
-        if (!empty($activeCityIds)) {
-            $statsQuery->where(function ($sq) use ($activeCityIds) {
-                $sq->whereIn('city_id', $activeCityIds)
-                  ->orWhereHas('customer', fn($cq) => $cq->whereIn('city_id', $activeCityIds));
+        if (!empty($activeDistrictIds)) {
+            $statsQuery->where(function ($sq) use ($activeDistrictIds) {
+                $sq->whereIn('district_id', $activeDistrictIds)
+                  ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $activeDistrictIds));
             });
         } elseif ($admin && $admin->role === 'admin') {
             $statsQuery->whereRaw('1 = 0');
@@ -187,19 +210,22 @@ class Index extends Component
         $completedHelps = (clone $statsQuery)->whereIn('status', ['completed', 'selesai'])->count();
         $cancelledHelps = (clone $statsQuery)->whereIn('status', ['cancelled', 'dibatalkan', 'rejected'])->count();
 
-        $selectedHelp = $this->selectedHelpId ? Help::with(['customer', 'mitra', 'city', 'rating'])->find($this->selectedHelpId) : null;
+        $selectedHelp = $this->selectedHelpId ? Help::with(['customer', 'mitra', 'district', 'city', 'rating'])->find($this->selectedHelpId) : null;
         $helpActivities = $this->selectedHelpId ? \App\Models\PartnerActivity::with('user')->where('help_id', $this->selectedHelpId)->orderBy('created_at', 'asc')->get() : collect();
 
-        return view('livewire.admin.helps.index', compact(
-            'helps',
-            'managedCities',
-            'totalHelps',
-            'pendingHelps',
-            'activeHelps',
-            'completedHelps',
-            'cancelledHelps',
-            'selectedHelp',
-            'helpActivities'
-        ));
+        return view('livewire.admin.helps.index', [
+            'helps'            => $helps,
+            'managedDistricts' => $managedDistricts,
+            'managedCities'    => $managedDistricts, // Backward compatibility
+            'districtFilter'   => $this->districtFilter,
+            'cityFilter'       => $this->districtFilter,
+            'totalHelps'       => $totalHelps,
+            'pendingHelps'     => $pendingHelps,
+            'activeHelps'      => $activeHelps,
+            'completedHelps'   => $completedHelps,
+            'cancelledHelps'   => $cancelledHelps,
+            'selectedHelp'     => $selectedHelp,
+            'helpActivities'   => $helpActivities,
+        ]);
     }
 }

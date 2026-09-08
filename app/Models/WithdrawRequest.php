@@ -56,8 +56,19 @@ class WithdrawRequest extends Model
     public const STATUS_SUCCESS = 'success';
     public const STATUS_FAILED = 'failed';
 
+    public function isPlatformAccount(): bool
+    {
+        $banks = AppSetting::getWithdrawBanks();
+        $codeUpper = strtoupper(trim($this->bank_code ?? ''));
+        $matched = collect($banks)->first(function ($b) use ($codeUpper) {
+            return strtoupper($b['code'] ?? '') === $codeUpper;
+        });
+        return !empty($matched['is_platform_account']);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 }
+

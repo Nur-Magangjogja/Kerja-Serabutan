@@ -140,8 +140,8 @@
                         this.bankName = match.name;
                         this.bankCategory = match.category;
                         this.bankIcon = match.icon;
-                        this.selectedBankFee = Number(match.fee || 0);
                         this.isPlatformAccount = Boolean(match.is_platform_account);
+                        this.selectedBankFee = this.isPlatformAccount ? 0 : Number(match.fee || 0);
                     }
                     this.$watch('openBankModal', value => {
                         if (value) {
@@ -162,11 +162,12 @@
                     this.bankName = b.name;
                     this.bankCategory = b.category;
                     this.bankIcon = b.icon;
-                    this.selectedBankFee = Number(b.fee || 0);
                     this.isPlatformAccount = Boolean(b.is_platform_account);
+                    this.selectedBankFee = this.isPlatformAccount ? 0 : Number(b.fee || 0);
                     this.openBankModal = false;
                     this.searchBank = '';
                 },
+
                 setAmount(val) {
                     if (val > this.maxBalance) val = this.maxBalance;
                     this.amount = val;

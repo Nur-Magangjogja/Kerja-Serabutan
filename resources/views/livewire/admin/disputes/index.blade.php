@@ -3,13 +3,13 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <span>⚖️ Mediasi & Penyelesaian Sengketa</span>
+                <span>⚖️ Arbitrase & Audit Pembatalan</span>
                 <span class="text-xs px-2.5 py-1 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-semibold border border-rose-200 dark:border-rose-800">
-                    Escrow Freeze
+                    Audit Wilayah
                 </span>
             </h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Pusat resolusi komplain customer, pembekuan saldo, dan mediasi arbitrase Admin Wilayah.
+                Pusat arbitrase sengketa saldo escrow dan audit klaim pembatalan berdasar progres nyata.
             </p>
         </div>
     </div>
@@ -29,117 +29,241 @@
         </div>
     @endif
 
+    {{-- Main Tabs Switcher --}}
+    <div class="flex items-center gap-2 mb-4 border-b border-gray-200 dark:border-gray-700">
+        <button wire:click="$set('activeTab', 'disputes')" 
+                class="pb-3 px-4 font-bold text-xs transition border-b-2 flex items-center gap-2 {{ $activeTab === 'disputes' ? 'border-primary-600 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400' }}">
+            <span>⚖️ Mediasi Sengketa Escrow</span>
+        </button>
+        <button wire:click="$set('activeTab', 'cancellations')" 
+                class="pb-3 px-4 font-bold text-xs transition border-b-2 flex items-center gap-2 {{ $activeTab === 'cancellations' ? 'border-primary-600 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400' }}">
+            <span>🛑 Permintaan Pembatalan Khusus</span>
+        </button>
+    </div>
+
     {{-- Filter & Search Bar --}}
     <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-2 w-full sm:w-auto">
-                <button wire:click="$set('status', 'frozen')" 
-                        class="px-4 py-2 rounded-xl text-xs font-bold transition {{ $status === 'frozen' ? 'bg-rose-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200' }}">
-                    Dibekukan (Aktif)
-                </button>
-                <button wire:click="$set('status', 'resolved')" 
-                        class="px-4 py-2 rounded-xl text-xs font-bold transition {{ $status === 'resolved' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200' }}">
-                    Terselesaikan
-                </button>
-                <button wire:click="$set('status', 'all')" 
-                        class="px-4 py-2 rounded-xl text-xs font-bold transition {{ $status === 'all' ? 'bg-primary-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200' }}">
-                    Semua
-                </button>
+                @if($activeTab === 'disputes')
+                    <button wire:click="$set('status', 'frozen')" 
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition {{ $status === 'frozen' ? 'bg-rose-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200' }}">
+                        Dibekukan (Aktif)
+                    </button>
+                    <button wire:click="$set('status', 'resolved')" 
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition {{ $status === 'resolved' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200' }}">
+                        Terselesaikan
+                    </button>
+                    <button wire:click="$set('status', 'all')" 
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition {{ $status === 'all' ? 'bg-primary-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200' }}">
+                        Semua
+                    </button>
+                @else
+                    <button wire:click="$set('status', 'pending')" 
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition {{ $status === 'pending' ? 'bg-amber-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200' }}">
+                        Menunggu Audit
+                    </button>
+                    <button wire:click="$set('status', 'approved')" 
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition {{ $status === 'approved' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200' }}">
+                        Disetujui
+                    </button>
+                    <button wire:click="$set('status', 'rejected')" 
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition {{ $status === 'rejected' ? 'bg-rose-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200' }}">
+                        Ditolak
+                    </button>
+                    <button wire:click="$set('status', 'all')" 
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition {{ $status === 'all' ? 'bg-primary-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200' }}">
+                        Semua
+                    </button>
+                @endif
             </div>
 
             <div class="w-full sm:w-72">
                 <input type="text" 
                        wire:model.live.debounce.300ms="search" 
-                       placeholder="Cari order / customer / mitra..." 
+                       placeholder="Cari order / pihak terkait..." 
                        class="w-full px-3.5 py-2 text-xs bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-white placeholder-gray-400">
             </div>
         </div>
     </div>
 
-    {{-- Dispute List Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs text-gray-600 dark:text-gray-300">
-                <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-200 uppercase font-semibold text-[11px] border-b border-gray-100 dark:border-gray-700">
-                    <tr>
-                        <th class="p-4">Bantuan / Order</th>
-                        <th class="p-4">Customer & Mitra</th>
-                        <th class="p-4">Nominal Bruto</th>
-                        <th class="p-4">Alasan Komplain</th>
-                        <th class="p-4">Status Escrow</th>
-                        <th class="p-4 text-center">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                    @forelse($disputes as $help)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
-                            <td class="p-4">
-                                <span class="font-bold text-gray-900 dark:text-white">#{{ $help->id }} - {{ $help->title }}</span>
-                                <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                                    {{ $help->city->name ?? '-' }} • {{ $help->disputed_at ? $help->disputed_at->translatedFormat('d M Y, H:i') : '-' }}
-                                </div>
-                            </td>
-                            <td class="p-4">
-                                <div class="font-semibold text-gray-900 dark:text-white">Cust: {{ $help->user->name ?? 'Customer' }}</div>
-                                <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Mitra: {{ $help->mitra->name ?? 'Belum ada' }}</div>
-                            </td>
-                            <td class="p-4 font-bold text-gray-900 dark:text-white">
-                                Rp {{ number_format($help->total_amount > 0 ? $help->total_amount : $help->amount, 0, ',', '.') }}
-                            </td>
-                            <td class="p-4 max-w-xs">
-                                <p class="text-xs text-rose-600 dark:text-rose-400 italic line-clamp-2">"{{ $help->dispute_reason ?? 'Tidak ada deskripsi' }}"</p>
-                            </td>
-                            <td class="p-4">
-                                @if($help->escrow_status === \App\Models\Help::ESCROW_STATUS_DISPUTED_FREEZE)
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300">
-                                        FROZEN
-                                    </span>
-                                @elseif($help->escrow_status === \App\Models\Help::ESCROW_STATUS_RELEASED)
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
-                                        RELEASED
-                                    </span>
-                                @elseif($help->escrow_status === \App\Models\Help::ESCROW_STATUS_REFUNDED)
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
-                                        REFUNDED (100%)
-                                    </span>
-                                @elseif($help->escrow_status === \App\Models\Help::ESCROW_STATUS_PARTIAL_REFUND)
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300">
-                                        PARTIAL SPLIT
-                                    </span>
-                                @else
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                        {{ strtoupper($help->escrow_status) }}
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="p-4 text-center">
-                                @if($help->escrow_status === \App\Models\Help::ESCROW_STATUS_DISPUTED_FREEZE)
-                                    <button wire:click="openResolveModal({{ $help->id }})" 
-                                            class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
-                                        Mediasi Sengketa
-                                    </button>
-                                @else
-                                    <span class="text-[11px] text-gray-400">
-                                        Selesai oleh {{ $help->disputeResolvedBy->name ?? 'Admin' }}
-                                    </span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
+    @if($activeTab === 'disputes')
+        {{-- Dispute List Table --}}
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-gray-600 dark:text-gray-300">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-200 uppercase font-semibold text-[11px] border-b border-gray-100 dark:border-gray-700">
                         <tr>
-                            <td colspan="6" class="p-8 text-center text-gray-400 text-xs">
-                                Tidak ada data sengketa atau komplain yang ditemukan.
-                            </td>
+                            <th class="p-4">Bantuan / Order</th>
+                            <th class="p-4">Customer & Mitra</th>
+                            <th class="p-4">Nominal Bruto</th>
+                            <th class="p-4">Alasan Komplain</th>
+                            <th class="p-4">Status Escrow</th>
+                            <th class="p-4 text-center">Aksi</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        @forelse($disputes as $help)
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
+                                <td class="p-4">
+                                    <span class="font-bold text-gray-900 dark:text-white">#{{ $help->id }} - {{ $help->title }}</span>
+                                    <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                        {{ $help->district ? 'Kec. ' . $help->district->name : ($help->city->name ?? '-') }} • {{ $help->disputed_at ? $help->disputed_at->translatedFormat('d M Y, H:i') : '-' }}
+                                    </div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-semibold text-gray-900 dark:text-white">Cust: {{ $help->user->name ?? 'Customer' }}</div>
+                                    <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Mitra: {{ $help->mitra->name ?? 'Belum ada' }}</div>
+                                </td>
+                                <td class="p-4 font-bold text-gray-900 dark:text-white">
+                                    Rp {{ number_format($help->total_amount > 0 ? $help->total_amount : $help->amount, 0, ',', '.') }}
+                                </td>
+                                <td class="p-4 max-w-xs">
+                                    <p class="text-xs text-rose-600 dark:text-rose-400 italic line-clamp-2">"{{ $help->dispute_reason ?? 'Tidak ada deskripsi' }}"</p>
+                                </td>
+                                <td class="p-4">
+                                    @if($help->escrow_status === \App\Models\Help::ESCROW_STATUS_DISPUTED_FREEZE)
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300">
+                                            FROZEN
+                                        </span>
+                                    @elseif($help->escrow_status === \App\Models\Help::ESCROW_STATUS_RELEASED)
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
+                                            RELEASED
+                                        </span>
+                                    @elseif($help->escrow_status === \App\Models\Help::ESCROW_STATUS_REFUNDED)
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
+                                            REFUNDED (100%)
+                                        </span>
+                                    @elseif($help->escrow_status === \App\Models\Help::ESCROW_STATUS_PARTIAL_REFUND)
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300">
+                                            PARTIAL SPLIT
+                                        </span>
+                                    @else
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                            {{ strtoupper($help->escrow_status) }}
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="p-4 text-center">
+                                    @if($help->escrow_status === \App\Models\Help::ESCROW_STATUS_DISPUTED_FREEZE)
+                                        <button wire:click="openResolveModal({{ $help->id }})" 
+                                                class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
+                                            Mediasi Sengketa
+                                        </button>
+                                    @else
+                                        <span class="text-[11px] text-gray-400">
+                                            Selesai oleh {{ $help->disputeResolvedBy->name ?? 'Admin' }}
+                                        </span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="p-8 text-center text-gray-400 text-xs">
+                                    Tidak ada data sengketa atau komplain yang ditemukan.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
 
-        <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
-            {{ $disputes->links('vendor.pagination.superadmin') }}
+            @if(method_exists($disputes, 'links'))
+                <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
+                    {{ $disputes->links('vendor.pagination.superadmin') }}
+                </div>
+            @endif
         </div>
-    </div>
+    @else
+        {{-- Cancellation Requests List Table (Revisi 3) --}}
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-gray-600 dark:text-gray-300">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-200 uppercase font-semibold text-[11px] border-b border-gray-100 dark:border-gray-700">
+                        <tr>
+                            <th class="p-4">ID & Bantuan</th>
+                            <th class="p-4">Diajukan Oleh</th>
+                            <th class="p-4">Alasan & Catatan</th>
+                            <th class="p-4">Status Barang & Progres</th>
+                            <th class="p-4">Status Klaim</th>
+                            <th class="p-4 text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        @forelse($cancellations as $req)
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
+                                <td class="p-4">
+                                    <span class="font-bold text-gray-900 dark:text-white">#{{ $req->help_id }} - {{ $req->help->title ?? 'Bantuan' }}</span>
+                                    <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                        Escrow: Rp {{ number_format($req->help->amount ?? 0, 0, ',', '.') }}
+                                    </div>
+                                </td>
+                                <td class="p-4">
+                                    <span class="font-bold text-gray-900 dark:text-white">{{ $req->requestedBy->name ?? 'User' }}</span>
+                                    <div class="text-[10px] text-gray-500">{{ $req->district->name ?? '-' }}</div>
+                                </td>
+                                <td class="p-4 max-w-xs">
+                                    <p class="font-semibold text-gray-800 dark:text-gray-200">{{ $req->reason }}</p>
+                                    @if($req->notes)
+                                        <p class="text-[11px] text-gray-500 italic mt-0.5 line-clamp-1">"{{ $req->notes }}"</p>
+                                    @endif
+                                </td>
+                                <td class="p-4">
+                                    <div class="space-y-0.5">
+                                        @if($req->item_purchased)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
+                                                🛒 Barang Dibeli: Rp {{ number_format($req->item_purchase_amount, 0, ',', '.') }}
+                                            </span>
+                                        @endif
+                                        <div class="text-[11px] text-gray-500">Progres: {{ $req->work_completed_percentage }}%</div>
+                                    </div>
+                                </td>
+                                <td class="p-4">
+                                    @if($req->status === 'pending')
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
+                                            PENDING AUDIT
+                                        </span>
+                                    @elseif($req->status === 'approved')
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
+                                            DISETUJUI ({{ $req->settlement_type }})
+                                        </span>
+                                    @else
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300">
+                                            DITOLAK
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="p-4 text-center">
+                                    @if($req->status === 'pending')
+                                        <button wire:click="openCancelReviewModal({{ $req->id }})" 
+                                                class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
+                                            Audit Finansial
+                                        </button>
+                                    @else
+                                        <span class="text-[11px] text-gray-400">
+                                            Ditutup oleh {{ $req->reviewedBy->name ?? 'Sistem' }}
+                                        </span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="p-8 text-center text-gray-400 text-xs">
+                                    Tidak ada permintaan pembatalan khusus yang menunggu.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            @if(method_exists($cancellations, 'links'))
+                <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
+                    {{ $cancellations->links('vendor.pagination.superadmin') }}
+                </div>
+            @endif
+        </div>
+    @endif
 
     {{-- Modal Resolusi Sengketa --}}
     @if($showResolveModal && $selectedHelp)
@@ -148,35 +272,33 @@
             <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700">
                 <div class="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
                     <div>
-                        <h3 class="font-bold text-base text-gray-900 dark:text-white">Arbitrase Sengketa Bantuan #{{ $selectedHelp->id }}</h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $selectedHelp->title }} ({{ $selectedHelp->city->name ?? '-' }})</p>
+                        <h3 class="font-bold text-base text-gray-900 dark:text-white">Arbitrase Sengketa Bantuan</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Order #{{ $selectedHelp->id }} - {{ $selectedHelp->title }}</p>
                     </div>
-                    <button wire:click="closeResolveModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <button wire:click="closeResolveModal" class="p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                {{-- Detail Dispute Info --}}
-                <div class="mb-4 bg-gray-50 dark:bg-gray-700/40 rounded-xl p-3.5 text-xs space-y-2">
+                {{-- Order Summary --}}
+                <div class="bg-gray-50 dark:bg-gray-750 p-3.5 rounded-xl border border-gray-100 dark:border-gray-700 mb-4 text-xs space-y-1.5">
                     <div class="flex justify-between">
-                        <span class="text-gray-500 dark:text-gray-400">Total Nominal Bruto:</span>
-                        <span class="font-bold text-gray-900 dark:text-white">Rp {{ number_format($selectedHelp->total_amount > 0 ? $selectedHelp->total_amount : $selectedHelp->amount, 0, ',', '.') }}</span>
+                        <span class="text-gray-500 dark:text-gray-400">Customer:</span>
+                        <span class="font-bold text-gray-800 dark:text-gray-200">{{ $selectedHelp->user->name ?? 'Customer' }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-gray-500 dark:text-gray-400">Alasan Komplain Customer:</span>
-                        <span class="text-rose-600 dark:text-rose-400 italic text-right max-w-xs">"{{ $selectedHelp->dispute_reason }}"</span>
+                        <span class="text-gray-500 dark:text-gray-400">Mitra:</span>
+                        <span class="font-bold text-gray-800 dark:text-gray-200">{{ $selectedHelp->mitra->name ?? 'Mitra' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">Dana Terkunci:</span>
+                        <span class="font-black text-rose-600 dark:text-rose-400">Rp {{ number_format($selectedHelp->total_amount > 0 ? $selectedHelp->total_amount : $selectedHelp->amount, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex justify-between border-t border-gray-200 dark:border-gray-600 pt-1">
+                        <span class="text-gray-500 dark:text-gray-400">Alasan Sengketa:</span>
+                        <span class="font-semibold text-rose-700 dark:text-rose-300 italic text-right">"{{ $selectedHelp->dispute_reason }}"</span>
                     </div>
                 </div>
-
-                {{-- Proof Photo if available --}}
-                @if($selectedHelp->proof_photo)
-                    <div class="mb-4">
-                        <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Bukti Pengerjaan Mitra:</p>
-                        <a href="{{ asset('storage/' . $selectedHelp->proof_photo) }}" target="_blank" class="block rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 max-h-36">
-                            <img src="{{ asset('storage/' . $selectedHelp->proof_photo) }}" alt="Bukti Mitra" class="w-full h-36 object-cover hover:scale-105 transition">
-                        </a>
-                    </div>
-                @endif
 
                 {{-- Resolution Options --}}
                 <div class="mb-4">
@@ -189,7 +311,6 @@
                                 <p class="text-gray-500 dark:text-gray-400 text-[11px]">Pekerjaan dinilai selesai sah. Saldo diteruskan ke mitra & komisi platform.</p>
                             </div>
                         </label>
-
                         <label class="flex items-center gap-2 p-2.5 rounded-xl border {{ $resolutionType === 'full_refund' ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/30' : 'border-gray-200 dark:border-gray-700' }} cursor-pointer text-xs">
                             <input type="radio" wire:model.live="resolutionType" value="full_refund" class="text-amber-600">
                             <div>
@@ -197,7 +318,6 @@
                                 <p class="text-gray-500 dark:text-gray-400 text-[11px]">Pekerjaan dibatalkan total. Seluruh dana bruto dikembalikan ke saldo customer.</p>
                             </div>
                         </label>
-
                         <label class="flex items-center gap-2 p-2.5 rounded-xl border {{ $resolutionType === 'partial_split' ? 'border-purple-500 bg-purple-50/50 dark:bg-purple-950/30' : 'border-gray-200 dark:border-gray-700' }} cursor-pointer text-xs">
                             <input type="radio" wire:model.live="resolutionType" value="partial_split" class="text-purple-600">
                             <div>
@@ -208,42 +328,132 @@
                     </div>
                 </div>
 
-                {{-- Partial Split Custom Inputs --}}
+                {{-- Partial Split Inputs --}}
                 @if($resolutionType === 'partial_split')
-                    <div class="mb-4 p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-xl space-y-2 text-xs">
-                        <div class="grid grid-cols-3 gap-2">
-                            <div>
-                                <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Mitra (Rp)</label>
-                                <input type="number" wire:model.live="partnerAmount" class="w-full px-2.5 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
-                            </div>
-                            <div>
-                                <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Biaya Platf (Rp)</label>
-                                <input type="number" wire:model.live="platformFee" class="w-full px-2.5 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
-                            </div>
-                            <div>
-                                <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Customer (Rp)</label>
-                                <input type="number" wire:model.live="customerRefund" class="w-full px-2.5 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
-                            </div>
+                    <div class="mb-4 p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-xl grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Mitra (Rp)</label>
+                            <input type="number" wire:model.live="partnerAmount" class="w-full px-2.5 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
                         </div>
-                        @error('customerRefund')
-                            <p class="text-rose-500 font-semibold text-[11px]">{{ $message }}</p>
-                        @enderror
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Biaya Platf (Rp)</label>
+                            <input type="number" wire:model.live="platformFee" class="w-full px-2.5 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Customer (Rp)</label>
+                            <input type="number" wire:model.live="customerRefund" class="w-full px-2.5 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
+                        </div>
                     </div>
                 @endif
 
-                {{-- Actions --}}
                 <div class="flex items-center gap-2 mt-6">
-                    <button wire:click="closeResolveModal"
-                            type="button"
-                            class="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl transition">
-                        Batal
-                    </button>
-                    <button wire:click="executeResolution"
-                            wire:loading.attr="disabled"
-                            type="button"
-                            class="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5">
+                    <button wire:click="closeResolveModal" type="button" class="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl transition">Batal</button>
+                    <button wire:click="executeResolution" wire:loading.attr="disabled" type="button" class="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5">
                         <span wire:loading.remove wire:target="executeResolution">Eksekusi Keputusan</span>
                         <span wire:loading wire:target="executeResolution">Memproses...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal Audit Pembatalan Khusus (Revisi 3) --}}
+    @if($showCancelReviewModal && $selectedCancelRequest)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
+             wire:click.self="closeCancelReviewModal">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700">
+                <div class="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
+                    <div>
+                        <h3 class="font-bold text-base text-gray-900 dark:text-white">Audit Finansial Pembatalan</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Order #{{ $selectedCancelRequest->help_id }} - {{ $selectedCancelRequest->help->title ?? '' }}</p>
+                    </div>
+                    <button wire:click="closeCancelReviewModal" class="p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div class="bg-gray-50 dark:bg-gray-750 p-3.5 rounded-xl border border-gray-100 dark:border-gray-700 mb-4 text-xs space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Alasan:</span>
+                        <span class="font-bold text-gray-800 dark:text-gray-200">{{ $selectedCancelRequest->reason }}</span>
+                    </div>
+                    @if($selectedCancelRequest->notes)
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Catatan:</span>
+                            <span class="font-medium text-gray-700 dark:text-gray-300 italic">{{ $selectedCancelRequest->notes }}</span>
+                        </div>
+                    @endif
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Status Pembelian Barang:</span>
+                        <span class="font-bold {{ $selectedCancelRequest->item_purchased ? 'text-amber-600' : 'text-gray-600' }}">
+                            {{ $selectedCancelRequest->item_purchased ? 'Barang Sudah Dibeli (Rp ' . number_format($selectedCancelRequest->item_purchase_amount, 0, ',', '.') . ')' : 'Belum Dibeli' }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Persentase Pekerjaan Selesai:</span>
+                        <span class="font-bold text-blue-600">{{ $selectedCancelRequest->work_completed_percentage }}%</span>
+                    </div>
+                    @if($selectedCancelRequest->evidence_photo)
+                        <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
+                            <a href="{{ asset('storage/' . $selectedCancelRequest->evidence_photo) }}" target="_blank" class="text-blue-600 hover:underline font-bold flex items-center gap-1">
+                                <span>Lihat Foto Bukti / Struk ↗</span>
+                            </a>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Decision Selector --}}
+                <div class="mb-4 space-y-3 text-xs">
+                    <div>
+                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Keputusan Admin:</label>
+                        <div class="flex gap-2">
+                            <label class="flex-1 p-2 rounded-xl border text-center cursor-pointer font-bold {{ $cancelDecision === 'approved' ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'border-gray-200 text-gray-600' }}">
+                                <input type="radio" wire:model.live="cancelDecision" value="approved" class="hidden">
+                                Disetujui
+                            </label>
+                            <label class="flex-1 p-2 rounded-xl border text-center cursor-pointer font-bold {{ $cancelDecision === 'rejected' ? 'bg-rose-50 border-rose-500 text-rose-700' : 'border-gray-200 text-gray-600' }}">
+                                <input type="radio" wire:model.live="cancelDecision" value="rejected" class="hidden">
+                                Ditolak (Lanjutkan Order)
+                            </label>
+                        </div>
+                    </div>
+
+                    @if($cancelDecision === 'approved')
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Tipe Penyelesaian Finansial:</label>
+                            <select wire:model.live="settlementType" class="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs">
+                                <option value="full_refund">Full Refund (100% Saldo ke Customer)</option>
+                                <option value="item_settled">Item Settled (Barang dibayar ke Mitra, sisa ke Customer)</option>
+                                <option value="partial_settlement">Settlement Parsial / Proporsional</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Refund Customer (Rp)</label>
+                                <input type="number" wire:model.defer="cancelRefundAmount" class="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 rounded-lg text-xs font-bold">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Kompensasi Mitra (Rp)</label>
+                                <input type="number" wire:model.defer="cancelPartnerAmount" class="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 rounded-lg text-xs font-bold">
+                            </div>
+                        </div>
+                    @endif
+
+                    <div>
+                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Catatan Audit Admin</label>
+                        <textarea wire:model.defer="cancelAdminNotes" rows="2" class="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 rounded-lg text-xs" placeholder="Penjelasan hasil audit..."></textarea>
+                    </div>
+                </div>
+
+                {{-- Actions --}}
+                <div class="flex items-center gap-2 mt-4">
+                    <button wire:click="closeCancelReviewModal" type="button" class="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl">
+                        Batal
+                    </button>
+                    <button wire:click="executeCancelReview" wire:loading.attr="disabled" type="button" class="flex-1 py-2.5 bg-primary-600 text-white text-xs font-bold rounded-xl shadow-sm flex items-center justify-center">
+                        <span wire:loading.remove wire:target="executeCancelReview">Simpan Keputusan</span>
+                        <span wire:loading wire:target="executeCancelReview">Memproses...</span>
                     </button>
                 </div>
             </div>

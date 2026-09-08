@@ -90,8 +90,8 @@ class HelpTransactionService
             throw new \RuntimeException('Anda tidak dapat mengambil bantuan ini karena sebelumnya telah Anda batalkan.');
         }
 
-        // 8. Validasi Radius Jarak Maksimal Platform Pool
-        $maxPoolRadiusKm = (float) \App\Models\AppSetting::getMaxPoolRadiusKm();
+        // 8. Validasi Jarak Operasional Baku (Maksimal 10.0 KM)
+        $maxRadiusKm = (float) \App\Models\AppSetting::MAX_OPERATIONAL_RADIUS_KM;
         $mitraLat = $lat ?? ($mitra->latitude ? (float) $mitra->latitude : null);
         $mitraLng = $lng ?? ($mitra->longitude ? (float) $mitra->longitude : null);
         if ($mitraLat && $mitraLng && $help->latitude && $help->longitude) {
@@ -100,8 +100,8 @@ class HelpTransactionService
                 (float) $help->latitude, (float) $help->longitude
             );
             $distKm = $distMeters / 1000;
-            if ($distKm > $maxPoolRadiusKm) {
-                throw new \RuntimeException("Lokasi bantuan ini berjarak " . round($distKm, 1) . " km, melebihi batas radius jangkauan maksimal Mitra ({$maxPoolRadiusKm} km).");
+            if ($distKm > $maxRadiusKm) {
+                throw new \RuntimeException("Lokasi bantuan ini berjarak " . round($distKm, 1) . " km, melebihi batas jangkauan operasional maksimal platform ({$maxRadiusKm} km).");
             }
         }
     }
@@ -1254,7 +1254,7 @@ class HelpTransactionService
      */
     private function releaseEscrowToMitra(Help $lockedHelp, string $triggeredBy = 'customer_confirm'): void
     {
-        if (!$lockedHelp->mitra_id || $lockedHelp->amount <= 0) {
+        if (!$lockedHelp->mitra_id || ($lockedHelp->getNetEarning() <= 0 && $lockedHelp->amount <= 0 && ($lockedHelp->total_amount ?? 0) <= 0)) {
             return;
         }
 
@@ -1342,6 +1342,66 @@ class HelpTransactionService
     private function creditMitra(Help $help): void
     {
         $this->releaseEscrowToMitra($help, 'manual_credit');
+    }
+
+    /**
+     * MODEL V2 & V3: Kembalikan escrow dari Holding ke saldo Customer secara langsung (Full / Parsial).
+     */
+    public function refundFromEscrowDirect(Help $help, User $customer, float $refundAmount, string $note = 'Pengembalian Dana'): void
+    {
+        if ($refundAmount <= 0) {
+            return;
+        }
+
+        $customerBalance = UserBalance::firstOrCreate(
+            ['user_id' => $customer->id],
+            ['balance' => 0]
+        );
+
+        $customerBalance->refundToCustomer(
+            $refundAmount,
+            $help->id,
+            $help->order_id,
+            "{$note} (Bantuan #{$help->id} '{$help->title}')",
+            "help:{$help->id}:refund_direct:" . uniqid()
+        );
+
+        Log::info('[HelpTransactionService] refundFromEscrowDirect executed', [
+            'help_id'     => $help->id,
+            'customer_id' => $customer->id,
+            'amount'      => $refundAmount,
+            'note'        => $note,
+        ]);
+    }
+
+    /**
+     * MODEL V2 & V3: Pencairan kompensasi parsial dari Escrow ke Mitra.
+     */
+    public function payoutPartialFromEscrowDirect(Help $help, User $mitra, float $payoutAmount, string $note = 'Kompensasi'): void
+    {
+        if ($payoutAmount <= 0) {
+            return;
+        }
+
+        $mitraBalance = UserBalance::firstOrCreate(
+            ['user_id' => $mitra->id],
+            ['balance' => 0]
+        );
+
+        $mitraBalance->credit(
+            $payoutAmount,
+            $help->id,
+            $help->order_id,
+            "{$note} (Bantuan #{$help->id} '{$help->title}')",
+            "help:{$help->id}:payout_direct:" . uniqid()
+        );
+
+        Log::info('[HelpTransactionService] payoutPartialFromEscrowDirect executed', [
+            'help_id'  => $help->id,
+            'mitra_id' => $mitra->id,
+            'amount'   => $payoutAmount,
+            'note'     => $note,
+        ]);
     }
 
     /**

@@ -71,11 +71,11 @@
                         <span class="font-semibold text-gray-800 dark:text-gray-200 block mt-0.5">{{ $user->gender ?: '—' }}</span>
                     </div>
                     <div class="p-3 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700/80">
-                        <span class="text-gray-400 block text-[10px]">Kota Operasional</span>
-                        <span class="font-semibold text-gray-800 dark:text-gray-200 block mt-0.5">{{ $user->city_name ?: '—' }}</span>
+                        <span class="text-gray-400 block text-[10px]">Wilayah Operasional</span>
+                        <span class="font-semibold text-gray-800 dark:text-gray-200 block mt-0.5">{{ $user->kecamatan ? 'Kec. ' . $user->kecamatan . ($user->city_name ? ', ' . $user->city_name : '') : ($user->city_name ?: '—') }}</span>
                     </div>
                     <div class="sm:col-span-2 p-3.5 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700/80 space-y-1">
-                        <span class="text-gray-400 block text-[10px]">Kota Wilayah</span>
+                        <span class="text-gray-400 block text-[10px]">Alamat Lengkap Domisili</span>
                         <p class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200 leading-relaxed">{{ $user->full_address }}</p>
                     </div>
                     <div class="p-3 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700/80">

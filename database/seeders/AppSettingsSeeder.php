@@ -27,6 +27,15 @@ class AppSettingsSeeder extends Seeder
             'contact_email'             => 'support@sayabantu.com',
             'contact_phone'             => '081234567890',
             'default_city'              => 'Sleman',
+            // ─── REVISI 3 CONFIGS ────────────────────────────────────────────
+            'travel_fee_per_km'                 => '2500', // Rp 2.500 per km setelah free radius
+            'travel_free_radius_km'             => '2.0',  // 0-2 KM free travel fee baseline
+            'max_matching_distance_km'          => '10.0', // Batas maksimum matching mitra -> titik awal
+            'arrival_radius_meters'             => '50',   // Radius tiba di lokasi (50m)
+            'arrival_acceptable_accuracy'       => '50',   // Akurasi GPS maksimal yang diizinkan untuk tiba
+            'movement_min_meters'               => '30',   // Jarak minimum pergerakan tercatat
+            'drift_max_velocity_kmh'            => '120',  // Batas kecepatan anti-drift (km/jam)
+            'adjacent_district_match_enabled'   => '1',    // Ekspansi matching ke kecamatan tetangga aktif
         ];
 
         foreach ($settings as $key => $value) {

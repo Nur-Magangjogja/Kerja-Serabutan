@@ -17,11 +17,12 @@ class CitySeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Eksekusi SQL Dump (indonesia.sql & kecamatan.sql) jika ada
+        // 1. Eksekusi SQL Dump (indonesia.sql & kecamatan.sql) jika belum terisi
         $indonesiaSqlPath = database_path('seeders/sql/indonesia.sql');
         $kecamatanSqlPath = database_path('seeders/sql/kecamatan.sql');
+        $needsSqlImport = !Schema::hasTable('reg_districts') || DB::table('reg_districts')->count() === 0;
 
-        if (file_exists($indonesiaSqlPath) || file_exists($kecamatanSqlPath)) {
+        if ($needsSqlImport && (file_exists($indonesiaSqlPath) || file_exists($kecamatanSqlPath))) {
             $this->command->info('Memproses impor database SQL wilayah Indonesia...');
             DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 

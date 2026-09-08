@@ -53,6 +53,9 @@ new #[Layout('layouts.guest')] class extends Component {
             'full_name',
             'phone',
             'gender',
+            'district_id',
+            'kecamatan',
+            'city_id',
             'city',
             'province'
         ]);
@@ -98,11 +101,20 @@ new #[Layout('layouts.guest')] class extends Component {
                 $cityId = $c?->id;
             }
 
+            $districtId = $registration->district_id;
+            $kecamatanName = $registration->kecamatan;
+            if (!$kecamatanName && $districtId) {
+                $distRec = \App\Models\District::find($districtId);
+                $kecamatanName = $distRec?->name;
+            }
+
             $user->update([
                 'nik'            => $registration->nik,
                 'name'           => $registration->full_name ?: $user->name,
                 'phone'          => $registration->phone ?: $user->phone,
                 'gender'         => $registration->gender,
+                'district_id'    => $districtId,
+                'kecamatan'      => $kecamatanName,
                 'city'           => $registration->city,
                 'city_id'        => $cityId,
                 'province'       => $registration->province,
@@ -120,10 +132,17 @@ new #[Layout('layouts.guest')] class extends Component {
                 // ignore
             }
 
-            // Kirim notifikasi ke admin regional terkait pengajuan KTP baru
+            // Kirim notifikasi ke admin regional terkait pengajuan KTP baru (berdasarkan kecamatan / kota)
             try {
                 $admins = User::where('role', 'admin')
-                    ->when($user->city_id, fn($q) => $q->where('city_id', $user->city_id))
+                    ->when($user->district_id, function($q) use ($user) {
+                        $q->where(function($sq) use ($user) {
+                            $sq->where('district_id', $user->district_id)
+                               ->orWhereHas('managedDistricts', fn($dq) => $dq->where('districts.id', $user->district_id));
+                        });
+                    }, function($q) use ($user) {
+                        $q->when($user->city_id, fn($cq) => $cq->where('city_id', $user->city_id));
+                    })
                     ->where('status', 'active')
                     ->get();
                 if ($admins->isEmpty()) {
@@ -244,11 +263,19 @@ new #[Layout('layouts.guest')] class extends Component {
                     <span class="text-gray-500 dark:text-gray-400">Jenis Kelamin:</span>
                     <span class="font-semibold text-gray-900 dark:text-white">{{ $step1_data['gender'] ?? '-' }}</span>
                 </div>
-                <div class="pt-2 border-t border-gray-200/60 dark:border-gray-700/60">
-                    <span class="text-gray-500 dark:text-gray-400 block mb-0.5">Alamat KTP:</span>
-                    <span class="font-medium text-gray-900 dark:text-gray-200 text-xs leading-relaxed">
-                        {{ $step1_data['city'] ?? '-' }}, {{ $step1_data['province'] ?? '-' }}
-                    </span>
+                <div class="pt-2 border-t border-gray-200/60 dark:border-gray-700/60 space-y-1">
+                    <span class="text-gray-500 dark:text-gray-400 block text-xs">Wilayah Domisili / Operasional:</span>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                            <span class="text-[10px] text-gray-400 block font-medium">Kecamatan (Patokan Utama)</span>
+                            <span class="font-bold text-primary-700 dark:text-sky-400 truncate block">{{ $step1_data['kecamatan'] ?? ($step1_data['district_id'] ? 'Kecamatan Terpilih' : '-') }}</span>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                            <span class="text-[10px] text-gray-400 block font-medium">Kota / Kabupaten</span>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $step1_data['city'] ?? '-' }}</span>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-gray-400 dark:text-gray-500 pt-0.5">Provinsi: {{ $step1_data['province'] ?? '-' }}</p>
                 </div>
             </div>
         </div>

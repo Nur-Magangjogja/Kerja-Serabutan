@@ -264,7 +264,8 @@ class Index extends Component
         $inProgressCount     = $stats['inProgress'];
         $completedCount      = $stats['completed'];
 
-        $userCityId = $user->city_id;
+        $userDistrictId = $user->district_id;
+        $userCityId     = $user->city_id;
 
         // 2. Data paginasi berdasarkan tab aktif
         if ($this->activeTab === 'tersedia' || $this->activeTab === 'semua') {
@@ -279,9 +280,11 @@ class Index extends Component
                     $q->whereNull('scheduled_at')
                       ->orWhere('scheduled_at', '<=', now());
                 })
-                ->with(['user', 'city']);
+                ->with(['user', 'city', 'district']);
 
-            if ($userCityId) {
+            if ($userDistrictId) {
+                $helpsQuery->orderByRaw("(district_id = ?) DESC", [$userDistrictId])->latest();
+            } elseif ($userCityId) {
                 $helpsQuery->orderByRaw("(city_id = ?) DESC", [$userCityId])->latest();
             } else {
                 $helpsQuery->latest();
@@ -291,18 +294,18 @@ class Index extends Component
         } elseif ($this->activeTab === 'diproses') {
             $helps = Help::where('mitra_id', $user->id)
                 ->whereIn('status', ['memperoleh_mitra', 'taken', 'sedang_diproses', 'in_progress', 'partner_on_the_way', 'partner_arrived', 'waiting_customer_confirmation', 'partner_cancel_requested'])
-                ->with(['user', 'city'])
+                ->with(['user', 'city', 'district'])
                 ->latest()
                 ->paginate(6);
         } elseif ($this->activeTab === 'selesai') {
             $helps = Help::where('mitra_id', $user->id)
                 ->whereIn('status', ['selesai', 'completed'])
-                ->with(['user', 'city'])
+                ->with(['user', 'city', 'district'])
                 ->latest()
                 ->paginate(6);
         } else {
             $helps = Help::where('mitra_id', $user->id)
-                ->with(['user', 'city'])
+                ->with(['user', 'city', 'district'])
                 ->latest()
                 ->paginate(6);
         }
@@ -323,7 +326,7 @@ class Index extends Component
                 $q->active()
                   ->orWhere('status', Help::STATUS_WAITING_CONFIRMATION);
             })
-            ->with(['user', 'city'])
+            ->with(['user', 'city', 'district'])
             ->latest()
             ->get();
 

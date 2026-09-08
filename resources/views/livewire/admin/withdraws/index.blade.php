@@ -46,31 +46,31 @@
 
             @if($isSuperAdmin)
                 <div>
-                    <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Wilayah / Kota</label>
-                    <select wire:model.live="cityFilter"
+                    <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Wilayah / Kecamatan</label>
+                    <select wire:model.live="districtFilter"
                         class="py-2 pl-3 pr-8 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
                         <option value="all">Semua Wilayah (Nasional)</option>
-                        @foreach($cities as $city)
-                            <option value="{{ $city->id }}">{{ $city->name }}</option>
+                        @foreach($districts as $district)
+                            <option value="{{ $district->id }}">Kec. {{ $district->name }} ({{ $district->city?->name ?? 'Kota' }})</option>
                         @endforeach
                     </select>
                 </div>
-            @elseif($cities->count() > 1)
+            @elseif($districts->count() > 1)
                 <div>
-                    <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Wilayah / Kota</label>
-                    <select wire:model.live="cityFilter"
+                    <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Wilayah / Kecamatan</label>
+                    <select wire:model.live="districtFilter"
                         class="py-2 pl-3 pr-8 text-sm border border-primary-200 dark:border-primary-800 rounded-lg bg-primary-50/50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 font-bold focus:outline-none focus:ring-2 focus:ring-primary-500">
-                        <option value="all">Semua Wilayah Saya ({{ $cities->count() }} Kota)</option>
-                        @foreach($cities as $city)
-                            <option value="{{ $city->id }}">{{ $city->name }}</option>
+                        <option value="all">Semua Wilayah Saya ({{ $districts->count() }} Kecamatan)</option>
+                        @foreach($districts as $district)
+                            <option value="{{ $district->id }}">Kec. {{ $district->name }}</option>
                         @endforeach
                     </select>
                 </div>
-            @elseif($cities->count() === 1)
+            @elseif($districts->count() === 1)
                 <div>
                     <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Wilayah Wewenang</label>
                     <span class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 rounded-lg">
-                        📍 {{ $cities->first()->name }}
+                        📍 Kec. {{ $districts->first()->name }}
                     </span>
                 </div>
             @endif
@@ -116,7 +116,7 @@
                     <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 font-bold uppercase tracking-wider text-[10px] border-b border-gray-100 dark:border-gray-700">
                         <tr>
                             <th class="px-4 py-3">ID / Pengguna</th>
-                            <th class="px-4 py-3">Wilayah</th>
+                            <th class="px-4 py-3">Wilayah / Kec.</th>
                             <th class="px-4 py-3">Rekening Tujuan</th>
                             <th class="px-4 py-3">Nominal Tarik</th>
                             <th class="px-4 py-3">Biaya Admin</th>
@@ -147,9 +147,17 @@
 
                                 <td class="px-4 py-3.5 whitespace-nowrap">
                                     @php
+                                        $districtName = $u?->district?->name ?? ($u?->kecamatan ?? null);
                                         $cityName = $u?->city_name ?? (is_object($u?->city) ? $u?->city?->name : ($u?->city ?? null));
                                     @endphp
-                                    @if($cityName)
+                                    @if($districtName)
+                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
+                                            <svg class="w-3.5 h-3.5 text-primary-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                                            </svg>
+                                            <span>Kec. {{ $districtName }}</span>
+                                        </div>
+                                    @elseif($cityName)
                                         <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
                                             <svg class="w-3.5 h-3.5 text-primary-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
@@ -322,8 +330,8 @@
                         <span class="font-semibold text-gray-800 dark:text-gray-200">📍 {{ $rejCity }}</span>
                     </div>
                     <div class="flex items-center justify-between pt-1 border-t border-gray-200/60 dark:border-gray-600/60">
-                        <span class="text-gray-500 dark:text-gray-400 font-medium">Nominal Pengembalian:</span>
-                        <span class="font-extrabold text-primary-600 dark:text-primary-400">Rp {{ number_format($selectedWithdraw?->amount ?? 0, 0, ',', '.') }}</span>
+                        <span class="text-gray-500 dark:text-gray-400 font-medium">Nominal Pengembalian Total:</span>
+                        <span class="font-extrabold text-primary-600 dark:text-primary-400">Rp {{ number_format(($selectedWithdraw?->amount ?? 0) + ($selectedWithdraw?->admin_fee ?? 0), 0, ',', '.') }}</span>
                     </div>
                 </div>
 

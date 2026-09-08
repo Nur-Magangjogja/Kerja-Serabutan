@@ -30,8 +30,10 @@ class AdminUsers extends Component
     public $role = 'admin';
     public $status = 'active';
     public $verified = true;
-    public $city_id = null;
-    public $managed_city_ids = []; 
+    public $district_id = null;
+    public $managed_district_ids = []; 
+    public $districtSearch = '';
+    public $cityFilter = 'all';
     public $address = null;
     public $nik = null;
     public $place_of_birth = null;
@@ -106,7 +108,7 @@ class AdminUsers extends Component
 
     public function viewUser($id)
     {
-        $user = User::with(['city', 'managedCities'])->find($id);
+        $user = User::with(['district.city', 'managedDistricts.city', 'city'])->find($id);
         if (!$user) {
             session()->flash('error', 'Admin tidak ditemukan');
             return;
@@ -118,7 +120,7 @@ class AdminUsers extends Component
 
     public function editUser($id)
     {
-        $user = User::with('managedCities')->find($id);
+        $user = User::with(['managedDistricts.city', 'district'])->find($id);
         if (!$user) {
             session()->flash('error', 'Admin tidak ditemukan');
             return;
@@ -132,12 +134,12 @@ class AdminUsers extends Component
         $this->status = $user->status ?? 'active';
         $this->verified = (bool) ($user->verified ?? true);
         
-        $managedIds = $user->managedCities->pluck('id')->map(fn($cid) => (int)$cid)->toArray();
-        if (empty($managedIds) && $user->city_id) {
-            $managedIds = [(int)$user->city_id];
+        $managedIds = $user->managedDistricts->pluck('id')->map(fn($did) => (int)$did)->toArray();
+        if (empty($managedIds) && $user->district_id) {
+            $managedIds = [(int)$user->district_id];
         }
-        $this->managed_city_ids = $managedIds;
-        $this->city_id = !empty($managedIds) ? $managedIds[0] : null;
+        $this->managed_district_ids = $managedIds;
+        $this->district_id = !empty($managedIds) ? $managedIds[0] : null;
 
         $this->address = $user->address;
         $this->nik = $user->nik;
@@ -150,6 +152,8 @@ class AdminUsers extends Component
         $this->occupation = $user->occupation;
         $this->password = '';
         $this->adminPassword = '';
+        $this->districtSearch = '';
+        $this->cityFilter = 'all';
         $this->resetErrorBag();
         $this->showEditModal = true;
     }
@@ -184,8 +188,10 @@ class AdminUsers extends Component
         $this->role = 'admin';
         $this->status = 'active';
         $this->verified = true;
-        $this->city_id = null;
-        $this->managed_city_ids = [];
+        $this->district_id = null;
+        $this->managed_district_ids = [];
+        $this->districtSearch = '';
+        $this->cityFilter = 'all';
         $this->address = null;
         $this->nik = null;
         $this->place_of_birth = null;
@@ -218,9 +224,9 @@ class AdminUsers extends Component
             'role' => 'required|string',
             'status' => 'required|in:active,inactive',
             'verified' => 'boolean',
-            'city_id' => 'nullable|exists:cities,id',
-            'managed_city_ids' => 'nullable|array',
-            'managed_city_ids.*' => 'exists:cities,id',
+            'district_id' => 'nullable|exists:districts,id',
+            'managed_district_ids' => 'nullable|array',
+            'managed_district_ids.*' => 'exists:districts,id',
             'nik' => ['nullable', 'string', 'max:50', Rule::unique('users', 'nik')->ignore($userId)],
             'address' => 'nullable|string|max:1000',
             'date_of_birth' => 'nullable|date',
@@ -246,10 +252,14 @@ class AdminUsers extends Component
             }
         }
 
-        // Process managed cities
-        $managedCityIds = array_values(array_unique(array_filter(array_map('intval', (array)($this->managed_city_ids ?? [])))));
-        $primaryCityId = !empty($managedCityIds) ? $managedCityIds[0] : null;
-        $primaryCity = $primaryCityId ? City::find($primaryCityId) : null;
+        // Process managed districts
+        $managedDistrictIds = array_values(array_unique(array_filter(array_map('intval', (array)($this->managed_district_ids ?? [])))));
+        $primaryDistrictId = !empty($managedDistrictIds) ? $managedDistrictIds[0] : null;
+        $primaryDistrict = $primaryDistrictId ? \App\Models\District::with('city')->find($primaryDistrictId) : null;
+        $primaryCityId = $primaryDistrict ? $primaryDistrict->city_id : null;
+        $primaryCityName = $primaryDistrict?->city?->name;
+        $primaryProvince = $primaryDistrict?->city?->province;
+        $primaryKecamatan = $primaryDistrict?->name;
 
         $data = [
             'name' => $this->name,
@@ -259,14 +269,17 @@ class AdminUsers extends Component
             'status' => $this->status ?: 'active',
             'verified' => true,
             'email_verified_at' => now(),
+            'district_id' => $primaryDistrictId,
+            'kecamatan' => $primaryKecamatan,
             'city_id' => $primaryCityId,
-            'city_name' => $primaryCity ? $primaryCity->name : null,
+            'city_name' => $primaryCityName,
+            'city' => $primaryCityName,
             'address' => $this->address,
             'nik' => $this->nik,
             'place_of_birth' => $this->place_of_birth,
             'date_of_birth' => $this->date_of_birth,
             'gender' => $this->gender,
-            'province' => $this->province ?? ($primaryCity ? $primaryCity->province : null),
+            'province' => $this->province ?? $primaryProvince,
             'religion' => $this->religion,
             'marital_status' => $this->marital_status,
             'occupation' => $this->occupation,
@@ -284,8 +297,12 @@ class AdminUsers extends Component
             $user->update($data);
 
             if ($this->role === 'admin') {
-                $user->managedCities()->sync($managedCityIds);
+                $user->managedDistricts()->sync($managedDistrictIds);
+                if ($primaryCityId) {
+                    $user->managedCities()->sync([$primaryCityId]);
+                }
             } else {
+                $user->managedDistricts()->sync([]);
                 $user->managedCities()->sync([]);
             }
 
@@ -303,7 +320,10 @@ class AdminUsers extends Component
             }
 
             if ($this->role === 'admin') {
-                $user->managedCities()->sync($managedCityIds);
+                $user->managedDistricts()->sync($managedDistrictIds);
+                if ($primaryCityId) {
+                    $user->managedCities()->sync([$primaryCityId]);
+                }
             }
 
             session()->flash('message', 'Admin baru ' . $user->name . ' berhasil dibuat dan terverifikasi.');
@@ -346,6 +366,7 @@ class AdminUsers extends Component
         }
 
         $userName = $user->name;
+        $user->managedDistricts()->sync([]);
         $user->managedCities()->sync([]);
         $user->delete();
 
@@ -371,7 +392,7 @@ class AdminUsers extends Component
 
     public function render()
     {
-        $users = User::with(['city', 'managedCities'])
+        $users = User::with(['district.city', 'managedDistricts.city', 'city'])
             ->where('role', 'admin')
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
@@ -385,6 +406,28 @@ class AdminUsers extends Component
 
         $cities = City::orderBy('name')->get();
 
-        return view('livewire.superadmin.users.admin-users', compact('users', 'cities'));
+        // Load districts for modal selection (with search and city filter)
+        $districtQuery = \App\Models\District::with('city')->where('is_active', true);
+        if ($this->cityFilter !== 'all' && is_numeric($this->cityFilter)) {
+            $districtQuery->where('city_id', (int) $this->cityFilter);
+        }
+        if (!empty($this->districtSearch)) {
+            $dq = trim($this->districtSearch);
+            $districtQuery->where(function($b) use ($dq) {
+                $b->where('name', 'like', "%{$dq}%")
+                  ->orWhereHas('city', fn($cq) => $cq->where('name', 'like', "%{$dq}%"));
+            });
+        }
+        $districts = $districtQuery->orderBy('name')->limit(100)->get();
+
+        // Ensure selected districts are always included in list
+        if (!empty($this->managed_district_ids)) {
+            $selectedExtras = \App\Models\District::with('city')
+                ->whereIn('id', $this->managed_district_ids)
+                ->get();
+            $districts = $districts->merge($selectedExtras)->unique('id')->values();
+        }
+
+        return view('livewire.superadmin.users.admin-users', compact('users', 'cities', 'districts'));
     }
 }
