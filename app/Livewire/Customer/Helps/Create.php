@@ -124,22 +124,8 @@ class Create extends Component
             $this->amount = $this->minHelpNominal;
         }
 
-        // Otomatis isi kota & kecamatan dari akun Customer
-        $user = auth()->user();
-        if ($user) {
-            if (!empty($user->city_id)) {
-                $this->setCityId($user->city_id);
-            } elseif (!empty($user->city)) {
-                $matchedCity = City::where('name', 'LIKE', '%' . trim($user->city) . '%')->first();
-                if ($matchedCity) {
-                    $this->setCityId($matchedCity->id);
-                }
-            }
-
-            if (!empty($user->district_id)) {
-                $this->setDistrictId($user->district_id);
-            }
-        }
+        // Catatan: Lokasi kota & kecamatan ditentukan 100% dari titik peta / GPS (Single Source of Truth),
+        // bukan mengambil dari profil akun Customer agar akurat dengan tempat pekerjaan jasa.
 
         if (Schema::hasTable('req_provinces')) {
             $this->req_provinces = DB::table('req_provinces')->orderBy('province')->get()->toArray();
@@ -279,6 +265,117 @@ class Create extends Component
     {
         $this->district_id   = '';
         $this->districtQuery = '';
+    }
+
+    /**
+     * Sinkronisasi Titik Lokasi Peta (Map Coordinates as Single Source of Truth).
+     * Otomatis mencocokkan Kabupaten/Kota & Kecamatan dari koordinat GPS/Peta,
+     * BUKAN mengambil dari profil akun pengguna, agar lokasi kerja akurat untuk Rekan Jasa.
+     */
+    public function resolveLocationFromMap($lat, $lng, $cityName = null, $districtName = null, $fullAddress = null, $provinceName = null)
+    {
+        $this->latitude  = (float) $lat;
+        $this->longitude = (float) $lng;
+
+        if ($fullAddress) {
+            $this->full_address = $fullAddress;
+            $parts = explode(',', $fullAddress);
+            $cleanAddress = trim(implode(', ', array_slice($parts, 0, 3)));
+            $this->location = $cleanAddress ?: $fullAddress;
+        }
+
+        // 1. Bersihkan String Kota & Kabupaten
+        $cleanCity = trim($cityName ?? '');
+        $cleanCity = preg_replace('/^(Kota\s+|Kabupaten\s+|Kab\.\s+|City of\s+|Regency\s+)/i', '', $cleanCity);
+        $cleanCity = trim($cleanCity);
+
+        $matchedCity = null;
+        if (!empty($cleanCity)) {
+            $matchedCity = City::where('name', 'LIKE', '%' . $cleanCity . '%')
+                ->orWhere('name', 'LIKE', '%' . trim($cityName ?? '') . '%')
+                ->first();
+        }
+
+        // Fallback pencarian kota berdasarkan kedekatan koordinat jika nama tidak cocok
+        if (!$matchedCity && $this->latitude && $this->longitude) {
+            $matchedCity = City::select('*')
+                ->selectRaw("(6371 * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) AS dist", [$this->latitude, $this->longitude, $this->latitude])
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->orderBy('dist')
+                ->first();
+        }
+
+        if ($matchedCity) {
+            $this->city_id       = $matchedCity->id;
+            $this->cityQuery     = $matchedCity->name;
+            $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $matchedCity->id);
+
+            // SELALU RESET district_id saat berpindah/memilih titik peta baru (mencegah membawa profil lama)
+            $this->district_id   = '';
+            $this->districtQuery = '';
+
+            // Update Timezone
+            $zone = $this->computeTimezoneLabelFromCity($matchedCity);
+            $iana = $this->ianaForZone($zone);
+            $this->timezoneLabel = $zone;
+            $this->timezoneIana  = $iana;
+            $this->dispatch('help:timezone-changed', zone: $zone, iana: $iana);
+
+            // 2. Bersihkan String Kecamatan
+            $cleanDistrict = trim($districtName ?? '');
+            $cleanDistrict = preg_replace('/^(Kecamatan\s+|Kec\.\s+|Kapanewon\s+|Kemantren\s+|District of\s+)/i', '', $cleanDistrict);
+            $cleanDistrict = trim($cleanDistrict);
+
+            $matchedDistrict = null;
+
+            // Strategi A: Cocokkan langsung nama kecamatan pada kota tersebut
+            if (!empty($cleanDistrict)) {
+                $matchedDistrict = \App\Models\District::where('city_id', $matchedCity->id)
+                    ->where(function ($q) use ($cleanDistrict, $districtName) {
+                        $q->where('name', 'LIKE', '%' . $cleanDistrict . '%')
+                          ->orWhere('name', 'LIKE', '%' . trim($districtName ?? '') . '%');
+                    })
+                    ->first();
+            }
+
+            // Strategi B: Jika belum cocok, cari apakah ada nama kecamatan resmi di kota ini yang terkandung di fullAddress
+            if (!$matchedDistrict && !empty($fullAddress)) {
+                $existingDistricts = \App\Models\District::where('city_id', $matchedCity->id)->get();
+                foreach ($existingDistricts as $dist) {
+                    if (stripos($fullAddress, $dist->name) !== false) {
+                        $matchedDistrict = $dist;
+                        break;
+                    }
+                }
+            }
+
+            // Strategi C: Jika belum ada di tabel districts kota ini dan $cleanDistrict valid, auto-create
+            if (!$matchedDistrict && !empty($cleanDistrict) && strlen($cleanDistrict) >= 3) {
+                $matchedDistrict = \App\Models\District::firstOrCreate(
+                    ['city_id' => $matchedCity->id, 'name' => ucwords(strtolower($cleanDistrict))],
+                    ['is_active' => true]
+                );
+                $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $matchedCity->id);
+            }
+
+            // Strategi D: Fallback ke kecamatan pertama yang terdaftar di kota tersebut jika ada
+            if (!$matchedDistrict) {
+                $matchedDistrict = \App\Models\District::where('city_id', $matchedCity->id)->first();
+            }
+
+            if ($matchedDistrict) {
+                $this->district_id   = $matchedDistrict->id;
+                $this->districtQuery = $matchedDistrict->name;
+            }
+        }
+
+        $this->dispatch('map-location-resolved', [
+            'cityName'     => $this->cityQuery ?: ($cityName ?? '-'),
+            'districtName' => $this->districtQuery ?: ($districtName ?? '-'),
+            'lat'          => $this->latitude,
+            'lng'          => $this->longitude,
+        ]);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -463,7 +560,7 @@ class Create extends Component
         'equipment_provided' => 'nullable|string|max:1000',
         'amount'             => 'required|numeric|min:0|max:100000000',
         'city_id'            => 'required|exists:cities,id',
-        'district_id'        => 'required|exists:districts,id',
+        'district_id'        => 'nullable|exists:districts,id',
         'location'           => 'nullable|string|max:255',
         'full_address'       => 'nullable|string|max:1000',
         'latitude'           => 'required|numeric|between:-90,90',
@@ -509,7 +606,7 @@ class Create extends Component
         $this->minHelpNominal = (int) AppSetting::get('min_help_nominal', 10000);
 
         $this->rules['city_id']     = 'required|exists:cities,id';
-        $this->rules['district_id'] = 'required|exists:districts,id';
+        $this->rules['district_id'] = 'nullable|exists:districts,id';
         $this->rules['title']       = 'required|string|max:255';
         $this->rules['description'] = 'required|string';
         $this->rules['latitude']    = 'required|numeric|between:-90,90';
@@ -526,6 +623,14 @@ class Create extends Component
             $this->addError('amount', 'Akun Anda saat ini dibatasi dari membuat pesanan bantuan baru karena dalam peninjauan moderasi.');
             $this->dispatch('scroll-to-first-error');
             return;
+        }
+
+        if (empty($this->district_id) && !empty($this->city_id)) {
+            $matchedDistrict = \App\Models\District::where('city_id', $this->city_id)->first();
+            if ($matchedDistrict) {
+                $this->district_id = $matchedDistrict->id;
+                $this->districtQuery = $matchedDistrict->name;
+            }
         }
 
         try {
@@ -624,8 +729,16 @@ class Create extends Component
             return;
         }
 
+        if (empty($this->district_id) && !empty($this->city_id)) {
+            $matchedDistrict = \App\Models\District::where('city_id', $this->city_id)->first();
+            if ($matchedDistrict) {
+                $this->district_id = $matchedDistrict->id;
+                $this->districtQuery = $matchedDistrict->name;
+            }
+        }
+
         $this->rules['city_id']     = 'required|exists:cities,id';
-        $this->rules['district_id'] = 'required|exists:districts,id';
+        $this->rules['district_id'] = 'nullable|exists:districts,id';
         $this->rules['latitude']    = 'required|numeric|between:-90,90';
         $this->rules['longitude']   = 'required|numeric|between:-180,180';
         $this->validate();

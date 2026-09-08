@@ -41,8 +41,8 @@ class DashboardStatsService
                 ->whereNull('mitra_id')
                 ->availableForMitra($user->id)
                 ->where(function ($q) {
-                    $q->whereNull('scheduled_at')
-                      ->orWhere('scheduled_at', '<=', now());
+                    $q->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
                 })
                 ->count();
 
@@ -93,8 +93,8 @@ class DashboardStatsService
                 ->whereNull('mitra_id')
                 ->availableForMitra($user->id)
                 ->where(function ($q) {
-                    $q->whereNull('scheduled_at')
-                      ->orWhere('scheduled_at', '<=', now());
+                    $q->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
                 })
                 ->when($user->district_id, function ($query, $dId) {
                     return $query->where('district_id', $dId);
@@ -128,8 +128,8 @@ class DashboardStatsService
                 ->whereNull('mitra_id')
                 ->availableForMitra($user->id)
                 ->where(function ($q) {
-                    $q->whereNull('scheduled_at')
-                      ->orWhere('scheduled_at', '<=', now());
+                    $q->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
                 })
                 ->with(['user', 'city', 'district'])
                 ->latest()
@@ -159,8 +159,8 @@ class DashboardStatsService
                 ->whereNull('mitra_id')
                 ->availableForMitra($user->id)
                 ->where(function ($q) {
-                    $q->whereNull('scheduled_at')
-                      ->orWhere('scheduled_at', '<=', now());
+                    $q->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
                 })
                 ->when($user->district_id, function ($query, $dId) {
                     return $query->where('district_id', $dId);

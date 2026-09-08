@@ -277,8 +277,8 @@ class Index extends Component
                 ->whereNull('mitra_id')
                 ->availableForMitra($user->id)
                 ->where(function ($q) {
-                    $q->whereNull('scheduled_at')
-                      ->orWhere('scheduled_at', '<=', now());
+                    $q->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
                 })
                 ->with(['user', 'city', 'district']);
 

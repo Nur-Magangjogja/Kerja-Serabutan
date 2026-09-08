@@ -488,6 +488,16 @@
                             <span id="gps-status-pill" class="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold">Tersimpan</span>
                         </div>
 
+                        <!-- Auto-Detected Territory Badge dari Titik Peta -->
+                        <div id="territory-display"
+                            class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg p-2.5 mb-2 hidden flex items-center justify-between flex-wrap gap-2 text-xs">
+                            <div class="flex items-center gap-1.5 text-blue-800 dark:text-blue-300 font-medium">
+                                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
+                                <span>Wilayah Terdeteksi dari Peta: <strong id="territory-name-display" class="font-bold">-</strong></span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-semibold">Tersinkron Peta</span>
+                        </div>
+
                         <!-- Hidden inputs for Livewire coordinates -->
                         <input type="hidden" wire:model="latitude" id="latitude-input">
                         <input type="hidden" wire:model="longitude" id="longitude-input">
@@ -1493,7 +1503,7 @@
                 setLivewireProp('latitude', lat);
                 setLivewireProp('longitude', lng);
 
-                // Automatic reverse geocode to fill 'location' field
+                // Automatic reverse geocode to fill 'location', 'city_id', and 'district_id'
                 const geocodeIndicator = document.getElementById('reverse-geocode-indicator');
                 if (geocodeIndicator) geocodeIndicator.classList.remove('hidden');
 
@@ -1502,19 +1512,56 @@
                         .then(r => r.json())
                         .then(data => {
                             if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
-                            if (data && data.display_name) {
+                            if (data) {
+                                const addr = data.address || {};
+                                // 1. Deteksi Kabupaten / Kota
+                                const cityName = addr.city || addr.town || addr.county || addr.city_district || '';
+                                // 2. Deteksi Kecamatan / Kapanewon / Kemantren (municipality, city_district, suburb, district, quarter, village)
+                                const districtName = addr.municipality || addr.city_district || addr.suburb || addr.district || addr.quarter || addr.village || '';
+                                const provinceName = addr.state || addr.province || '';
+                                const fullAddress = data.display_name || '';
+
                                 // Extract clean address (e.g. road / village / district)
-                                let parts = data.display_name.split(',');
+                                let parts = fullAddress.split(',');
                                 let cleanAddress = parts.slice(0, 4).join(',').trim();
                                 setLivewireProp('location', cleanAddress);
+
+                                // Sinkronkan wilayah (City & District) langsung dari koordinat peta ke Livewire
+                                const lw = getLivewire();
+                                if (lw && typeof lw.call === 'function') {
+                                    lw.call('resolveLocationFromMap', lat, lng, cityName, districtName, fullAddress, provinceName);
+                                }
                             }
-                        }).catch(() => {
+                        }).catch((err) => {
+                            console.warn('Reverse geocode error:', err);
                             if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
+                            // Fallback jika geocode offline: resolve by spatial coordinates
+                            const lw = getLivewire();
+                            if (lw && typeof lw.call === 'function') {
+                                lw.call('resolveLocationFromMap', lat, lng);
+                            }
                         });
                 } catch (e) {
                     if (geocodeIndicator) geocodeIndicator.classList.add('hidden');
                 }
             }
+
+            // Event listener untuk update tampilan wilayah saat berhasil disinkronkan oleh backend
+            document.addEventListener('map-location-resolved', function(event) {
+                const data = event.detail ? (event.detail[0] || event.detail) : {};
+                const territoryEl = document.getElementById('territory-display');
+                const territoryNameEl = document.getElementById('territory-name-display');
+                if (territoryEl && territoryNameEl) {
+                    const parts = [];
+                    if (data.districtName && data.districtName !== '-') parts.push('Kec. ' + data.districtName);
+                    if (data.cityName && data.cityName !== '-') parts.push(data.cityName);
+                    
+                    if (parts.length > 0) {
+                        territoryNameEl.textContent = parts.join(', ');
+                        territoryEl.classList.remove('hidden');
+                    }
+                }
+            });
 
             function initializeMap() {
                 const mapContainer = document.getElementById('map');

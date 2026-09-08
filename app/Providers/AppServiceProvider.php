@@ -49,6 +49,23 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Pagination\Paginator::defaultView('vendor.pagination.superadmin');
         \Illuminate\Pagination\Paginator::defaultSimpleView('vendor.pagination.superadmin');
 
+        // Cross-database compatibility: Register mathematical functions for SQLite in testing/local environments
+        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite') {
+            try {
+                $pdo = \Illuminate\Support\Facades\DB::connection()->getPdo();
+                if ($pdo instanceof \PDO) {
+                    $pdo->sqliteCreateFunction('radians', 'deg2rad', 1);
+                    $pdo->sqliteCreateFunction('least', fn(...$args) => min($args));
+                    $pdo->sqliteCreateFunction('greatest', fn(...$args) => max($args));
+                    $pdo->sqliteCreateFunction('acos', 'acos', 1);
+                    $pdo->sqliteCreateFunction('cos', 'cos', 1);
+                    $pdo->sqliteCreateFunction('sin', 'sin', 1);
+                }
+            } catch (\Throwable $e) {
+                // Ignore if connection not ready yet
+            }
+        }
+
         // Redirect authenticated users based on their role
         $this->configureRedirectsForAuthentication();
     }

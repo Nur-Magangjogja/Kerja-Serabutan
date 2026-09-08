@@ -73,24 +73,31 @@
                     </div>
                 </div>
 
-                <!-- District & 10 KM Unified Filter Grid -->
-                <div class="grid {{ $userDistrict ? 'grid-cols-3' : ($userCity ? 'grid-cols-2' : 'grid-cols-1') }} gap-1 bg-black/15 backdrop-blur-md p-1 rounded-xl border border-white/20 text-center">
+                <!-- Territory & 10 KM Unified Filter Grid -->
+                <div class="grid {{ ($userDistrict && $userCity) ? 'grid-cols-3' : (($userDistrict || $userCity) ? 'grid-cols-2' : 'grid-cols-1') }} gap-1.5 bg-black/20 backdrop-blur-md p-1.5 rounded-xl border border-white/20 text-center">
+                    <!-- Tab 1: Radius 10 KM -->
                     <button type="button" wire:click="$set('districtFilter', 'all')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center {{ $districtFilter === 'all' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
-                        <span>Semua (≤ 10 km)</span>
+                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center leading-tight {{ $districtFilter === 'all' ? 'bg-white text-primary-700 shadow-md scale-[1.02]' : 'text-white/90 hover:bg-white/10' }}"
+                        title="Semua bantuan dalam radius 10 KM dari posisi berdiri">
+                        <span class="truncate">📍 ≤ 10 KM</span>
+                        <span class="text-[10px] font-medium {{ $districtFilter === 'all' ? 'text-primary-600' : 'text-white/75' }}">({{ $countRadius10km ?? 0 }})</span>
                     </button>
+                    <!-- Tab 2: Kecamatan -->
                     @if($userDistrict)
                     <button type="button" wire:click="$set('districtFilter', 'my_district')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center truncate {{ $districtFilter === 'my_district' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}"
-                        title="Kecamatan {{ $userDistrict->name }}">
+                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center leading-tight truncate {{ $districtFilter === 'my_district' ? 'bg-white text-primary-700 shadow-md scale-[1.02]' : 'text-white/90 hover:bg-white/10' }}"
+                        title="Semua bantuan di Kecamatan {{ $userDistrict->name }}">
                         <span class="truncate">Kec. {{ $userDistrict->name }}</span>
+                        <span class="text-[10px] font-medium {{ $districtFilter === 'my_district' ? 'text-primary-600' : 'text-white/75' }}">({{ $countDistrict ?? 0 }})</span>
                     </button>
                     @endif
+                    <!-- Tab 3: Kota / Kabupaten -->
                     @if($userCity)
-                    <button type="button" wire:click="$set('districtFilter', 'all')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center truncate text-white/80 hover:bg-white/10"
-                        title="Radius Baku: 10 KM">
-                        <span class="truncate">📍 Max 10 KM</span>
+                    <button type="button" wire:click="$set('districtFilter', 'my_city')" role="tab"
+                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center leading-tight truncate {{ $districtFilter === 'my_city' ? 'bg-white text-primary-700 shadow-md scale-[1.02]' : 'text-white/90 hover:bg-white/10' }}"
+                        title="Semua bantuan di {{ $userCity->name }}">
+                        <span class="truncate">{{ $userCity->name }}</span>
+                        <span class="text-[10px] font-medium {{ $districtFilter === 'my_city' ? 'text-primary-600' : 'text-white/75' }}">({{ $countCity ?? 0 }})</span>
                     </button>
                     @endif
                 </div>
@@ -147,10 +154,16 @@
             <!-- GPS Status Bar -->
             <div class="flex items-center justify-between mb-4 bg-gray-50 border border-gray-100 rounded-xl p-2.5 text-xs text-gray-600 flex-wrap gap-2">
                 <div class="flex items-center gap-1.5">
-                    <span id="mitra-gps-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span id="mitra-gps-text" class="font-medium">Mendeteksi lokasi GPS...</span>
+                    <span id="mitra-gps-indicator" class="w-2.5 h-2.5 rounded-full {{ ($mitraLat && $mitraLng) ? 'bg-emerald-500' : 'bg-blue-500 animate-pulse' }}"></span>
+                    <span id="mitra-gps-text" class="font-medium">
+                        @if($mitraLat && $mitraLng)
+                            Lokasi GPS Siap ({{ round($mitraLat, 4) }}, {{ round($mitraLng, 4) }})
+                        @else
+                            Mendeteksi lokasi GPS...
+                        @endif
+                    </span>
                 </div>
-                <button type="button" onclick="refreshMitraGPS()" class="text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1 text-[11px]">
+                <button type="button" onclick="refreshMitraGPS()" class="text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1 text-[11px] cursor-pointer">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                     Perbarui GPS
                 </button>
@@ -169,7 +182,7 @@
             </div> 
 
             <div class="space-y-4">
-                <div class="space-y-3.5 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="distanceRadius,sortBy,search">
+                <div class="space-y-3.5 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="districtFilter,sortBy,search">
                     {{-- List based on filter --}}
                     @forelse($helps as $help)
                     <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all border border-gray-100">
@@ -195,7 +208,11 @@
                                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                                                 🟢 {{ $help->distance_km }} km (Dekat)
                                             </span>
-                                        @elseif($help->distance_km <= 25)
+                                        @elseif($help->distance_km <= 15)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                                🔵 {{ $help->distance_km }} km
+                                            </span>
+                                        @elseif($help->distance_km <= 30)
                                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                                                 🟡 {{ $help->distance_km }} km
                                             </span>
@@ -206,7 +223,7 @@
                                         @endif
                                     @else
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                                            📍 {{ $help->city->name ?? 'Indonesia' }}
+                                            📍 {{ $help->district->name ?? $help->city->name ?? 'Indonesia' }}
                                         </span>
                                     @endif
 
@@ -245,6 +262,7 @@
                                             'equipment_provided' => $help->equipment_provided ?? '',
                                             'location' => $help->location ?? '',
                                             'full_address' => $help->full_address ?? '',
+                                            'district_name' => $help->district->name ?? '',
                                             'city_name' => $help->city->name ?? '',
                                             'province_name' => $help->city->province ?? '',
                                             'photo_url' => $help->photo ? asset('storage/' . $help->photo) : null,
@@ -272,13 +290,31 @@
                         <div class="w-14 h-14 rounded-full bg-blue-50 dark:bg-gray-700 text-blue-500 mx-auto flex items-center justify-center mb-3">
                             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         </div>
-                        <p class="text-sm font-bold text-gray-800 dark:text-gray-200">{{ $search ? 'Tidak ada bantuan ditemukan' : 'Tidak ada bantuan di radius ini' }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
-                            {{ $search ? 'Coba cari dengan kata kunci lain' : 'Pilih tab "Semua" atau perbesar radius jangkauan untuk melihat bantuan lain.' }}
+                        <p class="text-sm font-bold text-gray-800 dark:text-gray-200">
+                            @if($search)
+                                Tidak ada bantuan ditemukan
+                            @elseif($districtFilter === 'all')
+                                Tidak ada bantuan dalam radius 10 KM
+                            @elseif($districtFilter === 'my_district')
+                                Tidak ada bantuan di Kecamatan {{ $userDistrict->name ?? '' }}
+                            @elseif($districtFilter === 'my_city')
+                                Tidak ada bantuan di {{ $userCity->name ?? '' }}
+                            @else
+                                Tidak ada bantuan di wilayah ini
+                            @endif
                         </p>
-                        @if($distanceRadius !== 'all')
-                        <button type="button" wire:click="$set('distanceRadius', 'all')" class="mt-4 px-4 py-2 bg-primary-50 text-primary-600 rounded-xl text-xs font-bold border border-primary-200 cursor-pointer">
-                            Lihat Semua
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
+                            @if($search)
+                                Coba cari dengan kata kunci lain.
+                            @elseif($districtFilter === 'all')
+                                Belum ada order dalam jarak 10 km dari lokasi berdiri Anda. Coba cek tab Kecamatan atau Kabupaten/Kota di atas.
+                            @else
+                                Coba cek tab filter lainnya untuk melihat pesanan bantuan yang tersedia.
+                            @endif
+                        </p>
+                        @if($districtFilter !== 'all')
+                        <button type="button" wire:click="$set('districtFilter', 'all')" class="mt-4 px-4 py-2 bg-primary-50 text-primary-600 hover:bg-primary-100 rounded-xl text-xs font-bold border border-primary-200 cursor-pointer transition">
+                            Lihat Radius 10 KM
                         </button>
                         @endif
                     </div>
@@ -292,6 +328,7 @@
             </div>
         </div>
     </div>
+
 
 
     <!-- Modal Preview Bantuan (Centered Modern Dialog - No Bottom Nav Clash) -->
@@ -577,10 +614,15 @@
         };
 
         window.refreshMitraGPS = function() {
-            if (!navigator.geolocation) return;
-
             const indicator = document.getElementById('mitra-gps-indicator');
             const textEl = document.getElementById('mitra-gps-text');
+
+            if (!navigator.geolocation) {
+                if (textEl) textEl.textContent = 'Browser tidak mendukung GPS';
+                if (indicator) indicator.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+                return;
+            }
+
             if (textEl) textEl.textContent = 'Memperbarui koordinat GPS...';
             if (indicator) indicator.className = 'w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping';
 
@@ -596,8 +638,15 @@
                 },
                 (err) => {
                     console.warn('GPS error:', err.message);
-                    if (textEl) textEl.textContent = 'GPS tidak aktif / izin ditolak';
-                    if (indicator) indicator.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+                    if (textEl) {
+                        if (userMitraLat && userMitraLng) {
+                            textEl.textContent = `Lokasi Tersimpan (${Number(userMitraLat).toFixed(4)}, ${Number(userMitraLng).toFixed(4)})`;
+                            if (indicator) indicator.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+                        } else {
+                            textEl.textContent = 'GPS tidak aktif / izin ditolak';
+                            if (indicator) indicator.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+                        }
+                    }
                 },
                 { enableHighAccuracy: true, timeout: 8000 }
             );
