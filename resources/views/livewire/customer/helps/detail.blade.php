@@ -362,53 +362,58 @@
             @endif
         </div>
 
-        {{-- Countdown Multi-Timer Display (Revisi 3) --}}
-        @if($help->departure_at || $help->estimated_arrival_at || $help->service_scheduled_at)
-            <div class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-4 rounded-2xl shadow-md border border-indigo-900/50 mt-2 space-y-3"
-                 x-data="{
-                     now: new Date().getTime(),
-                     depTime: {{ $help->departure_at ? "'" . $help->departure_at->toIso8601String() . "'" : "null" }},
-                     arrTime: {{ $help->estimated_arrival_at ? "'" . $help->estimated_arrival_at->toIso8601String() . "'" : "null" }},
-                     schedTime: {{ $help->service_scheduled_at ? "'" . $help->service_scheduled_at->toIso8601String() . "'" : "null" }},
-                     formatDiff(target) {
-                         if (!target) return '--';
-                         const diff = new Date(target).getTime() - this.now;
-                         if (diff <= 0) return 'Waktu Terlewati';
-                         const m = Math.floor(diff / 60000);
-                         const s = Math.floor((diff % 60000) / 1000);
-                         const h = Math.floor(m / 60);
-                         if (h > 0) return `${h} jam ${m % 60} mnt`;
-                         return `${m} mnt ${s} dtk`;
-                     }
-                 }"
-                 x-init="setInterval(() => now = new Date().getTime(), 1000)">
-                <div class="flex items-center justify-between border-b border-indigo-800/60 pb-2">
-                    <span class="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        Estimasi Waktu Layanan
+        {{-- Live Dynamic Travel ETA & Progress Card (Konsep 2) --}}
+        @if($help->mitra_id && in_array($help->status, ['memperoleh_mitra', 'taken', 'partner_on_the_way', 'partner_arrived']))
+            @php
+                $travelProgress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($help);
+            @endphp
+            <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 text-white p-4 rounded-2xl shadow-md border border-indigo-800/60 mt-2 space-y-3">
+                <div class="flex items-center justify-between border-b border-indigo-800/60 pb-2.5">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">{{ $help->isPickup() ? '📦' : '🛵' }}</span>
+                        <div>
+                            <h4 class="text-xs font-bold text-indigo-200">
+                                {{ $travelProgress['is_arrived'] ? 'Rekan Jasa Telah Tiba' : 'Pemantauan Perjalanan Rekan Jasa' }}
+                            </h4>
+                            <p class="text-[10px] text-indigo-300/80">Menuju: {{ $travelProgress['target_label'] }}</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-900/80 text-emerald-300 border border-emerald-700/60' : 'bg-blue-900/80 text-blue-300 border border-blue-700/60 animate-pulse' }}">
+                        <span class="w-1.5 h-1.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-400' : 'bg-blue-400' }}"></span>
+                        {{ $travelProgress['is_arrived'] ? 'Tiba di Lokasi' : 'Live GPS Sync' }}
                     </span>
-                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-900/80 text-indigo-200">Live Client Sync</span>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
-                    @if($help->departure_at && !in_array($help->status, ['in_progress', 'waiting_customer_confirmation', 'completed', 'selesai']))
+
+                @if($travelProgress['is_arrived'])
+                    <div class="bg-emerald-950/60 border border-emerald-800/80 rounded-xl p-3 text-center">
+                        <p class="text-xs font-bold text-emerald-300 flex items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Rekan Jasa sudah sampai di lokasi tujuan
+                        </p>
+                        <p class="text-[11px] text-emerald-200/80 mt-0.5">Silakan temui rekan jasa untuk koordinasi dan memulai bantuan.</p>
+                    </div>
+                @else
+                    <div class="grid grid-cols-2 gap-2 text-center">
                         <div class="bg-white/10 rounded-xl p-2.5">
-                            <span class="text-[10px] text-indigo-200 block">Jadwal Keberangkatan</span>
-                            <span class="text-xs font-extrabold text-amber-300 font-mono" x-text="formatDiff(depTime)"></span>
+                            <span class="text-[10px] text-indigo-300 block font-medium">Jarak Tersisa</span>
+                            <span class="text-sm font-extrabold text-white font-mono block mt-0.5">
+                                {{ $travelProgress['formatted_distance'] }}
+                            </span>
                         </div>
-                    @endif
-                    @if($help->estimated_arrival_at && in_array($help->status, ['partner_on_the_way', 'taken']))
                         <div class="bg-white/10 rounded-xl p-2.5">
-                            <span class="text-[10px] text-indigo-200 block">Estimasi Tiba (ETA)</span>
-                            <span class="text-xs font-extrabold text-emerald-300 font-mono" x-text="formatDiff(arrTime)"></span>
+                            <span class="text-[10px] text-indigo-300 block font-medium">Estimasi Waktu Tiba (Live ETA)</span>
+                            <span class="text-sm font-extrabold text-emerald-300 font-mono block mt-0.5">
+                                {{ $travelProgress['formatted_eta'] }}
+                            </span>
                         </div>
-                    @endif
-                    @if($help->service_scheduled_at)
-                        <div class="bg-white/10 rounded-xl p-2.5">
-                            <span class="text-[10px] text-indigo-200 block">Jadwal Dimulai</span>
-                            <span class="text-xs font-extrabold text-white font-mono" x-text="formatDiff(schedTime)"></span>
-                        </div>
-                    @endif
-                </div>
+                    </div>
+                    <div class="flex items-center justify-between text-[10px] text-indigo-300/80 pt-1 border-t border-indigo-900/60">
+                        <span>💡 Waktu tiba selalu disesuaikan otomatis mengikuti posisi GPS Rekan Jasa</span>
+                        @if($travelProgress['partner_last_seen'])
+                            <span class="font-mono text-indigo-200">{{ $travelProgress['partner_last_seen'] }}</span>
+                        @endif
+                    </div>
+                @endif
             </div>
         @endif
 
@@ -937,26 +942,53 @@
             </div>
         </div>
 
-        {{-- Cancel Button --}}
+        {{-- Cancel Actions & Statuses --}}
         @if(in_array($help->status, ['menunggu_pembayaran', 'mencari_mitra', 'menunggu_mitra']))
             <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
-                <button wire:click="confirmCancel" class="w-full py-3 border-2 border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg font-semibold text-sm transition">
+                <button wire:click="confirmCancel" class="w-full py-3 border-2 border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg font-semibold text-sm transition cursor-pointer">
                     Batalkan Pesanan
                 </button>
             </div>
-        @endif
-
-        {{-- Partner requested cancellation - DIGANTI DENGAN MODAL --}}
-
-        {{-- Floating Help Card (mobile) - fixed above bottom nav --}}
-        {{-- <div id="floating-help-card" class="md:hidden fixed left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-50" style="bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);">
-            <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 flex items-center justify-between gap-3">
-                <div class="flex-1 text-sm text-gray-700">Butuh bantuan atau ada keluhan atas Rekan Jasa?</div>
-                <a href="{{ route('customer.help-support') }}" class="inline-flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg font-semibold hover:bg-blue-100 transition">
-                    <span class="text-sm">Hubungi Kami</span>
-                </a>
+        @elseif(in_array($help->status, ['taken', 'memperoleh_mitra', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'sedang_diproses']))
+            <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
+                <button wire:click="openCustomerCancelModal" class="w-full py-3 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5">
+                    <span>🛑 Ajukan Pembatalan Pesanan (Review Admin)</span>
+                </button>
             </div>
-        </div> --}}
+        @elseif($help->status === 'partner_cancel_requested')
+            <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mt-3 space-y-3">
+                <div class="flex items-start gap-2.5">
+                    <span class="text-xl leading-none">⚠️</span>
+                    <div>
+                        <h4 class="font-bold text-sm text-amber-900 dark:text-amber-200">Mitra Mengajukan Pembatalan</h4>
+                        <p class="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
+                            Alasan: <strong>"{{ $help->partner_cancel_reason ?? 'Kendala lapangan' }}"</strong>
+                        </p>
+                        @if($help->cancel_deadline_at)
+                            <p class="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
+                                Batas konfirmasi otomatis: {{ $help->cancel_deadline_at->diffForHumans() }}. Jika tidak dikonfirmasi, order otomatis batal & saldo kembali 100%.
+                            </p>
+                        @endif
+                    </div>
+                </div>
+                <div class="flex gap-2 pt-1">
+                    <button wire:click="acceptPartnerCancel" wire:loading.attr="disabled" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1">
+                        <span wire:loading.remove wire:target="acceptPartnerCancel">✓ Terima Pembatalan (Refund 100% Saldo)</span>
+                        <span wire:loading wire:target="acceptPartnerCancel">Memproses...</span>
+                    </button>
+                </div>
+            </div>
+        @elseif($help->status === 'customer_cancel_requested')
+            <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mt-3 flex items-start gap-2.5">
+                <span class="text-xl leading-none">⏳</span>
+                <div>
+                    <h4 class="font-bold text-sm text-blue-900 dark:text-blue-200">Pengajuan Pembatalan Sedang Ditinjau</h4>
+                    <p class="text-xs text-blue-800 dark:text-blue-300 mt-0.5">
+                        Pengajuan pembatalan Anda telah diterima oleh Admin Wilayah. Mitra diberikan kesempatan klarifikasi sebelum diputuskan secara resmi.
+                    </p>
+                </div>
+            </div>
+        @endif
     </div>
 
     {{-- Real-time Tracking Map Modal --}}
@@ -1106,6 +1138,72 @@
                             class="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5">
                         <span wire:loading.remove wire:target="submitDispute">Kirim Komplain</span>
                         <span wire:loading wire:target="submitDispute">Mengirim...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal Ajukan Pembatalan Customer (Pemeriksaan Admin Wilayah) --}}
+    @if($showCustomerCancelModal)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
+             wire:click.self="closeCustomerCancelModal">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700">
+                <div class="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-base text-gray-900 dark:text-white">Pengajuan Pembatalan Pesanan</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Pemeriksaan manual oleh Admin Wilayah</p>
+                        </div>
+                    </div>
+                    <button wire:click="closeCustomerCancelModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+                    Pesanan ini telah diambil oleh mitra. Pengajuan pembatalan akan dikonfirmasi oleh <strong>Admin Wilayah</strong> dan mitra akan diberikan kesempatan memberikan tanggapan. Jika disetujui, <strong>100% saldo pembayaran akan dikembalikan</strong> ke akun Anda.
+                </div>
+
+                <div class="space-y-3 mb-5 text-xs">
+                    <div>
+                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Pilih Alasan Pembatalan <span class="text-red-500">*</span></label>
+                        <select wire:model.defer="customerCancelReason" class="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white">
+                            <option value="">-- Pilih Alasan --</option>
+                            <option value="Mitra Tidak Kunjung Datang / Lama">Mitra Tidak Kunjung Datang / Terlalu Lama</option>
+                            <option value="Mitra Tidak Dapat Dihubungi / Mangkir">Mitra Tidak Dapat Dihubungi / Mangkir</option>
+                            <option value="Mitra Meminta Batalkan Tanpa Prosedur">Mitra Meminta Batalkan Tanpa Prosedur</option>
+                            <option value="Pekerjaan Terbengkalai / Tidak Dikerjakan">Pekerjaan Terbengkalai / Tidak Dikerjakan</option>
+                            <option value="Perubahan Rencana Mendesak">Perubahan Rencana Mendesak</option>
+                            <option value="Lainnya">Lainnya (Tuliskan di catatan)</option>
+                        </select>
+                        @error('customerCancelReason') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Foto Bukti (Opsional)</label>
+                        <input type="file" wire:model="customerCancelPhoto" accept="image/*" class="w-full p-2 text-xs bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600 rounded-xl">
+                        @error('customerCancelPhoto') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Catatan Tambahan (Opsional)</label>
+                        <textarea wire:model.defer="customerCancelNotes" rows="3" placeholder="Ceritakan detail kendala pengerjaan..." class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button wire:click="closeCustomerCancelModal" type="button" class="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl transition">
+                        Batal
+                    </button>
+                    <button wire:click="submitCustomerCancel" wire:loading.attr="disabled" type="button" class="flex-1 py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5">
+                        <span wire:loading.remove wire:target="submitCustomerCancel">Kirim Pengajuan</span>
+                        <span wire:loading wire:target="submitCustomerCancel">Mengirim...</span>
                     </button>
                 </div>
             </div>

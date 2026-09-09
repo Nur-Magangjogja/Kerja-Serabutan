@@ -4,17 +4,26 @@ namespace App\Livewire\Customer\Helps;
 
 use App\Models\Help;
 use App\Models\Rating;
+use App\Services\HelpCancellationService;
 use App\Services\HelpTransactionService;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Log;
 
 class Detail extends Component
 {
+    use WithFileUploads;
+
     public $help;
     public $helpId;
 
     // Modal state
     public $showCancelConfirm          = false;
+    public $showCustomerCancelModal    = false;
+    public $customerCancelReason       = '';
+    public $customerCancelNotes        = '';
+    public $customerCancelPhoto        = null;
+
     public $showMapModal               = false;
     public $showRatingForm             = false;
     public $showDisputeModal           = false;
@@ -101,16 +110,97 @@ class Detail extends Component
 
     public function cancelHelp()
     {
-        try {
-            app(HelpTransactionService::class)->customerCancelHelp($this->help, auth()->user());
-            session()->flash('success', 'Permintaan bantuan berhasil dibatalkan.');
+        // Jika belum dapat mitra, langsung batalkan & refund
+        $cancellableDirectly = [
+            Help::STATUS_MENUNGGU_MITRA,
+            'mencari_mitra',
+            'menunggu_pembayaran',
+            'pending',
+        ];
+
+        if (in_array($this->help->status, $cancellableDirectly, true)) {
+            try {
+                app(HelpTransactionService::class)->customerCancelHelp($this->help, auth()->user());
+                session()->flash('success', 'Permintaan bantuan berhasil dibatalkan dan saldo telah dikembalikan.');
+                $this->showCancelConfirm = false;
+                return redirect()->route('customer.helps.index');
+            } catch (\RuntimeException $e) {
+                session()->flash('error', $e->getMessage());
+            } catch (\Throwable $e) {
+                Log::error('[CustomerHelpDetail] cancelHelp error: ' . $e->getMessage());
+                session()->flash('error', 'Terjadi kesalahan saat membatalkan bantuan.');
+            }
+        } else {
+            // Jika sudah diambil mitra, arahkan ke modal pengajuan pembatalan customer
             $this->showCancelConfirm = false;
-            return redirect()->route('customer.helps.index');
+            $this->openCustomerCancelModal();
+        }
+    }
+
+    public function openCustomerCancelModal()
+    {
+        $this->customerCancelReason = '';
+        $this->customerCancelNotes  = '';
+        $this->customerCancelPhoto  = null;
+        $this->showCustomerCancelModal = true;
+    }
+
+    public function closeCustomerCancelModal()
+    {
+        $this->showCustomerCancelModal = false;
+        $this->customerCancelReason = '';
+        $this->customerCancelNotes  = '';
+        $this->customerCancelPhoto  = null;
+    }
+
+    public function submitCustomerCancel()
+    {
+        $this->validate([
+            'customerCancelReason' => 'required|string|min:5|max:255',
+            'customerCancelNotes'  => 'nullable|string|max:1000',
+            'customerCancelPhoto'  => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+        ], [
+            'customerCancelReason.required' => 'Pilih atau isi alasan pembatalan.',
+            'customerCancelReason.min'      => 'Alasan pembatalan minimal 5 karakter.',
+            'customerCancelPhoto.image'     => 'Foto bukti harus berupa gambar (JPG/PNG).',
+        ]);
+
+        try {
+            $photoPath = null;
+            if ($this->customerCancelPhoto) {
+                $photoPath = $this->customerCancelPhoto->store('customer_cancels', 'public');
+            }
+
+            app(HelpCancellationService::class)->submitCustomerCancelRequest(
+                $this->help,
+                auth()->user(),
+                $this->customerCancelReason,
+                $this->customerCancelNotes ?: null,
+                $photoPath
+            );
+
+            $this->showCustomerCancelModal = false;
+            $this->loadHelp();
+            session()->flash('warning', 'Pengajuan pembatalan Anda telah dikirim dan menunggu tinjauan Admin Wilayah.');
         } catch (\RuntimeException $e) {
             session()->flash('error', $e->getMessage());
         } catch (\Throwable $e) {
-            Log::error('[CustomerHelpDetail] cancelHelp error: ' . $e->getMessage());
-            session()->flash('error', 'Terjadi kesalahan saat membatalkan bantuan.');
+            Log::error('[CustomerHelpDetail] submitCustomerCancel error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    public function acceptPartnerCancel()
+    {
+        try {
+            app(HelpCancellationService::class)->customerAcceptPartnerCancellation($this->help, auth()->user());
+            $this->loadHelp();
+            session()->flash('success', 'Pembatalan mitra telah disetujui. Dana 100% telah dikembalikan ke saldo Anda.');
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[CustomerHelpDetail] acceptPartnerCancel error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat menyetujui pembatalan mitra.');
         }
     }
 

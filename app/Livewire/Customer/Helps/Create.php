@@ -57,6 +57,9 @@ class Create extends Component
     public $store_address      = '';
     public $store_latitude     = null;
     public $store_longitude    = null;
+    public $route_distance_km  = 0.0;
+    public $item_count         = 1;
+    public $shopping_list      = '';
 
     // ─── Req province/regency/district selectors ─────────────────────────────
     public $req_province_id = '';
@@ -71,6 +74,11 @@ class Create extends Component
     public $scheduled_time = null;
     public $timezoneLabel  = 'WIB';
     public $timezoneIana   = 'Asia/Jakarta';
+
+    // ─── Customer Saved Landmarks (Patokan Tempat dari Profil) ───────────────
+    public array $savedLandmarks = [];
+    public bool $showSaveLandmarkModal = false;
+    public string $newLandmarkLabel = '';
 
     // ─── Batas Waktu Kadaluwarsa / Auto-Cancel ──────────────────────────────
     public $expiry_option      = '24_hours'; // '1_hour', '3_hours', '6_hours', '12_hours', '24_hours', '2_days', '3_days', 'custom'
@@ -96,7 +104,11 @@ class Create extends Component
     public $confirmMinServiceFee  = 0;
 
     protected $listeners = [
-        'citySelected' => 'setCityId',
+        'citySelected'            => 'setCityId',
+        'setPickupLocation'       => 'resolvePickupLocation',
+        'setDeliveryLocation'     => 'resolveDeliveryLocation',
+        'setStoreLocation'        => 'resolveStoreLocation',
+        'calculateRouteDistance'  => 'calculateRouteDistance',
     ];
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -124,11 +136,46 @@ class Create extends Component
             $this->amount = $this->minHelpNominal;
         }
 
-        // Catatan: Lokasi kota & kecamatan ditentukan 100% dari titik peta / GPS (Single Source of Truth),
-        // bukan mengambil dari profil akun Customer agar akurat dengan tempat pekerjaan jasa.
+        // Muat patokan tempat yang tersimpan di profil customer
+        if (auth()->check()) {
+            $this->savedLandmarks = auth()->user()->getSavedLandmarksList();
+        }
 
         if (Schema::hasTable('req_provinces')) {
             $this->req_provinces = DB::table('req_provinces')->orderBy('province')->get()->toArray();
+        }
+    }
+
+    /**
+     * Pilih & terapkan patokan tersimpan dari profil customer.
+     */
+    public function applySavedLandmark(string $patokan): void
+    {
+        $this->full_address = $patokan;
+    }
+
+    /**
+     * Simpan teks patokan saat ini ke profil customer secara instan.
+     */
+    public function saveCurrentPatokanToProfile(): void
+    {
+        if (empty(trim((string)$this->full_address))) {
+            $this->addError('full_address', 'Tuliskan detail patokan terlebih dahulu sebelum disimpan.');
+            return;
+        }
+
+        $label = trim($this->newLandmarkLabel);
+        if (empty($label)) {
+            $label = 'Patokan ' . (count($this->savedLandmarks) + 1);
+        }
+
+        $user = auth()->user();
+        if ($user) {
+            $user->addSavedLandmark($label, $this->full_address);
+            $this->savedLandmarks = $user->getSavedLandmarksList();
+            $this->newLandmarkLabel = '';
+            $this->showSaveLandmarkModal = false;
+            session()->flash('landmark_saved', 'Patokan "' . $label . '" berhasil disimpan ke profil!');
         }
     }
 
@@ -138,6 +185,9 @@ class Create extends Component
     public function adjustAmount(int $delta): void
     {
         $min = (int) ($this->minHelpNominal ?: AppSetting::get('min_help_nominal', 10000));
+        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY && $this->route_distance_km > 0) {
+            $min = (int) (max(1, ceil($this->route_distance_km)) * 2000);
+        }
         $current = (int) ($this->amount ?: 0);
         $new = max($min, min(100000000, $current + $delta));
         $this->amount = $new;
@@ -149,6 +199,9 @@ class Create extends Component
     public function setPresetAmount(int $value): void
     {
         $min = (int) ($this->minHelpNominal ?: AppSetting::get('min_help_nominal', 10000));
+        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY && $this->route_distance_km > 0) {
+            $min = (int) (max(1, ceil($this->route_distance_km)) * 2000);
+        }
         $this->amount = max($min, min(100000000, $value));
     }
 
@@ -274,14 +327,25 @@ class Create extends Component
      */
     public function resolveLocationFromMap($lat, $lng, $cityName = null, $districtName = null, $fullAddress = null, $provinceName = null)
     {
+        $geoService = app(\App\Services\GeoService::class);
+        $safety = $geoService->validateLocationSafety((float) $lat, (float) $lng);
+        if (!$safety['is_safe']) {
+            $this->latitude  = null;
+            $this->longitude = null;
+            $this->location  = '';
+            $this->addError('latitude', $safety['reason'] ?? 'Titik lokasi berada di area terlarang / tidak dapat diakses.');
+            $this->dispatch('restricted-location-detected', [
+                'reason' => $safety['reason'] ?? 'Titik lokasi berada di area terlarang / tidak dapat diakses.',
+                'point'  => 'onsite'
+            ]);
+            return;
+        }
+
         $this->latitude  = (float) $lat;
         $this->longitude = (float) $lng;
 
         if ($fullAddress) {
-            $this->full_address = $fullAddress;
-            $parts = explode(',', $fullAddress);
-            $cleanAddress = trim(implode(', ', array_slice($parts, 0, 3)));
-            $this->location = $cleanAddress ?: $fullAddress;
+            $this->location = $fullAddress;
         }
 
         // 1. Bersihkan String Kota & Kabupaten
@@ -376,6 +440,77 @@ class Create extends Component
             'lat'          => $this->latitude,
             'lng'          => $this->longitude,
         ]);
+    }
+
+    /**
+     * Sinkronisasi Tunggal Atomik untuk Kerja di Lokasi (On-Site).
+     * Mencegah multiple concurrent AJAX race conditions.
+     */
+    public function syncOnSiteLocation($lat, $lng, $fullAddress = null, $cityName = null, $districtName = null, $provinceName = null): void
+    {
+        $this->resolveLocationFromMap($lat, $lng, $cityName, $districtName, $fullAddress, $provinceName);
+    }
+
+    /**
+     * Sinkronisasi Tunggal Atomik untuk Titik 1 (Jemput / Pickup).
+     */
+    public function syncPickupLocation($lat, $lng, $fullAddress = null, $cityName = null, $districtName = null, $provinceName = null): void
+    {
+        $geoService = app(\App\Services\GeoService::class);
+        $safety = $geoService->validateLocationSafety((float) $lat, (float) $lng);
+        if (!$safety['is_safe']) {
+            $this->pickup_latitude  = null;
+            $this->pickup_longitude = null;
+            $this->pickup_address   = '';
+            $this->addError('pickup_address', $safety['reason'] ?? 'Titik 1 (Jemput) berada di area terlarang / perairan.');
+            $this->dispatch('restricted-location-detected', [
+                'reason' => $safety['reason'] ?? 'Titik 1 (Jemput) berada di area terlarang / perairan.',
+                'point'  => 'pickup'
+            ]);
+            return;
+        }
+
+        $this->pickup_latitude  = (float) $lat;
+        $this->pickup_longitude = (float) $lng;
+        if ($fullAddress) {
+            $this->pickup_address = $fullAddress;
+            $this->location       = $fullAddress;
+        }
+        $this->latitude  = (float) $lat;
+        $this->longitude = (float) $lng;
+
+        if ($cityName || $districtName || $fullAddress) {
+            $this->resolveLocationFromMap($lat, $lng, $cityName, $districtName, $fullAddress, $provinceName);
+        }
+
+        $this->calculateRouteDistance();
+    }
+
+    /**
+     * Sinkronisasi Tunggal Atomik untuk Titik 2 (Antar / Delivery).
+     */
+    public function syncDeliveryLocation($lat, $lng, $fullAddress = null): void
+    {
+        $geoService = app(\App\Services\GeoService::class);
+        $safety = $geoService->validateLocationSafety((float) $lat, (float) $lng);
+        if (!$safety['is_safe']) {
+            $this->delivery_latitude  = null;
+            $this->delivery_longitude = null;
+            $this->delivery_address   = '';
+            $this->addError('delivery_address', $safety['reason'] ?? 'Titik 2 (Antar) berada di area terlarang / perairan.');
+            $this->dispatch('restricted-location-detected', [
+                'reason' => $safety['reason'] ?? 'Titik 2 (Antar) berada di area terlarang / perairan.',
+                'point'  => 'delivery'
+            ]);
+            return;
+        }
+
+        $this->delivery_latitude  = (float) $lat;
+        $this->delivery_longitude = (float) $lng;
+        if ($fullAddress) {
+            $this->delivery_address = $fullAddress;
+        }
+        $this->calculateRouteDistance();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -583,40 +718,172 @@ class Create extends Component
         'amount.max'            => 'Nominal maksimal Rp 100.000.000',
         'latitude.required'     => 'Titik lokasi pada peta wajib ditentukan. Silakan klik pada peta atau gunakan tombol GPS.',
         'longitude.required'    => 'Titik lokasi pada peta wajib ditentukan. Silakan klik pada peta atau gunakan tombol GPS.',
+        'location.required'     => 'Alamat lokasi pekerjaan wajib ditentukan.',
+        'pickup_address.required'   => 'Alamat titik jemput (Titik 1) wajib ditentukan.',
+        'pickup_latitude.required'  => 'Titik 1 (Jemput) pada peta wajib ditentukan.',
+        'pickup_longitude.required' => 'Titik 1 (Jemput) pada peta wajib ditentukan.',
+        'delivery_address.required'   => 'Alamat titik antar tujuan (Titik 2) wajib ditentukan.',
+        'delivery_latitude.required'  => 'Titik 2 (Antar) pada peta wajib ditentukan.',
+        'delivery_longitude.required' => 'Titik 2 (Antar) pada peta wajib ditentukan.',
         'scheduled_date.date'  => 'Format tanggal tidak valid',
         'scheduled_time.regex' => 'Format waktu tidak valid. Gunakan format 24-jam HH:MM, contoh: 9:30 atau 09:30',
         'photo.image'          => 'File harus berupa gambar (JPG, PNG, JPEG)',
         'photo.max'            => 'Ukuran foto maksimal 2MB',
     ];
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // CONFIRM MODAL — tanpa cek saldo
-    // ─────────────────────────────────────────────────────────────────────────
+    public function setServiceType(string $type): void
+    {
+        $this->service_type = ($type === Help::SERVICE_TYPE_PICKUP_DELIVERY)
+            ? Help::SERVICE_TYPE_PICKUP_DELIVERY
+            : Help::SERVICE_TYPE_ON_SITE;
+
+        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+            // Isolasi data: inisialisasi pickup dari koordinat sebelumnya jika ada
+            if (!$this->pickup_latitude && $this->latitude) {
+                $this->pickup_latitude  = $this->latitude;
+                $this->pickup_longitude = $this->longitude;
+                $this->pickup_address   = $this->location;
+            }
+            $this->store_name      = '';
+            $this->store_address   = '';
+            $this->store_latitude  = null;
+            $this->store_longitude = null;
+            $this->item_fund       = 0;
+
+            $this->resetErrorBag(['location', 'latitude', 'longitude', 'amount']);
+
+            $calcFee = $this->route_distance_km > 0 ? (int) max(10000, ceil($this->route_distance_km) * 2000) : 10000;
+            $this->minHelpNominal = $calcFee;
+            $this->amount = $calcFee;
+            $this->calculateRouteDistance();
+
+            $this->dispatch('service-type-changed', [
+                'serviceType' => 'pickup_delivery',
+                'pickupLat'   => $this->pickup_latitude,
+                'pickupLng'   => $this->pickup_longitude,
+                'deliveryLat' => $this->delivery_latitude,
+                'deliveryLng' => $this->delivery_longitude,
+            ]);
+        } else {
+            // Isolasi data: bersihkan semua titik antar/jemput agar tidak ada tabrakan layer/data
+            $this->pickup_address     = '';
+            $this->pickup_latitude    = null;
+            $this->pickup_longitude   = null;
+            $this->delivery_address   = '';
+            $this->delivery_latitude  = null;
+            $this->delivery_longitude = null;
+            $this->route_distance_km  = 0.0;
+            $this->store_name         = '';
+            $this->store_address      = '';
+            $this->store_latitude     = null;
+            $this->store_longitude    = null;
+            $this->item_fund          = 0;
+
+            $this->resetErrorBag(['pickup_address', 'delivery_address', 'pickup_latitude', 'delivery_latitude', 'amount']);
+
+            $this->minHelpNominal = 10000;
+            if (empty($this->amount) || (float) $this->amount < 10000) {
+                $this->amount = 10000;
+            }
+
+            $this->dispatch('service-type-changed', [
+                'serviceType' => 'on_site_service',
+                'lat'         => $this->latitude,
+                'lng'         => $this->longitude,
+            ]);
+        }
+    }
+
+    public function resolvePickupLocation($lat, $lng, $address = null)
+    {
+        $this->pickup_latitude  = (float) $lat;
+        $this->pickup_longitude = (float) $lng;
+        if ($address) {
+            $this->pickup_address = $address;
+            $this->location       = $address;
+        }
+        $this->latitude  = (float) $lat;
+        $this->longitude = (float) $lng;
+        $this->calculateRouteDistance();
+    }
+
+    public function resolveDeliveryLocation($lat, $lng, $address = null)
+    {
+        $this->delivery_latitude  = (float) $lat;
+        $this->delivery_longitude = (float) $lng;
+        if ($address) {
+            $this->delivery_address = $address;
+        }
+        $this->calculateRouteDistance();
+    }
+
+    public function resolveStoreLocation($lat, $lng, $address = null, $storeName = null)
+    {
+        $this->store_latitude  = (float) $lat;
+        $this->store_longitude = (float) $lng;
+        if ($address) {
+            $this->store_address = $address;
+        }
+        if ($storeName) {
+            $this->store_name = $storeName;
+        }
+        $this->calculateRouteDistance();
+    }
+
+    public function calculateRouteDistance(): void
+    {
+        $pricingService = app(\App\Services\HelpPricingService::class);
+        $estimate = $pricingService->calculateInitialOrderEstimate([
+            'service_type'       => $this->service_type,
+            'amount'             => (float) ($this->amount ?: 0),
+            'material_fee'       => 0,
+            'item_fund'          => 0,
+            'pickup_latitude'    => $this->pickup_latitude ?? $this->latitude,
+            'pickup_longitude'   => $this->pickup_longitude ?? $this->longitude,
+            'delivery_latitude'  => $this->delivery_latitude ?? $this->latitude,
+            'delivery_longitude' => $this->delivery_longitude ?? $this->longitude,
+            'store_latitude'     => $this->store_latitude,
+            'store_longitude'    => $this->store_longitude,
+            'latitude'           => $this->latitude,
+            'longitude'          => $this->longitude,
+        ]);
+
+        $this->route_distance_km = (float) ($estimate['service_route_distance_km'] ?? 0.0);
+
+        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+            $calcFee = (int) ($estimate['service_fee'] ?? 10000);
+            $this->minHelpNominal = $calcFee;
+            $this->amount = $calcFee;
+        } elseif ($this->service_type !== Help::SERVICE_TYPE_ON_SITE && ($estimate['service_fee'] ?? 0) > (float) ($this->amount ?: 0)) {
+            $this->amount = (int) $estimate['service_fee'];
+        }
+    }
+
+    /**
+     * Terima hasil pengukuran jarak rute jalan raya nyata (road network routing) dari client.
+     */
+    public function updateRouteDistanceRoad(float $distanceKm): void
+    {
+        if ($this->service_type !== Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+            return;
+        }
+
+        if ($distanceKm > 0) {
+            $this->route_distance_km = round($distanceKm, 2);
+            $calcFee = (int) max(10000, ceil($this->route_distance_km) * 2000);
+            $this->amount = $calcFee;
+            $this->minHelpNominal = $calcFee;
+        }
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // CONFIRM MODAL — dengan Pricing Engine & Schedule Engine Terintegrasi
+    // CONFIRM MODAL — dengan Pricing Engine V3 Transparan & Isolasi Layanan
     // ─────────────────────────────────────────────────────────────────────────
 
     public function prepareConfirm()
     {
         if (!auth()->check() || !auth()->user()->isCustomer()) {
             abort(403, 'Akses ditolak. Hanya akun Customer yang dapat membuat permintaan bantuan.');
-        }
-
-        $this->minHelpNominal = (int) AppSetting::get('min_help_nominal', 10000);
-
-        $this->rules['city_id']     = 'required|exists:cities,id';
-        $this->rules['district_id'] = 'nullable|exists:districts,id';
-        $this->rules['title']       = 'required|string|max:255';
-        $this->rules['description'] = 'required|string';
-        $this->rules['latitude']    = 'required|numeric|between:-90,90';
-        $this->rules['longitude']   = 'required|numeric|between:-180,180';
-
-        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
-            $this->rules['pickup_address']   = 'nullable|string';
-            $this->rules['delivery_address'] = 'nullable|string';
-        } elseif ($this->service_type === Help::SERVICE_TYPE_BUY_FOR_CUSTOMER) {
-            $this->rules['item_fund'] = 'nullable|numeric|min:0';
         }
 
         if (auth()->user()->isShadowBanned()) {
@@ -633,6 +900,121 @@ class Create extends Component
             }
         }
 
+        // ISOLASI KETAT DATA ANTAR JENIS LAYANAN SEBELUM VALIDASI & TRANSAKSI
+        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+            $this->store_name      = null;
+            $this->store_address   = null;
+            $this->store_latitude  = null;
+            $this->store_longitude = null;
+            $this->item_fund       = 0;
+
+            if (empty($this->pickup_latitude) || empty($this->pickup_longitude)) {
+                $this->addError('pickup_address', 'Silakan tentukan Titik 1 (Jemput) pada peta terlebih dahulu.');
+                $this->dispatch('scroll-to-first-error');
+                return;
+            }
+            if (empty($this->delivery_latitude) || empty($this->delivery_longitude)) {
+                $this->addError('delivery_address', 'Silakan tentukan Titik 2 (Antar/Tujuan) pada peta terlebih dahulu.');
+                $this->dispatch('scroll-to-first-error');
+                return;
+            }
+
+            $geoService = app(\App\Services\GeoService::class);
+            $pSafety = $geoService->validateLocationSafety((float) $this->pickup_latitude, (float) $this->pickup_longitude);
+            if (!$pSafety['is_safe']) {
+                $this->addError('pickup_address', $pSafety['reason'] ?? 'Titik 1 (Jemput) berada di area terlarang.');
+                $this->dispatch('scroll-to-first-error');
+                return;
+            }
+            $dSafety = $geoService->validateLocationSafety((float) $this->delivery_latitude, (float) $this->delivery_longitude);
+            if (!$dSafety['is_safe']) {
+                $this->addError('delivery_address', $dSafety['reason'] ?? 'Titik 2 (Antar) berada di area terlarang.');
+                $this->dispatch('scroll-to-first-error');
+                return;
+            }
+
+            if (empty($this->pickup_address)) {
+                $this->pickup_address = 'Titik Jemput (' . round((float)$this->pickup_latitude, 4) . ', ' . round((float)$this->pickup_longitude, 4) . ')';
+            }
+            if (empty($this->delivery_address)) {
+                $this->delivery_address = 'Titik Antar (' . round((float)$this->delivery_latitude, 4) . ', ' . round((float)$this->delivery_longitude, 4) . ')';
+            }
+
+            $this->latitude  = $this->pickup_latitude;
+            $this->longitude = $this->pickup_longitude;
+            $this->location  = $this->pickup_address;
+
+            $this->calculateRouteDistance();
+
+            $this->rules = [
+                'title'              => 'required|string|max:255',
+                'description'        => 'required|string',
+                'equipment_provided' => 'nullable|string|max:1000',
+                'amount'             => 'required|numeric|min:10000|max:100000000',
+                'city_id'            => 'required|exists:cities,id',
+                'district_id'        => 'nullable|exists:districts,id',
+                'pickup_address'     => 'required|string|max:500',
+                'pickup_latitude'    => 'required|numeric|between:-90,90',
+                'pickup_longitude'   => 'required|numeric|between:-180,180',
+                'delivery_address'   => 'required|string|max:500',
+                'delivery_latitude'  => 'required|numeric|between:-90,90',
+                'delivery_longitude' => 'required|numeric|between:-180,180',
+                'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+                'scheduled_date'     => 'nullable|date',
+                'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
+            ];
+        } else {
+            // On-Site Service
+            $this->pickup_address     = null;
+            $this->pickup_latitude    = null;
+            $this->pickup_longitude   = null;
+            $this->delivery_address   = null;
+            $this->delivery_latitude  = null;
+            $this->delivery_longitude = null;
+            $this->route_distance_km  = 0.0;
+            $this->store_name         = null;
+            $this->store_address      = null;
+            $this->store_latitude     = null;
+            $this->store_longitude    = null;
+            $this->item_fund          = 0;
+
+            if (empty($this->latitude) || empty($this->longitude)) {
+                $this->addError('latitude', 'Silakan pilih titik lokasi pekerjaan pada peta terlebih dahulu.');
+                $this->dispatch('scroll-to-first-error');
+                return;
+            }
+
+            $geoService = app(\App\Services\GeoService::class);
+            $oSafety = $geoService->validateLocationSafety((float) $this->latitude, (float) $this->longitude);
+            if (!$oSafety['is_safe']) {
+                $this->addError('latitude', $oSafety['reason'] ?? 'Titik lokasi berada di area terlarang.');
+                $this->dispatch('scroll-to-first-error');
+                return;
+            }
+
+            if (empty($this->location)) {
+                $this->location = 'Titik Lokasi (' . round((float)$this->latitude, 4) . ', ' . round((float)$this->longitude, 4) . ')';
+            }
+
+            $this->minHelpNominal = 10000;
+
+            $this->rules = [
+                'title'              => 'required|string|max:255',
+                'description'        => 'required|string',
+                'equipment_provided' => 'nullable|string|max:1000',
+                'amount'             => 'required|numeric|min:10000|max:100000000',
+                'city_id'            => 'required|exists:cities,id',
+                'district_id'        => 'nullable|exists:districts,id',
+                'location'           => 'required|string|max:500',
+                'full_address'       => 'nullable|string|max:1000',
+                'latitude'           => 'required|numeric|between:-90,90',
+                'longitude'          => 'required|numeric|between:-180,180',
+                'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+                'scheduled_date'     => 'nullable|date',
+                'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
+            ];
+        }
+
         try {
             $this->validate();
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -640,15 +1022,15 @@ class Create extends Component
             throw $e;
         }
 
-        // Kalkulasi Estimasi Awal berbasis Pricing Engine (Fase 1)
+        // Kalkulasi Estimasi Awal berbasis Pricing Engine V3
         $pricingService = app(\App\Services\HelpPricingService::class);
         $estimate = $pricingService->calculateInitialOrderEstimate([
             'service_type'                  => $this->service_type,
             'service_category'              => $this->service_category ?: 'general',
             'service_duration_hours'        => (float) ($this->service_duration_hours ?: 1.0),
             'amount'                        => (float) ($this->amount ?: 0),
-            'material_fee'                  => (float) ($this->material_fee ?: 0),
-            'item_fund'                     => (float) ($this->item_fund ?: 0),
+            'material_fee'                  => 0,
+            'item_fund'                     => 0,
             'item_fund_mode'                => $this->item_fund_mode,
             'customer_reimbursement_method' => $this->customer_reimbursement_method,
             'advance_limit'                 => (float) ($this->advance_limit ?: 100000),
@@ -656,6 +1038,10 @@ class Create extends Component
             'pickup_longitude'              => $this->pickup_longitude,
             'delivery_latitude'             => $this->delivery_latitude,
             'delivery_longitude'            => $this->delivery_longitude,
+            'store_latitude'                => null,
+            'store_longitude'               => null,
+            'latitude'                      => $this->latitude,
+            'longitude'                     => $this->longitude,
         ]);
 
         $totalAmount = (float) $estimate['total_amount'];
@@ -666,7 +1052,7 @@ class Create extends Component
         $currentBalance  = $customerBalance ? (float) $customerBalance->balance : 0;
 
         if ($currentBalance < $totalAmount) {
-            $this->addError('amount', 'Saldo tidak mencukupi. Total yang dibutuhkan (termasuk kompensasi perjalanan & biaya layanan): Rp ' . number_format($totalAmount, 0, ',', '.') . '. Saldo Anda: Rp ' . number_format($currentBalance, 0, ',', '.') . '. Silakan top up terlebih dahulu.');
+            $this->addError('amount', 'Saldo tidak mencukupi. Total saldo yang dibutuhkan: Rp ' . number_format($totalAmount, 0, ',', '.') . '. Saldo Anda: Rp ' . number_format($currentBalance, 0, ',', '.') . '. Silakan top up terlebih dahulu.');
             $this->dispatch('scroll-to-first-error');
             return;
         }
@@ -693,9 +1079,9 @@ class Create extends Component
 
         // Confirm modal data
         $this->confirmServiceFee     = $estimate['service_fee'];
-        $this->confirmTravelFee      = $estimate['travel_fee'];
-        $this->confirmMaterialFee    = $estimate['material_fee'];
-        $this->confirmItemFund       = $estimate['item_fund'];
+        $this->confirmTravelFee      = 0;
+        $this->confirmMaterialFee    = 0;
+        $this->confirmItemFund       = 0;
         $this->confirmAmount         = $estimate['service_fee'];
         $this->confirmAdminFee       = $estimate['platform_fee'];
         $this->confirmTotal          = $totalAmount;
@@ -703,6 +1089,7 @@ class Create extends Component
         $this->confirmFeeLabel       = 'Rp ' . number_format($estimate['platform_fee'], 0, ',', '.');
         $this->confirmMitraEarning   = $estimate['mitra_earning'];
         $this->confirmMinServiceFee  = $estimate['minimum_service_fee'];
+        $this->route_distance_km     = $estimate['service_route_distance_km'] ?? 0.0;
         $this->confirmScheduled      = $this->scheduled_date
             ? (date('d M Y', strtotime($this->scheduled_date)) . ($this->scheduled_time ? ' Pukul ' . $this->scheduled_time . ' ' . $this->timezoneLabel : ''))
             : null;
@@ -719,7 +1106,7 @@ class Create extends Component
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // SAVE — Model v3: Escrow Lock + Dynamic Pricing & Timestamps
+    // SAVE — Model V3 Transparan, Escrow Lock Terpadu, & Isolasi Data Penuh
     // ─────────────────────────────────────────────────────────────────────────
 
     public function save()
@@ -737,24 +1124,102 @@ class Create extends Component
             }
         }
 
-        $this->rules['city_id']     = 'required|exists:cities,id';
-        $this->rules['district_id'] = 'nullable|exists:districts,id';
-        $this->rules['latitude']    = 'required|numeric|between:-90,90';
-        $this->rules['longitude']   = 'required|numeric|between:-180,180';
+        // ISOLASI KETAT DATA SEBELUM PENYIMPANAN TRANSAKSI
+        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+            $this->store_name      = null;
+            $this->store_address   = null;
+            $this->store_latitude  = null;
+            $this->store_longitude = null;
+            $this->item_fund       = 0;
+
+            if (empty($this->pickup_address) && $this->pickup_latitude && $this->pickup_longitude) {
+                $this->pickup_address = 'Titik Jemput (' . round((float)$this->pickup_latitude, 4) . ', ' . round((float)$this->pickup_longitude, 4) . ')';
+            }
+            if (empty($this->delivery_address) && $this->delivery_latitude && $this->delivery_longitude) {
+                $this->delivery_address = 'Titik Antar (' . round((float)$this->delivery_latitude, 4) . ', ' . round((float)$this->delivery_longitude, 4) . ')';
+            }
+
+            $this->latitude  = $this->pickup_latitude;
+            $this->longitude = $this->pickup_longitude;
+            $this->location  = $this->pickup_address;
+
+            $this->rules = [
+                'title'              => 'required|string|max:255',
+                'description'        => 'required|string',
+                'city_id'            => 'required|exists:cities,id',
+                'district_id'        => 'nullable|exists:districts,id',
+                'pickup_address'     => 'required|string|max:500',
+                'pickup_latitude'    => 'required|numeric|between:-90,90',
+                'pickup_longitude'   => 'required|numeric|between:-180,180',
+                'delivery_address'   => 'required|string|max:500',
+                'delivery_latitude'  => 'required|numeric|between:-90,90',
+                'delivery_longitude' => 'required|numeric|between:-180,180',
+                'amount'             => 'required|numeric|min:10000|max:100000000',
+            ];
+        } else {
+            $this->pickup_address     = null;
+            $this->pickup_latitude    = null;
+            $this->pickup_longitude   = null;
+            $this->delivery_address   = null;
+            $this->delivery_latitude  = null;
+            $this->delivery_longitude = null;
+            $this->route_distance_km  = 0.0;
+            $this->store_name         = null;
+            $this->store_address      = null;
+            $this->store_latitude     = null;
+            $this->store_longitude    = null;
+            $this->item_fund          = 0;
+
+            if (empty($this->location) && $this->latitude && $this->longitude) {
+                $this->location = 'Titik Lokasi (' . round((float)$this->latitude, 4) . ', ' . round((float)$this->longitude, 4) . ')';
+            }
+
+            $this->rules = [
+                'title'        => 'required|string|max:255',
+                'description'  => 'required|string',
+                'city_id'      => 'required|exists:cities,id',
+                'district_id'  => 'nullable|exists:districts,id',
+                'location'     => 'required|string|max:500',
+                'latitude'     => 'required|numeric|between:-90,90',
+                'longitude'    => 'required|numeric|between:-180,180',
+                'amount'       => 'required|numeric|min:10000|max:100000000',
+            ];
+        }
+
         $this->validate();
+
+        $geoService = app(\App\Services\GeoService::class);
+        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+            $pSafety = $geoService->validateLocationSafety((float) $this->pickup_latitude, (float) $this->pickup_longitude);
+            if (!$pSafety['is_safe']) {
+                $this->addError('pickup_address', $pSafety['reason'] ?? 'Titik 1 (Jemput) berada di area terlarang.');
+                return;
+            }
+            $dSafety = $geoService->validateLocationSafety((float) $this->delivery_latitude, (float) $this->delivery_longitude);
+            if (!$dSafety['is_safe']) {
+                $this->addError('delivery_address', $dSafety['reason'] ?? 'Titik 2 (Antar) berada di area terlarang.');
+                return;
+            }
+        } else {
+            $oSafety = $geoService->validateLocationSafety((float) $this->latitude, (float) $this->longitude);
+            if (!$oSafety['is_safe']) {
+                $this->addError('latitude', $oSafety['reason'] ?? 'Titik lokasi berada di area terlarang.');
+                return;
+            }
+        }
 
         $userId   = auth()->id();
         $customer = auth()->user();
 
-        // 1. Jalankan Kalkulasi Pricing Engine (Fase 1)
+        // 1. Jalankan Kalkulasi Pricing Engine V3
         $pricingService = app(\App\Services\HelpPricingService::class);
         $estimate = $pricingService->calculateInitialOrderEstimate([
             'service_type'                  => $this->service_type,
             'service_category'              => $this->service_category ?: 'general',
             'service_duration_hours'        => (float) ($this->service_duration_hours ?: 1.0),
             'amount'                        => (float) ($this->amount ?: 0),
-            'material_fee'                  => (float) ($this->material_fee ?: 0),
-            'item_fund'                     => (float) ($this->item_fund ?: 0),
+            'material_fee'                  => 0,
+            'item_fund'                     => 0,
             'item_fund_mode'                => $this->item_fund_mode,
             'customer_reimbursement_method' => $this->customer_reimbursement_method,
             'advance_limit'                 => (float) ($this->advance_limit ?: 100000),
@@ -762,6 +1227,10 @@ class Create extends Component
             'pickup_longitude'              => $this->pickup_longitude,
             'delivery_latitude'             => $this->delivery_latitude,
             'delivery_longitude'            => $this->delivery_longitude,
+            'store_latitude'                => null,
+            'store_longitude'               => null,
+            'latitude'                      => $this->latitude,
+            'longitude'                     => $this->longitude,
         ]);
 
         $totalAmount = (float) $estimate['total_amount'];
@@ -771,7 +1240,7 @@ class Create extends Component
         $currentBalance  = $customerBalance ? (float) $customerBalance->balance : 0;
 
         if ($currentBalance < $totalAmount) {
-            $this->addError('amount', 'Saldo tidak mencukupi. Total yang dibutuhkan: Rp ' . number_format($totalAmount, 0, ',', '.') . '. Saldo Anda: Rp ' . number_format($currentBalance, 0, ',', '.') . '. Silakan top up terlebih dahulu.');
+            $this->addError('amount', 'Saldo tidak mencukupi. Total saldo yang dibutuhkan: Rp ' . number_format($totalAmount, 0, ',', '.') . '. Saldo Anda: Rp ' . number_format($currentBalance, 0, ',', '.') . '. Silakan top up terlebih dahulu.');
             return;
         }
 
@@ -798,7 +1267,7 @@ class Create extends Component
             $photoPath = $this->photo ? $this->photo->store('helps', 'public') : null;
             $orderId   = $this->generateOrderId();
 
-            // Simpan data bantuan dengan rincian model v3 (Layanan, Jarak, Multi-Point, dan Item Fund)
+            // Simpan data bantuan dengan rincian model V3
             $help = Help::create([
                 'user_id'                       => $userId,
                 'order_id'                      => $orderId,
@@ -810,11 +1279,11 @@ class Create extends Component
                 'order_mode'                    => $scheduleData['order_mode'],
                 'service_category'              => $this->service_category ?: 'general',
                 'service_duration_hours'        => (float) ($this->service_duration_hours ?: 1.0),
-                'amount'                        => $estimate['service_fee'] + $estimate['travel_fee'] + $estimate['material_fee'],
+                'amount'                        => $estimate['service_fee'],
                 'service_fee'                   => $estimate['service_fee'],
-                'travel_fee'                    => $estimate['travel_fee'],
-                'material_fee'                  => $estimate['material_fee'],
-                'item_fund'                     => $estimate['item_fund'],
+                'travel_fee'                    => 0.0,
+                'material_fee'                  => 0.0,
+                'item_fund'                     => 0.0,
                 'item_fund_mode'                => $this->item_fund_mode,
                 'customer_reimbursement_method' => $this->customer_reimbursement_method,
                 'advance_limit'                 => (float) ($this->advance_limit ?: 100000),
@@ -836,10 +1305,11 @@ class Create extends Component
                 'delivery_address'              => $this->delivery_address,
                 'delivery_latitude'             => $this->delivery_latitude,
                 'delivery_longitude'            => $this->delivery_longitude,
-                'store_name'                    => $this->store_name,
-                'store_address'                 => $this->store_address,
-                'store_latitude'                => $this->store_latitude,
-                'store_longitude'               => $this->store_longitude,
+                'store_name'                    => null,
+                'store_address'                 => null,
+                'store_latitude'                => null,
+                'store_longitude'               => null,
+                'service_route_distance_km'     => ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) ? ($estimate['service_route_distance_km'] ?? $this->route_distance_km ?? 0.0) : 0.0,
                 'scheduled_at'                  => $scheduleData['service_scheduled_at'],
                 'published_at'                  => $scheduleData['published_at'],
                 'departure_at'                  => $scheduleData['departure_at'],
@@ -851,7 +1321,7 @@ class Create extends Component
                 'status'                        => Help::STATUS_MENUNGGU_MITRA,
                 'payment_status'                => Help::PAYMENT_STATUS_PAID,
                 'escrow_status'                 => Help::ESCROW_STATUS_HELD,
-                'dispatch_mode'                 => Help::DISPATCH_MODE_SEEKING,
+                'dispatch_mode'                 => ($scheduleData['order_mode'] === Help::ORDER_MODE_SCHEDULED || $this->service_type !== Help::SERVICE_TYPE_ON_SITE) ? Help::DISPATCH_MODE_POOL : Help::DISPATCH_MODE_SEEKING,
                 'rating_status'                 => Help::RATING_STATUS_PENDING,
                 'model_version'                 => 3,
                 'escrow_locked_at'              => now(),
@@ -864,13 +1334,7 @@ class Create extends Component
             );
 
             $descParts = [];
-            $descParts[] = "Jasa: Rp " . number_format($estimate['service_fee'], 0, ',', '.');
-            if (($estimate['travel_fee'] ?? 0) > 0) {
-                $descParts[] = "Ongkos: Rp " . number_format($estimate['travel_fee'], 0, ',', '.');
-            }
-            if (($estimate['item_fund'] ?? 0) > 0) {
-                $descParts[] = "Titipan Belanja: Rp " . number_format($estimate['item_fund'], 0, ',', '.');
-            }
+            $descParts[] = ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY ? "Ongkos Antar: " : "Jasa: ") . "Rp " . number_format($estimate['service_fee'], 0, ',', '.');
             $descParts[] = "Layanan: Rp " . number_format($estimate['platform_fee'], 0, ',', '.');
             $lockDescription = "Dana Ditahan untuk Permintaan Bantuan '{$help->title}' (" . implode(' + ', $descParts) . ")";
 
@@ -885,8 +1349,8 @@ class Create extends Component
             return $help;
         });
 
-        // POST-COMMIT: Picu Sequential Matching Engine jika order siap dicocokkan
-        if ($createdHelp) {
+        // POST-COMMIT: Picu Matching Engine jika On-Site instan
+        if ($createdHelp && $createdHelp->order_mode === Help::ORDER_MODE_INSTANT && $createdHelp->service_type === Help::SERVICE_TYPE_ON_SITE) {
             try {
                 app(\App\Services\HelpMatchingService::class)->initiateMatching($createdHelp);
             } catch (\Throwable $e) {
@@ -979,7 +1443,11 @@ class Create extends Component
 
     public function render()
     {
-        $this->minHelpNominal = (int) AppSetting::get('min_help_nominal', 10000);
+        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+            $this->minHelpNominal = $this->route_distance_km > 0 ? (int) max(10000, ceil($this->route_distance_km) * 2000) : 10000;
+        } else {
+            $this->minHelpNominal = (int) AppSetting::get('min_help_nominal', 10000);
+        }
 
         return view('livewire.customer.helps.create', [
             'cities' => City::where('is_active', true)->get(),

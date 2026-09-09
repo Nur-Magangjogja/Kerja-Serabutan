@@ -56,6 +56,7 @@ class Help extends Model
     public const STATUS_SELESAI                     = 'selesai';
     public const STATUS_DIBATALKAN                  = 'dibatalkan';
     public const STATUS_PARTNER_CANCEL_REQUESTED    = 'partner_cancel_requested';
+    public const STATUS_CUSTOMER_CANCEL_REQUESTED   = 'customer_cancel_requested';
 
     // Escrow Statuses
     public const ESCROW_STATUS_UNINITIALIZED        = 'uninitialized';
@@ -117,6 +118,8 @@ class Help extends Model
             self::STATUS_PARTNER_ARRIVED,   // jika mitra tiba tanpa update on_the_way
             self::STATUS_IN_PROGRESS,
             self::STATUS_PARTNER_CANCEL_REQUESTED,
+            self::STATUS_CUSTOMER_CANCEL_REQUESTED,
+            self::STATUS_DIBATALKAN,
             // Alias lawas yang mungkin masih ada di data
             'memperoleh_mitra',
         ],
@@ -124,36 +127,55 @@ class Help extends Model
             self::STATUS_TAKEN,
             self::STATUS_PARTNER_ON_THE_WAY,
             self::STATUS_PARTNER_CANCEL_REQUESTED,
+            self::STATUS_CUSTOMER_CANCEL_REQUESTED,
         ],
         self::STATUS_PARTNER_ON_THE_WAY => [
             self::STATUS_PARTNER_ARRIVED,
             self::STATUS_IN_PROGRESS,       // transisi langsung untuk stage khusus
             self::STATUS_PARTNER_CANCEL_REQUESTED,
+            self::STATUS_CUSTOMER_CANCEL_REQUESTED,
+            self::STATUS_DIBATALKAN,
         ],
         self::STATUS_PARTNER_ARRIVED => [
             self::STATUS_IN_PROGRESS,
             self::STATUS_SELESAI,
             self::STATUS_WAITING_CONFIRMATION,
             self::STATUS_PARTNER_CANCEL_REQUESTED,
+            self::STATUS_CUSTOMER_CANCEL_REQUESTED,
+            self::STATUS_DIBATALKAN,
             // Alias
             'sedang_diproses',
         ],
         'sedang_diproses' => [
             self::STATUS_SELESAI,
             self::STATUS_WAITING_CONFIRMATION,
+            self::STATUS_PARTNER_CANCEL_REQUESTED,
+            self::STATUS_CUSTOMER_CANCEL_REQUESTED,
         ],
         self::STATUS_IN_PROGRESS => [
             self::STATUS_SELESAI,
             self::STATUS_WAITING_CONFIRMATION,
             self::STATUS_PARTNER_CANCEL_REQUESTED,
+            self::STATUS_CUSTOMER_CANCEL_REQUESTED,
+            self::STATUS_DIBATALKAN,
         ],
         self::STATUS_WAITING_CONFIRMATION => [
             self::STATUS_SELESAI,
+            self::STATUS_PARTNER_CANCEL_REQUESTED,
+            self::STATUS_CUSTOMER_CANCEL_REQUESTED,
         ],
         self::STATUS_PARTNER_CANCEL_REQUESTED => [
             self::STATUS_MENUNGGU_MITRA,    // customer accept / admin rematch
-            self::STATUS_DIBATALKAN,        // admin approve cancellation
+            self::STATUS_DIBATALKAN,        // admin approve cancellation / timeout
             // Kembali ke status sebelumnya (dinamis, ditangani di service)
+            self::STATUS_TAKEN,
+            self::STATUS_PARTNER_ON_THE_WAY,
+            self::STATUS_PARTNER_ARRIVED,
+            self::STATUS_IN_PROGRESS,
+        ],
+        self::STATUS_CUSTOMER_CANCEL_REQUESTED => [
+            self::STATUS_MENUNGGU_MITRA,
+            self::STATUS_DIBATALKAN,        // admin approve cancellation
             self::STATUS_TAKEN,
             self::STATUS_PARTNER_ON_THE_WAY,
             self::STATUS_PARTNER_ARRIVED,
@@ -277,6 +299,9 @@ class Help extends Model
         'partner_cancel_reason',
         'partner_cancel_notes',
         'partner_cancel_prev_status',
+        'cancel_requested_by',
+        'cancel_deadline_at',
+        'cancel_evidence_photo',
         'cancelled_mitra_ids',
         // Kolom model v2 (Commission-Based / Escrow System)
         'model_version',
@@ -356,6 +381,7 @@ class Help extends Model
         'partner_current_lng'        => 'decimal:8',
         'partner_started_moving_at'  => 'datetime',
         'partner_cancel_requested_at'=> 'datetime',
+        'cancel_deadline_at'         => 'datetime',
         'cancelled_mitra_ids'        => 'array',
         // Model v2 casts
         'model_version'              => 'integer',
@@ -475,14 +501,14 @@ class Help extends Model
     // QUERY SCOPES
     // ─────────────────────────────────────────────────────────────────────────
 
-    /** Bantuan yang sedang menunggu mitra (tersedia di pool dan jadwalnya sudah tiba atau tanpa jadwal). */
+    /** Bantuan yang sedang menunggu mitra (tersedia di pool dan belum kadaluwarsa). */
     public function scopePending($query)
     {
         return $query->where('status', self::STATUS_MENUNGGU_MITRA)
                      ->whereNull('mitra_id')
                      ->where(function ($q) {
-                         $q->whereNull('scheduled_at')
-                           ->orWhere('scheduled_at', '<=', now());
+                         $q->whereNull('expires_at')
+                           ->orWhere('expires_at', '>', now());
                      });
     }
 

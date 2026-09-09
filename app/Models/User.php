@@ -29,6 +29,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'status',
         'phone',
         'address',
+        'saved_landmarks',
         // KTP Fields
         'nik',
         'place_of_birth',
@@ -82,6 +83,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'rt' => 'integer',
             'rw' => 'integer',
             'notification_settings' => 'array',
+            'saved_landmarks' => 'array',
             'is_greylisted' => 'boolean',
             'greylisted_at' => 'datetime',
             'is_shadow_banned' => 'boolean',
@@ -1000,5 +1002,58 @@ class User extends Authenticatable implements MustVerifyEmail
     public function onlineState()
     {
         return $this->hasOne(PartnerOnlineState::class, 'user_id');
+    }
+
+    /**
+     * Customer Saved Landmarks / Patokan Presets
+     */
+    public function getSavedLandmarksList(): array
+    {
+        $landmarks = $this->saved_landmarks;
+        if (is_string($landmarks)) {
+            $landmarks = json_decode($landmarks, true);
+        }
+        return is_array($landmarks) ? array_values($landmarks) : [];
+    }
+
+    public function addSavedLandmark(string $label, string $patokan): array
+    {
+        $list = $this->getSavedLandmarksList();
+        $item = [
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'label' => trim($label),
+            'patokan' => trim($patokan),
+            'created_at' => now()->toIso8601String(),
+        ];
+        $list[] = $item;
+        $this->update(['saved_landmarks' => $list]);
+        return $item;
+    }
+
+    public function updateSavedLandmark(string $id, string $label, string $patokan): bool
+    {
+        $list = $this->getSavedLandmarksList();
+        $found = false;
+        foreach ($list as &$item) {
+            if (($item['id'] ?? '') === $id) {
+                $item['label'] = trim($label);
+                $item['patokan'] = trim($patokan);
+                $item['updated_at'] = now()->toIso8601String();
+                $found = true;
+                break;
+            }
+        }
+        if ($found) {
+            $this->update(['saved_landmarks' => $list]);
+        }
+        return $found;
+    }
+
+    public function deleteSavedLandmark(string $id): bool
+    {
+        $list = $this->getSavedLandmarksList();
+        $filtered = array_values(array_filter($list, fn($item) => ($item['id'] ?? '') !== $id));
+        $this->update(['saved_landmarks' => $filtered]);
+        return count($filtered) < count($list);
     }
 }

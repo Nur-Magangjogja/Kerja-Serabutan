@@ -240,6 +240,31 @@ class HelpMatchingService
     }
 
     /**
+     * Hitung batas maksimum radius matching untuk order ini:
+     * - On-Site:
+     *   - Nilai Jasa <= Rp 20.000 : Max 3.0 KM (Ring 1)
+     *   - Nilai Jasa <= Rp 50.000 : Max 5.0 KM (Ring 1 -> Ring 2)
+     *   - Nilai Jasa > Rp 50.000  : Max 10.0 KM (Ring 1 -> Ring 2 -> Ring 3 -> Ring 4)
+     * - Pickup / Buy:
+     *   - Leg 1 Constraint: Maksimal 5.0 KM (jarak mitra ke titik jemput/toko)
+     */
+    public function computeServiceMaxMatchingRadius(Help $help): float
+    {
+        if ($help->isPickup() || $help->isBuy()) {
+            return 5.0;
+        }
+
+        $amount = (float) ($help->service_fee > 0 ? $help->service_fee : $help->amount);
+        if ($amount <= 20000.0) {
+            return 3.0;
+        }
+        if ($amount <= 50000.0) {
+            return 5.0;
+        }
+        return (float) AppSetting::MAX_OPERATIONAL_RADIUS_KM; // 10.0 KM
+    }
+
+    /**
      * Hitung skor komposit mitra untuk order bantuan tertentu berdasarkan bobot AppSetting.
      */
     public function calculatePartnerCompositeScore(
@@ -250,10 +275,10 @@ class HelpMatchingService
         ?object $prefetchedHelp = null, 
         ?array $config = null
     ): array {
-        $maxRadius = (float) ($config['max_radius'] ?? AppSetting::MAX_OPERATIONAL_RADIUS_KM);
+        $maxRadius = (float) ($config['max_radius'] ?? $this->computeServiceMaxMatchingRadius($help));
         $weights   = $config['weights'] ?? AppSetting::getMatchingWeights();
 
-        // 1. Distance & District Alignment Score (Maksimal 10.0 KM dari Titik Awal Layanan)
+        // 1. Distance & District Alignment Score (Maksimal radius dari Titik Awal Layanan)
         if ($help->isPickup()) {
             $targetLat = (float) ($help->pickup_latitude ?: $help->latitude);
             $targetLng = (float) ($help->pickup_longitude ?: $help->longitude);
@@ -305,12 +330,13 @@ class HelpMatchingService
 
     /**
      * Dapatkan daftar kandidat mitra terurut (Top N) untuk order tertentu.
-     * Menggunakan kombinasi: Primary District + Adjacent District Expansion + GPS aktual <= 10 KM + Status + Kemampuan + Jadwal.
+     * Menggunakan kombinasi: Primary District + Adjacent District Expansion + GPS aktual <= Max Radius + Status + Kemampuan + Jadwal.
      */
-    public function getRankedCandidates(Help $help, array $excludeMitraIds = []): Collection
+    public function getRankedCandidates(Help $help, array $excludeMitraIds = [], ?float $ringRadius = null): Collection
     {
         $ttl = AppSetting::getHeartbeatTtlSeconds();
-        $maxMatchingRadius = AppSetting::MAX_OPERATIONAL_RADIUS_KM; // Baku 10.0 KM
+        $serviceMaxRadius = $this->computeServiceMaxMatchingRadius($help);
+        $maxMatchingRadius = $ringRadius !== null ? min($serviceMaxRadius, $ringRadius) : $serviceMaxRadius;
 
         $excludedPartnerIds = [];
         try {
@@ -377,7 +403,7 @@ class HelpMatchingService
                 }
             });
 
-        // Bounding Box Pre-Filter: Batasi kandidat secara instan berbasis rentang 10 KM
+        // Bounding Box Pre-Filter: Batasi kandidat secara instan berbasis rentang maxMatchingRadius
         if ($targetLat != 0 && $targetLng != 0) {
             $latDelta = $maxMatchingRadius / 111.045;
             $lngDelta = $maxMatchingRadius / (111.045 * max(0.01, cos(deg2rad($targetLat))));
@@ -410,7 +436,7 @@ class HelpMatchingService
 
         // 3. Batch Pre-fetch All System Configs (In-Memory)
         $config = [
-            'max_radius'           => AppSetting::MAX_OPERATIONAL_RADIUS_KM,
+            'max_radius'           => $maxMatchingRadius,
             'weights'              => AppSetting::getMatchingWeights(),
             'rating_min_votes'     => (float) AppSetting::getRatingMinVotes(),
             'neutral_rating_prior' => (float) AppSetting::getNeutralRatingPrior(),
@@ -421,7 +447,7 @@ class HelpMatchingService
             'newbie_min_score'     => (float) AppSetting::getNewbieMinFairnessScore(),
         ];
 
-        // 4. In-Memory Mathematical Scoring & Hard Filter MAX_MATCHING_DISTANCE <= 10.0 KM
+        // 4. In-Memory Mathematical Scoring & Hard Filter MAX_MATCHING_DISTANCE <= maxMatchingRadius
         $scoredCandidates = $eligibleStates->map(function ($state) use ($help, $ratingStats, $helpStats, $config, $maxMatchingRadius) {
             $userRating = $ratingStats->get($state->user_id);
             $userHelp   = $helpStats->get($state->user_id);
@@ -435,7 +461,7 @@ class HelpMatchingService
                 $config
             );
 
-            // HARD LIMIT RULE: Jika jarak matching mitra ke titik awal > 10.0 KM, eliminasi kandidat
+            // HARD LIMIT RULE: Jika jarak matching mitra ke titik awal > maxMatchingRadius, eliminasi kandidat
             if ($scoreDetails['distance_km'] > $maxMatchingRadius && $scoreDetails['distance_km'] > 0) {
                 return null;
             }
@@ -474,6 +500,11 @@ class HelpMatchingService
      */
     public function initiateMatching(Help $help): bool
     {
+        if ($help->order_mode === Help::ORDER_MODE_SCHEDULED || $help->dispatch_mode === Help::DISPATCH_MODE_POOL) {
+            $this->fallbackToOpenPool($help);
+            return false;
+        }
+
         $candidates = $this->getRankedCandidates($help);
 
         if ($candidates->isEmpty()) {

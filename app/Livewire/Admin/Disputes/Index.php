@@ -4,7 +4,9 @@ namespace App\Livewire\Admin\Disputes;
 
 use App\Models\City;
 use App\Models\Help;
+use App\Models\HelpCancelRequest;
 use App\Models\PartnerReport;
+use App\Services\HelpCancellationService;
 use App\Services\HelpTransactionService;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
@@ -19,6 +21,7 @@ class Index extends Component
     public $activeTab = 'disputes'; // 'disputes' | 'cancellations'
     public $status = 'frozen'; // 'frozen', 'resolved', 'all' (or 'pending', 'approved', 'rejected' for cancellations)
     public $search = '';
+    public $requesterTypeFilter = 'all'; // 'all', 'partner', 'customer'
 
     // Modal state (Disputes)
     public $showResolveModal = false;
@@ -30,7 +33,7 @@ class Index extends Component
     public $customerRefund   = 0;
     public $adminNotes       = '';
 
-    // Modal state (Cancellation Requests Revisi 3)
+    // Modal state (Cancellation Requests)
     public $showCancelReviewModal     = false;
     public $selectedCancelRequestId   = null;
     public $selectedCancelRequest     = null;
@@ -40,10 +43,18 @@ class Index extends Component
     public $cancelPartnerAmount      = 0;
     public $cancelAdminNotes         = '';
 
+    // SP Controls for Admin
+    public $spTarget         = 'none'; // 'none', 'partner', 'customer', 'both'
+    public $partnerSpLevel   = 1;
+    public $partnerSpReason  = 'Pelanggaran pembatalan tugas bantuan';
+    public $customerSpLevel  = 1;
+    public $customerSpReason = 'Pelanggaran / kejanggalan pesanan bantuan';
+
     protected $queryString = [
-        'activeTab' => ['except' => 'disputes'],
-        'status'    => ['except' => 'frozen'],
-        'search'    => ['except' => ''],
+        'activeTab'           => ['except' => 'disputes'],
+        'status'              => ['except' => 'frozen'],
+        'requesterTypeFilter' => ['except' => 'all'],
+        'search'              => ['except' => ''],
     ];
 
     protected $listeners = [
@@ -57,6 +68,11 @@ class Index extends Component
     }
 
     public function updatingStatus()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingRequesterTypeFilter()
     {
         $this->resetPage();
     }
@@ -176,12 +192,12 @@ class Index extends Component
         }
     }
 
-    // ─── CANCELLATION REQUEST ACTIONS (Revisi 3) ─────────────────────────────
+    // ─── CANCELLATION REQUEST ACTIONS ────────────────────────────────────────
 
     public function openCancelReviewModal(int $cancelRequestId)
     {
         $this->selectedCancelRequestId = $cancelRequestId;
-        $this->selectedCancelRequest   = \App\Models\HelpCancelRequest::with(['help.user', 'help.mitra', 'requestedBy', 'district'])->findOrFail($cancelRequestId);
+        $this->selectedCancelRequest   = HelpCancelRequest::with(['help.user', 'help.mitra', 'requestedBy', 'district'])->findOrFail($cancelRequestId);
 
         $admin = auth()->user();
         if ($admin && $admin->role === 'admin') {
@@ -203,13 +219,36 @@ class Index extends Component
         $this->cancelRefundAmount = $gross;
         $this->cancelPartnerAmount= $this->selectedCancelRequest->item_purchase_amount ?: 0;
         $this->cancelAdminNotes   = '';
+
+        // Reset SP Controls
+        $this->spTarget         = 'none';
+        $this->partnerSpLevel   = 1;
+        $this->partnerSpReason  = ($this->selectedCancelRequest->requester_type === 'partner')
+            ? 'Mitra terbukti membatalkan tugas secara sepihak tanpa alasan sah'
+            : 'Mitra terbukti mangkir / menelantarkan tugas bantuan customer';
+        $this->customerSpLevel  = 1;
+        $this->customerSpReason = 'Customer terindikasi melakukan pembatalan tidak wajar / order fiktif';
+
         $this->showCancelReviewModal = true;
     }
 
     public function closeCancelReviewModal()
     {
         $this->showCancelReviewModal = false;
-        $this->reset(['selectedCancelRequestId', 'selectedCancelRequest', 'cancelDecision', 'settlementType', 'cancelRefundAmount', 'cancelPartnerAmount', 'cancelAdminNotes']);
+        $this->reset([
+            'selectedCancelRequestId',
+            'selectedCancelRequest',
+            'cancelDecision',
+            'settlementType',
+            'cancelRefundAmount',
+            'cancelPartnerAmount',
+            'cancelAdminNotes',
+            'spTarget',
+            'partnerSpLevel',
+            'partnerSpReason',
+            'customerSpLevel',
+            'customerSpReason',
+        ]);
     }
 
     public function executeCancelReview()
@@ -219,23 +258,31 @@ class Index extends Component
         }
 
         $this->validate([
-            'cancelDecision' => 'required|in:approved,rejected',
-            'settlementType' => 'required_if:cancelDecision,approved|in:full_refund,item_settled,partial_settlement',
+            'cancelDecision'     => 'required|in:approved,rejected',
+            'settlementType'     => 'required_if:cancelDecision,approved|in:full_refund,item_settled,partial_settlement',
             'cancelRefundAmount' => 'nullable|numeric|min:0',
             'cancelPartnerAmount'=> 'nullable|numeric|min:0',
+            'spTarget'           => 'required|in:none,partner,customer,both',
+            'partnerSpLevel'     => 'required_if:spTarget,partner,both|integer|min:1|max:3',
+            'customerSpLevel'    => 'required_if:spTarget,customer,both|integer|min:1|max:3',
         ]);
 
         try {
             $isApproved = ($this->cancelDecision === 'approved');
-            app(\App\Services\HelpCancellationService::class)->reviewByAdmin(
+            app(HelpCancellationService::class)->reviewByAdmin(
                 $this->selectedCancelRequest,
                 auth()->user(),
                 $isApproved,
                 $this->settlementType,
                 [
-                    'refund_amount'  => (float) $this->cancelRefundAmount,
-                    'partner_amount' => (float) $this->cancelPartnerAmount,
-                    'admin_notes'    => $this->cancelAdminNotes,
+                    'refund_amount'      => (float) $this->cancelRefundAmount,
+                    'partner_amount'     => (float) $this->cancelPartnerAmount,
+                    'admin_notes'        => $this->cancelAdminNotes,
+                    'sp_target'          => $this->spTarget,
+                    'partner_sp_level'   => (int) $this->partnerSpLevel,
+                    'partner_sp_reason'  => $this->partnerSpReason,
+                    'customer_sp_level'  => (int) $this->customerSpLevel,
+                    'customer_sp_reason' => $this->customerSpReason,
                 ]
             );
 
@@ -251,11 +298,14 @@ class Index extends Component
 
     public function render()
     {
+        // Otomatis cek dan batalkan permintaan yang batas waktunya telah habis
+        app(HelpCancellationService::class)->checkAndAutoCancelExpiredRequests();
+
         $admin        = auth()->user();
         $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
 
         if ($this->activeTab === 'cancellations') {
-            $query = \App\Models\HelpCancelRequest::with(['help.user', 'help.mitra', 'requestedBy', 'district', 'reviewedBy']);
+            $query = HelpCancelRequest::with(['help.user', 'help.mitra', 'requestedBy', 'district', 'reviewedBy']);
 
             if (!$isSuperAdmin) {
                 $districtIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
@@ -267,6 +317,10 @@ class Index extends Component
                 } else {
                     $query->whereRaw('1 = 0');
                 }
+            }
+
+            if ($this->requesterTypeFilter !== 'all') {
+                $query->where('requester_type', $this->requesterTypeFilter);
             }
 
             if ($this->status !== 'all') {

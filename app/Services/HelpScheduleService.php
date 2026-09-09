@@ -92,39 +92,87 @@ class HelpScheduleService
     }
 
     /**
-     * Dapatkan payload 3 Countdown terpisah untuk render realtime di client-side:
-     * 1. Countdown Keberangkatan (departure_at - now)
-     * 2. ETA Perjalanan (estimated_arrival_at - now)
-     * 3. Countdown Layanan / Batas Waktu (service_scheduled_at / delivery_deadline_at - now)
+     * Dapatkan data pemantauan perjalanan live mitra (Live Dynamic Travel Progress & ETA):
+     * - Titik Target: Lokasi Kerja (On-site), Titik Jemput (Pickup), atau Titik Antar (Delivery)
+     * - Jarak Tersisa & Live ETA dinamis berdasarkan pergerakan GPS riil mitra.
      */
-    public function getThreeCountdownData(Help $help): array
+    public function getLiveTravelProgress(Help $help): array
     {
-        $now = now();
+        // 1. Tentukan Titik Sasaran Saat Ini
+        $targetLat = 0.0;
+        $targetLng = 0.0;
+        $targetLabel = 'Lokasi Pekerjaan';
+        $targetAddress = $help->location ?: $help->full_address;
 
-        $departureSec = 0;
-        if ($help->departure_at && $help->departure_at->isFuture()) {
-            $departureSec = $now->diffInSeconds($help->departure_at, false);
+        if ($help->isPickup()) {
+            if ($help->service_stage === Help::STAGE_GOING_TO_DESTINATION || $help->service_stage === Help::STAGE_ITEM_COLLECTED) {
+                $targetLat = (float) ($help->delivery_latitude ?: $help->latitude);
+                $targetLng = (float) ($help->delivery_longitude ?: $help->longitude);
+                $targetLabel = 'Titik 2: Antar (Tujuan)';
+                $targetAddress = $help->delivery_address ?: $help->location;
+            } else {
+                $targetLat = (float) ($help->pickup_latitude ?: $help->latitude);
+                $targetLng = (float) ($help->pickup_longitude ?: $help->longitude);
+                $targetLabel = 'Titik 1: Jemput (Pickup)';
+                $targetAddress = $help->pickup_address ?: $help->location;
+            }
+        } elseif ($help->isBuy()) {
+            if (in_array($help->service_stage, [Help::STAGE_GOING_TO_CUSTOMER, Help::STAGE_PURCHASING])) {
+                $targetLat = (float) ($help->latitude ?: 0);
+                $targetLng = (float) ($help->longitude ?: 0);
+                $targetLabel = 'Lokasi Pemesan (Customer)';
+                $targetAddress = $help->location;
+            } else {
+                $targetLat = (float) ($help->store_latitude ?: $help->latitude);
+                $targetLng = (float) ($help->store_longitude ?: $help->longitude);
+                $targetLabel = 'Toko / Lokasi Belanja';
+                $targetAddress = $help->store_address ?: $help->store_name;
+            }
+        } else {
+            // On-Site Service
+            $targetLat = (float) ($help->latitude ?: 0);
+            $targetLng = (float) ($help->longitude ?: 0);
+            $targetLabel = 'Lokasi Pekerjaan';
+            $targetAddress = $help->location ?: $help->full_address;
         }
 
-        $etaTravelSec = 0;
-        if ($help->estimated_arrival_at && $help->estimated_arrival_at->isFuture()) {
-            $etaTravelSec = $now->diffInSeconds($help->estimated_arrival_at, false);
-        }
+        // 2. Ambil Posisi Terkini Rekan Jasa (GPS)
+        $partnerLat = (float) ($help->partner_current_lat ?: $help->partner_initial_lat ?: 0);
+        $partnerLng = (float) ($help->partner_current_lng ?: $help->partner_initial_lng ?: 0);
 
-        $targetServiceTime = $help->delivery_deadline_at ?: ($help->service_scheduled_at ?: $help->scheduled_at);
-        $serviceCountdownSec = 0;
-        if ($targetServiceTime && $targetServiceTime->isFuture()) {
-            $serviceCountdownSec = $now->diffInSeconds($targetServiceTime, false);
+        $isArrived = in_array($help->status, ['partner_arrived', 'in_progress', 'completed', 'selesai', 'waiting_confirmation', 'waiting_customer_confirmation']);
+
+        // 3. Hitung Live Dynamic Travel ETA
+        $etaData = [
+            'distance_meters'          => 0,
+            'distance_km'              => 0.0,
+            'estimated_minutes'        => 0,
+            'formatted_distance'       => '--',
+            'formatted_eta'            => 'Menunggu GPS Rekan Jasa...',
+            'is_arrived'               => $isArrived,
+        ];
+
+        if ($partnerLat != 0 && $partnerLng != 0 && $targetLat != 0 && $targetLng != 0) {
+            $etaData = $this->geoService->calculateLiveTravelEta($partnerLat, $partnerLng, $targetLat, $targetLng);
+            if ($isArrived) {
+                $etaData['is_arrived'] = true;
+                $etaData['formatted_eta'] = 'Tiba di lokasi';
+            }
         }
 
         return [
-            'departure_countdown_seconds' => max(0, $departureSec),
-            'departure_at_iso'            => $help->departure_at?->toIso8601String(),
-            'eta_travel_seconds'          => max(0, $etaTravelSec),
-            'estimated_arrival_at_iso'    => $help->estimated_arrival_at?->toIso8601String(),
-            'service_countdown_seconds'   => max(0, $serviceCountdownSec),
-            'service_scheduled_at_iso'    => $targetServiceTime?->toIso8601String(),
-            'is_departure_due'            => $this->isDepartureDue($help),
+            'target_label'          => $targetLabel,
+            'target_address'        => $targetAddress,
+            'target_lat'            => $targetLat,
+            'target_lng'            => $targetLng,
+            'partner_lat'           => $partnerLat,
+            'partner_lng'           => $partnerLng,
+            'partner_last_seen'     => $help->partner_location_updated_at ? \Carbon\Carbon::parse($help->partner_location_updated_at)->diffForHumans() : null,
+            'is_arrived'            => $etaData['is_arrived'],
+            'remaining_distance_km' => $etaData['distance_km'],
+            'formatted_distance'    => $etaData['formatted_distance'],
+            'formatted_eta'         => $etaData['formatted_eta'],
+            'estimated_minutes'     => $etaData['estimated_minutes'],
         ];
     }
 }

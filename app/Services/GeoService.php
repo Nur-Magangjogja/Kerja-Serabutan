@@ -41,8 +41,8 @@ class GeoService
     }
 
     /**
-     * Hitung estimasi jarak rute perjalanan jalan (Route Distance dalam KM).
-     * Menerapkan fallback estimasi 1.25x dengan pencatatan `route_source` transparan.
+     * Hitung estimasi jarak rute perjalanan jalan raya (Road Route Distance dalam KM).
+     * Menggunakan OSRM Driving Routing API mengikuti kontur jalan nyata, dengan fallback faktor jalan (1.30x).
      */
     public function getRouteDistance(float $lat1, float $lng1, float $lat2, float $lng2, ?string &$source = null): float
     {
@@ -53,10 +53,33 @@ class GeoService
             return 0.0;
         }
 
-        // LEVEL 1 & Fallback Estimasi: 1.25x road factor
-        // Dapat dikembangkan ke Level 2 (Google Maps / OSRM API) saat production provider aktif
+        // 1. Coba hitung jarak rute jalan nyata via OSRM Driving API (dengan cache per koordinat)
+        $cacheKey = 'road_dist_' . round($lat1, 5) . '_' . round($lng1, 5) . '_' . round($lat2, 5) . '_' . round($lng2, 5);
+        
+        try {
+            $roadDist = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($lat1, $lng1, $lat2, $lng2) {
+                $url = "https://router.project-osrm.org/route/v1/driving/{$lng1},{$lat1};{$lng2},{$lat2}?overview=false";
+                $res = \Illuminate\Support\Facades\Http::timeout(2)->get($url);
+                if ($res->successful()) {
+                    $data = $res->json();
+                    if (isset($data['routes'][0]['distance'])) {
+                        return round((float)$data['routes'][0]['distance'] / 1000.0, 2);
+                    }
+                }
+                return null;
+            });
+
+            if ($roadDist !== null && $roadDist > 0) {
+                $source = 'osrm_road_network';
+                return $roadDist;
+            }
+        } catch (\Throwable $e) {
+            // Log or fallback to road curvature factor
+        }
+
+        // 2. Fallback Estimasi Jalur Jalan: 1.30x faktor belokan jalan perkotaan
         $source = Help::ROUTE_SOURCE_FALLBACK;
-        $estimatedRoute = $straightDist * 1.25;
+        $estimatedRoute = $straightDist * 1.30;
 
         return round($estimatedRoute, 2);
     }
@@ -74,6 +97,59 @@ class GeoService
         $travelMinutes = (int) ceil($travelHours * 60);
 
         return $travelMinutes + $bufferMinutes;
+    }
+
+    /**
+     * Hitung Live Dynamic Travel ETA dari posisi mitra saat ini menuju lokasi target.
+     * Mengembalikan metrik jarak tersisa, estimasi durasi menit, dan label tampilan format manusia.
+     */
+    public function calculateLiveTravelEta(float $currentLat, float $currentLng, float $targetLat, float $targetLng): array
+    {
+        if ($currentLat == 0 || $currentLng == 0 || $targetLat == 0 || $targetLng == 0) {
+            return [
+                'distance_meters'          => 0,
+                'distance_km'              => 0.0,
+                'estimated_minutes'        => 0,
+                'formatted_distance'       => '--',
+                'formatted_eta'            => 'Menunggu GPS...',
+                'is_arrived'               => false,
+            ];
+        }
+
+        $distMeters = $this->calculateDistanceMeters($currentLat, $currentLng, $targetLat, $targetLng);
+        $distKm     = round($distMeters / 1000.0, 2);
+
+        // Jika sudah <= 50 meter, dianggap tiba
+        if ($distMeters <= 50.0) {
+            return [
+                'distance_meters'          => round($distMeters, 1),
+                'distance_km'              => $distKm,
+                'estimated_minutes'        => 0,
+                'formatted_distance'       => round($distMeters) . ' m',
+                'formatted_eta'            => 'Tiba di lokasi',
+                'is_arrived'               => true,
+            ];
+        }
+
+        // Estimasi durasi berkendara motor dengan kecepatan perkotaan
+        $durationMinutes = $this->getRouteDurationMinutes($distKm, 25.0, 2);
+
+        $formattedDistance = ($distKm < 1.0)
+            ? round($distMeters) . ' meter'
+            : number_format($distKm, 1, ',', '.') . ' KM';
+
+        $formattedEta = ($durationMinutes <= 2)
+            ? '< 2 Menit (Hampir Tiba)'
+            : "~{$durationMinutes} Menit";
+
+        return [
+            'distance_meters'          => round($distMeters, 1),
+            'distance_km'              => $distKm,
+            'estimated_minutes'        => $durationMinutes,
+            'formatted_distance'       => $formattedDistance,
+            'formatted_eta'            => $formattedEta,
+            'is_arrived'               => false,
+        ];
     }
 
     /**
@@ -232,6 +308,69 @@ class GeoService
             'total_distance_km'         => round($totalEstimatedDistance, 2),
             'route_source'              => $routeSource,
             'estimated_duration_minutes'=> $durationMinutes,
+        ];
+    }
+
+    /**
+     * Validasi Keamanan & Kelayakan Wilayah Titik Lokasi Peta (Restricted / Forbidden Zones Check).
+     * Memeriksa apakah koordinat:
+     * 1. Berada dalam batas teritori Indonesia (Latitude: -11.5 s/d 6.5, Longitude: 94.5 s/d 141.5).
+     * 2. Bukan berada di perairan terbuka / laut lepas / danau tanpa akses darat.
+     * 3. Bukan berada di zona militer tertutup atau kawasan bahaya terlarang.
+     */
+    public function validateLocationSafety(float $lat, float $lng, ?array $osmDetails = null): array
+    {
+        // 1. Validasi Bounding Box Teritori Indonesia
+        // Batas wilayah Indonesia: Lat: 6.5 N s/d -11.5 S, Lng: 94.5 E s/d 141.5 E
+        if ($lat > 6.5 || $lat < -11.5 || $lng < 94.5 || $lng > 141.5) {
+            return [
+                'is_safe' => false,
+                'reason'  => 'Titik lokasi berada di luar batas wilayah Republik Indonesia.',
+            ];
+        }
+
+        // 2. Validasi Klasifikasi OSM Data jika tersedia
+        if ($osmDetails) {
+            $category = strtolower($osmDetails['category'] ?? $osmDetails['class'] ?? '');
+            $type     = strtolower($osmDetails['type'] ?? '');
+            $country  = strtolower($osmDetails['address']['country_code'] ?? '');
+
+            if (!empty($country) && $country !== 'id') {
+                return [
+                    'is_safe' => false,
+                    'reason'  => 'Titik lokasi terdeteksi berada di luar wilayah Indonesia.',
+                ];
+            }
+
+            // Perairan terbuka / lautan / perairan bebas
+            $forbiddenWaterTypes = ['water', 'sea', 'ocean', 'bay', 'coastline', 'beach', 'strait', 'lake', 'riverbank'];
+            if ($category === 'natural' && in_array($type, $forbiddenWaterTypes, true)) {
+                return [
+                    'is_safe' => false,
+                    'reason'  => 'Titik lokasi terdeteksi berada di area perairan / lautan yang tidak dapat diakses rekan jasa.',
+                ];
+            }
+
+            if ($category === 'waterway' || $type === 'waterway') {
+                return [
+                    'is_safe' => false,
+                    'reason'  => 'Titik lokasi terdeteksi berada di perairan sungai / kanal.',
+                ];
+            }
+
+            // Zona militer khusus / zona bahaya
+            $forbiddenMilitaryTypes = ['military', 'barracks', 'danger_area', 'airfield', 'naval_base'];
+            if ($category === 'military' || in_array($type, $forbiddenMilitaryTypes, true)) {
+                return [
+                    'is_safe' => false,
+                    'reason'  => 'Titik lokasi terdeteksi berada di zona instalasi militer / area terbatas khusus.',
+                ];
+            }
+        }
+
+        return [
+            'is_safe' => true,
+            'reason'  => null,
         ];
     }
 }

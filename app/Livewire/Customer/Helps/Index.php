@@ -415,13 +415,8 @@ class Index extends Component
                         $sub->whereNotNull('expires_at')
                             ->where('expires_at', '<=', $now);
                     })
-                    ->orWhere(function ($sub) use ($now) {
-                        $sub->whereNotNull('scheduled_at')
-                            ->where('scheduled_at', '<=', $now);
-                    })
                     ->orWhere(function ($sub) use ($cutoff) {
                         $sub->whereNull('expires_at')
-                            ->whereNull('scheduled_at')
                             ->where('created_at', '<=', $cutoff);
                     });
                 })
@@ -430,8 +425,6 @@ class Index extends Component
             foreach ($expiredWaiting as $expHelp) {
                 if ($expHelp->expires_at && \Carbon\Carbon::parse($expHelp->expires_at)->isPast()) {
                     $reason = 'Batas waktu pencarian Rekan Jasa yang ditentukan telah berakhir';
-                } elseif ($expHelp->scheduled_at && \Carbon\Carbon::parse($expHelp->scheduled_at)->isPast()) {
-                    $reason = 'Waktu jadwal bantuan telah terlewat tanpa Rekan Jasa tersedia';
                 } else {
                     $reason = "Tidak ada Rekan Jasa yang mengambil bantuan dalam batas waktu {$hours} jam";
                 }

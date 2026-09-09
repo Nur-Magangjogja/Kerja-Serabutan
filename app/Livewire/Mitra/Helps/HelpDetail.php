@@ -23,7 +23,7 @@ class HelpDetail extends Component
     public $help;
     public $currentStatus;
 
-    // ─── Cancel modal (Revisi 3) ─────────────────────────────────────────────
+    // ─── Cancel modal & Clarification ─────────────────────────────────────────
     public $showPartnerCancelModal       = false;
     public $partnerCancelReason          = '';
     public $partnerCancelNotes           = '';
@@ -33,6 +33,11 @@ class HelpDetail extends Component
     public $work_completed_percentage    = 0;
     public $showPartnerCancelStatusModal = false;
     public $partnerCancelStatus          = null; // 'pending' | 'accepted' | 'rejected'
+
+    // Clarification on customer-requested cancel
+    public $showClarificationModal       = false;
+    public $partnerClarificationText     = '';
+    public $partnerClarificationPhoto    = null;
 
     // ─── Completion modal ────────────────────────────────────────────────────
     public $proof_photo;
@@ -262,8 +267,7 @@ class HelpDetail extends Component
         $this->openCompletionModal();
     }
 
-    // ─── Partner Cancel (Revisi 3: State-Aware Cancel Request) ───────────────
-
+    // ─── Partner Cancel (State-Aware Cancel Request with Photo & Audit) ──────
     public function openPartnerCancelModal()
     {
         $this->partnerCancelReason       = '';
@@ -278,23 +282,35 @@ class HelpDetail extends Component
     public function requestPartnerCancel()
     {
         $this->validate([
-            'partnerCancelReason' => 'required|string|min:5|max:255',
-            'partnerCancelNotes'  => 'nullable|string|max:1000',
+            'partnerCancelReason'   => 'required|string|min:5|max:255',
+            'partnerCancelNotes'    => 'nullable|string|max:1000',
+            'cancel_evidence_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
         ], [
-            'partnerCancelReason.required' => 'Pilih atau isi alasan pembatalan sepihak.',
+            'partnerCancelReason.required' => 'Pilih atau isi alasan pembatalan.',
             'partnerCancelReason.min'      => 'Alasan pembatalan minimal 5 karakter.',
+            'cancel_evidence_photo.image'  => 'Foto bukti harus berupa file gambar (JPG/PNG).',
+            'cancel_evidence_photo.max'    => 'Ukuran foto bukti maksimal 5MB.',
         ]);
 
         try {
-            app(\App\Services\HelpCancellationService::class)->cancelByPartnerUnilaterally(
+            $evidencePath = null;
+            if ($this->cancel_evidence_photo) {
+                $evidencePath = $this->cancel_evidence_photo->store('cancel_evidence', 'public');
+            }
+
+            app(\App\Services\HelpCancellationService::class)->submitPartnerCancelRequest(
                 $this->help,
                 auth()->user(),
                 $this->partnerCancelReason,
-                $this->partnerCancelNotes ?: null
+                $this->partnerCancelNotes ?: null,
+                $evidencePath,
+                (bool) $this->item_purchased,
+                (float) $this->item_purchase_amount,
+                (float) $this->work_completed_percentage
             );
 
             $this->showPartnerCancelModal = false;
-            session()->flash('message', 'Penugasan telah dibatalkan sepihak. Catatan pelanggaran telah ditambahkan ke akun Anda.');
+            session()->flash('message', 'Pengajuan pembatalan telah dikirim dan menunggu konfirmasi. Akun Anda telah dibebaskan untuk mencari order lain.');
             return redirect()->route('mitra.dashboard');
         } catch (\RuntimeException $e) {
             $this->showPartnerCancelModal = false;
@@ -303,6 +319,66 @@ class HelpDetail extends Component
             $this->showPartnerCancelModal = false;
             Log::error('[MitraHelpDetail] requestPartnerCancel error: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat membatalkan tugas: ' . $e->getMessage());
+        }
+    }
+
+    // ─── Clarification for Customer-Requested Cancel ─────────────────────────
+    public function openClarificationModal()
+    {
+        $this->partnerClarificationText  = '';
+        $this->partnerClarificationPhoto = null;
+        $this->showClarificationModal    = true;
+    }
+
+    public function closeClarificationModal()
+    {
+        $this->showClarificationModal    = false;
+        $this->partnerClarificationText  = '';
+        $this->partnerClarificationPhoto = null;
+    }
+
+    public function submitClarification()
+    {
+        $this->validate([
+            'partnerClarificationText'  => 'required|string|min:5|max:1000',
+            'partnerClarificationPhoto' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+        ], [
+            'partnerClarificationText.required' => 'Isi penjelasan klarifikasi/pengakuan Anda.',
+            'partnerClarificationText.min'      => 'Penjelasan minimal 5 karakter.',
+            'partnerClarificationPhoto.image'   => 'Foto bukti harus berupa gambar (JPG/PNG).',
+        ]);
+
+        try {
+            $pendingRequest = \App\Models\HelpCancelRequest::where('help_id', $this->help->id)
+                ->where('status', \App\Models\HelpCancelRequest::STATUS_PENDING)
+                ->where('requester_type', \App\Models\HelpCancelRequest::REQUESTER_CUSTOMER)
+                ->latest()
+                ->first();
+
+            if (!$pendingRequest) {
+                session()->flash('error', 'Tidak ditemukan tiket pengajuan pembatalan customer yang aktif.');
+                $this->showClarificationModal = false;
+                return;
+            }
+
+            $clarificationPhotoPath = null;
+            if ($this->partnerClarificationPhoto) {
+                $clarificationPhotoPath = $this->partnerClarificationPhoto->store('cancel_clarifications', 'public');
+            }
+
+            app(\App\Services\HelpCancellationService::class)->submitPartnerClarification(
+                $pendingRequest,
+                auth()->user(),
+                $this->partnerClarificationText,
+                $clarificationPhotoPath
+            );
+
+            $this->showClarificationModal = false;
+            $this->loadHelp();
+            session()->flash('message', 'Tanggapan / klarifikasi Anda telah berhasil dicatat untuk ditinjau oleh Admin Wilayah.');
+        } catch (\Throwable $e) {
+            Log::error('[MitraHelpDetail] submitClarification error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat mengirim klarifikasi: ' . $e->getMessage());
         }
     }
 

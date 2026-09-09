@@ -477,6 +477,14 @@ class PartnerOnlineService
         });
     }
 
+    /**
+     * Alias untuk melepaskan mitra saat bantuan dibatalkan.
+     */
+    public function releaseFromCancelledHelp(int $mitraId, int $helpId): void
+    {
+        $this->releaseBusy($mitraId, $helpId);
+    }
+
     // ═════════════════════════════════════════════════════════════════════════
     // HOUSEKEEPING & CRON
     // ═════════════════════════════════════════════════════════════════════════

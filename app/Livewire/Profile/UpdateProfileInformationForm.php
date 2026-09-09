@@ -20,6 +20,13 @@ class UpdateProfileInformationForm extends Component
     public $kecamatan;
     public array $districtsList = [];
 
+    // Saved Landmarks / Patokan Tempat
+    public array $savedLandmarks = [];
+    public string $newLandmarkLabel = '';
+    public string $newLandmarkPatokan = '';
+    public ?string $editingLandmarkId = null;
+    public bool $showLandmarkForm = false;
+
     protected $rules = [
         'name' => ['required', 'string', 'max:255'],
         'email' => ['required', 'email', 'max:255'],
@@ -54,6 +61,7 @@ class UpdateProfileInformationForm extends Component
         $this->city = $user->city;
         $this->province = $user->province;
         $this->kecamatan = $user->kecamatan ?? $user->district?->name;
+        $this->savedLandmarks = $user->getSavedLandmarksList();
 
         if ($this->city_id) {
             $cityRec = \App\Models\City::find($this->city_id);
@@ -187,6 +195,73 @@ class UpdateProfileInformationForm extends Component
         ]);
 
         session()->flash('message', 'Profil Anda berhasil diperbarui!');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SAVED LANDMARKS (Patokan Tempat / Ciri Rumah)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function openNewLandmarkForm()
+    {
+        $this->editingLandmarkId = null;
+        $this->newLandmarkLabel = '';
+        $this->newLandmarkPatokan = '';
+        $this->showLandmarkForm = true;
+    }
+
+    public function editLandmark($id)
+    {
+        $this->editingLandmarkId = $id;
+        foreach ($this->savedLandmarks as $lm) {
+            if (($lm['id'] ?? '') === $id) {
+                $this->newLandmarkLabel = $lm['label'] ?? '';
+                $this->newLandmarkPatokan = $lm['patokan'] ?? '';
+                break;
+            }
+        }
+        $this->showLandmarkForm = true;
+    }
+
+    public function cancelLandmarkForm()
+    {
+        $this->editingLandmarkId = null;
+        $this->newLandmarkLabel = '';
+        $this->newLandmarkPatokan = '';
+        $this->showLandmarkForm = false;
+    }
+
+    public function saveLandmark()
+    {
+        $this->validate([
+            'newLandmarkLabel' => ['required', 'string', 'max:50'],
+            'newLandmarkPatokan' => ['required', 'string', 'max:500'],
+        ], [
+            'newLandmarkLabel.required' => 'Nama/Label patokan wajib diisi (contoh: Rumah / Kost).',
+            'newLandmarkPatokan.required' => 'Detail patokan / ciri rumah wajib diisi.',
+        ]);
+
+        $user = Auth::user();
+        if ($this->editingLandmarkId) {
+            $user->updateSavedLandmark($this->editingLandmarkId, $this->newLandmarkLabel, $this->newLandmarkPatokan);
+            session()->flash('landmark_message', 'Patokan tempat berhasil diperbarui!');
+        } else {
+            $user->addSavedLandmark($this->newLandmarkLabel, $this->newLandmarkPatokan);
+            session()->flash('landmark_message', 'Patokan tempat baru berhasil disimpan!');
+        }
+
+        $this->savedLandmarks = $user->getSavedLandmarksList();
+        $this->cancelLandmarkForm();
+    }
+
+    public function deleteLandmark($id)
+    {
+        $user = Auth::user();
+        $user->deleteSavedLandmark($id);
+        $this->savedLandmarks = $user->getSavedLandmarksList();
+        if ($this->editingLandmarkId === $id) {
+            $this->cancelLandmarkForm();
+        }
+        session()->flash('landmark_message', 'Patokan tempat berhasil dihapus.');
     }
 
     public function render()

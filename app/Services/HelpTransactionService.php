@@ -136,10 +136,6 @@ class HelpTransactionService
                 throw new \RuntimeException('Anda tidak dapat mengambil bantuan ini karena sebelumnya telah Anda batalkan.');
             }
 
-            if ($lockedHelp->scheduled_at && \Illuminate\Support\Carbon::parse($lockedHelp->scheduled_at)->isFuture()) {
-                throw new \RuntimeException('Bantuan ini dijadwalkan untuk waktu yang akan datang dan belum dapat diambil saat ini.');
-            }
-
             // STEP 2 (Tier 2): Lock & selesaikan HelpDispatch aktif untuk mitra ini (jika ada pending offer)
             $staleDispatches = \App\Models\HelpDispatch::where('mitra_id', $mitra->id)
                 ->where('status', \App\Models\HelpDispatch::STATUS_OFFERED)

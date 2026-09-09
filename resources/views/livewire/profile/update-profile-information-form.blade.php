@@ -198,8 +198,103 @@
             </div>
         @endif
 
+        <!-- Section: Patokan Tempat / Ciri Rumah Tersimpan -->
+        <div class="p-4 bg-gray-50/80 dark:bg-gray-800/60 rounded-2xl border border-gray-200/80 dark:border-gray-700/80 space-y-3.5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs">
+                        🏠
+                    </div>
+                    <div>
+                        <h3 class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">Patokan Tempat / Ciri Rumah</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Tersedia untuk dipilih otomatis saat membuat bantuan</p>
+                    </div>
+                </div>
+                @if(!$showLandmarkForm)
+                    <button type="button" wire:click="openNewLandmarkForm" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800/60 border border-blue-200 dark:border-blue-800 transition active:scale-95 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                        Tambah
+                    </button>
+                @endif
+            </div>
 
-        <!-- Tombol Simpan -->
+            @if(session()->has('landmark_message'))
+                <div class="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                    <svg class="w-4 h-4 flex-shrink-0 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                    <span>{{ session('landmark_message') }}</span>
+                </div>
+            @endif
+
+            <!-- Form Tambah / Edit Patokan -->
+            @if($showLandmarkForm)
+                <div class="p-3.5 bg-white dark:bg-gray-800 rounded-xl border border-blue-200 dark:border-blue-800 space-y-3 shadow-xs animate-in fade-in">
+                    <div class="flex items-center justify-between text-xs font-bold text-gray-800 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2">
+                        <span>{{ $editingLandmarkId ? '✏️ Edit Patokan Tempat' : '➕ Tambah Patokan Tempat Baru' }}</span>
+                        <button type="button" wire:click="cancelLandmarkForm" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs">✕ Batal</button>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            Nama / Label Tempat <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" wire:model="newLandmarkLabel" placeholder="Contoh: Rumah Utama, Kost Melati, Kantor, Toko"
+                            class="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        @error('newLandmarkLabel')
+                            <p class="text-[10px] text-red-500 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            Detail Patokan / Ciri Rumah <span class="text-red-500">*</span>
+                        </label>
+                        <textarea wire:model="newLandmarkPatokan" rows="2" placeholder="Contoh: Pagar hitam nomor 12 samping warung Madura, ada pohon mangga di depan"
+                            class="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none"></textarea>
+                        @error('newLandmarkPatokan')
+                            <p class="text-[10px] text-red-500 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div class="flex items-center justify-end gap-2 pt-1">
+                        <button type="button" wire:click="cancelLandmarkForm" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-pointer">
+                            Batal
+                        </button>
+                        <button type="button" wire:click="saveLandmark" class="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition active:scale-95 cursor-pointer shadow-xs">
+                            {{ $editingLandmarkId ? 'Simpan Perubahan' : 'Simpan Patokan' }}
+                        </button>
+                    </div>
+                </div>
+            @endif
+
+            <!-- List Patokan Tersimpan -->
+            @if(!empty($savedLandmarks))
+                <div class="space-y-2">
+                    @foreach($savedLandmarks as $landmark)
+                        <div class="p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200/80 dark:border-gray-700 flex items-start justify-between gap-3 text-xs shadow-2xs group">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-1.5 font-bold text-gray-900 dark:text-white">
+                                    <span class="text-sm">📍</span>
+                                    <span>{{ $landmark['label'] ?? 'Patokan' }}</span>
+                                </div>
+                                <p class="text-[11px] text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">{{ $landmark['patokan'] ?? '-' }}</p>
+                            </div>
+                            <div class="flex items-center gap-1 flex-shrink-0">
+                                <button type="button" wire:click="editLandmark('{{ $landmark['id'] ?? '' }}')" class="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition cursor-pointer" title="Edit">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </button>
+                                <button type="button" wire:click="deleteLandmark('{{ $landmark['id'] ?? '' }}')" wire:confirm="Hapus patokan ini dari profil?" class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition cursor-pointer" title="Hapus">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                @if(!$showLandmarkForm)
+                    <div class="p-3 bg-white/60 dark:bg-gray-800/40 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-center text-xs text-gray-400">
+                        Belum ada patokan tersimpan. Klik <strong>+ Tambah</strong> untuk menyimpan patokan rumah/tempat favorit Anda.
+                    </div>
+                @endif
+            @endif
+        </div>
+
         <div class="pt-3">
             <button type="submit" wire:loading.attr="disabled"
                 class="w-full text-white font-bold text-xs sm:text-sm py-3.5 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-gradient-to-r from-[#0098e7] via-[#0077cc] to-[#0060b0] hover:brightness-105">
