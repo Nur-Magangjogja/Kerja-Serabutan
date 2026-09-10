@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AppSetting;
 use App\Models\Help;
 use App\Models\HelpCancelRequest;
 use App\Models\User;
@@ -23,6 +24,292 @@ class HelpCancellationService
         $this->escrowService     = $escrowService;
         $this->onlineService     = $onlineService;
         $this->disciplineService = $disciplineService;
+    }
+
+    /**
+     * Membatalkan pesanan langsung saat masih dalam status MENUNGGU_MITRA (belum diambil mitra manapun).
+     * Berlaku untuk semua jenis layanan: 100% total bayar dikembalikan ke saldo customer.
+     */
+    public function cancelOrderBeforePartnerTaken(Help $help, User $customer, string $reason = 'Dibatalkan oleh customer sebelum diambil mitra'): void
+    {
+        DB::transaction(function () use ($help, $customer, $reason) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
+
+            if ($lockedHelp->user_id !== $customer->id) {
+                throw new \RuntimeException('Hanya customer pemilik pesanan yang dapat membatalkan pesanan.');
+            }
+
+            if ($lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA && !empty($lockedHelp->mitra_id)) {
+                throw new \RuntimeException('Pesanan sudah diambil mitra dan tidak dapat dibatalkan langsung tanpa pengajuan.');
+            }
+
+            $totalPaid = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
+
+            if ($totalPaid > 0) {
+                $this->escrowService->refundFromEscrowDirect($lockedHelp, $customer, $totalPaid, 'Pembatalan Sebelum Ada Mitra');
+            }
+
+            $lockedHelp->update([
+                'status'         => Help::STATUS_DIBATALKAN,
+                'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
+                'escrow_status'  => Help::ESCROW_STATUS_REFUNDED,
+                'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
+                'admin_notes'    => "Dibatalkan langsung oleh Customer sebelum diambil mitra. Alasan: {$reason}",
+            ]);
+
+            Log::info("[HelpCancellationService] Help #{$lockedHelp->id} cancelled before partner assigned by Customer #{$customer->id}.");
+        });
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // KHUSUS LAYANAN ANTAR / JEMPUT (PICKUP & DELIVERY)
+    // SISTEM PEMBATALAN BERBASIS TAHAPAN PERJALANAN (ANTI-BYPASS LOCK)
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Hitung kalkulasi kompensasi mitra dan refund customer untuk pembatalan pickup_delivery.
+     * Mengembalikan [
+     *    'stage' => string,
+     *    'allowed' => bool,
+     *    'partner_compensation' => float,
+     *    'customer_refund' => float,
+     *    'reason' => string
+     * ]
+     */
+    public function calculatePickupDeliveryCancellationSplit(Help $help): array
+    {
+        $serviceFee = (float) ($help->service_fee > 0 ? $help->service_fee : $help->amount);
+        $platformFee = (float) $help->getPlatformFee();
+        $totalPaid = (float) ($help->total_amount > 0 ? $help->total_amount : ($serviceFee + $platformFee));
+
+        // 1. Sebelum mitra mengambil pesanan (Status MENUNGGU_MITRA)
+        if ($help->status === Help::STATUS_MENUNGGU_MITRA || (empty($help->mitra_id) && empty($help->assigned_to))) {
+            return [
+                'phase'                => 1,
+                'stage'                => 'unassigned',
+                'allowed'              => true,
+                'partner_compensation' => 0.0,
+                'customer_refund'      => $totalPaid,
+                'reason'               => 'Pembatalan sebelum mitra mengambil pesanan (100% refund).',
+            ];
+        }
+
+        // 2. Pesanan sudah diambil mitra tapi mitra belum mulai bergerak (Status TAKEN & partner_started_moving_at null)
+        if ($help->status === Help::STATUS_TAKEN && empty($help->partner_started_moving_at) && empty($help->service_stage)) {
+            return [
+                'phase'                => 1,
+                'stage'                => 'taken_not_moving',
+                'allowed'              => true,
+                'partner_compensation' => 0.0,
+                'customer_refund'      => $totalPaid, // 100% Total Paid ke customer jika mitra belum bergerak
+                'reason'               => 'Pembatalan sebelum mitra mulai bergerak menuju titik jemput.',
+            ];
+        }
+
+        // 3. Mitra dalam perjalanan ke titik jemput (STAGE_GOING_TO_PICKUP atau STATUS_PARTNER_ON_THE_WAY sebelum arrived)
+        if ($help->service_stage === Help::STAGE_GOING_TO_PICKUP || ($help->status === Help::STATUS_PARTNER_ON_THE_WAY && empty($help->service_stage))) {
+            $travelKm = (float) ($help->travel_distance_km ?: 1.0);
+            if ($help->partner_initial_lat && $help->partner_initial_lng && $help->partner_current_lat && $help->partner_current_lng) {
+                $geo = app(GeoService::class);
+                $meters = $geo->calculateDistance(
+                    (float) $help->partner_initial_lat,
+                    (float) $help->partner_initial_lng,
+                    (float) $help->partner_current_lat,
+                    (float) $help->partner_current_lng
+                );
+                $travelKm = max(1.0, ceil($meters / 1000.0));
+            } else {
+                $travelKm = max(1.0, ceil($travelKm));
+            }
+
+            $baseFare  = AppSetting::getPickupDeliveryCancellationBaseFare(); // Default Rp 10.000
+            $ratePerKm = AppSetting::getPickupDeliveryCancellationRatePerKm(); // Default Rp 2.500
+            $rawComp   = $baseFare + ($travelKm * $ratePerKm);
+
+            // Safety Cap: Kompensasi tidak boleh melebihi Service Fare
+            $partnerCompensation = min($serviceFee, $rawComp);
+            $customerRefund      = max(0.0, $serviceFee - $partnerCompensation);
+
+            return [
+                'phase'                => 2,
+                'stage'                => Help::STAGE_GOING_TO_PICKUP,
+                'allowed'              => true,
+                'travel_km'            => $travelKm,
+                'partner_compensation' => $partnerCompensation,
+                'customer_refund'      => $customerRefund,
+                'reason'               => "Kompensasi pembatalan: Tarif Dasar (Rp " . number_format($baseFare, 0, ',', '.') . ") + Perjalanan ({$travelKm} KM x Rp " . number_format($ratePerKm, 0, ',', '.') . ").",
+            ];
+        }
+
+        // 4. Mitra sudah tiba di titik jemput / menunggu customer (STAGE_AT_PICKUP / STAGE_WAITING_FOR_CUSTOMER / STATUS_PARTNER_ARRIVED)
+        if (in_array($help->service_stage, [Help::STAGE_AT_PICKUP, Help::STAGE_WAITING_FOR_CUSTOMER], true) ||
+            ($help->status === Help::STATUS_PARTNER_ARRIVED && empty($help->service_stage))) {
+
+            $travelKm = (float) ($help->travel_distance_km ?: 1.0);
+            if ($help->partner_initial_lat && $help->partner_initial_lng && $help->partner_current_lat && $help->partner_current_lng) {
+                $geo = app(GeoService::class);
+                $meters = $geo->calculateDistance(
+                    (float) $help->partner_initial_lat,
+                    (float) $help->partner_initial_lng,
+                    (float) $help->partner_current_lat,
+                    (float) $help->partner_current_lng
+                );
+                $travelKm = max(1.0, ceil($meters / 1000.0));
+            } else {
+                $travelKm = max(1.0, ceil($travelKm));
+            }
+
+            // Saat tiba di titik penjemputan: 100% Service Fare dialokasikan ke mitra
+            $partnerCompensation = $serviceFee;
+            $customerRefund      = 0.0;
+
+            return [
+                'phase'                => 3,
+                'stage'                => Help::STAGE_AT_PICKUP,
+                'allowed'              => true,
+                'travel_km'            => $travelKm,
+                'partner_compensation' => $partnerCompensation,
+                'customer_refund'      => $customerRefund,
+                'reason'               => "Mitra telah tiba di lokasi penjemputan (100% ongkos layanan dialokasikan ke mitra).",
+            ];
+        }
+
+        // 5. Tahap Lanjut (ITEM_COLLECTED, GOING_TO_DESTINATION, FINAL_APPROACH, AT_DESTINATION)
+        // Tombol pembatalan otomatis dinonaktifkan (Anti-Bypass Lock)
+        return [
+            'phase'                => in_array($help->service_stage, [Help::STAGE_GOING_TO_DESTINATION, Help::STAGE_FINAL_APPROACH, Help::STAGE_AT_DESTINATION], true) ? 5 : 4,
+            'stage'                => $help->service_stage ?: $help->status,
+            'allowed'              => false,
+            'partner_compensation' => $serviceFee,
+            'customer_refund'      => 0.0,
+            'reason'               => 'Pembatalan otomatis terkunci karena barang telah diambil / dalam proses pengantaran.',
+        ];
+    }
+
+    /**
+     * Customer membatalkan pesanan Antar/Jemput (pickup_delivery) dengan kalkulasi kompensasi tahapan.
+     */
+    public function cancelPickupDeliveryByCustomer(Help $help, User $customer, string $reason): void
+    {
+        DB::transaction(function () use ($help, $customer, $reason) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
+
+            if ($lockedHelp->user_id !== $customer->id) {
+                throw new \RuntimeException('Hanya pemesan (Customer) yang dapat membatalkan pesanan ini.');
+            }
+
+            if (!$lockedHelp->isPickup()) {
+                throw new \RuntimeException('Metode ini khusus untuk layanan antar/jemput (pickup_delivery).');
+            }
+
+            if (in_array($lockedHelp->status, [Help::STATUS_SELESAI, 'completed', Help::STATUS_DIBATALKAN, 'cancelled'])) {
+                throw new \RuntimeException('Pesanan ini sudah selesai atau telah dibatalkan.');
+            }
+
+            $split = $this->calculatePickupDeliveryCancellationSplit($lockedHelp);
+
+            if (!$split['allowed']) {
+                throw new \RuntimeException('Pembatalan otomatis terkunci karena pengantaran fisik barang telah dimulai. Silakan hubungi Bantuan CS / Admin Wilayah.');
+            }
+
+            $partnerCompensation = (float) $split['partner_compensation'];
+            $customerRefund      = (float) $split['customer_refund'];
+            $partner             = $lockedHelp->mitra;
+
+            // Eksekusi pengembalian dana & kompensasi mitra
+            if ($customerRefund > 0) {
+                $this->escrowService->refundFromEscrowDirect($lockedHelp, $customer, $customerRefund, 'Refund Pembatalan Antar/Jemput');
+            }
+
+            if ($partnerCompensation > 0 && $partner) {
+                $this->escrowService->payoutPartialFromEscrowDirect($lockedHelp, $partner, $partnerCompensation, 'Kompensasi Pembatalan Antar/Jemput');
+            }
+
+            $escrowFinalStatus = ($customerRefund > 0 && $partnerCompensation > 0)
+                ? Help::ESCROW_STATUS_PARTIAL_REFUND
+                : ($customerRefund > 0 ? Help::ESCROW_STATUS_REFUNDED : Help::ESCROW_STATUS_RELEASED);
+
+            $lockedHelp->update([
+                'status'         => Help::STATUS_DIBATALKAN,
+                'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
+                'escrow_status'  => $escrowFinalStatus,
+                'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
+                'admin_notes'    => "Dibatalkan oleh Customer pada tahap {$split['stage']}. {$split['reason']} Refund Customer: Rp " . number_format($customerRefund, 0, ',', '.') . ", Kompensasi Mitra: Rp " . number_format($partnerCompensation, 0, ',', '.'),
+            ]);
+
+            if ($lockedHelp->mitra_id) {
+                $this->onlineService->releaseBusy($lockedHelp->mitra_id, $lockedHelp->id);
+            }
+
+            if ($partner) {
+                try {
+                    $partner->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        "Pesanan antar/jemput #{$lockedHelp->id} dibatalkan customer. Anda menerima kompensasi: Rp " . number_format($partnerCompensation, 0, ',', '.')
+                    ));
+                } catch (\Throwable $e) {
+                    Log::warning("[HelpCancellationService] Failed notifying partner: " . $e->getMessage());
+                }
+            }
+
+            Log::info("[HelpCancellationService] Pickup Delivery #{$lockedHelp->id} cancelled by Customer #{$customer->id}. Compensation: Rp {$partnerCompensation}, Refund: Rp {$customerRefund}.");
+        });
+    }
+
+    /**
+     * Mitra memicu Customer No-Show untuk layanan Antar/Jemput (pickup_delivery)
+     * setelah tiba di titik jemput dan menunggu minimal 10 menit tanpa respon.
+     * Mengakibatkan 100% ongkos antar diteruskan ke mitra.
+     */
+    public function triggerCustomerNoShow(Help $help, User $partner, ?string $notes = null, ?string $photo = null): void
+    {
+        DB::transaction(function () use ($help, $partner, $notes, $photo) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
+
+            if ($lockedHelp->mitra_id !== $partner->id) {
+                throw new \RuntimeException('Hanya mitra yang ditugaskan pada pesanan ini yang dapat memicu Customer No-Show.');
+            }
+
+            if (!$lockedHelp->isPickup()) {
+                throw new \RuntimeException('Customer No-Show khusus untuk layanan antar/jemput (pickup_delivery).');
+            }
+
+            if (!$lockedHelp->canPartnerTriggerNoShow()) {
+                $waitMinutes = AppSetting::getPickupDeliveryNoShowWaitMinutes();
+                throw new \RuntimeException("Customer No-Show hanya dapat dipicu setelah menunggu minimal {$waitMinutes} menit di titik penjemputan.");
+            }
+
+            $serviceFee = (float) ($lockedHelp->service_fee > 0 ? $lockedHelp->service_fee : $lockedHelp->amount);
+
+            // 100% Service Fee ke Mitra
+            if ($serviceFee > 0) {
+                $this->escrowService->payoutPartialFromEscrowDirect($lockedHelp, $partner, $serviceFee, 'Kompensasi Customer No-Show Antar/Jemput (100% Ongkos Antar)');
+            }
+
+            $lockedHelp->update([
+                'status'                => Help::STATUS_DIBATALKAN,
+                'dispatch_mode'         => Help::DISPATCH_MODE_CLOSED,
+                'escrow_status'         => Help::ESCROW_STATUS_RELEASED,
+                'payment_status'        => Help::PAYMENT_STATUS_PAID,
+                'cancel_evidence_photo' => $photo,
+                'admin_notes'           => "Customer No-Show dipicu oleh Mitra #{$partner->id} ({$partner->name}) setelah masa tunggu 10 menit terlewati. 100% ongkos antar (Rp " . number_format($serviceFee, 0, ',', '.') . ") diteruskan ke saldo mitra.",
+            ]);
+
+            $this->onlineService->releaseBusy($partner->id, $lockedHelp->id);
+
+            if ($lockedHelp->user) {
+                try {
+                    $lockedHelp->user->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        "Pesanan #{$lockedHelp->id} dibatalkan karena Anda tidak hadir/merespons di titik penjemputan lebih dari 10 menit. Ongkos antar telah diteruskan ke mitra."
+                    ));
+                } catch (\Throwable $e) {
+                    Log::warning("[HelpCancellationService] Failed notifying customer of no-show: " . $e->getMessage());
+                }
+            }
+
+            Log::info("[HelpCancellationService] Customer No-Show triggered by Partner #{$partner->id} on Help #{$lockedHelp->id}.");
+        });
     }
 
     /**

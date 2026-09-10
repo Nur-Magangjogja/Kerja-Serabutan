@@ -67,7 +67,7 @@
                             <span>⏱️</span>
                             <span>Estimasi: <strong>~{{ $estTravelMin }} Menit</strong></span>
                         </div>
-                        <span class="font-bold text-emerald-800 dark:text-emerald-200">Rp {{ number_format(max(10000, ceil((float)$route_distance_km) * 2000), 0, ',', '.') }}</span>
+                        <span class="font-bold text-emerald-800 dark:text-emerald-200">Rp {{ number_format(app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float)$route_distance_km), 0, ',', '.') }}</span>
                     </div>
                 @endif
                 @error('delivery_address')

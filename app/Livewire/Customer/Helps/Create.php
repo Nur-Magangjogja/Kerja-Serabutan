@@ -185,8 +185,8 @@ class Create extends Component
     public function adjustAmount(int $delta): void
     {
         $min = (int) ($this->minHelpNominal ?: AppSetting::get('min_help_nominal', 10000));
-        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY && $this->route_distance_km > 0) {
-            $min = (int) (max(1, ceil($this->route_distance_km)) * 2000);
+        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+            $min = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
         }
         $current = (int) ($this->amount ?: 0);
         $new = max($min, min(100000000, $current + $delta));
@@ -199,8 +199,8 @@ class Create extends Component
     public function setPresetAmount(int $value): void
     {
         $min = (int) ($this->minHelpNominal ?: AppSetting::get('min_help_nominal', 10000));
-        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY && $this->route_distance_km > 0) {
-            $min = (int) (max(1, ceil($this->route_distance_km)) * 2000);
+        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+            $min = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
         }
         $this->amount = max($min, min(100000000, $value));
     }
@@ -752,7 +752,7 @@ class Create extends Component
 
             $this->resetErrorBag(['location', 'latitude', 'longitude', 'amount']);
 
-            $calcFee = $this->route_distance_km > 0 ? (int) max(10000, ceil($this->route_distance_km) * 2000) : 10000;
+            $calcFee = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
             $this->minHelpNominal = $calcFee;
             $this->amount = $calcFee;
             $this->calculateRouteDistance();
@@ -870,7 +870,7 @@ class Create extends Component
 
         if ($distanceKm > 0) {
             $this->route_distance_km = round($distanceKm, 2);
-            $calcFee = (int) max(10000, ceil($this->route_distance_km) * 2000);
+            $calcFee = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
             $this->amount = $calcFee;
             $this->minHelpNominal = $calcFee;
         }
@@ -944,7 +944,9 @@ class Create extends Component
             $this->longitude = $this->pickup_longitude;
             $this->location  = $this->pickup_address;
 
-            $this->calculateRouteDistance();
+            if ($this->route_distance_km <= 0) {
+                $this->calculateRouteDistance();
+            }
 
             $this->rules = [
                 'title'              => 'required|string|max:255',
@@ -1029,6 +1031,8 @@ class Create extends Component
             'service_category'              => $this->service_category ?: 'general',
             'service_duration_hours'        => (float) ($this->service_duration_hours ?: 1.0),
             'amount'                        => (float) ($this->amount ?: 0),
+            'service_route_distance_km'     => (float) ($this->route_distance_km ?: 0),
+            'route_distance_km'             => (float) ($this->route_distance_km ?: 0),
             'material_fee'                  => 0,
             'item_fund'                     => 0,
             'item_fund_mode'                => $this->item_fund_mode,
@@ -1218,6 +1222,8 @@ class Create extends Component
             'service_category'              => $this->service_category ?: 'general',
             'service_duration_hours'        => (float) ($this->service_duration_hours ?: 1.0),
             'amount'                        => (float) ($this->amount ?: 0),
+            'service_route_distance_km'     => (float) ($this->route_distance_km ?: 0),
+            'route_distance_km'             => (float) ($this->route_distance_km ?: 0),
             'material_fee'                  => 0,
             'item_fund'                     => 0,
             'item_fund_mode'                => $this->item_fund_mode,
@@ -1444,7 +1450,7 @@ class Create extends Component
     public function render()
     {
         if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
-            $this->minHelpNominal = $this->route_distance_km > 0 ? (int) max(10000, ceil($this->route_distance_km) * 2000) : 10000;
+            $this->minHelpNominal = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
         } else {
             $this->minHelpNominal = (int) AppSetting::get('min_help_nominal', 10000);
         }

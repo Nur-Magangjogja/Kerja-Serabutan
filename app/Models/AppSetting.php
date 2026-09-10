@@ -396,5 +396,59 @@ class AppSetting extends Model
     {
         return (bool) static::get('adjacent_district_matching_enabled', true);
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TAHAP 6: PICKUP & DELIVERY PRICING & CANCELLATION CONFIGURATION
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public static function getPickupDeliveryMinimumFare(): float
+    {
+        return (float) static::get('pickup_delivery.minimum_fare', 10000.0);
+    }
+
+    public static function getPickupDeliveryPricePerKm(): float
+    {
+        return (float) static::get('pickup_delivery.price_per_km', 2500.0);
+    }
+
+    public static function getPickupDeliveryLongDistanceThresholdKm(): float
+    {
+        return (float) static::get('pickup_delivery.long_distance_threshold', 20.0);
+    }
+
+    public static function getPickupDeliveryLongDistancePricePerKm(): float
+    {
+        return (float) static::get('pickup_delivery.long_distance_price_per_km', 2750.0);
+    }
+
+    public static function getPickupDeliveryCancellationBaseFare(): float
+    {
+        return (float) static::get('pickup_delivery.cancellation.base_fare', 10000.0);
+    }
+
+    public static function getPickupDeliveryCancellationRatePerKm(): float
+    {
+        return (float) static::get('pickup_delivery.cancellation.rate_per_km', 2500.0);
+    }
+
+    public static function getPickupDeliveryCancellationMinimumAtPickup(): float
+    {
+        return (float) static::get('pickup_delivery.cancellation.minimum_at_pickup', 15000.0);
+    }
+
+    public static function getPickupDeliveryNoShowWaitMinutes(): int
+    {
+        return (int) static::get('pickup_delivery.cancellation.no_show_wait_minutes', 10);
+    }
+
+    public static function getPickupDeliveryFinalApproachProgress(): float
+    {
+        return (float) static::get('pickup_delivery.cancellation.final_approach_progress', 80.0);
+    }
+
+    public static function getPickupDeliveryFinalApproachEtaMinutes(): int
+    {
+        return (int) static::get('pickup_delivery.cancellation.final_approach_eta_minutes', 10);
+    }
 }
 

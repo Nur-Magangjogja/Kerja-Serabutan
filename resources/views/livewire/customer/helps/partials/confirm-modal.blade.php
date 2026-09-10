@@ -56,7 +56,7 @@
                                 @endphp
                                 <div class="flex items-center justify-between text-[11px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/50 px-2.5 py-1.5 rounded-lg mt-1 border border-blue-100 dark:border-blue-900/40 flex-wrap gap-1">
                                     <span>🛣️ Rute: <strong>{{ number_format((float)$route_distance_km, 1, ',', '.') }} KM</strong> (±{{ $estTravelMin }} mnt)</span>
-                                    <span>{{ (float)$route_distance_km <= 5 ? 'Tarif Min. Rp 10.000 (≤ 5 KM)' : '@ Rp 2.000 / KM' }}</span>
+                                    <span>{{ (float)$route_distance_km <= 4 ? 'Tarif Dasar Rp 10.000 (≤ 4 KM)' : ((float)$route_distance_km <= 20 ? '@ Rp 2.500 / KM' : 'Tarif Jarak Jauh (> 20 KM)') }}</span>
                                 </div>
                             @endif
                         </div>

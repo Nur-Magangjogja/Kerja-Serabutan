@@ -19,8 +19,10 @@ class Help extends Model
     // Sub-stages for Pickup & Delivery
     public const STAGE_GOING_TO_PICKUP          = 'going_to_pickup';
     public const STAGE_AT_PICKUP                = 'at_pickup';
+    public const STAGE_WAITING_FOR_CUSTOMER     = 'waiting_for_customer';
     public const STAGE_ITEM_COLLECTED           = 'item_collected';
     public const STAGE_GOING_TO_DESTINATION     = 'going_to_destination';
+    public const STAGE_FINAL_APPROACH           = 'final_approach';
     public const STAGE_AT_DESTINATION           = 'at_destination';
 
     // Sub-stages for Buy for Customer
@@ -722,8 +724,10 @@ class Help extends Model
         return match($this->service_stage) {
             self::STAGE_GOING_TO_PICKUP      => 'Menuju Lokasi Pengambilan',
             self::STAGE_AT_PICKUP            => 'Tiba di Lokasi Pengambilan',
+            self::STAGE_WAITING_FOR_CUSTOMER => 'Menunggu Customer di Titik Jemput',
             self::STAGE_ITEM_COLLECTED       => 'Barang Telah Diambil',
             self::STAGE_GOING_TO_DESTINATION => 'Mengantar ke Tujuan',
+            self::STAGE_FINAL_APPROACH       => 'Mendekati Tujuan (Tahap Akhir)',
             self::STAGE_AT_DESTINATION       => 'Tiba di Lokasi Tujuan',
             self::STAGE_GOING_TO_STORE       => 'Menuju Toko / Tempat Belanja',
             self::STAGE_AT_STORE             => 'Tiba di Toko / Tempat Belanja',
@@ -780,11 +784,11 @@ class Help extends Model
 
         if ($this->isPickup()) {
             return match($this->service_stage) {
-                self::STAGE_GOING_TO_PICKUP      => 2,
-                self::STAGE_AT_PICKUP            => 3,
-                self::STAGE_ITEM_COLLECTED, self::STAGE_GOING_TO_DESTINATION => 3,
-                self::STAGE_AT_DESTINATION       => 4,
-                default                          => $this->status === self::STATUS_WAITING_CONFIRMATION ? 4 : ($this->isDone() ? 5 : 3),
+                self::STAGE_GOING_TO_PICKUP                                                => 2,
+                self::STAGE_AT_PICKUP, self::STAGE_WAITING_FOR_CUSTOMER                    => 3,
+                self::STAGE_ITEM_COLLECTED, self::STAGE_GOING_TO_DESTINATION, self::STAGE_FINAL_APPROACH => 3,
+                self::STAGE_AT_DESTINATION                                                 => 4,
+                default                                                                    => $this->status === self::STATUS_WAITING_CONFIRMATION ? 4 : ($this->isDone() ? 5 : 3),
             };
         }
 
@@ -827,9 +831,11 @@ class Help extends Model
             return match($this->service_stage) {
                 self::STAGE_GOING_TO_PICKUP      => 30,
                 self::STAGE_AT_PICKUP            => 45,
+                self::STAGE_WAITING_FOR_CUSTOMER => 50,
                 self::STAGE_ITEM_COLLECTED       => 60,
                 self::STAGE_GOING_TO_DESTINATION => 75,
-                self::STAGE_AT_DESTINATION       => 85,
+                self::STAGE_FINAL_APPROACH       => 85,
+                self::STAGE_AT_DESTINATION       => 90,
                 default                          => 40,
             };
         }
@@ -886,13 +892,13 @@ class Help extends Model
                     'key'    => 'at_pickup',
                     'title'  => 'Ambil Barang',
                     'icon'   => '📦',
-                    'active' => in_array($stage, [self::STAGE_AT_PICKUP, self::STAGE_ITEM_COLLECTED]) || ($status === self::STATUS_PARTNER_ARRIVED && !$stage),
+                    'active' => in_array($stage, [self::STAGE_AT_PICKUP, self::STAGE_WAITING_FOR_CUSTOMER, self::STAGE_ITEM_COLLECTED]) || ($status === self::STATUS_PARTNER_ARRIVED && !$stage),
                 ],
                 [
                     'key'    => 'delivery_otw',
                     'title'  => 'Antar ke Tujuan',
                     'icon'   => '🚚',
-                    'active' => in_array($stage, [self::STAGE_GOING_TO_DESTINATION, self::STAGE_AT_DESTINATION]) || ($status === self::STATUS_IN_PROGRESS && !$stage),
+                    'active' => in_array($stage, [self::STAGE_GOING_TO_DESTINATION, self::STAGE_FINAL_APPROACH, self::STAGE_AT_DESTINATION]) || ($status === self::STATUS_IN_PROGRESS && !$stage),
                 ],
                 [
                     'key'    => 'done',
@@ -1002,8 +1008,10 @@ class Help extends Model
             return match($this->service_stage) {
                 self::STAGE_GOING_TO_PICKUP      => '🛵',
                 self::STAGE_AT_PICKUP            => '📍',
+                self::STAGE_WAITING_FOR_CUSTOMER => '⏳',
                 self::STAGE_ITEM_COLLECTED       => '📦',
                 self::STAGE_GOING_TO_DESTINATION => '🚚',
+                self::STAGE_FINAL_APPROACH       => '🏁',
                 self::STAGE_AT_DESTINATION       => '🏁',
                 default                          => '📦',
             };
@@ -1082,6 +1090,80 @@ class Help extends Model
     public function isCustomerCancellable(): bool
     {
         return $this->status === self::STATUS_MENUNGGU_MITRA;
+    }
+
+    /**
+     * Anti-Bypass Lock: Cek apakah customer diperbolehkan membatalkan pesanan.
+     * Untuk layanan pickup_delivery:
+     * - Status MENUNGGU_MITRA -> Boleh
+     * - Sub-stage GOING_TO_PICKUP / AT_PICKUP / WAITING_FOR_CUSTOMER -> Boleh (dengan skema kompensasi)
+     * - Sub-stage ITEM_COLLECTED / GOING_TO_DESTINATION / FINAL_APPROACH / AT_DESTINATION -> TERKUNCI (Tidak boleh)
+     * Untuk layanan lain (on_site_service, buy_for_customer):
+     * - Tetap mengikuti aturan layanan standar.
+     */
+    public function canCustomerCancel(): bool
+    {
+        if (!$this->isPickup()) {
+            return $this->isCustomerCancellable() || in_array($this->status, [self::STATUS_TAKEN, self::STATUS_PARTNER_ON_THE_WAY, self::STATUS_PARTNER_ARRIVED, self::STATUS_IN_PROGRESS]);
+        }
+
+        if ($this->status === self::STATUS_MENUNGGU_MITRA) {
+            return true;
+        }
+
+        // Penguncian pembatalan (Anti-Bypass Lock)
+        $lockedStages = [
+            self::STAGE_ITEM_COLLECTED,
+            self::STAGE_GOING_TO_DESTINATION,
+            self::STAGE_FINAL_APPROACH,
+            self::STAGE_AT_DESTINATION,
+        ];
+
+        if (in_array($this->service_stage, $lockedStages, true)) {
+            return false;
+        }
+
+        // Jika dalam status aktif sebelum barang diambil
+        return in_array($this->status, [self::STATUS_TAKEN, self::STATUS_PARTNER_ON_THE_WAY, self::STATUS_PARTNER_ARRIVED], true);
+    }
+
+    /**
+     * Cek apakah pesanan pickup_delivery sudah masuk tahap akhir (Final Approach).
+     */
+    public function isFinalApproach(): bool
+    {
+        return $this->isPickup() && $this->service_stage === self::STAGE_FINAL_APPROACH;
+    }
+
+    /**
+     * Cek apakah mitra berhak memicu Customer No-Show (telah tiba di titik jemput & menunggu >= 10 menit).
+     */
+    public function canPartnerTriggerNoShow(): bool
+    {
+        if (!$this->isPickup()) {
+            return false;
+        }
+
+        $isAtPickup = in_array($this->service_stage, [self::STAGE_AT_PICKUP, self::STAGE_WAITING_FOR_CUSTOMER], true) ||
+                      $this->status === self::STATUS_PARTNER_ARRIVED;
+
+        if (!$isAtPickup) {
+            return false;
+        }
+
+        $arrivedTime = $this->partner_arrived_at ?? $this->arrived_at;
+        if (!$arrivedTime && is_array($this->stage_history) && !empty($this->stage_history['arrived_at_pickup_at'])) {
+            $arrivedTime = \Illuminate\Support\Carbon::parse($this->stage_history['arrived_at_pickup_at']);
+        } elseif (is_string($arrivedTime)) {
+            $arrivedTime = \Illuminate\Support\Carbon::parse($arrivedTime);
+        }
+
+        if (!$arrivedTime) {
+            return false;
+        }
+
+        $waitMinutes = AppSetting::getPickupDeliveryNoShowWaitMinutes(); // default 10 menit
+        return $arrivedTime->copy()->addMinutes($waitMinutes)->isPast();
     }
 
     /**

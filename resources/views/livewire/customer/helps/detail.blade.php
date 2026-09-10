@@ -936,9 +936,33 @@
         @if($help->status === 'menunggu_mitra')
             <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
                 <button wire:click="confirmCancel" class="w-full py-3 border-2 border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg font-semibold text-sm transition cursor-pointer">
-                    Batalkan Pesanan
+                    Batalkan Pesanan (Refund 100%)
                 </button>
             </div>
+        @elseif($help->isPickup() && in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress']))
+            @if($help->canCustomerCancel())
+                <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 space-y-2">
+                    <button wire:click="confirmCancel" class="w-full py-3 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5">
+                        <span>🛑 Batalkan Pesanan (Kompensasi Sesuai Tahap)</span>
+                    </button>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center">
+                        Pembatalan pada tahap ini memberikan kompensasi biaya perjalanan ke Rekan Jasa dan mengembalikan sisa saldo ke akun Anda.
+                    </p>
+                </div>
+            @else
+                <div class="bg-gray-100 dark:bg-gray-800/80 mt-2 px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3 text-xs text-gray-600 dark:text-gray-300">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">🔒</span>
+                        <div>
+                            <p class="font-bold text-gray-800 dark:text-gray-200">Pembatalan Otomatis Terkunci</p>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400">Pengantaran fisik telah dimulai / mendekati tujuan. Hubungi CS bila ada kendala darurat.</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('customer.chat', ['admin' => 1]) }}" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold text-[11px] shrink-0 hover:bg-blue-700 transition">
+                        Bantuan CS
+                    </a>
+                </div>
+            @endif
         @elseif(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress']))
             <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
                 <button wire:click="openCustomerCancelModal" class="w-full py-3 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5">

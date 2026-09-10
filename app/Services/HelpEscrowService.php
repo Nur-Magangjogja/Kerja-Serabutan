@@ -161,11 +161,11 @@ class HelpEscrowService
             ['balance' => 0]
         );
 
-        $mitraBalance->credit(
+        $mitraBalance->receiveEarning(
             $payoutAmount,
             $help->id,
-            $help->order_id,
             "{$note} (Bantuan #{$help->id} '{$help->title}')",
+            $help->order_id,
             "help:{$help->id}:payout_direct:" . uniqid()
         );
 

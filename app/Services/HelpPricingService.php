@@ -22,14 +22,43 @@ class HelpPricingService
 
     public const PRICE_PER_KM_DEFAULT        = 2000.0;
     public const MIN_SERVICE_FEE_ON_SITE     = 10000.0;
-    public const MIN_SERVICE_FEE_PICKUP      = 10000.0; // Minimal Rp 10.000 (untuk jarak <= 5 KM)
+    public const MIN_SERVICE_FEE_PICKUP      = 10000.0; // Minimal Rp 10.000 (untuk jarak <= 4 KM)
     public const MIN_SERVICE_FEE_BUY         = 15000.0;
     public const MAX_LEG1_MATCHING_RADIUS_KM = 5.0; // Constraint jarak mitra ke titik awal
 
     /**
+     * Hitung tarif bertingkat khusus layanan Antar/Jemput (pickup_delivery):
+     * - 0 - 4 KM   : Rp 10.000 (Tarif Dasar / Minimum)
+     * - > 4 - 20 KM: ceil(jarak) * Rp 2.500 (Tarif Standar)
+     * - > 20 KM    : (20 * 2.500) + ((ceil(jarak) - 20) * 2.750) = 50.000 + ((ceil(jarak) - 20) * 2.750)
+     */
+    public function calculatePickupDeliveryFare(float $distanceKm): float
+    {
+        $effectiveKm = max(1.0, ceil($distanceKm));
+        $minFare = AppSetting::getPickupDeliveryMinimumFare(); // 10000
+        $pricePerKm = AppSetting::getPickupDeliveryPricePerKm(); // 2500
+        $longDistThreshold = AppSetting::getPickupDeliveryLongDistanceThresholdKm(); // 20
+        $longDistPricePerKm = AppSetting::getPickupDeliveryLongDistancePricePerKm(); // 2750
+
+        if ($effectiveKm <= 4.0) {
+            return $minFare;
+        }
+
+        if ($effectiveKm <= $longDistThreshold) {
+            return $effectiveKm * $pricePerKm;
+        }
+
+        $standardPortion = $longDistThreshold * $pricePerKm; // 50.000
+        $excessKm = $effectiveKm - $longDistThreshold;
+        $longDistPortion = $excessKm * $longDistPricePerKm;
+
+        return $standardPortion + $longDistPortion;
+    }
+
+    /**
      * Hitung nilai minimum biaya jasa (minimum_service_fee) untuk masing-masing tipe layanan:
      * - On-Site      : Minimal Rp 10.000
-     * - Antar/Jemput : Minimal Rp 10.000 untuk jarak <= 5 KM, selebihnya Rp 2.000 / KM
+     * - Antar/Jemput : Tarif bertingkat (Rp 10.000 untuk <= 4 KM, Rp 2.500/KM untuk 4-20 KM, Rp 2.750/KM untuk > 20 KM)
      * - Titip Beli   : Minimal Rp 15.000 (Rp 2.000 / KM dari rute Toko → Customer + Jasa Titip)
      */
     public function calculateMinimumServiceFee(
@@ -41,9 +70,7 @@ class HelpPricingService
         $pricePerKm = self::PRICE_PER_KM_DEFAULT;
 
         if ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
-            $effectiveKm = max(1.0, ceil($distanceKm));
-            $distanceFee = $effectiveKm * $pricePerKm;
-            return max(self::MIN_SERVICE_FEE_PICKUP, $distanceFee);
+            return $this->calculatePickupDeliveryFare($distanceKm);
         }
 
         if ($serviceType === Help::SERVICE_TYPE_BUY_FOR_CUSTOMER) {
@@ -66,15 +93,12 @@ class HelpPricingService
     }
 
     /**
-     * Hitung ongkos pengantaran rute layanan (service_route_fee) untuk Pickup & Delivery / Belanja:
-     * Tarif dasar Rp 10.000 (<= 5 KM), di atas 5 KM Rp 2.000 / KM menggunakan pembulatan ceil().
+     * Hitung ongkos pengantaran rute layanan (service_route_fee) untuk Pickup & Delivery / Belanja.
      */
     public function calculateServiceDeliveryFee(float $serviceRouteDistanceKm, string $serviceType = Help::SERVICE_TYPE_PICKUP_DELIVERY): float
     {
         if ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
-            $effectiveKm = max(1.0, ceil($serviceRouteDistanceKm));
-            $distanceFee = $effectiveKm * self::PRICE_PER_KM_DEFAULT;
-            return max(self::MIN_SERVICE_FEE_PICKUP, $distanceFee);
+            return $this->calculatePickupDeliveryFare($serviceRouteDistanceKm);
         }
 
         $minFee = self::MIN_SERVICE_FEE_BUY;
@@ -107,7 +131,10 @@ class HelpPricingService
         $routeProvider = 'fallback';
 
         if ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
-            if (!empty($params['pickup_latitude']) && !empty($params['delivery_latitude'])) {
+            if (!empty($params['service_route_distance_km']) || !empty($params['route_distance_km'])) {
+                $estimatedServiceDist = (float) ($params['service_route_distance_km'] ?? $params['route_distance_km']);
+                $routeProvider = 'road_provider';
+            } elseif (!empty($params['pickup_latitude']) && !empty($params['delivery_latitude'])) {
                 $estimatedServiceDist = $this->geoService->getRouteDistance(
                     (float) $params['pickup_latitude'],
                     (float) $params['pickup_longitude'],
@@ -164,6 +191,10 @@ class HelpPricingService
             $matchingRadiusSnapshot = self::MAX_LEG1_MATCHING_RADIUS_KM; // 5.0 KM
         }
 
+        $pricePerKmSnapshot = ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY)
+            ? AppSetting::getPickupDeliveryPricePerKm()
+            : self::PRICE_PER_KM_DEFAULT;
+
         return [
             'service_type'                 => $serviceType,
             'service_category'             => $category,
@@ -183,7 +214,7 @@ class HelpPricingService
             'mitra_earning'                => $mitraEarningEstimate,
             'service_route_distance_km'    => round($estimatedServiceDist, 2),
             // Snapshots
-            'price_per_km_snapshot'        => self::PRICE_PER_KM_DEFAULT,
+            'price_per_km_snapshot'        => $pricePerKmSnapshot,
             'minimum_service_snapshot'     => $minServiceFee,
             'matching_radius_snapshot'     => $matchingRadiusSnapshot,
             'platform_fee_snapshot'        => $platformFee,

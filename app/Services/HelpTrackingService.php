@@ -112,6 +112,28 @@ class HelpTrackingService
             }
         }
 
+        // 3. Khusus pickup_delivery: Deteksi otomatis Tahap Akhir (STAGE_FINAL_APPROACH)
+        if ($help->isPickup() && $help->service_stage === Help::STAGE_GOING_TO_DESTINATION) {
+            $destLat = (float) ($help->delivery_latitude ?: $help->latitude);
+            $destLng = (float) ($help->delivery_longitude ?: $help->longitude);
+            if ($destLat != 0 && $destLng != 0) {
+                $distToDestMeters = $this->calculateDistance($currentLat, $currentLng, $destLat, $destLng);
+                $distToDestKm = $distToDestMeters / 1000.0;
+                $totalRouteKm = (float) ($help->service_route_distance_km ?: 5.0);
+
+                $progressPct = ($totalRouteKm > 0) ? max(0, min(100, (1.0 - ($distToDestKm / $totalRouteKm)) * 100)) : 0;
+                $etaMin = $this->geoService->getRouteDurationMinutes($distToDestKm, 25.0, 2);
+
+                $progThreshold = \App\Models\AppSetting::getPickupDeliveryFinalApproachProgress(); // 80%
+                $etaThreshold  = \App\Models\AppSetting::getPickupDeliveryFinalApproachEtaMinutes(); // 10 min
+
+                if ($progressPct >= $progThreshold || $etaMin <= $etaThreshold) {
+                    $help->service_stage = Help::STAGE_FINAL_APPROACH;
+                    $statusChanged = true;
+                }
+            }
+        }
+
         $help->save();
 
         if ($statusChanged && $help->user) {
@@ -167,7 +189,14 @@ class HelpTrackingService
                 if ($nextStage === Help::STAGE_AT_PICKUP) {
                     $updatePayload['status'] = Help::STATUS_PARTNER_ARRIVED;
                     $updatePayload['partner_arrived_at'] = now();
-                } elseif ($nextStage === Help::STAGE_ITEM_COLLECTED || $nextStage === Help::STAGE_GOING_TO_DESTINATION) {
+                    $updatePayload['arrived_at'] = now();
+                } elseif ($nextStage === Help::STAGE_WAITING_FOR_CUSTOMER) {
+                    $updatePayload['status'] = Help::STATUS_PARTNER_ARRIVED;
+                    if (empty($locked->partner_arrived_at)) {
+                        $updatePayload['partner_arrived_at'] = now();
+                        $updatePayload['arrived_at'] = now();
+                    }
+                } elseif (in_array($nextStage, [Help::STAGE_ITEM_COLLECTED, Help::STAGE_GOING_TO_DESTINATION, Help::STAGE_FINAL_APPROACH])) {
                     $updatePayload['status'] = Help::STATUS_IN_PROGRESS;
                 } elseif ($nextStage === Help::STAGE_AT_DESTINATION) {
                     $updatePayload['status'] = Help::STATUS_IN_PROGRESS;
@@ -194,7 +223,7 @@ class HelpTrackingService
     protected function resolveCurrentTargetCoordinates(Help $help): array
     {
         if ($help->isPickup()) {
-            if ($help->service_stage === Help::STAGE_GOING_TO_DESTINATION || $help->service_stage === Help::STAGE_ITEM_COLLECTED) {
+            if (in_array($help->service_stage, [Help::STAGE_GOING_TO_DESTINATION, Help::STAGE_FINAL_APPROACH, Help::STAGE_ITEM_COLLECTED], true)) {
                 return [
                     'lat'   => (float) ($help->delivery_latitude ?: $help->latitude),
                     'lng'   => (float) ($help->delivery_longitude ?: $help->longitude),
@@ -243,7 +272,7 @@ class HelpTrackingService
                 $help->partner_arrived_at = now();
                 $help->arrived_at = now();
                 return true;
-            } elseif ($help->service_stage === Help::STAGE_GOING_TO_DESTINATION) {
+            } elseif (in_array($help->service_stage, [Help::STAGE_GOING_TO_DESTINATION, Help::STAGE_FINAL_APPROACH], true)) {
                 $help->service_stage = Help::STAGE_AT_DESTINATION;
                 return true;
             }

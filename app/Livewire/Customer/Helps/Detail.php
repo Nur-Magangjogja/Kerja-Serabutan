@@ -110,10 +110,50 @@ class Detail extends Component
 
     public function cancelHelp()
     {
-        // Jika belum dapat mitra, langsung batalkan & refund
+        // Khusus pickup_delivery: Cek aturan Anti-Bypass Lock & Staged Cancellation
+        if ($this->help->isPickup()) {
+            if ($this->help->status === Help::STATUS_MENUNGGU_MITRA) {
+                try {
+                    app(HelpCancellationService::class)->cancelOrderBeforePartnerTaken($this->help, auth()->user(), 'Dibatalkan oleh customer sebelum ada mitra');
+                    session()->flash('success', 'Permintaan bantuan antar/jemput berhasil dibatalkan dan saldo telah dikembalikan 100%.');
+                    $this->showCancelConfirm = false;
+                    return redirect()->route('customer.helps.index');
+                } catch (\RuntimeException $e) {
+                    session()->flash('error', $e->getMessage());
+                    return;
+                } catch (\Throwable $e) {
+                    Log::error('[CustomerHelpDetail] cancelHelp pickup error: ' . $e->getMessage());
+                    session()->flash('error', 'Terjadi kesalahan saat membatalkan bantuan.');
+                    return;
+                }
+            }
+
+            if ($this->help->canCustomerCancel()) {
+                try {
+                    app(HelpCancellationService::class)->cancelPickupDeliveryByCustomer($this->help, auth()->user(), 'Dibatalkan oleh customer pada tahap penjemputan.');
+                    session()->flash('success', 'Pesanan antar/jemput berhasil dibatalkan. Kompensasi mitra dan pengembalian saldo telah diproses sesuai tahap perjalanan.');
+                    $this->showCancelConfirm = false;
+                    $this->loadHelp();
+                    return;
+                } catch (\RuntimeException $e) {
+                    session()->flash('error', $e->getMessage());
+                    return;
+                } catch (\Throwable $e) {
+                    Log::error('[CustomerHelpDetail] cancelPickupDelivery error: ' . $e->getMessage());
+                    session()->flash('error', 'Terjadi kesalahan saat membatalkan pesanan antar/jemput.');
+                    return;
+                }
+            } else {
+                session()->flash('error', 'Pembatalan otomatis terkunci karena pengantaran fisik barang telah dimulai. Silakan hubungi Bantuan CS / Admin Wilayah.');
+                $this->showCancelConfirm = false;
+                return;
+            }
+        }
+
+        // Layanan Reguler (On-Site Service / Buy for Customer)
         if ($this->help->status === Help::STATUS_MENUNGGU_MITRA) {
             try {
-                app(HelpCancellationService::class)->cancelByPartnerUnilaterally($this->help, auth()->user(), 'Dibatalkan oleh customer sebelum ada mitra');
+                app(HelpCancellationService::class)->cancelOrderBeforePartnerTaken($this->help, auth()->user(), 'Dibatalkan oleh customer sebelum ada mitra');
                 session()->flash('success', 'Permintaan bantuan berhasil dibatalkan dan saldo telah dikembalikan.');
                 $this->showCancelConfirm = false;
                 return redirect()->route('customer.helps.index');
