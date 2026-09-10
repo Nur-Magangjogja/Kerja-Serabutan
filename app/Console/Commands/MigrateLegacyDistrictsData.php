@@ -24,7 +24,7 @@ class MigrateLegacyDistrictsData extends Command
      *
      * @var string
      */
-    protected $description = 'Pemetaan dan migrasi data wilayah lama (Kota/Alamat) ke Kecamatan (district_id) secara aman dan menyeluruh';
+    protected $description = 'Memetakan data lama User, Help, dan Admin dari city_id ke district_id.';
 
     /**
      * Execute the console command.
@@ -33,16 +33,18 @@ class MigrateLegacyDistrictsData extends Command
     {
         $isDryRun = (bool) $this->option('dry-run');
 
-        $this->info("=== MEMULAI MIGRASI DATA WILAYAH KECAMATAN REVISI 3 ===" . ($isDryRun ? " [DRY-RUN]" : ""));
+        $this->info("=== MIGRASI DATA WILAYAH KE KECAMATAN ===" . ($isDryRun ? " [DRY-RUN]" : ""));
 
         // 1. Pastikan tabel districts terisi
         $totalDistricts = District::count();
         $this->info("Total data Kecamatan di tabel districts: {$totalDistricts}");
         if ($totalDistricts === 0) {
-            $this->warn("Tabel districts kosong. Menjalankan seeder IndonesiaRegionsSeeder / DistrictSeeder...");
-            if (!$isDryRun) {
-                $this->call('db:seed', ['--class' => 'DistrictSeeder', '--force' => true]);
-            }
+            $this->error(
+                'Data kecamatan belum tersedia. ' .
+                'Jalankan "php artisan db:seed --class=CitySeeder" terlebih dahulu untuk mengisi data wilayah.'
+            );
+
+            return Command::FAILURE;
         }
 
         // 2. Migrasi Users (Customer & Mitra)
@@ -99,7 +101,7 @@ class MigrateLegacyDistrictsData extends Command
         }
         $this->info("✓ Relasi Admin-Kecamatan berhasil disinkronkan: {$adminPivotCount} relasi.");
 
-        $this->info("=== MIGRASI DATA WILAYAH KECAMATAN REVISI 3 SELESAI ===");
+        $this->info("=== MIGRASI DATA WILAYAH KE KECAMATAN SELESAI ===");
         return Command::SUCCESS;
     }
 
