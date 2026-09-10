@@ -3,7 +3,9 @@
 namespace App\Livewire\Admin\Partners\Reports;
 
 use App\Models\PartnerReport;
+use App\Models\User;
 use App\Services\HelpTransactionService;
+use App\Services\PartnerDisciplineService;
 use Livewire\Component;
 
 class Show extends Component
@@ -22,13 +24,28 @@ class Show extends Component
     public $showRejectModal = false;
     public $rejectReason = '';
 
+    // Instant SP Modal
+    public $showSpModal = false;
+    public $spTargetUserId = null;
+    public $spTargetUserName = '';
+    public $spTargetUserRole = '';
+    public $spCurrentWarningLevel = 0;
+    public $spIsGreylisted = false;
+    public $spWarningLevel = 1;
+    public $spReason = '';
+    public $spAutoNoteInReport = true;
+
     public function mount(PartnerReport $report)
     {
         $this->report = $report->load([
             'reporter.userBalance',
+            'reporter.greylistLogs.admin',
             'reportedUser.userBalance',
+            'reportedUser.greylistLogs.admin',
             'reportedHelp.user.userBalance',
+            'reportedHelp.user.greylistLogs.admin',
             'reportedHelp.mitra.userBalance',
+            'reportedHelp.mitra.greylistLogs.admin',
             'reportedHelp.city',
             'resolvedBy',
             'refundProcessedBy',
@@ -123,6 +140,94 @@ class Show extends Component
             session()->flash('success', 'Permintaan refund telah ditolak dengan alasan resmi.');
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal menolak refund: ' . $e->getMessage());
+        }
+    }
+
+    public function openSpModal(int $userId, ?int $defaultLevel = null)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            session()->flash('error', 'Data pengguna tidak ditemukan.');
+            return;
+        }
+
+        $this->spTargetUserId = $user->id;
+        $this->spTargetUserName = $user->name;
+        $this->spTargetUserRole = $user->role;
+        $this->spCurrentWarningLevel = (int) ($user->warning_level ?? 0);
+        $this->spIsGreylisted = (bool) $user->is_greylisted;
+
+        $this->spWarningLevel = $defaultLevel ?: min(3, max(1, $this->spCurrentWarningLevel + 1));
+        $this->spReason = "Pelanggaran pada Laporan Aduan #{$this->report->id}: '{$this->report->title}'";
+        $this->spAutoNoteInReport = true;
+        $this->showSpModal = true;
+    }
+
+    public function closeSpModal()
+    {
+        $this->showSpModal = false;
+        $this->spTargetUserId = null;
+        $this->spReason = '';
+    }
+
+    public function submitInstantSp(PartnerDisciplineService $disciplineService)
+    {
+        $this->validate([
+            'spTargetUserId'    => 'required|exists:users,id',
+            'spWarningLevel'    => 'required|integer|min:1|max:3',
+            'spReason'          => 'required|string|min:5',
+        ], [
+            'spReason.required' => 'Alasan penerbitan SP wajib diisi.',
+            'spReason.min'      => 'Alasan penerbitan SP minimal 5 karakter.',
+        ]);
+
+        try {
+            $targetUser = User::findOrFail($this->spTargetUserId);
+            $admin = auth()->user();
+            $help = $this->report->reportedHelp;
+
+            $disciplineService->issueManualWarningToUser(
+                $targetUser,
+                (int) $this->spWarningLevel,
+                trim($this->spReason),
+                $admin,
+                $help
+            );
+
+            if ($this->spAutoNoteInReport) {
+                $timestamp = now()->format('d M Y H:i');
+                $adminName = $admin->name;
+                $roleLabel = ($targetUser->role === 'mitra') ? 'Mitra' : 'Customer';
+                $entry = "[{$timestamp} oleh {$adminName}]: Menerbitkan SP {$this->spWarningLevel} kepada {$roleLabel} {$targetUser->name} (#{$targetUser->id}). Alasan: " . trim($this->spReason);
+
+                $existing = $this->report->admin_notes ? $this->report->admin_notes . "\n" : '';
+                $updatedNotes = $existing . $entry;
+
+                $this->report->update([
+                    'admin_notes' => $updatedNotes,
+                ]);
+                $this->adminNotes = $updatedNotes;
+            }
+
+            $this->report->load([
+                'reporter.userBalance',
+                'reporter.greylistLogs.admin',
+                'reportedUser.userBalance',
+                'reportedUser.greylistLogs.admin',
+                'reportedHelp.user.userBalance',
+                'reportedHelp.user.greylistLogs.admin',
+                'reportedHelp.mitra.userBalance',
+                'reportedHelp.mitra.greylistLogs.admin',
+                'reportedHelp.city',
+                'resolvedBy',
+                'refundProcessedBy',
+                'messages.sender'
+            ]);
+
+            $this->showSpModal = false;
+            session()->flash('success', "Surat Peringatan (SP {$this->spWarningLevel}) berhasil diterbitkan kepada {$targetUser->name} secara instan!");
+        } catch (\Throwable $e) {
+            session()->flash('error', 'Gagal menerbitkan SP: ' . $e->getMessage());
         }
     }
 

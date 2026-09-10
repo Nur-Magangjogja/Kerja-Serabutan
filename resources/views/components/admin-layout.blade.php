@@ -1,6 +1,6 @@
 <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex">
     <!-- Sidebar -->
-    <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg fixed inset-y-0 left-0 flex flex-col z-30">
+    <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg fixed inset-y-0 left-0 flex flex-col z-30 h-screen max-h-screen overscroll-contain">
         @php
             $siteName = \App\Models\AppSetting::get('app_name', 'SayaBantu');
             $siteLogo = \App\Models\AppSetting::get('app_logo');
@@ -33,7 +33,9 @@
         </div>
 
         <!-- Scrollable Navigation Menu -->
-        <nav class="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-1.5 custom-scrollbar min-h-0">
+        <nav tabindex="-1"
+             class="flex-1 min-h-0 h-0 overflow-y-auto overflow-x-hidden p-4 space-y-1.5 custom-scrollbar overscroll-contain touch-pan-y outline-none focus:outline-none"
+             style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
             <a href="{{ route('admin.dashboard') }}"
                 class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.dashboard') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                 <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

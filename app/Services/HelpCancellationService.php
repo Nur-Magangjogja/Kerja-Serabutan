@@ -394,78 +394,163 @@ class HelpCancellationService
             $customerSpReason = $extraData['customer_sp_reason'] ?? 'Pelanggaran / kejanggalan dalam pesanan';
 
             if ($isApproved) {
-                $totalPaid = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : ($lockedHelp->amount + ($lockedHelp->travel_fee ?? 0) + ($lockedHelp->item_fund ?? 0) + ($lockedHelp->platform_fee_amount ?? 2000)));
-                $itemFund  = (float) ($lockedHelp->item_fund ?? 0);
-                $serviceFee = (float) ($lockedHelp->service_fee > 0 ? $lockedHelp->service_fee : $lockedHelp->amount);
+                if ($settlementType === HelpCancelRequest::SETTLEMENT_RELIST_POOL) {
+                    $formerMitraId = $lockedHelp->mitra_id;
+                    $formerMitra   = $lockedHelp->mitra;
 
-                $customRefund  = isset($extraData['refund_amount']) && $extraData['refund_amount'] !== '' ? (float) $extraData['refund_amount'] : null;
-                $customPartner = isset($extraData['partner_amount']) && $extraData['partner_amount'] !== '' ? (float) $extraData['partner_amount'] : null;
-
-                if ($customRefund !== null && $customPartner !== null) {
-                    $refundCustomer = max(0.0, $customRefund);
-                    $payoutMitra    = max(0.0, $customPartner);
-                } else {
-                    if ($settlementType === HelpCancelRequest::SETTLEMENT_FULL_REFUND) {
-                        $refundCustomer = $totalPaid;
-                        $payoutMitra    = 0.0;
-                    } elseif ($settlementType === HelpCancelRequest::SETTLEMENT_ITEM_SETTLED) {
-                        $actualItemCost = min($itemFund > 0 ? $itemFund : $lockedReq->item_purchase_amount, $lockedReq->item_purchase_amount);
-                        $payoutMitra    = $actualItemCost;
-                        $refundCustomer = max(0.0, $totalPaid - $payoutMitra);
-                    } elseif ($settlementType === HelpCancelRequest::SETTLEMENT_PARTIAL_SETTLEMENT) {
-                        $pct = min(1.0, max(0.0, ((float) $lockedReq->work_completed_percentage) / 100.0));
-                        $payoutMitra    = round($serviceFee * $pct, 2);
-                        $refundCustomer = max(0.0, $totalPaid - $payoutMitra);
-                    } else {
-                        $refundCustomer = $totalPaid;
-                        $payoutMitra    = 0.0;
+                    $cancelledMitraIds = is_array($lockedHelp->cancelled_mitra_ids) ? $lockedHelp->cancelled_mitra_ids : [];
+                    if ($formerMitraId && !in_array($formerMitraId, $cancelledMitraIds, false)) {
+                        $cancelledMitraIds[] = $formerMitraId;
                     }
+
+                    if ($formerMitraId && \Illuminate\Support\Facades\Schema::hasTable('help_partner_exclusions')) {
+                        \App\Models\HelpPartnerExclusion::firstOrCreate([
+                            'help_id'  => $lockedHelp->id,
+                            'mitra_id' => $formerMitraId,
+                        ], [
+                            'reason'   => $lockedReq->reason ?? 'Dialihkan kembali ke pool oleh Admin',
+                        ]);
+                    }
+
+                    $lockedHelp->update([
+                        'status'                      => Help::STATUS_MENUNGGU_MITRA,
+                        'dispatch_mode'               => Help::DISPATCH_MODE_POOL,
+                        'mitra_id'                    => null,
+                        'cancelled_mitra_ids'         => $cancelledMitraIds,
+                        'partner_cancel_prev_status'  => null,
+                        'partner_cancel_reason'       => null,
+                        'partner_cancel_requested_at' => null,
+                        'cancel_requested_by'         => null,
+                        'cancel_deadline_at'          => null,
+                        'partner_current_lat'         => null,
+                        'partner_current_lng'         => null,
+                        'partner_initial_lat'         => null,
+                        'partner_initial_lng'         => null,
+                        'partner_started_at'          => null,
+                        'partner_arrived_at'          => null,
+                        'service_started_at'          => null,
+                        'admin_notes'                 => "Aduan pembatalan customer ditinjau Admin #{$admin->id} ({$admin->name}). Mitra lama dilepaskan dan pesanan dikembalikan ke pool terbuka untuk mencari mitra baru.",
+                    ]);
+
+                    if ($formerMitraId) {
+                        $this->onlineService->releaseBusy($formerMitraId, $lockedHelp->id);
+                    }
+
+                    $auditDecision = ($spTarget !== HelpCancelRequest::SP_TARGET_NONE)
+                        ? HelpCancelRequest::AUDIT_PENALTY_ISSUED
+                        : HelpCancelRequest::AUDIT_VALID_NO_SP;
+
+                    $lockedReq->update([
+                        'status'                 => HelpCancelRequest::STATUS_APPROVED,
+                        'settlement_type'        => HelpCancelRequest::SETTLEMENT_RELIST_POOL,
+                        'refund_amount_customer' => 0,
+                        'payout_amount_mitra'    => 0,
+                        'reviewed_by'            => $admin->id,
+                        'admin_notes'            => $adminNotes ?: 'Pesanan dilempar kembali ke pool terbuka untuk mencari mitra lain.',
+                        'sp_target'              => $spTarget,
+                        'partner_sp_level'       => ($spTarget === 'partner' || $spTarget === 'both') ? $partnerSpLevel : null,
+                        'partner_sp_reason'      => ($spTarget === 'partner' || $spTarget === 'both') ? $partnerSpReason : null,
+                        'customer_sp_level'      => ($spTarget === 'customer' || $spTarget === 'both') ? $customerSpLevel : null,
+                        'customer_sp_reason'     => ($spTarget === 'customer' || $spTarget === 'both') ? $customerSpReason : null,
+                        'audit_decision'         => $auditDecision,
+                        'reviewed_at'            => now(),
+                    ]);
+
+                    if ($lockedHelp->user) {
+                        try {
+                            $lockedHelp->user->notify(new HelpStatusNotification(
+                                $lockedHelp,
+                                "Admin telah memproses aduan Anda. Mitra lama telah dilepaskan dan pesanan Anda sedang dicarikan Rekan Jasa pengganti."
+                            ));
+                        } catch (\Throwable $e) {
+                            Log::warning("[HelpCancellationService] Failed notifying customer: " . $e->getMessage());
+                        }
+                    }
+
+                    if ($formerMitra) {
+                        try {
+                            $formerMitra->notify(new HelpStatusNotification(
+                                $lockedHelp,
+                                "Penugasan Anda pada pesanan #{$lockedHelp->id} telah dialihkan kembali ke sistem oleh Admin."
+                            ));
+                        } catch (\Throwable $e) {
+                            Log::warning("[HelpCancellationService] Failed notifying former partner: " . $e->getMessage());
+                        }
+                    }
+                } else {
+                    $totalPaid = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : ($lockedHelp->amount + ($lockedHelp->travel_fee ?? 0) + ($lockedHelp->item_fund ?? 0) + ($lockedHelp->platform_fee_amount ?? 2000)));
+                    $itemFund  = (float) ($lockedHelp->item_fund ?? 0);
+                    $serviceFee = (float) ($lockedHelp->service_fee > 0 ? $lockedHelp->service_fee : $lockedHelp->amount);
+
+                    $customRefund  = isset($extraData['refund_amount']) && $extraData['refund_amount'] !== '' ? (float) $extraData['refund_amount'] : null;
+                    $customPartner = isset($extraData['partner_amount']) && $extraData['partner_amount'] !== '' ? (float) $extraData['partner_amount'] : null;
+
+                    if ($customRefund !== null && $customPartner !== null) {
+                        $refundCustomer = max(0.0, $customRefund);
+                        $payoutMitra    = max(0.0, $customPartner);
+                    } else {
+                        if ($settlementType === HelpCancelRequest::SETTLEMENT_FULL_REFUND) {
+                            $refundCustomer = $totalPaid;
+                            $payoutMitra    = 0.0;
+                        } elseif ($settlementType === HelpCancelRequest::SETTLEMENT_ITEM_SETTLED) {
+                            $actualItemCost = min($itemFund > 0 ? $itemFund : $lockedReq->item_purchase_amount, $lockedReq->item_purchase_amount);
+                            $payoutMitra    = $actualItemCost;
+                            $refundCustomer = max(0.0, $totalPaid - $payoutMitra);
+                        } elseif ($settlementType === HelpCancelRequest::SETTLEMENT_PARTIAL_SETTLEMENT) {
+                            $pct = min(1.0, max(0.0, ((float) $lockedReq->work_completed_percentage) / 100.0));
+                            $payoutMitra    = round($serviceFee * $pct, 2);
+                            $refundCustomer = max(0.0, $totalPaid - $payoutMitra);
+                        } else {
+                            $refundCustomer = $totalPaid;
+                            $payoutMitra    = 0.0;
+                        }
+                    }
+
+                    // Eksekusi mutasi saldo
+                    if ($refundCustomer > 0 && $lockedHelp->user) {
+                        $this->transactionService->refundFromEscrowDirect($lockedHelp, $lockedHelp->user, $refundCustomer, 'Pembatalan Disetujui Admin Wilayah');
+                    }
+
+                    if ($payoutMitra > 0 && $lockedHelp->mitra) {
+                        $this->transactionService->payoutPartialFromEscrowDirect($lockedHelp, $lockedHelp->mitra, $payoutMitra, 'Kompensasi Pembatalan oleh Admin Wilayah');
+                    }
+
+                    $escrowFinalStatus = ($refundCustomer > 0 && $payoutMitra > 0)
+                        ? Help::ESCROW_STATUS_PARTIAL_REFUND
+                        : ($refundCustomer > 0 ? Help::ESCROW_STATUS_REFUNDED : Help::ESCROW_STATUS_RELEASED);
+
+                    $lockedHelp->update([
+                        'status'         => Help::STATUS_DIBATALKAN,
+                        'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
+                        'escrow_status'  => $escrowFinalStatus,
+                        'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
+                        'admin_notes'    => "Pembatalan disetujui Admin #{$admin->id} ({$admin->name}). Resolusi: {$settlementType}. Refund: Rp " . number_format($refundCustomer, 0, ',', '.') . ", Kompensasi Mitra: Rp " . number_format($payoutMitra, 0, ',', '.'),
+                    ]);
+
+                    if ($lockedHelp->mitra_id) {
+                        $this->onlineService->releaseBusy($lockedHelp->mitra_id, $lockedHelp->id);
+                    }
+
+                    $auditDecision = ($spTarget !== HelpCancelRequest::SP_TARGET_NONE)
+                        ? HelpCancelRequest::AUDIT_PENALTY_ISSUED
+                        : HelpCancelRequest::AUDIT_VALID_NO_SP;
+
+                    $lockedReq->update([
+                        'status'                 => HelpCancelRequest::STATUS_APPROVED,
+                        'settlement_type'        => $settlementType,
+                        'refund_amount_customer' => $refundCustomer,
+                        'payout_amount_mitra'    => $payoutMitra,
+                        'reviewed_by'            => $admin->id,
+                        'admin_notes'            => $adminNotes,
+                        'sp_target'              => $spTarget,
+                        'partner_sp_level'       => ($spTarget === 'partner' || $spTarget === 'both') ? $partnerSpLevel : null,
+                        'partner_sp_reason'      => ($spTarget === 'partner' || $spTarget === 'both') ? $partnerSpReason : null,
+                        'customer_sp_level'      => ($spTarget === 'customer' || $spTarget === 'both') ? $customerSpLevel : null,
+                        'customer_sp_reason'     => ($spTarget === 'customer' || $spTarget === 'both') ? $customerSpReason : null,
+                        'audit_decision'         => $auditDecision,
+                        'reviewed_at'            => now(),
+                    ]);
                 }
-
-                // Eksekusi mutasi saldo
-                if ($refundCustomer > 0 && $lockedHelp->user) {
-                    $this->transactionService->refundFromEscrowDirect($lockedHelp, $lockedHelp->user, $refundCustomer, 'Pembatalan Disetujui Admin Wilayah');
-                }
-
-                if ($payoutMitra > 0 && $lockedHelp->mitra) {
-                    $this->transactionService->payoutPartialFromEscrowDirect($lockedHelp, $lockedHelp->mitra, $payoutMitra, 'Kompensasi Pembatalan oleh Admin Wilayah');
-                }
-
-                $escrowFinalStatus = ($refundCustomer > 0 && $payoutMitra > 0)
-                    ? Help::ESCROW_STATUS_PARTIAL_REFUND
-                    : ($refundCustomer > 0 ? Help::ESCROW_STATUS_REFUNDED : Help::ESCROW_STATUS_RELEASED);
-
-                $lockedHelp->update([
-                    'status'         => Help::STATUS_DIBATALKAN,
-                    'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
-                    'escrow_status'  => $escrowFinalStatus,
-                    'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
-                    'admin_notes'    => "Pembatalan disetujui Admin #{$admin->id} ({$admin->name}). Resolusi: {$settlementType}. Refund: Rp " . number_format($refundCustomer, 0, ',', '.') . ", Kompensasi Mitra: Rp " . number_format($payoutMitra, 0, ',', '.'),
-                ]);
-
-                if ($lockedHelp->mitra_id) {
-                    $this->onlineService->releaseBusy($lockedHelp->mitra_id, $lockedHelp->id);
-                }
-
-                $auditDecision = ($spTarget !== HelpCancelRequest::SP_TARGET_NONE)
-                    ? HelpCancelRequest::AUDIT_PENALTY_ISSUED
-                    : HelpCancelRequest::AUDIT_VALID_NO_SP;
-
-                $lockedReq->update([
-                    'status'                 => HelpCancelRequest::STATUS_APPROVED,
-                    'settlement_type'        => $settlementType,
-                    'refund_amount_customer' => $refundCustomer,
-                    'payout_amount_mitra'    => $payoutMitra,
-                    'reviewed_by'            => $admin->id,
-                    'admin_notes'            => $adminNotes,
-                    'sp_target'              => $spTarget,
-                    'partner_sp_level'       => ($spTarget === 'partner' || $spTarget === 'both') ? $partnerSpLevel : null,
-                    'partner_sp_reason'      => ($spTarget === 'partner' || $spTarget === 'both') ? $partnerSpReason : null,
-                    'customer_sp_level'      => ($spTarget === 'customer' || $spTarget === 'both') ? $customerSpLevel : null,
-                    'customer_sp_reason'     => ($spTarget === 'customer' || $spTarget === 'both') ? $customerSpReason : null,
-                    'audit_decision'         => $auditDecision,
-                    'reviewed_at'            => now(),
-                ]);
             } else {
                 // Penolakan Pembatalan: Kembalikan status pengerjaan semula
                 $restoredStatus = $lockedReq->previous_status ?: Help::STATUS_TAKEN;

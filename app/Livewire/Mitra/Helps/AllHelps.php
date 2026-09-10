@@ -182,17 +182,19 @@ class AllHelps extends Component
             $minLng = $lng - $lngDelta;
             $maxLng = $lng + $lngDelta;
 
-            // Formula Haversine SQL Presisi (Output: distance_km)
-            $haversineSql = "(6371 * acos(least(1.0, greatest(-1.0, cos(radians($lat)) * cos(radians(latitude)) * cos(radians(longitude) - radians($lng)) + sin(radians($lat)) * sin(radians(latitude))))))";
+            // Formula Haversine SQL Presisi dengan koordinat titik awal sesuai jenis layanan (Output: distance_km)
+            $initialLatSql = "COALESCE(helps.pickup_latitude, helps.store_latitude, helps.latitude)";
+            $initialLngSql = "COALESCE(helps.pickup_longitude, helps.store_longitude, helps.longitude)";
+            $haversineSql = "(6371 * acos(least(1.0, greatest(-1.0, cos(radians($lat)) * cos(radians($initialLatSql)) * cos(radians($initialLngSql) - radians($lng)) + sin(radians($lat)) * sin(radians($initialLatSql))))))";
         }
 
         // Hitung total order per tab untuk badge indikator
         $countRadius10km = 0;
         if ($hasGps) {
-            $countRadius10km = (clone $basePoolQuery)->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $maxOperationalKm, $user) {
-                $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $maxOperationalKm) {
-                    $sub->whereBetween('latitude', [$minLat, $maxLat])
-                        ->whereBetween('longitude', [$minLng, $maxLng])
+            $countRadius10km = (clone $basePoolQuery)->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm, $user) {
+                $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm) {
+                    $sub->whereRaw("$initialLatSql BETWEEN ? AND ?", [$minLat, $maxLat])
+                        ->whereRaw("$initialLngSql BETWEEN ? AND ?", [$minLng, $maxLng])
                         ->whereRaw("$haversineSql <= ?", [$maxOperationalKm]);
                 })->orWhere(function ($sub) use ($user) {
                     $sub->where(function($s) {
@@ -228,10 +230,10 @@ class AllHelps extends Component
         if ($this->districtFilter === 'all' || $this->districtFilter === 'radius_10km') {
             // TAB 1: Radius 10 KM dari tempat Mitra berdiri
             if ($hasGps) {
-                $query->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $maxOperationalKm, $user) {
-                    $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $maxOperationalKm) {
-                        $sub->whereBetween('latitude', [$minLat, $maxLat])
-                            ->whereBetween('longitude', [$minLng, $maxLng])
+                $query->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm, $user) {
+                    $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm) {
+                        $sub->whereRaw("$initialLatSql BETWEEN ? AND ?", [$minLat, $maxLat])
+                            ->whereRaw("$initialLngSql BETWEEN ? AND ?", [$minLng, $maxLng])
                             ->whereRaw("$haversineSql <= ?", [$maxOperationalKm]);
                     })->orWhere(function ($sub) use ($user) {
                         // Fallback untuk order legacy yang belum ada koordinat map

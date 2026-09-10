@@ -310,7 +310,7 @@ class HelpDetail extends Component
             );
 
             $this->showPartnerCancelModal = false;
-            session()->flash('message', 'Pengajuan pembatalan telah dikirim dan menunggu konfirmasi. Akun Anda telah dibebaskan untuk mencari order lain.');
+            session()->flash('message', 'Tugas berhasil dibatalkan. Akun Anda telah aktif kembali untuk menerima pekerjaan lain.');
             return redirect()->route('mitra.dashboard');
         } catch (\RuntimeException $e) {
             $this->showPartnerCancelModal = false;

@@ -54,7 +54,7 @@
                     </span>
                 @endif
             </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Penanganan sengketa, klarifikasi mitra & customer, investigasi bukti, dan moderasi dana</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Penanganan sengketa, klarifikasi mitra & customer, investigasi bukti, audit disiplin SP, dan moderasi dana</p>
         </div>
         <a href="{{ route($routePrefix . 'partners.reports') }}"
             class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors w-full sm:w-auto shrink-0 shadow-xs">
@@ -135,24 +135,70 @@
                 @endif
             </div>
 
-            {{-- Kartu Kontak Pelapor & Terlapor --}}
+            {{-- Kartu Kontak & Disiplin SP Pelapor & Terlapor --}}
             <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs p-4 sm:p-6 space-y-4">
-                <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 pb-3 border-b border-gray-100 dark:border-gray-700">
-                    <span>👥 Pihak yang Bersengketa</span>
-                </h3>
+                <div class="flex items-center justify-between gap-2 pb-3 border-b border-gray-100 dark:border-gray-700">
+                    <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <span>👥 Pihak Terlibat & Audit Status Kedisiplinan (SP)</span>
+                    </h3>
+                    <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Pemberian SP Instan Tanpa Berpindah Halaman</span>
+                </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {{-- Kontak Pelapor --}}
-                    <div class="p-4 sm:p-5 bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-700/50 dark:to-gray-800 rounded-2xl border border-blue-100 dark:border-gray-600 space-y-3 min-w-0">
+                    {{-- Kontak & Status SP Pelapor --}}
+                    <div class="p-4 sm:p-5 bg-gradient-to-br from-blue-50/40 via-white to-gray-50 dark:from-gray-700/40 dark:via-gray-800 dark:to-gray-800 rounded-2xl border border-blue-100 dark:border-gray-700 space-y-3.5 min-w-0 shadow-2xs">
                         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 min-w-0">
                             <div class="min-w-0 flex-1">
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">Pelapor</span>
-                                <h4 class="text-sm font-bold text-gray-900 dark:text-white break-words">{{ $rep?->name ?? 'User' }}</h4>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
+                                    Pelapor ({{ $rep?->role === 'mitra' ? 'Mitra' : 'Customer' }})
+                                </span>
+                                <h4 class="text-sm font-bold text-gray-900 dark:text-white break-words mt-1">{{ $rep?->name ?? 'User' }}</h4>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $rep?->email ?? '-' }}</p>
                             </div>
                             <span class="text-xs font-extrabold text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/60 px-2.5 py-1 rounded-lg self-start sm:self-auto shrink-0 whitespace-nowrap">
                                 Saldo: Rp {{ number_format($rep?->balance ?? 0, 0, ',', '.') }}
                             </span>
+                        </div>
+
+                        {{-- Section Status SP & Greylist Pelapor --}}
+                        <div class="p-3 bg-white/80 dark:bg-gray-700/60 rounded-xl border border-blue-100 dark:border-gray-600 space-y-2">
+                            <div class="flex items-center justify-between gap-2 flex-wrap">
+                                <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400">Tingkat SP Saat Ini:</span>
+                                @php
+                                    $repSp = (int) ($rep?->warning_level ?? 0);
+                                @endphp
+                                @if($repSp === 0)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300">
+                                        <svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                        Bersih (0 SP)
+                                    </span>
+                                @elseif($repSp === 1)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 animate-pulse">
+                                        ⚠️ SP 1 (Ringan)
+                                    </span>
+                                @elseif($repSp === 2)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300 border border-orange-300 animate-pulse">
+                                        🟠 SP 2 (Keras)
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 animate-pulse">
+                                        🔴 SP 3 (Sanksi Berat)
+                                    </span>
+                                @endif
+                            </div>
+
+                            @if($rep?->is_greylisted)
+                                <div class="pt-1.5 border-t border-gray-100 dark:border-gray-600 flex items-start gap-1.5 text-[11px] text-amber-800 dark:text-amber-300">
+                                    <span class="font-extrabold">🏴 Daftar Abu-Abu:</span>
+                                    <span class="text-gray-600 dark:text-gray-300 line-clamp-2" title="{{ $rep->greylist_reason }}">{{ $rep->greylist_reason ?: 'Dalam pengawasan khusus' }}</span>
+                                </div>
+                            @endif
+
+                            @if($rep && $rep->greylistLogs->isNotEmpty())
+                                <p class="text-[10px] text-gray-500 dark:text-gray-400">
+                                    Total {{ $rep->greylistLogs->count() }} catatan riwayat SP/kedisiplinan tercatat di sistem.
+                                </p>
+                            @endif
                         </div>
 
                         <div class="text-xs space-y-1 text-gray-600 dark:text-gray-300">
@@ -179,25 +225,72 @@
                             @endif
 
                             @if($rep)
-                                <a href="{{ route($routePrefix . 'partners.greylist', ['search' => $rep->name]) }}"
-                                    class="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800 rounded-xl text-xs font-bold transition">
-                                    <span>⚠️ Pengawasan / SP</span>
+                                <button type="button" wire:click="openSpModal({{ $rep->id }})"
+                                    class="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-xl text-xs font-extrabold transition cursor-pointer shadow-2xs active:scale-95">
+                                    <span>⚡ Beri SP Instan</span>
+                                </button>
+                                <a href="{{ route($routePrefix . 'partners.greylist', ['search' => $rep->name]) }}" target="_blank"
+                                    class="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl text-xs font-semibold transition">
+                                    <span>Log SP</span>
                                 </a>
                             @endif
                         </div>
                     </div>
 
-                    {{-- Kontak Terlapor --}}
-                    <div class="p-4 sm:p-5 bg-gradient-to-br from-amber-50/50 to-white dark:from-gray-700/50 dark:to-gray-800 rounded-2xl border border-amber-100 dark:border-gray-600 space-y-3 min-w-0">
+                    {{-- Kontak & Status SP Terlapor --}}
+                    <div class="p-4 sm:p-5 bg-gradient-to-br from-amber-50/40 via-white to-gray-50 dark:from-gray-700/40 dark:via-gray-800 dark:to-gray-800 rounded-2xl border border-amber-100 dark:border-gray-700 space-y-3.5 min-w-0 shadow-2xs">
                         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 min-w-0">
                             <div class="min-w-0 flex-1">
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Terlapor (Mitra)</span>
-                                <h4 class="text-sm font-bold text-gray-900 dark:text-white break-words">{{ $mitra?->name ?? 'Mitra' }}</h4>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
+                                    Terlapor ({{ $mitra?->role === 'customer' ? 'Customer' : 'Mitra' }})
+                                </span>
+                                <h4 class="text-sm font-bold text-gray-900 dark:text-white break-words mt-1">{{ $mitra?->name ?? 'Mitra' }}</h4>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $mitra?->email ?? '-' }}</p>
                             </div>
                             <span class="text-xs font-extrabold text-emerald-600 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-1 rounded-lg self-start sm:self-auto shrink-0 whitespace-nowrap">
                                 Saldo: Rp {{ number_format($mitra?->balance ?? 0, 0, ',', '.') }}
                             </span>
+                        </div>
+
+                        {{-- Section Status SP & Greylist Terlapor --}}
+                        <div class="p-3 bg-white/80 dark:bg-gray-700/60 rounded-xl border border-amber-100 dark:border-gray-600 space-y-2">
+                            <div class="flex items-center justify-between gap-2 flex-wrap">
+                                <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400">Tingkat SP Saat Ini:</span>
+                                @php
+                                    $mitraSp = (int) ($mitra?->warning_level ?? 0);
+                                @endphp
+                                @if($mitraSp === 0)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300">
+                                        <svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                        Bersih (0 SP)
+                                    </span>
+                                @elseif($mitraSp === 1)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 animate-pulse">
+                                        ⚠️ SP 1 (Ringan)
+                                    </span>
+                                @elseif($mitraSp === 2)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300 border border-orange-300 animate-pulse">
+                                        🟠 SP 2 (Keras)
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 animate-pulse">
+                                        🔴 SP 3 (Sanksi Berat)
+                                    </span>
+                                @endif
+                            </div>
+
+                            @if($mitra?->is_greylisted)
+                                <div class="pt-1.5 border-t border-gray-100 dark:border-gray-600 flex items-start gap-1.5 text-[11px] text-amber-800 dark:text-amber-300">
+                                    <span class="font-extrabold">🏴 Daftar Abu-Abu:</span>
+                                    <span class="text-gray-600 dark:text-gray-300 line-clamp-2" title="{{ $mitra->greylist_reason }}">{{ $mitra->greylist_reason ?: 'Dalam pengawasan khusus' }}</span>
+                                </div>
+                            @endif
+
+                            @if($mitra && $mitra->greylistLogs->isNotEmpty())
+                                <p class="text-[10px] text-gray-500 dark:text-gray-400">
+                                    Total {{ $mitra->greylistLogs->count() }} catatan riwayat SP/kedisiplinan tercatat di sistem.
+                                </p>
+                            @endif
                         </div>
 
                         <div class="text-xs space-y-1 text-gray-600 dark:text-gray-300">
@@ -224,9 +317,13 @@
                             @endif
 
                             @if($mitra)
-                                <a href="{{ route($routePrefix . 'partners.greylist', ['search' => $mitra->name]) }}"
-                                    class="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-bold transition">
-                                    <span>⚠️ Pengawasan / SP</span>
+                                <button type="button" wire:click="openSpModal({{ $mitra->id }})"
+                                    class="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-xl text-xs font-extrabold transition cursor-pointer shadow-2xs active:scale-95">
+                                    <span>⚡ Beri SP Instan</span>
+                                </button>
+                                <a href="{{ route($routePrefix . 'partners.greylist', ['search' => $mitra->name]) }}" target="_blank"
+                                    class="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl text-xs font-semibold transition">
+                                    <span>Log SP</span>
                                 </a>
                             @endif
                         </div>
@@ -381,6 +478,104 @@
         </div>
     </div>
 
+    {{-- ============================================================ --}}
+    {{-- MODAL PENERBITAN SP INSTAN (SURAT PERINGATAN LANGSUNG)        --}}
+    {{-- ============================================================ --}}
+    @if($showSpModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <div class="bg-white dark:bg-gray-800 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-gray-100 dark:border-gray-700 space-y-4 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-sm">
+                            ⚡
+                        </span>
+                        <div>
+                            <h3 class="text-sm font-extrabold text-gray-900 dark:text-white">Penerbitan Surat Peringatan (SP) Instan</h3>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400">Jatuhkan sanksi kedisiplinan langsung dari laporan ini</p>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="closeSpModal" class="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                {{-- Ringkasan Target User --}}
+                <div class="p-3.5 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-200 dark:border-gray-600 flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-[10px] uppercase tracking-wider font-extrabold text-gray-400">Target Pelanggar</p>
+                        <p class="font-bold text-sm text-gray-900 dark:text-white truncate">{{ $spTargetUserName }}</p>
+                        <span class="inline-block text-[10px] font-semibold text-gray-500 capitalize">
+                            Peran: {{ $spTargetUserRole === 'mitra' ? 'Mitra Lapangan' : 'Customer' }}
+                        </span>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <p class="text-[10px] text-gray-400 font-medium">Status Saat Ini</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-extrabold {{ $spCurrentWarningLevel > 0 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' }}">
+                            {{ $spCurrentWarningLevel > 0 ? "SP {$spCurrentWarningLevel}" : 'Bersih (0 SP)' }}
+                        </span>
+                    </div>
+                </div>
+
+                {{-- Pilih Tingkat SP --}}
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Pilih Tingkat SP yang Diterbitkan:</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <label class="relative flex flex-col p-3 rounded-xl border cursor-pointer transition {{ (int)$spWarningLevel === 1 ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-gray-700 dark:text-gray-300' }}">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" wire:model="spWarningLevel" value="1" class="text-amber-600 focus:ring-amber-500">
+                                <span class="font-bold text-xs">SP 1</span>
+                            </div>
+                            <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Peringatan Ringan / Awal</span>
+                        </label>
+
+                        <label class="relative flex flex-col p-3 rounded-xl border cursor-pointer transition {{ (int)$spWarningLevel === 2 ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/30 text-orange-900 dark:text-orange-200 ring-2 ring-orange-500/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-gray-700 dark:text-gray-300' }}">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" wire:model="spWarningLevel" value="2" class="text-orange-600 focus:ring-orange-500">
+                                <span class="font-bold text-xs">SP 2</span>
+                            </div>
+                            <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Peringatan Keras (Pelanggaran Berulang)</span>
+                        </label>
+
+                        <label class="relative flex flex-col p-3 rounded-xl border cursor-pointer transition {{ (int)$spWarningLevel === 3 ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200 ring-2 ring-rose-500/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-gray-700 dark:text-gray-300' }}">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" wire:model="spWarningLevel" value="3" class="text-rose-600 focus:ring-rose-500">
+                                <span class="font-bold text-xs text-rose-600 dark:text-rose-400">SP 3</span>
+                            </div>
+                            <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Sanksi Berat & Shadow Ban (Mitra)</span>
+                        </label>
+                    </div>
+                </div>
+
+                {{-- Alasan Pelanggaran --}}
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                        Alasan Pelanggaran / Dasar Penerbitan SP <span class="text-rose-500">*</span>
+                    </label>
+                    <textarea wire:model="spReason" rows="3" placeholder="Jelaskan alasan detail pemberian SP (misal: Terbukti lalai dalam pengerjaan tugas, tidak hadir tanpa konfirmasi, dll)..."
+                        class="w-full p-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-rose-500"></textarea>
+                    @error('spReason') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                {{-- Opsi Catat ke Catatan Admin --}}
+                <div class="flex items-center gap-2 pt-1">
+                    <input type="checkbox" id="spAutoNoteInReport" wire:model="spAutoNoteInReport" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                    <label for="spAutoNoteInReport" class="text-xs text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                        Otomatis cantumkan tindakan SP ini ke dalam Catatan Internal Laporan
+                    </label>
+                </div>
+
+                {{-- Actions --}}
+                <div class="flex flex-col-reverse sm:flex-row sm:items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <button type="button" wire:click="closeSpModal" class="w-full sm:w-auto px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold text-center">Batal</button>
+                    <button type="button" wire:click="submitInstantSp" wire:loading.attr="disabled" class="w-full sm:w-auto px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-extrabold shadow-sm text-center flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition">
+                        <span wire:loading.remove wire:target="submitInstantSp">⚡ Terbitkan SP {{ $spWarningLevel }} Sekarang</span>
+                        <span wire:loading wire:target="submitInstantSp">Memproses...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- MODAL REFUND APPROVAL --}}
     @if($showRefundModal)
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
@@ -425,4 +620,3 @@
         </div>
     @endif
 </div>
-

@@ -473,24 +473,31 @@
 
                     @if($cancelDecision === 'approved')
                         <div>
-                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Penyelesaian Finansial:</label>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Keputusan & Penyelesaian:</label>
                             <select wire:model.live="settlementType" class="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs">
-                                <option value="full_refund">Full Refund (100% Saldo Escrow ke Customer)</option>
+                                <option value="full_refund">Batalkan Total: Full Refund (100% Saldo Escrow ke Customer)</option>
+                                <option value="relist_pool">🔄 Lempar Kembali ke Pool (Lepas Mitra Saat Ini & Cari Mitra Lain)</option>
                                 <option value="item_settled">Item Settled (Barang dibayar ke Mitra, sisa ke Customer)</option>
                                 <option value="partial_settlement">Settlement Parsial / Proporsional</option>
                             </select>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Refund Customer (Rp)</label>
-                                <input type="number" wire:model.defer="cancelRefundAmount" class="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 rounded-lg text-xs font-bold">
+                        @if($settlementType !== 'relist_pool')
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Refund Customer (Rp)</label>
+                                    <input type="number" wire:model.defer="cancelRefundAmount" class="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 rounded-lg text-xs font-bold">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Kompensasi Mitra (Rp)</label>
+                                    <input type="number" wire:model.defer="cancelPartnerAmount" class="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 rounded-lg text-xs font-bold">
+                                </div>
                             </div>
-                            <div>
-                                <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Kompensasi Mitra (Rp)</label>
-                                <input type="number" wire:model.defer="cancelPartnerAmount" class="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 rounded-lg text-xs font-bold">
+                        @else
+                            <div class="p-2.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-800 dark:text-blue-300">
+                                ℹ️ Saldo tetap aman di rekening escrow. Mitra saat ini akan dilepaskan (dan dapat diberikan SP jika bersalah), dan pesanan akan otomatis dibuka kembali di open pool untuk diambil oleh mitra lain.
                             </div>
-                        </div>
+                        @endif
                     @endif
 
                     {{-- Admin SP Penalty Controls --}}

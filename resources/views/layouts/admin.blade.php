@@ -145,6 +145,8 @@
               }
           }
       }" 
+      :class="{ 'overflow-hidden': sidebarOpenMobile }"
+      x-init="$watch('sidebarOpenMobile', val => { if(val) { $nextTick(() => { $refs.adminSidebarNav?.focus(); }); } })"
       @keydown.escape.window="sidebarOpenMobile = false"
       x-on:livewire:navigated.window="if (window.innerWidth < 1024) sidebarOpenMobile = false"
       @open-logout-modal.window="showLogoutModal = true">
@@ -154,12 +156,14 @@
         <!-- Mobile Drawer Backdrop -->
         <div x-show="sidebarOpenMobile" 
              @click="sidebarOpenMobile = false" 
+             @touchmove.prevent
+             @wheel.prevent
              x-cloak 
-             class="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-40 lg:hidden">
+             class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-40 lg:hidden">
         </div>
 
         <!-- Sidebar / Drawer Menu -->
-        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-2xl lg:shadow-md fixed inset-y-0 left-0 flex flex-col z-50 -translate-x-full lg:translate-x-0"
+        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-2xl lg:shadow-md fixed inset-y-0 left-0 flex flex-col z-50 -translate-x-full lg:translate-x-0 h-screen max-h-screen overscroll-contain"
                :class="{
                    'translate-x-0': sidebarOpenMobile,
                    'lg:translate-x-0': sidebarOpenDesktop,
@@ -204,7 +208,10 @@
             </div>
 
             <!-- Scrollable Navigation -->
-            <nav class="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-1.5 custom-scrollbar min-h-0">
+            <nav x-ref="adminSidebarNav"
+                 tabindex="-1"
+                 class="flex-1 min-h-0 h-0 overflow-y-auto overflow-x-hidden p-4 space-y-1.5 custom-scrollbar overscroll-contain touch-pan-y outline-none focus:outline-none"
+                 style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
                 <a href="{{ route('admin.dashboard') }}" wire:navigate
                     class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.dashboard') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -247,7 +254,7 @@
                         <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        <span class="truncate">Manajemen Laporan Aduan</span>
+                        <span class="truncate">Laporan Aduan</span>
                     </div>
                     @php
                         $pendingReportsCount = \App\Models\PartnerReport::getActiveReportsCountForUser();
@@ -255,6 +262,24 @@
                     @if($pendingReportsCount > 0)
                         <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold {{ request()->routeIs('admin.partners.report') || request()->routeIs('admin.partners.reports.*') ? 'bg-white text-rose-600 shadow-2xs' : 'bg-rose-500 text-white shadow-xs' }} ml-2 shrink-0 animate-pulse" title="{{ $pendingReportsCount }} Aduan Masuk / Diproses">
                             {{ $pendingReportsCount > 99 ? '99+' : $pendingReportsCount }}
+                        </span>
+                    @endif
+                </a>
+
+                <a href="{{ route('admin.cancellations.index') }}" wire:navigate
+                    class="flex items-center justify-between px-4 py-2.5 {{ request()->routeIs('admin.disputes*') || request()->routeIs('admin.cancellations*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <div class="flex items-center min-w-0">
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <span class="truncate">Tinjauan Pembatalan</span>
+                    </div>
+                    @php
+                        $pendingCancelsCount = \App\Models\HelpCancelRequest::getPendingReviewsCountForUser();
+                    @endphp
+                    @if($pendingCancelsCount > 0)
+                        <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold {{ request()->routeIs('admin.disputes*') || request()->routeIs('admin.cancellations*') ? 'bg-white text-rose-600 shadow-2xs' : 'bg-rose-500 text-white shadow-xs' }} ml-2 shrink-0 animate-pulse" title="{{ $pendingCancelsCount }} Pembatalan / Sengketa Menunggu Audit">
+                            {{ $pendingCancelsCount > 99 ? '99+' : $pendingCancelsCount }}
                         </span>
                     @endif
                 </a>
@@ -330,6 +355,7 @@
                     request()->routeIs('admin.verifications.*') || request()->routeIs('admin.verifications') => 'Verifikasi Akun Mitra',
                     request()->routeIs('admin.ktp-ocr.*') || request()->routeIs('admin.ktp-ocr') => 'OCR KTP & Verifikasi',
                     request()->routeIs('admin.partners.reports*') || request()->routeIs('admin.reports.*') => 'Laporan Aduan',
+                    request()->routeIs('admin.disputes*') || request()->routeIs('admin.cancellations*') => 'Tinjauan Pembatalan & Sengketa',
                     request()->routeIs('admin.withdraws.*') => 'Manajemen Withdraw',
                     request()->routeIs('admin.topup.approvals*') => 'Manajemen Top-Up',
                     request()->routeIs('admin.settings.*') => 'Pengaturan',

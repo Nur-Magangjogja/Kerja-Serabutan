@@ -455,6 +455,11 @@ class Help extends Model
         return $this->hasMany(HelpCancelRequest::class);
     }
 
+    public function cancelRequest()
+    {
+        return $this->hasOne(HelpCancelRequest::class)->latestOfMany();
+    }
+
     public function activeCancelRequest()
     {
         return $this->hasOne(HelpCancelRequest::class)->where('status', HelpCancelRequest::STATUS_PENDING)->latestOfMany();
@@ -522,7 +527,6 @@ class Help extends Model
             self::STATUS_PARTNER_ARRIVED,
             self::STATUS_IN_PROGRESS,
             'sedang_diproses',
-            self::STATUS_PARTNER_CANCEL_REQUESTED,
         ]);
     }
 

@@ -9,19 +9,31 @@ use App\Models\PartnerReport;
 use App\Services\HelpCancellationService;
 use App\Services\HelpTransactionService;
 use Illuminate\Support\Facades\Log;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-#[Layout('layouts.admin')]
 class Index extends Component
 {
     use WithPagination;
 
-    public $activeTab = 'disputes'; // 'disputes' | 'cancellations'
-    public $status = 'frozen'; // 'frozen', 'resolved', 'all' (or 'pending', 'approved', 'rejected' for cancellations)
+    public $activeTab = 'cancellations'; // Default to cancellations since cancellations are frequent
+    public $status = 'pending'; // 'frozen', 'resolved', 'all' (or 'pending', 'approved', 'rejected' for cancellations)
     public $search = '';
     public $requesterTypeFilter = 'all'; // 'all', 'partner', 'customer'
+
+    public function mount()
+    {
+        if (request()->routeIs('*disputes*') && !request()->has('tab')) {
+            $this->activeTab = 'disputes';
+            $this->status = 'frozen';
+        } elseif (request('tab') === 'disputes') {
+            $this->activeTab = 'disputes';
+            $this->status = 'frozen';
+        } else {
+            $this->activeTab = 'cancellations';
+            $this->status = 'pending';
+        }
+    }
 
     // Modal state (Disputes)
     public $showResolveModal = false;
@@ -259,7 +271,7 @@ class Index extends Component
 
         $this->validate([
             'cancelDecision'     => 'required|in:approved,rejected',
-            'settlementType'     => 'required_if:cancelDecision,approved|in:full_refund,item_settled,partial_settlement',
+            'settlementType'     => 'required_if:cancelDecision,approved|in:full_refund,item_settled,partial_settlement,relist_pool',
             'cancelRefundAmount' => 'nullable|numeric|min:0',
             'cancelPartnerAmount'=> 'nullable|numeric|min:0',
             'spTarget'           => 'required|in:none,partner,customer,both',
@@ -336,11 +348,13 @@ class Index extends Component
             }
 
             $cancellations = $query->latest()->paginate(10);
+            $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 
             return view('livewire.admin.disputes.index', [
                 'cancellations' => $cancellations,
                 'disputes'      => collect(),
-            ]);
+                'isSuperAdmin'  => $isSuperAdmin,
+            ])->layout($layout);
         }
 
         $query = Help::with(['user.district', 'mitra.district', 'district', 'city', 'disputeResolvedBy'])
@@ -382,10 +396,12 @@ class Index extends Component
         }
 
         $disputes = $query->latest('disputed_at')->paginate(10);
+        $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 
         return view('livewire.admin.disputes.index', [
             'disputes'      => $disputes,
             'cancellations' => collect(),
-        ]);
+            'isSuperAdmin'  => $isSuperAdmin,
+        ])->layout($layout);
     }
 }

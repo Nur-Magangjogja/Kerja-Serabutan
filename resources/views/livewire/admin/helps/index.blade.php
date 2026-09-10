@@ -282,20 +282,11 @@
                         </div>
                     </div>
 
-                    {{-- Financial Breakdown (Revisi 3) --}}
-                    <div class="p-3.5 bg-gray-50/80 dark:bg-gray-700/30 rounded-2xl border border-gray-100 dark:border-gray-700 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    {{-- Financial Breakdown --}}
+                    <div class="p-3.5 bg-gray-50/80 dark:bg-gray-700/30 rounded-2xl border border-gray-100 dark:border-gray-700 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                         <div>
                             <span class="text-[10px] text-gray-400 block font-medium">Biaya Jasa</span>
                             <span class="font-bold text-gray-800 dark:text-gray-200">Rp {{ number_format($selectedHelp->service_fee ?: $selectedHelp->amount, 0, ',', '.') }}</span>
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-gray-400 block font-medium">Biaya Perjalanan</span>
-                            <span class="font-bold text-blue-600 dark:text-blue-400">
-                                Rp {{ number_format($selectedHelp->travel_fee ?? 0, 0, ',', '.') }}
-                                @if($selectedHelp->travel_distance_km)
-                                    <span class="text-[9px] font-normal text-gray-500">({{ number_format($selectedHelp->travel_distance_km, 1) }} km)</span>
-                                @endif
-                            </span>
                         </div>
                         <div>
                             <span class="text-[10px] text-gray-400 block font-medium">Titipan Belanja</span>

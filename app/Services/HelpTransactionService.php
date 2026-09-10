@@ -90,18 +90,36 @@ class HelpTransactionService
             throw new \RuntimeException('Anda tidak dapat mengambil bantuan ini karena sebelumnya telah Anda batalkan.');
         }
 
-        // 8. Validasi Jarak Operasional Baku (Maksimal 10.0 KM)
+        // 8. Validasi Jarak Operasional Baku (Maksimal 10.0 KM untuk pesanan instan)
         $maxRadiusKm = (float) \App\Models\AppSetting::MAX_OPERATIONAL_RADIUS_KM;
         $mitraLat = $lat ?? ($mitra->latitude ? (float) $mitra->latitude : null);
         $mitraLng = $lng ?? ($mitra->longitude ? (float) $mitra->longitude : null);
-        if ($mitraLat && $mitraLng && $help->latitude && $help->longitude) {
+
+        // Tentukan koordinat titik awal sesuai jenis layanan
+        $targetLat = null;
+        $targetLng = null;
+        if ($help->isPickup()) {
+            $targetLat = (float) ($help->pickup_latitude ?: $help->latitude);
+            $targetLng = (float) ($help->pickup_longitude ?: $help->longitude);
+        } elseif ($help->isBuy()) {
+            $targetLat = (float) ($help->store_latitude ?: $help->pickup_latitude ?: $help->latitude);
+            $targetLng = (float) ($help->store_longitude ?: $help->pickup_longitude ?: $help->longitude);
+        } else {
+            $targetLat = (float) ($help->latitude ?: 0);
+            $targetLng = (float) ($help->longitude ?: 0);
+        }
+
+        // Pesanan berjadwal di masa depan (> 1 jam dari sekarang) fleksibel dari lokasi saat ini
+        $isFutureScheduled = $help->scheduled_at && \Carbon\Carbon::parse($help->scheduled_at)->isFuture() && \Carbon\Carbon::parse($help->scheduled_at)->diffInMinutes(now()) > 60;
+
+        if (!$isFutureScheduled && $mitraLat && $mitraLng && $targetLat && $targetLng) {
             $distMeters = app(LocationTrackingService::class)->calculateDistance(
                 (float) $mitraLat, (float) $mitraLng,
-                (float) $help->latitude, (float) $help->longitude
+                (float) $targetLat, (float) $targetLng
             );
             $distKm = $distMeters / 1000;
             if ($distKm > $maxRadiusKm) {
-                throw new \RuntimeException("Lokasi bantuan ini berjarak " . round($distKm, 1) . " km, melebihi batas jangkauan operasional maksimal platform ({$maxRadiusKm} km).");
+                throw new \RuntimeException("Lokasi titik awal bantuan ini berjarak " . round($distKm, 1) . " km dari posisi Anda saat ini, melebihi batas jangkauan operasional maksimal platform ({$maxRadiusKm} km).");
             }
         }
     }

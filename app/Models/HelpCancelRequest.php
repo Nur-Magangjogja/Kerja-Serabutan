@@ -26,6 +26,7 @@ class HelpCancelRequest extends Model
     public const SETTLEMENT_PARTIAL_SETTLEMENT = 'partial_settlement';
     public const SETTLEMENT_ITEM_SETTLED       = 'item_settled';
     public const SETTLEMENT_NO_REFUND          = 'no_refund';
+    public const SETTLEMENT_RELIST_POOL        = 'relist_pool';
 
     protected $fillable = [
         'help_id',
@@ -142,4 +143,58 @@ class HelpCancelRequest extends Model
     {
         return $this->expires_at && $this->expires_at->isPast() && $this->isPending();
     }
+
+    protected static function booted()
+    {
+        static::created(function () {
+            \Illuminate\Support\Facades\Cache::increment('active_cancellations_count_version');
+        });
+
+        static::updated(function () {
+            \Illuminate\Support\Facades\Cache::increment('active_cancellations_count_version');
+        });
+    }
+
+    /**
+     * Menghitung total permintaan pembatalan pending & sengketa escrow aktif
+     * untuk keperluan indikator badge di sidebar Admin & Superadmin.
+     */
+    public static function getPendingReviewsCountForUser(?User $user = null): int
+    {
+        $user = $user ?? auth()->user();
+        if (!$user) {
+            return 0;
+        }
+
+        $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
+        $version = \Illuminate\Support\Facades\Cache::get('active_cancellations_count_version', 1);
+        $cacheKey = 'active_cancels_disputes_count_v' . $version . '_' . ($isSuperAdmin ? 'sa' : 'admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
+
+        return (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin) {
+            // 1. Permintaan pembatalan tugas yang menunggu audit admin
+            $cancelQuery = static::where('status', self::STATUS_PENDING);
+
+            // 2. Sengketa dana escrow yang dibekukan
+            $disputeQuery = Help::where('escrow_status', Help::ESCROW_STATUS_DISPUTED_FREEZE);
+
+            if (!$isSuperAdmin) {
+                $districtIds = $user->getEffectiveAdminDistrictIds();
+                if (!empty($districtIds)) {
+                    $cancelQuery->where(function ($q) use ($districtIds) {
+                        $q->whereIn('district_id', $districtIds)
+                          ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $districtIds));
+                    });
+                    $disputeQuery->where(function ($q) use ($districtIds) {
+                        $q->whereIn('district_id', $districtIds)
+                          ->orWhereHas('user', fn($uq) => $uq->whereIn('district_id', $districtIds));
+                    });
+                } else {
+                    return 0;
+                }
+            }
+
+            return (int) ($cancelQuery->count() + $disputeQuery->count());
+        });
+    }
 }
+

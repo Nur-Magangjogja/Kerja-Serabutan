@@ -148,23 +148,14 @@
                 </div>
             </div>
 
-            {{-- Financial Breakdown (Revisi 3) --}}
-            <div class="bg-gray-50/80 dark:bg-gray-750/70 p-3 rounded-xl border border-gray-100 dark:border-gray-700/60 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+            {{-- Financial Breakdown --}}
+            <div class="bg-gray-50/80 dark:bg-gray-750/70 p-3 rounded-xl border border-gray-100 dark:border-gray-700/60 grid grid-cols-2 gap-2 text-xs">
                 <div>
                     <span class="text-[10px] text-gray-400 block font-medium">Biaya Jasa</span>
                     <span class="font-bold text-gray-800 dark:text-gray-200">Rp {{ number_format($help->service_fee ?: $help->amount, 0, ',', '.') }}</span>
                 </div>
-                <div>
-                    <span class="text-[10px] text-gray-400 block font-medium">Biaya Perjalanan</span>
-                    <span class="font-bold text-blue-600 dark:text-blue-400">
-                        Rp {{ number_format($help->travel_fee, 0, ',', '.') }}
-                        @if($help->travel_distance_km || $help->route_distance_km)
-                            <span class="text-[9px] font-normal text-gray-500">({{ number_format($help->travel_distance_km ?? $help->route_distance_km, 1) }} km)</span>
-                        @endif
-                    </span>
-                </div>
                 @if($help->service_type === 'buy_for_customer' && $help->item_fund > 0)
-                    <div class="col-span-2 sm:col-span-1">
+                    <div>
                         <span class="text-[10px] text-amber-600 dark:text-amber-400 block font-medium">Titipan Belanja (Escrow)</span>
                         <span class="font-bold text-amber-700 dark:text-amber-300">Rp {{ number_format($help->item_fund, 0, ',', '.') }}</span>
                     </div>
@@ -1148,7 +1139,7 @@
     @if($showCustomerCancelModal)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
              wire:click.self="closeCustomerCancelModal">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
                 <div class="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
                     <div class="flex items-center gap-2.5">
                         <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
@@ -1157,22 +1148,63 @@
                             </svg>
                         </div>
                         <div>
-                            <h3 class="font-bold text-base text-gray-900 dark:text-white">Pengajuan Pembatalan Pesanan</h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Pemeriksaan manual oleh Admin Wilayah</p>
+                            <h3 class="font-bold text-base text-gray-900 dark:text-white">Aduan Pembatalan Pesanan</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Peninjauan & Tindak Lanjut oleh Admin</p>
                         </div>
                     </div>
-                    <button wire:click="closeCustomerCancelModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">
+                    <button wire:click="closeCustomerCancelModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 cursor-pointer">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
-                    Pesanan ini telah diambil oleh mitra. Pengajuan pembatalan akan dikonfirmasi oleh <strong>Admin Wilayah</strong> dan mitra akan diberikan kesempatan memberikan tanggapan. Jika disetujui, <strong>100% saldo pembayaran akan dikembalikan</strong> ke akun Anda.
+                <div class="mb-4 p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-xl text-xs text-amber-900 dark:text-amber-200 leading-relaxed space-y-1.5">
+                    <p class="font-bold flex items-center gap-1.5">
+                        <span>ℹ️</span>
+                        <span>Informasi Prosedur Pembatalan:</span>
+                    </p>
+                    <p class="text-amber-800 dark:text-amber-300">
+                        Pengajuan aduan Anda akan langsung masuk ke <strong>Admin Wilayah</strong>. Admin akan menghubungi mitra untuk menindaklanjuti masalah, lalu menentukan apakah pesanan <strong>dibatalkan (refund 100% saldo)</strong> atau <strong>dialihkan kembali ke sistem untuk mencari mitra lain</strong>.
+                    </p>
+                </div>
+
+                {{-- Direct Contact Buttons --}}
+                <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-750 rounded-xl border border-gray-100 dark:border-gray-700/60 space-y-2">
+                    <span class="text-[11px] font-bold text-gray-600 dark:text-gray-300 block">Hubungi Langsung Sebelum Mengajukan:</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        @php
+                            $adminPhone = \App\Models\AppSetting::get('admin_whatsapp_contact', \App\Models\AppSetting::get('cs_phone', '6281234567890'));
+                            $adminWaText = urlencode("Halo Admin SayaBantu, saya ingin meminta bantuan/klarifikasi untuk pesanan #" . $help->order_id . ".");
+                        @endphp
+                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $adminPhone) }}?text={{ $adminWaText }}" target="_blank" rel="noopener"
+                           class="py-2 px-2.5 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition">
+                            <span>💬 CS Admin (WA)</span>
+                        </a>
+                        @if($help->mitra)
+                            @php
+                                $mitraWaText = urlencode("Halo Rekan " . ($help->mitra->name ?? 'Mitra') . ", terkait pesanan #" . $help->order_id . " mohon konfirmasinya.");
+                            @endphp
+                            @if(!empty($help->mitra->phone))
+                                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $help->mitra->phone) }}?text={{ $mitraWaText }}" target="_blank" rel="noopener"
+                                   class="py-2 px-2.5 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition">
+                                    <span>📞 Chat Mitra</span>
+                                </a>
+                            @else
+                                <a href="{{ route('chat.show', ['type' => 'help', 'id' => $help->id]) }}"
+                                   class="py-2 px-2.5 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition">
+                                    <span>💬 Chat Aplikasi</span>
+                                </a>
+                            @endif
+                        @else
+                            <div class="py-2 px-2.5 bg-gray-100 dark:bg-gray-700 text-gray-400 rounded-lg text-xs font-medium text-center">
+                                Mitra Belum Ada
+                            </div>
+                        @endif
+                    </div>
                 </div>
 
                 <div class="space-y-3 mb-5 text-xs">
                     <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Pilih Alasan Pembatalan <span class="text-red-500">*</span></label>
+                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Pilih Alasan Pembatalan / Aduan <span class="text-red-500">*</span></label>
                         <select wire:model.defer="customerCancelReason" class="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white">
                             <option value="">-- Pilih Alasan --</option>
                             <option value="Mitra Tidak Kunjung Datang / Lama">Mitra Tidak Kunjung Datang / Terlalu Lama</option>
@@ -1193,16 +1225,16 @@
 
                     <div>
                         <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Catatan Tambahan (Opsional)</label>
-                        <textarea wire:model.defer="customerCancelNotes" rows="3" placeholder="Ceritakan detail kendala pengerjaan..." class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs"></textarea>
+                        <textarea wire:model.defer="customerCancelNotes" rows="3" placeholder="Ceritakan detail kendala pengerjaan kepada Admin..." class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs"></textarea>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <button wire:click="closeCustomerCancelModal" type="button" class="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl transition">
-                        Batal
+                    <button wire:click="closeCustomerCancelModal" type="button" class="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl transition cursor-pointer">
+                        Tutup
                     </button>
-                    <button wire:click="submitCustomerCancel" wire:loading.attr="disabled" type="button" class="flex-1 py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5">
-                        <span wire:loading.remove wire:target="submitCustomerCancel">Kirim Pengajuan</span>
+                    <button wire:click="submitCustomerCancel" wire:loading.attr="disabled" type="button" class="flex-1 py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span wire:loading.remove wire:target="submitCustomerCancel">Kirim Aduan</span>
                         <span wire:loading wire:target="submitCustomerCancel">Mengirim...</span>
                     </button>
                 </div>

@@ -3,8 +3,7 @@
 namespace App\Livewire\Mitra\Helps;
 
 use App\Models\Help;
-use App\Models\BalanceTransaction;
-use App\Models\PartnerActivity;
+use App\Models\HelpCancelRequest;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
@@ -47,38 +46,41 @@ class CompletedHelps extends Component
         $totalCompletedAmount = (clone $completedHelpsQuery)->sum('amount');
         $uniqueCustomersCount = (clone $completedHelpsQuery)->distinct('user_id')->count('user_id');
 
-        $cancellationQuery = PartnerActivity::where('user_id', $user->id)
-            ->whereIn('activity_type', [
-                'cancel_requested',
-                'cancel_accepted',
-                'partner_request_cancel',
-                'help_cancelled',
-                'partner_cancel'
-            ]);
+        $cancellationQuery = HelpCancelRequest::where(function ($q) use ($user) {
+            $q->where('partner_id', $user->id)
+              ->orWhereHas('help', fn($h) => $h->where('mitra_id', $user->id));
+        });
         $totalCancelledCount = (clone $cancellationQuery)->count();
 
         // 2. Tab Query
         if ($this->activeTab === 'cancelled') {
-            $cancelledActivitiesQuery = PartnerActivity::with(['help.user', 'help.city'])
-                ->where('user_id', $user->id)
-                ->whereIn('activity_type', [
-                    'cancel_requested',
-                    'cancel_accepted',
-                    'partner_request_cancel',
-                    'help_cancelled',
-                    'partner_cancel'
-                ]);
+            $cancellationsQuery = HelpCancelRequest::with(['help.user', 'help.city', 'help.rating', 'customer', 'partner', 'reviewedBy'])
+                ->where(function ($q) use ($user) {
+                    $q->where('partner_id', $user->id)
+                      ->orWhereHas('help', fn($h) => $h->where('mitra_id', $user->id));
+                });
 
             if ($this->search) {
-                $cancelledActivitiesQuery->where(function ($q) {
-                    $q->where('description', 'like', '%' . $this->search . '%')
-                        ->orWhereHas('help', function ($h) {
-                            $h->where('title', 'like', '%' . $this->search . '%');
-                        });
+                $cancellationsQuery->where(function ($q) {
+                    $q->where('reason', 'like', '%' . $this->search . '%')
+                      ->orWhere('notes', 'like', '%' . $this->search . '%')
+                      ->orWhere('admin_notes', 'like', '%' . $this->search . '%')
+                      ->orWhereHas('customer', fn($c) => $c->where('name', 'like', '%' . $this->search . '%'))
+                      ->orWhereHas('help', function ($h) {
+                          $h->where('title', 'like', '%' . $this->search . '%')
+                            ->orWhere('order_id', 'like', '%' . $this->search . '%')
+                            ->orWhereHas('user', fn($u) => $u->where('name', 'like', '%' . $this->search . '%'));
+                      });
                 });
             }
 
-            $cancelledActivities = $cancelledActivitiesQuery->latest()->paginate(10);
+            if ($this->sortBy === 'oldest') {
+                $cancellationsQuery->oldest('requested_at');
+            } else {
+                $cancellationsQuery->latest('requested_at');
+            }
+
+            $cancellations = $cancellationsQuery->paginate(10);
             $helps = null;
         } else {
             $helpsQuery = Help::with(['user', 'city', 'rating'])
@@ -102,12 +104,13 @@ class CompletedHelps extends Component
             }
 
             $helps = $helpsQuery->paginate(10);
-            $cancelledActivities = null;
+            $cancellations = null;
         }
 
         return view('livewire.mitra.helps.completed-helps', [
             'helps'                => $helps,
-            'cancelledActivities'  => $cancelledActivities,
+            'cancellations'        => $cancellations,
+            'cancelledActivities'  => $cancellations, // backward-compat alias
             'totalCompletedCount'  => $totalCompletedCount,
             'totalCompletedAmount' => $totalCompletedAmount,
             'uniqueCustomersCount' => $uniqueCustomersCount,
