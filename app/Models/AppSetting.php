@@ -450,5 +450,16 @@ class AppSetting extends Model
     {
         return (int) static::get('pickup_delivery.cancellation.final_approach_eta_minutes', 10);
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TAHAP 7: SCHEDULED ORDERS DEPARTURE WINDOW & REMINDER CONFIGURATION
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public static function getScheduledEarlyDepartureWindowMinutes(): int
+    {
+        $val = (int) static::get('scheduled_early_departure_window_minutes', 60);
+        return max(5, min(180, $val));
+    }
 }
+
 

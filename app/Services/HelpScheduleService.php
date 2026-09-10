@@ -23,7 +23,8 @@ class HelpScheduleService
         ?Carbon $targetScheduledAt = null,
         float $travelDistanceKm = 0.0,
         string $serviceType = Help::SERVICE_TYPE_ON_SITE,
-        float $serviceRouteDistanceKm = 0.0
+        float $serviceRouteDistanceKm = 0.0,
+        ?int $earlyDepartureMinutes = null
     ): array {
         $now = now();
         $travelMinutes = $this->geoService->getRouteDurationMinutes($travelDistanceKm, 25.0, 5);
@@ -41,20 +42,22 @@ class HelpScheduleService
                 : null;
 
             return [
-                'order_mode'            => Help::ORDER_MODE_INSTANT,
-                'published_at'          => $publishedAt,
-                'departure_at'          => $departureAt,
-                'service_scheduled_at'  => $serviceScheduledAt,
-                'pickup_scheduled_at'   => $pickupScheduledAt,
-                'delivery_deadline_at'  => $deliveryDeadlineAt,
-                'estimated_arrival_at'  => $serviceScheduledAt,
+                'order_mode'              => Help::ORDER_MODE_INSTANT,
+                'published_at'            => $publishedAt,
+                'departure_at'            => $departureAt,
+                'service_scheduled_at'    => $serviceScheduledAt,
+                'pickup_scheduled_at'     => $pickupScheduledAt,
+                'delivery_deadline_at'    => $deliveryDeadlineAt,
+                'estimated_arrival_at'    => $serviceScheduledAt,
+                'early_departure_minutes' => null,
             ];
         }
 
         // Mode Scheduled: Waktu target ditentukan oleh Customer
         $publishedAt = $now;
         $serviceScheduledAt = $targetScheduledAt;
-        $departureAt = $targetScheduledAt->copy()->subMinutes($travelMinutes);
+        $leadMinutes = $earlyDepartureMinutes ?: \App\Models\AppSetting::getScheduledEarlyDepartureWindowMinutes();
+        $departureAt = $targetScheduledAt->copy()->subMinutes(max($travelMinutes, $leadMinutes));
 
         // Jika waktu keberangkatan yang dihitung sudah lewat, jadwalkan keberangkatan segera
         if ($departureAt->lt($now)) {
@@ -70,13 +73,14 @@ class HelpScheduleService
         }
 
         return [
-            'order_mode'            => Help::ORDER_MODE_SCHEDULED,
-            'published_at'          => $publishedAt,
-            'departure_at'          => $departureAt,
-            'service_scheduled_at'  => $serviceScheduledAt,
-            'pickup_scheduled_at'   => $pickupScheduledAt,
-            'delivery_deadline_at'  => $deliveryDeadlineAt,
-            'estimated_arrival_at'  => $serviceScheduledAt,
+            'order_mode'              => Help::ORDER_MODE_SCHEDULED,
+            'published_at'            => $publishedAt,
+            'departure_at'            => $departureAt,
+            'service_scheduled_at'    => $serviceScheduledAt,
+            'pickup_scheduled_at'     => $pickupScheduledAt,
+            'delivery_deadline_at'    => $deliveryDeadlineAt,
+            'estimated_arrival_at'    => $serviceScheduledAt,
+            'early_departure_minutes' => $earlyDepartureMinutes,
         ];
     }
 

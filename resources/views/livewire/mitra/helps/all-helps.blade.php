@@ -250,10 +250,15 @@
 
                                 <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 mb-2 leading-relaxed">{{ $help->description }}</p>
 
-                                @if($help->scheduled_at)
-                                    <div class="flex items-center gap-1.5 text-[11px] text-blue-700 dark:text-blue-300 font-medium bg-blue-50/70 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/60 rounded-lg px-2.5 py-1 mb-2.5">
-                                        <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                        <span>Waktu: {{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('l, d M Y - H:i') }} WIB</span>
+                                @if($help->isScheduled() || $help->scheduled_at)
+                                    <div class="flex items-center justify-between text-[11px] text-blue-700 dark:text-blue-300 font-medium bg-blue-50/70 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/60 rounded-lg px-2.5 py-1 mb-2.5 flex-wrap gap-1">
+                                        <div class="flex items-center gap-1.5">
+                                            <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                            <span>Jadwal: {{ \Carbon\Carbon::parse($help->scheduled_at ?? $help->service_scheduled_at)->translatedFormat('l, d M Y - H:i') }} WIB</span>
+                                        </div>
+                                        @if($help->departure_window_opens_at)
+                                            <span class="text-[10px] font-bold bg-blue-100 dark:bg-blue-900/60 px-1.5 py-0.5 rounded">Mulai pkl {{ $help->departure_window_opens_at->format('H:i') }}</span>
+                                        @endif
                                     </div>
                                 @endif
 
@@ -282,7 +287,10 @@
                                             'city_name' => $help->city->name ?? '',
                                             'province_name' => $help->city->province ?? '',
                                             'photo_url' => $help->photo ? asset('storage/' . $help->photo) : null,
-                                            'scheduled_at' => $help->scheduled_at ? \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('l, d M Y • H:i') . ' WIB' : null,
+                                            'scheduled_at' => ($help->scheduled_at || $help->service_scheduled_at) ? \Carbon\Carbon::parse($help->scheduled_at ?? $help->service_scheduled_at)->translatedFormat('l, d M Y • H:i') . ' WIB' : null,
+                                            'is_scheduled' => $help->isScheduled(),
+                                            'departure_window_opens_at' => $help->departure_window_opens_at?->format('H:i'),
+                                            'departure_lead_minutes' => $help->departure_lead_minutes,
                                             'created_at_human' => $help->created_at ? $help->created_at->diffForHumans() : '',
                                             'customer_name' => $help->user->name ?? 'Pemohon Bantuan',
                                             'customer_avatar' => ($help->user->selfie_photo ?? $help->user->photo) ? asset('storage/' . ($help->user->selfie_photo ?? $help->user->photo)) : null,
@@ -560,7 +568,7 @@
             const schedBadge = document.getElementById('previewScheduledBadge');
             if (schedBadge) {
                 if (data.scheduled_at) {
-                    schedBadge.textContent = '📅 ' + data.scheduled_at;
+                    schedBadge.textContent = '📅 ' + data.scheduled_at + (data.departure_window_opens_at ? ' (Buka Pkl ' + data.departure_window_opens_at + ')' : '');
                     schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800';
                 } else {
                     schedBadge.textContent = '⚡ Butuh Cepat';

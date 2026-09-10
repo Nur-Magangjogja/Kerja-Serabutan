@@ -72,6 +72,7 @@ class Create extends Component
     // ─── Scheduling ──────────────────────────────────────────────────────────
     public $scheduled_date = null;
     public $scheduled_time = null;
+    public $early_departure_minutes = 60; // Jeda keberangkatan mitra: 30, 45, 60, 90, 120 menit
     public $timezoneLabel  = 'WIB';
     public $timezoneIana   = 'Asia/Jakarta';
 
@@ -1264,7 +1265,8 @@ class Create extends Component
             $targetScheduledAt,
             0.0,
             $this->service_type,
-            (float) ($estimate['service_route_distance_km'] ?? 0)
+            (float) ($estimate['service_route_distance_km'] ?? 0),
+            $this->early_departure_minutes ? (int) $this->early_departure_minutes : null
         );
 
         $expiresAt = $this->computeExpiresAt();
@@ -1322,6 +1324,7 @@ class Create extends Component
                 'service_scheduled_at'          => $scheduleData['service_scheduled_at'],
                 'pickup_scheduled_at'           => $scheduleData['pickup_scheduled_at'],
                 'delivery_deadline_at'          => $scheduleData['delivery_deadline_at'],
+                'early_departure_minutes'       => $scheduleData['early_departure_minutes'],
                 'expires_at'                    => $expiresAt->format('Y-m-d H:i:s'),
                 'photo'                         => $photoPath,
                 'status'                        => Help::STATUS_MENUNGGU_MITRA,

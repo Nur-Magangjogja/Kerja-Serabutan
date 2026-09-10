@@ -104,9 +104,15 @@
                 </div>
 
                 @if ($confirmScheduled)
-                    <div class="p-3 bg-blue-50/70 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900/40 text-xs">
-                        <span class="text-blue-800 dark:text-blue-300 font-medium">Jadwal Mulai Tugas:</span>
-                        <span class="font-bold text-blue-950 dark:text-blue-100 ml-1">{{ $confirmScheduled }}</span>
+                    <div class="p-3 bg-blue-50/70 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900/40 text-xs flex items-center justify-between">
+                        <div>
+                            <span class="text-blue-800 dark:text-blue-300 font-medium block">Jadwal Tugas:</span>
+                            <span class="font-bold text-blue-950 dark:text-blue-100">{{ $confirmScheduled }}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] text-gray-500 dark:text-gray-400 block">Jeda Keberangkatan:</span>
+                            <span class="font-bold text-blue-700 dark:text-blue-300">{{ $early_departure_minutes }} Menit Sebelum</span>
+                        </div>
                     </div>
                 @endif
 

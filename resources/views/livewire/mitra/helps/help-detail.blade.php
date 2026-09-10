@@ -607,32 +607,89 @@
             </div>
         @endif
 
-        {{-- Update Status Section (Revisi 3: Multi-Stage Action Controls) --}}
+        {{-- Update Status Section (Revisi 3: Multi-Stage Action Controls & Scheduled Departure Window Lock) --}}
         @if ($help->status === 'taken' && $help->mitra_id === auth()->id())
-            <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3 space-y-2">
-                @if ($help->service_type === 'pickup_delivery')
-                    <button wire:click="advanceStage('going_to_pickup')" wire:loading.attr="disabled"
-                        class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                        <span>Mulai Menuju Lokasi Penjemputan</span>
+            @php
+                $isScheduledLocked = $help->isScheduled() && !$help->canPartnerStartDeparture();
+                $targetTimeStr = $help->getScheduledTargetTime()?->format('H:i') ?? '-';
+                $windowOpensStr = $help->departure_window_opens_at?->format('H:i') ?? '-';
+            @endphp
+
+            @if ($isScheduledLocked)
+                {{-- Scheduled Departure Lock Banner --}}
+                <div class="bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800/80 rounded-2xl p-4 mb-3 space-y-3 shadow-xs">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-amber-500/30 shadow-2xs">
+                            <span class="text-lg">🔒</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+                                <h4 class="text-xs font-bold text-amber-950 dark:text-amber-100">
+                                    Tugas Terjadwal (Pukul {{ $targetTimeStr }})
+                                </h4>
+                                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200/80 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200">
+                                    ⏳ {{ $help->departure_countdown_formatted }}
+                                </span>
+                            </div>
+                            <p class="text-xs text-amber-900/85 dark:text-amber-300/90 leading-relaxed">
+                                Pesanan ini berhasil Anda ambil di awal. Tombol keberangkatan akan aktif otomatis pada pukul <strong>{{ $windowOpensStr }}</strong> ({{ $help->departure_lead_minutes }} menit sebelum jadwal).
+                            </p>
+                        </div>
+                    </div>
+                    <div class="pt-2 border-t border-amber-200/60 dark:border-amber-800/60 flex items-center justify-between text-[11px] text-amber-800 dark:text-amber-300">
+                        <span>📅 Jadwal: {{ $help->getScheduledTargetTime()?->translatedFormat('d M Y - H:i') }}</span>
+                        <span class="font-semibold">Harap bersiap sebelum berangkat</span>
+                    </div>
+                </div>
+
+                {{-- Disabled Action Button --}}
+                <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3 space-y-2">
+                    <button disabled
+                        class="w-full py-3.5 bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-xl font-bold text-sm shadow-xs flex items-center justify-center gap-2 cursor-not-allowed">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        <span>Keberangkatan Terkunci (Aktif Pkl {{ $windowOpensStr }})</span>
                     </button>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda mulai bergerak menuju titik barang yang akan dijemput</p>
-                @elseif ($help->service_type === 'buy_for_customer')
-                    <button wire:click="advanceStage('going_to_store')" wire:loading.attr="disabled"
-                        class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                        <span>Mulai Menuju Toko / Merchant</span>
-                    </button>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda mulai berangkat menuju toko/tempat belanja</p>
-                @else
-                    <button wire:click="markPartnerStarted" wire:loading.attr="disabled"
-                        class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                        <span>Mulai Berangkat ke Lokasi Customer</span>
-                    </button>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda mulai jalan menuju lokasi pengerjaan</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 text-center">Tombol mulai berangkat akan aktif otomatis saat memasuki jeda waktu keberangkatan.</p>
+                </div>
+            @else
+                @if ($help->isScheduled())
+                    {{-- Banner Waktunya Berangkat --}}
+                    <div class="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/40 border border-emerald-300/80 dark:border-emerald-700/70 rounded-2xl p-3.5 mb-3 flex items-center gap-3 shadow-xs">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 text-base">
+                            ⏰
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-xs font-bold text-emerald-950 dark:text-emerald-100">Waktunya Berangkat!</h4>
+                            <p class="text-[11px] text-emerald-800 dark:text-emerald-300">Jadwal pelaksanaan pukul <strong>{{ $targetTimeStr }}</strong>. Silakan mulai perjalanan Anda sekarang.</p>
+                        </div>
+                    </div>
                 @endif
-            </div>
+
+                <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3 space-y-2">
+                    @if ($help->service_type === 'pickup_delivery')
+                        <button wire:click="advanceStage('going_to_pickup')" wire:loading.attr="disabled"
+                            class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            <span>Mulai Menuju Lokasi Penjemputan</span>
+                        </button>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda mulai bergerak menuju titik barang yang akan dijemput</p>
+                    @elseif ($help->service_type === 'buy_for_customer')
+                        <button wire:click="advanceStage('going_to_store')" wire:loading.attr="disabled"
+                            class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            <span>Mulai Menuju Toko / Merchant</span>
+                        </button>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda mulai berangkat menuju toko/tempat belanja</p>
+                    @else
+                        <button wire:click="markPartnerStarted" wire:loading.attr="disabled"
+                            class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            <span>Mulai Berangkat ke Lokasi Customer</span>
+                        </button>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda mulai jalan menuju lokasi pengerjaan</p>
+                    @endif
+                </div>
+            @endif
         @endif
 
         @if ($help->status === 'partner_on_the_way' && $help->mitra_id === auth()->id())

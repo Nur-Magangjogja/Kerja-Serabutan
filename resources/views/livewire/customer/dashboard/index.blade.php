@@ -313,14 +313,12 @@
                     <!-- Fallback High-Aesthetic Interactive Slides -->
                     <div class="flex h-full transition-transform duration-700 ease-out" :style="'transform: translateX(-' + (active * 100) + '%)'">
                         <!-- Slide 1 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
-                             style="background: linear-gradient(135deg, #0284c7 0%, #0060b0 50%, #0f172a 100%);">
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-sky-600 dark:bg-sky-800">
                             <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
                             <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-sky-400/20 blur-xl pointer-events-none"></div>
 
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
-                                    <span>⚡</span>
                                     <span>Solusi Cepat</span>
                                 </div>
                                 <h3 class="text-base sm:text-lg font-black text-white leading-tight">
@@ -345,14 +343,12 @@
                         </div>
 
                         <!-- Slide 2 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
-                             style="background: linear-gradient(135deg, #059669 0%, #0d9488 50%, #064e3b 100%);">
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-emerald-600 dark:bg-emerald-800">
                             <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
                             <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-emerald-400/20 blur-xl pointer-events-none"></div>
 
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
-                                    <span>💳</span>
                                     <span>Isi Saldo</span>
                                 </div>
                                 <h3 class="text-base sm:text-lg font-black text-white leading-tight">
@@ -377,14 +373,12 @@
                         </div>
 
                         <!-- Slide 3 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
-                             style="background: linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #431407 100%);">
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-rose-600 dark:bg-rose-800">
                             <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
                             <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-amber-400/20 blur-xl pointer-events-none"></div>
 
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
-                                    <span>⭐</span>
                                     <span>Mitra Terpercaya</span>
                                 </div>
                                 <h3 class="text-base sm:text-lg font-black text-white leading-tight">

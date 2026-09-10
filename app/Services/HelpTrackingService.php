@@ -179,6 +179,15 @@ class HelpTrackingService
      */
     public function advanceServiceStage(Help $help, string $nextStage, array $extraData = []): Help
     {
+        // Guard penjadwalan jika memulai pergerakan awal
+        if (in_array($nextStage, [Help::STAGE_GOING_TO_PICKUP, Help::STAGE_GOING_TO_STORE], true)) {
+            if ($help->isScheduled() && !$help->canPartnerStartDeparture()) {
+                $openTime = $help->departure_window_opens_at?->format('H:i') ?? '1 jam sebelum jadwal';
+                $targetTime = $help->getScheduledTargetTime()?->format('H:i') ?? '-';
+                throw new \RuntimeException("Tugas ini dijadwalkan untuk pukul {$targetTime}. Tombol keberangkatan baru dapat diaktifkan mulai pukul {$openTime} ({$help->departure_lead_minutes} menit sebelum jadwal).");
+            }
+        }
+
         return DB::transaction(function () use ($help, $nextStage, $extraData) {
             $locked = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
 
@@ -186,7 +195,10 @@ class HelpTrackingService
 
             // Pemetaan transisi otomatis ke Help.status
             if ($locked->isPickup()) {
-                if ($nextStage === Help::STAGE_AT_PICKUP) {
+                if ($nextStage === Help::STAGE_GOING_TO_PICKUP) {
+                    $updatePayload['status'] = Help::STATUS_PARTNER_ON_THE_WAY;
+                    $updatePayload['partner_started_at'] = $locked->partner_started_at ?? now();
+                } elseif ($nextStage === Help::STAGE_AT_PICKUP) {
                     $updatePayload['status'] = Help::STATUS_PARTNER_ARRIVED;
                     $updatePayload['partner_arrived_at'] = now();
                     $updatePayload['arrived_at'] = now();
@@ -202,9 +214,13 @@ class HelpTrackingService
                     $updatePayload['status'] = Help::STATUS_IN_PROGRESS;
                 }
             } elseif ($locked->isBuy()) {
-                if ($nextStage === Help::STAGE_AT_STORE) {
+                if ($nextStage === Help::STAGE_GOING_TO_STORE) {
+                    $updatePayload['status'] = Help::STATUS_PARTNER_ON_THE_WAY;
+                    $updatePayload['partner_started_at'] = $locked->partner_started_at ?? now();
+                } elseif ($nextStage === Help::STAGE_AT_STORE) {
                     $updatePayload['status'] = Help::STATUS_PARTNER_ARRIVED;
                     $updatePayload['partner_arrived_at'] = now();
+                    $updatePayload['arrived_at'] = now();
                 } elseif (in_array($nextStage, [Help::STAGE_PURCHASING, Help::STAGE_GOING_TO_CUSTOMER, Help::STAGE_AT_CUSTOMER, Help::STAGE_DELIVERED])) {
                     $updatePayload['status'] = Help::STATUS_IN_PROGRESS;
                 }
@@ -215,6 +231,18 @@ class HelpTrackingService
 
             return $locked;
         });
+    }
+
+    /**
+     * Alias method untuk memajukan tahapan layanan oleh mitra.
+     */
+    public function advanceStage(Help $help, User $mitra, string $nextStage, array $extraData = []): Help
+    {
+        if ($help->mitra_id !== $mitra->id) {
+            throw new \RuntimeException('Anda tidak memiliki hak akses untuk memajukan tahapan pesanan ini.');
+        }
+
+        return $this->advanceServiceStage($help, $nextStage, $extraData);
     }
 
     /**

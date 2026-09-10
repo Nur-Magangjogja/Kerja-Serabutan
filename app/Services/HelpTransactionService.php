@@ -285,6 +285,12 @@ class HelpTransactionService
         $this->assertMitraAssigned($help, $mitra);
         $this->assertCanTransition($help, Help::STATUS_PARTNER_ON_THE_WAY);
 
+        if ($help->isScheduled() && !$help->canPartnerStartDeparture()) {
+            $openTime = $help->departure_window_opens_at?->format('H:i') ?? '1 jam sebelum jadwal';
+            $targetTime = $help->getScheduledTargetTime()?->format('H:i') ?? '-';
+            throw new \RuntimeException("Tugas ini dijadwalkan untuk pukul {$targetTime}. Tombol keberangkatan baru dapat diaktifkan mulai pukul {$openTime} ({$help->departure_lead_minutes} menit sebelum jadwal).");
+        }
+
         DB::transaction(function () use ($help) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
             $lockedHelp->update([

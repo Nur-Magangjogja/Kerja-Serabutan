@@ -281,12 +281,21 @@
                         </div>
 
                         <!-- Upload Control -->
-                        <div>
+                        <div x-data="{ fileName: 'Belum ada file dipilih' }">
                             <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                                 Upload Gambar QRIS Baru (PNG, JPG, WebP)
                             </label>
-                            <input type="file" wire:model="qris_image" accept="image/png,image/jpeg,image/jpg,image/webp"
-                                class="w-full text-xs text-gray-500 dark:text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary-50 file:text-primary-700 dark:file:bg-primary-950/60 dark:file:text-primary-300 hover:file:bg-primary-100 cursor-pointer bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 p-1" />
+                            <div class="flex items-center gap-2 w-full bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 p-1 cursor-pointer"
+                                 @click="$refs.qrisInput.click()">
+                                <span class="shrink-0 py-2 px-4 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300 hover:bg-primary-100 transition-colors">
+                                    Pilih File
+                                </span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="fileName"></span>
+                            </div>
+                            <input type="file" x-ref="qrisInput" wire:model="qris_image"
+                                   accept="image/png,image/jpeg,image/jpg,image/webp"
+                                   class="hidden"
+                                   @change="fileName = $event.target.files[0] ? $event.target.files[0].name : 'Belum ada file dipilih'" />
                             @error('qris_image')
                                 <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span>
                             @enderror

@@ -349,6 +349,8 @@ class Help extends Model
         'service_scheduled_at',
         'pickup_scheduled_at',
         'delivery_deadline_at',
+        'early_departure_minutes',
+        'departure_reminder_sent_at',
         'matching_distance_km',
         'travel_distance_km',
         'service_route_distance_km',
@@ -423,6 +425,8 @@ class Help extends Model
         'service_scheduled_at'       => 'datetime',
         'pickup_scheduled_at'        => 'datetime',
         'delivery_deadline_at'       => 'datetime',
+        'early_departure_minutes'    => 'integer',
+        'departure_reminder_sent_at' => 'datetime',
         'matching_distance_km'       => 'decimal:2',
         'travel_distance_km'         => 'decimal:2',
         'service_route_distance_km'  => 'decimal:2',
@@ -710,6 +714,116 @@ class Help extends Model
     public function isInstant(): bool
     {
         return empty($this->order_mode) || $this->order_mode === self::ORDER_MODE_INSTANT;
+    }
+
+    /**
+     * Dapatkan target waktu jadwal pengerjaan yang ditentukan customer.
+     */
+    public function getScheduledTargetTime(): ?\Carbon\Carbon
+    {
+        if ($this->service_scheduled_at) {
+            return \Carbon\Carbon::parse($this->service_scheduled_at);
+        }
+        if ($this->scheduled_at) {
+            return \Carbon\Carbon::parse($this->scheduled_at);
+        }
+        return null;
+    }
+
+    /**
+     * Dapatkan jeda menit sebelum jadwal buka keberangkatan (Default 60 menit jika null).
+     */
+    public function getDepartureLeadMinutesAttribute(): int
+    {
+        return (int) ($this->early_departure_minutes ?: AppSetting::getScheduledEarlyDepartureWindowMinutes());
+    }
+
+    /**
+     * Waktu persis saat jendela keberangkatan mulai dibuka untuk mitra.
+     * Misal target pkl 07:00 dengan jeda 60 menit -> dibuka pkl 06:00.
+     */
+    public function getDepartureWindowOpensAtAttribute(): ?\Carbon\Carbon
+    {
+        if (!$this->isScheduled()) {
+            return null;
+        }
+
+        $target = $this->getScheduledTargetTime();
+        if (!$target) {
+            return null;
+        }
+
+        return $target->copy()->subMinutes($this->departure_lead_minutes);
+    }
+
+    /**
+     * Periksa apakah mitra sudah diizinkan mulai berangkat / menuju lokasi.
+     */
+    public function canPartnerStartDeparture(): bool
+    {
+        if (!$this->isScheduled()) {
+            return true;
+        }
+
+        $windowOpensAt = $this->departure_window_opens_at;
+        if (!$windowOpensAt) {
+            return true;
+        }
+
+        return now()->gte($windowOpensAt);
+    }
+
+    /**
+     * Alias method status jendela keberangkatan.
+     */
+    public function isDepartureWindowOpen(): bool
+    {
+        return $this->canPartnerStartDeparture();
+    }
+
+    /**
+     * Hitung sisa menit hingga jendela keberangkatan dibuka (0 jika sudah buka).
+     */
+    public function getDepartureCountdownMinutesAttribute(): int
+    {
+        if ($this->canPartnerStartDeparture()) {
+            return 0;
+        }
+
+        $windowOpensAt = $this->departure_window_opens_at;
+        if (!$windowOpensAt) {
+            return 0;
+        }
+
+        return max(0, (int) now()->diffInMinutes($windowOpensAt, false));
+    }
+
+    /**
+     * Teks deskripsi hitung mundur ramah pengguna.
+     */
+    public function getDepartureCountdownFormattedAttribute(): string
+    {
+        if ($this->canPartnerStartDeparture()) {
+            return 'Sudah dapat berangkat';
+        }
+
+        $windowOpensAt = $this->departure_window_opens_at;
+        if (!$windowOpensAt) {
+            return '';
+        }
+
+        $minutes = $this->departure_countdown_minutes;
+        if ($minutes <= 0) {
+            return 'Siap dibuka';
+        }
+
+        if ($minutes >= 60) {
+            $hours = floor($minutes / 60);
+            $remMinutes = $minutes % 60;
+            return $remMinutes > 0 ? "{$hours} jam {$remMinutes} menit lagi" : "{$hours} jam lagi";
+        }
+
+        return "{$minutes} menit lagi";
     }
 
     /**

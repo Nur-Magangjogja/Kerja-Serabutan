@@ -54,15 +54,15 @@
                                 @if($conv->is_admin ?? false)
                                     <!-- Card Percakapan Khusus Tim Admin -->
                                     <button wire:click="selectAdmin"
-                                        class="w-full p-3.5 rounded-2xl transition-all text-left bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent dark:from-amber-950/40 dark:to-gray-800/90 border-2 border-amber-300 dark:border-amber-700/80 hover:bg-amber-50 dark:hover:bg-amber-950/60 shadow-xs hover:shadow-sm flex items-center gap-3.5 cursor-pointer">
-                                        <div class="w-12 h-12 rounded-2xl bg-amber-500 text-white flex-shrink-0 flex items-center justify-center font-bold text-lg shadow-xs border border-amber-400">
+                                        class="w-full p-3.5 rounded-2xl transition-all text-left bg-white dark:bg-gray-800 border-2 border-blue-300 dark:border-blue-700/80 hover:bg-blue-50 dark:hover:bg-blue-950/60 shadow-xs hover:shadow-sm flex items-center gap-3.5 cursor-pointer">
+                                        <div class="w-12 h-12 rounded-2xl bg-blue-500 text-white flex-shrink-0 flex items-center justify-center font-bold text-lg shadow-xs border border-blue-400">
                                             🛡️
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <div class="flex items-center justify-between gap-1 mb-0.5">
                                                 <div class="flex items-center gap-1.5 truncate">
                                                     <h3 class="font-bold text-sm text-gray-900 dark:text-white truncate">Tim Admin SayaBantu</h3>
-                                                    <span class="text-[9px] px-1.5 py-0.5 rounded font-extrabold bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200 uppercase">Resmi</span>
+                                                    <span class="text-[9px] px-1.5 py-0.5 rounded font-extrabold bg-blue-200 text-blue-900 dark:bg-blue-900 dark:text-blue-200 uppercase">Resmi</span>
                                                 </div>
                                                 <span class="text-[11px] text-gray-400 dark:text-gray-500 flex-shrink-0">
                                                     {{ $conv->last_message ? $conv->last_message->created_at->diffForHumans(null, true, true) : '' }}
@@ -72,7 +72,7 @@
                                                 @if($conv->last_message)
                                                     {{ $conv->last_message->message }}
                                                 @else
-                                                    <span class="text-amber-700 dark:text-amber-400 italic">Pusat Layanan Bantuan & Moderasi Mitra</span>
+                                                    <span class="text-blue-700 dark:text-amber-400 italic">Pusat Layanan Bantuan & Moderasi Mitra</span>
                                                 @endif
                                             </p>
                                         </div>

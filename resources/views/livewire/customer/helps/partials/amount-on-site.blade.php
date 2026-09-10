@@ -19,8 +19,8 @@
 
         <!-- Custom Stepper Input (Formatted with Comma Thousand Separator) -->
         <div class="flex items-center rounded-xl border @error('amount') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 bg-white dark:bg-gray-800 @enderror p-1.5 shadow-sm transition">
-            <!-- Decrement Button (-100) -->
-            <button type="button" wire:click="adjustAmount(-100)" title="Kurangi Rp 100" class="w-11 h-11 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 text-gray-700 dark:text-gray-200 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
+            <!-- Decrement Button (-1000) -->
+            <button type="button" wire:click="adjustAmount(-1000)" title="Kurangi Rp 1000" class="w-11 h-11 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 text-gray-700 dark:text-gray-200 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
                 −
             </button>
 
@@ -58,8 +58,8 @@
                     class="w-full pl-8 pr-2 py-1.5 text-center font-bold text-lg text-gray-900 dark:text-white border-none focus:ring-0 focus:outline-none bg-transparent">
             </div>
 
-            <!-- Increment Button (+100) -->
-            <button type="button" wire:click="adjustAmount(100)" title="Tambah Rp 100" class="w-11 h-11 rounded-lg bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-800/60 active:scale-95 text-blue-600 dark:text-blue-400 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
+            <!-- Increment Button (+1000) -->
+            <button type="button" wire:click="adjustAmount(1000)" title="Tambah Rp 1000" class="w-11 h-11 rounded-lg bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-800/60 active:scale-95 text-blue-600 dark:text-blue-400 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
                 +
             </button>
         </div>
@@ -71,12 +71,12 @@
                 <div class="flex items-center justify-between px-0.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400">
                     <span class="flex items-center gap-1">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                        Tambah Cepat
+                        Tambah
                     </span>
                 </div>
                 <div class="grid grid-cols-5 gap-1 sm:gap-1.5">
-                    <button type="button" wire:click="adjustAmount(1000)" class="w-full py-1.5 px-0.5 text-center text-[11px] sm:text-xs font-semibold rounded-lg bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/50 text-blue-700 dark:text-blue-300 transition border border-blue-200/70 dark:border-blue-800/70 active:scale-95 cursor-pointer">
-                        +1 rb
+                    <button type="button" wire:click="adjustAmount(5000)" class="w-full py-1.5 px-0.5 text-center text-[11px] sm:text-xs font-semibold rounded-lg bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/50 text-blue-700 dark:text-blue-300 transition border border-blue-200/70 dark:border-blue-800/70 active:scale-95 cursor-pointer">
+                        +5 rb
                     </button>
                     <button type="button" wire:click="adjustAmount(10000)" class="w-full py-1.5 px-0.5 text-center text-[11px] sm:text-xs font-semibold rounded-lg bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/50 text-blue-700 dark:text-blue-300 transition border border-blue-200/70 dark:border-blue-800/70 active:scale-95 cursor-pointer">
                         +10 rb
@@ -98,12 +98,12 @@
                 <div class="flex items-center justify-between px-0.5 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
                     <span class="flex items-center gap-1">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"/></svg>
-                        Kurangi Cepat
+                        Kurangi 
                     </span>
                 </div>
                 <div class="grid grid-cols-5 gap-1 sm:gap-1.5">
-                    <button type="button" wire:click="adjustAmount(-1000)" class="w-full py-1.5 px-0.5 text-center text-[11px] sm:text-xs font-semibold rounded-lg bg-rose-50/80 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 transition border border-rose-200/70 dark:border-rose-900/60 active:scale-95 cursor-pointer">
-                        −1 rb
+                    <button type="button" wire:click="adjustAmount(-5000)" class="w-full py-1.5 px-0.5 text-center text-[11px] sm:text-xs font-semibold rounded-lg bg-rose-50/80 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 transition border border-rose-200/70 dark:border-rose-900/60 active:scale-95 cursor-pointer">
+                        −5 rb
                     </button>
                     <button type="button" wire:click="adjustAmount(-10000)" class="w-full py-1.5 px-0.5 text-center text-[11px] sm:text-xs font-semibold rounded-lg bg-rose-50/80 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 transition border border-rose-200/70 dark:border-rose-900/60 active:scale-95 cursor-pointer">
                         −10 rb

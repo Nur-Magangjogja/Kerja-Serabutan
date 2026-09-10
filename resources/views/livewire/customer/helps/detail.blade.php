@@ -383,6 +383,21 @@
                         </p>
                         <p class="text-[11px] text-emerald-200/80 mt-0.5">Silakan temui rekan jasa untuk koordinasi dan memulai bantuan.</p>
                     </div>
+                @elseif($help->status === 'taken' && $help->isScheduled() && !$help->canPartnerStartDeparture())
+                    {{-- Status Terjadwal Menunggu Waktu Buka Keberangkatan --}}
+                    <div class="bg-indigo-950/80 border border-indigo-700/80 rounded-xl p-3 text-center space-y-1">
+                        <div class="flex items-center justify-center gap-1.5 text-xs font-bold text-indigo-200">
+                            <span>📅 Tugas Terjadwal (Pukul {{ $help->getScheduledTargetTime()?->format('H:i') }})</span>
+                        </div>
+                        <p class="text-[11px] text-indigo-300/90 leading-relaxed">
+                            Mitra <strong>{{ $help->mitra?->name }}</strong> telah ditugaskan dan bersiap. Mitra akan mulai berangkat menuju lokasi Anda pada pukul <strong>{{ $help->departure_window_opens_at?->format('H:i') }}</strong> ({{ $help->departure_lead_minutes }} menit sebelum jadwal).
+                        </p>
+                        <div class="pt-1">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-900 text-indigo-200 border border-indigo-700">
+                                ⏳ Berangkat dalam {{ $help->departure_countdown_formatted }}
+                            </span>
+                        </div>
+                    </div>
                 @else
                     <div class="grid grid-cols-2 gap-2 text-center">
                         <div class="bg-white/10 rounded-xl p-2.5">

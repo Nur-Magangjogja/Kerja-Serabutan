@@ -331,14 +331,9 @@
                     <!-- Fallback High-Aesthetic Interactive Slides for Mitra -->
                     <div class="flex h-full transition-transform duration-700 ease-out" :style="'transform: translateX(-' + (active * 100) + '%)'">
                         <!-- Slide 1 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
-                             style="background: linear-gradient(135deg, #0284c7 0%, #1d4ed8 50%, #0f172a 100%);">
-                            <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-                            <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-blue-400/20 blur-xl pointer-events-none"></div>
-
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-sky-600 dark:bg-sky-800">
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
-                                    <span>💼</span>
                                     <span>Peluang Kerja</span>
                                 </div>
                                 <h3 class="text-base sm:text-lg font-black text-white leading-tight">
@@ -363,14 +358,9 @@
                         </div>
 
                         <!-- Slide 2 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
-                             style="background: linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #1e1b4b 100%);">
-                            <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-                            <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-indigo-400/20 blur-xl pointer-events-none"></div>
-
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-violet-600 dark:bg-violet-800">
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
-                                    <span>⚡</span>
                                     <span>Penarikan Kilat</span>
                                 </div>
                                 <h3 class="text-base sm:text-lg font-black text-white leading-tight">
@@ -395,14 +385,9 @@
                         </div>
 
                         <!-- Slide 3 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
-                             style="background: linear-gradient(135deg, #d97706 0%, #ea580c 50%, #451a03 100%);">
-                            <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-                            <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-amber-400/20 blur-xl pointer-events-none"></div>
-
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-emerald-600 dark:bg-emerald-800">
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
-                                    <span>⭐</span>
                                     <span>Mitra Unggulan</span>
                                 </div>
                                 <h3 class="text-base sm:text-lg font-black text-white leading-tight">
@@ -412,7 +397,7 @@
                                     Berikan pelayanan terbaik untuk meraih bintang 5 dan order prioritas.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('mitra.withdraw.history') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-amber-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('mitra.withdraw.history') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-emerald-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Riwayat Tugas</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>

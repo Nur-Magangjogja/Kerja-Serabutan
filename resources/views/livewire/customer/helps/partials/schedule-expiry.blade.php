@@ -55,6 +55,40 @@
             Besok Siang (13:00)
         </button>
     </div>
+
+    @if ($scheduled_date)
+        <!-- Opsi Jeda Waktu Keberangkatan Mitra -->
+        <div class="mt-3 p-3 bg-blue-50/60 dark:bg-blue-950/30 rounded-xl border border-blue-200/60 dark:border-blue-800/50">
+            <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-bold text-blue-900 dark:text-blue-200">
+                    Waktu Mulai Berangkat Mitra
+                </label>
+                <span class="text-[10px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/60 px-2 py-0.5 rounded-full">
+                    Jeda Keberangkatan
+                </span>
+            </div>
+            <p class="text-[11px] text-blue-800/80 dark:text-blue-300/80 mb-2">
+                Pilih berapa menit sebelum jadwal tugas mitra dapat mulai berangkat menuju lokasi Anda:
+            </p>
+            <div class="grid grid-cols-5 gap-1.5">
+                @foreach([
+                    30 => '30 Mnt',
+                    45 => '45 Mnt',
+                    60 => '1 Jam',
+                    90 => '1.5 Jam',
+                    120 => '2 Jam'
+                ] as $minutes => $label)
+                    <button type="button" wire:click="$set('early_departure_minutes', {{ $minutes }})"
+                        class="py-1.5 px-1 text-[11px] font-bold rounded-lg border transition text-center cursor-pointer {{ (int)$early_departure_minutes === $minutes ? 'bg-blue-600 text-white border-blue-600 shadow-xs' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
+                        {{ $label }}
+                    </button>
+                @endforeach
+            </div>
+            <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5 italic">
+                *Tombol keberangkatan mitra akan dikunci hingga {{ $early_departure_minutes }} menit sebelum jadwal pelaksanaan.
+            </p>
+        </div>
+    @endif
 </div>
 
 <!-- Batas Waktu Kadaluwarsa Pencarian Rekan Jasa -->

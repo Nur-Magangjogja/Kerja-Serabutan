@@ -46,25 +46,20 @@
             <div class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-1.5 rounded-2xl shadow-xs border border-gray-200/70 dark:border-gray-700/80 space-y-1.5">
                 <div class="grid grid-cols-3 gap-1.5">
                     <button wire:click="setFilter('all')" class="group py-2 px-2 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 {{ $filterType === 'all' ? 'bg-gradient-to-r from-primary-600 to-sky-600 text-white shadow-md shadow-primary-500/25 ring-2 ring-primary-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span class="text-xs {{ $filterType === 'all' ? 'opacity-100 scale-110' : 'opacity-70 group-hover:scale-110' }} transition-transform">🌟</span>
                         <span>Semua</span>
                     </button>
                     <button wire:click="setFilter('topup')" class="group py-2 px-2 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 {{ $filterType === 'topup' ? 'bg-gradient-to-r from-primary-600 to-sky-600 text-white shadow-md shadow-primary-500/25 ring-2 ring-primary-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span class="text-xs {{ $filterType === 'topup' ? 'opacity-100 scale-110' : 'opacity-70 group-hover:scale-110' }} transition-transform">💳</span>
                         <span>Top Up</span>
                     </button>
                     <button wire:click="setFilter('withdraw')" class="group py-2 px-2 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 {{ $filterType === 'withdraw' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25 ring-2 ring-blue-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span class="text-xs {{ $filterType === 'withdraw' ? 'opacity-100 scale-110' : 'opacity-70 group-hover:scale-110' }} transition-transform">💸</span>
                         <span>Tarik Saldo</span>
                     </button>
                 </div>
                 <div class="grid grid-cols-2 gap-1.5">
                     <button wire:click="setFilter('payment')" class="group py-2 px-2 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 {{ $filterType === 'payment' ? 'bg-gradient-to-r from-primary-600 to-sky-600 text-white shadow-md shadow-primary-500/25 ring-2 ring-primary-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span class="text-xs {{ $filterType === 'payment' ? 'opacity-100 scale-110' : 'opacity-70 group-hover:scale-110' }} transition-transform">🛍️</span>
                         <span>Pembayaran</span>
                     </button>
                     <button wire:click="setFilter('refund')" class="group py-2 px-2 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 {{ $filterType === 'refund' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span class="text-xs {{ $filterType === 'refund' ? 'opacity-100 scale-110' : 'opacity-70 group-hover:scale-110' }} transition-transform">↩️</span>
                         <span>Dana Kembali</span>
                     </button>
                 </div>
