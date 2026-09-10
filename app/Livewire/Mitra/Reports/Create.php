@@ -193,7 +193,13 @@ class Create extends Component
 
     public function render()
     {
-        $helps = auth()->user()->takenHelps()->whereIn('status', ['active', 'completed'])->select('id', 'title', 'status', 'user_id')->latest()->limit(50)->get();
+        $allowedStatuses = array_merge(Help::activeStatuses(), [
+            Help::STATUS_WAITING_CONFIRMATION,
+            Help::STATUS_SELESAI,
+            Help::STATUS_DIBATALKAN,
+        ]);
+
+        $helps = auth()->user()->takenHelps()->whereIn('status', $allowedStatuses)->select('id', 'title', 'status', 'user_id')->latest()->limit(50)->get();
         $customers = User::where('role', 'customer')->select('id', 'name', 'email')->limit(100)->get();
 
         return view('livewire.mitra.reports.create', [

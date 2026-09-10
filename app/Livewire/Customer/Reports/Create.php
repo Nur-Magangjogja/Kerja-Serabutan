@@ -132,7 +132,7 @@ class Create extends Component
         }
 
         // 4. Jika bantuan berstatus SELESAI: klaim garansi 1x24 jam aktif selama dalam 24 jam sejak completed_at
-        if (in_array($help->status, ['completed', 'selesai'])) {
+        if ($help->status === Help::STATUS_SELESAI) {
             if (!$help->completed_at) {
                 return false;
             }
@@ -140,7 +140,10 @@ class Create extends Component
         }
 
         // 5. Jika bantuan sedang menunggu konfirmasi atau sedang dalam proses pengerjaan
-        return in_array($help->status, ['waiting_customer_confirmation', 'waiting_confirmation', 'konfirmasi_selesai', 'in_progress', 'active', 'sedang_diproses', 'taken', 'menunggu_mitra']);
+        return in_array($help->status, array_merge(Help::activeStatuses(), [
+            Help::STATUS_WAITING_CONFIRMATION,
+            Help::STATUS_MENUNGGU_MITRA,
+        ]));
     }
 
     public function updatedHelpId($value)
@@ -313,8 +316,14 @@ class Create extends Component
 
     public function render()
     {
+        $reportableStatuses = array_merge(Help::activeStatuses(), [
+            Help::STATUS_WAITING_CONFIRMATION,
+            Help::STATUS_SELESAI,
+            Help::STATUS_DIBATALKAN,
+        ]);
+
         $helps = auth()->user()->helps()
-            ->whereIn('status', ['active', 'completed', 'selesai', 'in_progress', 'taken', 'sedang_diproses'])
+            ->whereIn('status', $reportableStatuses)
             ->with('mitra')
             ->select('id', 'title', 'status', 'mitra_id', 'amount', 'total_amount', 'completed_at', 'created_at')
             ->latest()

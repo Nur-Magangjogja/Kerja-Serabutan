@@ -6,7 +6,6 @@ use App\Models\Help;
 use App\Models\PartnerOnlineState;
 use App\Models\UserBalance;
 use App\Services\HelpTransactionService;
-use App\Services\LocationTrackingService;
 use App\Services\PartnerOnlineService;
 use App\Notifications\HelpTakenNotification;
 use Illuminate\Support\Facades\Cache;
@@ -225,18 +224,16 @@ class Index extends Component
             ->where('mitra_id', auth()->id())
             ->firstOrFail();
 
-        $help->update([
-            'status'                   => Help::STATUS_WAITING_CONFIRMATION,
-            'service_completed_at'     => $help->service_completed_at ?? now(),
-            'confirmation_deadline_at' => now()->addHours(24),
-        ]);
+        try {
+            app(HelpTransactionService::class)->submitCompletion($help, auth()->user(), null, 'Selesai dari dashboard');
 
-        // Lepaskan status BUSY mitra agar dapat langsung mencari pesanan baru
-        app(\App\Services\PartnerOnlineService::class)->releaseBusy(auth()->id(), $help->id);
-        $this->clearDashboardCache();
-
-        session()->flash('message', 'Pekerjaan selesai! Dana escrow diamankan (maks. 24 jam). Status Anda kembali Bebas Tugas — Klik "Cari Order" untuk mulai pekerjaan baru.');
-        $this->setTab('diproses');
+            $this->clearDashboardCache();
+            session()->flash('message', 'Pekerjaan selesai! Dana escrow diamankan (maks. 24 jam). Status Anda kembali Bebas Tugas — Klik "Cari Order" untuk mulai pekerjaan baru.');
+            $this->setTab('diproses');
+        } catch (\Throwable $e) {
+            Log::error('[MitraDashboard] completeHelp error: ' . $e->getMessage(), ['help_id' => $helpId]);
+            session()->flash('error', 'Terjadi kesalahan saat menyelesaikan pekerjaan: ' . $e->getMessage());
+        }
     }
 
     public function clearDashboardCache(?int $userId = null): void
@@ -292,14 +289,20 @@ class Index extends Component
 
             $helps = $helpsQuery->paginate(6);
         } elseif ($this->activeTab === 'diproses') {
+            $inProgressStatuses = array_merge(Help::activeStatuses(), [
+                Help::STATUS_WAITING_CONFIRMATION,
+                Help::STATUS_PARTNER_CANCEL_REQUESTED,
+                Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+            ]);
+
             $helps = Help::where('mitra_id', $user->id)
-                ->whereIn('status', ['memperoleh_mitra', 'taken', 'sedang_diproses', 'in_progress', 'partner_on_the_way', 'partner_arrived', 'waiting_customer_confirmation', 'partner_cancel_requested'])
+                ->whereIn('status', $inProgressStatuses)
                 ->with(['user', 'city', 'district'])
                 ->latest()
                 ->paginate(6);
         } elseif ($this->activeTab === 'selesai') {
             $helps = Help::where('mitra_id', $user->id)
-                ->whereIn('status', ['selesai', 'completed'])
+                ->where('status', Help::STATUS_SELESAI)
                 ->with(['user', 'city', 'district'])
                 ->latest()
                 ->paginate(6);
@@ -331,15 +334,9 @@ class Index extends Component
             ->get();
 
         $activeTask = $relevantMitraHelps->first(function ($h) {
-            return in_array($h->status, [
-                Help::STATUS_TAKEN,
-                'memperoleh_mitra',
-                Help::STATUS_PARTNER_ON_THE_WAY,
-                Help::STATUS_PARTNER_ARRIVED,
-                Help::STATUS_IN_PROGRESS,
-                'sedang_diproses',
+            return in_array($h->status, array_merge(Help::activeStatuses(), [
                 Help::STATUS_PARTNER_CANCEL_REQUESTED,
-            ]);
+            ]));
         });
 
         $waitingConfirmationHelps = $relevantMitraHelps->filter(function ($h) {

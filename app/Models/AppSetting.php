@@ -229,7 +229,7 @@ class AppSetting extends Model
 
     public static function getOfferTimeoutSeconds(): int
     {
-        $val = (int) static::get('offer_timeout_seconds', 120);
+        $val = (int) static::get('offer_timeout_seconds', 45);
         return max(15, min(600, $val));
     }
 
@@ -254,21 +254,21 @@ class AppSetting extends Model
     public const MAX_OPERATIONAL_RADIUS_KM = 10.0;
 
     /**
-     * Batas radius matching baku (10.0 KM).
+     * Batas radius matching baku (15.0 KM default, max 100.0 KM).
      */
     public static function getMaxMatchingRadiusKm(): float
     {
-        $val = (float) static::get('max_matching_radius_km', self::MAX_OPERATIONAL_RADIUS_KM);
-        return max(1.0, min(self::MAX_OPERATIONAL_RADIUS_KM, $val));
+        $val = (float) static::get('max_matching_radius_km', 15.0);
+        return max(1.0, min(100.0, $val));
     }
 
     /**
-     * Batas radius pool baku (10.0 KM).
+     * Batas radius pool baku (15.0 KM default, max 100.0 KM).
      */
     public static function getMaxPoolRadiusKm(): float
     {
-        $val = (float) static::get('max_pool_radius_km', self::MAX_OPERATIONAL_RADIUS_KM);
-        return max(1.0, min(self::MAX_OPERATIONAL_RADIUS_KM, $val));
+        $val = (float) static::get('max_pool_radius_km', 15.0);
+        return max(1.0, min(100.0, $val));
     }
 
     public static function getNeutralRatingPrior(): float

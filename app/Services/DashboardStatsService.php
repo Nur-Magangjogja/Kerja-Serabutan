@@ -47,20 +47,15 @@ class DashboardStatsService
                 ->count();
 
             $inProgress = Help::where('mitra_id', $user->id)
-                ->whereIn('status', [
-                    'memperoleh_mitra',
-                    Help::STATUS_TAKEN,
-                    'sedang_diproses',
-                    Help::STATUS_IN_PROGRESS,
-                    Help::STATUS_PARTNER_ON_THE_WAY,
-                    Help::STATUS_PARTNER_ARRIVED,
+                ->whereIn('status', array_merge(Help::activeStatuses(), [
                     Help::STATUS_WAITING_CONFIRMATION,
                     Help::STATUS_PARTNER_CANCEL_REQUESTED,
-                ])
+                    Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+                ]))
                 ->count();
 
             $completed = Help::where('mitra_id', $user->id)
-                ->whereIn('status', [Help::STATUS_SELESAI, 'completed'])
+                ->where('status', Help::STATUS_SELESAI)
                 ->count();
 
             return [
@@ -188,15 +183,11 @@ class DashboardStatsService
             try {
                 if (Schema::hasTable('chats')) {
                     $myHelpIds = Help::where('mitra_id', $user->id)
-                        ->whereIn('status', [
-                            'memperoleh_mitra',
-                            Help::STATUS_TAKEN,
-                            'sedang_diproses',
-                            Help::STATUS_IN_PROGRESS,
-                            Help::STATUS_PARTNER_ON_THE_WAY,
-                            Help::STATUS_PARTNER_ARRIVED,
+                        ->whereIn('status', array_merge(Help::activeStatuses(), [
                             Help::STATUS_WAITING_CONFIRMATION,
-                        ])
+                            Help::STATUS_PARTNER_CANCEL_REQUESTED,
+                            Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+                        ]))
                         ->pluck('id');
 
                     return Chat::whereIn('help_id', $myHelpIds)

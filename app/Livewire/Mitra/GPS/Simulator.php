@@ -3,7 +3,7 @@
 namespace App\Livewire\Mitra\GPS;
 
 use App\Models\Help;
-use App\Services\LocationTrackingService;
+use App\Services\HelpTrackingService;
 use Livewire\Component;
 use Illuminate\Support\Facades\Log;
 
@@ -20,7 +20,7 @@ class Simulator extends Component
 
     protected $locationService;
 
-    public function boot(LocationTrackingService $locationService)
+    public function boot(HelpTrackingService $locationService)
     {
         $this->locationService = $locationService;
     }
@@ -118,16 +118,8 @@ class Simulator extends Component
         // Generate random start location HANYA saat simulasi dimulai
         $this->generateRandomStartLocation();
 
-        // Set lokasi awal di database
-        if (!$help->partner_initial_lat) {
-            $this->locationService->setInitialLocation($help, $this->currentLat, $this->currentLng);
-        } else {
-            // Update current location ke random location
-            $help->update([
-                'partner_current_lat' => $this->currentLat,
-                'partner_current_lng' => $this->currentLng,
-            ]);
-        }
+        // Set lokasi awal di database via HelpTrackingService
+        $this->locationService->setInitialLocation($help, $this->currentLat, $this->currentLng);
 
         $this->isSimulating = true;
         $this->dispatch('simulation-started');

@@ -398,10 +398,10 @@
                         @foreach($latestHelps as $help)
                         @php
                         $stClass = match($help->status ?? '') {
-                            'pending', 'menunggu_mitra' => 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400',
-                            'active', 'taken', 'memperoleh_mitra', 'in_progress', 'partner_on_the_way', 'partner_arrived', 'sedang_diproses' => 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
-                            'completed', 'selesai' => 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400',
-                            'cancelled', 'dibatalkan', 'rejected' => 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400',
+                            'menunggu_mitra' => 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400',
+                            'taken', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'waiting_customer_confirmation' => 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+                            'selesai' => 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400',
+                            'dibatalkan', 'partner_cancel_requested', 'customer_cancel_requested' => 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400',
                             default => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                         };
                         @endphp

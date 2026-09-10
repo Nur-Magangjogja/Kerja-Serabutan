@@ -21,12 +21,7 @@ class AutoCancelExpiredHelps extends Command
         $fallbackCutoff = $now->copy()->subHours($fallbackHours);
 
         $expiredHelps = Help::whereNull('mitra_id')
-            ->whereIn('status', [
-                Help::STATUS_MENUNGGU_MITRA,
-                'mencari_mitra',
-                'menunggu_pembayaran',
-                'pending',
-            ])
+            ->where('status', Help::STATUS_MENUNGGU_MITRA)
             ->where(function ($query) use ($now, $fallbackCutoff) {
                 // 1. Batas waktu pencarian yang ditentukan oleh customer (expires_at)
                 $query->where(function ($q) use ($now) {

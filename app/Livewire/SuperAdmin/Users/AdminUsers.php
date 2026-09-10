@@ -32,6 +32,7 @@ class AdminUsers extends Component
     public $verified = true;
     public $district_id = null;
     public $managed_district_ids = []; 
+    public $managed_city_ids = [];
     public $districtSearch = '';
     public $cityFilter = 'all';
     public $address = null;
@@ -120,7 +121,7 @@ class AdminUsers extends Component
 
     public function editUser($id)
     {
-        $user = User::with(['managedDistricts.city', 'district'])->find($id);
+        $user = User::with(['managedDistricts.city', 'managedCities', 'district'])->find($id);
         if (!$user) {
             session()->flash('error', 'Admin tidak ditemukan');
             return;
@@ -140,6 +141,12 @@ class AdminUsers extends Component
         }
         $this->managed_district_ids = $managedIds;
         $this->district_id = !empty($managedIds) ? $managedIds[0] : null;
+
+        $managedCityIds = $user->managedCities->pluck('id')->map(fn($cid) => (int)$cid)->toArray();
+        if (empty($managedCityIds) && $user->city_id) {
+            $managedCityIds = [(int)$user->city_id];
+        }
+        $this->managed_city_ids = $managedCityIds;
 
         $this->address = $user->address;
         $this->nik = $user->nik;
@@ -190,6 +197,7 @@ class AdminUsers extends Component
         $this->verified = true;
         $this->district_id = null;
         $this->managed_district_ids = [];
+        $this->managed_city_ids = [];
         $this->districtSearch = '';
         $this->cityFilter = 'all';
         $this->address = null;
@@ -252,13 +260,16 @@ class AdminUsers extends Component
             }
         }
 
-        // Process managed districts
+        // Process managed districts and cities
+        $managedCityIds = array_values(array_unique(array_filter(array_map('intval', (array)($this->managed_city_ids ?? [])))));
         $managedDistrictIds = array_values(array_unique(array_filter(array_map('intval', (array)($this->managed_district_ids ?? [])))));
+        
         $primaryDistrictId = !empty($managedDistrictIds) ? $managedDistrictIds[0] : null;
         $primaryDistrict = $primaryDistrictId ? \App\Models\District::with('city')->find($primaryDistrictId) : null;
-        $primaryCityId = $primaryDistrict ? $primaryDistrict->city_id : null;
-        $primaryCityName = $primaryDistrict?->city?->name;
-        $primaryProvince = $primaryDistrict?->city?->province;
+        $primaryCityId = !empty($managedCityIds) ? $managedCityIds[0] : ($primaryDistrict ? $primaryDistrict->city_id : null);
+        $primaryCity = $primaryCityId ? City::find($primaryCityId) : null;
+        $primaryCityName = $primaryDistrict?->city?->name ?: $primaryCity?->name;
+        $primaryProvince = $primaryDistrict?->city?->province ?: $primaryCity?->province;
         $primaryKecamatan = $primaryDistrict?->name;
 
         $data = [
@@ -298,7 +309,9 @@ class AdminUsers extends Component
 
             if ($this->role === 'admin') {
                 $user->managedDistricts()->sync($managedDistrictIds);
-                if ($primaryCityId) {
+                if (!empty($managedCityIds)) {
+                    $user->managedCities()->sync($managedCityIds);
+                } elseif ($primaryCityId) {
                     $user->managedCities()->sync([$primaryCityId]);
                 }
             } else {
@@ -321,7 +334,9 @@ class AdminUsers extends Component
 
             if ($this->role === 'admin') {
                 $user->managedDistricts()->sync($managedDistrictIds);
-                if ($primaryCityId) {
+                if (!empty($managedCityIds)) {
+                    $user->managedCities()->sync($managedCityIds);
+                } elseif ($primaryCityId) {
                     $user->managedCities()->sync([$primaryCityId]);
                 }
             }

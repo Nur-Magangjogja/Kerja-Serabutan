@@ -81,8 +81,8 @@ class RateCustomer extends Component
         // Validate
         $this->validate();
 
-        // Check if help is completed (accept both 'completed' and 'selesai')
-        if (!in_array($this->help->status, ['completed', 'selesai'])) {
+        // Check if help is completed
+        if ($this->help->status !== Help::STATUS_SELESAI) {
             session()->flash('error', 'Hanya bisa memberi rating untuk bantuan yang sudah selesai');
             return;
         }

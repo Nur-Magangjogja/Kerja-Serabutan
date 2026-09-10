@@ -354,7 +354,7 @@
         </div>
 
         {{-- Live Dynamic Travel ETA & Progress Card (Konsep 2) --}}
-        @if($help->mitra_id && in_array($help->status, ['memperoleh_mitra', 'taken', 'partner_on_the_way', 'partner_arrived']))
+        @if($help->mitra_id && in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']))
             @php
                 $travelProgress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($help);
             @endphp
@@ -472,7 +472,7 @@
         </div>
 
         {{-- Card Penjelasan Selesai Otomatis saat Sedang Berjalan --}}
-        @if(in_array($help->status, ['taken', 'memperoleh_mitra', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'sedang_diproses']))
+        @if(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress']))
             <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 mt-2 px-4 py-3.5 rounded-xl border border-blue-200/80 dark:border-blue-800/60 flex items-start gap-3 shadow-xs">
                 <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -492,13 +492,12 @@
 
             @php
                 $statuses = [
-                    [ 'key' => 'payment', 'title' => 'Pembayaran', 'time' => $help->created_at, 'active' => in_array($help->status, ['menunggu_pembayaran','mencari_mitra','menunggu_mitra','memperoleh_mitra','taken','partner_on_the_way','partner_arrived','in_progress','sedang_diproses','waiting_customer_confirmation','selesai','completed']), 'current' => $help->status === 'menunggu_pembayaran' ],
-                    [ 'key' => 'searching', 'title' => 'Mencari Rekan Jasa', 'time' => $help->mitra_assigned_at ?? $help->taken_at, 'active' => in_array($help->status, ['mencari_mitra','menunggu_mitra','memperoleh_mitra','taken','partner_on_the_way','partner_arrived','in_progress','sedang_diproses','waiting_customer_confirmation','selesai','completed']), 'current' => in_array($help->status, ['mencari_mitra','menunggu_mitra','memperoleh_mitra']) ],
-                    [ 'key' => 'accepted', 'title' => 'Menunggu Rekan Jasa berangkat', 'time' => $help->taken_at, 'active' => in_array($help->status, ['taken','partner_on_the_way','partner_arrived','in_progress','sedang_diproses','waiting_customer_confirmation','selesai','completed']), 'current' => $help->status === 'taken' ],
-                    [ 'key' => 'on_the_way', 'title' => 'Rekan Jasa menuju ke lokasi', 'time' => $help->partner_started_moving_at, 'active' => in_array($help->status, ['partner_on_the_way','partner_arrived','in_progress','sedang_diproses','waiting_customer_confirmation','selesai','completed']), 'current' => $help->status === 'partner_on_the_way' ],
-                    [ 'key' => 'arrived', 'title' => 'Rekan Jasa tiba di lokasi', 'time' => $help->partner_arrived_at, 'active' => in_array($help->status, ['partner_arrived','in_progress','sedang_diproses','waiting_customer_confirmation','selesai','completed']), 'current' => $help->status === 'partner_arrived' ],
-                    [ 'key' => 'in_progress', 'title' => 'Pelayanan dalam proses', 'time' => $help->service_started_at, 'active' => in_array($help->status, ['in_progress','sedang_diproses','waiting_customer_confirmation','selesai','completed']), 'current' => in_array($help->status, ['in_progress','sedang_diproses']) ],
-                    [ 'key' => 'completed', 'title' => 'Pesanan selesai', 'time' => $help->completed_at ?? $help->service_completed_at, 'active' => in_array($help->status, ['selesai','completed']), 'current' => in_array($help->status, ['selesai','completed']) ]
+                    [ 'key' => 'searching', 'title' => 'Mencari Rekan Jasa', 'time' => $help->mitra_assigned_at ?? $help->taken_at, 'active' => in_array($help->status, ['menunggu_mitra', 'taken', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'waiting_customer_confirmation', 'selesai']), 'current' => $help->status === 'menunggu_mitra' ],
+                    [ 'key' => 'accepted', 'title' => 'Menunggu Rekan Jasa berangkat', 'time' => $help->taken_at, 'active' => in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'waiting_customer_confirmation', 'selesai']), 'current' => $help->status === 'taken' ],
+                    [ 'key' => 'on_the_way', 'title' => 'Rekan Jasa menuju ke lokasi', 'time' => $help->partner_started_moving_at, 'active' => in_array($help->status, ['partner_on_the_way', 'partner_arrived', 'in_progress', 'waiting_customer_confirmation', 'selesai']), 'current' => $help->status === 'partner_on_the_way' ],
+                    [ 'key' => 'arrived', 'title' => 'Rekan Jasa tiba di lokasi', 'time' => $help->partner_arrived_at, 'active' => in_array($help->status, ['partner_arrived', 'in_progress', 'waiting_customer_confirmation', 'selesai']), 'current' => $help->status === 'partner_arrived' ],
+                    [ 'key' => 'in_progress', 'title' => 'Pelayanan dalam proses', 'time' => $help->service_started_at, 'active' => in_array($help->status, ['in_progress', 'waiting_customer_confirmation', 'selesai']), 'current' => $help->status === 'in_progress' ],
+                    [ 'key' => 'completed', 'title' => 'Pesanan selesai', 'time' => $help->completed_at ?? $help->service_completed_at, 'active' => $help->status === 'selesai', 'current' => $help->status === 'selesai' ]
                 ];
             @endphp
 
@@ -934,13 +933,13 @@
         </div>
 
         {{-- Cancel Actions & Statuses --}}
-        @if(in_array($help->status, ['menunggu_pembayaran', 'mencari_mitra', 'menunggu_mitra']))
+        @if($help->status === 'menunggu_mitra')
             <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
                 <button wire:click="confirmCancel" class="w-full py-3 border-2 border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg font-semibold text-sm transition cursor-pointer">
                     Batalkan Pesanan
                 </button>
             </div>
-        @elseif(in_array($help->status, ['taken', 'memperoleh_mitra', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'sedang_diproses']))
+        @elseif(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress']))
             <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
                 <button wire:click="openCustomerCancelModal" class="w-full py-3 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5">
                     <span>🛑 Ajukan Pembatalan Pesanan (Review Admin)</span>

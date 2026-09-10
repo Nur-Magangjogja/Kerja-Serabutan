@@ -41,11 +41,11 @@ class Help extends Model
     public const ROUTE_SOURCE_FALLBACK          = 'fallback_estimation';
 
     // ─────────────────────────────────────────────────────────────────────────
-    // STATE MACHINE
+    // STATE MACHINE & CANONICAL STATUSES
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Status yang valid dalam sistem.
+     * Status resmi / kanonik yang valid dalam sistem.
      */
     public const STATUS_MENUNGGU_MITRA              = 'menunggu_mitra';
     public const STATUS_TAKEN                       = 'taken';
@@ -85,53 +85,89 @@ class Help extends Model
     public const DISPATCH_MODE_CLOSED               = 'closed';
 
     /**
-     * Transisi status yang diizinkan.
+     * Daftar status yang aktif dikerjakan oleh mitra.
+     */
+    public static function activeStatuses(): array
+    {
+        return [
+            self::STATUS_TAKEN,
+            self::STATUS_PARTNER_ON_THE_WAY,
+            self::STATUS_PARTNER_ARRIVED,
+            self::STATUS_IN_PROGRESS,
+        ];
+    }
+
+    /**
+     * Daftar status akhir (terminal).
+     */
+    public static function terminalStatuses(): array
+    {
+        return [
+            self::STATUS_SELESAI,
+            self::STATUS_DIBATALKAN,
+        ];
+    }
+
+    /**
+     * Daftar seluruh status kanonik yang diakui sistem.
+     */
+    public static function canonicalStatuses(): array
+    {
+        return [
+            self::STATUS_MENUNGGU_MITRA,
+            self::STATUS_TAKEN,
+            self::STATUS_PARTNER_ON_THE_WAY,
+            self::STATUS_PARTNER_ARRIVED,
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_WAITING_CONFIRMATION,
+            self::STATUS_SELESAI,
+            self::STATUS_DIBATALKAN,
+            self::STATUS_PARTNER_CANCEL_REQUESTED,
+            self::STATUS_CUSTOMER_CANCEL_REQUESTED,
+        ];
+    }
+
+    /**
+     * Normalisasi status lawas / alias ke status kanonik.
+     */
+    public static function normalizeStatus(?string $status): string
+    {
+        if (empty($status)) {
+            return self::STATUS_MENUNGGU_MITRA;
+        }
+
+        return match ($status) {
+            'completed' => self::STATUS_SELESAI,
+            'cancelled' => self::STATUS_DIBATALKAN,
+            'memperoleh_mitra' => self::STATUS_TAKEN,
+            'sedang_diproses' => self::STATUS_IN_PROGRESS,
+            'mencari_mitra', 'pending', 'menunggu_pembayaran' => self::STATUS_MENUNGGU_MITRA,
+            'waiting_confirmation' => self::STATUS_WAITING_CONFIRMATION,
+            default => $status,
+        };
+    }
+
+    /**
+     * Transisi status yang diizinkan (Kanonik).
      * Key: status saat ini
      * Value: array status tujuan yang valid
      */
     public const VALID_TRANSITIONS = [
         self::STATUS_MENUNGGU_MITRA => [
             self::STATUS_TAKEN,
-            'memperoleh_mitra',
             self::STATUS_DIBATALKAN,
-            'cancelled',
-        ],
-        'mencari_mitra' => [
-            self::STATUS_TAKEN,
-            'memperoleh_mitra',
-            self::STATUS_DIBATALKAN,
-            'cancelled',
-        ],
-        'menunggu_pembayaran' => [
-            self::STATUS_MENUNGGU_MITRA,
-            self::STATUS_DIBATALKAN,
-            'cancelled',
-        ],
-        'pending' => [
-            self::STATUS_MENUNGGU_MITRA,
-            self::STATUS_TAKEN,
-            self::STATUS_DIBATALKAN,
-            'cancelled',
         ],
         self::STATUS_TAKEN => [
             self::STATUS_PARTNER_ON_THE_WAY,
-            self::STATUS_PARTNER_ARRIVED,   // jika mitra tiba tanpa update on_the_way
+            self::STATUS_PARTNER_ARRIVED,
             self::STATUS_IN_PROGRESS,
             self::STATUS_PARTNER_CANCEL_REQUESTED,
             self::STATUS_CUSTOMER_CANCEL_REQUESTED,
             self::STATUS_DIBATALKAN,
-            // Alias lawas yang mungkin masih ada di data
-            'memperoleh_mitra',
-        ],
-        'memperoleh_mitra' => [
-            self::STATUS_TAKEN,
-            self::STATUS_PARTNER_ON_THE_WAY,
-            self::STATUS_PARTNER_CANCEL_REQUESTED,
-            self::STATUS_CUSTOMER_CANCEL_REQUESTED,
         ],
         self::STATUS_PARTNER_ON_THE_WAY => [
             self::STATUS_PARTNER_ARRIVED,
-            self::STATUS_IN_PROGRESS,       // transisi langsung untuk stage khusus
+            self::STATUS_IN_PROGRESS,
             self::STATUS_PARTNER_CANCEL_REQUESTED,
             self::STATUS_CUSTOMER_CANCEL_REQUESTED,
             self::STATUS_DIBATALKAN,
@@ -143,14 +179,6 @@ class Help extends Model
             self::STATUS_PARTNER_CANCEL_REQUESTED,
             self::STATUS_CUSTOMER_CANCEL_REQUESTED,
             self::STATUS_DIBATALKAN,
-            // Alias
-            'sedang_diproses',
-        ],
-        'sedang_diproses' => [
-            self::STATUS_SELESAI,
-            self::STATUS_WAITING_CONFIRMATION,
-            self::STATUS_PARTNER_CANCEL_REQUESTED,
-            self::STATUS_CUSTOMER_CANCEL_REQUESTED,
         ],
         self::STATUS_IN_PROGRESS => [
             self::STATUS_SELESAI,
@@ -167,24 +195,21 @@ class Help extends Model
         self::STATUS_PARTNER_CANCEL_REQUESTED => [
             self::STATUS_MENUNGGU_MITRA,    // customer accept / admin rematch
             self::STATUS_DIBATALKAN,        // admin approve cancellation / timeout
-            // Kembali ke status sebelumnya (dinamis, ditangani di service)
             self::STATUS_TAKEN,
             self::STATUS_PARTNER_ON_THE_WAY,
             self::STATUS_PARTNER_ARRIVED,
             self::STATUS_IN_PROGRESS,
         ],
         self::STATUS_CUSTOMER_CANCEL_REQUESTED => [
-            self::STATUS_MENUNGGU_MITRA,
-            self::STATUS_DIBATALKAN,        // admin approve cancellation
+            self::STATUS_MENUNGGU_MITRA,    // admin relist ke pool
+            self::STATUS_DIBATALKAN,        // admin approve full cancel & refund
             self::STATUS_TAKEN,
             self::STATUS_PARTNER_ON_THE_WAY,
             self::STATUS_PARTNER_ARRIVED,
             self::STATUS_IN_PROGRESS,
         ],
         self::STATUS_SELESAI   => [], // terminal
-        'completed'            => [], // alias lawas
         self::STATUS_DIBATALKAN => [], // terminal
-        'cancelled'             => [], // alias lawas
     ];
 
     /**
@@ -192,7 +217,8 @@ class Help extends Model
      */
     public function canTransitionTo(string $toStatus): bool
     {
-        $from = $this->status ?? '';
+        $from = self::normalizeStatus($this->status ?? '');
+        $target = self::normalizeStatus($toStatus);
         $allowed = self::VALID_TRANSITIONS[$from] ?? null;
 
         // Fail-Closed: Jika status saat ini tidak dikenal dalam map, tolak transisi secara tegas demi integritas data
@@ -200,7 +226,7 @@ class Help extends Model
             return false;
         }
 
-        return in_array($toStatus, $allowed, true);
+        return in_array($target, $allowed, true);
     }
 
     /**
@@ -520,14 +546,7 @@ class Help extends Model
     /** Bantuan yang sedang aktif dikerjakan oleh mitra. */
     public function scopeActive($query)
     {
-        return $query->whereIn('status', [
-            self::STATUS_TAKEN,
-            'memperoleh_mitra',
-            self::STATUS_PARTNER_ON_THE_WAY,
-            self::STATUS_PARTNER_ARRIVED,
-            self::STATUS_IN_PROGRESS,
-            'sedang_diproses',
-        ]);
+        return $query->whereIn('status', self::activeStatuses());
     }
 
     /** Bantuan yang telah diselesaikan mitra dan sedang menunggu konfirmasi customer (1x24 jam). */
@@ -539,13 +558,13 @@ class Help extends Model
     /** Bantuan yang sudah selesai. */
     public function scopeCompleted($query)
     {
-        return $query->whereIn('status', [self::STATUS_SELESAI, 'completed']);
+        return $query->where('status', self::STATUS_SELESAI);
     }
 
     /** Bantuan yang dibatalkan. */
     public function scopeCancelled($query)
     {
-        return $query->whereIn('status', [self::STATUS_DIBATALKAN, 'cancelled']);
+        return $query->where('status', self::STATUS_DIBATALKAN);
     }
 
     /**
@@ -728,16 +747,17 @@ class Help extends Model
         }
 
         return match($this->status) {
-            'menunggu_mitra'               => 'Menunggu Rekan Jasa',
-            'taken', 'memperoleh_mitra'   => 'Rekan Jasa Mengambil Pesanan',
-            'partner_on_the_way'           => $this->isBuy() ? 'Menuju Toko' : ($this->isPickup() ? 'Menuju Titik Jemput' : 'Rekan Jasa Menuju Lokasi'),
-            'partner_arrived'              => $this->isBuy() ? 'Tiba di Toko' : ($this->isPickup() ? 'Tiba di Titik Jemput' : 'Rekan Jasa Tiba di Lokasi'),
-            'in_progress', 'sedang_diproses' => $this->isBuy() ? 'Membeli & Mengantar Barang' : ($this->isPickup() ? 'Mengantar Barang ke Tujuan' : 'Pelayanan Dalam Proses'),
-            'waiting_customer_confirmation'=> 'Menunggu Konfirmasi Anda',
-            'selesai', 'completed'         => 'Selesai',
-            'dibatalkan', 'cancelled'      => 'Dibatalkan',
-            'partner_cancel_requested'     => 'Mitra Mengajukan Kendala/Pembatalan',
-            default                        => ucfirst(str_replace('_', ' ', $this->status)),
+            self::STATUS_MENUNGGU_MITRA            => 'Menunggu Rekan Jasa',
+            self::STATUS_TAKEN                     => 'Rekan Jasa Mengambil Pesanan',
+            self::STATUS_PARTNER_ON_THE_WAY        => $this->isBuy() ? 'Menuju Toko' : ($this->isPickup() ? 'Menuju Titik Jemput' : 'Rekan Jasa Menuju Lokasi'),
+            self::STATUS_PARTNER_ARRIVED           => $this->isBuy() ? 'Tiba di Toko' : ($this->isPickup() ? 'Tiba di Titik Jemput' : 'Rekan Jasa Tiba di Lokasi'),
+            self::STATUS_IN_PROGRESS               => $this->isBuy() ? 'Membeli & Mengantar Barang' : ($this->isPickup() ? 'Mengantar Barang ke Tujuan' : 'Pelayanan Dalam Proses'),
+            self::STATUS_WAITING_CONFIRMATION     => 'Menunggu Konfirmasi Anda',
+            self::STATUS_SELESAI                   => 'Selesai',
+            self::STATUS_DIBATALKAN                => 'Dibatalkan',
+            self::STATUS_PARTNER_CANCEL_REQUESTED  => 'Mitra Mengajukan Kendala/Pembatalan',
+            self::STATUS_CUSTOMER_CANCEL_REQUESTED => 'Pengajuan Kendala Customer Sedang Ditinjau Admin',
+            default                                => ucfirst(str_replace('_', ' ', $this->status ?? '')),
         };
     }
 
@@ -746,15 +766,15 @@ class Help extends Model
      */
     public function getProgressStepAttribute(): int
     {
-        if (in_array($this->status, ['dibatalkan', 'cancelled'])) {
+        if ($this->status === self::STATUS_DIBATALKAN) {
             return 0;
         }
 
-        if (in_array($this->status, ['menunggu_mitra', 'mencari_mitra', 'menunggu_pembayaran'])) {
+        if ($this->status === self::STATUS_MENUNGGU_MITRA) {
             return 1;
         }
 
-        if (in_array($this->status, ['taken', 'memperoleh_mitra'])) {
+        if ($this->status === self::STATUS_TAKEN) {
             return 2;
         }
 
@@ -779,10 +799,10 @@ class Help extends Model
         }
 
         return match($this->status) {
-            'partner_on_the_way'                                    => 3,
-            'partner_arrived', 'in_progress', 'sedang_diproses'     => 4,
-            'waiting_customer_confirmation', 'selesai', 'completed' => 5,
-            default                                                 => 1,
+            self::STATUS_PARTNER_ON_THE_WAY                                    => 3,
+            self::STATUS_PARTNER_ARRIVED, self::STATUS_IN_PROGRESS             => 4,
+            self::STATUS_WAITING_CONFIRMATION, self::STATUS_SELESAI            => 5,
+            default                                                            => 1,
         };
     }
 
@@ -791,7 +811,7 @@ class Help extends Model
      */
     public function getProgressPercentageAttribute(): int
     {
-        if (in_array($this->status, ['dibatalkan', 'cancelled'])) {
+        if ($this->status === self::STATUS_DIBATALKAN) {
             return 0;
         }
 
@@ -827,13 +847,14 @@ class Help extends Model
         }
 
         return match($this->status) {
-            'menunggu_mitra', 'mencari_mitra', 'menunggu_pembayaran' => 20,
-            'taken', 'memperoleh_mitra'                             => 40,
-            'partner_on_the_way'                                    => 60,
-            'partner_arrived'                                       => 75,
-            'in_progress', 'sedang_diproses'                        => 85,
-            'partner_cancel_requested'                              => 50,
-            default                                                 => 20,
+            self::STATUS_MENUNGGU_MITRA            => 20,
+            self::STATUS_TAKEN                     => 40,
+            self::STATUS_PARTNER_ON_THE_WAY        => 60,
+            self::STATUS_PARTNER_ARRIVED           => 75,
+            self::STATUS_IN_PROGRESS               => 85,
+            self::STATUS_PARTNER_CANCEL_REQUESTED  => 50,
+            self::STATUS_CUSTOMER_CANCEL_REQUESTED => 50,
+            default                                => 20,
         };
     }
 
@@ -853,7 +874,7 @@ class Help extends Model
                     'key'    => 'taken',
                     'title'  => 'Pesanan Diterima',
                     'icon'   => '🤝',
-                    'active' => in_array($status, [self::STATUS_TAKEN, 'memperoleh_mitra']),
+                    'active' => $status === self::STATUS_TAKEN,
                 ],
                 [
                     'key'    => 'pickup_otw',
@@ -877,7 +898,7 @@ class Help extends Model
                     'key'    => 'done',
                     'title'  => 'Selesai',
                     'icon'   => '✅',
-                    'active' => in_array($status, [self::STATUS_WAITING_CONFIRMATION, self::STATUS_SELESAI, 'completed']),
+                    'active' => in_array($status, [self::STATUS_WAITING_CONFIRMATION, self::STATUS_SELESAI]),
                 ],
             ];
         }
@@ -888,7 +909,7 @@ class Help extends Model
                     'key'    => 'taken',
                     'title'  => 'Pesanan Diterima',
                     'icon'   => '🤝',
-                    'active' => in_array($status, [self::STATUS_TAKEN, 'memperoleh_mitra']),
+                    'active' => $status === self::STATUS_TAKEN,
                 ],
                 [
                     'key'    => 'to_store',
@@ -912,7 +933,7 @@ class Help extends Model
                     'key'    => 'done',
                     'title'  => 'Selesai',
                     'icon'   => '✅',
-                    'active' => in_array($status, [self::STATUS_WAITING_CONFIRMATION, self::STATUS_SELESAI, 'completed']),
+                    'active' => in_array($status, [self::STATUS_WAITING_CONFIRMATION, self::STATUS_SELESAI]),
                 ],
             ];
         }
@@ -923,7 +944,7 @@ class Help extends Model
                 'key'    => 'taken',
                 'title'  => 'Pesanan Diterima',
                 'icon'   => '🤝',
-                'active' => in_array($status, [self::STATUS_TAKEN, 'memperoleh_mitra']),
+                'active' => $status === self::STATUS_TAKEN,
             ],
             [
                 'key'    => 'otw',
@@ -941,13 +962,13 @@ class Help extends Model
                 'key'    => 'in_progress',
                 'title'  => 'Pengerjaan Jasa',
                 'icon'   => '⚡',
-                'active' => in_array($status, [self::STATUS_IN_PROGRESS, 'sedang_diproses']),
+                'active' => $status === self::STATUS_IN_PROGRESS,
             ],
             [
                 'key'    => 'done',
                 'title'  => 'Selesai',
                 'icon'   => '✅',
-                'active' => in_array($status, [self::STATUS_WAITING_CONFIRMATION, self::STATUS_SELESAI, 'completed']),
+                'active' => in_array($status, [self::STATUS_WAITING_CONFIRMATION, self::STATUS_SELESAI]),
             ],
         ];
     }
@@ -989,16 +1010,17 @@ class Help extends Model
         }
 
         return match($this->status) {
-            'menunggu_mitra', 'mencari_mitra'                       => '🔍',
-            'taken', 'memperoleh_mitra'                             => '🤝',
-            'partner_on_the_way'                                    => '🛵',
-            'partner_arrived'                                       => '📍',
-            'in_progress', 'sedang_diproses'                        => '⚡',
-            'waiting_customer_confirmation'                         => '📸',
-            'selesai', 'completed'                                  => '✅',
-            'dibatalkan', 'cancelled'                               => '❌',
-            'partner_cancel_requested'                              => '⚠️',
-            default                                                 => '📋',
+            self::STATUS_MENUNGGU_MITRA            => '🔍',
+            self::STATUS_TAKEN                     => '🤝',
+            self::STATUS_PARTNER_ON_THE_WAY        => '🛵',
+            self::STATUS_PARTNER_ARRIVED           => '📍',
+            self::STATUS_IN_PROGRESS               => '⚡',
+            self::STATUS_WAITING_CONFIRMATION      => '📸',
+            self::STATUS_SELESAI                   => '✅',
+            self::STATUS_DIBATALKAN                => '❌',
+            self::STATUS_PARTNER_CANCEL_REQUESTED  => '⚠️',
+            self::STATUS_CUSTOMER_CANCEL_REQUESTED => '⚠️',
+            default                                => '📋',
         };
     }
 
@@ -1007,13 +1029,13 @@ class Help extends Model
      */
     public function getProgressSummaryAttribute(): string
     {
-        if (in_array($this->status, ['dibatalkan', 'cancelled'])) {
+        if ($this->status === self::STATUS_DIBATALKAN) {
             return 'Pesanan Dibatalkan';
         }
-        if ($this->status === 'partner_cancel_requested') {
+        if ($this->status === self::STATUS_PARTNER_CANCEL_REQUESTED || $this->status === self::STATUS_CUSTOMER_CANCEL_REQUESTED) {
             return 'Pengajuan Kendala / Pembatalan';
         }
-        if (in_array($this->status, ['selesai', 'completed'])) {
+        if ($this->status === self::STATUS_SELESAI) {
             return 'Pesanan Selesai';
         }
 
@@ -1040,49 +1062,34 @@ class Help extends Model
     public function getStatusColorAttribute(): string
     {
         return match($this->status) {
-            'menunggu_mitra'                => 'bg-blue-100 text-blue-700',
-            'taken', 'memperoleh_mitra'    => 'bg-blue-100 text-blue-700',
-            'partner_on_the_way'            => 'bg-indigo-100 text-indigo-700',
-            'partner_arrived'               => 'bg-green-100 text-green-700',
-            'in_progress', 'sedang_diproses'=> 'bg-cyan-100 text-cyan-700',
-            'waiting_customer_confirmation' => 'bg-orange-100 text-orange-700',
-            'selesai', 'completed'          => 'bg-green-100 text-green-700',
-            'dibatalkan', 'cancelled'       => 'bg-red-100 text-red-700',
-            'partner_cancel_requested'      => 'bg-yellow-100 text-yellow-700',
-            default                         => 'bg-gray-100 text-gray-700',
+            self::STATUS_MENUNGGU_MITRA            => 'bg-blue-100 text-blue-700',
+            self::STATUS_TAKEN                     => 'bg-blue-100 text-blue-700',
+            self::STATUS_PARTNER_ON_THE_WAY        => 'bg-indigo-100 text-indigo-700',
+            self::STATUS_PARTNER_ARRIVED           => 'bg-green-100 text-green-700',
+            self::STATUS_IN_PROGRESS               => 'bg-cyan-100 text-cyan-700',
+            self::STATUS_WAITING_CONFIRMATION      => 'bg-orange-100 text-orange-700',
+            self::STATUS_SELESAI                   => 'bg-green-100 text-green-700',
+            self::STATUS_DIBATALKAN                => 'bg-red-100 text-red-700',
+            self::STATUS_PARTNER_CANCEL_REQUESTED  => 'bg-yellow-100 text-yellow-700',
+            self::STATUS_CUSTOMER_CANCEL_REQUESTED => 'bg-yellow-100 text-yellow-700',
+            default                                => 'bg-gray-100 text-gray-700',
         };
     }
 
     /**
-     * Apakah bantuan masih bisa dibatalkan oleh customer.
+     * Apakah bantuan masih bisa dibatalkan oleh customer sebelum ada mitra.
      */
     public function isCustomerCancellable(): bool
     {
-        return in_array($this->status, [
-            self::STATUS_MENUNGGU_MITRA,
-            'mencari_mitra',
-            'menunggu_pembayaran',
-            'pending',
-        ]);
+        return $this->status === self::STATUS_MENUNGGU_MITRA;
     }
 
-
-
     /**
-     * Apakah bantuan sedang aktif (belum selesai dan belum dibatalkan).
+     * Apakah bantuan sedang aktif (sedang dikerjakan mitra).
      */
     public function isActive(): bool
     {
-        return in_array($this->status, [
-            self::STATUS_TAKEN,
-            'memperoleh_mitra',
-            self::STATUS_PARTNER_ON_THE_WAY,
-            self::STATUS_PARTNER_ARRIVED,
-            self::STATUS_IN_PROGRESS,
-            'sedang_diproses',
-            self::STATUS_WAITING_CONFIRMATION,
-            self::STATUS_PARTNER_CANCEL_REQUESTED,
-        ]);
+        return in_array($this->status, self::activeStatuses());
     }
 
     /**
@@ -1090,7 +1097,7 @@ class Help extends Model
      */
     public function isDone(): bool
     {
-        return in_array($this->status, [self::STATUS_SELESAI, 'completed']);
+        return $this->status === self::STATUS_SELESAI;
     }
 
     // ─────────────────────────────────────────────────────────────────────────

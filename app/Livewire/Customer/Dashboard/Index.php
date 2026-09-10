@@ -116,8 +116,8 @@ class Index extends Component
         } elseif ($user->isMitra()) {
             $stats = [
                 'total_helped' => Help::where('mitra_id', $user->id)->count(),
-                'in_progress' => Help::where('mitra_id', $user->id)->where('status', 'memperoleh_mitra')->count(),
-                'completed' => Help::where('mitra_id', $user->id)->where('status', 'selesai')->count(),
+                'in_progress' => Help::where('mitra_id', $user->id)->whereIn('status', Help::activeStatuses())->count(),
+                'completed' => Help::where('mitra_id', $user->id)->where('status', Help::STATUS_SELESAI)->count(),
             ];
 
             $myHelps = Help::where('mitra_id', $user->id)

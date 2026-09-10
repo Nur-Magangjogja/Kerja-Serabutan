@@ -6,6 +6,8 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use App\Models\Help;
+use App\Models\District;
+use App\Models\City;
 
 #[Layout('layouts.admin')]
 class Index extends Component
@@ -48,7 +50,11 @@ class Index extends Component
 
     public function updatedDistrictFilter()
     {
-        auth()->user()?->setActiveAdminDistrictFilter($this->districtFilter);
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $admin->setActiveAdminDistrictFilter($this->districtFilter);
+            $admin->setActiveAdminCityFilter($this->districtFilter);
+        }
         $this->cityFilter = $this->districtFilter;
         $this->dispatch('admin-district-changed', districtId: $this->districtFilter);
         $this->resetPage();
@@ -70,7 +76,11 @@ class Index extends Component
     {
         $this->districtFilter = $district;
         $this->cityFilter = $district;
-        auth()->user()?->setActiveAdminDistrictFilter($district);
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $admin->setActiveAdminDistrictFilter($district);
+            $admin->setActiveAdminCityFilter($district);
+        }
         $this->dispatch('admin-district-changed', districtId: $district);
         $this->resetPage();
     }
@@ -82,8 +92,14 @@ class Index extends Component
 
     public function onAdminDistrictChanged($districtId = null)
     {
-        $this->districtFilter = auth()->user()?->getActiveAdminDistrictFilter() ?? 'all';
-        $this->cityFilter = $this->districtFilter;
+        $admin = auth()->user();
+        $target = (string) ($districtId ?? ($admin ? ($admin->getActiveAdminDistrictFilter() !== 'all' ? $admin->getActiveAdminDistrictFilter() : $admin->getActiveAdminCityFilter()) : 'all'));
+        if ($admin && $admin->role === 'admin') {
+            $admin->setActiveAdminDistrictFilter($target);
+            $admin->setActiveAdminCityFilter($target);
+        }
+        $this->districtFilter = $target;
+        $this->cityFilter = $target;
         $this->resetPage();
     }
 
@@ -112,23 +128,17 @@ class Index extends Component
     public function approveHelp($id)
     {
         $help = Help::findOrFail($id);
-        $help->update(['status' => Help::STATUS_MENUNGGU_MITRA]);
-        session()->flash('message', 'Bantuan berhasil disetujui');
+        $help->update([
+            'status'        => Help::STATUS_MENUNGGU_MITRA,
+            'dispatch_mode' => Help::DISPATCH_MODE_POOL,
+        ]);
+        session()->flash('message', 'Bantuan berhasil disetujui dan dibuka ke pool mitra');
     }
 
     public function rejectHelp($id)
     {
         $help = Help::findOrFail($id);
-        if ($help->escrow_status === Help::ESCROW_STATUS_HELD) {
-            app(\App\Services\HelpTransactionService::class)->autoCancelExpiredHelp($help, 'Ditolak oleh Admin Regional');
-        } else {
-            $help->update([
-                'status'         => Help::STATUS_DIBATALKAN,
-                'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
-                'escrow_status'  => Help::ESCROW_STATUS_REFUNDED,
-                'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
-            ]);
-        }
+        app(\App\Services\HelpCancellationService::class)->cancelByPartnerUnilaterally($help, auth()->user(), 'Ditolak oleh Admin Regional');
         session()->flash('message', 'Bantuan ditolak dan dana escrow dikembalikan 100% ke saldo pemohon.');
     }
 
@@ -136,28 +146,65 @@ class Index extends Component
     {
         $admin = auth()->user();
         
-        // District Resolution for Admin
+        // District and City Resolution for Admin
         $allowedDistrictIds = ($admin && $admin->role === 'admin') ? $admin->getAdminDistrictIds() : [];
         $managedDistricts = ($admin && $admin->role === 'admin') ? $admin->getAdminDistricts() : collect();
+        $allowedCityIds = ($admin && $admin->role === 'admin') ? $admin->getAdminCityIds() : [];
+        $managedCities = ($admin && $admin->role === 'admin') ? $admin->getAdminCities() : collect();
+
+        $activeDistrictIds = [];
+        $activeCityIds = [];
+
         if ($admin && $admin->role === 'admin') {
-            $this->districtFilter = $admin->getActiveAdminDistrictFilter();
-            $this->cityFilter = $this->districtFilter;
-            $activeDistrictIds = $admin->getEffectiveAdminDistrictIds();
-        } else {
-            $activeDistrictIds = [];
+            $filterValue = $this->districtFilter !== 'all' ? $this->districtFilter : ($this->cityFilter !== 'all' ? $this->cityFilter : 'all');
+
+            if ($filterValue !== 'all') {
+                $valInt = (int) $filterValue;
+                if (in_array($valInt, $allowedDistrictIds, true)) {
+                    $activeDistrictIds = [$valInt];
+                } elseif (in_array($valInt, $allowedCityIds, true)) {
+                    $activeCityIds = [$valInt];
+                    $activeDistrictIds = District::where('city_id', $valInt)->pluck('id')->map('intval')->all();
+                } else {
+                    $activeDistrictIds = $allowedDistrictIds;
+                    $activeCityIds = $allowedCityIds;
+                }
+            } else {
+                $activeDistrictIds = $allowedDistrictIds;
+                $activeCityIds = $allowedCityIds;
+            }
         }
 
         // Base Query
         $query = Help::query()
             ->with(['customer', 'customer.district', 'customer.city', 'mitra', 'district', 'city'])
-            ->when(!empty($activeDistrictIds), function ($q) use ($activeDistrictIds) {
-                $q->where(function ($sq) use ($activeDistrictIds) {
-                    $sq->whereIn('district_id', $activeDistrictIds)
-                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $activeDistrictIds));
-                });
-            })
-            ->when(empty($activeDistrictIds) && $admin && $admin->role === 'admin', function ($q) {
-                $q->whereRaw('1 = 0');
+            ->when($admin && $admin->role === 'admin', function ($q) use ($activeDistrictIds, $activeCityIds) {
+                if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
+                    $q->where(function ($sq) use ($activeDistrictIds, $activeCityIds) {
+                        $sq->whereIn('district_id', $activeDistrictIds)
+                          ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $activeDistrictIds))
+                          ->orWhere(function ($ssq) use ($activeCityIds) {
+                              $ssq->whereNull('district_id')
+                                 ->whereIn('city_id', $activeCityIds);
+                          })
+                          ->orWhereHas('customer', function ($cq) use ($activeCityIds) {
+                              $cq->whereNull('district_id')
+                                 ->whereIn('city_id', $activeCityIds);
+                          });
+                    });
+                } elseif (!empty($activeDistrictIds)) {
+                    $q->where(function ($sq) use ($activeDistrictIds) {
+                        $sq->whereIn('district_id', $activeDistrictIds)
+                          ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $activeDistrictIds));
+                    });
+                } elseif (!empty($activeCityIds)) {
+                    $q->where(function ($sq) use ($activeCityIds) {
+                        $sq->whereIn('city_id', $activeCityIds)
+                          ->orWhereHas('customer', fn($cq) => $cq->whereIn('city_id', $activeCityIds));
+                    });
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
             })
             ->when($this->search !== '', function ($q) {
                 $q->where(function ($sq) {
@@ -171,44 +218,56 @@ class Index extends Component
                 $filter = strtolower(trim($this->statusFilter));
 
                 if (in_array($filter, ['pending', 'menunggu', 'menunggu_mitra'])) {
-                    $q->whereIn('status', ['pending', 'menunggu_mitra', 'menunggu']);
-                } elseif (in_array($filter, ['active', 'aktif', 'in_progress', 'sedang_diproses'])) {
-                    $q->whereIn('status', [
-                        'active', 'taken', 'memperoleh_mitra', 'sedang_diproses',
-                        'in_progress', 'partner_on_the_way', 'partner_arrived',
-                        'waiting_customer_confirmation'
-                    ]);
+                    $q->where('status', Help::STATUS_MENUNGGU_MITRA);
+                } elseif (in_array($filter, ['active', 'aktif', 'in_progress', 'sedang_diproses', 'diproses'])) {
+                    $q->whereIn('status', array_merge(Help::activeStatuses(), [Help::STATUS_WAITING_CONFIRMATION]));
                 } elseif (in_array($filter, ['completed', 'selesai'])) {
-                    $q->whereIn('status', ['completed', 'selesai']);
+                    $q->where('status', Help::STATUS_SELESAI);
                 } elseif (in_array($filter, ['cancelled', 'dibatalkan', 'rejected', 'ditolak'])) {
-                    $q->whereIn('status', ['cancelled', 'dibatalkan', 'rejected']);
+                    $q->where('status', Help::STATUS_DIBATALKAN);
                 } else {
-                    $q->where('status', $filter);
+                    $q->where('status', Help::normalizeStatus($filter));
                 }
             });
 
         $helps = $query->latest()->paginate($this->perPage);
 
-        // Statistics - filtered by active district scope
+        // Statistics - filtered by active district/city scope
         $statsQuery = Help::query();
-        if (!empty($activeDistrictIds)) {
-            $statsQuery->where(function ($sq) use ($activeDistrictIds) {
-                $sq->whereIn('district_id', $activeDistrictIds)
-                  ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $activeDistrictIds));
-            });
-        } elseif ($admin && $admin->role === 'admin') {
-            $statsQuery->whereRaw('1 = 0');
+        if ($admin && $admin->role === 'admin') {
+            if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
+                $statsQuery->where(function ($sq) use ($activeDistrictIds, $activeCityIds) {
+                    $sq->whereIn('district_id', $activeDistrictIds)
+                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $activeDistrictIds))
+                      ->orWhere(function ($ssq) use ($activeCityIds) {
+                          $ssq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      })
+                      ->orWhereHas('customer', function ($cq) use ($activeCityIds) {
+                          $cq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      });
+                });
+            } elseif (!empty($activeDistrictIds)) {
+                $statsQuery->where(function ($sq) use ($activeDistrictIds) {
+                    $sq->whereIn('district_id', $activeDistrictIds)
+                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $activeDistrictIds));
+                });
+            } elseif (!empty($activeCityIds)) {
+                $statsQuery->where(function ($sq) use ($activeCityIds) {
+                    $sq->whereIn('city_id', $activeCityIds)
+                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('city_id', $activeCityIds));
+                });
+            } else {
+                $statsQuery->whereRaw('1 = 0');
+            }
         }
 
         $totalHelps = (clone $statsQuery)->count();
-        $pendingHelps = (clone $statsQuery)->whereIn('status', ['pending', 'menunggu_mitra', 'menunggu'])->count();
-        $activeHelps = (clone $statsQuery)->whereIn('status', [
-            'active', 'taken', 'memperoleh_mitra', 'sedang_diproses',
-            'in_progress', 'partner_on_the_way', 'partner_arrived',
-            'waiting_customer_confirmation'
-        ])->count();
-        $completedHelps = (clone $statsQuery)->whereIn('status', ['completed', 'selesai'])->count();
-        $cancelledHelps = (clone $statsQuery)->whereIn('status', ['cancelled', 'dibatalkan', 'rejected'])->count();
+        $pendingHelps = (clone $statsQuery)->where('status', Help::STATUS_MENUNGGU_MITRA)->count();
+        $activeHelps = (clone $statsQuery)->whereIn('status', array_merge(Help::activeStatuses(), [Help::STATUS_WAITING_CONFIRMATION]))->count();
+        $completedHelps = (clone $statsQuery)->where('status', Help::STATUS_SELESAI)->count();
+        $cancelledHelps = (clone $statsQuery)->where('status', Help::STATUS_DIBATALKAN)->count();
 
         $selectedHelp = $this->selectedHelpId ? Help::with(['customer', 'mitra', 'district', 'city', 'rating'])->find($this->selectedHelpId) : null;
         $helpActivities = $this->selectedHelpId ? \App\Models\PartnerActivity::with('user')->where('help_id', $this->selectedHelpId)->orderBy('created_at', 'asc')->get() : collect();

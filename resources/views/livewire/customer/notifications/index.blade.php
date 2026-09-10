@@ -93,15 +93,17 @@
                             } elseif($type === 'help_status') {
                                 $statusKey = strtolower($data['new_status'] ?? '');
                                 $titleText = $data['title'] ?? match($statusKey) {
-                                    'in_progress', 'sedang_diproses', 'service_started' => 'Pekerjaan Dimulai',
+                                    'in_progress' => 'Pekerjaan Dimulai',
                                     'waiting_customer_confirmation' => 'Pekerjaan Selesai (Konfirmasi)',
-                                    'completed', 'selesai' => 'Bantuan Selesai',
+                                    'selesai' => 'Bantuan Selesai',
                                     'partner_on_the_way' => 'Mitra Menuju Lokasi',
                                     'partner_arrived' => 'Mitra Telah Tiba',
-                                    'partner_cancel_requested' => 'Permintaan Pembatalan',
+                                    'partner_cancel_requested' => 'Permintaan Pembatalan (Mitra)',
+                                    'customer_cancel_requested' => 'Permintaan Pembatalan (Customer)',
+                                    'dibatalkan' => 'Bantuan Dibatalkan',
                                     default => 'Pembaruan Status Bantuan',
                                 };
-                                $badgeColor = in_array($statusKey, ['completed', 'selesai', 'waiting_customer_confirmation']) ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-sky-50 text-sky-700 border-sky-200';
+                                $badgeColor = in_array($statusKey, ['selesai', 'waiting_customer_confirmation']) ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-sky-50 text-sky-700 border-sky-200';
                                 $iconColor = 'text-amber-500 bg-amber-50';
                             } else {
                                 $titleText = $data['title'] ?? 'Notifikasi';

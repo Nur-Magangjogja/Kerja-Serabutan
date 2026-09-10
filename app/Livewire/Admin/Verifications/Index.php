@@ -272,15 +272,16 @@ class Index extends Component
             ->with(['district', 'city'])
             ->whereIn('status', ['pending_verification', 'pending', 'approved', 'rejected']);
 
-        // Strict district isolation: Admin only sees registrations from their assigned districts
+        // Strict district isolation: Admin only sees registrations from their assigned districts/city
         if (!$isSuperAdmin && $authUser && $authUser->role === 'admin') {
             $this->districtFilter = $authUser->getActiveAdminDistrictFilter();
             $this->cityFilter = $this->districtFilter;
             $effectiveDistrictIds = $authUser->getEffectiveAdminDistrictIds();
+            $adminCityId = $authUser->city_id;
             if (!empty($effectiveDistrictIds)) {
                 $query->whereIn('district_id', $effectiveDistrictIds);
-            } else {
-                $query->whereRaw('1 = 0');
+            } elseif (!empty($adminCityId)) {
+                $query->where('city_id', $adminCityId);
             }
         } elseif ($isSuperAdmin) {
             // Super Admin can filter by district or see all

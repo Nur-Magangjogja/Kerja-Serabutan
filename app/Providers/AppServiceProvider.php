@@ -50,20 +50,35 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Pagination\Paginator::defaultSimpleView('vendor.pagination.superadmin');
 
         // Cross-database compatibility: Register mathematical functions for SQLite in testing/local environments
-        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite') {
-            try {
-                $pdo = \Illuminate\Support\Facades\DB::connection()->getPdo();
-                if ($pdo instanceof \PDO) {
-                    $pdo->sqliteCreateFunction('radians', 'deg2rad', 1);
-                    $pdo->sqliteCreateFunction('least', fn(...$args) => min($args));
-                    $pdo->sqliteCreateFunction('greatest', fn(...$args) => max($args));
-                    $pdo->sqliteCreateFunction('acos', 'acos', 1);
-                    $pdo->sqliteCreateFunction('cos', 'cos', 1);
-                    $pdo->sqliteCreateFunction('sin', 'sin', 1);
+        $registerSqliteFunctions = function ($connection) {
+            if ($connection->getDriverName() === 'sqlite') {
+                try {
+                    $pdo = $connection->getPdo();
+                    if ($pdo instanceof \PDO && method_exists($pdo, 'sqliteCreateFunction')) {
+                        $pdo->sqliteCreateFunction('radians', 'deg2rad', 1);
+                        $pdo->sqliteCreateFunction('least', fn(...$args) => min($args));
+                        $pdo->sqliteCreateFunction('greatest', fn(...$args) => max($args));
+                        $pdo->sqliteCreateFunction('acos', 'acos', 1);
+                        $pdo->sqliteCreateFunction('cos', 'cos', 1);
+                        $pdo->sqliteCreateFunction('sin', 'sin', 1);
+                    }
+                } catch (\Throwable $e) {
+                    // Ignore
                 }
-            } catch (\Throwable $e) {
-                // Ignore if connection not ready yet
             }
+        };
+
+        \Illuminate\Support\Facades\Event::listen(
+            \Illuminate\Database\Events\ConnectionEstablished::class,
+            function ($event) use ($registerSqliteFunctions) {
+                $registerSqliteFunctions($event->connection);
+            }
+        );
+
+        try {
+            $registerSqliteFunctions(\Illuminate\Support\Facades\DB::connection());
+        } catch (\Throwable $e) {
+            // Connection not ready yet
         }
 
         // Redirect authenticated users based on their role

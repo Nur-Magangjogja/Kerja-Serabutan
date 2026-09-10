@@ -87,7 +87,7 @@
     <!-- Content -->
     <div class="px-5 pt-5 pb-20 max-w-md mx-auto">
         {{-- GPS Tracker - Auto tracking untuk status aktif --}}
-        @if (in_array($help->status, ['memperoleh_mitra', 'taken', 'partner_on_the_way', 'partner_arrived']))
+        @if (in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']))
             {{-- <div class="mb-3">
                 <livewire:mitra.gps.tracker :helpId="$help->id" :key="'gps-tracker-'.$help->id" />
             </div> --}}
@@ -608,7 +608,7 @@
         @endif
 
         {{-- Update Status Section (Revisi 3: Multi-Stage Action Controls) --}}
-        @if (in_array($help->status, ['taken', 'memperoleh_mitra']) && $help->mitra_id === auth()->id())
+        @if ($help->status === 'taken' && $help->mitra_id === auth()->id())
             <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3 space-y-2">
                 @if ($help->service_type === 'pickup_delivery')
                     <button wire:click="advanceStage('going_to_pickup')" wire:loading.attr="disabled"
@@ -719,7 +719,7 @@
             </div>
         @endif
 
-        @if ($help->status === 'in_progress' || $help->status === 'sedang_diproses')
+        @if ($help->status === 'in_progress')
             <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-3">
                 <button wire:click="openCompletionModal"
                     class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
@@ -829,7 +829,7 @@
             @endif
         @endif
 
-        @if (in_array($help->status, ['memperoleh_mitra', 'taken', 'partner_on_the_way', 'partner_arrived']) &&
+        @if (in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']) &&
                 $help->mitra_id === auth()->id())
             <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3">
                 <button wire:click="openPartnerCancelModal"

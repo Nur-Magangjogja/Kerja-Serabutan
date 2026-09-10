@@ -28,31 +28,31 @@ class Approved extends Component
     public function approveHelp($id)
     {
         $help = Help::findOrFail($id);
-        $help->update(['status' => Help::STATUS_MENUNGGU_MITRA]);
-        session()->flash('message', 'Bantuan berhasil disetujui');
+        $help->update([
+            'status'        => Help::STATUS_MENUNGGU_MITRA,
+            'dispatch_mode' => Help::DISPATCH_MODE_POOL,
+        ]);
+        session()->flash('message', 'Bantuan berhasil disetujui dan dibuka ke pool mitra');
     }
 
     public function rejectHelp($id)
     {
         $help = Help::findOrFail($id);
-        if ($help->escrow_status === Help::ESCROW_STATUS_HELD) {
-            app(\App\Services\HelpTransactionService::class)->autoCancelExpiredHelp($help, 'Ditolak oleh SuperAdmin');
-        } else {
-            $help->update([
-                'status'         => Help::STATUS_DIBATALKAN,
-                'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
-                'escrow_status'  => Help::ESCROW_STATUS_REFUNDED,
-                'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
-            ]);
-        }
+        app(\App\Services\HelpCancellationService::class)->cancelByPartnerUnilaterally($help, auth()->user(), 'Ditolak oleh SuperAdmin');
         session()->flash('message', 'Bantuan ditolak dan dana escrow dikembalikan 100% ke pemohon.');
     }
 
     public function render()
     {
+        $approvedStatuses = array_merge(Help::activeStatuses(), [
+            Help::STATUS_MENUNGGU_MITRA,
+            Help::STATUS_WAITING_CONFIRMATION,
+            Help::STATUS_SELESAI,
+        ]);
+
         $helps = Help::query()
             ->with(['customer', 'mitra', 'city'])
-            ->whereIn('status', ['active', 'menunggu_mitra', 'taken', 'memperoleh_mitra', 'sedang_diproses', 'in_progress', 'waiting_customer_confirmation', 'selesai', 'completed'])
+            ->whereIn('status', $approvedStatuses)
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('title', 'like', '%' . $this->search . '%')

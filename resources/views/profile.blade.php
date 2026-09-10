@@ -161,12 +161,12 @@
             
             // Riwayat Bantuan (bantuan yang telah selesai dan tampil di riwayat)
             $completedHelps = \App\Models\Help::where('user_id', $user->id)
-                ->whereIn('status', ['selesai', 'completed'])
+                ->where('status', \App\Models\Help::STATUS_SELESAI)
                 ->count();
 
-            // Bantuan yang sedang aktif (menunggu mitra, sedang dikerjakan mitra, menunggu konfirmasi customer)
+            // Bantuan yang sedang aktif (menunggu mitra, aktif dikerjakan, menunggu konfirmasi)
             $activeHelps = \App\Models\Help::where('user_id', $user->id)
-                ->whereIn('status', ['menunggu_mitra', 'memperoleh_mitra', 'waiting_customer_confirmation'])
+                ->whereIn('status', array_merge([\App\Models\Help::STATUS_MENUNGGU_MITRA, \App\Models\Help::STATUS_WAITING_CONFIRMATION], \App\Models\Help::activeStatuses()))
                 ->count();
 
             // Total ulasan yang diberikan customer kepada mitra

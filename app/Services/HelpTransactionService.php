@@ -4,16 +4,13 @@ namespace App\Services;
 
 use App\Models\AppSetting;
 use App\Models\BalanceTransaction;
-use App\Models\Chat;
 use App\Models\Help;
 use App\Models\HelpDispatch;
-use App\Models\PartnerActivity;
+use App\Models\PartnerOnlineState;
 use App\Models\PartnerReport;
 use App\Models\User;
 use App\Models\UserBalance;
-use App\Notifications\ChatMessageNotification;
 use App\Notifications\HelpStatusNotification;
-use App\Notifications\HelpTakenNotification;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -21,26 +18,36 @@ use Illuminate\Support\Facades\Log;
 /**
  * HelpTransactionService
  *
- * Memusatkan seluruh logika bisnis transaksi bantuan jasa.
- * Setiap aksi berjalan dalam DB::transaction dengan pessimistic locking (lockForUpdate)
- * untuk mencegah race condition, duplikasi penugasan, dan double processing.
- *
- * Aturan Bisnis Inti:
- * 1. Mitra hanya dapat mengambil 1 tugas bantuan aktif sekaligus.
- * 2. Transisi status dikawal oleh State Machine (Help::canTransitionTo).
- * 3. Notifikasi dan pesan chat dikirim secara otomatis ke ruang obrolan (chat)
- *    pada setiap fase (ambil tugas, pembatalan mitra, persetujuan/penolakan batal,
- *    penyelesaian tugas, dan konfirmasi customer).
- * 4. Pembatalan oleh mitra yang disetujui melepaskan mitra dari tugas dan mengembalikan pesanan ke antrean.
- * 5. Idempotency guard pada pencairan dan refund saldo untuk menjamin keadilan 2 belah pihak.
- *
- * Model v2 (Commission-Based / Escrow — berlaku untuk helps dengan model_version = 2):
- * - Escrow Lock: Dana customer ditahan ke Holding saat tugas dibuat.
- * - Split Payment: Saat selesai, Holding dibagi: Earning (mitra) + Platform Fee (kas).
- * - Refund: Jika batal, Holding dikembalikan 100% ke customer (tanpa potongan).
+ * Memusatkan alur orkestrasi transaksi bantuan jasa.
+ * Mengoordinasikan HelpEscrowService, HelpChatService, HelpNotificationService,
+ * HelpMatchingService, dan PartnerOnlineService.
+ * Setiap aksi berjalan dalam DB::transaction dengan pessimistic locking (lockForUpdate).
  */
 class HelpTransactionService
 {
+    protected HelpEscrowService $escrowService;
+    protected HelpChatService $chatService;
+    protected HelpNotificationService $notificationService;
+    protected PartnerOnlineService $onlineService;
+    protected HelpMatchingService $matchingService;
+    protected HelpTrackingService $trackingService;
+
+    public function __construct(
+        HelpEscrowService $escrowService,
+        HelpChatService $chatService,
+        HelpNotificationService $notificationService,
+        PartnerOnlineService $onlineService,
+        HelpMatchingService $matchingService,
+        HelpTrackingService $trackingService
+    ) {
+        $this->escrowService       = $escrowService;
+        $this->chatService         = $chatService;
+        $this->notificationService = $notificationService;
+        $this->onlineService       = $onlineService;
+        $this->matchingService     = $matchingService;
+        $this->trackingService     = $trackingService;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // MITRA ACTIONS
     // ─────────────────────────────────────────────────────────────────────────
@@ -76,7 +83,7 @@ class HelpTransactionService
         }
 
         // 5b. Validasi Ketersediaan Bantuan (Belum diambil mitra lain)
-        if ($help->mitra_id !== null || !in_array($help->status, [Help::STATUS_MENUNGGU_MITRA, 'menunggu_mitra'])) {
+        if ($help->mitra_id !== null || $help->status !== Help::STATUS_MENUNGGU_MITRA) {
             throw new \RuntimeException('Bantuan ini sudah diambil oleh Rekan Jasa lain atau tidak tersedia lagi.');
         }
 
@@ -91,13 +98,14 @@ class HelpTransactionService
         }
 
         // 8. Validasi Jarak Operasional Baku (Maksimal 10.0 KM untuk pesanan instan)
-        $maxRadiusKm = (float) \App\Models\AppSetting::MAX_OPERATIONAL_RADIUS_KM;
+        $maxRadiusKm = (float) AppSetting::MAX_OPERATIONAL_RADIUS_KM;
         $mitraLat = $lat ?? ($mitra->latitude ? (float) $mitra->latitude : null);
         $mitraLng = $lng ?? ($mitra->longitude ? (float) $mitra->longitude : null);
 
         // Tentukan koordinat titik awal sesuai jenis layanan
         $targetLat = null;
         $targetLng = null;
+
         if ($help->isPickup()) {
             $targetLat = (float) ($help->pickup_latitude ?: $help->latitude);
             $targetLng = (float) ($help->pickup_longitude ?: $help->longitude);
@@ -113,7 +121,7 @@ class HelpTransactionService
         $isFutureScheduled = $help->scheduled_at && \Carbon\Carbon::parse($help->scheduled_at)->isFuture() && \Carbon\Carbon::parse($help->scheduled_at)->diffInMinutes(now()) > 60;
 
         if (!$isFutureScheduled && $mitraLat && $mitraLng && $targetLat && $targetLng) {
-            $distMeters = app(LocationTrackingService::class)->calculateDistance(
+            $distMeters = $this->trackingService->calculateDistance(
                 (float) $mitraLat, (float) $mitraLng,
                 (float) $targetLat, (float) $targetLng
             );
@@ -142,7 +150,7 @@ class HelpTransactionService
                 ->lockForUpdate()
                 ->first();
 
-            if (!$lockedHelp || $lockedHelp->mitra_id !== null || !in_array($lockedHelp->status, [Help::STATUS_MENUNGGU_MITRA, 'menunggu_mitra'])) {
+            if (!$lockedHelp || $lockedHelp->mitra_id !== null || $lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA) {
                 throw new \RuntimeException('Bantuan ini sudah diambil oleh Rekan Jasa lain atau tidak tersedia lagi.');
             }
 
@@ -155,14 +163,14 @@ class HelpTransactionService
             }
 
             // STEP 2 (Tier 2): Lock & selesaikan HelpDispatch aktif untuk mitra ini (jika ada pending offer)
-            $staleDispatches = \App\Models\HelpDispatch::where('mitra_id', $mitra->id)
-                ->where('status', \App\Models\HelpDispatch::STATUS_OFFERED)
+            $staleDispatches = HelpDispatch::where('mitra_id', $mitra->id)
+                ->where('status', HelpDispatch::STATUS_OFFERED)
                 ->lockForUpdate()
                 ->get();
 
             foreach ($staleDispatches as $stale) {
                 $stale->update([
-                    'status'           => \App\Models\HelpDispatch::STATUS_REJECTED,
+                    'status'           => HelpDispatch::STATUS_REJECTED,
                     'responded_at'     => now(),
                     'rejection_reason' => 'Mitra mengambil pekerjaan lain dari open pool',
                 ]);
@@ -174,19 +182,19 @@ class HelpTransactionService
             }
 
             // STEP 3 (Tier 3): Lock baris PartnerOnlineState mitra
-            $partnerState = \App\Models\PartnerOnlineState::where('user_id', $mitra->id)
+            $partnerState = PartnerOnlineState::where('user_id', $mitra->id)
                 ->lockForUpdate()
                 ->first();
 
             if (!$partnerState) {
-                $partnerState = \App\Models\PartnerOnlineState::create([
+                $partnerState = PartnerOnlineState::create([
                     'user_id'         => $mitra->id,
-                    'matching_status' => \App\Models\PartnerOnlineState::STATUS_SEARCHING,
+                    'matching_status' => PartnerOnlineState::STATUS_SEARCHING,
                 ]);
             }
 
             // Validasi di dalam lock: Mitra tidak boleh BUSY
-            if ($partnerState->matching_status === \App\Models\PartnerOnlineState::STATUS_BUSY) {
+            if ($partnerState->matching_status === PartnerOnlineState::STATUS_BUSY) {
                 throw new \RuntimeException('Anda masih memiliki tugas bantuan aktif yang sedang berjalan. Harap selesaikan tugas tersebut terlebih dahulu sebelum mengambil tugas baru.');
             }
 
@@ -210,7 +218,7 @@ class HelpTransactionService
             ]);
 
             $partnerState->update([
-                'matching_status'      => \App\Models\PartnerOnlineState::STATUS_BUSY,
+                'matching_status'      => PartnerOnlineState::STATUS_BUSY,
                 'current_help_id'      => $lockedHelp->id,
                 'searching_since'      => null,
                 'consecutive_declines' => 0,
@@ -238,17 +246,17 @@ class HelpTransactionService
 
         // Advance sequential matching untuk order yang ditinggalkan di luar transaksi penguncian
         foreach ($advances as $adv) {
-            app(\App\Services\HelpMatchingService::class)->dispatchNextCandidate($adv['help_id'], $adv['round'], $adv['rank']);
+            $this->matchingService->dispatchNextCandidate($adv['help_id'], $adv['round'], $adv['rank']);
         }
 
         // 5. Otomatis batalkan penawaran pop-up aktif lain yang sedang menggantung dan teruskan ke kandidat berikutnya
-        $pendingDispatches = \App\Models\HelpDispatch::where('mitra_id', $mitra->id)
-            ->where('status', \App\Models\HelpDispatch::STATUS_OFFERED)
+        $pendingDispatches = HelpDispatch::where('mitra_id', $mitra->id)
+            ->where('status', HelpDispatch::STATUS_OFFERED)
             ->get();
 
         foreach ($pendingDispatches as $pDispatch) {
             if ($pDispatch->help_id !== $help->id) {
-                app(\App\Services\HelpMatchingService::class)->rejectOffer(
+                $this->matchingService->rejectOffer(
                     $pDispatch->id,
                     $mitra,
                     'Mitra telah mengambil bantuan lain dari pool umum'
@@ -257,9 +265,9 @@ class HelpTransactionService
         }
 
         // 6. Notifikasi, Pesan Chat Sambutan, & Audit Log
-        $this->notifyHelpTaken($help, $mitra);
-        $this->sendWelcomeChat($help, $mitra);
-        $this->logActivity(
+        $this->notificationService->notifyHelpTaken($help, $mitra);
+        $this->chatService->sendWelcomeChat($help, $mitra);
+        $this->notificationService->logActivity(
             $mitra->id,
             $help->id,
             'take_help',
@@ -285,8 +293,8 @@ class HelpTransactionService
             ]);
         });
 
-        $this->sendStatusNotification($help, Help::STATUS_PARTNER_ON_THE_WAY, $help->user, $mitra);
-        $this->logActivity(
+        $this->notificationService->sendStatusNotification($help, Help::STATUS_PARTNER_ON_THE_WAY, $help->user, $mitra);
+        $this->notificationService->logActivity(
             $mitra->id,
             $help->id,
             'partner_on_the_way',
@@ -310,8 +318,8 @@ class HelpTransactionService
             ]);
         });
 
-        $this->sendStatusNotification($help, Help::STATUS_PARTNER_ARRIVED, $help->user, $mitra);
-        $this->logActivity(
+        $this->notificationService->sendStatusNotification($help, Help::STATUS_PARTNER_ARRIVED, $help->user, $mitra);
+        $this->notificationService->logActivity(
             $mitra->id,
             $help->id,
             'partner_arrived',
@@ -335,9 +343,9 @@ class HelpTransactionService
             ]);
         });
 
-        $this->sendStatusNotification($help, Help::STATUS_IN_PROGRESS, $help->user, $mitra);
-        $this->sendServiceStartedChat($help, $mitra);
-        $this->logActivity(
+        $this->notificationService->sendStatusNotification($help, Help::STATUS_IN_PROGRESS, $help->user, $mitra);
+        $this->chatService->sendServiceStartedChat($help, $mitra);
+        $this->notificationService->logActivity(
             $mitra->id,
             $help->id,
             'help_started',
@@ -374,15 +382,15 @@ class HelpTransactionService
             $lockedHelp->update($data);
 
             // Lepaskan status BUSY mitra agar mitra dapat langsung mencari / mengambil tugas bantuan baru
-            app(PartnerOnlineService::class)->releaseBusy($mitra->id, $lockedHelp->id);
+            $this->onlineService->releaseBusy($mitra->id, $lockedHelp->id);
         });
 
         $help->refresh();
 
         // Kirim pesan chat dengan foto bukti ke customer
-        $this->sendCompletionChat($help, $mitra, $path, $notes);
-        $this->sendStatusNotification($help, Help::STATUS_WAITING_CONFIRMATION, $help->user, $mitra);
-        $this->logActivity(
+        $this->chatService->sendCompletionChat($help, $mitra, $path, $notes);
+        $this->notificationService->sendStatusNotification($help, Help::STATUS_WAITING_CONFIRMATION, $help->user, $mitra);
+        $this->notificationService->logActivity(
             $mitra->id,
             $help->id,
             'help_completed_waiting_confirmation',
@@ -392,101 +400,11 @@ class HelpTransactionService
     }
 
     /**
-     * Mitra membatalkan tugas bantuan yang telah diambil (Langsung dibatalkan tanpa perlu konfirmasi customer).
-     * Bantuan seketika dikembalikan ke sistem pencarian (Matching sequential / pop-up -> fallback pool jika tidak ada mitra).
+     * @deprecated Gunakan HelpCancellationService::submitPartnerCancelRequest() secara langsung.
      */
     public function requestPartnerCancel(Help $help, User $mitra, ?string $reason = null): void
     {
-        $this->assertMitraAssigned($help, $mitra);
-
-        DB::transaction(function () use ($help, $mitra, $reason) {
-            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
-
-            if ($lockedHelp->mitra_id !== $mitra->id) {
-                throw new \RuntimeException('Anda bukan mitra yang ditugaskan untuk bantuan ini.');
-            }
-
-            if (in_array($lockedHelp->status, [Help::STATUS_SELESAI, Help::STATUS_DIBATALKAN])) {
-                throw new \RuntimeException('Pesanan ini sudah selesai atau telah dibatalkan.');
-            }
-
-            // Tambahkan mitra ke daftar help_partner_exclusions terindeks dan legacy cancelled_mitra_ids
-            \App\Models\HelpPartnerExclusion::firstOrCreate([
-                'help_id'  => $lockedHelp->id,
-                'mitra_id' => $mitra->id,
-            ], [
-                'reason'   => $reason ?? 'Pembatalan tugas oleh mitra',
-            ]);
-
-            $cancelledMitraIds = $lockedHelp->cancelled_mitra_ids ?? [];
-            if (!is_array($cancelledMitraIds)) {
-                $cancelledMitraIds = json_decode((string) $cancelledMitraIds, true) ?? [];
-            }
-            if (!in_array($mitra->id, $cancelledMitraIds, false)) {
-                $cancelledMitraIds[] = $mitra->id;
-            }
-
-            // Reset status bantuan kembali ke pencarian mitra
-            $lockedHelp->update([
-                'status'                      => Help::STATUS_MENUNGGU_MITRA,
-                'dispatch_mode'               => Help::DISPATCH_MODE_SEEKING,
-                'mitra_id'                    => null,
-                'cancelled_mitra_ids'         => $cancelledMitraIds,
-                'partner_cancel_prev_status'  => null,
-                'partner_cancel_reason'       => $reason,
-                'partner_cancel_requested_at' => now(),
-                'partner_current_lat'         => null,
-                'partner_current_lng'         => null,
-                'partner_initial_lat'         => null,
-                'partner_initial_lng'         => null,
-                'partner_started_at'          => null,
-                'partner_arrived_at'          => null,
-                'service_started_at'          => null,
-                'service_completed_at'        => null,
-                'taken_at'                    => null,
-                'proof_photo'                 => null,
-                'completion_notes'            => null,
-            ]);
-
-            // Lepaskan status BUSY mitra yang membatalkan
-            app(PartnerOnlineService::class)->releaseBusy($mitra->id, $lockedHelp->id);
-        });
-
-        $help->refresh();
-
-        // 1. Masukkan mitra ke Daftar Abu-Abu dan evaluasi eskalasi SP
-        app(\App\Services\PartnerDisciplineService::class)->recordPartnerCancellation($mitra, $help, $reason);
-
-        // 2. Kirim pesan notifikasi chat di dalam order
-        $this->sendCancellationResolvedChat($help, $mitra, $help->user, 'partner_cancelled_redispatched');
-
-        // 3. Notifikasi ke Customer bahwa mitra membatalkan dan sistem mencari mitra baru
-        if ($help->user) {
-            try {
-                $help->user->notify(new HelpStatusNotification(
-                    $help,
-                    Help::STATUS_MENUNGGU_MITRA,
-                    'partner_cancelled_redispatched',
-                    $mitra
-                ));
-            } catch (\Throwable $e) {
-                Log::warning('[HelpTransactionService] Failed to notify customer of partner cancellation: ' . $e->getMessage());
-            }
-        }
-
-        $this->logActivity(
-            $mitra->id,
-            $help->id,
-            'partner_cancel_executed',
-            "Mitra {$mitra->name} membatalkan pengerjaan bantuan. Alasan: " . ($reason ?: 'Tidak disebutkan') . ". Bantuan otomatis dikembalikan ke sistem pencarian."
-        );
-
-        // 4. Picu pencarian ulang otomatis (Matching Sequential / Pop-up -> Pool jika tidak ada mitra)
-        try {
-            app(\App\Services\HelpMatchingService::class)->initiateMatching($help);
-        } catch (\Throwable $e) {
-            Log::warning('[HelpTransactionService] Failed to initiate rematching after partner cancel: ' . $e->getMessage());
-        }
+        app(HelpCancellationService::class)->submitPartnerCancelRequest($help, $mitra, $reason ?? 'Pembatalan oleh Rekan Jasa');
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -505,7 +423,7 @@ class HelpTransactionService
         DB::transaction(function () use ($help) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
 
-            if (in_array($lockedHelp->status, [Help::STATUS_SELESAI, 'completed'])) {
+            if ($lockedHelp->status === Help::STATUS_SELESAI) {
                 throw new \RuntimeException('Pesanan bantuan ini sudah diselesaikan sebelumnya.');
             }
 
@@ -513,16 +431,16 @@ class HelpTransactionService
                 throw new \RuntimeException('Pesanan ini sedang dalam proses sengketa/mediasi.');
             }
 
-            // Kreditkan pembayaran ke saldo mitra (atomic release)
-            $this->releaseEscrowToMitra($lockedHelp, 'customer_confirm');
+            // Kreditkan pembayaran ke saldo mitra (atomic release via HelpEscrowService)
+            $this->escrowService->releaseEscrowToMitra($lockedHelp, 'customer_confirm');
         });
 
         $help->refresh();
 
         // Kirim pesan chat penutup dari Customer ke Mitra
-        $this->sendConfirmationChat($help, $customer, $help->mitra);
-        $this->sendStatusNotification($help, Help::STATUS_SELESAI, $help->mitra, $customer);
-        $this->logActivity(
+        $this->chatService->sendConfirmationChat($help, $customer, $help->mitra);
+        $this->notificationService->sendStatusNotification($help, Help::STATUS_SELESAI, $help->mitra, $customer);
+        $this->notificationService->logActivity(
             $customer->id,
             $help->id,
             'help_confirmed',
@@ -559,14 +477,14 @@ class HelpTransactionService
                 return;
             }
 
-            $this->releaseEscrowToMitra($lockedHelp, 'auto_confirm');
+            $this->escrowService->releaseEscrowToMitra($lockedHelp, 'auto_confirm');
             $executed = true;
         });
 
         if ($executed) {
             $help->refresh();
-            $this->sendStatusNotification($help, Help::STATUS_SELESAI, $help->mitra, null);
-            $this->logActivity(
+            $this->notificationService->sendStatusNotification($help, Help::STATUS_SELESAI, $help->mitra, null);
+            $this->notificationService->logActivity(
                 $help->user_id,
                 $help->id,
                 'help_auto_confirmed',
@@ -597,7 +515,7 @@ class HelpTransactionService
                 throw new \RuntimeException('Dana bantuan tidak berada dalam status holding (telah dicairkan atau telah dibatalkan). Sengketa pembekuan tidak dapat diajukan.');
             }
 
-            if (!in_array($lockedHelp->status, [Help::STATUS_WAITING_CONFIRMATION, 'waiting_customer_confirmation', 'konfirmasi_selesai'])) {
+            if ($lockedHelp->status !== Help::STATUS_WAITING_CONFIRMATION) {
                 throw new \RuntimeException('Sengketa hanya dapat diajukan saat pesanan menunggu konfirmasi penyelesaian.');
             }
 
@@ -644,7 +562,7 @@ class HelpTransactionService
             }
         }
 
-        $this->logActivity(
+        $this->notificationService->logActivity(
             $customer->id,
             $help->id,
             'dispute_raised',
@@ -675,7 +593,7 @@ class HelpTransactionService
             }
 
             // Pastikan garansi 1x24 jam belum kadaluarsa jika pesanan telah selesai
-            if (in_array($lockedHelp->status, [Help::STATUS_SELESAI, 'completed'])) {
+            if ($lockedHelp->status === Help::STATUS_SELESAI) {
                 if (!$lockedHelp->completed_at || \Carbon\Carbon::parse($lockedHelp->completed_at)->addHours(24)->isPast()) {
                     throw new \RuntimeException('Masa garansi asuransi 1x24 jam untuk pesanan ini telah berakhir.');
                 }
@@ -760,7 +678,7 @@ class HelpTransactionService
             }
         }
 
-        $this->logActivity(
+        $this->notificationService->logActivity(
             $customer->id,
             $help->id,
             'warranty_claim_escrow_clawback',
@@ -785,7 +703,7 @@ class HelpTransactionService
             $grossAmount = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
 
             if ($resolutionType === 'full_release') {
-                $this->releaseEscrowToMitra($lockedHelp, 'admin_dispute_release');
+                $this->escrowService->releaseEscrowToMitra($lockedHelp, 'admin_dispute_release');
                 $lockedHelp->update([
                     'dispute_resolved_at' => now(),
                     'dispute_resolved_by' => $admin->id,
@@ -902,12 +820,12 @@ class HelpTransactionService
 
             // Lepaskan status BUSY mitra jika ada
             if ($lockedHelp->mitra_id) {
-                app(PartnerOnlineService::class)->releaseBusy($lockedHelp->mitra_id, $lockedHelp->id);
+                $this->onlineService->releaseBusy($lockedHelp->mitra_id, $lockedHelp->id);
             }
         });
 
         $help->refresh();
-        $this->logActivity(
+        $this->notificationService->logActivity(
             $admin->id,
             $help->id,
             'dispute_resolved',
@@ -919,7 +837,6 @@ class HelpTransactionService
     /**
      * Customer membatalkan bantuan sebelum mitra ditemukan.
      * Model v2: refund escrow 100% ke customer.
-     * Model v1: tidak ada escrow, tidak ada refund (logika lama).
      */
     public function customerCancelHelp(Help $help, User $customer): void
     {
@@ -929,14 +846,7 @@ class HelpTransactionService
         DB::transaction(function () use ($help, $customer) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
 
-            $cancellableStatuses = [
-                Help::STATUS_MENUNGGU_MITRA,
-                'mencari_mitra',
-                'menunggu_pembayaran',
-                'pending',
-            ];
-
-            if (!in_array($lockedHelp->status, $cancellableStatuses, true)) {
+            if ($lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA) {
                 throw new \RuntimeException('Bantuan ini tidak dapat dibatalkan secara sepihak karena sudah diambil oleh Rekan Jasa.');
             }
 
@@ -949,11 +859,11 @@ class HelpTransactionService
 
             // Kembalikan escrow ke customer (refund 100%)
             if ($lockedHelp->amount > 0) {
-                $this->refundFromEscrow($lockedHelp, $customer);
+                $this->escrowService->refundFromEscrow($lockedHelp, $customer);
             }
         });
 
-        $this->logActivity(
+        $this->notificationService->logActivity(
             $customer->id,
             $help->id,
             'help_cancelled',
@@ -974,7 +884,7 @@ class HelpTransactionService
                     'rejection_reason' => 'Permintaan bantuan dibatalkan oleh pemesan saat proses pencarian.',
                 ]);
 
-                app(PartnerOnlineService::class)->releaseCancelledOffer($dispatch->mitra_id, $help->id);
+                $this->onlineService->releaseCancelledOffer($dispatch->mitra_id, $help->id);
 
                 if ($dispatch->mitra) {
                     $dispatch->mitra->notify(new HelpStatusNotification($help, null, 'customer_cancelled_during_matching', null));
@@ -986,21 +896,14 @@ class HelpTransactionService
     }
 
     /**
-     * Membatalkan bantuan yang kadaluwarsa secara otomatis dan mengembalikan 100% dana escrow ke customer.
+     * @deprecated Gunakan HelpCancellationService::checkAndAutoCancelExpiredRequests() / auto-cancel.
      */
     public function autoCancelExpiredHelp(Help $help, string $reason = 'Batas waktu pencarian Rekan Jasa telah berakhir'): void
     {
         DB::transaction(function () use ($help, $reason) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
 
-            $cancellableStatuses = [
-                Help::STATUS_MENUNGGU_MITRA,
-                'mencari_mitra',
-                'menunggu_pembayaran',
-                'pending',
-            ];
-
-            if (!$lockedHelp || !in_array($lockedHelp->status, $cancellableStatuses, true) || $lockedHelp->mitra_id !== null) {
+            if (!$lockedHelp || $lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA || $lockedHelp->mitra_id !== null) {
                 return;
             }
 
@@ -1015,162 +918,21 @@ class HelpTransactionService
             // Kembalikan dana escrow 100% ke customer
             $customer = $lockedHelp->user;
             if ($customer && $lockedHelp->amount > 0) {
-                $this->refundFromEscrow($lockedHelp, $customer);
+                $this->escrowService->refundFromEscrow($lockedHelp, $customer);
             }
         });
-
-        if ($help->user) {
-            $this->logActivity(
-                $help->user_id,
-                $help->id,
-                'help_auto_cancelled',
-                "Permintaan bantuan dibatalkan otomatis oleh sistem. Alasan: {$reason}. Dana telah dikembalikan 100% ke saldo akun Anda."
-            );
-
-            try {
-                $help->user->notify(new \App\Notifications\HelpStatusNotification($help, Help::STATUS_MENUNGGU_MITRA, Help::STATUS_DIBATALKAN, $help->user));
-            } catch (\Throwable $e) {
-                // ignore notification delivery error
-            }
-        }
-
-        // Bebaskan mitra jika saat ini order sedang ditawarkan ke mitra (offer_pending)
-        try {
-            $offeredDispatches = HelpDispatch::with('mitra')
-                ->where('help_id', $help->id)
-                ->where('status', HelpDispatch::STATUS_OFFERED)
-                ->get();
-
-            foreach ($offeredDispatches as $dispatch) {
-                $dispatch->update([
-                    'status'           => HelpDispatch::STATUS_CANCELLED,
-                    'responded_at'     => now(),
-                    'rejection_reason' => "Permintaan bantuan dibatalkan otomatis oleh sistem. Alasan: {$reason}",
-                ]);
-
-                app(PartnerOnlineService::class)->releaseCancelledOffer($dispatch->mitra_id, $help->id);
-
-                if ($dispatch->mitra) {
-                    $dispatch->mitra->notify(new HelpStatusNotification($help, null, 'customer_cancelled_during_matching', null));
-                }
-            }
-        } catch (\Throwable $e) {
-            Log::warning('[HelpTransactionService] Failed to release offered dispatches on autoCancel: ' . $e->getMessage());
-        }
-
-        Log::info('[HelpTransactionService] autoCancelExpiredHelp success', ['help_id' => $help->id]);
     }
 
     /**
-     * Customer menerima permintaan pembatalan dari mitra.
-     * Mitra dilepaskan dari pesanan dan status kembali online.
-     * Pesanan dikembalikan ke pool status 'menunggu_mitra'.
-     * Dana escrow customer TETAP DITAHAN di holding (karena menunggu mitra lain).
-     * Jika customer ingin membatalkan pesanan, customer dapat menekan tombol "Batalkan Pesanan" saat status 'menunggu_mitra' untuk menerima refund 100%.
+     * @deprecated Gunakan HelpCancellationService::customerAcceptPartnerCancellation() secara langsung.
      */
     public function customerAcceptCancel(Help $help, User $customer): void
     {
-        $this->assertCustomerOwns($help, $customer);
-
-        if ($help->status !== Help::STATUS_PARTNER_CANCEL_REQUESTED) {
-            throw new \RuntimeException('Tidak ada permintaan pembatalan aktif dari Rekan Jasa.');
-        }
-
-        $mitraId = $help->mitra_id;
-        $formerMitra = $help->mitra ?: ($mitraId ? User::find($mitraId) : null);
-
-        DB::transaction(function () use ($help, &$formerMitra, $customer) {
-            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
-
-            if ($lockedHelp->status !== Help::STATUS_PARTNER_CANCEL_REQUESTED) {
-                throw new \RuntimeException('Status pesanan telah berubah atau pembatalan sudah diproses.');
-            }
-
-            // CATATAN PENTING ALIRAN DANA ESCROW:
-            // Dana escrow customer TETAP DITAHAN di holding (tidak direfund di sini),
-            // karena pesanan dikembalikan ke pool dengan status 'menunggu_mitra' agar bisa diambil oleh mitra lain.
-            // Tidak ada pemotongan denda saldo lagi (sanksi pelanggaran dikelola melalui Daftar Abu-Abu & Surat Peringatan Admin).
-
-            // Tambahkan ID mitra yang membatalkan ke daftar help_partner_exclusions dan cancelled_mitra_ids
-            // agar mitra ini tidak dapat mengambil kembali bantuan ini di masa mendatang
-            if ($formerMitra) {
-                \App\Models\HelpPartnerExclusion::firstOrCreate([
-                    'help_id'  => $lockedHelp->id,
-                    'mitra_id' => $formerMitra->id,
-                ], [
-                    'reason'   => $lockedHelp->partner_cancel_reason ?? 'Persetujuan pembatalan mitra oleh customer',
-                ]);
-            }
-
-            $cancelledMitraIds = $lockedHelp->cancelled_mitra_ids ?? [];
-            if (!is_array($cancelledMitraIds)) {
-                $cancelledMitraIds = json_decode((string) $cancelledMitraIds, true) ?? [];
-            }
-            if ($formerMitra && !in_array($formerMitra->id, $cancelledMitraIds, false)) {
-                $cancelledMitraIds[] = $formerMitra->id;
-            }
-
-            // Reset seluruh state bantuan kembali ke pool
-            $lockedHelp->update([
-                'status'                      => Help::STATUS_MENUNGGU_MITRA,
-                'dispatch_mode'               => Help::DISPATCH_MODE_POOL,
-                'mitra_id'                    => null,
-                'cancelled_mitra_ids'         => $cancelledMitraIds,
-                'partner_cancel_prev_status'  => null,
-                'partner_cancel_reason'       => null,
-                'partner_cancel_requested_at' => null,
-                'partner_current_lat'         => null,
-                'partner_current_lng'         => null,
-                'partner_initial_lat'         => null,
-                'partner_initial_lng'         => null,
-                'partner_started_at'          => null,
-                'partner_arrived_at'          => null,
-                'service_started_at'          => null,
-                'service_completed_at'        => null,
-                'taken_at'                    => null,
-                'proof_photo'                 => null,
-                'completion_notes'            => null,
-            ]);
-
-            // Lepaskan status BUSY mantan mitra agar dapat mencari order kembali
-            if ($formerMitra) {
-                app(PartnerOnlineService::class)->releaseBusy($formerMitra->id, $lockedHelp->id);
-            }
-        });
-
-        // Notifikasi dan Chat ke Mitra Lama
-        if ($formerMitra) {
-            try {
-                $formerMitra->notify(new HelpStatusNotification(
-                    $help,
-                    'partner_cancel_requested',
-                    'cancel_accepted',
-                    $formerMitra
-                ));
-            } catch (\Throwable $e) {
-                Log::warning('[HelpTransactionService] Failed to notify former mitra on cancel accepted: ' . $e->getMessage());
-            }
-
-            $this->sendCancellationResolvedChat($help, $formerMitra, $customer, 'accepted');
-        }
-
-        $this->logActivity(
-            $customer->id,
-            $help->id,
-            'cancel_accepted',
-            "Customer {$customer->name} menyetujui pembatalan bantuan. Pesanan dikembalikan ke pencarian mitra."
-        );
-
-        Log::info('[HelpTransactionService] customerAcceptCancel success', [
-            'help_id'     => $help->id,
-            'mitra_id'    => $formerMitra?->id,
-            'model_v2'    => $help->isV2Model(),
-        ]);
+        app(HelpCancellationService::class)->customerAcceptPartnerCancellation($help, $customer);
     }
 
     /**
-     * Customer menolak permintaan pembatalan dari mitra.
-     * Bantuan kembali ke status sebelum pembatalan diajukan.
+     * @deprecated Gunakan HelpCancellationService secara langsung.
      */
     public function customerRejectCancel(Help $help, User $customer): void
     {
@@ -1196,48 +958,30 @@ class HelpTransactionService
                 'partner_cancel_requested_at' => null,
             ]);
         });
-
-        // Notifikasi dan Chat ke mitra bahwa pembatalan ditolak
-        if ($help->mitra) {
-            try {
-                $help->mitra->notify(new HelpStatusNotification(
-                    $help,
-                    'partner_cancel_requested',
-                    'cancel_rejected',
-                    $help->mitra
-                ));
-            } catch (\Throwable $e) {
-                Log::warning('[HelpTransactionService] Failed to notify mitra on cancel rejected: ' . $e->getMessage());
-            }
-
-            $this->sendCancellationResolvedChat($help, $help->mitra, $customer, 'rejected');
-        }
-
-        $this->logActivity(
-            $customer->id,
-            $help->id,
-            'cancel_rejected',
-            "Customer {$customer->name} menolak pembatalan bantuan. Mitra diminta lanjutkan pekerjaan."
-        );
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // PRIVATE GUARDS & HELPERS
+    // ESCROW DELEGATES
     // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Memastikan mitra tidak memiliki tugas aktif lain yang belum selesai.
-     */
-    private function assertMitraHasNoActiveTask(User $mitra): void
+    public function refundFromEscrowDirect(Help $help, User $customer, float $refundAmount, string $note = 'Pengembalian Dana'): void
     {
-        $hasActive = Help::where('mitra_id', $mitra->id)
-            ->active()
-            ->exists();
-
-        if ($hasActive) {
-            throw new \RuntimeException('Anda masih memiliki tugas bantuan aktif yang sedang berjalan. Harap selesaikan tugas tersebut terlebih dahulu sebelum mengambil tugas baru.');
-        }
+        $this->escrowService->refundFromEscrowDirect($help, $customer, $refundAmount, $note);
     }
+
+    public function payoutPartialFromEscrowDirect(Help $help, User $mitra, float $payoutAmount, string $note = 'Kompensasi'): void
+    {
+        $this->escrowService->payoutPartialFromEscrowDirect($help, $mitra, $payoutAmount, $note);
+    }
+
+    public function refundFromEscrow(Help $help, User $customer): void
+    {
+        $this->escrowService->refundFromEscrow($help, $customer);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PRIVATE GUARDS
+    // ─────────────────────────────────────────────────────────────────────────
 
     private function assertMitraAssigned(Help $help, User $mitra): void
     {
@@ -1259,439 +1003,6 @@ class HelpTransactionService
             throw new \RuntimeException(
                 "Transisi status dari '{$help->status}' ke '{$toStatus}' tidak diizinkan."
             );
-        }
-    }
-
-    /**
-     * Melepaskan dana escrow ke saldo mitra dan kas platform secara atomik & idempotent.
-     * Mengubah status order menjadi selesai, escrow_status released, payment_status paid, dispatch_mode closed.
-     */
-    private function releaseEscrowToMitra(Help $lockedHelp, string $triggeredBy = 'customer_confirm'): void
-    {
-        if (!$lockedHelp->mitra_id || ($lockedHelp->getNetEarning() <= 0 && $lockedHelp->amount <= 0 && ($lockedHelp->total_amount ?? 0) <= 0)) {
-            return;
-        }
-
-        $netEarning  = $lockedHelp->getNetEarning();
-        $platformFee = $lockedHelp->getPlatformFee();
-
-        // 1. Catat Earning Mitra (Idempotent & Recredit-aware jika pernah ditarik clawback)
-        $totalEarned = (float) BalanceTransaction::where('user_id', $lockedHelp->mitra_id)
-            ->where('reference_id', $lockedHelp->id)
-            ->where('type', 'earning')
-            ->where('status', 'completed')
-            ->sum('amount');
-
-        $totalClawedBack = (float) BalanceTransaction::where('user_id', $lockedHelp->mitra_id)
-            ->where('reference_id', $lockedHelp->id)
-            ->where('type', 'deduction')
-            ->where('status', 'completed')
-            ->sum('amount');
-
-        if ($totalEarned <= $totalClawedBack) {
-            $mitraBalance = UserBalance::firstOrCreate(
-                ['user_id' => $lockedHelp->mitra_id],
-                ['balance' => 0]
-            );
-
-            $idSuffix = $totalClawedBack > 0 ? ":recredit_" . now()->timestamp : "";
-
-            $mitraBalance->receiveEarning(
-                $netEarning,
-                $lockedHelp->id,
-                "Pendapatan Bantuan '{$lockedHelp->title}'",
-                $lockedHelp->order_id,
-                "help:{$lockedHelp->id}:earning:{$lockedHelp->mitra_id}{$idSuffix}"
-            );
-        }
-
-        // 2. Catat Platform Fee (Idempotent)
-        if ($platformFee > 0) {
-            $alreadyFee = BalanceTransaction::where('reference_id', $lockedHelp->id)
-                ->where('type', 'platform_fee')
-                ->exists();
-
-            if (!$alreadyFee) {
-                BalanceTransaction::create([
-                    'idempotency_key' => "help:{$lockedHelp->id}:platform_fee",
-                    'user_id'         => null,
-                    'amount'          => $platformFee,
-                    'direction'       => 'credit',
-                    'type'            => 'platform_fee',
-                    'description'     => "Biaya Layanan Platform {$lockedHelp->getCommissionRateLabel()} dari Bantuan '{$lockedHelp->title}'",
-                    'reference_id'    => $lockedHelp->id,
-                    'reference_type'  => 'help',
-                    'order_id'        => $lockedHelp->order_id,
-                    'status'          => 'completed',
-                ]);
-            }
-        }
-
-        // 3. Update Status Order
-        $lockedHelp->update([
-            'status'            => Help::STATUS_SELESAI,
-            'escrow_status'     => Help::ESCROW_STATUS_RELEASED,
-            'payment_status'    => Help::PAYMENT_STATUS_PAID,
-            'rating_status'     => Help::RATING_STATUS_PENDING,
-            'dispatch_mode'     => Help::DISPATCH_MODE_CLOSED,
-            'completed_at'      => $lockedHelp->completed_at ?? now(),
-            'auto_confirmed_at' => ($triggeredBy === 'auto_confirm') ? now() : null,
-        ]);
-
-        // Lepaskan status BUSY mitra
-        app(PartnerOnlineService::class)->releaseBusy($lockedHelp->mitra_id, $lockedHelp->id);
-
-        Log::info('[HelpTransactionService] releaseEscrowToMitra selesai', [
-            'help_id'      => $lockedHelp->id,
-            'mitra_id'     => $lockedHelp->mitra_id,
-            'net_earning'  => $netEarning,
-            'platform_fee' => $platformFee,
-            'triggered_by' => $triggeredBy,
-        ]);
-    }
-
-    /**
-     * Kredit saldo mitra (wrapper kompatibilitas ke releaseEscrowToMitra).
-     */
-    private function creditMitra(Help $help): void
-    {
-        $this->releaseEscrowToMitra($help, 'manual_credit');
-    }
-
-    /**
-     * MODEL V2 & V3: Kembalikan escrow dari Holding ke saldo Customer secara langsung (Full / Parsial).
-     */
-    public function refundFromEscrowDirect(Help $help, User $customer, float $refundAmount, string $note = 'Pengembalian Dana'): void
-    {
-        if ($refundAmount <= 0) {
-            return;
-        }
-
-        $customerBalance = UserBalance::firstOrCreate(
-            ['user_id' => $customer->id],
-            ['balance' => 0]
-        );
-
-        $customerBalance->refundToCustomer(
-            $refundAmount,
-            $help->id,
-            $help->order_id,
-            "{$note} (Bantuan #{$help->id} '{$help->title}')",
-            "help:{$help->id}:refund_direct:" . uniqid()
-        );
-
-        Log::info('[HelpTransactionService] refundFromEscrowDirect executed', [
-            'help_id'     => $help->id,
-            'customer_id' => $customer->id,
-            'amount'      => $refundAmount,
-            'note'        => $note,
-        ]);
-    }
-
-    /**
-     * MODEL V2 & V3: Pencairan kompensasi parsial dari Escrow ke Mitra.
-     */
-    public function payoutPartialFromEscrowDirect(Help $help, User $mitra, float $payoutAmount, string $note = 'Kompensasi'): void
-    {
-        if ($payoutAmount <= 0) {
-            return;
-        }
-
-        $mitraBalance = UserBalance::firstOrCreate(
-            ['user_id' => $mitra->id],
-            ['balance' => 0]
-        );
-
-        $mitraBalance->credit(
-            $payoutAmount,
-            $help->id,
-            $help->order_id,
-            "{$note} (Bantuan #{$help->id} '{$help->title}')",
-            "help:{$help->id}:payout_direct:" . uniqid()
-        );
-
-        Log::info('[HelpTransactionService] payoutPartialFromEscrowDirect executed', [
-            'help_id'  => $help->id,
-            'mitra_id' => $mitra->id,
-            'amount'   => $payoutAmount,
-            'note'     => $note,
-        ]);
-    }
-
-    /**
-     * MODEL V2: Kembalikan escrow dari Holding ke saldo Customer (Refund 100%).
-     *
-     * Dipanggil saat tugas dibatalkan. Platform TIDAK memotong komisi apapun.
-     * Dana total dikembalikan utuh ke customer.
-     */
-    private function refundFromEscrow(Help $help, User $customer): void
-    {
-        // Idempotency: cek sudah pernah direfund
-        $alreadyRefunded = BalanceTransaction::where('user_id', $customer->id)
-            ->where('reference_id', $help->id)
-            ->where('type', 'refund')
-            ->exists();
-
-        if ($alreadyRefunded) {
-            Log::info('[HelpTransactionService] Refund sudah dilakukan untuk help ' . $help->id . ', skip.');
-            return;
-        }
-
-        $customerBalance = UserBalance::firstOrCreate(
-            ['user_id' => $customer->id],
-            ['balance' => 0]
-        );
-
-        $refundAmount = (float) ($help->total_amount > 0 ? $help->total_amount : $help->amount);
-
-        $customerBalance->refundToCustomer(
-            $refundAmount,
-            $help->id,
-            $help->order_id,
-            "Pengembalian Dana 100% (Bantuan '{$help->title}' Dibatalkan)",
-            "help:{$help->id}:refund:{$customer->id}"
-        );
-
-        Log::info('[HelpTransactionService] Refund escrow (v2) ke customer', [
-            'help_id'     => $help->id,
-            'customer_id' => $customer->id,
-            'amount'      => $refundAmount,
-        ]);
-
-        if ($help->mitra_id) {
-            app(PartnerOnlineService::class)->releaseBusy($help->mitra_id, $help->id);
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // ACTIVITY LOG & NOTIFICATION HELPERS
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Catat aktivitas mitra / customer ke PartnerActivity & ActivityLog.
-     */
-    private function logActivity($userId, $helpId, string $activityType, ?string $description = null, ?string $photo = null): void
-    {
-        try {
-            \App\Models\PartnerActivity::create([
-                'user_id'       => $userId,
-                'help_id'       => $helpId,
-                'activity_type' => $activityType,
-                'description'   => $description,
-                'photo'         => $photo,
-                'ip_address'    => function_exists('request') ? request()?->ip() : null,
-                'user_agent'    => function_exists('request') ? request()?->header('User-Agent') : null,
-            ]);
-
-            \App\Models\ActivityLog::record(
-                $userId,
-                $activityType,
-                $description ?? "Aktivitas bantuan #{$helpId}"
-            );
-        } catch (\Throwable $e) {
-            Log::warning('[HelpTransactionService] logActivity failed: ' . $e->getMessage(), [
-                'user_id'       => $userId,
-                'help_id'       => $helpId,
-                'activity_type' => $activityType,
-            ]);
-        }
-    }
-
-    private function notifyHelpTaken(Help $help, User $mitra): void
-    {
-        try {
-            $customer = $help->user ?? User::find($help->user_id);
-            if ($customer) {
-                $customer->notify(new HelpTakenNotification($help, $mitra));
-            }
-        } catch (\Throwable $e) {
-            Log::warning('[HelpTransactionService] Failed to send HelpTakenNotification: ' . $e->getMessage());
-        }
-    }
-
-    private function sendWelcomeChat(Help $help, User $mitra): void
-    {
-        try {
-            $customer = $help->user ?? User::find($help->user_id);
-            if (!$customer || !$mitra) return;
-
-            $greeting = $customer->name ? "Halo Kak {$customer->name}" : "Halo Kak";
-            $message  = "{$greeting}, perkenalkan saya {$mitra->name}. Saya telah mengambil permohonan bantuan Anda '{$help->title}'. Saya akan segera menuju lokasi Anda. Jika ada instruksi tambahan, silakan infokan di sini!";
-
-            Chat::create([
-                'help_id'     => $help->id,
-                'mitra_id'    => $mitra->id,
-                'customer_id' => $customer->id,
-                'message'     => $message,
-                'sender_type' => 'mitra',
-                'read_at'     => null,
-            ]);
-
-            $customer->notify(new ChatMessageNotification($help->id, $message, $mitra->id, $mitra->name));
-        } catch (\Throwable $e) {
-            Log::warning('[HelpTransactionService] Failed to send welcome chat: ' . $e->getMessage());
-        }
-    }
-
-    private function sendServiceStartedChat(Help $help, User $mitra): void
-    {
-        try {
-            $customer = $help->user ?? User::find($help->user_id);
-            if (!$customer || !$mitra) return;
-
-            $greeting = $customer->name ? "Halo Kak {$customer->name}" : "Halo Kak";
-            $message  = "{$greeting}, saya ({$mitra->name}) telah mulai mengerjakan permohonan bantuan Anda '{$help->title}'. Pelayanan saat ini dalam proses pengerjaan. Jika ada instruksi atau hal yang perlu dikoordinasikan, silakan infokan di chat ini ya!";
-
-            Chat::create([
-                'help_id'     => $help->id,
-                'mitra_id'    => $mitra->id,
-                'customer_id' => $customer->id,
-                'message'     => $message,
-                'sender_type' => 'mitra',
-                'read_at'     => null,
-            ]);
-
-            $customer->notify(new ChatMessageNotification($help->id, $message, $mitra->id, $mitra->name));
-        } catch (\Throwable $e) {
-            Log::warning('[HelpTransactionService] Failed to send service started chat: ' . $e->getMessage());
-        }
-    }
-
-    private function sendCompletionChat(Help $help, User $mitra, string $proofPath, ?string $notes): void
-    {
-        try {
-            $customer = $help->user ?? User::find($help->user_id);
-            if (!$customer) return;
-
-            $notesText = $notes ? "Catatan: \"{$notes}\". " : '';
-            $caption   = "Halo Kak {$customer->name}, pekerjaan '{$help->title}' telah selesai saya kerjakan. {$notesText}Berikut terlampir bukti foto hasil pengerjaan. Tugas ini telah otomatis diselesaikan dan Anda dapat langsung memberikan rating. Terima kasih!";
-
-            Chat::create([
-                'help_id'     => $help->id,
-                'mitra_id'    => $mitra->id,
-                'customer_id' => $customer->id,
-                'message'     => $caption,
-                'photo'       => $proofPath,
-                'sender_type' => 'mitra',
-                'read_at'     => null,
-            ]);
-
-            $customer->notify(new ChatMessageNotification($help->id, $caption, $mitra->id, $mitra->name));
-        } catch (\Throwable $e) {
-            Log::warning('[HelpTransactionService] Failed to send completion chat: ' . $e->getMessage());
-        }
-    }
-
-    private function sendConfirmationChat(Help $help, User $customer, ?User $mitra): void
-    {
-        try {
-            if (!$mitra) return;
-
-            $message = "Terima kasih Kak {$mitra->name}, pekerjaan '{$help->title}' telah saya konfirmasi selesai. Pembayaran telah diteruskan ke saldo akun Anda. Semoga sukses selalu!";
-
-            Chat::create([
-                'help_id'     => $help->id,
-                'mitra_id'    => $mitra->id,
-                'customer_id' => $customer->id,
-                'message'     => $message,
-                'sender_type' => 'customer',
-                'read_at'     => null,
-            ]);
-
-            $mitra->notify(new ChatMessageNotification($help->id, $message, $customer->id, $customer->name));
-        } catch (\Throwable $e) {
-            Log::warning('[HelpTransactionService] Failed to send confirmation chat: ' . $e->getMessage());
-        }
-    }
-
-    private function sendCancellationRequestChat(Help $help, User $mitra, ?string $reason = null): void
-    {
-        try {
-            $customer = $help->user ?? User::find($help->user_id);
-            if (!$customer || !$mitra) return;
-
-            $greeting   = $customer->name ? "Halo Kak {$customer->name}" : "Halo Kak";
-            $reasonText = !empty($reason) ? " dengan alasan: \"{$reason}\"" : "";
-            $message    = "{$greeting}, mohon maaf saya mengajukan pembatalan untuk permohonan bantuan '{$help->title}'{$reasonText}. Mohon kesediaannya untuk memeriksa dan memberikan persetujuan pada detail pesanan Anda. Terima kasih dan mohon maaf atas ketidaknyamanannya.";
-
-            Chat::create([
-                'help_id'     => $help->id,
-                'mitra_id'    => $mitra->id,
-                'customer_id' => $customer->id,
-                'message'     => $message,
-                'sender_type' => 'mitra',
-                'read_at'     => null,
-            ]);
-
-            $customer->notify(new ChatMessageNotification($help->id, $message, $mitra->id, $mitra->name));
-        } catch (\Throwable $e) {
-            Log::warning('[HelpTransactionService] Failed to send cancellation request chat: ' . $e->getMessage());
-        }
-    }
-
-    private function sendCancellationResolvedChat(Help $help, ?User $mitra, ?User $customer, string $action): void
-    {
-        try {
-            if (!$mitra || !$customer) return;
-
-            if ($action === 'partner_cancelled_redispatched') {
-                $reasonText = $help->partner_cancel_reason ? " (Alasan: {$help->partner_cancel_reason})" : "";
-                $message = "Sistem SayaBantu: Rekan Jasa {$mitra->name} telah membatalkan penugasan bantuan ini{$reasonText}. Sistem saat ini sedang otomatis mencari Rekan Jasa pengganti untuk Anda.";
-
-                Chat::create([
-                    'help_id'     => $help->id,
-                    'mitra_id'    => $mitra->id,
-                    'customer_id' => $customer->id,
-                    'message'     => $message,
-                    'sender_type' => 'system',
-                    'read_at'     => null,
-                ]);
-
-                // Notifikasi ke Customer dari pihak Sistem SayaBantu
-                $customer->notify(new ChatMessageNotification($help->id, $message, $customer->id, 'Sistem SayaBantu'));
-            } elseif ($action === 'accepted') {
-                $message = "Sistem SayaBantu: Permintaan pembatalan untuk bantuan '{$help->title}' telah disetujui oleh Customer. Pesanan ini telah dikembalikan ke pencarian Rekan Jasa lain.";
-
-                Chat::create([
-                    'help_id'     => $help->id,
-                    'mitra_id'    => $mitra->id,
-                    'customer_id' => $customer->id,
-                    'message'     => $message,
-                    'sender_type' => 'system',
-                    'read_at'     => null,
-                ]);
-
-                $mitra->notify(new ChatMessageNotification($help->id, $message, $customer->id, 'Sistem SayaBantu'));
-            } else {
-                $message = "Halo Rekan Jasa {$mitra->name}, permintaan pembatalan Anda untuk bantuan '{$help->title}' ditolak oleh Customer. Mohon untuk melanjutkan pengerjaan bantuan ini.";
-
-                Chat::create([
-                    'help_id'     => $help->id,
-                    'mitra_id'    => $mitra->id,
-                    'customer_id' => $customer->id,
-                    'message'     => $message,
-                    'sender_type' => 'customer',
-                    'read_at'     => null,
-                ]);
-
-                $mitra->notify(new ChatMessageNotification($help->id, $message, $customer->id, $customer->name));
-            }
-        } catch (\Throwable $e) {
-            Log::warning('[HelpTransactionService] Failed to send cancellation resolution chat: ' . $e->getMessage());
-        }
-    }
-
-    private function sendStatusNotification(Help $help, string $newStatus, ?User $recipient, ?User $actor): void
-    {
-        if (!$recipient) return;
-
-        try {
-            $recipient->notify(new HelpStatusNotification($help, $help->getOriginal('status') ?? '', $newStatus, $actor));
-        } catch (\Throwable $e) {
-            Log::warning('[HelpTransactionService] Failed to send HelpStatusNotification: ' . $e->getMessage(), [
-                'help_id'    => $help->id,
-                'new_status' => $newStatus,
-            ]);
         }
     }
 
@@ -1814,7 +1125,7 @@ class HelpTransactionService
                 $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
                 if ($lockedHelp && in_array($lockedHelp->escrow_status, [Help::ESCROW_STATUS_DISPUTED_FREEZE, Help::ESCROW_STATUS_HELD])) {
                     if ($lockedHelp->mitra_id) {
-                        $this->releaseEscrowToMitra($lockedHelp, 'admin_dispute_release');
+                        $this->escrowService->releaseEscrowToMitra($lockedHelp, 'admin_dispute_release');
                     }
                     $lockedHelp->update([
                         'status'              => Help::STATUS_SELESAI,
@@ -1836,4 +1147,3 @@ class HelpTransactionService
         });
     }
 }
-

@@ -431,9 +431,9 @@
             <div class="space-y-3">
                 @if($activeTab !== 'history')
                     @php
-                        // Only show helps that are waiting for a mitra (include legacy status names)
+                        // Only show helps that are waiting for a mitra
                         $waitingHelps = collect($availableHelps)->filter(function($h) {
-                            return in_array($h->status, ['mencari_mitra', 'menunggu_mitra', 'memperoleh_mitra', 'taken']);
+                            return in_array($h->status, [\App\Models\Help::STATUS_MENUNGGU_MITRA, \App\Models\Help::STATUS_TAKEN]);
                         });
                     @endphp
                     @forelse($waitingHelps as $help)

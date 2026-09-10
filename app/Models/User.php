@@ -313,6 +313,14 @@ class User extends Authenticatable implements MustVerifyEmail
             return [(int) $this->district_id];
         }
 
+        $cityIds = $this->getAdminCityIds();
+        if (!empty($cityIds)) {
+            $cityDistrictIds = District::whereIn('city_id', $cityIds)->pluck('id')->map('intval')->all();
+            if (!empty($cityDistrictIds)) {
+                return $cityDistrictIds;
+            }
+        }
+
         return [];
     }
 
@@ -544,27 +552,46 @@ class User extends Authenticatable implements MustVerifyEmail
                     ->withTimestamps();
     }
 
-    /**
-     * Get parent city IDs of districts managed by this admin.
-     *
-     * @return array<int>
-     */
     public function getAdminCityIds(): array
     {
         if ($this->role !== 'admin') {
             return [];
         }
 
-        $districtIds = $this->getAdminDistrictIds();
+        $cityIds = [];
+
+        // 1. Directly assigned managed cities (admin_city pivot)
+        if ($this->relationLoaded('managedCities')) {
+            $cityIds = array_merge($cityIds, $this->managedCities->pluck('id')->all());
+        } else {
+            $cityIds = array_merge($cityIds, $this->managedCities()->allRelatedIds()->all());
+        }
+
+        // 2. Cities derived from managed districts (admin_district pivot)
+        $districtIds = [];
+        if ($this->relationLoaded('managedDistricts')) {
+            $districtIds = $this->managedDistricts->pluck('id')->all();
+        } else {
+            $districtIds = $this->managedDistricts()->allRelatedIds()->all();
+        }
         if (!empty($districtIds)) {
-            return District::whereIn('id', $districtIds)->pluck('city_id')->unique()->filter()->map(fn($id) => (int)$id)->values()->all();
+            $cityIds = array_merge($cityIds, District::whereIn('id', $districtIds)->pluck('city_id')->all());
         }
 
+        // 3. Primary district parent city
+        if (!empty($this->district_id)) {
+            $parentCityId = District::where('id', $this->district_id)->value('city_id');
+            if ($parentCityId) {
+                $cityIds[] = (int) $parentCityId;
+            }
+        }
+
+        // 4. Primary city_id
         if (!empty($this->city_id)) {
-            return [(int) $this->city_id];
+            $cityIds[] = (int) $this->city_id;
         }
 
-        return [];
+        return array_values(array_unique(array_filter(array_map('intval', $cityIds))));
     }
 
     /**

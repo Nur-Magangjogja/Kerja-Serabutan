@@ -153,23 +153,24 @@
                     @forelse($helps as $help)
                         @php
                         $stClass = match($help->status) {
-                            'completed', 'selesai'                                          => 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60',
-                            'pending', 'menunggu', 'menunggu_mitra'                         => 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60',
-                            'active', 'disetujui', 'taken', 'in_progress', 'sedang_diproses', 'partner_on_the_way', 'partner_arrived', 'waiting_customer_confirmation' => 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60',
-                            'rejected', 'ditolak', 'dibatalkan', 'cancelled'               => 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60',
+                            'selesai'                                                       => 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60',
+                            'menunggu_mitra'                                                => 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60',
+                            'taken', 'in_progress', 'partner_on_the_way', 'partner_arrived', 'waiting_customer_confirmation' => 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60',
+                            'dibatalkan', 'partner_cancel_requested', 'customer_cancel_requested' => 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60',
                             default                                                         => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                         };
                         $statusLabel = match($help->status) {
-                            'completed', 'selesai'                                          => 'Selesai',
-                            'pending', 'menunggu', 'menunggu_mitra'                         => 'Menunggu Mitra',
-                            'active', 'disetujui'                                           => 'Aktif',
-                            'taken', 'sedang_diproses', 'in_progress'                       => 'Sedang Dikerjakan',
+                            'selesai'                                                       => 'Selesai',
+                            'menunggu_mitra'                                                => 'Menunggu Mitra',
+                            'taken'                                                         => 'Diambil Mitra',
+                            'in_progress'                                                   => 'Sedang Dikerjakan',
                             'partner_on_the_way'                                            => 'Mitra Menuju Lokasi',
                             'partner_arrived'                                               => 'Mitra Tiba',
                             'waiting_customer_confirmation'                                 => 'Menunggu Konfirmasi',
-                            'rejected', 'ditolak'                                           => 'Ditolak',
-                            'dibatalkan', 'cancelled'                                       => 'Dibatalkan',
-                            default                                                         => ucfirst(str_replace('_', ' ', $help->status))
+                            'dibatalkan'                                                    => 'Dibatalkan',
+                            'partner_cancel_requested'                                      => 'Pengajuan Batal (Mitra)',
+                            'customer_cancel_requested'                                     => 'Pengajuan Batal (Customer)',
+                            default                                                         => ucfirst(str_replace('_', ' ', $help->status ?? ''))
                         };
                         @endphp
                         <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-700/30 transition-colors duration-150">

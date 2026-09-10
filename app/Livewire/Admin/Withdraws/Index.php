@@ -109,6 +109,9 @@ class Index extends Component
         if (in_array($admin->role, ['super_admin', 'superadmin'])) return true;
         if ($admin->role === 'admin') {
             $allowedDistrictIds = $admin->getAdminDistrictIds();
+            if (empty($allowedDistrictIds)) {
+                return true;
+            }
             $userDistrictId = $withdraw->user?->district_id;
             return !empty($userDistrictId) && in_array((int) $userDistrictId, $allowedDistrictIds, true);
         }

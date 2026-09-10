@@ -32,36 +32,40 @@ class HelpStatusNotification extends Notification
     {
         $mitraName = $this->mitra?->name ?? 'Mitra';
 
-        $title = match (strtolower($this->newStatus)) {
-            'taken', 'memperoleh_mitra'     => "Rekan Jasa Mengambil Pesanan",
-            'menunggu_mitra'                => "Mencari Rekan Jasa Baru",
-            'partner_on_the_way'            => "Rekan Jasa Menuju Lokasi",
-            'partner_arrived'               => "Rekan Jasa Telah Tiba",
-            'in_progress', 'sedang_diproses' => "Pekerjaan Dimulai",
-            'waiting_customer_confirmation' => "Pekerjaan Selesai (Menunggu Konfirmasi)",
-            'completed', 'selesai'          => "Bantuan Selesai",
-            'partner_cancel_requested'      => "Permintaan Pembatalan Rekan Jasa",
-            'cancel_accepted'               => "Pembatalan Diterima",
-            'cancel_rejected'               => "Pembatalan Ditolak",
+        $statusNorm = Help::normalizeStatus($this->newStatus);
+
+        $title = match (strtolower($statusNorm)) {
+            Help::STATUS_TAKEN                  => "Rekan Jasa Mengambil Pesanan",
+            Help::STATUS_MENUNGGU_MITRA         => "Mencari Rekan Jasa Baru",
+            Help::STATUS_PARTNER_ON_THE_WAY     => "Rekan Jasa Menuju Lokasi",
+            Help::STATUS_PARTNER_ARRIVED        => "Rekan Jasa Telah Tiba",
+            Help::STATUS_IN_PROGRESS            => "Pekerjaan Dimulai",
+            Help::STATUS_WAITING_CONFIRMATION   => "Pekerjaan Selesai (Menunggu Konfirmasi)",
+            Help::STATUS_SELESAI                => "Bantuan Selesai",
+            Help::STATUS_PARTNER_CANCEL_REQUESTED => "Permintaan Pembatalan Rekan Jasa",
+            Help::STATUS_CUSTOMER_CANCEL_REQUESTED => "Pengajuan Pembatalan Customer",
+            'cancel_accepted'                   => "Pembatalan Diterima",
+            'cancel_rejected'                   => "Pembatalan Ditolak",
             'customer_cancelled_during_matching', 'customer_cancelled' => "Pesanan Bantuan Dibatalkan Pemesan",
-            'dibatalkan'                    => "Bantuan Dibatalkan",
-            default                         => "Pembaruan Status Bantuan"
+            Help::STATUS_DIBATALKAN             => "Bantuan Dibatalkan",
+            default                             => "Pembaruan Status Bantuan"
         };
 
-        $message = match (strtolower($this->newStatus)) {
-            'taken', 'memperoleh_mitra'     => "Rekan Jasa $mitraName telah mengambil pesanan bantuan Anda '{$this->help->title}'. Silakan pantau perkembangannya.",
-            'menunggu_mitra'                => "Pesanan Anda '{$this->help->title}' kembali tersedia dan sedang mencari Rekan Jasa baru.",
-            'partner_on_the_way'            => "Rekan Jasa $mitraName sedang dalam perjalanan menuju lokasi Anda.",
-            'partner_arrived'               => "Rekan Jasa $mitraName telah tiba di lokasi Anda.",
-            'in_progress', 'sedang_diproses' => "Rekan Jasa $mitraName telah mulai mengerjakan bantuan '{$this->help->title}'.",
-            'waiting_customer_confirmation' => "Rekan Jasa $mitraName telah menyelesaikan pekerjaan '{$this->help->title}'. Mohon periksa hasil pengerjaan dan konfirmasi penyelesaian.",
-            'completed', 'selesai'          => "Bantuan '{$this->help->title}' telah selesai dikerjakan oleh $mitraName.",
-            'partner_cancel_requested'      => "$mitraName mengajukan permintaan pembatalan. Silakan tinjau dan berikan keputusan Anda.",
-            'cancel_accepted'               => "Permintaan pembatalan telah diterima. Kami sedang mencari Rekan Jasa lain untuk Anda.",
-            'cancel_rejected'               => "Permintaan pembatalan ditolak. Pekerjaan akan tetap dilanjutkan.",
+        $message = match (strtolower($statusNorm)) {
+            Help::STATUS_TAKEN                  => "Rekan Jasa $mitraName telah mengambil pesanan bantuan Anda '{$this->help->title}'. Silakan pantau perkembangannya.",
+            Help::STATUS_MENUNGGU_MITRA         => "Pesanan Anda '{$this->help->title}' kembali tersedia dan sedang mencari Rekan Jasa baru.",
+            Help::STATUS_PARTNER_ON_THE_WAY     => "Rekan Jasa $mitraName sedang dalam perjalanan menuju lokasi Anda.",
+            Help::STATUS_PARTNER_ARRIVED        => "Rekan Jasa $mitraName telah tiba di lokasi Anda.",
+            Help::STATUS_IN_PROGRESS            => "Rekan Jasa $mitraName telah mulai mengerjakan bantuan '{$this->help->title}'.",
+            Help::STATUS_WAITING_CONFIRMATION   => "Rekan Jasa $mitraName telah menyelesaikan pekerjaan '{$this->help->title}'. Mohon periksa hasil pengerjaan dan konfirmasi penyelesaian.",
+            Help::STATUS_SELESAI                => "Bantuan '{$this->help->title}' telah selesai dikerjakan oleh $mitraName.",
+            Help::STATUS_PARTNER_CANCEL_REQUESTED => "$mitraName mengajukan permintaan kendala/pembatalan. Admin dan sistem akan meninjau proses ini.",
+            Help::STATUS_CUSTOMER_CANCEL_REQUESTED => "Pengajuan pembatalan untuk pesanan '{$this->help->title}' sedang ditinjau oleh Admin.",
+            'cancel_accepted'                   => "Permintaan pembatalan telah diterima. Kami sedang mencari Rekan Jasa lain untuk Anda.",
+            'cancel_rejected'                   => "Permintaan pembatalan ditolak. Pekerjaan akan tetap dilanjutkan.",
             'customer_cancelled_during_matching', 'customer_cancelled' => "Permintaan bantuan '{$this->help->title}' telah dibatalkan oleh pemesan saat proses pencarian. Radar Anda otomatis kembali mencari order lain.",
-            'dibatalkan'                    => "Permintaan bantuan '{$this->help->title}' telah dibatalkan.",
-            default                         => "Status bantuan '{$this->help->title}' kini menjadi: {$this->newStatus}."
+            Help::STATUS_DIBATALKAN             => "Permintaan bantuan '{$this->help->title}' telah dibatalkan.",
+            default                             => "Status bantuan '{$this->help->title}' kini menjadi: {$this->newStatus}."
         };
 
         return [

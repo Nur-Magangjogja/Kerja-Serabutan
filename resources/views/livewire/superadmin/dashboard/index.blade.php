@@ -376,20 +376,24 @@
                     @php
                     $s = $help->status;
                     $badge = match($s) {
-                        'pending', 'menunggu_mitra' => 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400',
-                        'active', 'sedang_diproses', 'taken', 'memperoleh_mitra', 'in_progress', 'waiting_customer_confirmation' => 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
-                        'completed', 'selesai' => 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400',
-                        'dibatalkan', 'cancelled', 'rejected' => 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
+                        'menunggu_mitra' => 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400',
+                        'taken', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'waiting_customer_confirmation' => 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+                        'selesai' => 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400',
+                        'dibatalkan', 'partner_cancel_requested', 'customer_cancel_requested' => 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
                         default => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
                     };
                     $statusLabel = match($s) {
                         'menunggu_mitra' => 'Menunggu Mitra',
-                        'taken', 'memperoleh_mitra' => 'Diambil Mitra',
-                        'sedang_diproses', 'in_progress' => 'Diproses',
-                        'waiting_customer_confirmation' => 'Konfirmasi Selesai',
-                        'selesai', 'completed' => 'Selesai',
-                        'dibatalkan', 'cancelled' => 'Dibatalkan',
-                        default => ucfirst(str_replace('_', ' ', $s)),
+                        'taken' => 'Diambil Mitra',
+                        'partner_on_the_way' => 'Menuju Lokasi',
+                        'partner_arrived' => 'Tiba di Lokasi',
+                        'in_progress' => 'Sedang Dikerjakan',
+                        'waiting_customer_confirmation' => 'Menunggu Konfirmasi',
+                        'selesai' => 'Selesai',
+                        'dibatalkan' => 'Dibatalkan',
+                        'partner_cancel_requested' => 'Pengajuan Batal (Mitra)',
+                        'customer_cancel_requested' => 'Pengajuan Batal (Customer)',
+                        default => ucfirst(str_replace('_', ' ', $s ?? '')),
                     };
                     @endphp
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-150">

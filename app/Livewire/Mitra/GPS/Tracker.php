@@ -3,7 +3,7 @@
 namespace App\Livewire\Mitra\GPS;
 
 use App\Models\Help;
-use App\Services\LocationTrackingService;
+use App\Services\HelpTrackingService;
 use Livewire\Component;
 use Illuminate\Support\Facades\Log;
 
@@ -17,7 +17,7 @@ class Tracker extends Component
 
     protected $locationService;
 
-    public function boot(LocationTrackingService $locationService)
+    public function boot(HelpTrackingService $locationService)
     {
         $this->locationService = $locationService;
     }
@@ -37,8 +37,8 @@ class Tracker extends Component
             return;
         }
 
-        // Tracking aktif jika status masih dalam proses
-        $this->isTracking = in_array($help->status, ['memperoleh_mitra', 'taken', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'sedang_diproses']);
+        // Tracking aktif jika status masih dalam proses (active)
+        $this->isTracking = in_array($help->status, Help::activeStatuses());
         $this->currentStatus = $help->status;
         
         Log::info('GPS Tracker Status Check', [

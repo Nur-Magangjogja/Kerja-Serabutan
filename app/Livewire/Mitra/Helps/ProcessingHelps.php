@@ -22,16 +22,11 @@ class ProcessingHelps extends Component
     {
         $this->helps = Help::where('mitra_id', auth()->id())
             ->with(['user', 'city'])
-            ->whereIn('status', [
-                Help::STATUS_TAKEN,
-                'memperoleh_mitra',
-                Help::STATUS_PARTNER_ON_THE_WAY,
-                Help::STATUS_PARTNER_ARRIVED,
-                Help::STATUS_IN_PROGRESS,
-                'sedang_diproses',
+            ->whereIn('status', array_merge(Help::activeStatuses(), [
                 Help::STATUS_WAITING_CONFIRMATION,
                 Help::STATUS_PARTNER_CANCEL_REQUESTED,
-            ])
+                Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+            ]))
             ->orderByDesc('taken_at')
             ->get();
     }
@@ -45,9 +40,7 @@ class ProcessingHelps extends Component
     }
 
     /**
-     * Mitra menyelesaikan bantuan → ubah ke waiting_customer_confirmation.
-     * Catatan: harus ada foto bukti (via submitCompletionProof di HelpDetail).
-     * Metode ini adalah shortcut dari daftar (processing list) tanpa foto.
+     * Mitra menyelesaikan bantuan → delegasi ke HelpTransactionService.
      */
     public function completeHelp($helpId)
     {
@@ -58,22 +51,14 @@ class ProcessingHelps extends Component
         }
 
         try {
-            // Gunakan service untuk validasi transisi dan kirim notifikasi
-            $help->update([
-                'status'                   => Help::STATUS_WAITING_CONFIRMATION,
-                'service_completed_at'     => $help->service_completed_at ?? now(),
-                'confirmation_deadline_at' => now()->addHours(24),
-            ]);
-
-            // Lepaskan status BUSY mitra agar mitra dapat langsung mencari pesanan baru
-            app(\App\Services\PartnerOnlineService::class)->releaseBusy(auth()->id(), $help->id);
+            app(HelpTransactionService::class)->submitCompletion($help, auth()->user(), null, 'Selesai dari daftar tugas');
 
             $this->dispatch('help-completed');
             session()->flash('success', 'Pekerjaan ditandai selesai! Menunggu konfirmasi customer. Anda kini dapat mencari bantuan baru.');
             $this->loadHelps();
         } catch (\Throwable $e) {
             Log::error('[ProcessingHelps] completeHelp error: ' . $e->getMessage(), ['help_id' => $helpId]);
-            session()->flash('error', 'Terjadi kesalahan saat menyelesaikan bantuan.');
+            session()->flash('error', 'Terjadi kesalahan saat menyelesaikan bantuan: ' . $e->getMessage());
         }
     }
 

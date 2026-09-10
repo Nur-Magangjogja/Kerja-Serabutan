@@ -49,7 +49,11 @@ class Index extends Component
     {
         $this->selectedDistrict = $district;
         $this->selectedCity = $district;
-        auth()->user()?->setActiveAdminDistrictFilter($district);
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $admin->setActiveAdminDistrictFilter($district);
+            $admin->setActiveAdminCityFilter($district);
+        }
         $this->dispatch('chart-refresh');
         $this->dispatch('admin-district-changed', districtId: $district);
     }
@@ -63,9 +67,10 @@ class Index extends Component
     public function onAdminDistrictChanged($districtId = null)
     {
         $admin = auth()->user();
-        $target = (string) ($districtId ?? ($admin ? $admin->getActiveAdminDistrictFilter() : 'all'));
+        $target = (string) ($districtId ?? ($admin ? ($admin->getActiveAdminDistrictFilter() !== 'all' ? $admin->getActiveAdminDistrictFilter() : $admin->getActiveAdminCityFilter()) : 'all'));
         if ($admin && $admin->role === 'admin') {
             $admin->setActiveAdminDistrictFilter($target);
+            $admin->setActiveAdminCityFilter($target);
         }
         $this->selectedDistrict = $target;
         $this->selectedCity = $target;
@@ -113,23 +118,43 @@ class Index extends Component
     {
         $user = auth()->user();
         
-        // District Resolution for Admin
+        // District and City Resolution for Admin
         $allowedDistrictIds = ($user && $user->role === 'admin') ? $user->getAdminDistrictIds() : [];
         $managedDistricts = ($user && $user->role === 'admin') ? $user->getAdminDistricts() : collect();
+        $allowedCityIds = ($user && $user->role === 'admin') ? $user->getAdminCityIds() : [];
+        $managedCities = ($user && $user->role === 'admin') ? $user->getAdminCities() : collect();
 
-        // Determine active district scope
+        // Determine active district / city scope
+        $activeDistrictIds = [];
+        $activeCityIds = [];
+
         if ($user && $user->role === 'admin') {
-            if ($this->selectedDistrict !== 'all' && in_array((int) $this->selectedDistrict, $allowedDistrictIds, true)) {
-                $activeDistrictIds = [(int) $this->selectedDistrict];
-                $districtObj = $managedDistricts->firstWhere('id', (int) $this->selectedDistrict);
-                $activeDistrictLabel = $districtObj ? 'Kec. ' . $districtObj->name : 'Wilayah Terpilih';
+            $filterValue = $this->selectedDistrict !== 'all' ? $this->selectedDistrict : ($this->selectedCity !== 'all' ? $this->selectedCity : 'all');
+
+            if ($filterValue !== 'all') {
+                $valInt = (int) $filterValue;
+                if (in_array($valInt, $allowedDistrictIds, true)) {
+                    $activeDistrictIds = [$valInt];
+                    $districtObj = $managedDistricts->firstWhere('id', $valInt);
+                    $activeDistrictLabel = $districtObj ? 'Kec. ' . $districtObj->name : 'Wilayah Terpilih';
+                } elseif (in_array($valInt, $allowedCityIds, true)) {
+                    $activeCityIds = [$valInt];
+                    $activeDistrictIds = District::where('city_id', $valInt)->pluck('id')->map('intval')->all();
+                    $cityObj = $managedCities->firstWhere('id', $valInt) ?? City::find($valInt);
+                    $activeDistrictLabel = $cityObj ? 'Kota/Kab. ' . $cityObj->name : 'Wilayah Terpilih';
+                } else {
+                    $activeDistrictIds = $allowedDistrictIds;
+                    $activeCityIds = $allowedCityIds;
+                    $activeDistrictLabel = $user->active_admin_district_label ?: $user->active_admin_city_label;
+                }
             } else {
-                $this->selectedDistrict = $user->getActiveAdminDistrictFilter();
-                $activeDistrictIds = $user->getEffectiveAdminDistrictIds();
-                $activeDistrictLabel = $user->active_admin_district_label;
+                $activeDistrictIds = $allowedDistrictIds;
+                $activeCityIds = $allowedCityIds;
+                $activeDistrictLabel = $user->admin_city_names ?: ($user->admin_district_names ?: 'Semua Wilayah');
             }
         } else {
             $activeDistrictIds = $allowedDistrictIds;
+            $activeCityIds = $allowedCityIds;
             $activeDistrictLabel = 'Semua Wilayah';
         }
 
@@ -172,17 +197,35 @@ class Index extends Component
             $endOfMonth = null;
         }
 
-        // 2. Base Help Query (District Scoped)
+        // 2. Base Help Query (District & City Scoped)
         $baseHelpQuery = Help::query();
-        if (!empty($activeDistrictIds)) {
-            $baseHelpQuery->where(function ($q) use ($activeDistrictIds) {
-                $q->whereIn('district_id', $activeDistrictIds)
-                  ->orWhereHas('customer', function ($cq) use ($activeDistrictIds) {
-                      $cq->whereIn('district_id', $activeDistrictIds);
-                  });
-            });
-        } elseif ($user && $user->role === 'admin') {
-            $baseHelpQuery->whereRaw('1 = 0');
+        if ($user && $user->role === 'admin') {
+            if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
+                $baseHelpQuery->where(function ($q) use ($activeDistrictIds, $activeCityIds) {
+                    $q->whereIn('district_id', $activeDistrictIds)
+                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $activeDistrictIds))
+                      ->orWhere(function ($sq) use ($activeCityIds) {
+                          $sq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      })
+                      ->orWhereHas('customer', function ($cq) use ($activeCityIds) {
+                          $cq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      });
+                });
+            } elseif (!empty($activeDistrictIds)) {
+                $baseHelpQuery->where(function ($q) use ($activeDistrictIds) {
+                    $q->whereIn('district_id', $activeDistrictIds)
+                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $activeDistrictIds));
+                });
+            } elseif (!empty($activeCityIds)) {
+                $baseHelpQuery->where(function ($q) use ($activeCityIds) {
+                    $q->whereIn('city_id', $activeCityIds)
+                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('city_id', $activeCityIds));
+                });
+            } else {
+                $baseHelpQuery->whereRaw('1 = 0');
+            }
         }
 
         $helpQuery = clone $baseHelpQuery;
@@ -192,17 +235,29 @@ class Index extends Component
 
         // Calculate Synchronized Operational Metrics
         $totalHelps = (clone $helpQuery)->count();
-        $pendingHelps = (clone $helpQuery)->whereIn('status', ['pending', 'menunggu_mitra'])->count();
-        $activeHelps = (clone $helpQuery)->whereIn('status', ['active', 'taken', 'memperoleh_mitra', 'sedang_diproses', 'in_progress', 'partner_on_the_way', 'partner_arrived', 'waiting_customer_confirmation'])->count();
-        $completedHelps = (clone $helpQuery)->whereIn('status', ['completed', 'selesai'])->count();
-        $cancelledHelps = (clone $helpQuery)->whereIn('status', ['cancelled', 'dibatalkan', 'rejected'])->count();
+        $pendingHelps = (clone $helpQuery)->where('status', Help::STATUS_MENUNGGU_MITRA)->count();
+        $activeHelps = (clone $helpQuery)->whereIn('status', array_merge(Help::activeStatuses(), [Help::STATUS_WAITING_CONFIRMATION]))->count();
+        $completedHelps = (clone $helpQuery)->where('status', Help::STATUS_SELESAI)->count();
+        $cancelledHelps = (clone $helpQuery)->where('status', Help::STATUS_DIBATALKAN)->count();
 
         // 3. KTP / Registration Verifications
         $baseRegQuery = Registration::query();
-        if (!empty($activeDistrictIds)) {
-            $baseRegQuery->whereIn('district_id', $activeDistrictIds);
-        } elseif ($user && $user->role === 'admin') {
-            $baseRegQuery->whereRaw('1 = 0');
+        if ($user && $user->role === 'admin') {
+            if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
+                $baseRegQuery->where(function ($q) use ($activeDistrictIds, $activeCityIds) {
+                    $q->whereIn('district_id', $activeDistrictIds)
+                      ->orWhere(function ($sq) use ($activeCityIds) {
+                          $sq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      });
+                });
+            } elseif (!empty($activeDistrictIds)) {
+                $baseRegQuery->whereIn('district_id', $activeDistrictIds);
+            } elseif (!empty($activeCityIds)) {
+                $baseRegQuery->whereIn('city_id', $activeCityIds);
+            } else {
+                $baseRegQuery->whereRaw('1 = 0');
+            }
         }
 
         $regQuery = clone $baseRegQuery;
@@ -213,10 +268,22 @@ class Index extends Component
 
         // Total Verified Mitras
         $mitraQuery = User::where('role', 'mitra');
-        if (!empty($activeDistrictIds)) {
-            $mitraQuery->whereIn('district_id', $activeDistrictIds);
-        } elseif ($user && $user->role === 'admin') {
-            $mitraQuery->whereRaw('1 = 0');
+        if ($user && $user->role === 'admin') {
+            if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
+                $mitraQuery->where(function ($q) use ($activeDistrictIds, $activeCityIds) {
+                    $q->whereIn('district_id', $activeDistrictIds)
+                      ->orWhere(function ($sq) use ($activeCityIds) {
+                          $sq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      });
+                });
+            } elseif (!empty($activeDistrictIds)) {
+                $mitraQuery->whereIn('district_id', $activeDistrictIds);
+            } elseif (!empty($activeCityIds)) {
+                $mitraQuery->whereIn('city_id', $activeCityIds);
+            } else {
+                $mitraQuery->whereRaw('1 = 0');
+            }
         }
         $totalAllMitras = (clone $mitraQuery)->count();
         if (!$isAllPeriod) {
@@ -227,23 +294,43 @@ class Index extends Component
         // 4. Pending Top-Up Approvals
         $topupQuery = BalanceTransaction::where('type', 'topup')
             ->where('status', 'waiting_approval');
-        if (!empty($activeDistrictIds)) {
-            $topupQuery->whereHas('user', function ($q) use ($activeDistrictIds) {
-                $q->whereIn('district_id', $activeDistrictIds);
-            });
-        } elseif ($user && $user->role === 'admin') {
-            $topupQuery->whereRaw('1 = 0');
+        if ($user && $user->role === 'admin') {
+            if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
+                $topupQuery->whereHas('user', function ($q) use ($activeDistrictIds, $activeCityIds) {
+                    $q->whereIn('district_id', $activeDistrictIds)
+                      ->orWhere(function ($sq) use ($activeCityIds) {
+                          $sq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      });
+                });
+            } elseif (!empty($activeDistrictIds)) {
+                $topupQuery->whereHas('user', fn($q) => $q->whereIn('district_id', $activeDistrictIds));
+            } elseif (!empty($activeCityIds)) {
+                $topupQuery->whereHas('user', fn($q) => $q->whereIn('city_id', $activeCityIds));
+            } else {
+                $topupQuery->whereRaw('1 = 0');
+            }
         }
         $pendingTopups = $topupQuery->count();
 
         // 5. Pending Withdraw Requests
         $withdrawQuery = \App\Models\WithdrawRequest::where('status', \App\Models\WithdrawRequest::STATUS_PENDING);
-        if (!empty($activeDistrictIds)) {
-            $withdrawQuery->whereHas('user', function ($q) use ($activeDistrictIds) {
-                $q->whereIn('district_id', $activeDistrictIds);
-            });
-        } elseif ($user && $user->role === 'admin') {
-            $withdrawQuery->whereRaw('1 = 0');
+        if ($user && $user->role === 'admin') {
+            if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
+                $withdrawQuery->whereHas('user', function ($q) use ($activeDistrictIds, $activeCityIds) {
+                    $q->whereIn('district_id', $activeDistrictIds)
+                      ->orWhere(function ($sq) use ($activeCityIds) {
+                          $sq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      });
+                });
+            } elseif (!empty($activeDistrictIds)) {
+                $withdrawQuery->whereHas('user', fn($q) => $q->whereIn('district_id', $activeDistrictIds));
+            } elseif (!empty($activeCityIds)) {
+                $withdrawQuery->whereHas('user', fn($q) => $q->whereIn('city_id', $activeCityIds));
+            } else {
+                $withdrawQuery->whereRaw('1 = 0');
+            }
         }
         $pendingWithdraws = $withdrawQuery->count();
 

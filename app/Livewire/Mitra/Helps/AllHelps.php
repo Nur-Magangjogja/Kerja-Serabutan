@@ -5,7 +5,6 @@ namespace App\Livewire\Mitra\Helps;
 use App\Models\Help;
 use App\Models\PartnerOnlineState;
 use App\Services\HelpTransactionService;
-use App\Services\LocationTrackingService;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
@@ -183,8 +182,8 @@ class AllHelps extends Component
             $maxLng = $lng + $lngDelta;
 
             // Formula Haversine SQL Presisi dengan koordinat titik awal sesuai jenis layanan (Output: distance_km)
-            $initialLatSql = "COALESCE(helps.pickup_latitude, helps.store_latitude, helps.latitude)";
-            $initialLngSql = "COALESCE(helps.pickup_longitude, helps.store_longitude, helps.longitude)";
+            $initialLatSql = "CAST(COALESCE(helps.pickup_latitude, helps.store_latitude, helps.latitude) AS REAL)";
+            $initialLngSql = "CAST(COALESCE(helps.pickup_longitude, helps.store_longitude, helps.longitude) AS REAL)";
             $haversineSql = "(6371 * acos(least(1.0, greatest(-1.0, cos(radians($lat)) * cos(radians($initialLatSql)) * cos(radians($initialLngSql) - radians($lng)) + sin(radians($lat)) * sin(radians($initialLatSql))))))";
         }
 
@@ -193,9 +192,9 @@ class AllHelps extends Component
         if ($hasGps) {
             $countRadius10km = (clone $basePoolQuery)->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm, $user) {
                 $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm) {
-                    $sub->whereRaw("$initialLatSql BETWEEN ? AND ?", [$minLat, $maxLat])
-                        ->whereRaw("$initialLngSql BETWEEN ? AND ?", [$minLng, $maxLng])
-                        ->whereRaw("$haversineSql <= ?", [$maxOperationalKm]);
+                    $sub->whereRaw("$initialLatSql BETWEEN $minLat AND $maxLat")
+                        ->whereRaw("$initialLngSql BETWEEN $minLng AND $maxLng")
+                        ->whereRaw("$haversineSql <= $maxOperationalKm");
                 })->orWhere(function ($sub) use ($user) {
                     $sub->where(function($s) {
                         $s->whereNull('latitude')->orWhereNull('longitude');
@@ -232,9 +231,9 @@ class AllHelps extends Component
             if ($hasGps) {
                 $query->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm, $user) {
                     $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm) {
-                        $sub->whereRaw("$initialLatSql BETWEEN ? AND ?", [$minLat, $maxLat])
-                            ->whereRaw("$initialLngSql BETWEEN ? AND ?", [$minLng, $maxLng])
-                            ->whereRaw("$haversineSql <= ?", [$maxOperationalKm]);
+                        $sub->whereRaw("$initialLatSql BETWEEN $minLat AND $maxLat")
+                            ->whereRaw("$initialLngSql BETWEEN $minLng AND $maxLng")
+                            ->whereRaw("$haversineSql <= $maxOperationalKm");
                     })->orWhere(function ($sub) use ($user) {
                         // Fallback untuk order legacy yang belum ada koordinat map
                         $sub->where(function($s) {

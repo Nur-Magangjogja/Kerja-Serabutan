@@ -140,7 +140,12 @@ class HelpScheduleService
         $partnerLat = (float) ($help->partner_current_lat ?: $help->partner_initial_lat ?: 0);
         $partnerLng = (float) ($help->partner_current_lng ?: $help->partner_initial_lng ?: 0);
 
-        $isArrived = in_array($help->status, ['partner_arrived', 'in_progress', 'completed', 'selesai', 'waiting_confirmation', 'waiting_customer_confirmation']);
+        $isArrived = in_array($help->status, [
+            Help::STATUS_PARTNER_ARRIVED,
+            Help::STATUS_IN_PROGRESS,
+            Help::STATUS_WAITING_CONFIRMATION,
+            Help::STATUS_SELESAI,
+        ], true);
 
         // 3. Hitung Live Dynamic Travel ETA
         $etaData = [

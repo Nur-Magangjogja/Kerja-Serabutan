@@ -118,14 +118,37 @@ class HelpTrackingService
             $this->notifyCustomer($help, $help->status);
         }
 
+        $distanceFromInitial = 0;
+        if ($help->partner_initial_lat && $help->partner_initial_lng) {
+            $distanceFromInitial = $this->calculateDistance(
+                (float) $help->partner_initial_lat,
+                (float) $help->partner_initial_lng,
+                $currentLat,
+                $currentLng
+            );
+        }
+
+        $distanceToCustomer = null;
+        if ($help->latitude && $help->longitude) {
+            $distanceToCustomer = $this->calculateDistance(
+                $currentLat,
+                $currentLng,
+                (float) $help->latitude,
+                (float) $help->longitude
+            );
+        }
+
         return [
-            'success'          => true,
-            'status'           => $help->status,
-            'service_stage'    => $help->service_stage,
-            'status_changed'   => $statusChanged,
-            'movement'         => $movementCheck,
-            'arrival_check'    => $arrivalResult,
-            'target_context'   => $targetCoords['label'],
+            'success'               => true,
+            'status'                => $help->status,
+            'service_stage'         => $help->service_stage,
+            'status_changed'        => $statusChanged,
+            'old_status'            => $oldStatus,
+            'distance_from_initial' => round($distanceFromInitial, 2),
+            'distance_to_customer'  => $distanceToCustomer ? round($distanceToCustomer, 2) : null,
+            'movement'              => $movementCheck,
+            'arrival_check'         => $arrivalResult,
+            'target_context'        => $targetCoords['label'],
         ];
     }
 
@@ -237,7 +260,7 @@ class HelpTrackingService
             }
         } else {
             // On-Site
-            if (in_array($help->status, [Help::STATUS_TAKEN, Help::STATUS_PARTNER_ON_THE_WAY, 'memperoleh_mitra'])) {
+            if (in_array($help->status, [Help::STATUS_TAKEN, Help::STATUS_PARTNER_ON_THE_WAY])) {
                 $help->status = Help::STATUS_PARTNER_ARRIVED;
                 $help->partner_arrived_at = now();
                 $help->arrived_at = now();
@@ -264,5 +287,87 @@ class HelpTrackingService
         } catch (\Throwable $e) {
             Log::warning("[HelpTrackingService] Failed to notify customer: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Hitung jarak antara dua koordinat (dalam meter) menggunakan Haversine formula.
+     */
+    public function calculateDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $earthRadius = 6371000; // meter
+
+        $lat1Rad = deg2rad($lat1);
+        $lat2Rad = deg2rad($lat2);
+        $latDiff = deg2rad($lat2 - $lat1);
+        $lngDiff = deg2rad($lng2 - $lng1);
+
+        $a = sin($latDiff / 2) * sin($latDiff / 2) +
+             cos($lat1Rad) * cos($lat2Rad) *
+             sin($lngDiff / 2) * sin($lngDiff / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
+
+    /**
+     * Set lokasi awal mitra saat mengambil bantuan.
+     */
+    public function setInitialLocation(Help $help, float $lat, float $lng): void
+    {
+        $help->partner_initial_lat = $lat;
+        $help->partner_initial_lng = $lng;
+        $help->partner_current_lat = $lat;
+        $help->partner_current_lng = $lng;
+        $help->save();
+
+        Log::info("[HelpTrackingService] Lokasi awal mitra di-set", [
+            'help_id' => $help->id,
+            'lat'     => $lat,
+            'lng'     => $lng,
+        ]);
+    }
+
+    /**
+     * Dapatkan status tracking untuk UI map / tracking drawer.
+     */
+    public function getTrackingStatus(Help $help): array
+    {
+        $status = [
+            'help_id'              => $help->id,
+            'current_status'       => $help->status,
+            'partner_location'     => null,
+            'customer_location'    => null,
+            'distance_to_customer' => null,
+            'service_stage'        => $help->service_stage,
+        ];
+
+        if ($help->partner_current_lat && $help->partner_current_lng) {
+            $status['partner_location'] = [
+                'lat' => (float) $help->partner_current_lat,
+                'lng' => (float) $help->partner_current_lng,
+            ];
+        }
+
+        if ($help->latitude && $help->longitude) {
+            $status['customer_location'] = [
+                'lat' => (float) $help->latitude,
+                'lng' => (float) $help->longitude,
+            ];
+
+            if ($status['partner_location']) {
+                $status['distance_to_customer'] = round(
+                    $this->calculateDistance(
+                        (float) $help->partner_current_lat,
+                        (float) $help->partner_current_lng,
+                        (float) $help->latitude,
+                        (float) $help->longitude
+                    ),
+                    2
+                );
+            }
+        }
+
+        return $status;
     }
 }

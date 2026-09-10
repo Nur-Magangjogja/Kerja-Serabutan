@@ -111,16 +111,9 @@ class Detail extends Component
     public function cancelHelp()
     {
         // Jika belum dapat mitra, langsung batalkan & refund
-        $cancellableDirectly = [
-            Help::STATUS_MENUNGGU_MITRA,
-            'mencari_mitra',
-            'menunggu_pembayaran',
-            'pending',
-        ];
-
-        if (in_array($this->help->status, $cancellableDirectly, true)) {
+        if ($this->help->status === Help::STATUS_MENUNGGU_MITRA) {
             try {
-                app(HelpTransactionService::class)->customerCancelHelp($this->help, auth()->user());
+                app(HelpCancellationService::class)->cancelByPartnerUnilaterally($this->help, auth()->user(), 'Dibatalkan oleh customer sebelum ada mitra');
                 session()->flash('success', 'Permintaan bantuan berhasil dibatalkan dan saldo telah dikembalikan.');
                 $this->showCancelConfirm = false;
                 return redirect()->route('customer.helps.index');
@@ -411,14 +404,16 @@ class Detail extends Component
     private function getStatusNotificationMessage(string $status): string
     {
         return match($status) {
-            'taken', 'memperoleh_mitra'    => '✅ Rekan Jasa telah mengambil pesanan Anda',
-            'partner_on_the_way'            => '🚗 Rekan Jasa sedang menuju lokasi Anda',
-            'partner_arrived'               => '📍 Rekan Jasa telah tiba di lokasi',
-            'in_progress', 'sedang_diproses'=> '⚙️ Pekerjaan sedang dikerjakan',
-            'waiting_customer_confirmation' => '✋ Menunggu konfirmasi Anda untuk menyelesaikan pesanan',
-            'selesai', 'completed'          => '✅ Pesanan telah selesai',
-            'partner_cancel_requested'      => '⚠️ Mitra mengajukan pembatalan',
-            default                         => 'Status pesanan diperbarui',
+            Help::STATUS_TAKEN                     => '✅ Rekan Jasa telah mengambil pesanan Anda',
+            Help::STATUS_PARTNER_ON_THE_WAY        => '🚗 Rekan Jasa sedang menuju lokasi Anda',
+            Help::STATUS_PARTNER_ARRIVED           => '📍 Rekan Jasa telah tiba di lokasi',
+            Help::STATUS_IN_PROGRESS               => '⚙️ Pekerjaan sedang dikerjakan',
+            Help::STATUS_WAITING_CONFIRMATION      => '✋ Menunggu konfirmasi Anda untuk menyelesaikan pesanan',
+            Help::STATUS_SELESAI                   => '✅ Pesanan telah selesai',
+            Help::STATUS_DIBATALKAN                => '❌ Pesanan dibatalkan',
+            Help::STATUS_PARTNER_CANCEL_REQUESTED  => '⚠️ Mitra mengajukan kendala/pembatalan',
+            Help::STATUS_CUSTOMER_CANCEL_REQUESTED => '⚠️ Pengajuan pembatalan sedang ditinjau admin',
+            default                                => 'Status pesanan diperbarui',
         };
     }
 

@@ -91,9 +91,7 @@ class HelpObserver
             $newStatus  = $help->status;
             $prevStatus = $help->getOriginal('status');
 
-            $completedStates = [Help::STATUS_SELESAI, 'completed'];
-
-            if (in_array($newStatus, $completedStates) && !in_array($prevStatus, $completedStates)) {
+            if ($newStatus === Help::STATUS_SELESAI && $prevStatus !== Help::STATUS_SELESAI) {
                 $this->creditMitraIfNeeded($help);
             }
         }

@@ -11,18 +11,18 @@ use Illuminate\Support\Facades\Log;
 
 class HelpCancellationService
 {
-    protected HelpTransactionService $transactionService;
+    protected HelpEscrowService $escrowService;
     protected PartnerOnlineService $onlineService;
     protected PartnerDisciplineService $disciplineService;
 
     public function __construct(
-        HelpTransactionService $transactionService,
+        HelpEscrowService $escrowService,
         PartnerOnlineService $onlineService,
         PartnerDisciplineService $disciplineService
     ) {
-        $this->transactionService = $transactionService;
-        $this->onlineService      = $onlineService;
-        $this->disciplineService  = $disciplineService;
+        $this->escrowService     = $escrowService;
+        $this->onlineService     = $onlineService;
+        $this->disciplineService = $disciplineService;
     }
 
     /**
@@ -275,7 +275,7 @@ class HelpCancellationService
             $totalPaid = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
 
             if ($totalPaid > 0) {
-                $this->transactionService->refundFromEscrowDirect($lockedHelp, $customer, $totalPaid, 'Customer Menerima Pembatalan Mitra');
+                $this->escrowService->refundFromEscrowDirect($lockedHelp, $customer, $totalPaid, 'Customer Menerima Pembatalan Mitra');
             }
 
             $lockedHelp->update([
@@ -332,7 +332,7 @@ class HelpCancellationService
                         $totalPaid = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
 
                         if ($totalPaid > 0 && $lockedHelp->user) {
-                            $this->transactionService->refundFromEscrowDirect($lockedHelp, $lockedHelp->user, $totalPaid, 'Otomatis Batal: Batas Waktu Konfirmasi Berakhir');
+                            $this->escrowService->refundFromEscrowDirect($lockedHelp, $lockedHelp->user, $totalPaid, 'Otomatis Batal: Batas Waktu Konfirmasi Berakhir');
                         }
 
                         $lockedHelp->update([
@@ -508,11 +508,11 @@ class HelpCancellationService
 
                     // Eksekusi mutasi saldo
                     if ($refundCustomer > 0 && $lockedHelp->user) {
-                        $this->transactionService->refundFromEscrowDirect($lockedHelp, $lockedHelp->user, $refundCustomer, 'Pembatalan Disetujui Admin Wilayah');
+                        $this->escrowService->refundFromEscrowDirect($lockedHelp, $lockedHelp->user, $refundCustomer, 'Pembatalan Disetujui Admin Wilayah');
                     }
 
                     if ($payoutMitra > 0 && $lockedHelp->mitra) {
-                        $this->transactionService->payoutPartialFromEscrowDirect($lockedHelp, $lockedHelp->mitra, $payoutMitra, 'Kompensasi Pembatalan oleh Admin Wilayah');
+                        $this->escrowService->payoutPartialFromEscrowDirect($lockedHelp, $lockedHelp->mitra, $payoutMitra, 'Kompensasi Pembatalan oleh Admin Wilayah');
                     }
 
                     $escrowFinalStatus = ($refundCustomer > 0 && $payoutMitra > 0)
