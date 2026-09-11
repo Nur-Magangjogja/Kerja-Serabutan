@@ -242,7 +242,7 @@
                                     </div>
                                 </div>
 
-                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-72 overflow-y-auto dropdown-scrollbar pr-1.5">
                                     @forelse($city->districts as $district)
                                     <div class="flex items-center justify-between p-2.5 rounded-lg bg-gray-50/80 dark:bg-gray-750/80 border border-gray-100 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 transition-colors group">
                                         <div class="flex items-center gap-2 min-w-0">

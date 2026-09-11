@@ -44,7 +44,7 @@
             </div>
 
             <!-- Notifications List -->
-            <div class="max-h-80 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700/60">
+            <div class="max-h-80 overflow-y-auto dropdown-scrollbar divide-y divide-gray-100 dark:divide-gray-700/60">
                 @forelse($notifications as $notification)
                     @php
                         $data = $notification->data ?? [];

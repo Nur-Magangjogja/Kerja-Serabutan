@@ -216,7 +216,7 @@
                         </div>
 
                         <!-- Categorized List -->
-                        <div class="max-h-60 sm:max-h-72 overflow-y-auto p-1.5 divide-y divide-gray-200/50 dark:divide-gray-700/50 space-y-1">
+                        <div class="max-h-60 sm:max-h-72 overflow-y-auto dropdown-scrollbar p-1.5 pr-2 divide-y divide-gray-200/50 dark:divide-gray-700/50 space-y-1">
                             <template x-if="filteredBanks.length === 0">
                                 <div class="py-6 text-center text-xs text-gray-400 dark:text-gray-500">
                                     <span class="text-lg block mb-1">🔍</span>

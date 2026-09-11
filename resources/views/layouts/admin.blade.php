@@ -18,9 +18,14 @@
         html.dark main { background-color: #111827 !important; }
         html:not(.dark) { background-color: #f3f4f6 !important; color-scheme: light; }
         html:not(.dark) body { background-color: #f3f4f6 !important; }
-        .no-transition, .no-transition * { -webkit-transition: none !important; transition: none !important; }
-        html, body, *, *::before, *::after { -ms-overflow-style: none !important; scrollbar-width: none !important; }
-        *::-webkit-scrollbar, html::-webkit-scrollbar, body::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+        html, body, .hide-scrollbar, .scrollbar-none, .no-scrollbar, .scrollbar-hide { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar, .hide-scrollbar::-webkit-scrollbar, .scrollbar-none::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar, .scrollbar-hide::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+        .dropdown-scrollbar, .custom-scrollbar, .scrollbar-thin { scrollbar-width: thin !important; scrollbar-color: rgba(156, 163, 175, 0.5) transparent !important; -ms-overflow-style: auto !important; }
+        .dropdown-scrollbar::-webkit-scrollbar, .custom-scrollbar::-webkit-scrollbar, .scrollbar-thin::-webkit-scrollbar { display: block !important; width: 6px !important; height: 6px !important; }
+        .dropdown-scrollbar::-webkit-scrollbar-track, .custom-scrollbar::-webkit-scrollbar-track, .scrollbar-thin::-webkit-scrollbar-track { background: transparent !important; }
+        .dropdown-scrollbar::-webkit-scrollbar-thumb, .custom-scrollbar::-webkit-scrollbar-thumb, .scrollbar-thin::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.5) !important; border-radius: 9999px !important; }
+        .dark .dropdown-scrollbar, .dark .custom-scrollbar, .dark .scrollbar-thin { scrollbar-color: rgba(107, 114, 128, 0.6) transparent !important; }
+        .dark .dropdown-scrollbar::-webkit-scrollbar-thumb, .dark .custom-scrollbar::-webkit-scrollbar-thumb, .dark .scrollbar-thin::-webkit-scrollbar-thumb { background-color: rgba(107, 114, 128, 0.5) !important; }
     </style>
     <script>
         (function() {

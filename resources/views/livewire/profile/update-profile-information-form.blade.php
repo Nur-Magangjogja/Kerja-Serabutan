@@ -135,7 +135,7 @@
                     <!-- Search Results Dropdown -->
                     @if(!empty($searchResults))
                         <div x-show="showDropdown"
-                            class="absolute z-50 left-0 right-0 mt-1 max-h-56 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl divide-y divide-gray-100 dark:divide-gray-700/60">
+                            class="absolute z-50 left-0 right-0 mt-1 max-h-56 overflow-y-auto dropdown-scrollbar bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl divide-y divide-gray-100 dark:divide-gray-700/60">
                             @foreach($searchResults as $c)
                                 <button type="button"
                                     wire:click="setCityId({{ $c['id'] }})"

@@ -73,7 +73,7 @@
         </div>
 
         {{-- Scrollable Territory List --}}
-        <div class="overflow-y-auto max-h-80 pr-1 space-y-1.5 scrollbar-thin">
+        <div class="overflow-y-auto max-h-80 pr-1.5 space-y-1.5 dropdown-scrollbar">
             
             {{-- Option: Semua Wilayah (Nasional) --}}
             <button type="button" wire:click="selectTerritory('all'); open = false"
@@ -158,7 +158,7 @@
                                 <span>Kecamatan di {{ $city->name }}</span>
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-48 overflow-y-auto pr-0.5">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-48 overflow-y-auto dropdown-scrollbar pr-1">
                                 @foreach($city->districts as $district)
                                     @php $isDistrictActive = ($territory['type'] === 'district' && (int)$territory['id'] === (int)$district->id); @endphp
                                     <button type="button" wire:click="selectTerritory('district', {{ $district->id }}); open = false"

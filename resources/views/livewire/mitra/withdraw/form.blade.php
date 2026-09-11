@@ -316,7 +316,7 @@
                         </div>
 
                         <!-- Scrollable Bank List -->
-                        <div class="p-3 overflow-y-auto max-h-[50vh] space-y-1 hide-scrollbar overscroll-contain">
+                        <div class="p-3 pr-2 overflow-y-auto max-h-[50vh] space-y-1 dropdown-scrollbar overscroll-contain">
                             <template x-for="item in filteredBanks" :key="item.code">
                                 <button type="button" @click="selectBank(item)"
                                     class="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-750 transition cursor-pointer border border-transparent text-left"

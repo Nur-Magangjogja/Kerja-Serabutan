@@ -449,7 +449,7 @@
                         </div>
 
                         {{-- Daftar Kecamatan Berkotak / Grid Card --}}
-                        <div class="max-h-64 overflow-y-auto rounded-2xl border border-gray-200 dark:border-gray-700 p-3 bg-white/70 dark:bg-gray-800/60 custom-scrollbar shadow-inner">
+                        <div class="max-h-64 overflow-y-auto dropdown-scrollbar rounded-2xl border border-gray-200 dark:border-gray-700 p-3 pr-2 bg-white/70 dark:bg-gray-800/60 shadow-inner">
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                                 @forelse($districts as $d)
                                 @php

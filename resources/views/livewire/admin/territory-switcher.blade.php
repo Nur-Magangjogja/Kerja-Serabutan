@@ -23,7 +23,7 @@
         x-transition:leave="transition ease-in duration-100"
         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
         x-transition:leave-end="opacity-0 translate-y-2 scale-95"
-        class="absolute right-0 sm:left-0 sm:right-auto mt-2 w-72 max-h-96 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-2 z-[60] overflow-y-auto scrollbar-thin">
+        class="absolute right-0 sm:left-0 sm:right-auto mt-2 w-72 max-h-96 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-2 z-[60] overflow-y-auto dropdown-scrollbar pr-1.5">
         
         <div class="px-2.5 py-1.5 border-b border-gray-100 dark:border-gray-700 mb-1 flex items-center justify-between">
             <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Wilayah Kecamatan Pantauan</span>

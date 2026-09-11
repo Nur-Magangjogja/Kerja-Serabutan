@@ -587,7 +587,7 @@
                     @if($role === 'admin')
                     <div class="pt-3 border-t border-gray-100 dark:border-gray-700">
                         <label class="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2 block">Kota yang Dikelola (untuk Admin)</label>
-                        <div class="max-h-48 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-600 p-3 bg-gray-50 dark:bg-gray-700/30">
+                        <div class="max-h-48 overflow-y-auto dropdown-scrollbar pr-2 rounded-lg border border-gray-200 dark:border-gray-600 p-3 bg-gray-50 dark:bg-gray-700/30">
                             <div class="grid grid-cols-2 gap-2">
                                 @forelse($cities as $c)
                                 <label class="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:border-primary-400 cursor-pointer transition-colors">

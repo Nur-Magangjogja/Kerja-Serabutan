@@ -669,7 +669,7 @@ new #[Layout('layouts.guest')] class extends Component {
                                 <input type="hidden" wire:model="city_id" id="city_id">
 
                                 @if (!empty($searchResults))
-                                    <ul class="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-60 overflow-auto z-50 divide-y divide-gray-100 dark:divide-gray-700/60">
+                                    <ul class="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-60 overflow-y-auto dropdown-scrollbar z-50 divide-y divide-gray-100 dark:divide-gray-700/60">
                                         @foreach ($searchResults as $c)
                                             <li wire:click="setCityId({{ $c['id'] }})"
                                                 class="px-4 py-3 text-xs sm:text-sm hover:bg-primary-50/80 dark:hover:bg-gray-700/80 cursor-pointer transition flex items-center justify-between gap-2 group">
@@ -793,7 +793,7 @@ new #[Layout('layouts.guest')] class extends Component {
                                     </div>
 
                                     <!-- Container List Kecamatan -->
-                                    <div class="max-h-56 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xs">
+                                    <div class="max-h-56 overflow-y-auto dropdown-scrollbar divide-y divide-gray-100 dark:divide-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xs">
                                         @forelse($this->getFilteredDistricts() as $d)
                                             <button type="button" 
                                                 wire:click="setDistrictId({{ $d['id'] }}, '{{ addslashes($d['name']) }}')"

@@ -132,7 +132,7 @@
 
         <!-- Search Results Dropdown -->
         <div x-show="showResults && searchResults.length > 0" x-cloak
-            class="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl divide-y divide-gray-100 dark:divide-gray-700/60">
+            class="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto dropdown-scrollbar bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl divide-y divide-gray-100 dark:divide-gray-700/60">
             <template x-for="item in searchResults" :key="item.place_id">
                 <button type="button" @click="selectResult(item)" class="w-full text-left p-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 flex items-start gap-2 transition cursor-pointer group">
                     <span class="text-base flex-shrink-0">📍</span>
