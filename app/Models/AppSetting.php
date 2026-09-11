@@ -185,10 +185,11 @@ class AppSetting extends Model
         return (string) static::get('withdraw_fee_mode', 'deduct_from_received');
     }
 
-    public static function calculateWithdrawFee(string $bankCode, int $amount = 0): array
+    public static function calculateWithdrawFee(string $bankCode, int|float $amount = 0): array
     {
         $banks = static::getWithdrawBanks();
         $codeUpper = strtoupper(trim($bankCode));
+        $amount = max(0, (float) $amount);
 
         $matched = collect($banks)->first(function ($b) use ($codeUpper) {
             return strtoupper($b['code'] ?? '') === $codeUpper;

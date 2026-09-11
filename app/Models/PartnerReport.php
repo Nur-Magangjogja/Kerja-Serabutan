@@ -158,22 +158,32 @@ class PartnerReport extends Model
     }
 
     // Helper methods
-    public function isPending()
+    public function isPending(): bool
     {
         return $this->status === 'pending';
     }
 
-    public function isResolved()
+    public function isActive(): bool
+    {
+        return in_array($this->status, ['pending', 'in_progress', 'investigating'], true);
+    }
+
+    public function isResolved(): bool
     {
         return $this->status === 'resolved';
     }
 
-    public function isDismissed()
+    public function isDismissed(): bool
     {
         return $this->status === 'dismissed';
     }
 
-    public function isFromCustomer()
+    public function isResolvedOrClosed(): bool
+    {
+        return in_array($this->status, ['resolved', 'dismissed', 'closed'], true);
+    }
+
+    public function isFromCustomer(): bool
     {
         return $this->category === 'dari_customer';
     }

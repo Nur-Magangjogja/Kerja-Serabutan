@@ -16,6 +16,11 @@ class PreventAdminRegistrationAccess
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Whitelist logout and cancellation routes so users can always log out cleanly
+        if ($request->routeIs(['logout', 'register.cancel']) || $request->is('logout')) {
+            return $next($request);
+        }
+
         if (Auth::check()) {
             $user = Auth::user();
 

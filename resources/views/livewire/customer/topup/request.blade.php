@@ -3,9 +3,14 @@
     <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
         <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
-        <div class="relative z-10 max-w-md mx-auto text-white text-center">
-            <h1 class="text-base font-bold truncate">Top-Up Saldo</h1>
-            <p class="text-xs text-white/90 truncate mt-0.5">Isi saldo via QRIS (Bebas Biaya Admin)</p>
+        <div class="relative z-10 max-w-md mx-auto flex items-center justify-between text-white">
+            <button type="button" wire:click="cancelTopup" class="p-1.5 -ml-1.5 rounded-xl hover:bg-white/15 active:bg-white/25 transition cursor-pointer text-white shrink-0" title="Kembali & Batalkan">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <div class="text-center flex-1 pr-6">
+                <h1 class="text-base font-bold truncate">Top-Up Saldo</h1>
+                <p class="text-xs text-white/90 truncate mt-0.5">Isi saldo via QRIS (Bebas Biaya Admin)</p>
+            </div>
         </div>
     </div>
 
@@ -124,39 +129,12 @@
                         </button>
                     </div>
 
-                    <!-- Nama Lengkap -->
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Nama Lengkap *</label>
-                        <input type="text" wire:model="customerName"
-                            class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300 font-medium"
-                            readonly>
-                        @error('customerName') <span class="text-xs text-red-600 dark:text-red-400 mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- Nomor Telepon -->
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Nomor Telepon *</label>
-                        <input type="tel" wire:model="customerPhone"
-                            class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400 dark:placeholder-gray-500"
-                            placeholder="081234567892">
-                        @error('customerPhone') <span class="text-xs text-red-600 dark:text-red-400 mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- Email -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
-                        <input type="email" wire:model="customerEmail"
-                            class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400 dark:placeholder-gray-500"
-                            placeholder="budi@example.com">
-                        @error('customerEmail') <span class="text-xs text-red-600 dark:text-red-400 mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
                     <!-- Buttons -->
                     <div class="flex gap-3 pt-2">
-                        <a href="{{ route('customer.dashboard') }}"
+                        <button type="button" wire:click="cancelTopup"
                             class="px-6 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold text-center hover:bg-gray-50 dark:hover:bg-gray-600 transition cursor-pointer">
                             Batal
-                        </a>
+                        </button>
                         <button type="submit" wire:loading.attr="disabled" wire:target="nextStep"
                             class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition shadow-md shadow-blue-500/20 cursor-pointer disabled:opacity-50">
                             <span wire:loading.remove wire:target="nextStep">Lanjutkan →</span>

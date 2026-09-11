@@ -17,14 +17,14 @@
             </span>
         </label>
 
-        <!-- Custom Stepper Input (Formatted with Comma Thousand Separator) -->
+        <!-- Custom Stepper Input (Formatted with Dot Thousand Separator) -->
         <div class="flex items-center rounded-xl border @error('amount') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 bg-white dark:bg-gray-800 @enderror p-1.5 shadow-sm transition">
             <!-- Decrement Button (-1000) -->
             <button type="button" wire:click="adjustAmount(-1000)" title="Kurangi Rp 1000" class="w-11 h-11 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 text-gray-700 dark:text-gray-200 font-bold text-xl flex items-center justify-center transition flex-shrink-0 cursor-pointer">
                 −
             </button>
 
-            <!-- Input Nominal with Comma Masking -->
+            <!-- Input Nominal with Dot Masking -->
             <div x-data="{
                 rawAmount: @entangle('amount').live,
                 formattedAmount: '',
@@ -33,13 +33,13 @@
                     let digits = String(val).replace(/[^0-9]/g, '');
                     if (!digits) return '';
                     let num = parseInt(digits, 10);
-                    return isNaN(num) ? '' : num.toLocaleString('en-US');
+                    return isNaN(num) ? '' : num.toLocaleString('id-ID');
                 },
                 handleInput(e) {
                     let digits = e.target.value.replace(/[^0-9]/g, '');
                     let num = digits ? parseInt(digits, 10) : 0;
                     this.rawAmount = num;
-                    this.formattedAmount = digits ? num.toLocaleString('en-US') : '';
+                    this.formattedAmount = digits ? num.toLocaleString('id-ID') : '';
                 },
                 init() {
                     this.formattedAmount = this.formatNumber(this.rawAmount);
@@ -54,7 +54,7 @@
                     x-model="formattedAmount"
                     @input="handleInput($event)"
                     id="amount-input"
-                    placeholder="{{ number_format($minHelpNominal ?? 10000, 0, '.', ',') }}"
+                    placeholder="{{ number_format($minHelpNominal ?? 10000, 0, ',', '.') }}"
                     class="w-full pl-8 pr-2 py-1.5 text-center font-bold text-lg text-gray-900 dark:text-white border-none focus:ring-0 focus:outline-none bg-transparent">
             </div>
 

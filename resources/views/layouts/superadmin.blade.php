@@ -344,19 +344,39 @@
                 </div>
 
                 <a href="{{ route('superadmin.withdraws.index') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.withdraws.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
-                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Manajemen Withdraw
+                    class="flex items-center justify-between px-4 py-2.5 {{ request()->routeIs('superadmin.withdraws.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <div class="flex items-center min-w-0">
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span class="truncate">Manajemen Withdraw</span>
+                    </div>
+                    @php
+                        $pendingWithdrawsCount = \App\Models\WithdrawRequest::getPendingWithdrawsCountForUser();
+                    @endphp
+                    @if($pendingWithdrawsCount > 0)
+                        <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold {{ request()->routeIs('superadmin.withdraws.*') ? 'bg-white text-rose-600 shadow-2xs' : 'bg-rose-500 text-white shadow-xs' }} ml-2 shrink-0 animate-pulse" title="{{ $pendingWithdrawsCount }} Permintaan Withdraw Menunggu Proses">
+                            {{ $pendingWithdrawsCount > 99 ? '99+' : $pendingWithdrawsCount }}
+                        </span>
+                    @endif
                 </a>
 
                 <a href="{{ route('superadmin.topup.approvals') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.topup.approvals*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
-                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Manajemen Top-Up
+                    class="flex items-center justify-between px-4 py-2.5 {{ request()->routeIs('superadmin.topup.approvals*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <div class="flex items-center min-w-0">
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="truncate">Manajemen Top-Up</span>
+                    </div>
+                    @php
+                        $pendingTopupsCount = \App\Models\BalanceTransaction::getPendingTopupsCountForUser();
+                    @endphp
+                    @if($pendingTopupsCount > 0)
+                        <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold {{ request()->routeIs('superadmin.topup.approvals*') ? 'bg-white text-amber-600 shadow-2xs' : 'bg-amber-500 text-white shadow-xs' }} ml-2 shrink-0 animate-pulse" title="{{ $pendingTopupsCount }} Permintaan Top-Up Menunggu Approval">
+                            {{ $pendingTopupsCount > 99 ? '99+' : $pendingTopupsCount }}
+                        </span>
+                    @endif
                 </a>
 
                 <div class="pt-4 pb-1">

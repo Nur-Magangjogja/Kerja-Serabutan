@@ -64,8 +64,8 @@ class TopupRequest extends Component
                     }
                 },
             ],
-            'customerName' => 'required|string|max:100',
-            'customerPhone' => 'required|numeric|digits_between:10,15',
+            'customerName' => 'nullable|string|max:100',
+            'customerPhone' => 'nullable|string|max:30',
             'customerEmail' => 'nullable|email|max:100',
             'customerNotes' => 'nullable|string|max:500',
         ];
@@ -75,9 +75,6 @@ class TopupRequest extends Component
         'amount.required' => 'Nominal harus diisi',
         'amount.min' => 'Minimal top-up adalah Rp 100',
         'amount.max' => 'Maksimal top-up adalah Rp 10.000.000',
-        'customerName.required' => 'Nama lengkap harus diisi',
-        'customerPhone.required' => 'Nomor telepon harus diisi',
-        'customerPhone.digits_between' => 'Nomor telepon tidak valid',
         'customerEmail.email' => 'Format email tidak valid',
     ];
 
@@ -191,9 +188,36 @@ class TopupRequest extends Component
         session()->flash('success', 'Data form berhasil direset');
     }
 
+    public function cancelTopup()
+    {
+        session()->forget('topup_form_data');
+        
+        $user = auth()->user();
+        $this->currentStep = 1;
+        $this->amount = null;
+        $this->customerName = $user->name ?? '';
+        $this->customerPhone = $user->phone ?? '';
+        $this->customerEmail = $user->email ?? '';
+        $this->customerNotes = null;
+        $this->paymentMethod = 'qris';
+        $this->proofOfPayment = null;
+        $this->adminFee = 0;
+        $this->totalPayment = 0;
+        $this->uniqueTotal = 0;
+
+        return $this->redirectRoute('customer.dashboard', navigate: true);
+    }
+
     public function nextStep()
     {
         if ($this->currentStep == 1) {
+            $user = auth()->user();
+            if ($user) {
+                if (empty($this->customerName)) $this->customerName = $user->name;
+                if (empty($this->customerPhone)) $this->customerPhone = $user->phone ?? '-';
+                if (empty($this->customerEmail)) $this->customerEmail = $user->email;
+            }
+
             $this->validate();
             $this->calculateFees();
             $this->currentStep = 2;
@@ -293,9 +317,9 @@ class TopupRequest extends Component
                 'type' => 'topup',
                 'description' => 'Top-up saldo via QRIS',
                 'status' => 'waiting_approval',
-                'customer_name' => $this->customerName,
-                'customer_phone' => $this->customerPhone,
-                'customer_email' => $this->customerEmail,
+                'customer_name' => $this->customerName ?: (auth()->user()->name ?? 'Customer'),
+                'customer_phone' => $this->customerPhone ?: (auth()->user()->phone ?? '-'),
+                'customer_email' => $this->customerEmail ?: auth()->user()->email,
                 'payment_method' => 'qris',
                 'proof_of_payment' => $proofPath,
                 'request_code' => $this->requestCode,

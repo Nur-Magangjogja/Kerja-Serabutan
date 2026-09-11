@@ -70,5 +70,51 @@ class WithdrawRequest extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    protected static function booted()
+    {
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('pending_withdraws_count_superadmin');
+            $ver = (int) \Illuminate\Support\Facades\Cache::get('pending_withdraws_count_version', 1);
+            \Illuminate\Support\Facades\Cache::put('pending_withdraws_count_version', $ver + 1, now()->addDays(7));
+        });
+
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('pending_withdraws_count_superadmin');
+            $ver = (int) \Illuminate\Support\Facades\Cache::get('pending_withdraws_count_version', 1);
+            \Illuminate\Support\Facades\Cache::put('pending_withdraws_count_version', $ver + 1, now()->addDays(7));
+        });
+    }
+
+    /**
+     * Menghitung total permintaan withdraw yang pending (menunggu proses)
+     * untuk keperluan indikator badge di sidebar Admin & Superadmin.
+     */
+    public static function getPendingWithdrawsCountForUser(?User $user = null): int
+    {
+        $user = $user ?? auth()->user();
+        if (!$user) {
+            return 0;
+        }
+
+        $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
+        $version = \Illuminate\Support\Facades\Cache::get('pending_withdraws_count_version', 1);
+        $cacheKey = 'pending_withdraws_count_v' . $version . '_' . ($isSuperAdmin ? 'sa' : 'admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
+
+        return (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin) {
+            $query = static::where('status', self::STATUS_PENDING);
+
+            if (!$isSuperAdmin) {
+                $districtIds = $user->getEffectiveAdminDistrictIds();
+                if (!empty($districtIds)) {
+                    $query->whereHas('user', fn($q) => $q->whereIn('district_id', $districtIds));
+                } else {
+                    return 0;
+                }
+            }
+
+            return (int) $query->count();
+        });
+    }
 }
 

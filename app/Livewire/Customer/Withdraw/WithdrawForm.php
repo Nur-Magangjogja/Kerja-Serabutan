@@ -36,8 +36,14 @@ class WithdrawForm extends Component
                 'required',
                 'numeric',
                 'min:' . $minAmount,
+                'max:100000000000',
                 function ($attribute, $value, $fail) {
-                    if ((int) $value % 100 !== 0) {
+                    $numericVal = (float) $value;
+                    if ($numericVal > 100000000000) {
+                        $fail('Nominal penarikan melebihi batas maksimal.');
+                        return;
+                    }
+                    if (fmod($numericVal, 100) != 0) {
                         $fail('Nominal penarikan harus berupa kelipatan 100 atau 1.000 rupiah (contoh: 10.000, 25.000, 50.000).');
                     }
                 },
@@ -49,6 +55,7 @@ class WithdrawForm extends Component
             'amount.required' => 'Nominal penarikan wajib diisi.',
             'amount.numeric' => 'Nominal harus berupa angka.',
             'amount.min' => 'Jumlah penarikan minimal Rp ' . number_format($minAmount, 0, ',', '.'),
+            'amount.max' => 'Nominal penarikan melebihi batas maksimal.',
             'bankCode.required' => 'Silakan pilih bank atau e-wallet tujuan.',
             'accountNumber.required' => 'Nomor rekening atau nomor HP e-wallet wajib diisi.',
             'accountName.required' => 'Nama pemilik rekening wajib diisi.',
@@ -59,8 +66,8 @@ class WithdrawForm extends Component
             return;
         }
 
-        $amountVal = (float) $this->amount;
-        $feeCalc = AppSetting::calculateWithdrawFee($this->bankCode, (int) $amountVal);
+        $amountVal = min(100_000_000_000, max(0, (float) $this->amount));
+        $feeCalc = AppSetting::calculateWithdrawFee($this->bankCode, $amountVal);
         $adminFee = (float) $feeCalc['fee'];
         $netAmount = (float) $feeCalc['net_amount'];
         $totalDeduction = $amountVal + $adminFee;
@@ -130,8 +137,8 @@ class WithdrawForm extends Component
         $balance = (float) ($user->balance ?? 0);
         $banks = collect(AppSetting::getWithdrawBanks())->filter(fn($b) => ($b['is_active'] ?? true) !== false)->values();
         $minAmount = (float) AppSetting::getWithdrawMinAmount();
-        $amountVal = (float) ($this->amount ?: 0);
-        $feeCalc = AppSetting::calculateWithdrawFee($this->bankCode ?: 'BCA', (int) $amountVal);
+        $amountVal = min(100_000_000_000, max(0, (float) ($this->amount ?: 0)));
+        $feeCalc = AppSetting::calculateWithdrawFee($this->bankCode ?: 'BCA', $amountVal);
         $adminFee = (float) $feeCalc['fee'];
         $netAmount = (float) $feeCalc['net_amount'];
         $totalDeduction = (float) ($amountVal > 0 ? ($amountVal + $adminFee) : 0);
