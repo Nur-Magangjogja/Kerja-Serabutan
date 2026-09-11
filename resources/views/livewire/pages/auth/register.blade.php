@@ -246,7 +246,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 <input wire:model="agree_terms" type="checkbox"
                     class="mt-0.5 w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500">
                 <span class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Saya menyetujui <a href="#" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline">Syarat & Ketentuan</a> serta <a href="#" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline">Kebijakan Privasi</a> yang berlaku di SayaBantu.
+                    Saya menyetujui <a href="{{ route('terms') }}" target="_blank" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline">Syarat & Ketentuan</a> serta <a href="{{ route('privacy') }}" target="_blank" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline">Kebijakan Privasi</a> yang berlaku di SayaBantu.
                 </span>
             </label>
             @error('agree_terms')

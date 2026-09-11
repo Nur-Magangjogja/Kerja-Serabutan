@@ -2,6 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 
+// ========================================
+// LEGAL PAGES (Public - No Auth Required)
+// ========================================
+Route::get('/syarat-ketentuan', fn() => view('legal.terms'))->name('terms');
+Route::get('/kebijakan-privasi', fn() => view('legal.privacy'))->name('privacy');
+
 // Landing / Login route - Unified entrance
 Route::get('/', function () {
     if (auth()->check()) {
