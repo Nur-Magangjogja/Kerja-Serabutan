@@ -23,6 +23,26 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\EnsureUserThemeAndSessionState::class,
         ]);
 
+        $middleware->redirectTo(
+            guests: '/login',
+            users: function () {
+                $user = \Illuminate\Support\Facades\Auth::user();
+                if (!$user) {
+                    return '/login';
+                }
+                if (in_array($user->role ?? '', ['super_admin', 'superadmin'])) {
+                    return route('superadmin.dashboard');
+                }
+                if ($user->role === 'admin') {
+                    return route('admin.dashboard');
+                }
+                if ($user->role === 'mitra') {
+                    return route('mitra.dashboard');
+                }
+                return route('customer.dashboard');
+            }
+        );
+
         $middleware->alias([
             'super_admin' => \App\Http\Middleware\EnsureSuperAdmin::class,
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
@@ -31,6 +51,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'customer' => \App\Http\Middleware\EnsureCustomer::class,
             'mitra' => \App\Http\Middleware\EnsureMitra::class,
             'approved' => \App\Http\Middleware\EnsureAccountApproved::class,
+            'block_admin_registration' => \App\Http\Middleware\PreventAdminRegistrationAccess::class,
         ]);
 
         // Exclude Midtrans webhook from CSRF verification (Nonaktif / Disabled)

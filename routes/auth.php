@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
-Route::middleware('guest')->group(function () {
+Route::middleware(['guest', 'block_admin_registration'])->group(function () {
     // 1. Direct Quick Register with Email, Name, Password & Role
     Volt::route('register', 'pages.auth.register')
         ->name('register');
@@ -30,8 +30,9 @@ Route::middleware('guest')->group(function () {
         ->name('password.reset');
 });
 
-// Registration Success Page (Accessible by guest and auth)
+// Registration Success Page (Accessible by guest and auth, blocked for admin/superadmin)
 Volt::route('registration/success', 'pages.auth.registration-success')
+    ->middleware('block_admin_registration')
     ->name('registration.success');
 
 // Email Verification Link Handler (dapat dibuka langsung dari aplikasi email)
@@ -39,7 +40,7 @@ Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
     ->middleware(['throttle:6,1'])
     ->name('verification.verify');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'block_admin_registration'])->group(function () {
     // 2. Email Verification Notice (Halaman tunggu verifikasi)
     Volt::route('verify-email', 'pages.auth.verify-email')
         ->name('verification.notice');
@@ -60,10 +61,21 @@ Route::middleware('auth')->group(function () {
     Volt::route('confirm-password', 'pages.auth.confirm-password')
         ->name('password.confirm');
 
+    Route::post('register/cancel', function (\App\Livewire\Actions\CancelRegistration $cancelRegistration) {
+        $cancelRegistration();
+        return redirect()->route('login');
+    })->name('register.cancel');
+
     Route::post('logout', function () {
         Auth::logout();
         request()->session()->invalidate();
         request()->session()->regenerateToken();
+
+        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('registration_uuid'));
+        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('registration_role'));
+        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('registration_step1_draft'));
+        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('sb_register_draft'));
+        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('sb_register_leave_time'));
 
         // Redirect all users cleanly to unified login
         return redirect()->route('login');

@@ -11,8 +11,8 @@
                                 @if(!empty($help->photo))
                                     <img src="{{ asset('storage/' . $help->photo) }}" alt="Foto bantuan"
                                         class="w-full h-full object-cover">
-                                @elseif(optional($help->user)->photo)
-                                    <img src="{{ asset('storage/' . optional($help->user)->photo) }}" alt="Avatar"
+                                @elseif(optional($help->user)->profile_photo ?? optional($help->user)->photo)
+                                    <img src="{{ asset('storage/' . (optional($help->user)->profile_photo ?? optional($help->user)->photo)) }}" alt="Avatar"
                                         class="w-full h-full object-cover">
                                 @else
                                     <div

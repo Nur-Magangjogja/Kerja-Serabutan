@@ -21,6 +21,24 @@ new #[Layout('layouts.guest')] class extends Component {
 
     public function mount(): void
     {
+        if (Auth::check()) {
+            $user = Auth::user();
+            if (in_array($user->role ?? '', ['super_admin', 'superadmin'])) {
+                $this->redirect(route('superadmin.dashboard'), navigate: true);
+                return;
+            }
+            if ($user->role === 'admin') {
+                $this->redirect(route('admin.dashboard'), navigate: true);
+                return;
+            }
+            if ($user->role === 'mitra') {
+                $this->redirect(route('mitra.dashboard'), navigate: true);
+                return;
+            }
+            $this->redirect(route('customer.dashboard'), navigate: true);
+            return;
+        }
+
         // Periksa apakah ada cookie draf registrasi sementara
         if (request()->hasCookie('sb_register_draft')) {
             try {
@@ -120,9 +138,19 @@ new #[Layout('layouts.guest')] class extends Component {
             'verified' => false,
         ]);
 
-        // Hapus cookie draft registrasi saat pembuatan akun berhasil
+        // Hapus cookie draft registrasi & data step pendaftaran lama saat pembuatan akun baru
         Cookie::queue(Cookie::forget('sb_register_draft'));
         Cookie::queue(Cookie::forget('sb_register_leave_time'));
+        Cookie::queue(Cookie::forget('registration_uuid'));
+        Cookie::queue(Cookie::forget('registration_step1_draft'));
+        Cookie::queue(Cookie::forget('registration_step2_draft'));
+        Cookie::queue(Cookie::forget('registration_step3_draft'));
+        Cookie::queue(Cookie::forget('registration_step4_draft'));
+        Cookie::queue(Cookie::forget('registration_role'));
+        session()->forget([
+            'registration_uuid',
+            'registration_role',
+        ]);
 
         try {
             event(new Registered($user));

@@ -379,8 +379,8 @@
                 <h3 class="font-semibold text-sm text-gray-900 dark:text-white">Informasi Customer</h3>
             </div>
             <div class="flex items-center gap-3 mb-3">
-                @if ($help->user->selfie_photo)
-                    <img src="{{ asset('storage/' . $help->user->selfie_photo) }}" alt="{{ $help->user->name }}"
+                @if ($help->user->profile_photo ?? $help->user->photo)
+                    <img src="{{ asset('storage/' . ($help->user->profile_photo ?? $help->user->photo)) }}" alt="{{ $help->user->name }}"
                         class="w-12 h-12 rounded-full object-cover border-2 border-blue-100 dark:border-blue-900">
                 @else
                     <div

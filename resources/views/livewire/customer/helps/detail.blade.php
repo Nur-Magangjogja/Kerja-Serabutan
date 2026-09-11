@@ -166,8 +166,8 @@
             @if($help->mitra)
                 <div class="p-3.5 bg-gray-50/80 dark:bg-gray-750/70 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-gray-700/60 shadow-2xs">
                     <div class="flex items-center gap-3 min-w-0">
-                        @if($help->mitra->selfie_photo)
-                            <img src="{{ asset('storage/' . $help->mitra->selfie_photo) }}" alt="{{ $help->mitra->name }}" class="w-11 h-11 rounded-full object-cover border-2 border-sky-200 dark:border-sky-800 shrink-0">
+                        @if($help->mitra->profile_photo ?? $help->mitra->photo)
+                            <img src="{{ asset('storage/' . ($help->mitra->profile_photo ?? $help->mitra->photo)) }}" alt="{{ $help->mitra->name }}" class="w-11 h-11 rounded-full object-cover border-2 border-sky-200 dark:border-sky-800 shrink-0">
                         @else
                             <div class="w-11 h-11 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold shrink-0 shadow-2xs">
                                 {{ strtoupper(substr($help->mitra->name ?? 'M', 0, 1)) }}

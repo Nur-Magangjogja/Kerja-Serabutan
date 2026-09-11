@@ -88,8 +88,8 @@
                                         
                                         <!-- Avatar -->
                                         <div class="w-12 h-12 rounded-2xl overflow-hidden bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-950 dark:to-teal-950 flex-shrink-0 flex items-center justify-center text-emerald-700 dark:text-emerald-300 font-bold text-base shadow-xs border border-emerald-200/50 dark:border-emerald-800/50">
-                                            @if($conv->partner->selfie_photo)
-                                                <img src="{{ asset('storage/' . $conv->partner->selfie_photo) }}" alt="{{ $conv->partner->name }}" class="w-full h-full object-cover">
+                                            @if($conv->partner->profile_photo ?? $conv->partner->photo)
+                                                <img src="{{ asset('storage/' . ($conv->partner->profile_photo ?? $conv->partner->photo)) }}" alt="{{ $conv->partner->name }}" class="w-full h-full object-cover">
                                             @else
                                                 {{ strtoupper(substr($conv->partner->name ?? 'C', 0, 1)) }}
                                             @endif
@@ -171,8 +171,8 @@
                                 </div>
                             @else
                                 <div class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-700 dark:text-emerald-300 font-bold text-sm border border-emerald-200/60 dark:border-emerald-800/60">
-                                    @if($selected_partner->selfie_photo)
-                                        <img src="{{ asset('storage/' . $selected_partner->selfie_photo) }}" alt="{{ $selected_partner->name }}" class="w-full h-full object-cover">
+                                    @if($selected_partner->profile_photo ?? $selected_partner->photo)
+                                        <img src="{{ asset('storage/' . ($selected_partner->profile_photo ?? $selected_partner->photo)) }}" alt="{{ $selected_partner->name }}" class="w-full h-full object-cover">
                                     @else
                                         {{ strtoupper(substr($selected_partner->name ?? 'C', 0, 1)) }}
                                     @endif

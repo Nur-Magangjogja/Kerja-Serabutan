@@ -45,17 +45,17 @@ class UpdatePhoto extends Component
         try {
             $user = auth()->user();
 
-            // Delete old photo if exists
-            if ($user->selfie_photo && Storage::disk('public')->exists($user->selfie_photo)) {
-                Storage::disk('public')->delete($user->selfie_photo);
+            // Delete old profile photo if exists
+            if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
+                Storage::disk('public')->delete($user->profile_photo);
             }
 
             // Store new photo
             $path = $this->photo->store('profile-photos', 'public');
 
-            // Update user
+            // Update user profile photo
             $user->update([
-                'selfie_photo' => $path,
+                'profile_photo' => $path,
             ]);
 
             session()->flash('status', 'Foto profil berhasil diperbarui!');
@@ -78,14 +78,14 @@ class UpdatePhoto extends Component
         try {
             $user = auth()->user();
 
-            // Delete photo file
-            if ($user->selfie_photo && Storage::disk('public')->exists($user->selfie_photo)) {
-                Storage::disk('public')->delete($user->selfie_photo);
+            // Delete profile photo file
+            if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
+                Storage::disk('public')->delete($user->profile_photo);
             }
 
-            // Update user
+            // Update user profile photo
             $user->update([
-                'selfie_photo' => null,
+                'profile_photo' => null,
             ]);
 
             session()->flash('status', 'Foto profil berhasil dihapus!');

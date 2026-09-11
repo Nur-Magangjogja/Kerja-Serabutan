@@ -52,13 +52,9 @@
             <div class="relative z-10">
                 <div class="flex items-center justify-between text-white">
                     <!-- Back Button -->
-                    @if(request()->routeIs('registration.success'))
-                        <a href="{{ route('login') }}" wire:navigate aria-label="Kembali ke Login" 
-                            class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0 text-white flex items-center justify-center">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </a>
+                    @if(request()->routeIs('register.step1', 'registration.success'))
+                        <!-- Spacer agar brand centerpiece tetap simetris di tengah -->
+                        <div class="w-9 flex-shrink-0"></div>
                     @else
                         <button onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{{ route('login') }}'; }" 
                             aria-label="Kembali" 

@@ -240,8 +240,8 @@
                 {{-- User Profile Header --}}
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
-                        @if($u->selfie_photo)
-                            <img src="{{ asset('storage/' . $u->selfie_photo) }}" alt="{{ $u->name }}" class="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shrink-0">
+                        @if($u->profile_photo ?? $u->photo)
+                            <img src="{{ asset('storage/' . ($u->profile_photo ?? $u->photo)) }}" alt="{{ $u->name }}" class="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shrink-0">
                         @else
                             <div class="w-12 h-12 rounded-xl {{ $isMitra ? 'bg-purple-600 text-white' : 'bg-primary-600 text-white' }} flex items-center justify-center font-bold text-sm shrink-0">
                                 {{ strtoupper(substr($u->name, 0, 2)) }}

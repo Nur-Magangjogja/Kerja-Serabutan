@@ -90,12 +90,13 @@ class Index extends Component
 
         $adminConversation = (object) [
             'partner' => (object) [
-                'id'           => 'admin',
-                'name'         => '🛡️ Tim Admin SayaBantu',
-                'email'        => 'admin@sayabantu.com',
-                'phone'        => 'Pusat Bantuan & Moderasi',
-                'selfie_photo' => null,
-                'is_admin'     => true,
+                'id'            => 'admin',
+                'name'          => '🛡️ Tim Admin SayaBantu',
+                'email'         => 'admin@sayabantu.com',
+                'phone'         => 'Pusat Bantuan & Moderasi',
+                'profile_photo' => null,
+                'selfie_photo'  => null,
+                'is_admin'      => true,
             ],
             'is_admin'     => true,
             'last_message' => $lastAdminMsg ? (object)[
@@ -185,12 +186,13 @@ class Index extends Component
         $this->selected_partner_id = 'admin';
         $this->is_admin_chat       = true;
         $this->selected_partner    = (object) [
-            'id'           => 'admin',
-            'name'         => '🛡️ Tim Admin SayaBantu',
-            'email'        => 'admin@sayabantu.com',
-            'phone'        => 'Pusat Bantuan & Moderasi Resmi',
-            'selfie_photo' => null,
-            'is_admin'     => true,
+            'id'            => 'admin',
+            'name'          => '🛡️ Tim Admin SayaBantu',
+            'email'         => 'admin@sayabantu.com',
+            'phone'         => 'Pusat Bantuan & Moderasi Resmi',
+            'profile_photo' => null,
+            'selfie_photo'  => null,
+            'is_admin'      => true,
         ];
         $this->unassigned_help     = null;
 

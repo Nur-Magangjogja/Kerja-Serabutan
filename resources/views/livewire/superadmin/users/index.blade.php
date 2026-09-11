@@ -190,8 +190,8 @@
             <div class="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/60">
                 <div class="flex items-center gap-3.5 min-w-0">
                     <div class="relative shrink-0">
-                        @if($selectedUser->selfie_url)
-                            <img src="{{ $selectedUser->selfie_url }}" alt="{{ $selectedUser->name }}" class="w-12 h-12 rounded-xl object-cover ring-2 ring-primary-500/30 shadow-xs">
+                        @if($selectedUser->avatar_url)
+                            <img src="{{ $selectedUser->avatar_url }}" alt="{{ $selectedUser->name }}" class="w-12 h-12 rounded-xl object-cover ring-2 ring-primary-500/30 shadow-xs">
                         @else
                             <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-lg shadow-xs">
                                 {{ strtoupper(substr($selectedUser->name, 0, 1)) }}

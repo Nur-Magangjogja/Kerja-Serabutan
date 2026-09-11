@@ -118,8 +118,8 @@
                                 <td class="px-4 py-3.5 whitespace-nowrap">
                                     <div class="flex items-center gap-2.5">
                                         <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center font-bold text-gray-700 dark:text-gray-200 text-xs shrink-0 overflow-hidden">
-                                            @if($user->selfie_photo || $user->photo)
-                                                <img src="{{ asset('storage/' . ($user->selfie_photo ?: $user->photo)) }}" alt="{{ $user->name }}" class="w-full h-full object-cover">
+                                            @if($user->profile_photo || $user->photo)
+                                                <img src="{{ asset('storage/' . ($user->profile_photo ?: $user->photo)) }}" alt="{{ $user->name }}" class="w-full h-full object-cover">
                                             @else
                                                 {{ strtoupper(substr($user->name, 0, 1)) }}
                                             @endif
@@ -422,8 +422,8 @@
                     <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-600 flex items-center justify-between gap-3 flex-wrap">
                         <div class="flex items-center gap-3">
                             <div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center font-bold text-gray-700 dark:text-gray-200 text-sm shrink-0 overflow-hidden shadow-xs">
-                                @if($detailUser->selfie_photo || $detailUser->photo)
-                                    <img src="{{ asset('storage/' . ($detailUser->selfie_photo ?: $detailUser->photo)) }}" alt="{{ $detailUser->name }}" class="w-full h-full object-cover">
+                                @if($detailUser->profile_photo || $detailUser->photo)
+                                    <img src="{{ asset('storage/' . ($detailUser->profile_photo ?: $detailUser->photo)) }}" alt="{{ $detailUser->name }}" class="w-full h-full object-cover">
                                 @else
                                     {{ strtoupper(substr($detailUser->name, 0, 1)) }}
                                 @endif

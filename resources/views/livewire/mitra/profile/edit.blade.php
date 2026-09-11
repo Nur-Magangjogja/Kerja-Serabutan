@@ -10,8 +10,8 @@
                         <div class="flex items-center gap-3">
                             <div
                                 class="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                                @if(auth()->user()?->selfie_photo)
-                                    <img src="{{ asset('storage/' . auth()->user()->selfie_photo) }}" alt="avatar"
+                                @if(auth()->user()?->profile_photo ?? auth()->user()?->photo)
+                                    <img src="{{ asset('storage/' . (auth()->user()->profile_photo ?? auth()->user()->photo)) }}" alt="avatar"
                                         class="w-full h-full object-cover">
                                 @else
                                     <span
@@ -29,8 +29,8 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="md:col-span-1 flex flex-col items-center gap-3 p-3 bg-gray-50 rounded-lg">
                             <div class="w-28 h-28 rounded-full overflow-hidden bg-white shadow-sm">
-                                @if(auth()->user()?->selfie_photo)
-                                    <img src="{{ asset('storage/' . auth()->user()->selfie_photo) }}" alt="avatar"
+                                @if(auth()->user()?->profile_photo ?? auth()->user()?->photo)
+                                    <img src="{{ asset('storage/' . (auth()->user()->profile_photo ?? auth()->user()->photo)) }}" alt="avatar"
                                         class="w-full h-full object-cover">
                                 @else
                                     <div class="w-full h-full flex items-center justify-center text-2xl text-gray-400">

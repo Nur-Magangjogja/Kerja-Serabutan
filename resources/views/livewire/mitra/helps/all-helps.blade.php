@@ -293,7 +293,7 @@
                                             'departure_lead_minutes' => $help->departure_lead_minutes,
                                             'created_at_human' => $help->created_at ? $help->created_at->diffForHumans() : '',
                                             'customer_name' => $help->user->name ?? 'Pemohon Bantuan',
-                                            'customer_avatar' => ($help->user->selfie_photo ?? $help->user->photo) ? asset('storage/' . ($help->user->selfie_photo ?? $help->user->photo)) : null,
+                                            'customer_avatar' => ($help->user->profile_photo ?? $help->user->photo) ? asset('storage/' . ($help->user->profile_photo ?? $help->user->photo)) : null,
                                             'distance_km' => $help->distance_km !== null ? (float)$help->distance_km : null,
                                         ];
                                     @endphp

@@ -194,7 +194,7 @@
                     <div class="text-center avatar-container">
                         <div class="relative inline-block">
                             @php
-                                $__avatar = optional($user)->selfie_photo ?? optional($user)->photo ?? null;
+                                $__avatar = optional($user)->profile_photo ?? optional($user)->photo ?? null;
                             @endphp
                             @if($__avatar)
                                 <img src="{{ asset('storage/' . $__avatar) }}" alt="Avatar" class="w-20 h-20 rounded-full object-cover mx-auto ring-4 ring-white/30 shadow-xl">

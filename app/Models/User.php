@@ -46,6 +46,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'occupation',
         'ktp_photo',
         'selfie_photo',
+        'profile_photo',
         'notification_settings',
         // Greylist, Shadow Ban, and Warning Fields
         'is_greylisted',
@@ -153,6 +154,23 @@ class User extends Authenticatable implements MustVerifyEmail
             return asset('storage/' . $this->selfie_photo);
         }
         return null;
+    }
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        $path = $this->profile_photo ?: $this->photo;
+        if ($path) {
+            if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+                return $path;
+            }
+            return asset('storage/' . $path);
+        }
+        return null;
+    }
+
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        return $this->avatar_url;
     }
 
     public function getIsVerifiedAttribute(): bool
