@@ -37,10 +37,11 @@ class Approval extends Component
     ];
 
     protected $listeners = [
-        'topupRequestCreated'    => '$refresh',
-        'confirmApprove'         => 'approve',
-        'admin-district-changed' => 'onAdminDistrictChanged',
-        'admin-city-changed'     => 'onAdminDistrictChanged',
+        'topupRequestCreated'            => '$refresh',
+        'confirmApprove'                 => 'approve',
+        'admin-district-changed'         => 'onAdminDistrictChanged',
+        'admin-city-changed'             => 'onAdminDistrictChanged',
+        'superadmin-territory-changed'   => '$refresh',
     ];
 
     public function mount()
@@ -381,7 +382,9 @@ class Approval extends Component
     public function render()
     {
         $admin = auth()->user();
-        if ($admin && $admin->role === 'admin') {
+        $isSuperAdmin = $admin && in_array($admin->role, ['super_admin', 'superadmin']);
+
+        if (!$isSuperAdmin && $admin && $admin->role === 'admin') {
             $this->districtFilter = $admin->getActiveAdminDistrictFilter();
             $this->cityFilter = $this->districtFilter;
         }
@@ -391,10 +394,25 @@ class Approval extends Component
         // Base scoped query for counts
         $adminCityId = $admin?->city_id;
         $baseQuery = BalanceTransaction::where('type', 'topup');
-        if (!empty($adminDistrictIds)) {
-            $baseQuery->whereHas('user', fn($q) => $q->whereIn('district_id', $adminDistrictIds));
-        } elseif (!empty($adminCityId) && $admin && $admin->role === 'admin') {
-            $baseQuery->whereHas('user', fn($q) => $q->where('city_id', $adminCityId));
+        if (!$isSuperAdmin) {
+            if (!empty($adminDistrictIds)) {
+                $baseQuery->whereHas('user', fn($q) => $q->whereIn('district_id', $adminDistrictIds));
+            } elseif (!empty($adminCityId) && $admin && $admin->role === 'admin') {
+                $baseQuery->whereHas('user', fn($q) => $q->where('city_id', $adminCityId));
+            }
+        } elseif ($isSuperAdmin && $admin) {
+            $saTerritory = $admin->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $dId = (int) $saTerritory['id'];
+                $baseQuery->whereHas('user', fn($q) => $q->where('district_id', $dId));
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cityId = (int) $saTerritory['id'];
+                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                $baseQuery->whereHas('user', function ($q) use ($cityId, $saDistrictIds) {
+                    if (!empty($saDistrictIds)) $q->whereIn('district_id', $saDistrictIds);
+                    if ($cityId) $q->orWhere('city_id', $cityId);
+                });
+            }
         }
 
         $totalPending = (clone $baseQuery)->where('status', 'waiting_approval')->count();
@@ -406,10 +424,25 @@ class Approval extends Component
         $query = BalanceTransaction::where('type', 'topup')
             ->with(['user', 'user.district', 'user.city', 'approvedBy']);
 
-        if (!empty($adminDistrictIds)) {
-            $query->whereHas('user', fn($q) => $q->whereIn('district_id', $adminDistrictIds));
-        } elseif (!empty($adminCityId) && $admin && $admin->role === 'admin') {
-            $query->whereHas('user', fn($q) => $q->where('city_id', $adminCityId));
+        if (!$isSuperAdmin) {
+            if (!empty($adminDistrictIds)) {
+                $query->whereHas('user', fn($q) => $q->whereIn('district_id', $adminDistrictIds));
+            } elseif (!empty($adminCityId) && $admin && $admin->role === 'admin') {
+                $query->whereHas('user', fn($q) => $q->where('city_id', $adminCityId));
+            }
+        } elseif ($isSuperAdmin && $admin) {
+            $saTerritory = $admin->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $dId = (int) $saTerritory['id'];
+                $query->whereHas('user', fn($q) => $q->where('district_id', $dId));
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cityId = (int) $saTerritory['id'];
+                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                $query->whereHas('user', function ($q) use ($cityId, $saDistrictIds) {
+                    if (!empty($saDistrictIds)) $q->whereIn('district_id', $saDistrictIds);
+                    if ($cityId) $q->orWhere('city_id', $cityId);
+                });
+            }
         }
 
         if ($this->filterStatus === 'waiting_approval') {

@@ -54,7 +54,8 @@ class Activity extends Component
     ];
 
     protected $listeners = [
-        'admin-city-changed' => '$refresh',
+        'admin-city-changed'             => '$refresh',
+        'superadmin-territory-changed'   => '$refresh',
     ];
 
     public function mount()
@@ -177,6 +178,22 @@ class Activity extends Component
             $userQuery->whereIn('district_id', $effectiveDistrictIds);
         } elseif (!$isSuperAdmin && $admin && $admin->role === 'admin') {
             $userQuery->whereRaw('1 = 0');
+        } elseif ($isSuperAdmin && $admin) {
+            $saTerritory = $admin->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $userQuery->where('district_id', (int) $saTerritory['id']);
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cityId = (int) $saTerritory['id'];
+                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                $userQuery->where(function ($q) use ($cityId, $saDistrictIds) {
+                    if (!empty($saDistrictIds)) {
+                        $q->whereIn('district_id', $saDistrictIds);
+                    }
+                    if ($cityId) {
+                        $q->orWhere('city_id', $cityId);
+                    }
+                });
+            }
         }
 
         if ($this->userRoleFilter !== 'all') {
@@ -227,6 +244,27 @@ class Activity extends Component
             });
         } elseif (!$isSuperAdmin && $admin && $admin->role === 'admin') {
             $activityQuery->whereRaw('1 = 0');
+        } elseif ($isSuperAdmin && $admin) {
+            $saTerritory = $admin->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $dId = (int) $saTerritory['id'];
+                $activityQuery->where(function ($q) use ($dId) {
+                    $q->whereHas('user', fn($uq) => $uq->where('district_id', $dId))
+                      ->orWhereHas('help', fn($hq) => $hq->where('district_id', $dId));
+                });
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cityId = (int) $saTerritory['id'];
+                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                $activityQuery->where(function ($q) use ($cityId, $saDistrictIds) {
+                    $q->whereHas('user', function ($uq) use ($cityId, $saDistrictIds) {
+                        if (!empty($saDistrictIds)) $uq->whereIn('district_id', $saDistrictIds);
+                        if ($cityId) $uq->orWhere('city_id', $cityId);
+                    })->orWhereHas('help', function ($hq) use ($cityId, $saDistrictIds) {
+                        if (!empty($saDistrictIds)) $hq->whereIn('district_id', $saDistrictIds);
+                        if ($cityId) $hq->orWhere('city_id', $cityId);
+                    });
+                });
+            }
         }
 
         if ($this->selectedUserId) {
@@ -292,6 +330,19 @@ class Activity extends Component
             $baseStats->whereHas('user', fn($q) => $q->whereIn('district_id', $effectiveDistrictIds));
         } elseif (!$isSuperAdmin && $admin && $admin->role === 'admin') {
             $baseStats->whereRaw('1 = 0');
+        } elseif ($isSuperAdmin && $admin) {
+            $saTerritory = $admin->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $dId = (int) $saTerritory['id'];
+                $baseStats->whereHas('user', fn($q) => $q->where('district_id', $dId));
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cityId = (int) $saTerritory['id'];
+                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                $baseStats->whereHas('user', function ($q) use ($cityId, $saDistrictIds) {
+                    if (!empty($saDistrictIds)) $q->whereIn('district_id', $saDistrictIds);
+                    if ($cityId) $q->orWhere('city_id', $cityId);
+                });
+            }
         }
 
         $stats = [

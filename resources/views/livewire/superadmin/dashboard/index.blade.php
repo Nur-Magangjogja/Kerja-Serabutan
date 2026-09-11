@@ -24,6 +24,40 @@
         </div>
     </div>
 
+    {{-- Active Territory Indicator Banner --}}
+    @if(isset($territory) && $territory['type'] !== 'all')
+    <div class="mb-6 p-4 rounded-2xl @if($territory['type'] === 'city') bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80 @else bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 @endif flex items-center justify-between gap-3 shadow-xs">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-xl @if($territory['type'] === 'city') bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 @else bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 @endif flex items-center justify-center shrink-0">
+                @if($territory['type'] === 'city')
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                @else
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                @endif
+            </div>
+            <div class="truncate">
+                <p class="text-xs font-bold @if($territory['type'] === 'city') text-indigo-950 dark:text-indigo-200 @else text-emerald-950 dark:text-emerald-200 @endif">
+                    @if($territory['type'] === 'city')
+                        Pantauan Kota/Kabupaten: <span class="text-indigo-600 dark:text-indigo-400 font-extrabold">{{ $territory['label'] }}</span>
+                    @else
+                        Pantauan Khusus Kecamatan: <span class="text-emerald-600 dark:text-emerald-400 font-extrabold">{{ $territory['label'] }}</span>
+                    @endif
+                </p>
+                <p class="text-[11px] @if($territory['type'] === 'city') text-indigo-700/80 dark:text-indigo-300/80 @else text-emerald-700/80 dark:text-emerald-300/80 @endif">
+                    @if($territory['type'] === 'city')
+                        Menampilkan seluruh data statistik, transaksi, pengguna, dan bantuan di semua kecamatan dalam kota ini.
+                    @else
+                        Menampilkan data eksklusif khusus untuk kecamatan ini saja.
+                    @endif
+                </p>
+            </div>
+        </div>
+        <button type="button" wire:click="$dispatch('superadmin-territory-changed', { type: 'all', id: null })" class="text-xs font-bold @if($territory['type'] === 'city') text-indigo-700 hover:text-indigo-900 @else text-emerald-700 hover:text-emerald-900 @endif underline shrink-0 cursor-pointer">
+            Reset Global
+        </button>
+    </div>
+    @endif
+
     {{-- Pending Alerts Grid (Optimized equal height & grid layout) --}}
     @if((isset($stats['pending_topups']) && $stats['pending_topups'] > 0) || (isset($stats['pending_withdraws']) && $stats['pending_withdraws'] > 0) || (isset($stats['pending_verifications']) && $stats['pending_verifications'] > 0))
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 mb-6">

@@ -37,8 +37,9 @@ class Index extends Component
     ];
 
     protected $listeners = [
-        'admin-district-changed' => 'onAdminDistrictChanged',
-        'admin-city-changed'     => 'onAdminDistrictChanged',
+        'superadmin-territory-changed' => '$refresh',
+        'admin-district-changed'       => 'onAdminDistrictChanged',
+        'admin-city-changed'           => 'onAdminDistrictChanged',
     ];
 
     public function mount()
@@ -281,8 +282,23 @@ class Index extends Component
             } elseif ($admin && $admin->role === 'admin') {
                 $query->whereRaw('1 = 0');
             }
-        } elseif ($this->districtFilter !== 'all') {
-            $query->whereHas('user', fn($q) => $q->where('district_id', (int) $this->districtFilter));
+        } else {
+            $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+            if ($territory['type'] === 'district' && $territory['id']) {
+                $dId = (int) $territory['id'];
+                $query->whereHas('user', fn($q) => $q->where('district_id', $dId));
+            } elseif ($territory['type'] === 'city' && $territory['id']) {
+                $cId = (int) $territory['id'];
+                $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
+                $query->whereHas('user', function ($q) use ($cId, $districtIds) {
+                    $q->where('city_id', $cId);
+                    if (!empty($districtIds)) {
+                        $q->orWhereIn('district_id', $districtIds);
+                    }
+                });
+            } elseif ($this->districtFilter !== 'all') {
+                $query->whereHas('user', fn($q) => $q->where('district_id', (int) $this->districtFilter));
+            }
         }
 
         if ($this->status !== 'all') {

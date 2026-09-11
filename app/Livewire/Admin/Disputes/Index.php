@@ -21,6 +21,12 @@ class Index extends Component
     public $search = '';
     public $requesterTypeFilter = 'all'; // 'all', 'partner', 'customer'
 
+    protected $listeners = [
+        'superadmin-territory-changed' => '$refresh',
+        'admin-district-changed'       => '$refresh',
+        'admin-city-changed'           => '$refresh',
+    ];
+
     public function mount()
     {
         if (request()->routeIs('*disputes*') && !request()->has('tab')) {
@@ -69,10 +75,6 @@ class Index extends Component
         'search'              => ['except' => ''],
     ];
 
-    protected $listeners = [
-        'admin-district-changed' => '$refresh',
-        'admin-city-changed'     => '$refresh',
-    ];
 
     public function updatingSearch()
     {
@@ -329,6 +331,25 @@ class Index extends Component
                 } else {
                     $query->whereRaw('1 = 0');
                 }
+            } else {
+                $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+                if ($territory['type'] === 'district' && $territory['id']) {
+                    $dId = (int) $territory['id'];
+                    $query->where(function ($q) use ($dId) {
+                        $q->where('district_id', $dId)
+                          ->orWhereHas('help', fn($hq) => $hq->where('district_id', $dId));
+                    });
+                } elseif ($territory['type'] === 'city' && $territory['id']) {
+                    $cId = (int) $territory['id'];
+                    $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
+                    $query->where(function ($q) use ($cId, $districtIds) {
+                        $q->whereHas('help', fn($hq) => $hq->where('city_id', $cId));
+                        if (!empty($districtIds)) {
+                            $q->orWhereIn('district_id', $districtIds)
+                              ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $districtIds));
+                        }
+                    });
+                }
             }
 
             if ($this->requesterTypeFilter !== 'all') {
@@ -363,7 +384,7 @@ class Index extends Component
                   ->orWhereNotNull('disputed_at');
             });
 
-        // District scoping for Regional Admins
+        // District scoping
         if (!$isSuperAdmin) {
             $districtIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
 
@@ -374,6 +395,26 @@ class Index extends Component
                 });
             } else {
                 $query->whereRaw('1 = 0');
+            }
+        } else {
+            $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+            if ($territory['type'] === 'district' && $territory['id']) {
+                $dId = (int) $territory['id'];
+                $query->where(function ($q) use ($dId) {
+                    $q->where('district_id', $dId)
+                      ->orWhereHas('user', fn($uq) => $uq->where('district_id', $dId));
+                });
+            } elseif ($territory['type'] === 'city' && $territory['id']) {
+                $cId = (int) $territory['id'];
+                $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
+                $query->where(function ($q) use ($cId, $districtIds) {
+                    $q->where('city_id', $cId)
+                      ->orWhereHas('user', fn($uq) => $uq->where('city_id', $cId));
+                    if (!empty($districtIds)) {
+                        $q->orWhereIn('district_id', $districtIds)
+                          ->orWhereHas('user', fn($uq) => $uq->whereIn('district_id', $districtIds));
+                    }
+                });
             }
         }
 

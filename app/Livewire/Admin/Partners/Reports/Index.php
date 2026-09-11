@@ -26,8 +26,9 @@ class Index extends Component
     ];
 
     protected $listeners = [
-        'admin-district-changed' => '$refresh',
-        'admin-city-changed'     => '$refresh',
+        'superadmin-territory-changed' => '$refresh',
+        'admin-district-changed'       => '$refresh',
+        'admin-city-changed'           => '$refresh',
     ];
 
     public function updatingSearch()
@@ -73,6 +74,31 @@ class Index extends Component
             } else {
                 $statsQuery->whereRaw('1 = 0');
             }
+        } else {
+            $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+            if ($territory['type'] === 'district' && $territory['id']) {
+                $dId = (int) $territory['id'];
+                $statsQuery->where(function ($q) use ($dId) {
+                    $q->whereHas('reporter', fn($sq) => $sq->where('district_id', $dId))
+                      ->orWhereHas('reportedUser', fn($sq) => $sq->where('district_id', $dId))
+                      ->orWhereHas('reportedHelp', fn($sq) => $sq->where('district_id', $dId));
+                });
+            } elseif ($territory['type'] === 'city' && $territory['id']) {
+                $cId = (int) $territory['id'];
+                $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
+                $statsQuery->where(function ($q) use ($cId, $districtIds) {
+                    $q->whereHas('reporter', function ($sq) use ($cId, $districtIds) {
+                        $sq->where('city_id', $cId);
+                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedUser', function ($sq) use ($cId, $districtIds) {
+                        $sq->where('city_id', $cId);
+                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedHelp', function ($sq) use ($cId, $districtIds) {
+                        $sq->where('city_id', $cId);
+                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
+                    });
+                });
+            }
         }
 
         // Stats
@@ -105,6 +131,31 @@ class Index extends Component
                 });
             } else {
                 $query->whereRaw('1 = 0');
+            }
+        } else {
+            $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+            if ($territory['type'] === 'district' && $territory['id']) {
+                $dId = (int) $territory['id'];
+                $query->where(function ($q) use ($dId) {
+                    $q->whereHas('reporter', fn($sq) => $sq->where('district_id', $dId))
+                      ->orWhereHas('reportedUser', fn($sq) => $sq->where('district_id', $dId))
+                      ->orWhereHas('reportedHelp', fn($sq) => $sq->where('district_id', $dId));
+                });
+            } elseif ($territory['type'] === 'city' && $territory['id']) {
+                $cId = (int) $territory['id'];
+                $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
+                $query->where(function ($q) use ($cId, $districtIds) {
+                    $q->whereHas('reporter', function ($sq) use ($cId, $districtIds) {
+                        $sq->where('city_id', $cId);
+                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedUser', function ($sq) use ($cId, $districtIds) {
+                        $sq->where('city_id', $cId);
+                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedHelp', function ($sq) use ($cId, $districtIds) {
+                        $sq->where('city_id', $cId);
+                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
+                    });
+                });
             }
         }
 

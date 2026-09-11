@@ -63,9 +63,12 @@ class PartnerReport extends Model
 
         $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
         $version = \Illuminate\Support\Facades\Cache::get('active_reports_count_version', 1);
-        $cacheKey = 'active_reports_count_v' . $version . '_' . ($isSuperAdmin ? 'sa' : 'admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
 
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin) {
+        $saTerritory = $isSuperAdmin ? $user->getActiveSuperadminTerritory() : null;
+        $saKeyPart = $isSuperAdmin ? ('sa_' . $saTerritory['type'] . '_' . ($saTerritory['id'] ?? 'all')) : ('admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
+        $cacheKey = 'active_reports_count_v' . $version . '_' . $saKeyPart;
+
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin, $saTerritory) {
             $query = static::whereIn('status', ['pending', 'in_progress', 'investigating']);
 
             if (!$isSuperAdmin) {
@@ -79,6 +82,30 @@ class PartnerReport extends Model
                     });
                 } else {
                     $query->whereRaw('1 = 0');
+                }
+            } else {
+                if ($saTerritory && $saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                    $dId = (int) $saTerritory['id'];
+                    $query->where(function ($q) use ($dId) {
+                        $q->whereHas('reporter', fn($sq) => $sq->where('district_id', $dId))
+                          ->orWhereHas('reportedUser', fn($sq) => $sq->where('district_id', $dId))
+                          ->orWhereHas('reportedHelp', fn($sq) => $sq->where('district_id', $dId));
+                    });
+                } elseif ($saTerritory && $saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                    $cId = (int) $saTerritory['id'];
+                    $saDistrictIds = $user->getEffectiveSuperadminDistrictIds();
+                    $query->where(function ($q) use ($cId, $saDistrictIds) {
+                        $q->whereHas('reporter', function ($sq) use ($cId, $saDistrictIds) {
+                            if (!empty($saDistrictIds)) $sq->whereIn('district_id', $saDistrictIds);
+                            if ($cId) $sq->orWhere('city_id', $cId);
+                        })->orWhereHas('reportedUser', function ($sq) use ($cId, $saDistrictIds) {
+                            if (!empty($saDistrictIds)) $sq->whereIn('district_id', $saDistrictIds);
+                            if ($cId) $sq->orWhere('city_id', $cId);
+                        })->orWhereHas('reportedHelp', function ($sq) use ($cId, $saDistrictIds) {
+                            if (!empty($saDistrictIds)) $sq->whereIn('district_id', $saDistrictIds);
+                            if ($cId) $sq->orWhere('city_id', $cId);
+                        });
+                    });
                 }
             }
 

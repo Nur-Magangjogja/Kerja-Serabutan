@@ -294,9 +294,12 @@ class BalanceTransaction extends Model
 
         $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
         $version = \Illuminate\Support\Facades\Cache::get('pending_topups_count_version', 1);
-        $cacheKey = 'pending_topups_count_v' . $version . '_' . ($isSuperAdmin ? 'sa' : 'admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
 
-        return (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin) {
+        $saTerritory = $isSuperAdmin ? $user->getActiveSuperadminTerritory() : null;
+        $saKeyPart = $isSuperAdmin ? ('sa_' . $saTerritory['type'] . '_' . ($saTerritory['id'] ?? 'all')) : ('admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
+        $cacheKey = 'pending_topups_count_v' . $version . '_' . $saKeyPart;
+
+        return (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin, $saTerritory) {
             $query = static::where('type', 'topup')->where('status', 'waiting_approval');
 
             if (!$isSuperAdmin) {
@@ -307,6 +310,18 @@ class BalanceTransaction extends Model
                     $query->whereHas('user', fn($q) => $q->where('city_id', $user->city_id));
                 } else {
                     return 0;
+                }
+            } else {
+                if ($saTerritory && $saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                    $dId = (int) $saTerritory['id'];
+                    $query->whereHas('user', fn($q) => $q->where('district_id', $dId));
+                } elseif ($saTerritory && $saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                    $cId = (int) $saTerritory['id'];
+                    $saDistrictIds = $user->getEffectiveSuperadminDistrictIds();
+                    $query->whereHas('user', function ($q) use ($cId, $saDistrictIds) {
+                        if (!empty($saDistrictIds)) $q->whereIn('district_id', $saDistrictIds);
+                        if ($cId) $q->orWhere('city_id', $cId);
+                    });
                 }
             }
 

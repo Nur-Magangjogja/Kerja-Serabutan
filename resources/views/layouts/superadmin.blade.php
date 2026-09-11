@@ -454,12 +454,12 @@
                 };
             @endphp
             <header class="sticky top-0 z-30 border-b w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-gray-200/80 dark:border-gray-700/80 shadow-xs">
-                <div class="px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
+                <div class="px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3">
+                    <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
                         <!-- Menu Toggle Button (Always visible on all screens: Desktop, Tablet & Mobile) -->
                         <button @click="toggleSidebar()" 
                                 type="button" 
-                                class="inline-flex items-center justify-center p-2 rounded-xl bg-gray-500/10 dark:bg-gray-400/10 border border-gray-500/15 dark:border-gray-400/15 text-gray-700 dark:text-gray-200 hover:bg-gray-500/15 dark:hover:bg-gray-400/20 focus:outline-none focus:ring-2 focus:ring-primary-500 flex-shrink-0 cursor-pointer shadow-2xs active:scale-95 transition-transform" 
+                                class="inline-flex items-center justify-center p-2 rounded-xl bg-gray-500/10 dark:bg-gray-400/10 border border-gray-500/15 dark:border-gray-400/15 text-gray-700 dark:text-gray-200 hover:bg-gray-500/15 dark:hover:bg-gray-400/20 focus:outline-none focus:ring-2 focus:ring-primary-500 shrink-0 cursor-pointer shadow-2xs active:scale-95 transition-transform" 
                                 title="Toggle Menu Sidebar"
                                 aria-label="Toggle Menu Sidebar">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -467,17 +467,17 @@
                             </svg>
                         </button>
 
-                        <!-- Single Breadcrumb Line Format -->
-                        <div class="flex items-center gap-2 min-w-0 text-sm font-bold truncate">
-                            <span class="text-gray-400 dark:text-gray-400 flex-shrink-0 font-medium">Super Admin</span>
-                            <svg class="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <!-- Single Breadcrumb Line Format (Responsive on mobile) -->
+                        <div class="flex items-center gap-1.5 sm:gap-2 min-w-0 text-xs sm:text-sm font-bold truncate">
+                            <span class="text-gray-400 dark:text-gray-400 shrink-0 font-medium hidden sm:inline">Super Admin</span>
+                            <svg class="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 shrink-0 hidden sm:inline" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
-                            <span class="text-gray-900 dark:text-white truncate font-bold">{{ $currentMenuName }}</span>
+                            <span class="text-gray-900 dark:text-white truncate font-bold max-w-[110px] xs:max-w-[160px] sm:max-w-none">{{ $currentMenuName }}</span>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                    <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
                         <!-- Super Admin Territory Switcher (Kabupaten/Kota -> Kecamatan + Search) -->
                         <livewire:superadmin.territory-switcher />
 

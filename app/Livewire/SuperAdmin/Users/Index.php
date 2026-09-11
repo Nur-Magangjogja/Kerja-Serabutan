@@ -50,8 +50,9 @@ class Index extends Component
 
 
     protected $listeners = [
-        'admin-district-changed' => '$refresh',
-        'admin-city-changed'     => '$refresh',
+        'superadmin-territory-changed' => '$refresh',
+        'admin-district-changed'       => '$refresh',
+        'admin-city-changed'           => '$refresh',
     ];
 
     public function updatedSearch()
@@ -387,6 +388,20 @@ class Index extends Component
                 $query->whereIn('district_id', $managedDistrictIds);
             } elseif ($currentUser && $currentUser->role === 'admin') {
                 $query->whereRaw('1 = 0');
+            }
+        } else {
+            $territory = $currentUser ? $currentUser->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+            if ($territory['type'] === 'district' && $territory['id']) {
+                $query->where('district_id', (int) $territory['id']);
+            } elseif ($territory['type'] === 'city' && $territory['id']) {
+                $cId = (int) $territory['id'];
+                $districtIds = $currentUser ? $currentUser->getEffectiveSuperadminDistrictIds() : [];
+                $query->where(function ($q) use ($cId, $districtIds) {
+                    $q->where('city_id', $cId);
+                    if (!empty($districtIds)) {
+                        $q->orWhereIn('district_id', $districtIds);
+                    }
+                });
             }
         }
 

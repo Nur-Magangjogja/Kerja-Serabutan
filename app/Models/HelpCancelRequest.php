@@ -168,9 +168,12 @@ class HelpCancelRequest extends Model
 
         $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
         $version = \Illuminate\Support\Facades\Cache::get('active_cancellations_count_version', 1);
-        $cacheKey = 'active_cancels_disputes_count_v' . $version . '_' . ($isSuperAdmin ? 'sa' : 'admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
 
-        return (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin) {
+        $saTerritory = $isSuperAdmin ? $user->getActiveSuperadminTerritory() : null;
+        $saKeyPart = $isSuperAdmin ? ('sa_' . $saTerritory['type'] . '_' . ($saTerritory['id'] ?? 'all')) : ('admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
+        $cacheKey = 'active_cancels_disputes_count_v' . $version . '_' . $saKeyPart;
+
+        return (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin, $saTerritory) {
             // 1. Permintaan pembatalan tugas yang menunggu audit admin
             $cancelQuery = static::where('status', self::STATUS_PENDING);
 
@@ -190,6 +193,36 @@ class HelpCancelRequest extends Model
                     });
                 } else {
                     return 0;
+                }
+            } else {
+                if ($saTerritory && $saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                    $dId = (int) $saTerritory['id'];
+                    $cancelQuery->where(function ($q) use ($dId) {
+                        $q->where('district_id', $dId)
+                          ->orWhereHas('help', fn($hq) => $hq->where('district_id', $dId));
+                    });
+                    $disputeQuery->where(function ($q) use ($dId) {
+                        $q->where('district_id', $dId)
+                          ->orWhereHas('user', fn($uq) => $uq->where('district_id', $dId));
+                    });
+                } elseif ($saTerritory && $saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                    $cId = (int) $saTerritory['id'];
+                    $saDistrictIds = $user->getEffectiveSuperadminDistrictIds();
+                    $cancelQuery->where(function ($q) use ($cId, $saDistrictIds) {
+                        $q->whereHas('help', fn($hq) => $hq->where('city_id', $cId));
+                        if (!empty($saDistrictIds)) {
+                            $q->orWhereIn('district_id', $saDistrictIds)
+                              ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $saDistrictIds));
+                        }
+                    });
+                    $disputeQuery->where(function ($q) use ($cId, $saDistrictIds) {
+                        $q->where('city_id', $cId)
+                          ->orWhereHas('user', fn($uq) => $uq->where('city_id', $cId));
+                        if (!empty($saDistrictIds)) {
+                            $q->orWhereIn('district_id', $saDistrictIds)
+                              ->orWhereHas('user', fn($uq) => $uq->whereIn('district_id', $saDistrictIds));
+                        }
+                    });
                 }
             }
 

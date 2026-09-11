@@ -19,18 +19,12 @@ class TerritorySwitcher extends Component
 
     public function mount()
     {
-        $user = auth()->user();
-        if ($user) {
-            $territory = $user->getActiveSuperadminTerritory();
-            if ($territory['type'] === 'district' && $territory['id']) {
-                $cityId = District::where('id', $territory['id'])->value('city_id');
-                if ($cityId) {
-                    $this->expandedCityIds = [(int) $cityId];
-                }
-            } elseif ($territory['type'] === 'city' && $territory['id']) {
-                $this->expandedCityIds = [(int) $territory['id']];
-            }
-        }
+        $this->expandedCityIds = [];
+    }
+
+    public function updatedSearch()
+    {
+        $this->expandedCityIds = [];
     }
 
     public function toggleExpandCity($cityId)
@@ -51,6 +45,8 @@ class TerritorySwitcher extends Component
         }
 
         $user->setActiveSuperadminTerritory($type, $id);
+        $this->expandedCityIds = [];
+        $this->search = '';
 
         $districtId = null;
         $cityId = null;
@@ -87,42 +83,71 @@ class TerritorySwitcher extends Component
         }
 
         $territory = $user->getActiveSuperadminTerritory();
-        $searchTerm = trim($this->search);
+        $rawSearch = trim($this->search);
+        $cleanSearch = trim(preg_replace('/^(kecamatan|kec\.|kec|kabupaten|kab\.|kab|kota)\s+/i', '', $rawSearch));
 
+        $activeDistrictId = null;
+        $activeCityId = null;
+
+        if ($territory['type'] === 'district' && !empty($territory['id'])) {
+            $activeDistrictId = (int) $territory['id'];
+            $activeCityId = (int) District::where('id', $activeDistrictId)->value('city_id');
+        } elseif ($territory['type'] === 'city' && !empty($territory['id'])) {
+            $activeCityId = (int) $territory['id'];
+        }
+
+        $expandedIds = $this->expandedCityIds;
         $query = City::query()
-            ->with(['districts' => function ($q) use ($searchTerm) {
-                if ($searchTerm !== '') {
-                    $q->where('name', 'like', "%{$searchTerm}%")
-                      ->orWhere('code', 'like', "%{$searchTerm}%");
-                }
-                $q->orderBy('name');
-            }])
-            ->withCount('districts')
-            ->orderBy('name');
+            ->withCount('districts');
 
-        if ($searchTerm !== '') {
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('name', 'like', "%{$searchTerm}%")
-                  ->orWhere('province', 'like', "%{$searchTerm}%")
-                  ->orWhereHas('districts', function ($dq) use ($searchTerm) {
-                      $dq->where('name', 'like', "%{$searchTerm}%")
-                         ->orWhere('code', 'like', "%{$searchTerm}%");
-                  });
+        if ($activeCityId) {
+            $query->orderByRaw("CASE WHEN id = ? THEN 0 ELSE 1 END", [$activeCityId])
+                  ->orderBy('name');
+        } else {
+            $query->orderBy('name');
+        }
+
+        if (!empty($expandedIds)) {
+            $query->with(['districts' => function ($q) use ($expandedIds, $activeDistrictId) {
+                $q->whereIn('city_id', $expandedIds);
+                if ($activeDistrictId) {
+                    $q->orderByRaw("CASE WHEN id = ? THEN 0 ELSE 1 END", [$activeDistrictId])
+                      ->orderBy('name');
+                } else {
+                    $q->orderBy('name');
+                }
+            }]);
+        }
+
+        if ($rawSearch !== '') {
+            $query->where(function ($q) use ($rawSearch, $cleanSearch) {
+                $q->where('name', 'like', "%{$rawSearch}%")
+                  ->orWhere('province', 'like', "%{$rawSearch}%");
+                
+                if ($cleanSearch !== '' && $cleanSearch !== $rawSearch) {
+                    $q->orWhere('name', 'like', "%{$cleanSearch}%")
+                      ->orWhere('province', 'like', "%{$cleanSearch}%");
+                }
+
+                $q->orWhereHas('districts', function ($dq) use ($rawSearch, $cleanSearch) {
+                    $dq->where('name', 'like', "%{$rawSearch}%");
+                    if ($cleanSearch !== '' && $cleanSearch !== $rawSearch) {
+                        $dq->orWhere('name', 'like', "%{$cleanSearch}%");
+                    }
+                });
             });
         }
 
         $cities = $query->get();
 
-        // If searching, auto-expand all cities that match
-        $effectiveExpanded = $this->expandedCityIds;
-        if ($searchTerm !== '') {
-            $effectiveExpanded = $cities->pluck('id')->map(fn($id) => (int)$id)->all();
-        }
-
         return view('livewire.superadmin.territory-switcher', [
             'territory'         => $territory,
             'cities'            => $cities,
-            'effectiveExpanded' => $effectiveExpanded,
+            'expandedCityIds'   => $this->expandedCityIds,
+            'activeCityId'      => $activeCityId,
+            'activeDistrictId'  => $activeDistrictId,
+            'searchTerm'        => $rawSearch,
+            'cleanSearch'       => $cleanSearch,
             'totalCities'       => City::count(),
             'totalDistricts'    => District::count(),
         ]);

@@ -55,6 +55,12 @@ class AdminUsers extends Component
     public $userToDelete = null;
     public $adminPassword = '';
 
+    protected $listeners = [
+        'superadmin-territory-changed' => '$refresh',
+        'admin-district-changed'       => '$refresh',
+        'admin-city-changed'           => '$refresh',
+    ];
+
     public function updatedSearch()
     {
         $this->resetPage();
@@ -407,8 +413,31 @@ class AdminUsers extends Component
 
     public function render()
     {
-        $users = User::with(['district.city', 'managedDistricts.city', 'city'])
-            ->where('role', 'admin')
+        $query = User::with(['district.city', 'managedDistricts.city', 'city'])
+            ->where('role', 'admin');
+
+        $currentUser = auth()->user();
+        $territory = $currentUser ? $currentUser->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+        if ($territory['type'] === 'district' && $territory['id']) {
+            $dId = (int) $territory['id'];
+            $query->where(function ($q) use ($dId) {
+                $q->where('district_id', $dId)
+                  ->orWhereHas('managedDistricts', fn($dq) => $dq->where('districts.id', $dId));
+            });
+        } elseif ($territory['type'] === 'city' && $territory['id']) {
+            $cId = (int) $territory['id'];
+            $districtIds = $currentUser ? $currentUser->getEffectiveSuperadminDistrictIds() : [];
+            $query->where(function ($q) use ($cId, $districtIds) {
+                $q->where('city_id', $cId)
+                  ->orWhereHas('managedCities', fn($cq) => $cq->where('cities.id', $cId));
+                if (!empty($districtIds)) {
+                    $q->orWhereIn('district_id', $districtIds)
+                      ->orWhereHas('managedDistricts', fn($dq) => $dq->whereIn('districts.id', $districtIds));
+                }
+            });
+        }
+
+        $users = $query
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('name', 'like', '%' . $this->search . '%')

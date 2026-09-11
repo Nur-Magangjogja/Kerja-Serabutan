@@ -15,6 +15,12 @@ class Approved extends Component
     public $search = '';
     public $perPage = 10;
 
+    protected $listeners = [
+        'superadmin-territory-changed' => '$refresh',
+        'admin-district-changed'       => '$refresh',
+        'admin-city-changed'           => '$refresh',
+    ];
+
     public function updatedSearch()
     {
         $this->resetPage();
@@ -50,9 +56,32 @@ class Approved extends Component
             Help::STATUS_SELESAI,
         ]);
 
-        $helps = Help::query()
-            ->with(['customer', 'mitra', 'city'])
-            ->whereIn('status', $approvedStatuses)
+        $query = Help::query()
+            ->with(['customer', 'mitra', 'city', 'district'])
+            ->whereIn('status', $approvedStatuses);
+
+        $currentUser = auth()->user();
+        $territory = $currentUser ? $currentUser->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+        if ($territory['type'] === 'district' && $territory['id']) {
+            $dId = (int) $territory['id'];
+            $query->where(function ($q) use ($dId) {
+                $q->where('district_id', $dId)
+                  ->orWhereHas('customer', fn($cq) => $cq->where('district_id', $dId));
+            });
+        } elseif ($territory['type'] === 'city' && $territory['id']) {
+            $cId = (int) $territory['id'];
+            $districtIds = $currentUser ? $currentUser->getEffectiveSuperadminDistrictIds() : [];
+            $query->where(function ($q) use ($cId, $districtIds) {
+                $q->where('city_id', $cId)
+                  ->orWhereHas('customer', fn($cq) => $cq->where('city_id', $cId));
+                if (!empty($districtIds)) {
+                    $q->orWhereIn('district_id', $districtIds)
+                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $districtIds));
+                }
+            });
+        }
+
+        $helps = $query
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('title', 'like', '%' . $this->search . '%')
@@ -65,4 +94,3 @@ class Approved extends Component
         return view('livewire.superadmin.helps.approved', compact('helps'));
     }
 }
-

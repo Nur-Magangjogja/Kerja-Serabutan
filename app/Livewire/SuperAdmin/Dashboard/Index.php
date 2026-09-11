@@ -5,6 +5,9 @@ namespace App\Livewire\SuperAdmin\Dashboard;
 use App\Models\User;
 use App\Models\City;
 use App\Models\Help;
+use App\Models\Registration;
+use App\Models\WithdrawRequest;
+use App\Models\BalanceTransaction;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Carbon\Carbon;
@@ -16,6 +19,18 @@ class Index extends Component
     public $selectedMonth;
     public $selectedYear;
     public $userChart = [];
+
+    protected $listeners = [
+        'superadmin-territory-changed' => 'onTerritoryChanged',
+        'admin-district-changed'       => 'onTerritoryChanged',
+        'admin-city-changed'           => 'onTerritoryChanged',
+        'chart-refresh'                => 'updateChartData',
+    ];
+
+    public function onTerritoryChanged()
+    {
+        $this->updateChartData();
+    }
 
     public function mount()
     {
@@ -46,15 +61,38 @@ class Index extends Component
         }
     }
 
+    protected function applyUserTerritoryScope($query, array $territory, array $districtIds)
+    {
+        if ($territory['type'] === 'district' && $territory['id']) {
+            $query->where('district_id', (int) $territory['id']);
+        } elseif ($territory['type'] === 'city' && $territory['id']) {
+            $cityId = (int) $territory['id'];
+            $query->where(function ($q) use ($cityId, $districtIds) {
+                $q->where('city_id', $cityId);
+                if (!empty($districtIds)) {
+                    $q->orWhereIn('district_id', $districtIds);
+                }
+            });
+        }
+        return $query;
+    }
+
     public function updateChartData()
     {
+        $user = auth()->user();
+        $territory = $user ? $user->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+        $districtIds = $user ? $user->getEffectiveSuperadminDistrictIds() : [];
+
         // 1. Daily - single grouped query for days in the selected month
         $selectedMonthCarbon = Carbon::parse($this->selectedMonth . '-01');
         $startOfMonth = $selectedMonthCarbon->copy()->startOfMonth();
         $endOfMonth = $selectedMonthCarbon->copy()->endOfMonth();
         $daysInMonth = $selectedMonthCarbon->daysInMonth;
 
-        $dailyCounts = User::whereBetween('created_at', [$startOfMonth, $endOfMonth])
+        $dailyQuery = User::whereBetween('created_at', [$startOfMonth, $endOfMonth]);
+        $this->applyUserTerritoryScope($dailyQuery, $territory, $districtIds);
+
+        $dailyCounts = $dailyQuery
             ->selectRaw('DATE(created_at) as date, count(*) as total')
             ->groupBy('date')
             ->pluck('total', 'date')
@@ -74,7 +112,10 @@ class Index extends Component
         $startOfYear = $selectedYearCarbon->copy()->startOfYear();
         $endOfYear = $selectedYearCarbon->copy()->endOfYear();
 
-        $monthlyCounts = User::whereBetween('created_at', [$startOfYear, $endOfYear])
+        $monthlyQuery = User::whereBetween('created_at', [$startOfYear, $endOfYear]);
+        $this->applyUserTerritoryScope($monthlyQuery, $territory, $districtIds);
+
+        $monthlyCounts = $monthlyQuery
             ->selectRaw('MONTH(created_at) as month, count(*) as total')
             ->groupBy('month')
             ->pluck('total', 'month')
@@ -94,7 +135,10 @@ class Index extends Component
         $startOf5Years = $startYear->copy()->startOfYear();
         $endOf5Years = Carbon::createFromDate($this->selectedYear, 12, 31)->endOfDay();
 
-        $yearlyCounts = User::whereBetween('created_at', [$startOf5Years, $endOf5Years])
+        $yearlyQuery = User::whereBetween('created_at', [$startOf5Years, $endOf5Years]);
+        $this->applyUserTerritoryScope($yearlyQuery, $territory, $districtIds);
+
+        $yearlyCounts = $yearlyQuery
             ->selectRaw('YEAR(created_at) as year, count(*) as total')
             ->groupBy('year')
             ->pluck('total', 'year')
@@ -110,34 +154,99 @@ class Index extends Component
         }
 
         $this->userChart = [
-            'daily' => ['labels' => $dailyLabels, 'data' => $dailyData],
+            'daily'   => ['labels' => $dailyLabels, 'data' => $dailyData],
             'monthly' => ['labels' => $monthlyLabels, 'data' => $monthlyData],
-            'yearly' => ['labels' => $yearlyLabels, 'data' => $yearlyData],
+            'yearly'  => ['labels' => $yearlyLabels, 'data' => $yearlyData],
         ];
     }
 
     public function render()
     {
+        $user = auth()->user();
+        $territory = $user ? $user->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null, 'label' => 'Semua Wilayah (Nasional)'];
+        $districtIds = $user ? $user->getEffectiveSuperadminDistrictIds() : [];
+        $cityId = ($territory['type'] === 'city') ? (int) $territory['id'] : null;
+        $districtId = ($territory['type'] === 'district') ? (int) $territory['id'] : null;
+
+        $userQuery = User::query();
+        $helpQuery = Help::query();
+        $regQuery = Registration::query();
+        $withdrawQuery = WithdrawRequest::query();
+        $topupQuery = BalanceTransaction::where('type', 'topup');
+
+        if ($districtId) {
+            $userQuery->where('district_id', $districtId);
+            $helpQuery->where(function ($q) use ($districtId) {
+                $q->where('district_id', $districtId)
+                  ->orWhereHas('customer', fn($cq) => $cq->where('district_id', $districtId));
+            });
+            $regQuery->where('district_id', $districtId);
+            $withdrawQuery->whereHas('user', fn($uq) => $uq->where('district_id', $districtId));
+            $topupQuery->whereHas('user', fn($uq) => $uq->where('district_id', $districtId));
+        } elseif ($cityId) {
+            $userQuery->where(function ($q) use ($cityId, $districtIds) {
+                $q->where('city_id', $cityId);
+                if (!empty($districtIds)) {
+                    $q->orWhereIn('district_id', $districtIds);
+                }
+            });
+            $helpQuery->where(function ($q) use ($cityId, $districtIds) {
+                $q->where('city_id', $cityId)
+                  ->orWhereHas('customer', fn($cq) => $cq->where('city_id', $cityId));
+                if (!empty($districtIds)) {
+                    $q->orWhereIn('district_id', $districtIds)
+                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $districtIds));
+                }
+            });
+            $regQuery->where(function ($q) use ($cityId, $districtIds) {
+                $q->where('city_id', $cityId);
+                if (!empty($districtIds)) {
+                    $q->orWhereIn('district_id', $districtIds);
+                }
+            });
+            $withdrawQuery->whereHas('user', function ($uq) use ($cityId, $districtIds) {
+                $uq->where('city_id', $cityId);
+                if (!empty($districtIds)) {
+                    $uq->orWhereIn('district_id', $districtIds);
+                }
+            });
+            $topupQuery->whereHas('user', function ($uq) use ($cityId, $districtIds) {
+                $uq->where('city_id', $cityId);
+                if (!empty($districtIds)) {
+                    $uq->orWhereIn('district_id', $districtIds);
+                }
+            });
+        }
+
         $stats = [
-            'total_users' => User::count(),
-            'total_customers' => User::where('role', 'customer')->count(),
-            'total_mitras' => User::where('role', 'mitra')->count(),
-            'total_admins' => User::whereIn('role', ['admin', 'super_admin'])->count(),
-            'total_cities' => City::count(),
-            'pending_helps' => Help::where('status', Help::STATUS_MENUNGGU_MITRA)->count(),
-            'active_helps' => Help::whereIn('status', array_merge(Help::activeStatuses(), [Help::STATUS_WAITING_CONFIRMATION]))->count(),
-            'completed_helps' => Help::where('status', Help::STATUS_SELESAI)->count(),
-            'pending_withdraws' => \App\Models\WithdrawRequest::where('status', \App\Models\WithdrawRequest::STATUS_PENDING)->count(),
-            'pending_topups' => \App\Models\BalanceTransaction::where('type', 'topup')->where('status', 'waiting_approval')->count(),
-            'pending_verifications' => \App\Models\Registration::whereIn('status', ['pending', 'pending_verification'])->count(),
+            'total_users'           => (clone $userQuery)->count(),
+            'total_customers'       => (clone $userQuery)->where('role', 'customer')->count(),
+            'total_mitras'          => (clone $userQuery)->where('role', 'mitra')->count(),
+            'total_admins'          => (clone $userQuery)->whereIn('role', ['admin', 'super_admin'])->count(),
+            'total_cities'          => City::count(),
+            'pending_helps'         => (clone $helpQuery)->where('status', Help::STATUS_MENUNGGU_MITRA)->count(),
+            'active_helps'          => (clone $helpQuery)->whereIn('status', array_merge(Help::activeStatuses(), [Help::STATUS_WAITING_CONFIRMATION]))->count(),
+            'completed_helps'       => (clone $helpQuery)->where('status', Help::STATUS_SELESAI)->count(),
+            'pending_withdraws'     => (clone $withdrawQuery)->where('status', WithdrawRequest::STATUS_PENDING)->count(),
+            'pending_topups'        => (clone $topupQuery)->where('status', 'waiting_approval')->count(),
+            'pending_verifications' => (clone $regQuery)->whereIn('status', ['pending', 'pending_verification'])->count(),
         ];
 
         // Recent items for quick view
-        $recentUsers = User::orderByDesc('created_at')->limit(6)->get(['id', 'name', 'email', 'role', 'created_at']);
-        $recentTransactions = \App\Models\BalanceTransaction::with('user')->orderByDesc('created_at')->limit(6)->get();
-        $recentHelps = Help::with('user')->orderByDesc('created_at')->limit(8)->get(['id', 'title', 'status', 'created_at', 'user_id', 'amount']);
+        $recentUsers = (clone $userQuery)->orderByDesc('created_at')->limit(6)->get(['id', 'name', 'email', 'role', 'created_at']);
+        
+        $recentTransactions = BalanceTransaction::with('user')
+            ->when($districtId, fn($q) => $q->whereHas('user', fn($uq) => $uq->where('district_id', $districtId)))
+            ->when($cityId, function ($q) use ($cityId, $districtIds) {
+                $q->whereHas('user', function ($uq) use ($cityId, $districtIds) {
+                    $uq->where('city_id', $cityId);
+                    if (!empty($districtIds)) $uq->orWhereIn('district_id', $districtIds);
+                });
+            })
+            ->orderByDesc('created_at')->limit(6)->get();
 
-        return view('livewire.superadmin.dashboard.index', compact('stats', 'recentUsers', 'recentTransactions', 'recentHelps'));
+        $recentHelps = (clone $helpQuery)->with('customer')->orderByDesc('created_at')->limit(8)->get(['id', 'title', 'status', 'created_at', 'user_id', 'amount']);
+
+        return view('livewire.superadmin.dashboard.index', compact('stats', 'recentUsers', 'recentTransactions', 'recentHelps', 'territory'));
     }
 }
-

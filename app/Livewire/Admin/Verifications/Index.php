@@ -36,8 +36,9 @@ class Index extends Component
     public $rejectingId = null;
 
     protected $listeners = [
-        'admin-district-changed' => 'onAdminDistrictChanged',
-        'admin-city-changed'     => 'onAdminDistrictChanged',
+        'admin-district-changed'         => 'onAdminDistrictChanged',
+        'admin-city-changed'             => 'onAdminDistrictChanged',
+        'superadmin-territory-changed'   => '$refresh',
     ];
 
     public function mount()
@@ -283,8 +284,24 @@ class Index extends Component
             } elseif (!empty($adminCityId)) {
                 $query->where('city_id', $adminCityId);
             }
-        } elseif ($isSuperAdmin) {
-            // Super Admin can filter by district or see all
+        } elseif ($isSuperAdmin && $authUser) {
+            $saTerritory = $authUser->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $query->where('district_id', $saTerritory['id']);
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $saDistrictIds = $authUser->getEffectiveSuperadminDistrictIds();
+                $cityId = (int) $saTerritory['id'];
+                $query->where(function ($sub) use ($cityId, $saDistrictIds) {
+                    if (!empty($saDistrictIds)) {
+                        $sub->whereIn('district_id', $saDistrictIds);
+                    }
+                    if ($cityId) {
+                        $sub->orWhere('city_id', $cityId);
+                    }
+                });
+            }
+
+            // In-page dropdown filter override if specifically selected
             if ($this->districtFilter !== '' && $this->districtFilter !== 'all') {
                 if ($this->districtFilter === 'unassigned') {
                     $query->whereNull('district_id');

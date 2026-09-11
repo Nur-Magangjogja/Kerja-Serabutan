@@ -37,8 +37,11 @@ class Approval extends Component
     ];
 
     protected $listeners = [
-        'topupRequestCreated' => '$refresh',
-        'confirmApprove' => 'approve',
+        'topupRequestCreated'          => '$refresh',
+        'confirmApprove'               => 'approve',
+        'superadmin-territory-changed' => '$refresh',
+        'admin-district-changed'       => '$refresh',
+        'admin-city-changed'           => '$refresh',
     ];
 
     public function updatingSearch()
@@ -286,15 +289,43 @@ class Approval extends Component
 
     public function render()
     {
+        $currentUser = auth()->user();
+        $territory = $currentUser ? $currentUser->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+        $districtIds = $currentUser ? $currentUser->getEffectiveSuperadminDistrictIds() : [];
+
+        $applyTerritory = function ($q) use ($territory, $districtIds) {
+            if ($territory['type'] === 'district' && $territory['id']) {
+                $dId = (int) $territory['id'];
+                $q->whereHas('user', fn($uq) => $uq->where('district_id', $dId));
+            } elseif ($territory['type'] === 'city' && $territory['id']) {
+                $cId = (int) $territory['id'];
+                $q->whereHas('user', function ($uq) use ($cId, $districtIds) {
+                    $uq->where('city_id', $cId);
+                    if (!empty($districtIds)) {
+                        $uq->orWhereIn('district_id', $districtIds);
+                    }
+                });
+            }
+        };
+
+        $baseCountQuery = BalanceTransaction::where('type', 'topup');
+        if ($territory['type'] !== 'all') {
+            $applyTerritory($baseCountQuery);
+        }
+
         // Hitung total count per status
-        $totalPending = BalanceTransaction::where('type', 'topup')->where('status', 'waiting_approval')->count();
-        $totalCompleted = BalanceTransaction::where('type', 'topup')->where('status', 'completed')->count();
-        $totalCancelled = BalanceTransaction::where('type', 'topup')->where('status', 'cancelled')->count();
-        $totalRejected = BalanceTransaction::where('type', 'topup')->where('status', 'rejected')->count();
-        $totalAll = BalanceTransaction::where('type', 'topup')->count();
+        $totalPending = (clone $baseCountQuery)->where('status', 'waiting_approval')->count();
+        $totalCompleted = (clone $baseCountQuery)->where('status', 'completed')->count();
+        $totalCancelled = (clone $baseCountQuery)->where('status', 'cancelled')->count();
+        $totalRejected = (clone $baseCountQuery)->where('status', 'rejected')->count();
+        $totalAll = (clone $baseCountQuery)->count();
 
         $query = BalanceTransaction::where('type', 'topup')
-            ->with(['user', 'user.city', 'approvedBy']);
+            ->with(['user', 'user.city', 'user.district', 'approvedBy']);
+
+        if ($territory['type'] !== 'all') {
+            $applyTerritory($query);
+        }
 
         if ($this->filterStatus === 'waiting_approval') {
             $query->where('status', 'waiting_approval');
