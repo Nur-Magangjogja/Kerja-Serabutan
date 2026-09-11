@@ -14,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
 
+        $middleware->encryptCookies(except: [
+            'sb_register_draft',
+            'sb_register_leave_time',
+        ]);
+
         $middleware->web(append: [
             \App\Http\Middleware\EnsureUserThemeAndSessionState::class,
         ]);
