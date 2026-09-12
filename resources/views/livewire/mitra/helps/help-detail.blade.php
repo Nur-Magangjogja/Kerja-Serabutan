@@ -1,29 +1,8 @@
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100"
     x-data="{ 
         showNotification: false, 
-        notificationMessage: '',
-        previousStatus: '{{ $help->status }}'
+        notificationMessage: ''
     }"
-    x-init="
-        // Update status setiap kali Livewire refresh
-        Livewire.hook('morph.updated', () => {
-            const currentStatus = '{{ $help->status }}';
-            
-            // Jika status berubah, tampilkan notifikasi
-            if (previousStatus !== currentStatus) {
-                console.log('📍 Status berubah:', {
-                    old: previousStatus,
-                    new: currentStatus
-                });
-                
-                notificationMessage = 'Status pesanan diperbarui';
-                showNotification = true;
-                setTimeout(() => showNotification = false, 5000);
-                
-                previousStatus = currentStatus;
-            }
-        });
-    "
     @show-status-notification.window="
         notificationMessage = $event.detail.message;
         showNotification = true;
@@ -95,7 +74,7 @@
 
         {{-- Modal: Customer confirmed rejection (cancel_rejected) --}}
         <div id="cancel-confirmed-modal"
-            class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4"
+            class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4"
             style="display:none;">
             <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700" role="dialog" aria-modal="true">
                 <div class="text-center">
@@ -135,7 +114,35 @@
         {{-- Service Info --}}
         <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3">
             {{-- Header Row: Photo & Title --}}
-            <div class="flex items-center gap-3.5 mb-3">
+            <div class="space-y-1.5 mb-3">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    @if($help->isPickup())
+                        @if($help->service_category === 'passenger')
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
+                                👥 Antar Penumpang
+                            </span>
+                        @else
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60">
+                                📦 Barang & Dokumen
+                            </span>
+                        @endif
+                    @else
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
+                            🛠️ Kerja di Lokasi
+                        </span>
+                    @endif
+
+                    @if($help->isScheduled())
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
+                            📅 Terjadwal
+                        </span>
+                    @else
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
+                            ⚡ Segera
+                        </span>
+                    @endif
+                </div>
+
                 <div class="flex-1 min-w-0">
                     <h2 class="font-bold text-base text-gray-900 dark:text-white truncate leading-snug">{{ $help->title }}</h2>
                     <p class="text-xs text-gray-500 dark:text-gray-400 font-medium truncate mt-0.5">Tugas yang sedang dikerjakan</p>
@@ -351,13 +358,32 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                Jadwal Permintaan
+                Waktu Pelaksanaan
             </h3>
-            <p class="text-sm text-gray-700 dark:text-gray-300">
-                {{ \Carbon\Carbon::parse($help->scheduled_at ?? $help->created_at)->translatedFormat('l, d F Y') }}
-                (Jam {{ \Carbon\Carbon::parse($help->scheduled_at ?? $help->created_at)->format('H:i') }})
-            </p>
-            <p class="text-xs text-gray-500 mt-1"></p>
+            @if($help->isScheduled())
+                <div class="p-3 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl border border-blue-100 dark:border-blue-900/50 space-y-1">
+                    <div class="flex items-center gap-1.5 text-xs font-bold text-blue-900 dark:text-blue-200">
+                        <span>📅 Tugas Terjadwal:</span>
+                    </div>
+                    <p class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">
+                        {{ \Carbon\Carbon::parse($help->scheduled_at ?? $help->service_scheduled_at)->locale('id')->translatedFormat('l, d F Y • H:i') }} WIB
+                    </p>
+                    @if($help->departure_window_opens_at)
+                        <p class="text-[11px] text-blue-700 dark:text-blue-300 font-medium">
+                            Jendela keberangkatan dapat dimulai sejak pukul {{ $help->departure_window_opens_at->format('H:i') }} WIB.
+                        </p>
+                    @endif
+                </div>
+            @else
+                <div class="p-3 bg-emerald-50/70 dark:bg-emerald-950/40 rounded-xl border border-emerald-100 dark:border-emerald-900/50 space-y-1">
+                    <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                        <span>⚡ Segera (Langsung):</span>
+                    </div>
+                    <p class="text-xs text-emerald-800 dark:text-emerald-300 leading-relaxed">
+                        Tugas ini tidak dijadwalkan secara khusus dan harus segera dikerjakan begitu Anda menerima penugasan.
+                    </p>
+                </div>
+            @endif
         </div>
 
         {{-- Customer Info --}}
@@ -454,63 +480,125 @@
 
             {{-- Address Text & Navigation CTA --}}
             <div class="p-4 space-y-3 bg-white dark:bg-gray-800">
-                <!-- Titik Alamat Utama GPS -->
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-red-100 dark:border-red-900/50 shadow-2xs">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between gap-2 flex-wrap mb-0.5">
-                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400">Titik Alamat Customer</span>
-                            <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/60 px-2 py-0.5 rounded-md border border-gray-200/60 dark:border-gray-700">
-                                <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                                {{ $help->city->name ?? 'Kota Lokasi' }}
+                @if($help->isPickup())
+                    {{-- 2-Point Route: Pickup & Delivery --}}
+                    <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700/60 pb-2">
+                        <span class="text-[11px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400">Rute Layanan (2 Titik)</span>
+                        @if($help->service_route_distance_km)
+                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 px-2 py-0.5 rounded-md border border-sky-200/60 dark:border-sky-800">
+                                ± {{ number_format($help->service_route_distance_km, 1) }} KM
                             </span>
+                        @endif
+                    </div>
+
+                    {{-- Titik Penjemputan --}}
+                    <div class="space-y-2">
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-emerald-100 dark:border-emerald-900/50 shadow-2xs">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-0.5">
+                                    1. Titik Penjemputan (Titik Awal)
+                                </div>
+                                <p class="font-bold text-sm text-gray-900 dark:text-white leading-snug break-words">
+                                    {{ $help->pickup_address ?: ($help->location ?: 'Alamat sesuai titik jemput') }}
+                                </p>
+                            </div>
                         </div>
-                        <p class="font-bold text-sm text-gray-900 dark:text-white leading-snug break-words">
-                            {{ $help->location ?? 'Alamat sesuai titik peta' }}
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Detail Patokan Tempat / Ciri Rumah (Opsional) -->
-                <div class="rounded-xl border p-3 transition-colors {{ !empty($help->full_address) ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-800/60' : 'bg-gray-50 dark:bg-gray-700/20 border-gray-200/70 dark:border-gray-700/60' }}">
-                    <div class="flex items-center gap-1.5 mb-1.5">
-                        <svg class="w-3.5 h-3.5 {{ !empty($help->full_address) ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500' }}" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
-                        </svg>
-                        <h4 class="text-xs font-bold {{ !empty($help->full_address) ? 'text-amber-900 dark:text-amber-200' : 'text-gray-600 dark:text-gray-400' }}">
-                            Detail Patokan Tempat / Ciri Rumah
-                        </h4>
-                        <span class="text-[11px] font-normal text-gray-400 dark:text-gray-500"></span>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination={{ $help->pickup_latitude ?: $help->latitude }},{{ $help->pickup_longitude ?: $help->longitude }}&travelmode=driving"
+                           target="_blank" rel="noopener noreferrer"
+                           class="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200/80 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                            <span>Navigasi ke Titik Jemput</span>
+                        </a>
                     </div>
 
-                    @if(!empty($help->full_address))
-                        <p class="text-xs text-amber-950 dark:text-amber-100 font-medium leading-relaxed whitespace-pre-line break-words pl-5">
-                            {{ $help->full_address }}
-                        </p>
-                    @else
-                        <p class="text-xs text-gray-400 dark:text-gray-500 italic pl-5">
-                            Customer tidak menyertakan patokan/ciri khusus rumah. Silakan gunakan navigasi peta ke titik koordinat.
-                        </p>
-                    @endif
-                </div>
+                    {{-- Titik Pengantaran --}}
+                    <div class="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-700/40">
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-rose-100 dark:border-rose-900/50 shadow-2xs">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-0.5">
+                                    2. Titik Pengantaran / Tujuan (Titik Akhir)
+                                </div>
+                                <p class="font-bold text-sm text-gray-900 dark:text-white leading-snug break-words">
+                                    {{ $help->delivery_address ?: ($help->full_address ?: 'Alamat sesuai titik antar') }}
+                                </p>
+                            </div>
+                        </div>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination={{ $help->delivery_latitude ?: $help->latitude }},{{ $help->delivery_longitude ?: $help->longitude }}&travelmode=driving"
+                           target="_blank" rel="noopener noreferrer"
+                           class="w-full py-2 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200/80 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                            <span>Navigasi ke Titik Antar</span>
+                        </a>
+                    </div>
+                @else
+                    <!-- Titik Alamat Utama GPS -->
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-red-100 dark:border-red-900/50 shadow-2xs">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2 flex-wrap mb-0.5">
+                                <span class="text-[11px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400">Titik Alamat Customer</span>
+                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/60 px-2 py-0.5 rounded-md border border-gray-200/60 dark:border-gray-700">
+                                    <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                    {{ $help->city->name ?? 'Kota Lokasi' }}
+                                </span>
+                            </div>
+                            <p class="font-bold text-sm text-gray-900 dark:text-white leading-snug break-words">
+                                {{ $help->location ?? 'Alamat sesuai titik peta' }}
+                            </p>
+                        </div>
+                    </div>
 
-                {{-- Action Buttons: Google Maps Turn-by-Turn Nav --}}
-                <div class="pt-1 flex items-center gap-2">
-                    <a id="btn-google-maps-nav" 
-                       href="https://www.google.com/maps/dir/?api=1&destination={{ $help->latitude ?? '' }},{{ $help->longitude ?? '' }}&travelmode=driving"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       class="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm shadow-emerald-500/20">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                        </svg>
-                        <span>Mulai Navigasi Google Maps</span>
-                    </a>
-                </div>
+                    <!-- Detail Patokan Tempat / Ciri Rumah (Opsional) -->
+                    <div class="rounded-xl border p-3 transition-colors {{ !empty($help->full_address) ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-800/60' : 'bg-gray-50 dark:bg-gray-700/20 border-gray-200/70 dark:border-gray-700/60' }}">
+                        <div class="flex items-center gap-1.5 mb-1.5">
+                            <svg class="w-3.5 h-3.5 {{ !empty($help->full_address) ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500' }}" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+                            </svg>
+                            <h4 class="text-xs font-bold {{ !empty($help->full_address) ? 'text-amber-900 dark:text-amber-200' : 'text-gray-600 dark:text-gray-400' }}">
+                                Detail Patokan Tempat / Ciri Rumah
+                            </h4>
+                            <span class="text-[11px] font-normal text-gray-400 dark:text-gray-500"></span>
+                        </div>
+
+                        @if(!empty($help->full_address))
+                            <p class="text-xs text-amber-950 dark:text-amber-100 font-medium leading-relaxed whitespace-pre-line break-words pl-5">
+                                {{ $help->full_address }}
+                            </p>
+                        @else
+                            <p class="text-xs text-gray-400 dark:text-gray-500 italic pl-5">
+                                Customer tidak menyertakan patokan/ciri khusus rumah. Silakan gunakan navigasi peta ke titik koordinat.
+                            </p>
+                        @endif
+                    </div>
+
+                    {{-- Action Buttons: Google Maps Turn-by-Turn Nav --}}
+                    <div class="pt-1 flex items-center gap-2">
+                        <a id="btn-google-maps-nav" 
+                           href="https://www.google.com/maps/dir/?api=1&destination={{ $help->latitude ?? '' }},{{ $help->longitude ?? '' }}&travelmode=driving"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm shadow-emerald-500/20">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                            </svg>
+                            <span>Mulai Navigasi Google Maps</span>
+                        </a>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -629,14 +717,20 @@
                     </div>
                 </div>
 
-                {{-- Disabled Action Button --}}
-                <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3 space-y-2">
+                {{-- Disabled Action Button with Cancel Option --}}
+                <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3 space-y-2.5">
                     <button disabled
                         class="w-full py-3.5 bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-xl font-bold text-sm shadow-xs flex items-center justify-center gap-2 cursor-not-allowed">
                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                         <span>Keberangkatan Terkunci (Aktif Pkl {{ $windowOpensStr }})</span>
                     </button>
                     <p class="text-xs text-gray-400 dark:text-gray-500 text-center">Tombol mulai berangkat akan aktif otomatis saat memasuki jeda waktu keberangkatan.</p>
+                    
+                    <button type="button" wire:click="openPartnerCancelModal"
+                        class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]">
+                        <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <span>Batalkan Penugasan (Kendala Mitra)</span>
+                    </button>
                 </div>
             @else
                 @if ($help->isScheduled())
@@ -679,12 +773,18 @@
                         </button>
                         <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda mulai jalan menuju lokasi pengerjaan</p>
                     @endif
+
+                    <button type="button" wire:click="openPartnerCancelModal"
+                        class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]">
+                        <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <span>Batalkan Penugasan (Kendala Mitra)</span>
+                    </button>
                 </div>
             @endif
         @endif
 
         @if ($help->status === 'partner_on_the_way' && $help->mitra_id === auth()->id())
-            <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3 space-y-2">
+            <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3 space-y-2.5">
                 @if ($help->service_type === 'pickup_delivery')
                     @if (!$help->service_stage || $help->service_stage === 'going_to_pickup')
                         <button wire:click="advanceStage('at_pickup')" wire:loading.attr="disabled"
@@ -713,11 +813,17 @@
                     </button>
                     <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda telah sampai di titik lokasi customer</p>
                 @endif
+
+                <button type="button" wire:click="openPartnerCancelModal"
+                    class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]">
+                    <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <span>Batalkan Penugasan (Kendala Mitra)</span>
+                </button>
             </div>
         @endif
 
         @if ($help->status === 'partner_arrived' || in_array($help->service_stage, ['at_customer', 'at_destination']))
-            <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3">
+            <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3 space-y-2.5">
                 @if ($help->service_type === 'on_site_service')
                     <button wire:click="startService"
                         class="w-full py-3.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 transition flex items-center justify-center gap-2 cursor-pointer shadow-md">
@@ -738,11 +844,17 @@
                     </button>
                     <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">Upload foto serah terima barang/hasil pesanan kepada customer</p>
                 @endif
+
+                <button type="button" wire:click="openPartnerCancelModal"
+                    class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]">
+                    <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <span>Batalkan Penugasan (Kendala Mitra)</span>
+                </button>
             </div>
         @endif
 
         @if ($help->status === 'in_progress')
-            <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-3">
+            <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-3 space-y-2.5">
                 <button wire:click="openCompletionModal"
                     class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -754,6 +866,12 @@
                     <span>Selesaikan & Upload Bukti Pekerjaan</span>
                 </button>
                 <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">Upload foto hasil pengerjaan sebagai bukti penyelesaian kepada customer</p>
+
+                <button type="button" wire:click="openPartnerCancelModal"
+                    class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]">
+                    <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <span>Batalkan Penugasan (Kendala Mitra)</span>
+                </button>
             </div>
         @endif
 
@@ -851,26 +969,6 @@
             @endif
         @endif
 
-        @if (in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']) &&
-                $help->mitra_id === auth()->id())
-            <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3">
-                <button wire:click="openPartnerCancelModal"
-                    class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 shadow-xs active:scale-98 cursor-pointer">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    Batalkan Penugasan (Sepihak)
-                </button>
-                <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-2">
-                    Pembatalan langsung melepaskan tugas tanpa menunggu customer (berkonsekuensi poin SP).
-                </p>
-            </div>
-        @endif
-
-        {{-- Informasi setelah mitra mengirim permintaan pembatalan - DIGANTI DENGAN MODAL --}}
-
-
         {{-- Status Timeline --}}
         @if (
             $help->partner_started_at ||
@@ -951,25 +1049,33 @@
             </div>
         @endif
     </div>
-    {{-- Partner Cancel Modal - Bottom Sheet Style --}}
+
+    {{-- Partner Cancel Modal - Modern Bottom Sheet & Centered Dialog --}}
     @if ($showPartnerCancelModal)
-        <div class="modal-overlay fixed inset-0 z-[9999] flex items-end justify-center animate-fade-in" 
-             style="background: rgba(0,0,0,0.6);" 
-             wire:click="$set('showPartnerCancelModal', false)">
-            <div class="bg-white dark:bg-gray-800 rounded-t-3xl w-full max-w-md shadow-2xl animate-slide-up relative" 
-                 @click.stop 
-                 style="padding-bottom: env(safe-area-inset-bottom,24px);">
+        <div class="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in" 
+             wire:click.self="closePartnerCancelModal">
+            <div class="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl animate-slide-up relative max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700" 
+                 style="padding-bottom: env(safe-area-inset-bottom, 16px);">
                 
                 {{-- Header --}}
-                <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 rounded-t-3xl">
+                <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 flex-shrink-0 z-10">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <span class="text-red-500">⚠️</span>
-                            <span>Ajukan Pembatalan Penugasan</span>
-                        </h3>
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900 dark:text-white leading-tight">
+                                    Batalkan Penugasan
+                                </h3>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400">Pengajuan pembatalan akibat kendala mitra</p>
+                            </div>
+                        </div>
                         <button type="button" 
-                                wire:click="$set('showPartnerCancelModal', false)" 
-                                class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition text-gray-600 dark:text-gray-300">
+                                wire:click="closePartnerCancelModal" 
+                                class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
@@ -977,13 +1083,13 @@
                     </div>
                 </div>
 
-                {{-- Content --}}
-                <div class="p-5 pb-6">
+                {{-- Scrollable Content Form --}}
+                <form wire:submit.prevent="requestPartnerCancel" class="p-5 overflow-y-auto space-y-4 text-xs">
                     {{-- Info Box --}}
-                    <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-3.5 mb-4 text-xs space-y-2">
+                    <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-3.5 space-y-2">
                         <div class="flex items-start gap-2.5">
                             <span class="text-lg leading-none mt-0.5">ℹ️</span>
-                            <div class="text-amber-900 dark:text-amber-200 leading-relaxed">
+                            <div class="text-amber-900 dark:text-amber-200 leading-relaxed text-xs">
                                 <strong class="block font-bold mb-0.5">Pelepasan Tugas & Audit Wilayah:</strong>
                                 Akun Anda akan langsung dibebaskan agar dapat mencari order lain. Pengajuan ini akan ditinjau oleh <strong>Admin Wilayah</strong>.
                             </div>
@@ -995,103 +1101,134 @@
                     </div>
 
                     {{-- Form Fields --}}
-                    <div class="space-y-3 mb-5">
+                    <div class="space-y-3.5">
                         <div>
-                            <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1">Alasan Pembatalan <span class="text-red-500">*</span></label>
-                            <select wire:model.defer="partnerCancelReason" 
-                                    class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition">
-                                <option value="">-- Pilih Alasan --</option>
+                            <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
+                                Alasan Pembatalan <span class="text-rose-500">*</span>
+                            </label>
+                            <select wire:model="partnerCancelReason" 
+                                    class="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition cursor-pointer">
+                                <option value="">-- Pilih Alasan Pembatalan --</option>
                                 <option value="Kendaraan Bermasalah / Mogok">Kendaraan Bermasalah / Mogok</option>
                                 <option value="Kondisi Darurat Pribadi / Sakit Mendadak">Kondisi Darurat Pribadi / Sakit Mendadak</option>
                                 <option value="Barang / Toko Tidak Ditemukan / Tutup">Barang / Toko Tidak Ditemukan / Tutup</option>
                                 <option value="Customer Tidak Dapat Dihubungi">Customer Tidak Dapat Dihubungi</option>
                                 <option value="Lokasi Tidak Memungkinkan Dijangkau / Bahaya">Lokasi Tidak Memungkinkan Dijangkau / Bahaya</option>
-                                <option value="Lainnya">Lainnya (Tuliskan di catatan)</option>
+                                <option value="Lainnya">Lainnya (Tuliskan rincian di catatan)</option>
                             </select>
-                            @error('partnerCancelReason') <span class="text-[11px] text-red-500 font-semibold">{{ $message }}</span> @enderror
+                            @error('partnerCancelReason') 
+                                <p class="text-[11px] text-rose-500 font-semibold mt-1">{{ $message }}</p> 
+                            @enderror
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1">Foto Bukti Kendala (Opsional)</label>
-                            <input type="file" wire:model="cancel_evidence_photo" accept="image/*"
-                                   class="w-full p-2 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 dark:file:bg-primary-950 dark:file:text-primary-300">
-                            @error('cancel_evidence_photo') <span class="text-[11px] text-red-500 font-semibold">{{ $message }}</span> @enderror
-                            <p class="text-[10px] text-gray-400 mt-1">Unggah foto ban bocor, toko tutup, atau kendala lapangan untuk mempermudah audit bebas SP.</p>
+                            <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
+                                Foto Bukti Kendala (Opsional)
+                            </label>
+                            
+                            @if ($cancel_evidence_photo)
+                                <div class="relative rounded-xl overflow-hidden border border-rose-300 dark:border-rose-700 bg-gray-50 dark:bg-gray-800 p-2 mb-2 flex items-center justify-between">
+                                    <span class="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[240px]">
+                                        📸 {{ method_exists($cancel_evidence_photo, 'getClientOriginalName') ? $cancel_evidence_photo->getClientOriginalName() : 'Foto bukti terpilih' }}
+                                    </span>
+                                    <button type="button" wire:click="$set('cancel_evidence_photo', null)" class="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer">
+                                        Hapus
+                                    </button>
+                                </div>
+                            @else
+                                <input type="file" wire:model="cancel_evidence_photo" accept="image/*"
+                                       class="w-full p-2 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 dark:file:bg-rose-950 dark:file:text-rose-300 cursor-pointer">
+                            @endif
+                            
+                            <div wire:loading wire:target="cancel_evidence_photo" class="text-[11px] text-blue-600 font-medium mt-1 flex items-center gap-1.5">
+                                <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                Mengunggah foto bukti...
+                            </div>
+                            @error('cancel_evidence_photo') 
+                                <p class="text-[11px] text-rose-500 font-semibold mt-1">{{ $message }}</p> 
+                            @enderror
+                            <p class="text-[10px] text-gray-400 mt-1">Unggah foto ban bocor, kendala teknis, atau kondisi darurat untuk mempermudah audit bebas SP.</p>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1">Catatan Tambahan (Opsional)</label>
-                            <textarea wire:model.defer="partnerCancelNotes" rows="2"
-                                      class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-red-500 transition"
-                                      placeholder="Jelaskan kendala yang dialami..."></textarea>
+                            <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
+                                Catatan Tambahan (Opsional)
+                            </label>
+                            <textarea wire:model="partnerCancelNotes" rows="3"
+                                      class="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition"
+                                      placeholder="Jelaskan kendala darurat yang dialami secara rinci..."></textarea>
+                            @error('partnerCancelNotes') 
+                                <p class="text-[11px] text-rose-500 font-semibold mt-1">{{ $message }}</p> 
+                            @enderror
                         </div>
                     </div>
 
-                    {{-- Buttons --}}
-                    <div class="flex gap-3">
+                    {{-- Actions --}}
+                    <div class="flex gap-2.5 pt-2">
                         <button type="button"
-                                wire:click="$set('showPartnerCancelModal', false)"
-                                class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-semibold hover:bg-gray-200 transition cursor-pointer">
+                                wire:click="closePartnerCancelModal"
+                                class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-semibold transition cursor-pointer">
                             Batal
                         </button>
-                        <button type="button"
-                                wire:click="requestPartnerCancel" 
+                        <button type="submit"
                                 wire:loading.attr="disabled"
-                                class="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98">
+                                wire:target="requestPartnerCancel, cancel_evidence_photo"
+                                class="flex-1 px-4 py-3 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl text-xs font-bold transition disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shadow-rose-500/20 active:scale-[0.99]">
                             <span wire:loading.remove wire:target="requestPartnerCancel">Kirim Pengajuan Batal</span>
-                            <span wire:loading wire:target="requestPartnerCancel">Memproses...</span>
+                            <span wire:loading wire:target="requestPartnerCancel" class="inline-flex items-center gap-1">
+                                <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                Memproses...
+                            </span>
                         </button>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     @endif
 
     {{-- Clarification Modal for Customer-Requested Cancel --}}
     @if ($showClarificationModal)
-        <div class="modal-overlay fixed inset-0 z-[9999] flex items-end justify-center animate-fade-in" 
-             style="background: rgba(0,0,0,0.6);" 
-             wire:click="closeClarificationModal">
-            <div class="bg-white dark:bg-gray-800 rounded-t-3xl w-full max-w-md shadow-2xl animate-slide-up relative" 
-                 @click.stop 
-                 style="padding-bottom: env(safe-area-inset-bottom,24px);">
+        <div class="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in" 
+             wire:click.self="closeClarificationModal">
+            <div class="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl animate-slide-up relative max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700" 
+                 style="padding-bottom: env(safe-area-inset-bottom, 16px);">
                 
-                <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 rounded-t-3xl">
+                <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 flex-shrink-0 z-10">
                     <div class="flex items-center justify-between">
                         <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <span>💬 Beri Klarifikasi / Tanggapan</span>
                         </h3>
-                        <button type="button" wire:click="closeClarificationModal" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition text-gray-600 dark:text-gray-300">
+                        <button type="button" wire:click="closeClarificationModal" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
                 </div>
 
-                <div class="p-5 pb-6 space-y-4 text-xs">
-                    <p class="text-gray-600 dark:text-gray-300">
+                <form wire:submit.prevent="submitClarification" class="p-5 overflow-y-auto space-y-4 text-xs">
+                    <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
                         Customer mengajukan pembatalan pesanan ini. Anda dapat memberikan penjelasan atau kesaksian Anda untuk ditinjau oleh Admin Wilayah sebelum keputusan diambil.
                     </p>
 
                     <div>
-                        <label class="block font-bold text-gray-900 dark:text-white mb-1">Penjelasan / Klarifikasi Anda <span class="text-red-500">*</span></label>
-                        <textarea wire:model.defer="partnerClarificationText" rows="3" class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs" placeholder="Contoh: Saya sudah di jalan namun terjebak macet total..."></textarea>
-                        @error('partnerClarificationText') <span class="text-[11px] text-red-500 font-semibold">{{ $message }}</span> @enderror
+                        <label class="block font-bold text-gray-900 dark:text-white mb-1.5">Penjelasan / Klarifikasi Anda <span class="text-rose-500">*</span></label>
+                        <textarea wire:model="partnerClarificationText" rows="3" class="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white" placeholder="Contoh: Saya sudah di jalan namun mengalami kendala..."></textarea>
+                        @error('partnerClarificationText') <p class="text-[11px] text-rose-500 font-semibold mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
-                        <label class="block font-bold text-gray-900 dark:text-white mb-1">Foto Bukti Pendukung (Opsional)</label>
-                        <input type="file" wire:model="partnerClarificationPhoto" accept="image/*" class="w-full p-2 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 rounded-xl">
-                        @error('partnerClarificationPhoto') <span class="text-[11px] text-red-500 font-semibold">{{ $message }}</span> @enderror
+                        <label class="block font-bold text-gray-900 dark:text-white mb-1.5">Foto Bukti Pendukung (Opsional)</label>
+                        <input type="file" wire:model="partnerClarificationPhoto" accept="image/*" class="w-full p-2 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white">
+                        @error('partnerClarificationPhoto') <p class="text-[11px] text-rose-500 font-semibold mt-1">{{ $message }}</p> @enderror
                     </div>
 
-                    <div class="flex gap-3 pt-2">
-                        <button type="button" wire:click="closeClarificationModal" class="flex-1 py-3 bg-gray-100 dark:bg-gray-700 rounded-xl font-semibold">Batal</button>
-                        <button type="button" wire:click="submitClarification" wire:loading.attr="disabled" class="flex-1 py-3 bg-primary-600 text-white rounded-xl font-bold flex items-center justify-center">
+                    <div class="flex gap-2.5 pt-2">
+                        <button type="button" wire:click="closeClarificationModal" class="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-semibold cursor-pointer">Batal</button>
+                        <button type="submit" wire:loading.attr="disabled" wire:target="submitClarification, partnerClarificationPhoto" class="flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold flex items-center justify-center cursor-pointer disabled:opacity-50">
                             <span wire:loading.remove wire:target="submitClarification">Kirim Tanggapan</span>
                             <span wire:loading wire:target="submitClarification">Mengirim...</span>
                         </button>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     @endif
@@ -1121,9 +1258,9 @@
 
     {{-- Completion Proof Upload Modal --}}
     @if($showCompletionModal)
-        <div class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in"
-                 @click.stop>
+        <div class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+             wire:click.self="closeCompletionModal">
+            <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
                 
                 {{-- Header --}}
                 <div class="bg-blue-600 px-6 py-5 text-white flex items-center justify-between">
@@ -1149,7 +1286,7 @@
                 </div>
 
                 {{-- Form Body --}}
-                <div class="p-6 space-y-4">
+                <form wire:submit.prevent="submitCompletionProof" class="p-6 space-y-4">
                     {{-- Upload Area --}}
                     <div>
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
@@ -1226,7 +1363,7 @@
                             class="flex-1 py-3 px-4 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold text-xs hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                             Batal
                         </button>
-                        <button type="button" wire:click="submitCompletionProof" wire:loading.attr="disabled"
+                        <button type="submit" wire:loading.attr="disabled" wire:target="submitCompletionProof, proof_photo"
                             class="flex-1 py-3 px-4 rounded-xl bg-blue-600 text-white font-bold text-xs shadow-md hover:bg-blue-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50">
                             <span wire:loading.remove wire:target="submitCompletionProof">Selesaikan Tugas Sekarang</span>
                             <span wire:loading wire:target="submitCompletionProof" class="inline-flex items-center gap-1">
@@ -1235,7 +1372,7 @@
                             </span>
                         </button>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     @endif
@@ -1315,8 +1452,30 @@
             let gpsWatchId = null;
             let isSimulating = false;
 
-            const destLat = parseFloat("{{ $help->latitude ?? '' }}") || null;
-            const destLng = parseFloat("{{ $help->longitude ?? '' }}") || null;
+            @php
+                $targetLat = null;
+                $targetLng = null;
+                $targetTitle = 'Tujuan Customer';
+                if ($help->isPickup()) {
+                    if (in_array($help->service_stage, ['going_to_pickup', 'at_pickup', 'waiting_for_customer']) || ($help->status === 'partner_on_the_way' && !$help->service_stage)) {
+                        $targetLat = $help->pickup_latitude ?: $help->latitude;
+                        $targetLng = $help->pickup_longitude ?: $help->longitude;
+                        $targetTitle = 'Titik Penjemputan';
+                    } else {
+                        $targetLat = $help->delivery_latitude ?: $help->latitude;
+                        $targetLng = $help->delivery_longitude ?: $help->longitude;
+                        $targetTitle = 'Titik Pengantaran / Tujuan';
+                    }
+                } else {
+                    $targetLat = $help->latitude;
+                    $targetLng = $help->longitude;
+                    $targetTitle = 'Lokasi Customer';
+                }
+            @endphp
+
+            const destLat = parseFloat("{{ $targetLat ?? $help->latitude ?? '' }}") || null;
+            const destLng = parseFloat("{{ $targetLng ?? $help->longitude ?? '' }}") || null;
+            const destTitle = "{{ addslashes($targetTitle) }}";
 
             let mitraLat = parseFloat("{{ $help->partner_current_lat ?? $help->partner_initial_lat ?? auth()->user()->latitude ?? '' }}") || (destLat ? destLat - 0.012 : -6.2088);
             let mitraLng = parseFloat("{{ $help->partner_current_lng ?? $help->partner_initial_lng ?? auth()->user()->longitude ?? '' }}") || (destLng ? destLng - 0.012 : 106.8456);
@@ -1364,7 +1523,7 @@
 
                 if (destLat && destLng) {
                     destMarker = L.marker([destLat, destLng], { icon: destIcon }).addTo(mapInstance)
-                        .bindPopup('<b>Tujuan: {{ addslashes($help->user->name ?? "Customer") }}</b><br><span class="text-xs text-gray-500">{{ addslashes($help->location ?? $help->full_address ?? "Lokasi Bantuan") }}</span>');
+                        .bindPopup(`<b>${destTitle}</b><br><span class="text-xs text-gray-500">{{ addslashes($help->location ?? $help->full_address ?? "Lokasi Bantuan") }}</span>`);
                     
                     updateConnectedRoute(mitraLat, mitraLng, destLat, destLng);
                 }

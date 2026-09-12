@@ -704,6 +704,38 @@ class Help extends Model
         return $this->service_type === self::SERVICE_TYPE_PICKUP_DELIVERY;
     }
 
+    public function isPassenger(): bool
+    {
+        return $this->isPickup() && $this->service_category === 'passenger';
+    }
+
+    public function isGoodsDocument(): bool
+    {
+        return $this->isPickup() && ($this->service_category === 'goods_document' || empty($this->service_category));
+    }
+
+    public function getServiceCategoryLabelAttribute(): string
+    {
+        if ($this->isPickup()) {
+            if ($this->service_category === 'passenger') {
+                return 'Antar Penumpang';
+            }
+            return 'Barang & Dokumen';
+        }
+        return 'Kerja di Lokasi';
+    }
+
+    public function getServiceCategoryIconAttribute(): string
+    {
+        if ($this->isPickup()) {
+            if ($this->service_category === 'passenger') {
+                return '👥';
+            }
+            return '📦';
+        }
+        return '🛠️';
+    }
+
     public function isBuy(): bool
     {
         return false;
@@ -712,6 +744,11 @@ class Help extends Model
     public function isOnSite(): bool
     {
         return empty($this->service_type) || $this->service_type === self::SERVICE_TYPE_ON_SITE;
+    }
+
+    public function isRegular(): bool
+    {
+        return $this->isOnSite();
     }
 
     public function isPublished(): bool

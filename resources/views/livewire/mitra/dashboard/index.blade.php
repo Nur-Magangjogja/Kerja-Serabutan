@@ -666,7 +666,7 @@
                             <div class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</div>
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center justify-between gap-1">
-                                    <span id="previewLeg1Label" class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase">Titik Jemput / Toko</span>
+                                    <span id="previewLeg1Label" class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase">Titik Jemput</span>
                                     <span id="previewLeg1Dist" class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400"></span>
                                 </div>
                                 <p id="previewLeg1Address" class="text-xs font-semibold text-gray-800 dark:text-gray-200 mt-0.5">-</p>
@@ -674,7 +674,7 @@
                         </div>
 
                         <div class="ml-3 border-l-2 border-dashed border-gray-300 dark:border-gray-600 pl-4 py-0.5">
-                            <span id="previewRouteDistanceText" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Jarak Pengantaran</span>
+                            <span id="previewRouteDistanceText" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Jarak Perjalanan</span>
                         </div>
 
                         <div class="flex items-start gap-2.5">
@@ -756,12 +756,12 @@
             // Jadwal
             const schedBadge = document.getElementById('previewScheduledBadge');
             if (schedBadge) {
-                if (data.scheduled_at) {
-                    schedBadge.textContent = '📅 ' + data.scheduled_at;
+                if (data.is_scheduled && data.scheduled_at) {
+                    schedBadge.textContent = '📅 Terjadwal: ' + data.scheduled_at + (data.departure_window_opens_at ? ' (Buka Pkl ' + data.departure_window_opens_at + ')' : '');
                     schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800';
                 } else {
-                    schedBadge.textContent = '⚡ Butuh Cepat';
-                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800';
+                    schedBadge.textContent = '⚡ Segera';
+                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800';
                 }
             }
 
@@ -811,26 +811,29 @@
             const locHeaderTitle = document.getElementById('previewLocationHeaderTitle');
 
             if (data.service_type === 'pickup_delivery') {
+                const isPassenger = data.service_category === 'passenger';
                 if (serviceTypeBadge) {
-                    serviceTypeBadge.textContent = '📦 Antar-Jemput';
-                    serviceTypeBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800';
+                    serviceTypeBadge.textContent = isPassenger ? '👥 Antar Penumpang' : '📦 Barang & Dokumen';
+                    serviceTypeBadge.className = isPassenger 
+                        ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                        : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800';
                     serviceTypeBadge.classList.remove('hidden');
                 }
-                if (locHeaderTitle) locHeaderTitle.textContent = 'Rute Pengantaran (Multi-Point):';
+                if (locHeaderTitle) locHeaderTitle.textContent = isPassenger ? 'Rute Antar Penumpang:' : 'Rute Pengantaran Barang:';
                 if (singleLocBox) singleLocBox.classList.add('hidden');
                 if (multiRouteBox) {
                     multiRouteBox.classList.remove('hidden');
-                    document.getElementById('previewLeg1Label').textContent = 'Titik 1 • Penjemputan Barang';
+                    document.getElementById('previewLeg1Label').textContent = isPassenger ? 'Titik 1 • Penjemputan Penumpang' : 'Titik 1 • Pengambilan Barang / Dokumen';
                     document.getElementById('previewLeg1Address').textContent = data.pickup_address || data.location || '-';
                     document.getElementById('previewLeg1Dist').textContent = (data.distance_km !== null && data.distance_km !== undefined) ? `${data.distance_km} km dari Anda` : '';
 
-                    document.getElementById('previewLeg2Label').textContent = 'Titik 2 • Tujuan Pengantaran';
+                    document.getElementById('previewLeg2Label').textContent = isPassenger ? 'Titik 2 • Tujuan Turun Penumpang' : 'Titik 2 • Tujuan Pengantaran';
                     document.getElementById('previewLeg2Address').textContent = data.delivery_address || data.full_address || data.location || '-';
                     
                     const routeKm = data.service_route_distance_km;
                     const routeDistText = document.getElementById('previewRouteDistanceText');
                     if (routeDistText) {
-                        routeDistText.textContent = routeKm ? `📏 Jarak Antar: ±${routeKm} km` : 'Rute Pengantaran';
+                        routeDistText.textContent = routeKm ? `📏 Jarak Rute: ±${routeKm} km` : 'Rute Perjalanan';
                     }
                 }
                 if (routeDistBadge && data.service_route_distance_km) {
@@ -840,7 +843,11 @@
                     routeDistBadge.classList.add('hidden');
                 }
             } else {
-                if (serviceTypeBadge) serviceTypeBadge.classList.add('hidden');
+                if (serviceTypeBadge) {
+                    serviceTypeBadge.textContent = '🛠️ Kerja di Lokasi';
+                    serviceTypeBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800';
+                    serviceTypeBadge.classList.remove('hidden');
+                }
                 if (locHeaderTitle) locHeaderTitle.textContent = 'Area & Patokan Lokasi:';
                 if (singleLocBox) singleLocBox.classList.remove('hidden');
                 if (multiRouteBox) multiRouteBox.classList.add('hidden');

@@ -109,8 +109,10 @@
 
                                 <p class="text-xs text-gray-600 line-clamp-2 mb-3">{{ Str::limit($help->description ?? $help->location ?? '-', 100) }}</p>
 
-                                @if($help->scheduled_at)
-                                    <div class="text-xs text-gray-500 mb-2">📅 {{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') }}</div>
+                                @if($help->isScheduled())
+                                    <div class="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-2">📅 Terjadwal: {{ \Carbon\Carbon::parse($help->scheduled_at ?? $help->service_scheduled_at)->locale('id')->translatedFormat('d M Y, H:i') }} WIB</div>
+                                @else
+                                    <div class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-2">⚡ Segera</div>
                                 @endif
 
                                 <div class="flex items-center justify-between gap-3">

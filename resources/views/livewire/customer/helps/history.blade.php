@@ -64,6 +64,24 @@
 									</div>
 
 									<div class="flex-1 min-w-0">
+										<div class="flex items-center gap-1.5 flex-wrap mb-1">
+											@if($help->isPickup())
+												@if($help->service_category === 'passenger')
+													<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200">
+														👥 Antar Penumpang
+													</span>
+												@else
+													<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200">
+														📦 Barang & Dokumen
+													</span>
+												@endif
+											@else
+												<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200">
+													🛠️ Kerja di Lokasi
+												</span>
+											@endif
+										</div>
+
 										<h3 class="font-bold text-sm text-gray-900 dark:text-white truncate">{{ $help->title ?? 'Permintaan Bantuan' }}</h3>
 										<p class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{{ optional($help->city)->name ?? '-' }} • {{ optional($help->updated_at)->translatedFormat('d M Y') }}</p>
 									</div>
@@ -109,6 +127,13 @@
 									</div>
 								@endif
 
+								@if($help->isScheduled() && $help->scheduled_at)
+									<div class="p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/60 text-xs flex items-center justify-between">
+										<span class="text-[11px] text-amber-800 dark:text-amber-300 font-medium">Jadwal Keberangkatan:</span>
+										<span class="font-bold text-amber-900 dark:text-amber-200">📅 {{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') }} WIB</span>
+									</div>
+								@endif
+
 								@if($help->description)
 									<div>
 										<h4 class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 mb-1">Deskripsi</h4>
@@ -116,26 +141,84 @@
 									</div>
 								@endif
 
-								<div class="grid grid-cols-2 gap-2 text-xs">
-									<div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
-										<div class="text-[10px] text-gray-400 font-semibold mb-0.5">Lokasi</div>
-										<div class="font-bold text-gray-800 dark:text-gray-200 truncate">{{ $help->full_address ?? optional($help->city)->name ?? '-' }}</div>
+								{{-- Service Specific Route / Location Section --}}
+								@if($help->isPickup())
+									<div class="bg-gray-50/70 dark:bg-gray-750/50 rounded-xl p-3 border border-gray-100 dark:border-gray-700/60 space-y-2.5">
+										<div class="flex items-center justify-between">
+											<span class="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Rute Perjalanan (2 Titik)</span>
+											@if($help->service_route_distance_km)
+												<span class="text-[11px] font-bold text-sky-600 dark:text-sky-400">± {{ number_format($help->service_route_distance_km, 1) }} KM</span>
+											@endif
+										</div>
+										<div class="space-y-2 text-xs">
+											<div class="flex items-start gap-2">
+												<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mt-1 shrink-0"></span>
+												<div class="min-w-0">
+													<div class="text-[10px] text-gray-400 font-semibold">Titik Jemput:</div>
+													<div class="font-bold text-gray-800 dark:text-gray-200 break-words">{{ $help->pickup_address ?: ($help->location ?: 'Sesuai titik jemput') }}</div>
+												</div>
+											</div>
+											<div class="flex items-start gap-2">
+												<span class="w-2.5 h-2.5 rounded-full bg-rose-500 mt-1 shrink-0"></span>
+												<div class="min-w-0">
+													<div class="text-[10px] text-gray-400 font-semibold">Titik Antar:</div>
+													<div class="font-bold text-gray-800 dark:text-gray-200 break-words">{{ $help->delivery_address ?: ($help->full_address ?: 'Sesuai titik tujuan') }}</div>
+												</div>
+											</div>
+										</div>
 									</div>
+								@else
+									<div class="grid grid-cols-2 gap-2 text-xs">
+										<div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
+											<div class="text-[10px] text-gray-400 font-semibold mb-0.5">Lokasi</div>
+											<div class="font-bold text-gray-800 dark:text-gray-200 truncate">{{ $help->location ?? optional($help->city)->name ?? '-' }}</div>
+											@if($help->full_address)
+												<div class="text-[11px] text-gray-500 mt-0.5 line-clamp-1">{{ $help->full_address }}</div>
+											@endif
+										</div>
 
+										@if(!empty($help->equipment_provided))
+											<div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
+												<div class="text-[10px] text-gray-400 font-semibold mb-0.5">Perlengkapan</div>
+												<div class="font-bold text-gray-800 dark:text-gray-200 truncate">{{ $help->equipment_provided }}</div>
+											</div>
+										@endif
+									</div>
+								@endif
+
+								{{-- Mitra Info & Finish Time --}}
+								<div class="grid grid-cols-2 gap-2 text-xs">
 									@if($help->mitra)
 										<div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
-											<div class="text-[10px] text-gray-400 font-semibold mb-0.5">Mitra</div>
+											<div class="text-[10px] text-gray-400 font-semibold mb-0.5">Mitra Pelaksana</div>
 											<div class="font-bold text-gray-800 dark:text-gray-200 truncate">{{ $help->mitra->name }}</div>
 											@if($help->mitra->phone)
 												<a href="tel:{{ $help->mitra->phone }}" class="text-[11px] font-bold text-sky-600 dark:text-sky-400 hover:underline block truncate">{{ $help->mitra->phone }}</a>
 											@endif
 										</div>
 									@endif
+
+									<div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
+										<div class="text-[10px] text-gray-400 font-semibold mb-0.5">Waktu Selesai</div>
+										<div class="font-bold text-gray-800 dark:text-gray-200">{{ optional($help->updated_at)->translatedFormat('d M Y, H:i') }} WIB</div>
+									</div>
 								</div>
 
-								<div class="text-[11px] text-gray-400 dark:text-gray-500 pt-1 border-t border-gray-100 dark:border-gray-700/50">
-									Selesai pada: <span class="text-gray-700 dark:text-gray-300 font-bold">{{ optional($help->updated_at)->translatedFormat('d M Y, H:i') }} WIB</span>
-								</div>
+								{{-- Completion Proof Photo (if uploaded by mitra) --}}
+								@if($help->proof_photo)
+									<div class="p-3 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/60 rounded-xl space-y-2">
+										<span class="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+											<svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+											Bukti Penyelesaian dari Mitra:
+										</span>
+										<a href="{{ asset('storage/' . $help->proof_photo) }}" target="_blank" rel="noopener" class="block rounded-xl overflow-hidden border border-emerald-200/80 dark:border-emerald-800 bg-gray-900/10 max-h-48 flex items-center justify-center">
+											<img src="{{ asset('storage/' . $help->proof_photo) }}" alt="Bukti Selesai" class="w-full h-auto max-h-48 object-contain">
+										</a>
+										@if($help->completion_notes)
+											<p class="text-xs text-gray-700 dark:text-gray-300 italic bg-white dark:bg-gray-800 p-2 rounded-lg border border-emerald-100 dark:border-emerald-900/40">"{{ $help->completion_notes }}"</p>
+										@endif
+									</div>
+								@endif
 
 								{{-- Rating form or previously given rating --}}
 								@if($help->mitra)

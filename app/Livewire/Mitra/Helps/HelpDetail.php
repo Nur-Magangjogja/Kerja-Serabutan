@@ -28,8 +28,6 @@ class HelpDetail extends Component
     public $partnerCancelReason          = '';
     public $partnerCancelNotes           = '';
     public $cancel_evidence_photo        = null;
-    public $item_purchased               = false;
-    public $item_purchase_amount         = 0;
     public $work_completed_percentage    = 0;
     public $showPartnerCancelStatusModal = false;
     public $partnerCancelStatus          = null; // 'pending' | 'accepted' | 'rejected'
@@ -57,7 +55,8 @@ class HelpDetail extends Component
             // Akses diizinkan jika pernah terlibat (audit activity atau notifikasi)
             if (!$this->wasInvolvedInHelp($id)) {
                 session()->flash('error', 'Bantuan ini tidak ditugaskan kepada Anda.');
-                return redirect()->route('mitra.dashboard');
+                $this->redirectRoute('mitra.dashboard');
+                return;
             }
 
             // Tampilkan modal info pembatalan diterima
@@ -270,24 +269,25 @@ class HelpDetail extends Component
     // ─── Partner Cancel (State-Aware Cancel Request with Photo & Audit) ──────
     public function openPartnerCancelModal()
     {
-        $this->partnerCancelReason       = '';
-        $this->partnerCancelNotes        = '';
-        $this->cancel_evidence_photo     = null;
-        $this->item_purchased            = false;
-        $this->item_purchase_amount      = 0;
-        $this->work_completed_percentage = 0;
-        $this->showPartnerCancelModal    = true;
+        $this->reset(['partnerCancelReason', 'partnerCancelNotes', 'cancel_evidence_photo']);
+        $this->showPartnerCancelModal = true;
+    }
+
+    public function closePartnerCancelModal()
+    {
+        $this->showPartnerCancelModal = false;
+        $this->reset(['partnerCancelReason', 'partnerCancelNotes', 'cancel_evidence_photo']);
     }
 
     public function requestPartnerCancel()
     {
         $this->validate([
-            'partnerCancelReason'   => 'required|string|min:5|max:255',
+            'partnerCancelReason'   => 'required|string|min:3|max:255',
             'partnerCancelNotes'    => 'nullable|string|max:1000',
             'cancel_evidence_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
         ], [
             'partnerCancelReason.required' => 'Pilih atau isi alasan pembatalan.',
-            'partnerCancelReason.min'      => 'Alasan pembatalan minimal 5 karakter.',
+            'partnerCancelReason.min'      => 'Alasan pembatalan minimal 3 karakter.',
             'cancel_evidence_photo.image'  => 'Foto bukti harus berupa file gambar (JPG/PNG).',
             'cancel_evidence_photo.max'    => 'Ukuran foto bukti maksimal 5MB.',
         ]);
@@ -304,14 +304,14 @@ class HelpDetail extends Component
                 $this->partnerCancelReason,
                 $this->partnerCancelNotes ?: null,
                 $evidencePath,
-                (bool) $this->item_purchased,
-                (float) $this->item_purchase_amount,
-                (float) $this->work_completed_percentage
+                false,
+                0.0,
+                0.0
             );
 
             $this->showPartnerCancelModal = false;
             session()->flash('message', 'Tugas berhasil dibatalkan. Akun Anda telah aktif kembali untuk menerima pekerjaan lain.');
-            return redirect()->route('mitra.dashboard');
+            return $this->redirectRoute('mitra.dashboard');
         } catch (\RuntimeException $e) {
             $this->showPartnerCancelModal = false;
             session()->flash('error', $e->getMessage());

@@ -1,8 +1,8 @@
 <div x-data="{ isOpen: @entangle('showModal') }">
     <!-- Modal -->
     <div x-show="isOpen" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-        @click="if($event.target === $event.currentTarget) $wire.closeModal()" style="display: none;">
-        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-slide-up" @click.stop>
+        @click.self="$wire.closeModal()" style="display: none;">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-slide-up">
             <!-- Header -->
             <div class="flex items-center justify-between p-6 border-b border-gray-200">
                 <h2 class="text-lg font-bold text-gray-900">Tambah Saldo</h2>

@@ -70,19 +70,25 @@ Route::middleware(['auth', 'block_admin_registration'])->group(function () {
 Route::middleware('auth')->group(function () {
     Volt::route('confirm-password', 'pages.auth.confirm-password')
         ->name('password.confirm');
+});
 
-    Route::post('logout', function () {
+// Logout Route (Mendukung POST & GET untuk mencegah stuck di URL /logout saat refresh/back/session timeout)
+Route::match(['GET', 'POST'], 'logout', function () {
+    if (Auth::check()) {
         Auth::logout();
+    }
+
+    if (request()->hasSession()) {
         request()->session()->invalidate();
         request()->session()->regenerateToken();
+    }
 
-        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('registration_uuid'));
-        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('registration_role'));
-        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('registration_step1_draft'));
-        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('sb_register_draft'));
-        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('sb_register_leave_time'));
+    \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('registration_uuid'));
+    \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('registration_role'));
+    \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('registration_step1_draft'));
+    \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('sb_register_draft'));
+    \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('sb_register_leave_time'));
 
-        // Redirect all users cleanly to unified login
-        return redirect()->route('login');
-    })->name('logout');
-});
+    // Redirect all users cleanly to unified login
+    return redirect()->route('login');
+})->name('logout');

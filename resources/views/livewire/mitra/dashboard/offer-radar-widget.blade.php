@@ -385,14 +385,42 @@
 
                 <!-- Header: Badge & Countdown -->
                 <div class="flex items-center justify-between gap-3 mb-2 relative z-10">
-                    <div class="flex items-center gap-2">
-                        <span class="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-black bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 px-2.5 py-1 rounded-full shadow-xs">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-extrabold bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 px-2 py-0.5 rounded-full shadow-xs">
                             Tawaran Khusus Anda
                         </span>
+
+                        {{-- Service Subcategory Badge --}}
+                        @if($activeOffer->help->service_type === 'pickup_delivery')
+                            @if($activeOffer->help->service_category === 'passenger')
+                                <span class="inline-flex items-center gap-1 text-[10px] uppercase font-extrabold bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-full">
+                                    👥 Antar Penumpang
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 text-[10px] uppercase font-extrabold bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 px-2 py-0.5 rounded-full">
+                                    📦 Barang & Dokumen
+                                </span>
+                            @endif
+                        @else
+                            <span class="inline-flex items-center gap-1 text-[10px] uppercase font-extrabold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full">
+                                🛠️ Kerja di Lokasi
+                            </span>
+                        @endif
+
+                        {{-- Order Mode / Schedule Badge --}}
+                        @if($activeOffer->help->isScheduled())
+                            <span class="inline-flex items-center gap-1 text-[10px] font-bold bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded-full">
+                                📅 Terjadwal: {{ \Carbon\Carbon::parse($activeOffer->help->scheduled_at ?? $activeOffer->help->service_scheduled_at)->locale('id')->translatedFormat('d M Y, H:i') }} WIB
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full">
+                                ⚡ Segera
+                            </span>
+                        @endif
                     </div>
 
                     <!-- Countdown Timer Pill -->
-                    <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl font-mono text-xs sm:text-sm font-black shadow-xs border transition-colors"
+                    <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl font-mono text-xs sm:text-sm font-black shadow-xs border transition-colors shrink-0"
                          :class="timeLeft <= 10 ? 'bg-rose-100 border-rose-400 text-rose-800 dark:bg-rose-950 dark:border-rose-700 dark:text-rose-200 animate-pulse' : 'bg-amber-50 border-amber-300 text-amber-800 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200'">
                         <svg class="w-3.5 h-3.5" :class="timeLeft <= 10 ? 'text-rose-600' : 'text-amber-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span x-text="formatDisplayTime(timeLeft)"></span>
@@ -420,6 +448,51 @@
                     </h3>
                 </div>
 
+                <!-- Rute Antar-Jemput (Jika Layanan Antar-Jemput: Penumpang atau Barang) -->
+                @if($activeOffer->help->service_type === 'pickup_delivery')
+                    <div class="mt-2.5 p-3 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/80 dark:border-white/[0.07] text-xs relative z-10 space-y-2.5">
+                        <div class="flex items-center justify-between text-[11px] font-bold text-gray-700 dark:text-slate-300">
+                            <span class="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
+                                🗺️ Rute Perjalanan ({{ $activeOffer->help->service_category === 'passenger' ? 'Antar Penumpang' : 'Pengantaran Barang' }})
+                            </span>
+                            @if($activeOffer->help->service_route_distance_km)
+                                <span class="bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
+                                    ±{{ $activeOffer->help->service_route_distance_km }} km
+                                </span>
+                            @endif
+                        </div>
+
+                        <!-- Titik Jemput (1) -->
+                        <div class="flex items-start gap-2">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">1</div>
+                            <div class="min-w-0 flex-1">
+                                <span class="text-[10px] uppercase font-bold text-gray-400 block">{{ $activeOffer->help->service_category === 'passenger' ? 'Titik Penjemputan Penumpang' : 'Titik Ambil Barang / Dokumen' }}</span>
+                                <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-snug break-words">
+                                    {{ $activeOffer->help->pickup_address ?: ($activeOffer->help->location ?: 'Sesuai titik peta') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Garis Penghubung -->
+                        <div class="ml-2.5 border-l-2 border-dashed border-gray-300 dark:border-gray-600 pl-4 py-0.5">
+                            <span class="text-[10px] text-gray-400 font-medium">
+                                {{ $activeOffer->help->service_route_distance_km ? 'Jarak rute: ±' . $activeOffer->help->service_route_distance_km . ' km' : 'Menuju titik tujuan' }}
+                            </span>
+                        </div>
+
+                        <!-- Titik Antar (2) -->
+                        <div class="flex items-start gap-2">
+                            <div class="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">2</div>
+                            <div class="min-w-0 flex-1">
+                                <span class="text-[10px] uppercase font-bold text-gray-400 block">{{ $activeOffer->help->service_category === 'passenger' ? 'Titik Turun / Tujuan Penumpang' : 'Titik Tujuan Pengantaran' }}</span>
+                                <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-snug break-words">
+                                    {{ $activeOffer->help->delivery_address ?: ($activeOffer->help->full_address ?: 'Sesuai alamat tujuan') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 <!-- Detail Pekerjaan / Deskripsi & Peralatan -->
                 @if(!empty($activeOffer->help->description) || !empty($activeOffer->help->equipment_provided))
                     <div class="mt-2.5 p-3 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/80 dark:border-white/[0.07] text-xs text-gray-700 dark:text-slate-300 relative z-10 space-y-2.5">
@@ -427,7 +500,7 @@
                             <div>
                                 <div class="flex items-center gap-1 text-[11px] font-bold text-gray-500 dark:text-slate-400 mb-1">
                                     <svg class="w-3.5 h-3.5 text-blue-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                    <span>Detail Pekerjaan:</span>
+                                    <span>Detail Kebutuhan:</span>
                                 </div>
                                 <p class="line-clamp-3 leading-relaxed break-words">{{ $activeOffer->help->description }}</p>
                             </div>
@@ -452,7 +525,7 @@
                 <!-- Meta Cards Grid: Lokasi, Jarak, & Customer -->
                 <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 relative z-10">
                     <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/60 dark:border-white/[0.06]">
-                        <div class="text-[10px] text-gray-500 dark:text-slate-400">Jarak Tempuh</div>
+                        <div class="text-[10px] text-gray-500 dark:text-slate-400">Jarak ke Titik Awal</div>
                         <div class="text-xs font-bold text-gray-900 dark:text-white mt-0.5 flex items-center gap-1">
                             <span>📍 {{ $formattedDistance ?? ($activeOffer->help->city?->name ?? 'Terjangkau') }}</span>
                             @if($estimatedMinutes)
@@ -469,9 +542,13 @@
                     </div>
 
                     <div class="col-span-2 sm:col-span-1 p-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/60 dark:border-white/[0.06]">
-                        <div class="text-[10px] text-gray-500 dark:text-slate-400">Waktu Permintaan</div>
+                        <div class="text-[10px] text-gray-500 dark:text-slate-400">Mode Order</div>
                         <div class="text-xs font-bold text-gray-900 dark:text-white mt-0.5">
-                            ⚡ Segera
+                            @if($activeOffer->help->isScheduled())
+                                📅 Terjadwal
+                            @else
+                                ⚡ Segera
+                            @endif
                         </div>
                     </div>
                 </div>

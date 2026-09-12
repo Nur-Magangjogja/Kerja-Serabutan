@@ -368,8 +368,8 @@
 
     <!-- Edit Modal (z-[70] to clear floating bottom nav) -->
     @if(isset($editingHelp) && $editingHelp)
-        <div class="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4" wire:click="closeEdit">
-            <div class="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto hide-scrollbar text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700" @click.stop>
+        <div class="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4" wire:click.self="closeEdit">
+            <div class="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto hide-scrollbar text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700">
                 <!-- Modal Header -->
                 <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 rounded-t-3xl sm:rounded-t-2xl z-10">
                     <div class="flex items-center justify-between">
@@ -387,7 +387,7 @@
                     <!-- Title -->
                     <div>
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Judul Permintaan *</label>
-                        <input type="text" wire:model.defer="editTitle" placeholder="Contoh: Bantu bersihkan halaman rumah"
+                        <input type="text" wire:model="editTitle" placeholder="Contoh: Bantu bersihkan halaman rumah"
                             class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white">
                         @error('editTitle') <span class="text-rose-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                     </div>
@@ -403,7 +403,7 @@
                     <!-- Description -->
                     <div>
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Deskripsi Kebutuhan *</label>
-                        <textarea wire:model.defer="editDescription" rows="3" placeholder="Jelaskan kebutuhan Anda..."
+                        <textarea wire:model="editDescription" rows="3" placeholder="Jelaskan kebutuhan Anda..."
                             class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white"></textarea>
                         @error('editDescription') <span class="text-rose-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                     </div>
@@ -411,7 +411,7 @@
                     <!-- City select -->
                     <div>
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Kota *</label>
-                        <select wire:model.defer="editCityId" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white">
+                        <select wire:model="editCityId" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white">
                             <option value="">Pilih kota / kabupaten</option>
                             @foreach($cities as $city)
                                 <option value="{{ $city->id }}">{{ $city->name }}@if($city->province), {{ $city->province }}@endif</option>
@@ -423,7 +423,7 @@
                     <!-- Full Address -->
                     <div>
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Alamat Lengkap</label>
-                        <textarea wire:model.defer="editFullAddress" rows="2" placeholder="Alamat lengkap dengan patokan..."
+                        <textarea wire:model="editFullAddress" rows="2" placeholder="Alamat lengkap dengan patokan..."
                             class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white"></textarea>
                     </div>
 
@@ -434,7 +434,7 @@
                                 class="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-bold text-xs hover:bg-gray-200 transition cursor-pointer">
                                 Batal
                             </button>
-                            <button type="submit" wire:loading.attr="disabled"
+                            <button type="submit" wire:loading.attr="disabled" wire:target="saveEdit"
                                 class="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-xs transition shadow-md cursor-pointer disabled:opacity-50">
                                 <span wire:loading.remove wire:target="saveEdit">Simpan Perubahan</span>
                                 <span wire:loading wire:target="saveEdit">Menyimpan...</span>
@@ -448,8 +448,8 @@
 
     <!-- Delete Confirmation Modal (Centered Modal with z-[70] for Zero Interference) -->
     @if($showDeleteConfirm)
-        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" wire:click="cancelDelete">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in duration-150" @click.stop>
+        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" wire:click.self="cancelDelete">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in duration-150">
                 <div class="p-6 text-center space-y-4">
                     <div class="w-14 h-14 rounded-2xl bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-xs">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -468,8 +468,9 @@
                         <button type="button" wire:click="cancelDelete" class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 rounded-xl font-bold text-xs transition cursor-pointer">
                             Kembali
                         </button>
-                        <button type="button" wire:click="deleteConfirmed" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs transition shadow-md cursor-pointer">
-                            Ya, Batalkan
+                        <button type="button" wire:click="deleteConfirmed" wire:loading.attr="disabled" wire:target="deleteConfirmed" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs transition shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1">
+                            <span wire:loading.remove wire:target="deleteConfirmed">Ya, Batalkan</span>
+                            <span wire:loading wire:target="deleteConfirmed">Memproses...</span>
                         </button>
                     </div>
                 </div>
@@ -479,8 +480,8 @@
 
     {{-- Confirmation Modal for Completing Help (Centered Modal with z-[70]) --}}
     @if($confirmingHelpId)
-        <div data-confirm-modal class="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" wire:click="$set('confirmingHelpId', null)">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-sm w-full p-6 text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in duration-150 text-center space-y-4" @click.stop>
+        <div data-confirm-modal class="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" wire:click.self="$set('confirmingHelpId', null)">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-sm w-full p-6 text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in duration-150 text-center space-y-4">
                 <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-xs">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -499,9 +500,10 @@
                             class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 rounded-xl font-bold text-xs transition cursor-pointer">
                         Batal
                     </button>
-                    <button wire:click="completeConfirmed" 
-                            class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition shadow-md cursor-pointer">
-                        Ya, Selesaikan
+                    <button wire:click="completeConfirmed" wire:loading.attr="disabled" wire:target="completeConfirmed"
+                            class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1">
+                        <span wire:loading.remove wire:target="completeConfirmed">Ya, Selesaikan</span>
+                        <span wire:loading wire:target="completeConfirmed">Memproses...</span>
                     </button>
                 </div>
             </div>

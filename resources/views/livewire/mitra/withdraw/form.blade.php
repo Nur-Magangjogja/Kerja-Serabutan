@@ -284,11 +284,10 @@
                 <!-- Bank Selection Modal -->
                 <div x-show="openBankModal" x-cloak 
                     class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overscroll-contain"
-                    @click="openBankModal = false"
+                    @click.self="openBankModal = false"
                     @wheel.prevent
                     @touchmove.stop>
                     <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm max-h-[75vh] flex flex-col shadow-2xl overflow-hidden text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700 overscroll-contain"
-                        @click.stop
                         @wheel.stop
                         @touchmove.stop>
                         
