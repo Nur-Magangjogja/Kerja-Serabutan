@@ -431,7 +431,7 @@
 
                                     {{-- 4. Status Pengerjaan & Pembelian Barang (Hanya tampil jika relevan) --}}
                                     @php
-                                        $isShoppingService = ($help && $help->isBuy()) || $item->item_purchased || $item->item_purchase_amount > 0;
+                                        $isShoppingService = (bool) ($item->item_purchased || $item->item_purchase_amount > 0);
                                         $hasProgressInfo = $item->work_completed_percentage > 0;
                                     @endphp
 

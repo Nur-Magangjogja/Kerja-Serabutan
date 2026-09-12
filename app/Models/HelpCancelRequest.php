@@ -45,6 +45,12 @@ class HelpCancelRequest extends Model
         'item_purchased',
         'item_purchase_amount',
         'work_completed_percentage',
+        'd_cancel_km',
+        'd_leg1_km',
+        'd_compensated_km',
+        'compensation_amount',
+        'refund_amount',
+        'cancellation_stage',
         'status',
         'settlement_type',
         'refund_amount_customer',
@@ -63,6 +69,11 @@ class HelpCancelRequest extends Model
     ];
 
     protected $casts = [
+        'd_cancel_km'               => 'decimal:2',
+        'd_leg1_km'                 => 'decimal:2',
+        'd_compensated_km'          => 'decimal:2',
+        'compensation_amount'       => 'decimal:2',
+        'refund_amount'             => 'decimal:2',
         'item_purchased'            => 'boolean',
         'item_purchase_amount'      => 'decimal:2',
         'work_completed_percentage' => 'decimal:2',

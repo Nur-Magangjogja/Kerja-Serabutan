@@ -22,7 +22,7 @@ class HelpsSeeder extends Seeder
      * Mengisi data transaksi bantuan berskala besar mencakup berbagai kegiatan sehari-hari masyarakat Indonesia
      * Terdistribusi di seluruh kota dan kecamatan strategis se-Indonesia dengan ragam status operasional lengkap.
      * Mengadopsi arsitektur FULL PLAN REVISI 3:
-     * 1. 3 Service Types (on_site_service, pickup_delivery, buy_for_customer)
+     * 1. 2 Service Types (on_site_service, pickup_delivery)
      * 2. Order Modes (instant, scheduled)
      * 3. 3-Context Distances (matching_distance_km, travel_distance_km, service_route_distance_km, route_source)
      * 4. Multi-Stage Tracking & Stages
@@ -128,9 +128,9 @@ class HelpsSeeder extends Seeder
                 'cust_email'    => 'customer@sayabantu.com',
                 'mitra_email'   => 'mitra.sleman3@sayabantu.com',
                 'city'          => 'Sleman', 'dist' => 'Ngaglik',
-                'service_type'  => 'buy_for_customer',
+                'service_type'  => 'pickup_delivery',
                 'order_mode'    => 'instant',
-                'service_stage' => 'delivered',
+                'service_stage' => 'at_destination',
                 'title'         => 'Titip Beli Semen Tambal & Aquaproof Toko Besi',
                 'service_fee'   => 45000,
                 'travel_fee'    => 7500,
@@ -227,9 +227,9 @@ class HelpsSeeder extends Seeder
                 'cust_email'    => 'customer.sukoharjo1@sayabantu.com',
                 'mitra_email'   => 'mitra.sukoharjo1@sayabantu.com',
                 'city'          => 'Sukoharjo', 'dist' => 'Kartasura',
-                'service_type'  => 'buy_for_customer',
+                'service_type'  => 'pickup_delivery',
                 'order_mode'    => 'instant',
-                'service_stage' => 'delivered',
+                'service_stage' => 'at_destination',
                 'title'         => 'Titip Beli Obat Resep Apotek 24 Jam Kartasura',
                 'service_fee'   => 35000,
                 'travel_fee'    => 5000,
@@ -364,9 +364,9 @@ class HelpsSeeder extends Seeder
                 'cust_email'    => 'customer.surabaya1@sayabantu.com',
                 'mitra_email'   => 'mitra.surabaya1@sayabantu.com',
                 'city'          => 'Surabaya', 'dist' => 'Gubeng',
-                'service_type'  => 'buy_for_customer',
+                'service_type'  => 'pickup_delivery',
                 'order_mode'    => 'instant',
-                'service_stage' => 'delivered',
+                'service_stage' => 'at_destination',
                 'title'         => 'Titip Beli Nasi Rawon & Spiku Khas Surabaya',
                 'service_fee'   => 40000,
                 'travel_fee'    => 7500,
@@ -463,9 +463,9 @@ class HelpsSeeder extends Seeder
                 'cust_email'    => 'customer.bandung1@sayabantu.com',
                 'mitra_email'   => 'mitra.bandung2@sayabantu.com',
                 'city'          => 'Bandung', 'dist' => 'Coblong',
-                'service_type'  => 'buy_for_customer',
+                'service_type'  => 'pickup_delivery',
                 'order_mode'    => 'instant',
-                'service_stage' => 'delivered',
+                'service_stage' => 'at_destination',
                 'title'         => 'Titip Beli Gas Elpiji 12kg & Bahan Dapur Coblong',
                 'service_fee'   => 45000,
                 'travel_fee'    => 5000,

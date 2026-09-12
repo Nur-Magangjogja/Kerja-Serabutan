@@ -74,7 +74,7 @@ class GeoService
                 return $roadDist;
             }
         } catch (\Throwable $e) {
-            // Log or fallback to road curvature factor
+            // Fallback to road curvature factor
         }
 
         // 2. Fallback Estimasi Jalur Jalan: 1.30x faktor belokan jalan perkotaan
@@ -85,7 +85,23 @@ class GeoService
     }
 
     /**
-     * Hitung estimasi durasi perjalanan (menit) berdasarkan kecepatan rata-rata kendaraan motor di perkotaan.
+     * Hitung D_cancel: Road distance dari titik Pickup ke posisi mitra saat ini.
+     * Digunakan secara ketat untuk pembatalan pasca-jemput (Kondisi E vs Kondisi F Lock > 5 KM).
+     */
+    public function calculateCancelDistanceAfterPickup(Help $help, float $partnerLat, float $partnerLng): float
+    {
+        $pickupLat = (float) ($help->pickup_latitude ?: $help->latitude);
+        $pickupLng = (float) ($help->pickup_longitude ?: $help->longitude);
+
+        if ($partnerLat == 0 || $partnerLng == 0 || $pickupLat == 0 || $pickupLng == 0) {
+            return 0.0;
+        }
+
+        return $this->getRouteDistance($pickupLat, $pickupLng, $partnerLat, $partnerLng);
+    }
+
+    /**
+     * Hitung estimasi durasi perjalanan (menit) berdasarkan kecepatan rata-rata sepeda motor di perkotaan.
      */
     public function getRouteDurationMinutes(float $distanceKm, float $avgSpeedKmh = 25.0, int $bufferMinutes = 5): int
     {
@@ -101,10 +117,17 @@ class GeoService
 
     /**
      * Hitung Live Dynamic Travel ETA dari posisi mitra saat ini menuju lokasi target.
-     * Mengembalikan metrik jarak tersisa, estimasi durasi menit, dan label tampilan format manusia.
+     * Mengembalikan metrik jarak tersisa, estimasi durasi menit, label tampilan format manusia,
+     * serta status keterlambatan (delay detection) berdasarkan perbandingan progres dan durasi.
      */
-    public function calculateLiveTravelEta(float $currentLat, float $currentLng, float $targetLat, float $targetLng): array
-    {
+    public function calculateLiveTravelEta(
+        float $currentLat,
+        float $currentLng,
+        float $targetLat,
+        float $targetLng,
+        ?Carbon $startedMovingAt = null,
+        ?float $initialDistanceKm = null
+    ): array {
         if ($currentLat == 0 || $currentLng == 0 || $targetLat == 0 || $targetLng == 0) {
             return [
                 'distance_meters'          => 0,
@@ -113,6 +136,9 @@ class GeoService
                 'formatted_distance'       => '--',
                 'formatted_eta'            => 'Menunggu GPS...',
                 'is_arrived'               => false,
+                'is_delayed'               => false,
+                'delay_minutes'            => 0,
+                'delay_reason'             => null,
             ];
         }
 
@@ -128,11 +154,31 @@ class GeoService
                 'formatted_distance'       => round($distMeters) . ' m',
                 'formatted_eta'            => 'Tiba di lokasi',
                 'is_arrived'               => true,
+                'is_delayed'               => false,
+                'delay_minutes'            => 0,
+                'delay_reason'             => null,
             ];
         }
 
-        // Estimasi durasi berkendara motor dengan kecepatan perkotaan
+        // Estimasi durasi berkendara motor dengan kecepatan perkotaan (default 25 km/jam)
         $durationMinutes = $this->getRouteDurationMinutes($distKm, 25.0, 2);
+
+        // Deteksi delay: perbandingan waktu tempuh aktual vs progres jarak
+        $isDelayed = false;
+        $delayMinutes = 0;
+        $delayReason = null;
+
+        if ($startedMovingAt && $initialDistanceKm !== null && $initialDistanceKm > 0) {
+            $elapsedMinutes = max(0, $startedMovingAt->diffInMinutes(now()));
+            $expectedMinutes = $this->getRouteDurationMinutes($initialDistanceKm, 25.0, 0);
+
+            // Jika waktu yang dihabiskan sudah melebihi 1.5x estimasi awal dan jarak sisa masih > 50%
+            if ($elapsedMinutes > ($expectedMinutes * 1.5) && $distKm > ($initialDistanceKm * 0.5)) {
+                $isDelayed = true;
+                $delayMinutes = (int) ($elapsedMinutes - $expectedMinutes);
+                $delayReason = 'Kondisi lalu lintas padat / macet di rute perjalanan.';
+            }
+        }
 
         $formattedDistance = ($distKm < 1.0)
             ? round($distMeters) . ' meter'
@@ -142,6 +188,10 @@ class GeoService
             ? '< 2 Menit (Hampir Tiba)'
             : "~{$durationMinutes} Menit";
 
+        if ($isDelayed) {
+            $formattedEta .= ' (Potensi Macet)';
+        }
+
         return [
             'distance_meters'          => round($distMeters, 1),
             'distance_km'              => $distKm,
@@ -149,6 +199,9 @@ class GeoService
             'formatted_distance'       => $formattedDistance,
             'formatted_eta'            => $formattedEta,
             'is_arrived'               => false,
+            'is_delayed'               => $isDelayed,
+            'delay_minutes'            => $delayMinutes,
+            'delay_reason'             => $delayReason,
         ];
     }
 
@@ -255,7 +308,7 @@ class GeoService
      * Hitung 3 Konteks Jarak secara terpisah untuk Pesanan Bantuan:
      * 1. Matching Distance (Mitra -> Lokasi Customer/Pickup) <= 10 KM
      * 2. Travel Distance (Mitra -> Titik Awal Layanan)
-     * 3. Service Route Distance (Pickup -> Delivery / Mitra -> Toko -> Customer)
+     * 3. Service Route Distance (Pickup -> Delivery)
      */
     public function calculateThreeDistanceContexts(Help $help, float $partnerLat, float $partnerLng): array
     {
@@ -276,18 +329,6 @@ class GeoService
 
             // Leg 2: Pickup -> Delivery (Service / Delivery Distance)
             $serviceRouteDist = $this->getRouteDistance($pickupLat, $pickupLng, $deliveryLat, $deliveryLng, $routeSource);
-        } elseif ($help->isBuy()) {
-            $storeLat = (float) ($help->store_latitude ?: $help->latitude);
-            $storeLng = (float) ($help->store_longitude ?: $help->longitude);
-            $customerLat = (float) ($help->latitude ?: 0);
-            $customerLng = (float) ($help->longitude ?: 0);
-
-            // Leg 1: Mitra -> Toko (Matching & Travel Distance)
-            $matchingDistance = $this->calculateStraightDistance($partnerLat, $partnerLng, $storeLat, $storeLng);
-            $travelDistance   = $this->getRouteDistance($partnerLat, $partnerLng, $storeLat, $storeLng, $routeSource);
-
-            // Leg 2: Toko -> Customer (Service Distance)
-            $serviceRouteDist = $this->getRouteDistance($storeLat, $storeLng, $customerLat, $customerLng, $routeSource);
         } else {
             // On-site Service: Matching Distance = Travel Distance = Mitra -> Customer
             $customerLat = (float) ($help->latitude ?: 0);
@@ -313,15 +354,10 @@ class GeoService
 
     /**
      * Validasi Keamanan & Kelayakan Wilayah Titik Lokasi Peta (Restricted / Forbidden Zones Check).
-     * Memeriksa apakah koordinat:
-     * 1. Berada dalam batas teritori Indonesia (Latitude: -11.5 s/d 6.5, Longitude: 94.5 s/d 141.5).
-     * 2. Bukan berada di perairan terbuka / laut lepas / danau tanpa akses darat.
-     * 3. Bukan berada di zona militer tertutup atau kawasan bahaya terlarang.
      */
     public function validateLocationSafety(float $lat, float $lng, ?array $osmDetails = null): array
     {
-        // 1. Validasi Bounding Box Teritori Indonesia
-        // Batas wilayah Indonesia: Lat: 6.5 N s/d -11.5 S, Lng: 94.5 E s/d 141.5 E
+        // 1. Validasi Bounding Box Teritori Indonesia: Lat: 6.5 N s/d -11.5 S, Lng: 94.5 E s/d 141.5 E
         if ($lat > 6.5 || $lat < -11.5 || $lng < 94.5 || $lng > 141.5) {
             return [
                 'is_safe' => false,

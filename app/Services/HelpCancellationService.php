@@ -7,6 +7,10 @@ use App\Models\Help;
 use App\Models\HelpCancelRequest;
 use App\Models\User;
 use App\Notifications\HelpStatusNotification;
+use App\Services\Cancellation\CancellationAuditService;
+use App\Services\Cancellation\CancellationSettlementService;
+use App\Services\Cancellation\OnSiteCancellationService;
+use App\Services\Cancellation\PickupDeliveryCancellationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -15,15 +19,27 @@ class HelpCancellationService
     protected HelpEscrowService $escrowService;
     protected PartnerOnlineService $onlineService;
     protected PartnerDisciplineService $disciplineService;
+    protected OnSiteCancellationService $onSiteCancellation;
+    protected PickupDeliveryCancellationService $pickupCancellation;
+    protected CancellationAuditService $auditService;
+    protected CancellationSettlementService $settlementService;
 
     public function __construct(
         HelpEscrowService $escrowService,
         PartnerOnlineService $onlineService,
-        PartnerDisciplineService $disciplineService
+        PartnerDisciplineService $disciplineService,
+        OnSiteCancellationService $onSiteCancellation,
+        PickupDeliveryCancellationService $pickupCancellation,
+        CancellationAuditService $auditService,
+        CancellationSettlementService $settlementService
     ) {
-        $this->escrowService     = $escrowService;
-        $this->onlineService     = $onlineService;
-        $this->disciplineService = $disciplineService;
+        $this->escrowService      = $escrowService;
+        $this->onlineService      = $onlineService;
+        $this->disciplineService  = $disciplineService;
+        $this->onSiteCancellation = $onSiteCancellation;
+        $this->pickupCancellation = $pickupCancellation;
+        $this->auditService       = $auditService;
+        $this->settlementService  = $settlementService;
     }
 
     /**
@@ -32,33 +48,16 @@ class HelpCancellationService
      */
     public function cancelOrderBeforePartnerTaken(Help $help, User $customer, string $reason = 'Dibatalkan oleh customer sebelum diambil mitra'): void
     {
-        DB::transaction(function () use ($help, $customer, $reason) {
-            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
+        if ($help->isPickup()) {
+            $this->pickupCancellation->executeCancellation(
+                $help,
+                $customer,
+                $reason
+            );
+            return;
+        }
 
-            if ($lockedHelp->user_id !== $customer->id) {
-                throw new \RuntimeException('Hanya customer pemilik pesanan yang dapat membatalkan pesanan.');
-            }
-
-            if ($lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA && !empty($lockedHelp->mitra_id)) {
-                throw new \RuntimeException('Pesanan sudah diambil mitra dan tidak dapat dibatalkan langsung tanpa pengajuan.');
-            }
-
-            $totalPaid = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
-
-            if ($totalPaid > 0) {
-                $this->escrowService->refundFromEscrowDirect($lockedHelp, $customer, $totalPaid, 'Pembatalan Sebelum Ada Mitra');
-            }
-
-            $lockedHelp->update([
-                'status'         => Help::STATUS_DIBATALKAN,
-                'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
-                'escrow_status'  => Help::ESCROW_STATUS_REFUNDED,
-                'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
-                'admin_notes'    => "Dibatalkan langsung oleh Customer sebelum diambil mitra. Alasan: {$reason}",
-            ]);
-
-            Log::info("[HelpCancellationService] Help #{$lockedHelp->id} cancelled before partner assigned by Customer #{$customer->id}.");
-        });
+        $this->settlementService->processFullRefund($help, $reason);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -78,182 +77,43 @@ class HelpCancellationService
      */
     public function calculatePickupDeliveryCancellationSplit(Help $help): array
     {
-        $serviceFee = (float) ($help->service_fee > 0 ? $help->service_fee : $help->amount);
-        $platformFee = (float) $help->getPlatformFee();
-        $totalPaid = (float) ($help->total_amount > 0 ? $help->total_amount : ($serviceFee + $platformFee));
+        $eligibility = $this->pickupCancellation->evaluateCancellationEligibility($help);
+        $financials  = $this->pickupCancellation->calculateCancellationFinancials(
+            $help,
+            $eligibility['condition'],
+            $eligibility['d_cancel'] ?? 0.0
+        );
 
-        // 1. Sebelum mitra mengambil pesanan (Status MENUNGGU_MITRA)
-        if ($help->status === Help::STATUS_MENUNGGU_MITRA || (empty($help->mitra_id) && empty($help->assigned_to))) {
-            return [
-                'phase'                => 1,
-                'stage'                => 'unassigned',
-                'allowed'              => true,
-                'partner_compensation' => 0.0,
-                'customer_refund'      => $totalPaid,
-                'reason'               => 'Pembatalan sebelum mitra mengambil pesanan (100% refund).',
-            ];
-        }
-
-        // 2. Pesanan sudah diambil mitra tapi mitra belum mulai bergerak (Status TAKEN & partner_started_moving_at null)
-        if ($help->status === Help::STATUS_TAKEN && empty($help->partner_started_moving_at) && empty($help->service_stage)) {
-            return [
-                'phase'                => 1,
-                'stage'                => 'taken_not_moving',
-                'allowed'              => true,
-                'partner_compensation' => 0.0,
-                'customer_refund'      => $totalPaid, // 100% Total Paid ke customer jika mitra belum bergerak
-                'reason'               => 'Pembatalan sebelum mitra mulai bergerak menuju titik jemput.',
-            ];
-        }
-
-        // 3. Mitra dalam perjalanan ke titik jemput (STAGE_GOING_TO_PICKUP atau STATUS_PARTNER_ON_THE_WAY sebelum arrived)
-        if ($help->service_stage === Help::STAGE_GOING_TO_PICKUP || ($help->status === Help::STATUS_PARTNER_ON_THE_WAY && empty($help->service_stage))) {
-            $travelKm = (float) ($help->travel_distance_km ?: 1.0);
-            if ($help->partner_initial_lat && $help->partner_initial_lng && $help->partner_current_lat && $help->partner_current_lng) {
-                $geo = app(GeoService::class);
-                $meters = $geo->calculateDistance(
-                    (float) $help->partner_initial_lat,
-                    (float) $help->partner_initial_lng,
-                    (float) $help->partner_current_lat,
-                    (float) $help->partner_current_lng
-                );
-                $travelKm = max(1.0, ceil($meters / 1000.0));
-            } else {
-                $travelKm = max(1.0, ceil($travelKm));
-            }
-
-            $baseFare  = AppSetting::getPickupDeliveryCancellationBaseFare(); // Default Rp 10.000
-            $ratePerKm = AppSetting::getPickupDeliveryCancellationRatePerKm(); // Default Rp 2.500
-            $rawComp   = $baseFare + ($travelKm * $ratePerKm);
-
-            // Safety Cap: Kompensasi tidak boleh melebihi Service Fare
-            $partnerCompensation = min($serviceFee, $rawComp);
-            $customerRefund      = max(0.0, $serviceFee - $partnerCompensation);
-
-            return [
-                'phase'                => 2,
-                'stage'                => Help::STAGE_GOING_TO_PICKUP,
-                'allowed'              => true,
-                'travel_km'            => $travelKm,
-                'partner_compensation' => $partnerCompensation,
-                'customer_refund'      => $customerRefund,
-                'reason'               => "Kompensasi pembatalan: Tarif Dasar (Rp " . number_format($baseFare, 0, ',', '.') . ") + Perjalanan ({$travelKm} KM x Rp " . number_format($ratePerKm, 0, ',', '.') . ").",
-            ];
-        }
-
-        // 4. Mitra sudah tiba di titik jemput / menunggu customer (STAGE_AT_PICKUP / STAGE_WAITING_FOR_CUSTOMER / STATUS_PARTNER_ARRIVED)
-        if (in_array($help->service_stage, [Help::STAGE_AT_PICKUP, Help::STAGE_WAITING_FOR_CUSTOMER], true) ||
-            ($help->status === Help::STATUS_PARTNER_ARRIVED && empty($help->service_stage))) {
-
-            $travelKm = (float) ($help->travel_distance_km ?: 1.0);
-            if ($help->partner_initial_lat && $help->partner_initial_lng && $help->partner_current_lat && $help->partner_current_lng) {
-                $geo = app(GeoService::class);
-                $meters = $geo->calculateDistance(
-                    (float) $help->partner_initial_lat,
-                    (float) $help->partner_initial_lng,
-                    (float) $help->partner_current_lat,
-                    (float) $help->partner_current_lng
-                );
-                $travelKm = max(1.0, ceil($meters / 1000.0));
-            } else {
-                $travelKm = max(1.0, ceil($travelKm));
-            }
-
-            // Saat tiba di titik penjemputan: 100% Service Fare dialokasikan ke mitra
-            $partnerCompensation = $serviceFee;
-            $customerRefund      = 0.0;
-
-            return [
-                'phase'                => 3,
-                'stage'                => Help::STAGE_AT_PICKUP,
-                'allowed'              => true,
-                'travel_km'            => $travelKm,
-                'partner_compensation' => $partnerCompensation,
-                'customer_refund'      => $customerRefund,
-                'reason'               => "Mitra telah tiba di lokasi penjemputan (100% ongkos layanan dialokasikan ke mitra).",
-            ];
-        }
-
-        // 5. Tahap Lanjut (ITEM_COLLECTED, GOING_TO_DESTINATION, FINAL_APPROACH, AT_DESTINATION)
-        // Tombol pembatalan otomatis dinonaktifkan (Anti-Bypass Lock)
         return [
-            'phase'                => in_array($help->service_stage, [Help::STAGE_GOING_TO_DESTINATION, Help::STAGE_FINAL_APPROACH, Help::STAGE_AT_DESTINATION], true) ? 5 : 4,
+            'phase'                => ($eligibility['condition'] === 'A_UNASSIGNED' || $eligibility['condition'] === 'B_PRE_DEPARTURE') ? 1 : (($eligibility['condition'] === 'C_PICKUP_TRAVEL') ? 2 : (($eligibility['condition'] === 'D_AT_PICKUP') ? 3 : 4)),
             'stage'                => $help->service_stage ?: $help->status,
-            'allowed'              => false,
-            'partner_compensation' => $serviceFee,
-            'customer_refund'      => 0.0,
-            'reason'               => 'Pembatalan otomatis terkunci karena barang telah diambil / dalam proses pengantaran.',
+            'allowed'              => $eligibility['allowed'],
+            'travel_km'            => $financials['d_compensated_km'] ?? 1.0,
+            'partner_compensation' => $financials['compensation_mitra'],
+            'customer_refund'      => $financials['refund_customer'],
+            'reason'               => $eligibility['reason'] ?? "Kalkulasi pembatalan tahap {$eligibility['condition']}.",
         ];
     }
 
     /**
      * Customer membatalkan pesanan Antar/Jemput (pickup_delivery) dengan kalkulasi kompensasi tahapan.
      */
-    public function cancelPickupDeliveryByCustomer(Help $help, User $customer, string $reason): void
-    {
-        DB::transaction(function () use ($help, $customer, $reason) {
-            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
-
-            if ($lockedHelp->user_id !== $customer->id) {
-                throw new \RuntimeException('Hanya pemesan (Customer) yang dapat membatalkan pesanan ini.');
-            }
-
-            if (!$lockedHelp->isPickup()) {
-                throw new \RuntimeException('Metode ini khusus untuk layanan antar/jemput (pickup_delivery).');
-            }
-
-            if (in_array($lockedHelp->status, [Help::STATUS_SELESAI, 'completed', Help::STATUS_DIBATALKAN, 'cancelled'])) {
-                throw new \RuntimeException('Pesanan ini sudah selesai atau telah dibatalkan.');
-            }
-
-            $split = $this->calculatePickupDeliveryCancellationSplit($lockedHelp);
-
-            if (!$split['allowed']) {
-                throw new \RuntimeException('Pembatalan otomatis terkunci karena pengantaran fisik barang telah dimulai. Silakan hubungi Bantuan CS / Admin Wilayah.');
-            }
-
-            $partnerCompensation = (float) $split['partner_compensation'];
-            $customerRefund      = (float) $split['customer_refund'];
-            $partner             = $lockedHelp->mitra;
-
-            // Eksekusi pengembalian dana & kompensasi mitra
-            if ($customerRefund > 0) {
-                $this->escrowService->refundFromEscrowDirect($lockedHelp, $customer, $customerRefund, 'Refund Pembatalan Antar/Jemput');
-            }
-
-            if ($partnerCompensation > 0 && $partner) {
-                $this->escrowService->payoutPartialFromEscrowDirect($lockedHelp, $partner, $partnerCompensation, 'Kompensasi Pembatalan Antar/Jemput');
-            }
-
-            $escrowFinalStatus = ($customerRefund > 0 && $partnerCompensation > 0)
-                ? Help::ESCROW_STATUS_PARTIAL_REFUND
-                : ($customerRefund > 0 ? Help::ESCROW_STATUS_REFUNDED : Help::ESCROW_STATUS_RELEASED);
-
-            $lockedHelp->update([
-                'status'         => Help::STATUS_DIBATALKAN,
-                'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
-                'escrow_status'  => $escrowFinalStatus,
-                'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
-                'admin_notes'    => "Dibatalkan oleh Customer pada tahap {$split['stage']}. {$split['reason']} Refund Customer: Rp " . number_format($customerRefund, 0, ',', '.') . ", Kompensasi Mitra: Rp " . number_format($partnerCompensation, 0, ',', '.'),
-            ]);
-
-            if ($lockedHelp->mitra_id) {
-                $this->onlineService->releaseBusy($lockedHelp->mitra_id, $lockedHelp->id);
-            }
-
-            if ($partner) {
-                try {
-                    $partner->notify(new HelpStatusNotification(
-                        $lockedHelp,
-                        "Pesanan antar/jemput #{$lockedHelp->id} dibatalkan customer. Anda menerima kompensasi: Rp " . number_format($partnerCompensation, 0, ',', '.')
-                    ));
-                } catch (\Throwable $e) {
-                    Log::warning("[HelpCancellationService] Failed notifying partner: " . $e->getMessage());
-                }
-            }
-
-            Log::info("[HelpCancellationService] Pickup Delivery #{$lockedHelp->id} cancelled by Customer #{$customer->id}. Compensation: Rp {$partnerCompensation}, Refund: Rp {$customerRefund}.");
-        });
+    public function cancelPickupDeliveryByCustomer(
+        Help $help,
+        User $customer,
+        string $reason,
+        ?float $partnerLat = null,
+        ?float $partnerLng = null
+    ): void {
+        $this->pickupCancellation->executeCancellation(
+            $help,
+            $customer,
+            $reason,
+            null,
+            null,
+            $partnerLat,
+            $partnerLng
+        );
     }
 
     /**
@@ -313,12 +173,9 @@ class HelpCancellationService
     }
 
     /**
-     * Mitra mengajukan pembatalan pesanan (dengan alasan wajib & foto bukti opsional).
-     * Sesuai aturan:
-     * 1. Status pesanan masuk ke 'partner_cancel_requested' (pending, tidak langsung masuk pool).
-     * 2. Mitra dibebaskan dari status BUSY agar bisa mencari order baru.
-     * 3. Memiliki batas waktu (deadline) konfirmasi (default 30 menit).
-     * 4. Tanpa SP otomatis; evaluasi SP dilakukan secara manual oleh Admin Wilayah.
+     * Mitra mengajukan pembatalan pesanan.
+     * Untuk Layanan Biasa (On-Site): Otomatis relist ke pool mitra baru & buat tiket audit untuk admin wilayah (Konsep 1).
+     * Untuk Pickup & Delivery: Menggunakan alur pembatalan bertahap dengan kalkulasi kompensasi perjalanan.
      */
     public function submitPartnerCancelRequest(
         Help $help,
@@ -331,91 +188,26 @@ class HelpCancellationService
         float $workCompletedPercentage = 0.0,
         int $deadlineMinutes = 30
     ): HelpCancelRequest {
-        return DB::transaction(function () use (
+        if ($help->isOnSite() || $help->isRegular()) {
+            $result = $this->onSiteCancellation->cancelByPartner(
+                $help,
+                $partner,
+                $reason,
+                $evidencePhoto,
+                $notes
+            );
+            return HelpCancelRequest::findOrFail($result['cancel_request_id']);
+        }
+
+        // Untuk pickup delivery:
+        $result = $this->pickupCancellation->executeCancellation(
             $help,
             $partner,
             $reason,
-            $notes,
             $evidencePhoto,
-            $itemPurchased,
-            $itemPurchaseAmount,
-            $workCompletedPercentage,
-            $deadlineMinutes
-        ) {
-            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
-
-            if ($lockedHelp->mitra_id !== $partner->id) {
-                throw new \RuntimeException('Hanya mitra yang ditugaskan pada pesanan ini yang dapat mengajukan pembatalan.');
-            }
-
-            if (in_array($lockedHelp->status, [Help::STATUS_SELESAI, 'completed', Help::STATUS_DIBATALKAN, 'cancelled'])) {
-                throw new \RuntimeException('Pesanan ini sudah selesai atau telah dibatalkan.');
-            }
-
-            $prevStatus = $lockedHelp->status;
-            $prevStage  = $lockedHelp->service_stage;
-            $deadline   = now()->addMinutes($deadlineMinutes);
-
-            // 1. Catat ke help_cancel_requests
-            $request = HelpCancelRequest::create([
-                'help_id'                   => $lockedHelp->id,
-                'requester_type'            => HelpCancelRequest::REQUESTER_PARTNER,
-                'partner_id'                => $partner->id,
-                'customer_id'               => $lockedHelp->user_id,
-                'district_id'               => $lockedHelp->district_id,
-                'previous_status'           => $prevStatus,
-                'previous_stage'            => $prevStage,
-                'reason'                    => $reason,
-                'notes'                     => $notes,
-                'evidence_photo'            => $evidencePhoto,
-                'item_purchased'            => $itemPurchased,
-                'item_purchase_amount'      => $itemPurchaseAmount,
-                'work_completed_percentage' => $workCompletedPercentage,
-                'status'                    => HelpCancelRequest::STATUS_PENDING,
-                'requested_at'              => now(),
-                'expires_at'                => $deadline,
-            ]);
-
-            // 2. Perbarui Help: pending pembatalan mitra & set batas waktu
-            $lockedHelp->update([
-                'status'                      => Help::STATUS_PARTNER_CANCEL_REQUESTED,
-                'partner_cancel_prev_status'  => $prevStatus,
-                'partner_cancel_reason'       => $reason,
-                'partner_cancel_notes'        => $notes,
-                'partner_cancel_requested_at' => now(),
-                'cancel_requested_by'         => 'partner',
-                'cancel_deadline_at'          => $deadline,
-                'cancel_evidence_photo'       => $evidencePhoto,
-            ]);
-
-            // 3. Bebaskan status online mitra (lepas dari BUSY agar bisa mencari order baru)
-            $this->onlineService->releaseBusy($partner->id, $lockedHelp->id);
-
-            // 4. Tambahkan ke exclusions agar tidak match kembali ke bantuan ini
-            if (\Illuminate\Support\Facades\Schema::hasTable('help_partner_exclusions')) {
-                \App\Models\HelpPartnerExclusion::firstOrCreate([
-                    'help_id'  => $lockedHelp->id,
-                    'mitra_id' => $partner->id,
-                ], [
-                    'reason'   => $reason,
-                ]);
-            }
-
-            // 5. Notifikasi ke Customer
-            if ($lockedHelp->user) {
-                try {
-                    $lockedHelp->user->notify(new HelpStatusNotification(
-                        $lockedHelp,
-                        "Mitra {$partner->name} mengajukan pembatalan (Alasan: {$reason}). Anda dapat menerima pembatalan untuk pengembalian dana 100% atau menunggu konfirmasi Admin Wilayah."
-                    ));
-                } catch (\Throwable $e) {
-                    Log::warning("[HelpCancellationService] Failed notifying customer: " . $e->getMessage());
-                }
-            }
-
-            Log::info("[HelpCancellationService] Partner #{$partner->id} submitted Cancel Request #{$request->id} for Help #{$lockedHelp->id} (Pending confirmation).");
-            return $request;
-        });
+            $notes
+        );
+        return HelpCancelRequest::findOrFail($result['cancel_request_id']);
     }
 
     /**
@@ -438,9 +230,9 @@ class HelpCancellationService
     }
 
     /**
-     * Customer mengajukan pembatalan pada pesanan yang sudah diambil mitra
-     * (karena mitra tidak kunjung datang / tidak responsif).
-     * Order masuk status 'customer_cancel_requested' / pending review Admin Wilayah.
+     * Customer mengajukan pembatalan pada pesanan yang sudah diambil mitra.
+     * Untuk Layanan Biasa (On-Site): Masuk status 'customer_cancel_requested' / pending review Admin Wilayah (Konsep 2).
+     * Untuk Pickup & Delivery: Dievaluasi berdasarkan 6-kondisi kelayakan dan formula kompensasi.
      */
     public function submitCustomerCancelRequest(
         Help $help,
@@ -450,74 +242,44 @@ class HelpCancellationService
         ?string $evidencePhoto = null,
         int $deadlineMinutes = 30
     ): HelpCancelRequest {
-        return DB::transaction(function () use (
+        if ($help->isOnSite() || $help->isRegular()) {
+            $result = $this->onSiteCancellation->requestCancelByCustomer(
+                $help,
+                $customer,
+                $reason,
+                $evidencePhoto,
+                $notes
+            );
+
+            if (isset($result['cancel_request_id'])) {
+                return HelpCancelRequest::findOrFail($result['cancel_request_id']);
+            }
+
+            // Jika langsung dibatalkan (misal unassigned):
+            return HelpCancelRequest::create([
+                'help_id'        => $help->id,
+                'requester_type' => HelpCancelRequest::REQUESTER_CUSTOMER,
+                'customer_id'    => $customer->id,
+                'reason'         => $reason,
+                'status'         => HelpCancelRequest::STATUS_APPROVED,
+                'settlement_type'=> HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+                'requested_at'   => now(),
+                'reviewed_at'    => now(),
+            ]);
+        }
+
+        $result = $this->pickupCancellation->executeCancellation(
             $help,
             $customer,
             $reason,
-            $notes,
             $evidencePhoto,
-            $deadlineMinutes
-        ) {
-            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
-
-            if ($lockedHelp->user_id !== $customer->id) {
-                throw new \RuntimeException('Hanya pemesan (Customer) yang dapat mengajukan pembatalan.');
-            }
-
-            if (in_array($lockedHelp->status, [Help::STATUS_SELESAI, 'completed', Help::STATUS_DIBATALKAN, 'cancelled'])) {
-                throw new \RuntimeException('Pesanan ini sudah selesai atau telah dibatalkan.');
-            }
-
-            $prevStatus = $lockedHelp->status;
-            $prevStage  = $lockedHelp->service_stage;
-            $deadline   = now()->addMinutes($deadlineMinutes);
-
-            $request = HelpCancelRequest::create([
-                'help_id'                   => $lockedHelp->id,
-                'requester_type'            => HelpCancelRequest::REQUESTER_CUSTOMER,
-                'partner_id'                => $lockedHelp->mitra_id,
-                'customer_id'               => $customer->id,
-                'district_id'               => $lockedHelp->district_id,
-                'previous_status'           => $prevStatus,
-                'previous_stage'            => $prevStage,
-                'reason'                    => $reason,
-                'notes'                     => $notes,
-                'evidence_photo'            => $evidencePhoto,
-                'status'                    => HelpCancelRequest::STATUS_PENDING,
-                'requested_at'              => now(),
-                'expires_at'                => $deadline,
-            ]);
-
-            $lockedHelp->update([
-                'status'                      => Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
-                'partner_cancel_prev_status'  => $prevStatus,
-                'partner_cancel_reason'       => $reason,
-                'partner_cancel_notes'        => $notes,
-                'partner_cancel_requested_at' => now(),
-                'cancel_requested_by'         => 'customer',
-                'cancel_deadline_at'          => $deadline,
-                'cancel_evidence_photo'       => $evidencePhoto,
-            ]);
-
-            // Notifikasi ke Mitra bahwa Customer mengajukan pembatalan (Mitra dapat beri klarifikasi opsional)
-            if ($lockedHelp->mitra) {
-                try {
-                    $lockedHelp->mitra->notify(new HelpStatusNotification(
-                        $lockedHelp,
-                        "Customer mengajukan pembatalan pesanan (Alasan: {$reason}). Anda dapat memberikan klarifikasi/tanggapan sebelum diputuskan Admin Wilayah."
-                    ));
-                } catch (\Throwable $e) {
-                    Log::warning("[HelpCancellationService] Failed notifying partner: " . $e->getMessage());
-                }
-            }
-
-            Log::info("[HelpCancellationService] Customer #{$customer->id} submitted Cancel Request #{$request->id} for Help #{$lockedHelp->id}.");
-            return $request;
-        });
+            $notes
+        );
+        return HelpCancelRequest::findOrFail($result['cancel_request_id']);
     }
 
     /**
-     * Mitra memberikan pengakuan / klarifikasi / tanggapan opsional atas pengajuan pembatalan Customer.
+     * Mitra memberikan klarifikasi / tanggapan opsional atas pengajuan pembatalan Customer.
      */
     public function submitPartnerClarification(
         HelpCancelRequest $request,
@@ -665,231 +427,26 @@ class HelpCancellationService
         string $settlementType = HelpCancelRequest::SETTLEMENT_FULL_REFUND,
         array $extraData = []
     ): void {
-        DB::transaction(function () use ($request, $admin, $isApproved, $settlementType, $extraData) {
-            $lockedReq  = HelpCancelRequest::where('id', $request->id)->lockForUpdate()->firstOrFail();
-            $lockedHelp = Help::where('id', $lockedReq->help_id)->lockForUpdate()->firstOrFail();
+        $spTarget         = $extraData['sp_target'] ?? HelpCancelRequest::SP_TARGET_NONE;
+        $partnerSpLevel   = isset($extraData['partner_sp_level']) ? (int) $extraData['partner_sp_level'] : null;
+        $partnerSpReason  = $extraData['partner_sp_reason'] ?? 'Pelanggaran pembatalan tugas bantuan';
+        $customerSpLevel  = isset($extraData['customer_sp_level']) ? (int) $extraData['customer_sp_level'] : null;
+        $customerSpReason = $extraData['customer_sp_reason'] ?? 'Pelanggaran / kejanggalan dalam pesanan';
+        $adminNotes       = $extraData['admin_notes'] ?? null;
 
-            if ($lockedReq->status !== HelpCancelRequest::STATUS_PENDING) {
-                throw new \RuntimeException('Pengajuan pembatalan ini sudah pernah diproses sebelumnya.');
-            }
+        $decision = $isApproved ? ($spTarget !== HelpCancelRequest::SP_TARGET_NONE ? 'penalty_issued' : 'valid_no_sp') : 'rejected';
 
-            $adminNotes       = $extraData['admin_notes'] ?? null;
-            $spTarget         = $extraData['sp_target'] ?? HelpCancelRequest::SP_TARGET_NONE; // 'none', 'partner', 'customer', 'both'
-            $partnerSpLevel   = isset($extraData['partner_sp_level']) ? (int) $extraData['partner_sp_level'] : null;
-            $partnerSpReason  = $extraData['partner_sp_reason'] ?? 'Pelanggaran pembatalan tugas bantuan';
-            $customerSpLevel  = isset($extraData['customer_sp_level']) ? (int) $extraData['customer_sp_level'] : null;
-            $customerSpReason = $extraData['customer_sp_reason'] ?? 'Pelanggaran / kejanggalan dalam pesanan';
-
-            if ($isApproved) {
-                if ($settlementType === HelpCancelRequest::SETTLEMENT_RELIST_POOL) {
-                    $formerMitraId = $lockedHelp->mitra_id;
-                    $formerMitra   = $lockedHelp->mitra;
-
-                    $cancelledMitraIds = is_array($lockedHelp->cancelled_mitra_ids) ? $lockedHelp->cancelled_mitra_ids : [];
-                    if ($formerMitraId && !in_array($formerMitraId, $cancelledMitraIds, false)) {
-                        $cancelledMitraIds[] = $formerMitraId;
-                    }
-
-                    if ($formerMitraId && \Illuminate\Support\Facades\Schema::hasTable('help_partner_exclusions')) {
-                        \App\Models\HelpPartnerExclusion::firstOrCreate([
-                            'help_id'  => $lockedHelp->id,
-                            'mitra_id' => $formerMitraId,
-                        ], [
-                            'reason'   => $lockedReq->reason ?? 'Dialihkan kembali ke pool oleh Admin',
-                        ]);
-                    }
-
-                    $lockedHelp->update([
-                        'status'                      => Help::STATUS_MENUNGGU_MITRA,
-                        'dispatch_mode'               => Help::DISPATCH_MODE_POOL,
-                        'mitra_id'                    => null,
-                        'cancelled_mitra_ids'         => $cancelledMitraIds,
-                        'partner_cancel_prev_status'  => null,
-                        'partner_cancel_reason'       => null,
-                        'partner_cancel_requested_at' => null,
-                        'cancel_requested_by'         => null,
-                        'cancel_deadline_at'          => null,
-                        'partner_current_lat'         => null,
-                        'partner_current_lng'         => null,
-                        'partner_initial_lat'         => null,
-                        'partner_initial_lng'         => null,
-                        'partner_started_at'          => null,
-                        'partner_arrived_at'          => null,
-                        'service_started_at'          => null,
-                        'admin_notes'                 => "Aduan pembatalan customer ditinjau Admin #{$admin->id} ({$admin->name}). Mitra lama dilepaskan dan pesanan dikembalikan ke pool terbuka untuk mencari mitra baru.",
-                    ]);
-
-                    if ($formerMitraId) {
-                        $this->onlineService->releaseBusy($formerMitraId, $lockedHelp->id);
-                    }
-
-                    $auditDecision = ($spTarget !== HelpCancelRequest::SP_TARGET_NONE)
-                        ? HelpCancelRequest::AUDIT_PENALTY_ISSUED
-                        : HelpCancelRequest::AUDIT_VALID_NO_SP;
-
-                    $lockedReq->update([
-                        'status'                 => HelpCancelRequest::STATUS_APPROVED,
-                        'settlement_type'        => HelpCancelRequest::SETTLEMENT_RELIST_POOL,
-                        'refund_amount_customer' => 0,
-                        'payout_amount_mitra'    => 0,
-                        'reviewed_by'            => $admin->id,
-                        'admin_notes'            => $adminNotes ?: 'Pesanan dilempar kembali ke pool terbuka untuk mencari mitra lain.',
-                        'sp_target'              => $spTarget,
-                        'partner_sp_level'       => ($spTarget === 'partner' || $spTarget === 'both') ? $partnerSpLevel : null,
-                        'partner_sp_reason'      => ($spTarget === 'partner' || $spTarget === 'both') ? $partnerSpReason : null,
-                        'customer_sp_level'      => ($spTarget === 'customer' || $spTarget === 'both') ? $customerSpLevel : null,
-                        'customer_sp_reason'     => ($spTarget === 'customer' || $spTarget === 'both') ? $customerSpReason : null,
-                        'audit_decision'         => $auditDecision,
-                        'reviewed_at'            => now(),
-                    ]);
-
-                    if ($lockedHelp->user) {
-                        try {
-                            $lockedHelp->user->notify(new HelpStatusNotification(
-                                $lockedHelp,
-                                "Admin telah memproses aduan Anda. Mitra lama telah dilepaskan dan pesanan Anda sedang dicarikan Rekan Jasa pengganti."
-                            ));
-                        } catch (\Throwable $e) {
-                            Log::warning("[HelpCancellationService] Failed notifying customer: " . $e->getMessage());
-                        }
-                    }
-
-                    if ($formerMitra) {
-                        try {
-                            $formerMitra->notify(new HelpStatusNotification(
-                                $lockedHelp,
-                                "Penugasan Anda pada pesanan #{$lockedHelp->id} telah dialihkan kembali ke sistem oleh Admin."
-                            ));
-                        } catch (\Throwable $e) {
-                            Log::warning("[HelpCancellationService] Failed notifying former partner: " . $e->getMessage());
-                        }
-                    }
-                } else {
-                    $totalPaid = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : ($lockedHelp->amount + ($lockedHelp->travel_fee ?? 0) + ($lockedHelp->item_fund ?? 0) + ($lockedHelp->platform_fee_amount ?? 2000)));
-                    $itemFund  = (float) ($lockedHelp->item_fund ?? 0);
-                    $serviceFee = (float) ($lockedHelp->service_fee > 0 ? $lockedHelp->service_fee : $lockedHelp->amount);
-
-                    $customRefund  = isset($extraData['refund_amount']) && $extraData['refund_amount'] !== '' ? (float) $extraData['refund_amount'] : null;
-                    $customPartner = isset($extraData['partner_amount']) && $extraData['partner_amount'] !== '' ? (float) $extraData['partner_amount'] : null;
-
-                    if ($customRefund !== null && $customPartner !== null) {
-                        $refundCustomer = max(0.0, $customRefund);
-                        $payoutMitra    = max(0.0, $customPartner);
-                    } else {
-                        if ($settlementType === HelpCancelRequest::SETTLEMENT_FULL_REFUND) {
-                            $refundCustomer = $totalPaid;
-                            $payoutMitra    = 0.0;
-                        } elseif ($settlementType === HelpCancelRequest::SETTLEMENT_ITEM_SETTLED) {
-                            $actualItemCost = min($itemFund > 0 ? $itemFund : $lockedReq->item_purchase_amount, $lockedReq->item_purchase_amount);
-                            $payoutMitra    = $actualItemCost;
-                            $refundCustomer = max(0.0, $totalPaid - $payoutMitra);
-                        } elseif ($settlementType === HelpCancelRequest::SETTLEMENT_PARTIAL_SETTLEMENT) {
-                            $pct = min(1.0, max(0.0, ((float) $lockedReq->work_completed_percentage) / 100.0));
-                            $payoutMitra    = round($serviceFee * $pct, 2);
-                            $refundCustomer = max(0.0, $totalPaid - $payoutMitra);
-                        } else {
-                            $refundCustomer = $totalPaid;
-                            $payoutMitra    = 0.0;
-                        }
-                    }
-
-                    // Eksekusi mutasi saldo
-                    if ($refundCustomer > 0 && $lockedHelp->user) {
-                        $this->escrowService->refundFromEscrowDirect($lockedHelp, $lockedHelp->user, $refundCustomer, 'Pembatalan Disetujui Admin Wilayah');
-                    }
-
-                    if ($payoutMitra > 0 && $lockedHelp->mitra) {
-                        $this->escrowService->payoutPartialFromEscrowDirect($lockedHelp, $lockedHelp->mitra, $payoutMitra, 'Kompensasi Pembatalan oleh Admin Wilayah');
-                    }
-
-                    $escrowFinalStatus = ($refundCustomer > 0 && $payoutMitra > 0)
-                        ? Help::ESCROW_STATUS_PARTIAL_REFUND
-                        : ($refundCustomer > 0 ? Help::ESCROW_STATUS_REFUNDED : Help::ESCROW_STATUS_RELEASED);
-
-                    $lockedHelp->update([
-                        'status'         => Help::STATUS_DIBATALKAN,
-                        'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
-                        'escrow_status'  => $escrowFinalStatus,
-                        'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
-                        'admin_notes'    => "Pembatalan disetujui Admin #{$admin->id} ({$admin->name}). Resolusi: {$settlementType}. Refund: Rp " . number_format($refundCustomer, 0, ',', '.') . ", Kompensasi Mitra: Rp " . number_format($payoutMitra, 0, ',', '.'),
-                    ]);
-
-                    if ($lockedHelp->mitra_id) {
-                        $this->onlineService->releaseBusy($lockedHelp->mitra_id, $lockedHelp->id);
-                    }
-
-                    $auditDecision = ($spTarget !== HelpCancelRequest::SP_TARGET_NONE)
-                        ? HelpCancelRequest::AUDIT_PENALTY_ISSUED
-                        : HelpCancelRequest::AUDIT_VALID_NO_SP;
-
-                    $lockedReq->update([
-                        'status'                 => HelpCancelRequest::STATUS_APPROVED,
-                        'settlement_type'        => $settlementType,
-                        'refund_amount_customer' => $refundCustomer,
-                        'payout_amount_mitra'    => $payoutMitra,
-                        'reviewed_by'            => $admin->id,
-                        'admin_notes'            => $adminNotes,
-                        'sp_target'              => $spTarget,
-                        'partner_sp_level'       => ($spTarget === 'partner' || $spTarget === 'both') ? $partnerSpLevel : null,
-                        'partner_sp_reason'      => ($spTarget === 'partner' || $spTarget === 'both') ? $partnerSpReason : null,
-                        'customer_sp_level'      => ($spTarget === 'customer' || $spTarget === 'both') ? $customerSpLevel : null,
-                        'customer_sp_reason'     => ($spTarget === 'customer' || $spTarget === 'both') ? $customerSpReason : null,
-                        'audit_decision'         => $auditDecision,
-                        'reviewed_at'            => now(),
-                    ]);
-                }
-            } else {
-                // Penolakan Pembatalan: Kembalikan status pengerjaan semula
-                $restoredStatus = $lockedReq->previous_status ?: Help::STATUS_TAKEN;
-                $restoredStage  = $lockedReq->previous_stage;
-
-                $auditDecision = ($spTarget !== HelpCancelRequest::SP_TARGET_NONE)
-                    ? HelpCancelRequest::AUDIT_PENALTY_ISSUED
-                    : HelpCancelRequest::AUDIT_REJECTED;
-
-                $lockedReq->update([
-                    'status'             => HelpCancelRequest::STATUS_REJECTED,
-                    'reviewed_by'        => $admin->id,
-                    'admin_notes'        => $adminNotes,
-                    'sp_target'          => $spTarget,
-                    'partner_sp_level'   => ($spTarget === 'partner' || $spTarget === 'both') ? $partnerSpLevel : null,
-                    'partner_sp_reason'  => ($spTarget === 'partner' || $spTarget === 'both') ? $partnerSpReason : null,
-                    'customer_sp_level'  => ($spTarget === 'customer' || $spTarget === 'both') ? $customerSpLevel : null,
-                    'customer_sp_reason' => ($spTarget === 'customer' || $spTarget === 'both') ? $customerSpReason : null,
-                    'audit_decision'     => $auditDecision,
-                    'reviewed_at'        => now(),
-                ]);
-
-                $lockedHelp->update([
-                    'status'        => $restoredStatus,
-                    'service_stage' => $restoredStage,
-                    'admin_notes'   => "Pengajuan pembatalan ditolak oleh Admin #{$admin->id} ({$admin->name}). Order dilanjutkan.",
-                ]);
-            }
-
-            // Eksekusi penjatuhan SP jika dipilih oleh Admin
-            if (in_array($spTarget, [HelpCancelRequest::SP_TARGET_PARTNER, HelpCancelRequest::SP_TARGET_BOTH]) && $partnerSpLevel && $lockedHelp->mitra) {
-                $this->disciplineService->issueManualWarningToUser(
-                    $lockedHelp->mitra,
-                    $partnerSpLevel,
-                    $partnerSpReason,
-                    $admin,
-                    $lockedHelp
-                );
-            }
-
-            if (in_array($spTarget, [HelpCancelRequest::SP_TARGET_CUSTOMER, HelpCancelRequest::SP_TARGET_BOTH]) && $customerSpLevel && $lockedHelp->user) {
-                $this->disciplineService->issueManualWarningToUser(
-                    $lockedHelp->user,
-                    $customerSpLevel,
-                    $customerSpReason,
-                    $admin,
-                    $lockedHelp
-                );
-            }
-
-            Log::info("[HelpCancellationService] Admin #{$admin->id} reviewed Cancel Request #{$lockedReq->id} (Approved: " . ($isApproved ? 'yes' : 'no') . ", SP Target: {$spTarget}).");
-        });
+        $this->auditService->reviewCancelRequest(
+            $request,
+            $admin,
+            $decision,
+            $adminNotes,
+            $spTarget,
+            $partnerSpLevel,
+            $partnerSpReason,
+            $customerSpLevel,
+            $customerSpReason
+        );
     }
 
     /**

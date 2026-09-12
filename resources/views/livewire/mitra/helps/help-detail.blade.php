@@ -154,20 +154,7 @@
                     </div>
                 </div>
 
-                @if($help->service_type === 'buy_for_customer' && $help->item_fund > 0)
-                    <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-2.5 flex items-center justify-between text-xs">
-                        <div class="flex items-center gap-2">
-                            <span class="text-base">🛒</span>
-                            <div>
-                                <span class="font-bold text-amber-900 dark:text-amber-200 block">Dana Titipan Belanja (Escrow)</span>
-                                <span class="text-[10px] text-amber-700/80 dark:text-amber-300/80">Bukan penghasilan - dana pembelian barang</span>
-                            </div>
-                        </div>
-                        <div class="font-black text-amber-800 dark:text-amber-200">
-                            Rp {{ number_format($help->item_fund, 0, ',', '.') }}
-                        </div>
-                    </div>
-                @endif
+
             </div>
 
             {{-- Order ID Row (Full Width & Overflow-Safe) --}}
@@ -665,21 +652,25 @@
                     </div>
                 @endif
 
-                <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3 space-y-2">
+                <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 mb-3 space-y-3">
+                    {{-- Pre-departure confirmation notice --}}
+                    <div class="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-xl text-xs text-blue-900 dark:text-blue-200 space-y-1">
+                        <div class="font-bold flex items-center gap-1.5">
+                            <span>📞</span>
+                            <span>Konfirmasi Pra-Keberangkatan</span>
+                        </div>
+                        <p class="text-[11px] text-blue-800 dark:text-blue-300">
+                            Disarankan menghubungi customer via Chat/Telepon untuk memastikan kesiapan dan memverifikasi alamat sebelum Anda berangkat.
+                        </p>
+                    </div>
+
                     @if ($help->service_type === 'pickup_delivery')
                         <button wire:click="advanceStage('going_to_pickup')" wire:loading.attr="disabled"
                             class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                             <span>Mulai Menuju Lokasi Penjemputan</span>
                         </button>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda mulai bergerak menuju titik barang yang akan dijemput</p>
-                    @elseif ($help->service_type === 'buy_for_customer')
-                        <button wire:click="advanceStage('going_to_store')" wire:loading.attr="disabled"
-                            class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                            <span>Mulai Menuju Toko / Merchant</span>
-                        </button>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda mulai berangkat menuju toko/tempat belanja</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Klik saat Anda mulai bergerak menuju titik penjemputan</p>
                     @else
                         <button wire:click="markPartnerStarted" wire:loading.attr="disabled"
                             class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
@@ -712,32 +703,6 @@
                             class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             <span>Tiba di Lokasi Tujuan Customer</span>
-                        </button>
-                    @endif
-                @elseif ($help->service_type === 'buy_for_customer')
-                    @if (!$help->service_stage || $help->service_stage === 'going_to_store')
-                        <button wire:click="advanceStage('at_store')" wire:loading.attr="disabled"
-                            class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                            <span>Saya Sudah Tiba di Toko / Merchant</span>
-                        </button>
-                    @elseif ($help->service_stage === 'at_store')
-                        <button wire:click="advanceStage('purchasing')" wire:loading.attr="disabled"
-                            class="w-full py-3.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                            <span>Mulai Pembelian / Belanja Barang</span>
-                        </button>
-                    @elseif ($help->service_stage === 'purchasing')
-                        <button wire:click="advanceStage('going_to_customer')" wire:loading.attr="disabled"
-                            class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                            <span>Barang Selesai Dibeli (Menuju Customer)</span>
-                        </button>
-                    @elseif ($help->service_stage === 'going_to_customer')
-                        <button wire:click="advanceStage('at_customer')" wire:loading.attr="disabled"
-                            class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            <span>Tiba di Lokasi Customer</span>
                         </button>
                     @endif
                 @else

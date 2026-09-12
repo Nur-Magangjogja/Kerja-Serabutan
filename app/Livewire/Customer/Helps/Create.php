@@ -20,7 +20,7 @@ class Create extends Component
     use WithFileUploads;
 
     // ─── Form fields (Revisi 3) ──────────────────────────────────────────────
-    public $service_type       = 'on_site_service'; // 'on_site_service', 'pickup_delivery', 'buy_for_customer'
+    public $service_type       = 'on_site_service'; // 'on_site_service', 'pickup_delivery'
     public $order_mode         = 'instant'; // 'instant', 'scheduled'
     public $service_category   = 'general';
     public $service_duration_hours = 1.0;
@@ -949,6 +949,13 @@ class Create extends Component
                 $this->calculateRouteDistance();
             }
 
+            $maxDistanceKm = AppSetting::getPickupDeliveryMaxDistanceKm();
+            if ($this->route_distance_km > $maxDistanceKm) {
+                $this->addError('delivery_address', "Jarak rute ({$this->route_distance_km} KM) melebihi batas maksimal {$maxDistanceKm} KM untuk layanan pengantaran sepeda motor.");
+                $this->dispatch('scroll-to-first-error');
+                return;
+            }
+
             $this->rules = [
                 'title'              => 'required|string|max:255',
                 'description'        => 'required|string',
@@ -1131,6 +1138,12 @@ class Create extends Component
 
         // ISOLASI KETAT DATA SEBELUM PENYIMPANAN TRANSAKSI
         if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+            $maxDistanceKm = AppSetting::getPickupDeliveryMaxDistanceKm();
+            if ($this->route_distance_km > $maxDistanceKm) {
+                $this->addError('delivery_address', "Jarak pengantaran ({$this->route_distance_km} KM) melebihi batas maksimal {$maxDistanceKm} KM untuk layanan pengantaran sepeda motor.");
+                return;
+            }
+
             $this->store_name      = null;
             $this->store_address   = null;
             $this->store_latitude  = null;
@@ -1193,114 +1206,25 @@ class Create extends Component
 
         $this->validate();
 
-        $geoService = app(\App\Services\GeoService::class);
-        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
-            $pSafety = $geoService->validateLocationSafety((float) $this->pickup_latitude, (float) $this->pickup_longitude);
-            if (!$pSafety['is_safe']) {
-                $this->addError('pickup_address', $pSafety['reason'] ?? 'Titik 1 (Jemput) berada di area terlarang.');
-                return;
-            }
-            $dSafety = $geoService->validateLocationSafety((float) $this->delivery_latitude, (float) $this->delivery_longitude);
-            if (!$dSafety['is_safe']) {
-                $this->addError('delivery_address', $dSafety['reason'] ?? 'Titik 2 (Antar) berada di area terlarang.');
-                return;
-            }
-        } else {
-            $oSafety = $geoService->validateLocationSafety((float) $this->latitude, (float) $this->longitude);
-            if (!$oSafety['is_safe']) {
-                $this->addError('latitude', $oSafety['reason'] ?? 'Titik lokasi berada di area terlarang.');
-                return;
-            }
-        }
+        $photoPath = $this->photo ? $this->photo->store('helps', 'public') : null;
 
-        $userId   = auth()->id();
-        $customer = auth()->user();
-
-        // 1. Jalankan Kalkulasi Pricing Engine V3
-        $pricingService = app(\App\Services\HelpPricingService::class);
-        $estimate = $pricingService->calculateInitialOrderEstimate([
-            'service_type'                  => $this->service_type,
-            'service_category'              => $this->service_category ?: 'general',
-            'service_duration_hours'        => (float) ($this->service_duration_hours ?: 1.0),
-            'amount'                        => (float) ($this->amount ?: 0),
-            'service_route_distance_km'     => (float) ($this->route_distance_km ?: 0),
-            'route_distance_km'             => (float) ($this->route_distance_km ?: 0),
-            'material_fee'                  => 0,
-            'item_fund'                     => 0,
-            'item_fund_mode'                => $this->item_fund_mode,
-            'customer_reimbursement_method' => $this->customer_reimbursement_method,
-            'advance_limit'                 => (float) ($this->advance_limit ?: 100000),
-            'pickup_latitude'               => $this->pickup_latitude,
-            'pickup_longitude'              => $this->pickup_longitude,
-            'delivery_latitude'             => $this->delivery_latitude,
-            'delivery_longitude'            => $this->delivery_longitude,
-            'store_latitude'                => null,
-            'store_longitude'               => null,
-            'latitude'                      => $this->latitude,
-            'longitude'                     => $this->longitude,
-        ]);
-
-        $totalAmount = (float) $estimate['total_amount'];
-
-        // Validasi saldo customer mencukupi total pembayaran
-        $customerBalance = \App\Models\UserBalance::where('user_id', $userId)->first();
-        $currentBalance  = $customerBalance ? (float) $customerBalance->balance : 0;
-
-        if ($currentBalance < $totalAmount) {
-            $this->addError('amount', 'Saldo tidak mencukupi. Total saldo yang dibutuhkan: Rp ' . number_format($totalAmount, 0, ',', '.') . '. Saldo Anda: Rp ' . number_format($currentBalance, 0, ',', '.') . '. Silakan top up terlebih dahulu.');
-            return;
-        }
-
-        // 2. Jalankan Schedule Engine
-        $targetScheduledAt = null;
-        if ($this->scheduled_date) {
-            $time = $this->scheduled_time ?: '08:00';
-            $targetScheduledAt = Carbon::parse($this->scheduled_date . ' ' . $time);
-        }
-
-        $scheduleService = app(\App\Services\HelpScheduleService::class);
-        $orderMode = $targetScheduledAt ? Help::ORDER_MODE_SCHEDULED : Help::ORDER_MODE_INSTANT;
-        $scheduleData = $scheduleService->computeScheduleTimestamps(
-            $orderMode,
-            $targetScheduledAt,
-            0.0,
-            $this->service_type,
-            (float) ($estimate['service_route_distance_km'] ?? 0),
-            $this->early_departure_minutes ? (int) $this->early_departure_minutes : null
-        );
-
-        $expiresAt = $this->computeExpiresAt();
-
-        $createdHelp = DB::transaction(function () use ($userId, $customer, $estimate, $totalAmount, $scheduleData, $expiresAt) {
-            $photoPath = $this->photo ? $this->photo->store('helps', 'public') : null;
-            $orderId   = $this->generateOrderId();
-
-            // Simpan data bantuan dengan rincian model V3
-            $help = Help::create([
-                'user_id'                       => $userId,
-                'order_id'                      => $orderId,
+        try {
+            $creationService = app(\App\Services\HelpCreationService::class);
+            $createdHelp = $creationService->createHelp(auth()->user(), [
                 'city_id'                       => $this->city_id,
                 'district_id'                   => $this->district_id ?: null,
                 'title'                         => $this->title,
                 'service_type'                  => $this->service_type,
-                'service_stage'                 => null,
-                'order_mode'                    => $scheduleData['order_mode'],
-                'service_category'              => $this->service_category ?: 'general',
+                'service_category'              => $this->service_category ?: ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY ? 'goods_document' : 'general'),
                 'service_duration_hours'        => (float) ($this->service_duration_hours ?: 1.0),
-                'amount'                        => $estimate['service_fee'],
-                'service_fee'                   => $estimate['service_fee'],
-                'travel_fee'                    => 0.0,
+                'amount'                        => (float) ($this->amount ?: 0),
+                'route_distance_km'             => (float) ($this->route_distance_km ?: 0),
+                'service_route_distance_km'     => (float) ($this->route_distance_km ?: 0),
                 'material_fee'                  => 0.0,
                 'item_fund'                     => 0.0,
                 'item_fund_mode'                => $this->item_fund_mode,
                 'customer_reimbursement_method' => $this->customer_reimbursement_method,
                 'advance_limit'                 => (float) ($this->advance_limit ?: 100000),
-                'minimum_service_fee'           => $estimate['minimum_service_fee'],
-                'minimum_order_value'           => $estimate['minimum_order_value'],
-                'admin_fee'                     => $estimate['platform_fee'],
-                'platform_fee_amount'           => $estimate['platform_fee'],
-                'total_amount'                  => $totalAmount,
-                'mitra_earning'                 => $estimate['mitra_earning'],
                 'description'                   => $this->description,
                 'equipment_provided'            => $this->equipment_provided,
                 'location'                      => $this->location,
@@ -1313,65 +1237,20 @@ class Create extends Component
                 'delivery_address'              => $this->delivery_address,
                 'delivery_latitude'             => $this->delivery_latitude,
                 'delivery_longitude'            => $this->delivery_longitude,
-                'store_name'                    => null,
-                'store_address'                 => null,
-                'store_latitude'                => null,
-                'store_longitude'               => null,
-                'service_route_distance_km'     => ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) ? ($estimate['service_route_distance_km'] ?? $this->route_distance_km ?? 0.0) : 0.0,
-                'scheduled_at'                  => $scheduleData['service_scheduled_at'],
-                'published_at'                  => $scheduleData['published_at'],
-                'departure_at'                  => $scheduleData['departure_at'],
-                'service_scheduled_at'          => $scheduleData['service_scheduled_at'],
-                'pickup_scheduled_at'           => $scheduleData['pickup_scheduled_at'],
-                'delivery_deadline_at'          => $scheduleData['delivery_deadline_at'],
-                'early_departure_minutes'       => $scheduleData['early_departure_minutes'],
-                'expires_at'                    => $expiresAt->format('Y-m-d H:i:s'),
-                'photo'                         => $photoPath,
-                'status'                        => Help::STATUS_MENUNGGU_MITRA,
-                'payment_status'                => Help::PAYMENT_STATUS_PAID,
-                'escrow_status'                 => Help::ESCROW_STATUS_HELD,
-                'dispatch_mode'                 => ($scheduleData['order_mode'] === Help::ORDER_MODE_SCHEDULED || $this->service_type !== Help::SERVICE_TYPE_ON_SITE) ? Help::DISPATCH_MODE_POOL : Help::DISPATCH_MODE_SEEKING,
-                'rating_status'                 => Help::RATING_STATUS_PENDING,
-                'model_version'                 => 3,
-                'escrow_locked_at'              => now(),
+                'scheduled_date'                => $this->scheduled_date,
+                'scheduled_time'                => $this->scheduled_time,
+                'early_departure_minutes'       => $this->early_departure_minutes,
+                'expires_at'                    => $this->computeExpiresAt()->format('Y-m-d H:i:s'),
+                'photo_path'                    => $photoPath,
             ]);
 
-            // Escrow Lock: tahan dana total customer ke Holding
-            $customerBalance = \App\Models\UserBalance::firstOrCreate(
-                ['user_id' => $userId],
-                ['balance' => 0]
-            );
-
-            $descParts = [];
-            $descParts[] = ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY ? "Ongkos Antar: " : "Jasa: ") . "Rp " . number_format($estimate['service_fee'], 0, ',', '.');
-            $descParts[] = "Layanan: Rp " . number_format($estimate['platform_fee'], 0, ',', '.');
-            $lockDescription = "Dana Ditahan untuk Permintaan Bantuan '{$help->title}' (" . implode(' + ', $descParts) . ")";
-
-            $escrowTx = $customerBalance->lockForEscrow(
-                $totalAmount,
-                $help->id,
-                $help->order_id,
-                $lockDescription
-            );
-            $help->update(['escrow_transaction_id' => $escrowTx->id]);
-
-            return $help;
-        });
-
-        // POST-COMMIT: Picu Matching Engine jika On-Site instan
-        if ($createdHelp && $createdHelp->order_mode === Help::ORDER_MODE_INSTANT && $createdHelp->service_type === Help::SERVICE_TYPE_ON_SITE) {
-            try {
-                app(\App\Services\HelpMatchingService::class)->initiateMatching($createdHelp);
-            } catch (\Throwable $e) {
-                Log::error('[Customer/Helps/Create] Gagal initiate matching: ' . $e->getMessage(), [
-                    'help_id' => $createdHelp->id,
-                ]);
-            }
+            $this->dispatch('draft-cleared');
+            session()->flash('message', 'Permintaan bantuan berhasil dibuat! Sistem sedang memproses untuk Anda.');
+            return redirect()->route('customer.helps.index');
+        } catch (\Throwable $e) {
+            $this->addError('amount', $e->getMessage());
+            return;
         }
-
-        $this->dispatch('draft-cleared');
-        session()->flash('message', 'Permintaan bantuan berhasil dibuat! Sistem sedang mencari Rekan Jasa terdekat untuk Anda.');
-        return redirect()->route('customer.helps.index');
     }
 
     /**

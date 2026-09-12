@@ -20,7 +20,16 @@ class HelpSettings extends Component
     public $platform_service_fee = 2000;
     public $admin_fee; // legacy
 
+    // Pickup & Delivery Pricing & Policy Configurations
+    public $pickup_delivery_base_fare = 10000;
+    public $pickup_delivery_price_per_km = 2500;
+    public $pickup_delivery_long_distance_threshold = 20.0;
+    public $pickup_delivery_long_distance_price_per_km = 2750;
+    public $pickup_delivery_max_distance_km = 40.0;
+    public $pickup_delivery_max_cancellation_distance_after_pickup = 5.0;
+
     // Matching & Fairness Calibration Properties
+    public $matching_seeking_enabled = true;
     public $offer_timeout_seconds = 120;
     public $max_dispatch_candidates = 5;
     public $heartbeat_ttl_seconds = 60;
@@ -43,24 +52,31 @@ class HelpSettings extends Component
     protected function rules()
     {
         return [
-            'min_help_nominal'           => 'required|numeric|min:0',
-            'platform_service_fee'       => 'required|numeric|min:0',
-            'admin_fee'                  => 'nullable|numeric|min:0',
-            'offer_timeout_seconds'      => 'required|integer|min:15|max:300',
-            'max_dispatch_candidates'    => 'required|integer|min:1|max:30',
-            'heartbeat_ttl_seconds'      => 'required|integer|min:30|max:300',
-            'max_matching_radius_km'     => 'required|numeric|min:1|max:100',
-            'neutral_rating_prior'       => 'required|numeric|min:3.0|max:5.0',
-            'rating_min_votes'           => 'required|integer|min:1|max:50',
-            'weight_distance'            => 'required|numeric|min:0|max:1',
-            'weight_rating'              => 'required|numeric|min:0|max:1',
-            'weight_reliability'         => 'required|numeric|min:0|max:1',
-            'weight_fairness'            => 'required|numeric|min:0|max:1',
-            'max_fairness_boost_minutes' => 'required|numeric|min:10|max:240',
-            'qris_image'                 => 'nullable|image|max:3072|mimes:jpg,jpeg,png,webp',
-            'qris_merchant_name'         => 'required|string|max:150',
-            'qris_nmid'                  => 'nullable|string|max:100',
-            'qris_instructions'          => 'nullable|string|max:500',
+            'min_help_nominal'                                       => 'required|numeric|min:0',
+            'platform_service_fee'                                   => 'required|numeric|min:0',
+            'admin_fee'                                              => 'nullable|numeric|min:0',
+            'pickup_delivery_base_fare'                              => 'required|numeric|min:1000',
+            'pickup_delivery_price_per_km'                           => 'required|numeric|min:500',
+            'pickup_delivery_long_distance_threshold'                => 'required|numeric|min:5|max:40',
+            'pickup_delivery_long_distance_price_per_km'             => 'required|numeric|min:500',
+            'pickup_delivery_max_distance_km'                        => 'required|numeric|min:5|max:100',
+            'pickup_delivery_max_cancellation_distance_after_pickup' => 'required|numeric|min:1|max:20',
+            'matching_seeking_enabled'                               => 'boolean',
+            'offer_timeout_seconds'                                  => 'required|integer|min:15|max:300',
+            'max_dispatch_candidates'                                => 'required|integer|min:1|max:30',
+            'heartbeat_ttl_seconds'                                  => 'required|integer|min:30|max:300',
+            'max_matching_radius_km'                                 => 'required|numeric|min:1|max:100',
+            'neutral_rating_prior'                                   => 'required|numeric|min:3.0|max:5.0',
+            'rating_min_votes'                                       => 'required|integer|min:1|max:50',
+            'weight_distance'                                        => 'required|numeric|min:0|max:1',
+            'weight_rating'                                          => 'required|numeric|min:0|max:1',
+            'weight_reliability'                                     => 'required|numeric|min:0|max:1',
+            'weight_fairness'                                        => 'required|numeric|min:0|max:1',
+            'max_fairness_boost_minutes'                             => 'required|numeric|min:10|max:240',
+            'qris_image'                                             => 'nullable|image|max:3072|mimes:jpg,jpeg,png,webp',
+            'qris_merchant_name'                                     => 'required|string|max:150',
+            'qris_nmid'                                              => 'nullable|string|max:100',
+            'qris_instructions'                                      => 'nullable|string|max:500',
         ];
     }
 
@@ -86,7 +102,16 @@ class HelpSettings extends Component
         $this->platform_service_fee = (int) AppSetting::getPlatformServiceFee();
         $this->admin_fee            = (float) AppSetting::get('admin_fee', 0);
 
+        // Load Pickup & Delivery pricing & limitations
+        $this->pickup_delivery_base_fare                              = AppSetting::getPickupDeliveryBaseFare();
+        $this->pickup_delivery_price_per_km                           = AppSetting::getPickupDeliveryPricePerKm();
+        $this->pickup_delivery_long_distance_threshold                = AppSetting::getPickupDeliveryLongDistanceThresholdKm();
+        $this->pickup_delivery_long_distance_price_per_km             = AppSetting::getPickupDeliveryLongDistancePricePerKm();
+        $this->pickup_delivery_max_distance_km                        = AppSetting::getPickupDeliveryMaxDistanceKm();
+        $this->pickup_delivery_max_cancellation_distance_after_pickup = AppSetting::getPickupDeliveryMaxCancellationDistanceAfterPickup();
+
         // Load Matching & Fairness settings
+        $this->matching_seeking_enabled   = AppSetting::isMatchingSeekingEnabled();
         $this->offer_timeout_seconds      = AppSetting::getOfferTimeoutSeconds();
         $this->max_dispatch_candidates    = AppSetting::getMaxDispatchCandidates();
         $this->heartbeat_ttl_seconds      = AppSetting::getHeartbeatTtlSeconds();
@@ -126,7 +151,16 @@ class HelpSettings extends Component
             AppSetting::set('admin_fee', (string) $this->admin_fee);
         }
 
+        // Save Pickup & Delivery settings
+        AppSetting::set('pickup_delivery.base_fare', (string) $this->pickup_delivery_base_fare);
+        AppSetting::set('pickup_delivery.price_per_km', (string) $this->pickup_delivery_price_per_km);
+        AppSetting::set('pickup_delivery.long_distance_threshold', (string) $this->pickup_delivery_long_distance_threshold);
+        AppSetting::set('pickup_delivery.long_distance_price_per_km', (string) $this->pickup_delivery_long_distance_price_per_km);
+        AppSetting::set('pickup_delivery.max_distance_km', (string) $this->pickup_delivery_max_distance_km);
+        AppSetting::set('pickup_delivery.cancellation.max_after_pickup_distance_km', (string) $this->pickup_delivery_max_cancellation_distance_after_pickup);
+
         // Save Matching & Fairness settings
+        AppSetting::set('matching_seeking_enabled', $this->matching_seeking_enabled ? '1' : '0');
         AppSetting::set('offer_timeout_seconds', (string) $this->offer_timeout_seconds);
         AppSetting::set('max_dispatch_candidates', (string) $this->max_dispatch_candidates);
         AppSetting::set('heartbeat_ttl_seconds', (string) $this->heartbeat_ttl_seconds);
@@ -138,6 +172,7 @@ class HelpSettings extends Component
         AppSetting::set('weight_reliability', (string) $this->weight_reliability);
         AppSetting::set('weight_fairness', (string) $this->weight_fairness);
         AppSetting::set('max_fairness_boost_minutes', (string) $this->max_fairness_boost_minutes);
+
 
         // Handle QRIS Image Upload
         if ($this->qris_image) {

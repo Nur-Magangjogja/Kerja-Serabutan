@@ -17,6 +17,10 @@ class HelpScheduleService
 
     /**
      * Hitung jadwal milestone waktu pesanan berdasarkan Mode (Instant vs Scheduled) dan Jenis Layanan.
+     * Mengimplementasikan 3 konsep waktu terpisah:
+     * 1. Waktu Buat (created_at)
+     * 2. Waktu Publish / Muncul di Pool Mitra (published_at)
+     * 3. Waktu Pelaksanaan / Jadwal Kerja (scheduled_at / service_scheduled_at)
      */
     public function computeScheduleTimestamps(
         string $orderMode = Help::ORDER_MODE_INSTANT,
@@ -54,12 +58,26 @@ class HelpScheduleService
         }
 
         // Mode Scheduled: Waktu target ditentukan oleh Customer
-        $publishedAt = $now;
         $serviceScheduledAt = $targetScheduledAt;
+        
+        // Hitung published_at dinamis berdasarkan jarak waktu ke jadwal pelaksanaan
+        $deltaHours = $now->diffInHours($targetScheduledAt, false);
+        if ($deltaHours <= 2) {
+            $publishedAt = $now; // Jika kurang dari 2 jam, langsung publish
+        } elseif ($deltaHours <= 24) {
+            $publishedAt = $targetScheduledAt->copy()->subHours(2); // Jika 2 - 24 jam ke depan, muncul 2 jam sebelumnya
+        } else {
+            $publishedAt = $targetScheduledAt->copy()->subHours(4); // Jika > 24 jam ke depan, muncul 4 jam sebelumnya
+        }
+
+        // Pastikan published_at tidak melewati waktu sekarang jika sudah terlewat
+        if ($publishedAt->lt($now)) {
+            $publishedAt = $now;
+        }
+
         $leadMinutes = $earlyDepartureMinutes ?: \App\Models\AppSetting::getScheduledEarlyDepartureWindowMinutes();
         $departureAt = $targetScheduledAt->copy()->subMinutes(max($travelMinutes, $leadMinutes));
 
-        // Jika waktu keberangkatan yang dihitung sudah lewat, jadwalkan keberangkatan segera
         if ($departureAt->lt($now)) {
             $departureAt = $now;
         }
@@ -109,7 +127,7 @@ class HelpScheduleService
         $targetAddress = $help->location ?: $help->full_address;
 
         if ($help->isPickup()) {
-            if ($help->service_stage === Help::STAGE_GOING_TO_DESTINATION || $help->service_stage === Help::STAGE_ITEM_COLLECTED) {
+            if (in_array($help->service_stage, [Help::STAGE_GOING_TO_DESTINATION, Help::STAGE_FINAL_APPROACH, Help::STAGE_ITEM_COLLECTED], true)) {
                 $targetLat = (float) ($help->delivery_latitude ?: $help->latitude);
                 $targetLng = (float) ($help->delivery_longitude ?: $help->longitude);
                 $targetLabel = 'Titik 2: Antar (Tujuan)';
@@ -119,18 +137,6 @@ class HelpScheduleService
                 $targetLng = (float) ($help->pickup_longitude ?: $help->longitude);
                 $targetLabel = 'Titik 1: Jemput (Pickup)';
                 $targetAddress = $help->pickup_address ?: $help->location;
-            }
-        } elseif ($help->isBuy()) {
-            if (in_array($help->service_stage, [Help::STAGE_GOING_TO_CUSTOMER, Help::STAGE_PURCHASING])) {
-                $targetLat = (float) ($help->latitude ?: 0);
-                $targetLng = (float) ($help->longitude ?: 0);
-                $targetLabel = 'Lokasi Pemesan (Customer)';
-                $targetAddress = $help->location;
-            } else {
-                $targetLat = (float) ($help->store_latitude ?: $help->latitude);
-                $targetLng = (float) ($help->store_longitude ?: $help->longitude);
-                $targetLabel = 'Toko / Lokasi Belanja';
-                $targetAddress = $help->store_address ?: $help->store_name;
             }
         } else {
             // On-Site Service
@@ -159,10 +165,24 @@ class HelpScheduleService
             'formatted_distance'       => '--',
             'formatted_eta'            => 'Menunggu GPS Rekan Jasa...',
             'is_arrived'               => $isArrived,
+            'is_delayed'               => false,
+            'delay_minutes'            => 0,
+            'delay_reason'             => null,
         ];
 
         if ($partnerLat != 0 && $partnerLng != 0 && $targetLat != 0 && $targetLng != 0) {
-            $etaData = $this->geoService->calculateLiveTravelEta($partnerLat, $partnerLng, $targetLat, $targetLng);
+            $startedMovingAt = $help->partner_started_moving_at ? Carbon::parse($help->partner_started_moving_at) : null;
+            $initialDist = (float) ($help->travel_distance_km ?: $help->matching_distance_km ?: 0);
+
+            $etaData = $this->geoService->calculateLiveTravelEta(
+                $partnerLat,
+                $partnerLng,
+                $targetLat,
+                $targetLng,
+                $startedMovingAt,
+                $initialDist
+            );
+
             if ($isArrived) {
                 $etaData['is_arrived'] = true;
                 $etaData['formatted_eta'] = 'Tiba di lokasi';
@@ -182,6 +202,9 @@ class HelpScheduleService
             'formatted_distance'    => $etaData['formatted_distance'],
             'formatted_eta'         => $etaData['formatted_eta'],
             'estimated_minutes'     => $etaData['estimated_minutes'],
+            'is_delayed'            => $etaData['is_delayed'] ?? false,
+            'delay_minutes'         => $etaData['delay_minutes'] ?? 0,
+            'delay_reason'          => $etaData['delay_reason'] ?? null,
         ];
     }
 }

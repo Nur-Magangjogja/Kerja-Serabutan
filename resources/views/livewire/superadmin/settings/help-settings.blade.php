@@ -90,7 +90,74 @@
             </div>
         </div>
 
-        <!-- 2. Kalibrasi Algoritma Matching & Keadilan (Fairness Engine) -->
+        <!-- 2. Konfigurasi Layanan Antar & Jemput (Pickup & Delivery Motor) -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="border-b border-gray-200 dark:border-gray-700 px-4 sm:px-8 py-5 bg-gray-50/80 dark:bg-gray-900/60 flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Konfigurasi Tarif & Kebijakan Antar / Jemput (Motor)
+                    </h2>
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                        Atur tarif dasar, biaya per KM, batas jarak maksimal 40 KM, dan batas pembatalan pasca-jemput 5 KM.
+                    </p>
+                </div>
+            </div>
+
+            <div class="p-4 sm:p-8 space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Tarif Dasar / Base Fare (Rp)</label>
+                        <div class="relative">
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rp</span>
+                            <input type="number" wire:model="pickup_delivery_base_fare" min="1000" step="500"
+                                class="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-1">Tarif dasar pengantaran/penjemputan.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Tarif Per KM (Rp)</label>
+                        <div class="relative">
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rp</span>
+                            <input type="number" wire:model="pickup_delivery_price_per_km" min="500" step="250"
+                                class="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-1">Tarif untuk jarak &le; 20 KM.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Tarif Per KM Jarak Jauh (Rp)</label>
+                        <div class="relative">
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rp</span>
+                            <input type="number" wire:model="pickup_delivery_long_distance_price_per_km" min="500" step="250"
+                                class="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-1">Tarif per KM tier jarak jauh &gt; 20 KM (default: Rp 2.750/KM).</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Batas Jarak Maksimal Antar (KM)</label>
+                        <input type="number" step="1" wire:model="pickup_delivery_max_distance_km" min="5" max="100"
+                            class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        <p class="text-[11px] text-gray-400 mt-1">Order dengan jarak rute &gt; 40 KM otomatis ditolak demi batas aman motor.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Batas Maksimal Pembatalan Pasca-Jemput (KM Lock)</label>
+                        <input type="number" step="0.5" wire:model="pickup_delivery_max_cancellation_distance_after_pickup" min="1" max="20"
+                            class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        <p class="text-[11px] text-gray-400 mt-1">Setelah barang/penumpang diambil, pembatalan terkunci otomatis jika jarak dari titik jemput &gt; 5 KM.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Kalibrasi Algoritma Matching & Keadilan (Fairness Engine) -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="border-b border-gray-200 dark:border-gray-700 px-4 sm:px-8 py-5 bg-gray-50/80 dark:bg-gray-900/60 flex items-center justify-between gap-4">
                 <div>
@@ -107,6 +174,20 @@
             </div>
 
             <div class="p-4 sm:p-8 space-y-6">
+                <!-- Toggle Fitur Cari Order / Antrean Mitra -->
+                <div class="p-4 bg-indigo-50/60 dark:bg-indigo-950/30 rounded-xl border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between gap-4">
+                    <div>
+                        <h4 class="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-200">Fitur Cari Order / Antrean Mitra (Seeking Mode)</h4>
+                        <p class="text-[11px] sm:text-xs text-indigo-700/80 dark:text-indigo-400 mt-0.5">
+                            Bila dinonaktifkan, mitra tidak perlu mengaktifkan mode mencari antrean (berguna untuk wilayah baru atau volume rendah).
+                        </p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" wire:model="matching_seeking_enabled" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                    </label>
+                </div>
+
                 <!-- Row 1: Parameter Teknis -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
@@ -137,6 +218,7 @@
                         <p class="text-[11px] text-gray-400 mt-1">Jangkauan radius pencocokan.</p>
                     </div>
                 </div>
+
 
                 <!-- Row 2: Prior Bayesian & Fairness Cap -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
@@ -173,7 +255,7 @@
                         </div>
 
                         <div class="bg-gray-50 dark:bg-gray-900/60 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
-                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">2. Boost Rating </span>
+                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">2. Boost Rating (prioritas tertinggi) </span>
                             <input type="number" step="0.05" min="0" max="1" wire:model="weight_rating"
                                    class="w-full mt-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
                         </div>

@@ -17,9 +17,29 @@
         <!-- Tab 2: Pickup / Antar-Jemput -->
         <button type="button" wire:click="setServiceType('pickup_delivery')"
             class="p-3.5 rounded-xl border text-left transition-all cursor-pointer {{ $service_type === 'pickup_delivery' ? 'border-blue-500 bg-blue-50/80 dark:bg-blue-950/50 ring-2 ring-blue-500/20 shadow-sm' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300' }}">
-            <div class="text-2xl mb-1.5">📦</div>
+            <div class="text-2xl mb-1.5">🛵</div>
             <div class="text-xs font-bold text-gray-900 dark:text-white">Antar / Jemput</div>
-            <div class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">Kirim & ambil barang / dokumen</div>
+            <div class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">Antar penumpang / barang & dokumen (Motor &le; 40KM)</div>
         </button>
     </div>
+
+    <!-- Subkategori Khusus Antar / Jemput -->
+    @if($service_type === 'pickup_delivery')
+        <div class="pt-2">
+            <label class="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1.5">
+                Kategori Antar / Jemput:
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" wire:click="$set('service_category', 'passenger')"
+                    class="py-2 px-3 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all {{ ($service_category ?? '') === 'passenger' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/30' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300' }}">
+                    <span>👥</span> Antar Penumpang
+                </button>
+                <button type="button" wire:click="$set('service_category', 'goods_document')"
+                    class="py-2 px-3 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all {{ ($service_category ?? 'goods_document') === 'goods_document' || empty($service_category) || $service_category === 'general' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/30' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300' }}">
+                    <span>📦</span> Barang & Dokumen
+                </button>
+            </div>
+        </div>
+    @endif
 </div>
+

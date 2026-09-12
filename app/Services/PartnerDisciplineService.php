@@ -62,6 +62,25 @@ class PartnerDisciplineService
     }
 
     /**
+     * Compatibility bridge untuk issueManualWarningToUser.
+     */
+    public function issueWarning(
+        int|User $user,
+        int $targetLevel,
+        string $reason,
+        int|User|null $admin = null,
+        int|Help|null $help = null
+    ): void {
+        $userObj  = is_numeric($user) ? User::find($user) : $user;
+        $adminObj = is_numeric($admin) ? User::find($admin) : $admin;
+        $helpObj  = is_numeric($help) ? Help::find($help) : $help;
+
+        if ($userObj) {
+            $this->issueManualWarningToUser($userObj, $targetLevel, $reason, $adminObj, $helpObj);
+        }
+    }
+
+    /**
      * Penerbitan Surat Peringatan (SP 1, SP 2, SP 3) secara manual oleh Admin Wilayah
      * kepada Pengguna (Mitra maupun Customer) jika ditemukan kejanggalan/pelanggaran.
      */

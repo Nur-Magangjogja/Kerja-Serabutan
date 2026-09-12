@@ -398,13 +398,33 @@ class AppSetting extends Model
         return (bool) static::get('adjacent_district_matching_enabled', true);
     }
 
+    public static function isMatchingSeekingEnabled(): bool
+    {
+        return (bool) static::get('matching_seeking_enabled', true);
+    }
+
+    public static function getPickupDeliveryBaseFare(): float
+    {
+        return (float) static::get('pickup_delivery.base_fare', 10000.0);
+    }
+
+    public static function getPickupDeliveryMaxDistanceKm(): float
+    {
+        return (float) static::get('pickup_delivery.max_distance_km', 40.0);
+    }
+
+    public static function getPickupDeliveryMaxCancellationDistanceAfterPickup(): float
+    {
+        return (float) static::get('pickup_delivery.cancellation.max_after_pickup_distance_km', 5.0);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // TAHAP 6: PICKUP & DELIVERY PRICING & CANCELLATION CONFIGURATION
     // ─────────────────────────────────────────────────────────────────────────
 
     public static function getPickupDeliveryMinimumFare(): float
     {
-        return (float) static::get('pickup_delivery.minimum_fare', 10000.0);
+        return (float) static::get('pickup_delivery.base_fare', static::get('pickup_delivery.minimum_fare', 10000.0));
     }
 
     public static function getPickupDeliveryPricePerKm(): float

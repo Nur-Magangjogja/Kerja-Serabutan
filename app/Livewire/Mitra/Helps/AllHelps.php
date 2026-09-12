@@ -182,8 +182,8 @@ class AllHelps extends Component
             $maxLng = $lng + $lngDelta;
 
             // Formula Haversine SQL Presisi dengan koordinat titik awal sesuai jenis layanan (Output: distance_km)
-            $initialLatSql = "CAST(COALESCE(helps.pickup_latitude, helps.store_latitude, helps.latitude) AS REAL)";
-            $initialLngSql = "CAST(COALESCE(helps.pickup_longitude, helps.store_longitude, helps.longitude) AS REAL)";
+            $initialLatSql = "CAST(COALESCE(helps.pickup_latitude, helps.latitude) AS REAL)";
+            $initialLngSql = "CAST(COALESCE(helps.pickup_longitude, helps.longitude) AS REAL)";
             $haversineSql = "(6371 * acos(least(1.0, greatest(-1.0, cos(radians($lat)) * cos(radians($initialLatSql)) * cos(radians($initialLngSql) - radians($lng)) + sin(radians($lat)) * sin(radians($initialLatSql))))))";
         }
 

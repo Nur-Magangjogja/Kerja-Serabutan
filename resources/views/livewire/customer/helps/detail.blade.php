@@ -154,12 +154,7 @@
                     <span class="text-[10px] text-gray-400 block font-medium">Biaya Jasa</span>
                     <span class="font-bold text-gray-800 dark:text-gray-200">Rp {{ number_format($help->service_fee ?: $help->amount, 0, ',', '.') }}</span>
                 </div>
-                @if($help->service_type === 'buy_for_customer' && $help->item_fund > 0)
-                    <div>
-                        <span class="text-[10px] text-amber-600 dark:text-amber-400 block font-medium">Titipan Belanja (Escrow)</span>
-                        <span class="font-bold text-amber-700 dark:text-amber-300">Rp {{ number_format($help->item_fund, 0, ',', '.') }}</span>
-                    </div>
-                @endif
+
             </div>
 
             {{-- Partner Info --}}

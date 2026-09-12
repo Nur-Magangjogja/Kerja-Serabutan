@@ -207,10 +207,6 @@
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                                             📦 Antar-Jemput
                                         </span>
-                                    @elseif($help->service_type === 'buy_for_customer')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                            🛒 Titip Belanja
-                                        </span>
                                     @endif
 
                                     @if(isset($help->distance_km) && $help->distance_km !== null)
@@ -472,8 +468,8 @@
                         <span id="previewRouteDistanceBadge" class="hidden text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50"></span>
                     </div>
 
-                    <!-- Multi-Leg Route Box (for pickup_delivery / buy_for_customer) -->
-                    <div id="previewMultiRouteBox" class="hidden bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-3.5 space-y-3">
+                    <!-- Multi-Leg Route Box (for pickup_delivery) -->
+                    <div id="previewMultiRouteBox" class="hidden bg-gray-50 dark:bg-gray-755/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-3.5 space-y-3">
                         <div class="flex items-start gap-2.5">
                             <div class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</div>
                             <div class="min-w-0 flex-1">
@@ -636,36 +632,6 @@
                     document.getElementById('previewLeg1Dist').textContent = (data.distance_km !== null && data.distance_km !== undefined) ? `${data.distance_km} km dari Anda` : '';
 
                     document.getElementById('previewLeg2Label').textContent = 'Titik 2 • Tujuan Pengantaran';
-                    document.getElementById('previewLeg2Address').textContent = data.delivery_address || data.full_address || data.location || '-';
-                    
-                    const routeKm = data.service_route_distance_km;
-                    const routeDistText = document.getElementById('previewRouteDistanceText');
-                    if (routeDistText) {
-                        routeDistText.textContent = routeKm ? `📏 Jarak Antar: ±${routeKm} km` : 'Rute Pengantaran';
-                    }
-                }
-                if (routeDistBadge && data.service_route_distance_km) {
-                    routeDistBadge.textContent = `±${data.service_route_distance_km} km`;
-                    routeDistBadge.classList.remove('hidden');
-                } else if (routeDistBadge) {
-                    routeDistBadge.classList.add('hidden');
-                }
-            } else if (data.service_type === 'buy_for_customer') {
-                if (serviceTypeBadge) {
-                    serviceTypeBadge.textContent = '🛒 Titip Belanja';
-                    serviceTypeBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800';
-                    serviceTypeBadge.classList.remove('hidden');
-                }
-                if (locHeaderTitle) locHeaderTitle.textContent = 'Lokasi Pembelian & Pengantaran:';
-                if (singleLocBox) singleLocBox.classList.add('hidden');
-                if (multiRouteBox) {
-                    multiRouteBox.classList.remove('hidden');
-                    document.getElementById('previewLeg1Label').textContent = 'Titik 1 • Toko / Merchant';
-                    const storeStr = (data.store_name ? data.store_name + ' — ' : '') + (data.store_address || data.pickup_address || '-');
-                    document.getElementById('previewLeg1Address').textContent = storeStr;
-                    document.getElementById('previewLeg1Dist').textContent = (data.distance_km !== null && data.distance_km !== undefined) ? `${data.distance_km} km dari Anda` : '';
-
-                    document.getElementById('previewLeg2Label').textContent = 'Titik 2 • Lokasi Pengantaran';
                     document.getElementById('previewLeg2Address').textContent = data.delivery_address || data.full_address || data.location || '-';
                     
                     const routeKm = data.service_route_distance_km;

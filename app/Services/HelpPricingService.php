@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AppSetting;
 use App\Models\Help;
 use App\Models\User;
+use InvalidArgumentException;
 use Illuminate\Support\Facades\Log;
 
 class HelpPricingService
@@ -17,38 +18,46 @@ class HelpPricingService
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    // 1. DYNAMIC PRICING RULES (On-Site, Pickup & Delivery, Titip Beli)
+    // 1. CANONICAL PRICING RULES (On-Site & Pickup/Delivery)
     // ═════════════════════════════════════════════════════════════════════════
 
-    public const PRICE_PER_KM_DEFAULT        = 2000.0;
     public const MIN_SERVICE_FEE_ON_SITE     = 10000.0;
-    public const MIN_SERVICE_FEE_PICKUP      = 10000.0; // Minimal Rp 10.000 (untuk jarak <= 4 KM)
-    public const MIN_SERVICE_FEE_BUY         = 15000.0;
+    public const BASE_FARE_PICKUP_DEFAULT    = 10000.0;
+    public const PRICE_PER_KM_DEFAULT        = 2500.0;
+    public const LONG_DIST_THRESHOLD_DEFAULT = 20.0;
+    public const LONG_DIST_PRICE_KM_DEFAULT  = 2750.0;
+    public const MAX_SERVICE_DISTANCE_KM     = 40.0;
     public const MAX_LEG1_MATCHING_RADIUS_KM = 5.0; // Constraint jarak mitra ke titik awal
 
     /**
-     * Hitung tarif bertingkat khusus layanan Antar/Jemput (pickup_delivery):
-     * - 0 - 4 KM   : Rp 10.000 (Tarif Dasar / Minimum)
-     * - > 4 - 20 KM: ceil(jarak) * Rp 2.500 (Tarif Standar)
-     * - > 20 KM    : (20 * 2.500) + ((ceil(jarak) - 20) * 2.750) = 50.000 + ((ceil(jarak) - 20) * 2.750)
+     * Hitung tarif canonical khusus layanan Antar/Jemput (pickup_delivery):
+     * Formula:
+     * - D <= 20 KM : BASE_FARE (10k) + ceil(D) * PRICE_PER_KM (2.5k)
+     * - > 20 KM & <= 40 KM : BASE_FARE (10k) + (20 * PRICE_PER_KM) + ((ceil(D) - 20) * LONG_DIST_PRICE_KM (2.75k))
+     *                        = 10.000 + 50.000 + ((ceil(D) - 20) * 2.750) = 60.000 + ((ceil(D) - 20) * 2.750)
+     * - D > 40 KM : Melebihi batas jangkauan motor (Ditolak)
+     *
+     * @param float $distanceKm Jarak jalan raya (road distance) dalam KM
+     * @return float Total biaya jasa / route fare
+     * @throws InvalidArgumentException jika jarak > 40 KM
      */
     public function calculatePickupDeliveryFare(float $distanceKm): float
     {
-        $effectiveKm = max(1.0, ceil($distanceKm));
-        $minFare = AppSetting::getPickupDeliveryMinimumFare(); // 10000
-        $pricePerKm = AppSetting::getPickupDeliveryPricePerKm(); // 2500
-        $longDistThreshold = AppSetting::getPickupDeliveryLongDistanceThresholdKm(); // 20
-        $longDistPricePerKm = AppSetting::getPickupDeliveryLongDistancePricePerKm(); // 2750
-
-        if ($effectiveKm <= 4.0) {
-            return $minFare;
+        if ($distanceKm > self::MAX_SERVICE_DISTANCE_KM) {
+            throw new InvalidArgumentException("Jarak pengantaran ({$distanceKm} KM) melebihi batas maksimal 40 KM untuk armada sepeda motor.");
         }
+
+        $effectiveKm = max(1.0, ceil($distanceKm));
+        $baseFare = (float) AppSetting::get('pickup_delivery.base_fare', self::BASE_FARE_PICKUP_DEFAULT);
+        $pricePerKm = (float) AppSetting::get('pickup_delivery.price_per_km', self::PRICE_PER_KM_DEFAULT);
+        $longDistThreshold = (float) AppSetting::get('pickup_delivery.long_distance_threshold', self::LONG_DIST_THRESHOLD_DEFAULT);
+        $longDistPricePerKm = (float) AppSetting::get('pickup_delivery.long_distance_price_per_km', self::LONG_DIST_PRICE_KM_DEFAULT);
 
         if ($effectiveKm <= $longDistThreshold) {
-            return $effectiveKm * $pricePerKm;
+            return $baseFare + ($effectiveKm * $pricePerKm);
         }
 
-        $standardPortion = $longDistThreshold * $pricePerKm; // 50.000
+        $standardPortion = $baseFare + ($longDistThreshold * $pricePerKm); // 10.000 + 50.000 = 60.000
         $excessKm = $effectiveKm - $longDistThreshold;
         $longDistPortion = $excessKm * $longDistPricePerKm;
 
@@ -58,8 +67,7 @@ class HelpPricingService
     /**
      * Hitung nilai minimum biaya jasa (minimum_service_fee) untuk masing-masing tipe layanan:
      * - On-Site      : Minimal Rp 10.000
-     * - Antar/Jemput : Tarif bertingkat (Rp 10.000 untuk <= 4 KM, Rp 2.500/KM untuk 4-20 KM, Rp 2.750/KM untuk > 20 KM)
-     * - Titip Beli   : Minimal Rp 15.000 (Rp 2.000 / KM dari rute Toko → Customer + Jasa Titip)
+     * - Antar/Jemput : Formula canonical bertingkat (Base Fare + KM)
      */
     public function calculateMinimumServiceFee(
         string $serviceType = Help::SERVICE_TYPE_ON_SITE,
@@ -67,15 +75,8 @@ class HelpPricingService
         float $durationHours = 1.0,
         float $distanceKm = 0.0
     ): float {
-        $pricePerKm = self::PRICE_PER_KM_DEFAULT;
-
         if ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
             return $this->calculatePickupDeliveryFare($distanceKm);
-        }
-
-        if ($serviceType === Help::SERVICE_TYPE_BUY_FOR_CUSTOMER) {
-            $distanceFee = ceil(max(0.0, $distanceKm)) * $pricePerKm;
-            return max(self::MIN_SERVICE_FEE_BUY, $distanceFee);
         }
 
         // On-Site Default: Minimal Rp 10.000
@@ -84,8 +85,8 @@ class HelpPricingService
 
     /**
      * Hitung kompensasi perjalanan mitra (travel_fee).
-     * Pada V3, Leg 1 (Mitra -> Titik Awal) adalah MATCHING CONSTRAINT (Maks 5 KM),
-     * bukan biaya tambahan yang ditagihkan kepada customer.
+     * Leg 1 (Mitra -> Titik Awal) adalah MATCHING CONSTRAINT (Maks 5 KM),
+     * bukan biaya tambahan yang ditagihkan kepada customer di awal.
      */
     public function calculateTravelFee(float $travelDistanceKm, string $serviceType = Help::SERVICE_TYPE_ON_SITE): float
     {
@@ -93,7 +94,7 @@ class HelpPricingService
     }
 
     /**
-     * Hitung ongkos pengantaran rute layanan (service_route_fee) untuk Pickup & Delivery / Belanja.
+     * Hitung ongkos pengantaran rute layanan (service_route_fee) untuk Pickup & Delivery.
      */
     public function calculateServiceDeliveryFee(float $serviceRouteDistanceKm, string $serviceType = Help::SERVICE_TYPE_PICKUP_DELIVERY): float
     {
@@ -101,9 +102,7 @@ class HelpPricingService
             return $this->calculatePickupDeliveryFare($serviceRouteDistanceKm);
         }
 
-        $minFee = self::MIN_SERVICE_FEE_BUY;
-        $distanceFee = ceil(max(0.0, $serviceRouteDistanceKm)) * self::PRICE_PER_KM_DEFAULT;
-        return max($minFee, $distanceFee);
+        return self::MIN_SERVICE_FEE_ON_SITE;
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -126,7 +125,7 @@ class HelpPricingService
         $reimburseMode = $params['customer_reimbursement_method'] ?? 'cash';
         $advanceLimit  = (float) ($params['advance_limit'] ?? AppSetting::getAdvanceLimitDefault());
 
-        // 1. Hitung Jarak Rute Layanan (Leg 2: Pickup -> Dest atau Toko -> Cust)
+        // 1. Hitung Jarak Rute Layanan (Leg 2: Pickup -> Dest)
         $estimatedServiceDist = 0.0;
         $routeProvider = 'fallback';
 
@@ -143,20 +142,9 @@ class HelpPricingService
                 );
                 $routeProvider = 'geo_service';
             }
-        } elseif ($serviceType === Help::SERVICE_TYPE_BUY_FOR_CUSTOMER) {
-            $destLat = $params['delivery_latitude'] ?? $params['latitude'] ?? null;
-            $destLng = $params['delivery_longitude'] ?? $params['longitude'] ?? null;
-            $storeLat = $params['store_latitude'] ?? $params['pickup_latitude'] ?? null;
-            $storeLng = $params['store_longitude'] ?? $params['pickup_longitude'] ?? null;
 
-            if (!empty($storeLat) && !empty($destLat)) {
-                $estimatedServiceDist = $this->geoService->getRouteDistance(
-                    (float) $storeLat,
-                    (float) $storeLng,
-                    (float) $destLat,
-                    (float) $destLng
-                );
-                $routeProvider = 'geo_service';
+            if ($estimatedServiceDist > self::MAX_SERVICE_DISTANCE_KM) {
+                throw new InvalidArgumentException("Jarak rute pengantaran ({$estimatedServiceDist} KM) melebihi batas maksimal 40 KM.");
             }
         }
 
@@ -169,7 +157,7 @@ class HelpPricingService
 
         // 4. Total Pemotongan Saldo Customer (Escrow)
         $totalEscrow = $serviceFee + $materialFee;
-        if ($serviceType === Help::SERVICE_TYPE_BUY_FOR_CUSTOMER && $itemFundMode === Help::ITEM_FUND_CUSTOMER_PAID && $itemFund > 0) {
+        if ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY && $itemFundMode === Help::ITEM_FUND_CUSTOMER_PAID && $itemFund > 0) {
             $totalEscrow += $itemFund;
         }
 
@@ -179,21 +167,14 @@ class HelpPricingService
         // 5. Tentukan Matching Radius Snapshot
         $matchingRadiusSnapshot = 10.0;
         if ($serviceType === Help::SERVICE_TYPE_ON_SITE) {
-            if ($serviceFee <= 20000.0) {
-                $matchingRadiusSnapshot = 3.0;
-            } elseif ($serviceFee <= 50000.0) {
-                $matchingRadiusSnapshot = 5.0;
-            } else {
-                $matchingRadiusSnapshot = 10.0;
-            }
+            $matchingRadiusSnapshot = 10.0;
         } else {
-            // Pickup & Buy Leg 1 Constraint
+            // Pickup Leg 1 Priority Constraint
             $matchingRadiusSnapshot = self::MAX_LEG1_MATCHING_RADIUS_KM; // 5.0 KM
         }
 
-        $pricePerKmSnapshot = ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY)
-            ? AppSetting::getPickupDeliveryPricePerKm()
-            : self::PRICE_PER_KM_DEFAULT;
+        $baseFareSnapshot = (float) AppSetting::get('pickup_delivery.base_fare', self::BASE_FARE_PICKUP_DEFAULT);
+        $pricePerKmSnapshot = (float) AppSetting::get('pickup_delivery.price_per_km', self::PRICE_PER_KM_DEFAULT);
 
         return [
             'service_type'                 => $serviceType,
@@ -202,7 +183,7 @@ class HelpPricingService
             'service_fee'                  => $serviceFee,
             'travel_fee'                   => 0.0,
             'material_fee'                 => $materialFee,
-            'item_fund'                    => ($serviceType === Help::SERVICE_TYPE_BUY_FOR_CUSTOMER) ? $itemFund : 0.0,
+            'item_fund'                    => ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY) ? $itemFund : 0.0,
             'item_fund_mode'               => $itemFundMode,
             'customer_reimbursement_method'=> $reimburseMode,
             'advance_limit'                => $advanceLimit,
@@ -214,6 +195,10 @@ class HelpPricingService
             'mitra_earning'                => $mitraEarningEstimate,
             'service_route_distance_km'    => round($estimatedServiceDist, 2),
             // Snapshots
+            'base_fare_applied'            => ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY) ? $baseFareSnapshot : 0.0,
+            'price_per_km_applied'         => ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY) ? $pricePerKmSnapshot : 0.0,
+            'platform_fee_applied'         => $platformFee,
+            'estimated_road_distance_km'   => round($estimatedServiceDist, 2),
             'price_per_km_snapshot'        => $pricePerKmSnapshot,
             'minimum_service_snapshot'     => $minServiceFee,
             'matching_radius_snapshot'     => $matchingRadiusSnapshot,
@@ -242,7 +227,7 @@ class HelpPricingService
         $mitraEarning = $serviceFee + $materialFee;
 
         $totalAmount = $serviceFee + $materialFee;
-        if ($help->isBuy() && $help->item_fund_mode === Help::ITEM_FUND_CUSTOMER_PAID && $itemFund > 0) {
+        if ($help->isPickup() && $help->item_fund_mode === Help::ITEM_FUND_CUSTOMER_PAID && $itemFund > 0) {
             $totalAmount += $itemFund;
         }
         $totalAmount += $platformFee;
@@ -264,7 +249,7 @@ class HelpPricingService
     }
 
     /**
-     * Memisahkan struktur keuangan secara ketat antara Kas Platform, Pendapatan Mitra, dan Dana Belanjaan Barang (Item Fund).
+     * Memisahkan struktur keuangan secara ketat antara Kas Platform, Pendapatan Mitra, dan Dana Belanjaan / Pengadaan Barang (Item Fund).
      */
     public function calculateEscrowAndEarnings(Help $help): array
     {
@@ -274,7 +259,7 @@ class HelpPricingService
         $platformFee  = (float) $help->getPlatformFee();
 
         $mitraEarning = $serviceFee + $materialFee;
-        $isItemFundInEscrow = ($help->isBuy() && $help->item_fund_mode === Help::ITEM_FUND_CUSTOMER_PAID && $itemFund > 0);
+        $isItemFundInEscrow = ($help->isPickup() && $help->item_fund_mode === Help::ITEM_FUND_CUSTOMER_PAID && $itemFund > 0);
 
         return [
             'customer_total_paid' => (float) ($help->total_amount ?: ($mitraEarning + $platformFee + ($isItemFundInEscrow ? $itemFund : 0))),

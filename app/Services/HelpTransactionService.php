@@ -109,9 +109,6 @@ class HelpTransactionService
         if ($help->isPickup()) {
             $targetLat = (float) ($help->pickup_latitude ?: $help->latitude);
             $targetLng = (float) ($help->pickup_longitude ?: $help->longitude);
-        } elseif ($help->isBuy()) {
-            $targetLat = (float) ($help->store_latitude ?: $help->pickup_latitude ?: $help->latitude);
-            $targetLng = (float) ($help->store_longitude ?: $help->pickup_longitude ?: $help->longitude);
         } else {
             $targetLat = (float) ($help->latitude ?: 0);
             $targetLng = (float) ($help->longitude ?: 0);

@@ -241,26 +241,11 @@ class HelpMatchingService
 
     /**
      * Hitung batas maksimum radius matching untuk order ini:
-     * - On-Site:
-     *   - Nilai Jasa <= Rp 20.000 : Max 3.0 KM (Ring 1)
-     *   - Nilai Jasa <= Rp 50.000 : Max 5.0 KM (Ring 1 -> Ring 2)
-     *   - Nilai Jasa > Rp 50.000  : Max 10.0 KM (Ring 1 -> Ring 2 -> Ring 3 -> Ring 4)
-     * - Pickup / Buy:
-     *   - Leg 1 Constraint: Maksimal 5.0 KM (jarak mitra ke titik jemput/toko)
+     * - On-Site: Maksimal 10.0 KM
+     * - Pickup/Delivery: Maksimal 10.0 KM (dengan dual-ring: 5 KM priority, 10 KM fallback)
      */
     public function computeServiceMaxMatchingRadius(Help $help): float
     {
-        if ($help->isPickup() || $help->isBuy()) {
-            return 5.0;
-        }
-
-        $amount = (float) ($help->service_fee > 0 ? $help->service_fee : $help->amount);
-        if ($amount <= 20000.0) {
-            return 3.0;
-        }
-        if ($amount <= 50000.0) {
-            return 5.0;
-        }
         return (float) AppSetting::MAX_OPERATIONAL_RADIUS_KM; // 10.0 KM
     }
 
@@ -282,9 +267,6 @@ class HelpMatchingService
         if ($help->isPickup()) {
             $targetLat = (float) ($help->pickup_latitude ?: $help->latitude);
             $targetLng = (float) ($help->pickup_longitude ?: $help->longitude);
-        } elseif ($help->isBuy()) {
-            $targetLat = (float) ($help->store_latitude ?: $help->latitude);
-            $targetLng = (float) ($help->store_longitude ?: $help->longitude);
         } else {
             $targetLat = (float) ($help->latitude ?: 0);
             $targetLng = (float) ($help->longitude ?: 0);
@@ -359,9 +341,6 @@ class HelpMatchingService
         if ($help->isPickup()) {
             $targetLat = (float) ($help->pickup_latitude ?: $help->latitude);
             $targetLng = (float) ($help->pickup_longitude ?: $help->longitude);
-        } elseif ($help->isBuy()) {
-            $targetLat = (float) ($help->store_latitude ?: $help->latitude);
-            $targetLng = (float) ($help->store_longitude ?: $help->longitude);
         } else {
             $targetLat = (float) ($help->latitude ?: 0);
             $targetLng = (float) ($help->longitude ?: 0);
@@ -500,12 +479,33 @@ class HelpMatchingService
      */
     public function initiateMatching(Help $help): bool
     {
+        // 1. Cek konfigurasi SuperAdmin: Apakah fitur cari order / matching seeking aktif
+        if (!AppSetting::isMatchingSeekingEnabled()) {
+            Log::info("[HelpMatchingService] Cari order is globally disabled. Falling back to Open Pool for Help #{$help->id}.");
+            $this->fallbackToOpenPool($help);
+            return false;
+        }
+
         if ($help->order_mode === Help::ORDER_MODE_SCHEDULED || $help->dispatch_mode === Help::DISPATCH_MODE_POOL) {
             $this->fallbackToOpenPool($help);
             return false;
         }
 
-        $candidates = $this->getRankedCandidates($help);
+        // 2. Dual-Ring Matching:
+        // - Pickup & Delivery: Prioritaskan Ring 1 (<= 5.0 KM), jika kosong fallback ke Ring 2 (<= 10.0 KM)
+        // - On-Site: Langsung cari dalam radius standar (<= 10.0 KM)
+        if ($help->isPickup()) {
+            // Ring 1: Prioritas <= 5 KM dari titik jemput
+            $candidates = $this->getRankedCandidates($help, [], 5.0);
+            
+            // Ring 2: Fallback hingga 10 KM jika ring 1 kosong
+            if ($candidates->isEmpty()) {
+                Log::info("[HelpMatchingService] Priority Ring (<= 5 KM) empty for Pickup/Delivery Help #{$help->id}. Expanding to Fallback Ring (<= 10 KM).");
+                $candidates = $this->getRankedCandidates($help, [], 10.0);
+            }
+        } else {
+            $candidates = $this->getRankedCandidates($help, [], 10.0);
+        }
 
         if ($candidates->isEmpty()) {
             Log::info("[HelpMatchingService] No eligible candidates found for Help #{$help->id}. Falling back to Open Pool.");

@@ -26,12 +26,7 @@ class HelpTrackingService
         return DB::transaction(function () use ($help, $initialLat, $initialLng, $gpsAccuracy) {
             $locked = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
 
-            $nextStage = null;
-            if ($locked->isPickup()) {
-                $nextStage = Help::STAGE_GOING_TO_PICKUP;
-            } elseif ($locked->isBuy()) {
-                $nextStage = Help::STAGE_GOING_TO_STORE;
-            }
+            $nextStage = $locked->isPickup() ? Help::STAGE_GOING_TO_PICKUP : null;
 
             $locked->update([
                 'status'                    => Help::STATUS_PARTNER_ON_THE_WAY,
@@ -180,7 +175,7 @@ class HelpTrackingService
     public function advanceServiceStage(Help $help, string $nextStage, array $extraData = []): Help
     {
         // Guard penjadwalan jika memulai pergerakan awal
-        if (in_array($nextStage, [Help::STAGE_GOING_TO_PICKUP, Help::STAGE_GOING_TO_STORE], true)) {
+        if ($nextStage === Help::STAGE_GOING_TO_PICKUP) {
             if ($help->isScheduled() && !$help->canPartnerStartDeparture()) {
                 $openTime = $help->departure_window_opens_at?->format('H:i') ?? '1 jam sebelum jadwal';
                 $targetTime = $help->getScheduledTargetTime()?->format('H:i') ?? '-';
@@ -193,7 +188,7 @@ class HelpTrackingService
 
             $updatePayload = array_merge(['service_stage' => $nextStage], $extraData);
 
-            // Pemetaan transisi otomatis ke Help.status
+            // Pemetaan transisi otomatis ke Help.status untuk pickup_delivery
             if ($locked->isPickup()) {
                 if ($nextStage === Help::STAGE_GOING_TO_PICKUP) {
                     $updatePayload['status'] = Help::STATUS_PARTNER_ON_THE_WAY;
@@ -211,17 +206,6 @@ class HelpTrackingService
                 } elseif (in_array($nextStage, [Help::STAGE_ITEM_COLLECTED, Help::STAGE_GOING_TO_DESTINATION, Help::STAGE_FINAL_APPROACH])) {
                     $updatePayload['status'] = Help::STATUS_IN_PROGRESS;
                 } elseif ($nextStage === Help::STAGE_AT_DESTINATION) {
-                    $updatePayload['status'] = Help::STATUS_IN_PROGRESS;
-                }
-            } elseif ($locked->isBuy()) {
-                if ($nextStage === Help::STAGE_GOING_TO_STORE) {
-                    $updatePayload['status'] = Help::STATUS_PARTNER_ON_THE_WAY;
-                    $updatePayload['partner_started_at'] = $locked->partner_started_at ?? now();
-                } elseif ($nextStage === Help::STAGE_AT_STORE) {
-                    $updatePayload['status'] = Help::STATUS_PARTNER_ARRIVED;
-                    $updatePayload['partner_arrived_at'] = now();
-                    $updatePayload['arrived_at'] = now();
-                } elseif (in_array($nextStage, [Help::STAGE_PURCHASING, Help::STAGE_GOING_TO_CUSTOMER, Help::STAGE_AT_CUSTOMER, Help::STAGE_DELIVERED])) {
                     $updatePayload['status'] = Help::STATUS_IN_PROGRESS;
                 }
             }
@@ -265,21 +249,6 @@ class HelpTrackingService
             ];
         }
 
-        if ($help->isBuy()) {
-            if (in_array($help->service_stage, [Help::STAGE_GOING_TO_CUSTOMER, Help::STAGE_PURCHASING])) {
-                return [
-                    'lat'   => (float) ($help->latitude ?: 0),
-                    'lng'   => (float) ($help->longitude ?: 0),
-                    'label' => 'Lokasi Pemesan (Customer)',
-                ];
-            }
-            return [
-                'lat'   => (float) ($help->store_latitude ?: $help->latitude),
-                'lng'   => (float) ($help->store_longitude ?: $help->longitude),
-                'label' => 'Toko / Tempat Belanja (Store)',
-            ];
-        }
-
         // On-Site Service: Target adalah alamat customer
         return [
             'lat'   => (float) ($help->latitude ?: 0),
@@ -302,17 +271,6 @@ class HelpTrackingService
                 return true;
             } elseif (in_array($help->service_stage, [Help::STAGE_GOING_TO_DESTINATION, Help::STAGE_FINAL_APPROACH], true)) {
                 $help->service_stage = Help::STAGE_AT_DESTINATION;
-                return true;
-            }
-        } elseif ($help->isBuy()) {
-            if ($help->service_stage === Help::STAGE_GOING_TO_STORE) {
-                $help->service_stage = Help::STAGE_AT_STORE;
-                $help->status = Help::STATUS_PARTNER_ARRIVED;
-                $help->partner_arrived_at = now();
-                $help->arrived_at = now();
-                return true;
-            } elseif ($help->service_stage === Help::STAGE_GOING_TO_CUSTOMER) {
-                $help->service_stage = Help::STAGE_AT_CUSTOMER;
                 return true;
             }
         } else {
