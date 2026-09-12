@@ -77,34 +77,91 @@
         isSearching: false,
         showResults: false,
         searchTimeout: null,
-        handleSearchInput() {
-            clearTimeout(this.searchTimeout);
-            if (this.searchQuery.trim().length < 3) {
+        searchController: null,
+        searchReqId: 0,
+        init() {
+            window.addEventListener('cancel-active-searches', () => {
+                clearTimeout(this.searchTimeout);
+                if (this.searchController) this.searchController.abort();
+                this.isSearching = false;
+                this.showResults = false;
+                this.searchResults = [];
+            });
+            window.addEventListener('map-address-updated', (e) => {
+                clearTimeout(this.searchTimeout);
+                if (this.searchController) this.searchController.abort();
+                this.isSearching = false;
+                this.showResults = false;
+                this.searchResults = [];
+            });
+            window.addEventListener('map-marker-cleared', (e) => {
+                clearTimeout(this.searchTimeout);
+                if (this.searchController) this.searchController.abort();
+                this.searchQuery = '';
                 this.searchResults = [];
                 this.showResults = false;
+                this.isSearching = false;
+            });
+        },
+        handleSearchInput() {
+            clearTimeout(this.searchTimeout);
+            if (this.searchController) {
+                this.searchController.abort();
+                this.searchController = null;
+            }
+
+            const q = (this.searchQuery || '').trim();
+            if (q.length < 2) {
+                this.searchResults = [];
+                this.showResults = false;
+                this.isSearching = false;
                 return;
             }
+
             this.isSearching = true;
-            this.searchTimeout = setTimeout(() => {
-                fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(this.searchQuery + ', Indonesia') + '&addressdetails=1&limit=6', {
-                    headers: { 'Accept-Language': 'id' }
-                })
-                .then(res => res.json())
-                .then(data => {
-                    this.searchResults = data || [];
-                    this.showResults = true;
-                    this.isSearching = false;
-                })
-                .catch(() => {
-                    this.isSearching = false;
-                });
-            }, 300);
+            const currentReq = ++this.searchReqId;
+
+            this.searchTimeout = setTimeout(async () => {
+                this.searchController = new AbortController();
+                try {
+                    let data = [];
+                    if (typeof window.searchIndonesianPlaces === 'function') {
+                        data = await window.searchIndonesianPlaces(q, 6, this.searchController.signal);
+                    } else {
+                        const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=id&addressdetails=1&limit=6&q=' + encodeURIComponent(q + ', Indonesia'), {
+                            signal: this.searchController.signal,
+                            headers: { 'Accept-Language': 'id' }
+                        });
+                        data = await res.json() || [];
+                    }
+                    if (currentReq === this.searchReqId) {
+                        this.searchResults = data || [];
+                        this.showResults = this.searchResults.length > 0;
+                    }
+                } catch(e) {
+                    if (e.name !== 'AbortError') {
+                        this.searchResults = [];
+                    }
+                } finally {
+                    if (currentReq === this.searchReqId) {
+                        this.isSearching = false;
+                    }
+                }
+            }, 280);
         },
         selectResult(item) {
+            clearTimeout(this.searchTimeout);
+            if (this.searchController) {
+                this.searchController.abort();
+                this.searchController = null;
+            }
+            this.isSearching = false;
+            this.showResults = false;
+            this.searchResults = [];
+
             const lat = parseFloat(item.lat);
             const lon = parseFloat(item.lon);
-            this.searchQuery = item.display_name.split(',').slice(0, 3).join(', ');
-            this.showResults = false;
+            this.searchQuery = item.main_title || item.display_name.split(',').slice(0, 3).join(', ');
             
             if (window.selectMapLocation) {
                 window.selectMapLocation(lat, lon, item.display_name);
@@ -122,23 +179,42 @@
                 @input="handleSearchInput()"
                 @focus="if(searchResults.length > 0) showResults = true"
                 id="map-search-input"
-                placeholder="{{ $service_type === 'pickup_delivery' ? '🔍 Cari alamat Titik 1 (Jemput)...' : '🔍 Cari nama tempat, gedung, jalan, atau area...' }}"
+                placeholder="{{ $service_type === 'pickup_delivery' ? '🔍 Cari desa, kelurahan, kecamatan, jalan Titik 1...' : '🔍 Cari nama jalan, desa, kelurahan, kecamatan, kabupaten, atau tempat...' }}"
                 class="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none shadow-2xs">
             <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center">
                 <span x-show="isSearching" class="text-blue-500 animate-spin text-xs">⏳</span>
-                <button type="button" x-show="!isSearching && searchQuery.length > 0" @click="searchQuery = ''; searchResults = []; showResults = false" class="text-gray-400 hover:text-gray-600 text-xs cursor-pointer">✕</button>
+                <button type="button" x-show="!isSearching && searchQuery.length > 0"
+                    @click="
+                        clearTimeout(searchTimeout);
+                        if (searchController) { searchController.abort(); searchController = null; }
+                        searchQuery = '';
+                        searchResults = [];
+                        showResults = false;
+                        isSearching = false;
+                        if (window.clearMapLocation) {
+                            window.clearMapLocation(window.activeMapPoint || 'onsite');
+                        }
+                    "
+                    class="text-gray-400 hover:text-gray-600 text-xs cursor-pointer">✕</button>
             </div>
         </div>
 
         <!-- Search Results Dropdown -->
         <div x-show="showResults && searchResults.length > 0" x-cloak
-            class="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto dropdown-scrollbar bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl divide-y divide-gray-100 dark:divide-gray-700/60">
-            <template x-for="item in searchResults" :key="item.place_id">
-                <button type="button" @click="selectResult(item)" class="w-full text-left p-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 flex items-start gap-2 transition cursor-pointer group">
-                    <span class="text-base flex-shrink-0">📍</span>
+            class="absolute z-50 left-0 right-0 mt-1 max-h-64 overflow-y-auto dropdown-scrollbar bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl divide-y divide-gray-100 dark:divide-gray-700/60">
+            <div class="px-3 py-1.5 bg-gray-50 dark:bg-gray-900 text-[10px] font-bold text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                <span>📍 Rekomendasi Lokasi di Peta:</span>
+                <span class="font-normal text-gray-400">Klik untuk geser peta</span>
+            </div>
+            <template x-for="item in searchResults" :key="item.place_id || item.osm_id || item.lat">
+                <button type="button" @click="selectResult(item)" class="w-full text-left p-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 flex items-start gap-2.5 transition cursor-pointer group">
+                    <span class="text-base flex-shrink-0 mt-0.5" x-text="item.badge_icon || '📍'">📍</span>
                     <div class="min-w-0 flex-1">
-                        <p class="text-xs font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate" x-text="item.display_name.split(',')[0]"></p>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate" x-text="item.display_name"></p>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <p class="text-xs font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate" x-text="item.main_title || item.display_name.split(',')[0]"></p>
+                            <span x-show="item.badge" :class="item.badge_class || 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'" class="px-1.5 py-0.2 rounded text-[9px] font-semibold" x-text="item.badge"></span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5" x-text="item.hierarchy_subtitle || item.display_name"></p>
                     </div>
                 </button>
             </template>
@@ -164,6 +240,35 @@
             <p class="text-[11px] mt-0.5 text-red-700 dark:text-red-400" x-text="message"></p>
         </div>
         <button type="button" @click="show = false" class="text-red-400 hover:text-red-600 font-bold">&times;</button>
+    </div>
+
+    <!-- Max Distance Exceeded Warning Alert -->
+    <div id="max-distance-warning"
+         x-data="{ show: false, message: '', distance: 0, max: 40 }"
+         x-show="show"
+         x-cloak
+         x-init="
+             window.addEventListener('max-distance-exceeded', (e) => {
+                 const detail = (e.detail && Array.isArray(e.detail)) ? e.detail[0] : (e.detail || {});
+                 distance = detail.distance || 0;
+                 max = detail.max || 40;
+                 message = detail.message || `Jarak pengantaran (${distance} KM) melebihi batas maksimal ${max} KM untuk armada sepeda motor.`;
+                 show = true;
+             });
+             window.addEventListener('max-distance-cleared', () => { show = false; });
+             window.addEventListener('map-marker-cleared', () => { show = false; });
+             window.addEventListener('service-type-changed', () => { show = false; });
+         "
+         class="bg-amber-600 dark:bg-amber-800 border border-amber-500 dark:border-amber-700 rounded-xl p-3 mb-2 text-xs flex items-start gap-2.5 text-white shadow-sm transition-all">
+        <span class="text-base flex-shrink-0">⚠️</span>
+        <div class="flex-1 min-w-0 text-white">
+            <p class="font-bold text-white flex items-center gap-1.5">
+                <span>Jarak Pengantaran Melebihi Batas Maksimal</span>
+                <span class="text-[10px] bg-black/25 text-white px-2 py-0.5 rounded-full font-bold" x-text="distance + ' KM / Maks. ' + max + ' KM'"></span>
+            </p>
+            <p class="text-[11px] mt-0.5 text-white leading-relaxed font-medium" x-text="message"></p>
+        </div>
+        <button type="button" @click="show = false" class="text-white hover:text-white/80 font-bold text-sm cursor-pointer">&times;</button>
     </div>
 
     <!-- Map Container -->

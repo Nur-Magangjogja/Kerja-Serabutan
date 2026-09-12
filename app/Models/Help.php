@@ -487,6 +487,11 @@ class Help extends Model
         return $this->hasOne(HelpCancelRequest::class)->latestOfMany();
     }
 
+    public function latestCancelRequest()
+    {
+        return $this->hasOne(HelpCancelRequest::class)->latestOfMany();
+    }
+
     public function activeCancelRequest()
     {
         return $this->hasOne(HelpCancelRequest::class)->where('status', HelpCancelRequest::STATUS_PENDING)->latestOfMany();

@@ -49,29 +49,39 @@ class HelpDetail extends Component
     public function mount($id)
     {
         $this->helpId = $id;
-        $this->help   = Help::with(['user', 'city', 'rating'])->findOrFail($id);
+        $this->help   = Help::with(['user', 'city', 'rating', 'latestCancelRequest.reviewedBy', 'latestCancelRequest.customer', 'latestCancelRequest.partner'])->findOrFail($id);
 
         if ($this->help->mitra_id !== auth()->id()) {
-            // Akses diizinkan jika pernah terlibat (audit activity atau notifikasi)
+            // Akses diizinkan jika pernah terlibat (audit activity, cancel request, atau notifikasi)
             if (!$this->wasInvolvedInHelp($id)) {
                 session()->flash('error', 'Bantuan ini tidak ditugaskan kepada Anda.');
                 $this->redirectRoute('mitra.dashboard');
                 return;
             }
 
-            // Tampilkan modal info pembatalan diterima
-            $this->showPartnerCancelStatusModal = true;
-            $this->partnerCancelStatus          = 'accepted';
+            // Tampilkan modal info pembatalan diterima jika ada flag
+            if ($this->help->partner_cancel_prev_status === 'cancel_accepted') {
+                $this->showPartnerCancelStatusModal = true;
+                $this->partnerCancelStatus          = 'accepted';
+            }
         }
 
         $this->currentStatus = $this->help->status;
     }
 
     /**
-     * Cek apakah mitra pernah terlibat pada help ini (via activity log atau notifikasi).
+     * Cek apakah mitra pernah terlibat pada help ini (via activity log, cancel request, atau notifikasi).
      */
     private function wasInvolvedInHelp(int $helpId): bool
     {
+        if ($this->help && $this->help->mitra_id === auth()->id()) {
+            return true;
+        }
+
+        if (\App\Models\HelpCancelRequest::where('help_id', $helpId)->where('partner_id', auth()->id())->exists()) {
+            return true;
+        }
+
         if (\App\Models\PartnerActivity::where('help_id', $helpId)->where('user_id', auth()->id())->exists()) {
             return true;
         }
@@ -92,7 +102,7 @@ class HelpDetail extends Component
         $oldFlag   = $this->help?->partner_cancel_prev_status;
 
         $this->help->refresh();
-        $this->help->load(['user', 'city', 'rating']);
+        $this->help->load(['user', 'city', 'rating', 'latestCancelRequest.reviewedBy', 'latestCancelRequest.customer', 'latestCancelRequest.partner']);
 
         // Auto-confirm jika batas waktu 24 jam telah terlewati tanpa komplain/sengketa
         if (
@@ -421,6 +431,24 @@ class HelpDetail extends Component
 
     public function render()
     {
-        return view('livewire.mitra.helps.help-detail');
+        $cancelRequest = \App\Models\HelpCancelRequest::with(['customer', 'partner', 'reviewedBy'])
+            ->where('help_id', $this->help->id)
+            ->where(function ($q) {
+                $q->where('partner_id', auth()->id())
+                  ->orWhereNull('partner_id');
+            })
+            ->latest()
+            ->first();
+
+        if (!$cancelRequest) {
+            $cancelRequest = \App\Models\HelpCancelRequest::with(['customer', 'partner', 'reviewedBy'])
+                ->where('help_id', $this->help->id)
+                ->latest()
+                ->first();
+        }
+
+        return view('livewire.mitra.helps.help-detail', [
+            'cancelRequest' => $cancelRequest,
+        ]);
     }
 }

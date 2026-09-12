@@ -103,6 +103,7 @@ class Create extends Component
     public $confirmFeeLabel       = 'Rp 2.000';
     public $confirmMitraEarning   = 0;
     public $confirmMinServiceFee  = 0;
+    public bool $isDraftRestored  = false;
 
     protected $listeners = [
         'citySelected'            => 'setCityId',
@@ -110,6 +111,8 @@ class Create extends Component
         'setDeliveryLocation'     => 'resolveDeliveryLocation',
         'setStoreLocation'        => 'resolveStoreLocation',
         'calculateRouteDistance'  => 'calculateRouteDistance',
+        'clearLocationPoint'      => 'clearLocationPoint',
+        'discardDraft'            => 'discardDraft',
     ];
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -144,6 +147,21 @@ class Create extends Component
 
         if (Schema::hasTable('req_provinces')) {
             $this->req_provinces = DB::table('req_provinces')->orderBy('province')->get()->toArray();
+        }
+
+        // Cek apakah ada cookie penyimpanan sementara bantuan (TTL 15 detik)
+        if (request()->hasCookie('sb_help_draft')) {
+            try {
+                $rawCookie = request()->cookie('sb_help_draft');
+                $parsed = json_decode($rawCookie, true);
+                if (is_array($parsed) && isset($parsed['expires_at']) && $parsed['expires_at'] > time()) {
+                    if (isset($parsed['data']) && is_array($parsed['data'])) {
+                        $this->restoreDraft($parsed['data']);
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Ignore parsing failure
+            }
         }
     }
 
@@ -187,7 +205,16 @@ class Create extends Component
     {
         $min = (int) ($this->minHelpNominal ?: AppSetting::get('min_help_nominal', 10000));
         if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
-            $min = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
+            $maxDistanceKm = AppSetting::getPickupDeliveryMaxDistanceKm();
+            if ((float) $this->route_distance_km > $maxDistanceKm) {
+                $min = 0;
+            } else {
+                try {
+                    $min = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
+                } catch (\Throwable $e) {
+                    $min = 0;
+                }
+            }
         }
         $current = (int) ($this->amount ?: 0);
         $new = max($min, min(100000000, $current + $delta));
@@ -201,7 +228,16 @@ class Create extends Component
     {
         $min = (int) ($this->minHelpNominal ?: AppSetting::get('min_help_nominal', 10000));
         if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
-            $min = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
+            $maxDistanceKm = AppSetting::getPickupDeliveryMaxDistanceKm();
+            if ((float) $this->route_distance_km > $maxDistanceKm) {
+                $min = 0;
+            } else {
+                try {
+                    $min = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
+                } catch (\Throwable $e) {
+                    $min = 0;
+                }
+            }
         }
         $this->amount = max($min, min(100000000, $value));
     }
@@ -344,6 +380,7 @@ class Create extends Component
 
         $this->latitude  = (float) $lat;
         $this->longitude = (float) $lng;
+        $this->resetErrorBag(['latitude', 'longitude', 'location']);
 
         if ($fullAddress) {
             $this->location = $fullAddress;
@@ -361,7 +398,7 @@ class Create extends Component
                 ->first();
         }
 
-        // Fallback pencarian kota berdasarkan kedekatan koordinat jika nama tidak cocok
+        // Fallback pencarian kota berdasarkan kedekatan koordinat jika nama tidak cocok atau null
         if (!$matchedCity && $this->latitude && $this->longitude) {
             $matchedCity = City::select('*')
                 ->selectRaw("(6371 * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) AS dist", [$this->latitude, $this->longitude, $this->latitude])
@@ -433,6 +470,10 @@ class Create extends Component
                 $this->district_id   = $matchedDistrict->id;
                 $this->districtQuery = $matchedDistrict->name;
             }
+
+            if (empty($this->location)) {
+                $this->location = ($this->districtQuery ? 'Kec. ' . $this->districtQuery . ', ' : '') . $matchedCity->name;
+            }
         }
 
         $this->dispatch('map-location-resolved', [
@@ -473,15 +514,20 @@ class Create extends Component
 
         $this->pickup_latitude  = (float) $lat;
         $this->pickup_longitude = (float) $lng;
+        $this->latitude         = (float) $lat;
+        $this->longitude        = (float) $lng;
+        $this->resetErrorBag(['pickup_address', 'pickup_latitude', 'pickup_longitude']);
+
         if ($fullAddress) {
             $this->pickup_address = $fullAddress;
             $this->location       = $fullAddress;
         }
-        $this->latitude  = (float) $lat;
-        $this->longitude = (float) $lng;
 
-        if ($cityName || $districtName || $fullAddress) {
-            $this->resolveLocationFromMap($lat, $lng, $cityName, $districtName, $fullAddress, $provinceName);
+        $this->resolveLocationFromMap($lat, $lng, $cityName, $districtName, $fullAddress ?: $this->pickup_address, $provinceName);
+
+        if (empty($this->pickup_address)) {
+            $this->pickup_address = ($this->districtQuery ? 'Kec. ' . $this->districtQuery . ', ' : '') . ($this->cityQuery ?: sprintf('Titik Jemput (%.4f, %.4f)', (float)$lat, (float)$lng));
+            $this->location       = $this->pickup_address;
         }
 
         $this->calculateRouteDistance();
@@ -508,10 +554,54 @@ class Create extends Component
 
         $this->delivery_latitude  = (float) $lat;
         $this->delivery_longitude = (float) $lng;
+        $this->resetErrorBag(['delivery_address', 'delivery_latitude', 'delivery_longitude']);
+
         if ($fullAddress) {
             $this->delivery_address = $fullAddress;
         }
+
+        if (empty($this->delivery_address)) {
+            $this->delivery_address = sprintf('Titik Antar (%.4f, %.4f)', (float) $lat, (float) $lng);
+        }
+
         $this->calculateRouteDistance();
+    }
+
+    /**
+     * Hapus / Clear titik lokasi tertentu secara atomik (dari tombol X atau reset peta).
+     */
+    public function clearLocationPoint(string $point = 'onsite'): void
+    {
+        if ($point === 'pickup') {
+            $this->pickup_latitude    = null;
+            $this->pickup_longitude   = null;
+            $this->pickup_address     = '';
+            $this->pickup_district_id = null;
+            $this->latitude           = null;
+            $this->longitude          = null;
+            $this->route_distance_km  = 0.0;
+            $this->amount             = $this->minHelpNominal;
+            $this->resetErrorBag(['pickup_address', 'delivery_address', 'route_distance_km']);
+            $this->dispatch('max-distance-cleared');
+        } elseif ($point === 'delivery') {
+            $this->delivery_latitude    = null;
+            $this->delivery_longitude   = null;
+            $this->delivery_address     = '';
+            $this->delivery_district_id = null;
+            $this->route_distance_km    = 0.0;
+            $this->amount               = $this->minHelpNominal;
+            $this->resetErrorBag(['delivery_address', 'route_distance_km']);
+            $this->dispatch('max-distance-cleared');
+        } else {
+            $this->latitude      = null;
+            $this->longitude     = null;
+            $this->location      = '';
+            $this->full_address  = '';
+            $this->district_id   = '';
+            $this->districtQuery = '';
+            $this->resetErrorBag(['location', 'latitude', 'longitude', 'route_distance_km']);
+            $this->dispatch('max-distance-cleared');
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -753,9 +843,21 @@ class Create extends Component
 
             $this->resetErrorBag(['location', 'latitude', 'longitude', 'amount']);
 
-            $calcFee = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
-            $this->minHelpNominal = $calcFee;
-            $this->amount = $calcFee;
+            $maxDistanceKm = AppSetting::getPickupDeliveryMaxDistanceKm();
+            if ((float) $this->route_distance_km > $maxDistanceKm) {
+                $this->minHelpNominal = 0;
+                $this->amount = 0;
+                $this->addError('delivery_address', "Jarak rute ({$this->route_distance_km} KM) melebihi batas maksimal {$maxDistanceKm} KM untuk layanan pengantaran sepeda motor.");
+            } else {
+                try {
+                    $calcFee = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
+                    $this->minHelpNominal = $calcFee;
+                    $this->amount = $calcFee;
+                } catch (\Throwable $e) {
+                    $this->minHelpNominal = (int) AppSetting::get('min_help_nominal', 10000);
+                    $this->amount = $this->minHelpNominal;
+                }
+            }
             $this->calculateRouteDistance();
 
             $this->dispatch('service-type-changed', [
@@ -833,30 +935,65 @@ class Create extends Component
 
     public function calculateRouteDistance(): void
     {
-        $pricingService = app(\App\Services\HelpPricingService::class);
-        $estimate = $pricingService->calculateInitialOrderEstimate([
-            'service_type'       => $this->service_type,
-            'amount'             => (float) ($this->amount ?: 0),
-            'material_fee'       => 0,
-            'item_fund'          => 0,
-            'pickup_latitude'    => $this->pickup_latitude ?? $this->latitude,
-            'pickup_longitude'   => $this->pickup_longitude ?? $this->longitude,
-            'delivery_latitude'  => $this->delivery_latitude ?? $this->latitude,
-            'delivery_longitude' => $this->delivery_longitude ?? $this->longitude,
-            'store_latitude'     => $this->store_latitude,
-            'store_longitude'    => $this->store_longitude,
-            'latitude'           => $this->latitude,
-            'longitude'          => $this->longitude,
-        ]);
+        $maxDistanceKm = AppSetting::getPickupDeliveryMaxDistanceKm();
 
-        $this->route_distance_km = (float) ($estimate['service_route_distance_km'] ?? 0.0);
+        try {
+            $pricingService = app(\App\Services\HelpPricingService::class);
+            $estimate = $pricingService->calculateInitialOrderEstimate([
+                'service_type'       => $this->service_type,
+                'amount'             => (float) ($this->amount ?: 0),
+                'material_fee'       => 0,
+                'item_fund'          => 0,
+                'pickup_latitude'    => $this->pickup_latitude ?? $this->latitude,
+                'pickup_longitude'   => $this->pickup_longitude ?? $this->longitude,
+                'delivery_latitude'  => $this->delivery_latitude ?? $this->latitude,
+                'delivery_longitude' => $this->delivery_longitude ?? $this->longitude,
+                'store_latitude'     => $this->store_latitude,
+                'store_longitude'    => $this->store_longitude,
+                'latitude'           => $this->latitude,
+                'longitude'          => $this->longitude,
+            ]);
 
-        if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
-            $calcFee = (int) ($estimate['service_fee'] ?? 10000);
-            $this->minHelpNominal = $calcFee;
-            $this->amount = $calcFee;
-        } elseif ($this->service_type !== Help::SERVICE_TYPE_ON_SITE && ($estimate['service_fee'] ?? 0) > (float) ($this->amount ?: 0)) {
-            $this->amount = (int) $estimate['service_fee'];
+            $this->route_distance_km = (float) ($estimate['service_route_distance_km'] ?? 0.0);
+
+            if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+                if ($this->route_distance_km > $maxDistanceKm) {
+                    $this->addError('delivery_address', "Jarak rute ({$this->route_distance_km} KM) melebihi batas maksimal {$maxDistanceKm} KM untuk layanan pengantaran sepeda motor.");
+                    $this->minHelpNominal = 0;
+                    $this->amount = 0;
+                    $this->dispatch('max-distance-exceeded', [
+                        'distance' => $this->route_distance_km,
+                        'max'      => $maxDistanceKm,
+                        'message'  => "Jarak pengantaran ({$this->route_distance_km} KM) melebihi batas maksimal {$maxDistanceKm} KM untuk armada sepeda motor."
+                    ]);
+                    return;
+                } else {
+                    $this->resetErrorBag(['delivery_address', 'route_distance_km']);
+                }
+
+                $calcFee = (int) ($estimate['service_fee'] ?? 10000);
+                $this->minHelpNominal = $calcFee;
+                $this->amount = $calcFee;
+            } elseif ($this->service_type !== Help::SERVICE_TYPE_ON_SITE && ($estimate['service_fee'] ?? 0) > (float) ($this->amount ?: 0)) {
+                $this->amount = (int) $estimate['service_fee'];
+            }
+        } catch (\InvalidArgumentException $e) {
+            if ($this->pickup_latitude && $this->pickup_longitude && $this->delivery_latitude && $this->delivery_longitude) {
+                $this->route_distance_km = round(app(\App\Services\GeoService::class)->getRouteDistance(
+                    (float) $this->pickup_latitude,
+                    (float) $this->pickup_longitude,
+                    (float) $this->delivery_latitude,
+                    (float) $this->delivery_longitude
+                ), 2);
+            }
+            $this->addError('delivery_address', $e->getMessage());
+            $this->minHelpNominal = 0;
+            $this->amount = 0;
+            $this->dispatch('max-distance-exceeded', [
+                'distance' => $this->route_distance_km,
+                'max'      => $maxDistanceKm,
+                'message'  => $e->getMessage()
+            ]);
         }
     }
 
@@ -871,9 +1008,30 @@ class Create extends Component
 
         if ($distanceKm > 0) {
             $this->route_distance_km = round($distanceKm, 2);
-            $calcFee = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
-            $this->amount = $calcFee;
-            $this->minHelpNominal = $calcFee;
+            $maxDistanceKm = AppSetting::getPickupDeliveryMaxDistanceKm();
+
+            if ($this->route_distance_km > $maxDistanceKm) {
+                $this->addError('delivery_address', "Jarak pengantaran ({$this->route_distance_km} KM) melebihi batas maksimal {$maxDistanceKm} KM untuk armada sepeda motor.");
+                $this->minHelpNominal = 0;
+                $this->amount = 0;
+                $this->dispatch('max-distance-exceeded', [
+                    'distance' => $this->route_distance_km,
+                    'max'      => $maxDistanceKm,
+                    'message'  => "Jarak pengantaran ({$this->route_distance_km} KM) melebihi batas maksimal {$maxDistanceKm} KM untuk armada sepeda motor."
+                ]);
+                return;
+            } else {
+                $this->resetErrorBag(['delivery_address', 'route_distance_km']);
+            }
+
+            try {
+                $calcFee = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
+                $this->amount = $calcFee;
+                $this->minHelpNominal = $calcFee;
+            } catch (\Throwable $e) {
+                $this->amount = 0;
+                $this->minHelpNominal = 0;
+            }
         }
     }
 
@@ -1245,6 +1403,7 @@ class Create extends Component
             ]);
 
             $this->dispatch('draft-cleared');
+            $this->dispatch('help:draft-cleared');
             session()->flash('message', 'Permintaan bantuan berhasil dibuat! Sistem sedang memproses untuk Anda.');
             return redirect()->route('customer.helps.index');
         } catch (\Throwable $e) {
@@ -1254,12 +1413,31 @@ class Create extends Component
     }
 
     /**
-     * Pulihkan data draf dari localStorage/cookie jika halaman ter-refresh.
+     * Pulihkan data draf dari Cookie penyimpanan sementara (kedua jenis layanan).
      */
     public function restoreDraft(array $data): void
     {
-        if (isset($data['title']) && is_string($data['title']) && !empty($data['title'])) $this->title = $data['title'];
-        if (isset($data['amount']) && is_numeric($data['amount'])) $this->amount = (int) $data['amount'];
+        if (isset($data['service_type']) && in_array($data['service_type'], [Help::SERVICE_TYPE_ON_SITE, Help::SERVICE_TYPE_PICKUP_DELIVERY])) {
+            $this->service_type = $data['service_type'];
+        }
+        if (isset($data['service_category']) && is_string($data['service_category'])) {
+            $this->service_category = $data['service_category'];
+        }
+        if (isset($data['service_duration_hours']) && is_numeric($data['service_duration_hours'])) {
+            $this->service_duration_hours = (float) $data['service_duration_hours'];
+        }
+        if (isset($data['title']) && is_string($data['title']) && !empty($data['title'])) {
+            $this->title = $data['title'];
+        }
+        if (isset($data['description']) && is_string($data['description']) && !empty($data['description'])) {
+            $this->description = $data['description'];
+        }
+        if (isset($data['equipment_provided']) && is_string($data['equipment_provided'])) {
+            $this->equipment_provided = $data['equipment_provided'];
+        }
+        if (isset($data['amount']) && is_numeric($data['amount'])) {
+            $this->amount = (int) $data['amount'];
+        }
         if (isset($data['city_id']) && !empty($data['city_id'])) {
             $this->setCityId($data['city_id']);
         }
@@ -1269,14 +1447,105 @@ class Create extends Component
         if (isset($data['cityQuery']) && is_string($data['cityQuery']) && empty($this->cityQuery)) {
             $this->cityQuery = $data['cityQuery'];
         }
-        if (isset($data['location']) && is_string($data['location']) && !empty($data['location'])) $this->location = $data['location'];
-        if (isset($data['full_address']) && is_string($data['full_address']) && !empty($data['full_address'])) $this->full_address = $data['full_address'];
-        if (isset($data['scheduled_date']) && is_string($data['scheduled_date']) && !empty($data['scheduled_date'])) $this->scheduled_date = $data['scheduled_date'];
-        if (isset($data['scheduled_time']) && is_string($data['scheduled_time']) && !empty($data['scheduled_time'])) $this->scheduled_time = $data['scheduled_time'];
-        if (isset($data['description']) && is_string($data['description']) && !empty($data['description'])) $this->description = $data['description'];
-        if (isset($data['equipment_provided']) && is_string($data['equipment_provided']) && !empty($data['equipment_provided'])) $this->equipment_provided = $data['equipment_provided'];
-        if (isset($data['latitude']) && is_numeric($data['latitude'])) $this->latitude = $data['latitude'];
-        if (isset($data['longitude']) && is_numeric($data['longitude'])) $this->longitude = $data['longitude'];
+        if (isset($data['districtQuery']) && is_string($data['districtQuery']) && empty($this->districtQuery)) {
+            $this->districtQuery = $data['districtQuery'];
+        }
+        if (isset($data['location']) && is_string($data['location'])) {
+            $this->location = $data['location'];
+        }
+        if (isset($data['full_address']) && is_string($data['full_address'])) {
+            $this->full_address = $data['full_address'];
+        }
+        if (isset($data['latitude']) && is_numeric($data['latitude'])) {
+            $this->latitude = (float) $data['latitude'];
+        }
+        if (isset($data['longitude']) && is_numeric($data['longitude'])) {
+            $this->longitude = (float) $data['longitude'];
+        }
+
+        // Multi-Point Pickup & Delivery Fields
+        if (isset($data['pickup_address']) && is_string($data['pickup_address'])) {
+            $this->pickup_address = $data['pickup_address'];
+        }
+        if (isset($data['pickup_latitude']) && is_numeric($data['pickup_latitude'])) {
+            $this->pickup_latitude = (float) $data['pickup_latitude'];
+        }
+        if (isset($data['pickup_longitude']) && is_numeric($data['pickup_longitude'])) {
+            $this->pickup_longitude = (float) $data['pickup_longitude'];
+        }
+        if (isset($data['delivery_address']) && is_string($data['delivery_address'])) {
+            $this->delivery_address = $data['delivery_address'];
+        }
+        if (isset($data['delivery_latitude']) && is_numeric($data['delivery_latitude'])) {
+            $this->delivery_latitude = (float) $data['delivery_latitude'];
+        }
+        if (isset($data['delivery_longitude']) && is_numeric($data['delivery_longitude'])) {
+            $this->delivery_longitude = (float) $data['delivery_longitude'];
+        }
+        if (isset($data['route_distance_km']) && is_numeric($data['route_distance_km'])) {
+            $this->route_distance_km = (float) $data['route_distance_km'];
+        }
+
+        // Scheduling & Expiry
+        if (isset($data['order_mode']) && in_array($data['order_mode'], ['instant', 'scheduled'])) {
+            $this->order_mode = $data['order_mode'];
+        }
+        if (isset($data['scheduled_date']) && is_string($data['scheduled_date'])) {
+            $this->scheduled_date = $data['scheduled_date'];
+        }
+        if (isset($data['scheduled_time']) && is_string($data['scheduled_time'])) {
+            $this->scheduled_time = $data['scheduled_time'];
+        }
+        if (isset($data['early_departure_minutes']) && is_numeric($data['early_departure_minutes'])) {
+            $this->early_departure_minutes = (int) $data['early_departure_minutes'];
+        }
+        if (isset($data['expiry_option']) && is_string($data['expiry_option'])) {
+            $this->expiry_option = $data['expiry_option'];
+        }
+        if (isset($data['custom_expiry_date']) && is_string($data['custom_expiry_date'])) {
+            $this->custom_expiry_date = $data['custom_expiry_date'];
+        }
+        if (isset($data['custom_expiry_time']) && is_string($data['custom_expiry_time'])) {
+            $this->custom_expiry_time = $data['custom_expiry_time'];
+        }
+
+        $this->isDraftRestored = true;
+        $this->dispatch('help:draft-restored', [
+            'service_type'       => $this->service_type,
+            'latitude'           => $this->latitude,
+            'longitude'          => $this->longitude,
+            'pickup_latitude'    => $this->pickup_latitude,
+            'pickup_longitude'   => $this->pickup_longitude,
+            'delivery_latitude'  => $this->delivery_latitude,
+            'delivery_longitude' => $this->delivery_longitude,
+        ]);
+    }
+
+    /**
+     * Buang dan bersihkan draft tersimpan.
+     */
+    public function discardDraft(): void
+    {
+        $this->isDraftRestored = false;
+        $this->title = '';
+        $this->description = '';
+        $this->equipment_provided = '';
+        $this->location = '';
+        $this->full_address = '';
+        $this->latitude = null;
+        $this->longitude = null;
+        $this->pickup_address = '';
+        $this->pickup_latitude = null;
+        $this->pickup_longitude = null;
+        $this->delivery_address = '';
+        $this->delivery_latitude = null;
+        $this->delivery_longitude = null;
+        $this->route_distance_km = 0.0;
+        $this->scheduled_date = null;
+        $this->scheduled_time = null;
+        $this->order_mode = 'instant';
+        $this->amount = $this->minHelpNominal;
+        $this->dispatch('help:draft-cleared');
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1332,7 +1601,16 @@ class Create extends Component
     public function render()
     {
         if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
-            $this->minHelpNominal = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
+            $maxDistanceKm = AppSetting::getPickupDeliveryMaxDistanceKm();
+            if ((float) $this->route_distance_km > $maxDistanceKm) {
+                $this->minHelpNominal = 0;
+            } else {
+                try {
+                    $this->minHelpNominal = (int) app(\App\Services\HelpPricingService::class)->calculatePickupDeliveryFare((float) $this->route_distance_km);
+                } catch (\Throwable $e) {
+                    $this->minHelpNominal = 0;
+                }
+            }
         } else {
             $this->minHelpNominal = (int) AppSetting::get('min_help_nominal', 10000);
         }

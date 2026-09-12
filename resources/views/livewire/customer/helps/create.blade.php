@@ -76,6 +76,7 @@
                     </div>
                 @endif
 
+
                 <form wire:submit.prevent="prepareConfirm" enctype="multipart/form-data" class="space-y-5">
                     <!-- 1. Pilihan Jenis Layanan (On-Site vs Pickup/Delivery) -->
                     @include('livewire.customer.helps.partials.service-type-selector')
@@ -166,7 +167,7 @@
                             </span>
                         </label>
                         <textarea wire:model="description" id="description-input" rows="4"
-                            placeholder="Jelaskan instruksi atau kebutuhan Anda secara jelas untuk memudahkan Rekan Jasa..."
+                            placeholder="{{ $service_type === 'pickup_delivery' ? (($service_category ?? '') === 'passenger' ? 'Contoh: Titik jemput depan lobby hotel, 1 orang penumpang, siap berangkat jam 09.00...' : 'Contoh: Paket berkas/barang berat ~5 kg (maks. 20 kg). Mohon bawa dengan hati-hati...') : 'Jelaskan instruksi atau kebutuhan Anda secara jelas untuk memudahkan Rekan Jasa...' }}"
                             class="w-full px-4 py-3 text-sm rounded-lg border @error('description') border-red-500 ring-1 ring-red-500 bg-red-50/20 dark:bg-red-950/20 @else border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 @enderror transition resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"></textarea>
                         @error('description')
                             <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block flex items-center font-medium">
@@ -249,8 +250,8 @@
 
                     <!-- Submit Button -->
                     <div class="flex gap-3 pt-4">
-                        <a href="{{ route('dashboard') }}"
-                            class="flex-1 inline-flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-5 py-3 text-sm rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        <a href="{{ route('dashboard') }}" onclick="handleCancelCreateHelp()"
+                            class="flex-1 inline-flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-5 py-3 text-sm rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
                             Batal
                         </a>
                         <button type="submit" wire:loading.attr="disabled"
@@ -275,4 +276,217 @@
 
     <!-- 13. Map Scripts & Leaflet Routing Engine -->
     @include('livewire.customer.helps.partials.map-scripts')
+
+    <!-- 14. Temporary Draft Cookie Manager (15s Expiration When Away or Cancelled) -->
+    <script>
+        (function() {
+            const DRAFT_COOKIE = 'sb_help_draft';
+            const AWAY_TTL_SEC = 15; // Batas waktu 15 detik saat keluar halaman
+            let isDraftCancelled = false;
+
+            function setDraftCookie(data, seconds = AWAY_TTL_SEC) {
+                if (isDraftCancelled || !data) return;
+                const expiresAt = Date.now() + (seconds * 1000);
+                const payload = JSON.stringify({
+                    expires_at: expiresAt,
+                    data: data
+                });
+                const d = new Date();
+                d.setTime(expiresAt);
+                document.cookie = DRAFT_COOKIE + '=' + encodeURIComponent(payload) + '; expires=' + d.toUTCString() + '; max-age=' + seconds + '; path=/; SameSite=Lax';
+            }
+
+            function getDraftCookie() {
+                if (isDraftCancelled) return null;
+                const nameEQ = DRAFT_COOKIE + '=';
+                const ca = document.cookie.split(';');
+                for (let i = 0; i < ca.length; i++) {
+                    let c = ca[i].trim();
+                    if (c.indexOf(nameEQ) === 0) {
+                        try {
+                            return JSON.parse(decodeURIComponent(c.substring(nameEQ.length, c.length)));
+                        } catch(e) {
+                            return null;
+                        }
+                    }
+                }
+                return null;
+            }
+
+            function deleteDraftCookie() {
+                document.cookie = DRAFT_COOKIE + '=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+                document.cookie = DRAFT_COOKIE + '=; path=' + window.location.pathname + '; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+                try {
+                    localStorage.removeItem(DRAFT_COOKIE);
+                    sessionStorage.removeItem(DRAFT_COOKIE);
+                } catch(e) {}
+            }
+
+            window.clearHelpDraftCookie = function() {
+                isDraftCancelled = true;
+                deleteDraftCookie();
+            };
+
+            window.handleCancelCreateHelp = function() {
+                isDraftCancelled = true;
+                deleteDraftCookie();
+                window.removeEventListener('beforeunload', persistDraftState);
+                window.removeEventListener('pagehide', persistDraftState);
+                
+                try {
+                    const root = document.getElementById('main-content')?.closest('[wire\\:id]');
+                    let lw = null;
+                    if (typeof @this !== 'undefined' && @this) {
+                        lw = @this;
+                    } else if (root && window.Livewire) {
+                        const id = root.getAttribute('wire:id');
+                        if (id) lw = window.Livewire.find(id);
+                    }
+                    if (lw && typeof lw.call === 'function') {
+                        lw.call('discardDraft');
+                    }
+                } catch(e){}
+            };
+
+            function getFormData() {
+                if (isDraftCancelled) return null;
+                try {
+                    const root = document.getElementById('main-content')?.closest('[wire\\:id]');
+                    let lw = null;
+                    if (typeof @this !== 'undefined' && @this) {
+                        lw = @this;
+                    } else if (root && window.Livewire) {
+                        const id = root.getAttribute('wire:id');
+                        if (id) lw = window.Livewire.find(id);
+                    }
+
+                    if (lw && typeof lw.get === 'function') {
+                        return {
+                            service_type: lw.get('service_type'),
+                            service_category: lw.get('service_category'),
+                            service_duration_hours: lw.get('service_duration_hours'),
+                            title: lw.get('title'),
+                            description: lw.get('description'),
+                            equipment_provided: lw.get('equipment_provided'),
+                            amount: lw.get('amount'),
+                            city_id: lw.get('city_id'),
+                            cityQuery: lw.get('cityQuery'),
+                            district_id: lw.get('district_id'),
+                            districtQuery: lw.get('districtQuery'),
+                            location: lw.get('location'),
+                            full_address: lw.get('full_address'),
+                            latitude: lw.get('latitude'),
+                            longitude: lw.get('longitude'),
+                            pickup_address: lw.get('pickup_address'),
+                            pickup_latitude: lw.get('pickup_latitude'),
+                            pickup_longitude: lw.get('pickup_longitude'),
+                            delivery_address: lw.get('delivery_address'),
+                            delivery_latitude: lw.get('delivery_latitude'),
+                            delivery_longitude: lw.get('delivery_longitude'),
+                            route_distance_km: lw.get('route_distance_km'),
+                            order_mode: lw.get('order_mode'),
+                            scheduled_date: lw.get('scheduled_date'),
+                            scheduled_time: lw.get('scheduled_time'),
+                            early_departure_minutes: lw.get('early_departure_minutes'),
+                            expiry_option: lw.get('expiry_option'),
+                            custom_expiry_date: lw.get('custom_expiry_date'),
+                            custom_expiry_time: lw.get('custom_expiry_time'),
+                        };
+                    }
+                } catch(e) {}
+                return null;
+            }
+
+            function hasContent(data) {
+                if (!data) return false;
+                return (data.title && data.title.trim().length > 0) ||
+                       (data.description && data.description.trim().length > 0) ||
+                       (data.location && data.location.trim().length > 0) ||
+                       (data.pickup_address && data.pickup_address.trim().length > 0) ||
+                       (data.delivery_address && data.delivery_address.trim().length > 0) ||
+                       (data.latitude !== null && data.latitude !== undefined) ||
+                       (data.pickup_latitude !== null && data.pickup_latitude !== undefined);
+            }
+
+            function persistDraftState() {
+                if (isDraftCancelled) {
+                    deleteDraftCookie();
+                    return;
+                }
+                const data = getFormData();
+                if (data && hasContent(data)) {
+                    setDraftCookie(data, AWAY_TTL_SEC);
+                } else {
+                    deleteDraftCookie();
+                }
+            }
+
+            // Simpan ke cookie saat beralih tab, keluar halaman, atau navigasi
+            window.addEventListener('beforeunload', persistDraftState);
+            window.addEventListener('pagehide', persistDraftState);
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    persistDraftState();
+                }
+            });
+            document.addEventListener('livewire:navigating', function() {
+                if (isDraftCancelled) {
+                    deleteDraftCookie();
+                }
+            });
+
+            // Hapus cookie saat order berhasil dibuat / dibatalkan
+            window.addEventListener('help:draft-cleared', () => {
+                isDraftCancelled = true;
+                deleteDraftCookie();
+            });
+            window.addEventListener('draft-cleared', () => {
+                isDraftCancelled = true;
+                deleteDraftCookie();
+            });
+
+            // Periksa & sinkronkan draft saat halaman dibuka
+            function checkAndRestoreDraft() {
+                if (isDraftCancelled) return;
+                const draft = getDraftCookie();
+                if (!draft) return;
+
+                const now = Date.now();
+                if (draft.expires_at && now <= draft.expires_at && draft.data && hasContent(draft.data)) {
+                    // Masih dalam jendela batas waktu 15 detik
+                    const root = document.getElementById('main-content')?.closest('[wire\\:id]');
+                    let lw = null;
+                    if (typeof @this !== 'undefined' && @this) {
+                        lw = @this;
+                    } else if (root && window.Livewire) {
+                        const id = root.getAttribute('wire:id');
+                        if (id) lw = window.Livewire.find(id);
+                    }
+
+                    if (lw && typeof lw.call === 'function') {
+                        lw.call('restoreDraft', draft.data);
+                    }
+
+                    if (window.syncMapToServiceType) {
+                        setTimeout(() => {
+                            window.syncMapToServiceType(draft.data.service_type || 'on_site_service', {
+                                lat: draft.data.latitude,
+                                lng: draft.data.longitude,
+                                pickupLat: draft.data.pickup_latitude,
+                                pickupLng: draft.data.pickup_longitude,
+                                deliveryLat: draft.data.delivery_latitude,
+                                deliveryLng: draft.data.delivery_longitude,
+                            });
+                        }, 400);
+                    }
+                } else {
+                    // Sudah lewat 15 detik -> buang draft
+                    deleteDraftCookie();
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', checkAndRestoreDraft);
+            document.addEventListener('livewire:navigated', checkAndRestoreDraft);
+        })();
+    </script>
 </div>

@@ -306,6 +306,13 @@
                                             Customer belum memberikan rating & ulasan untuk pekerjaan ini.
                                         </div>
                                     @endif
+
+                                    <div class="pt-2 border-t border-gray-100 dark:border-gray-700/60">
+                                        <a href="{{ route('mitra.helps.detail', $help->id) }}" class="w-full py-2.5 px-3 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 border border-emerald-200 dark:border-emerald-800/60">
+                                            <span>Buka Halaman Detail Lengkap</span>
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         @endforeach
@@ -689,6 +696,15 @@
                                                     </span>
                                                 </div>
                                             </div>
+                                        </div>
+                                    @endif
+
+                                    @if($help)
+                                        <div class="pt-2 border-t border-gray-100 dark:border-gray-700/60">
+                                            <a href="{{ route('mitra.helps.detail', $help->id) }}" class="w-full py-2.5 px-3 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 border border-rose-200 dark:border-rose-800/60">
+                                                <span>Buka Halaman Detail Lengkap</span>
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                            </a>
                                         </div>
                                     @endif
                                 </div>
