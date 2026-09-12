@@ -203,7 +203,7 @@ class HelpCreationService
             $createdHelp &&
             $createdHelp->order_mode === Help::ORDER_MODE_INSTANT &&
             $createdHelp->service_type === Help::SERVICE_TYPE_ON_SITE &&
-            AppSetting::isMatchingSeekingEnabled()
+            AppSetting::isMatchingSeekingEnabled($createdHelp->city_id)
         ) {
             try {
                 $this->matchingService->initiateMatching($createdHelp);

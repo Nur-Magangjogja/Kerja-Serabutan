@@ -174,18 +174,220 @@
             </div>
 
             <div class="p-4 sm:p-8 space-y-6">
-                <!-- Toggle Fitur Cari Order / Antrean Mitra -->
+                <!-- Toggle Fitur Cari Order / Antrean Mitra (Global Switch) -->
                 <div class="p-4 bg-indigo-50/60 dark:bg-indigo-950/30 rounded-xl border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between gap-4">
                     <div>
-                        <h4 class="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-200">Fitur Cari Order / Antrean Mitra (Seeking Mode)</h4>
+                        <h4 class="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-200">Saklar Global: Fitur Cari Order / Antrean Mitra</h4>
                         <p class="text-[11px] sm:text-xs text-indigo-700/80 dark:text-indigo-400 mt-0.5">
-                            Bila dinonaktifkan, mitra tidak perlu mengaktifkan mode mencari antrean (berguna untuk wilayah baru atau volume rendah).
+                            Bila dinonaktifkan secara global, mitra di wilayah yang mengikuti pengaturan global tidak perlu mengaktifkan mode mencari antrean (order langsung masuk ke daftar bantuan).
                         </p>
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
+                    <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
                         <input type="checkbox" wire:model="matching_seeking_enabled" class="sr-only peer">
                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
                     </label>
+                </div>
+
+                <!-- Sub-Section: Kustomisasi Pengaturan per Wilayah / Kota -->
+                <div class="p-4 sm:p-5 bg-gray-50/70 dark:bg-gray-900/40 rounded-2xl border border-gray-200 dark:border-gray-700/80 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+                        <div>
+                            <h4 class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                Pengaturan Kebijakan Wilayah / Kota
+                            </h4>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                Atur mode pencarian order untuk masing-masing kota secara fleksibel tanpa perlu berganti wilayah.
+                            </p>
+                        </div>
+                        <div class="w-full sm:w-64 relative">
+                            <input type="text" wire:model.live.debounce.300ms="city_search" placeholder="Cari nama kota / provinsi..."
+                                class="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
+                            <svg class="w-4 h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Container Daftar Wilayah (Responsif Mobile & Web Bebas Overflow) -->
+                    <div class="rounded-2xl border border-gray-200 dark:border-gray-700/80 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+                        
+                        <!-- 1. Tampilan Desktop & Tablet (Tabular Grid) -->
+                        <div class="hidden md:block overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-gray-50/90 dark:bg-gray-900/80 text-[11px] uppercase font-bold text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                                    <tr>
+                                        <th scope="col" class="px-5 py-3.5">Wilayah & Administrasi</th>
+                                        <th scope="col" class="px-5 py-3.5">Status Kebijakan Efektif</th>
+                                        <th scope="col" class="px-5 py-3.5 text-right">Pengaturan Mode</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
+                                    @forelse($regionalCities as $city)
+                                        @php
+                                            $currentChoice = $city_overrides[$city->id] ?? 'inherit';
+                                            $effectiveEnabled = match($currentChoice) {
+                                                'enabled'  => true,
+                                                'disabled' => false,
+                                                default    => (bool) $matching_seeking_enabled,
+                                            };
+                                        @endphp
+                                        <tr class="hover:bg-primary-50/20 dark:hover:bg-gray-700/30 transition-colors duration-150">
+                                            <td class="px-5 py-4">
+                                                <div class="flex items-center gap-3.5">
+                                                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-500/10 to-indigo-500/10 dark:from-primary-500/20 dark:to-indigo-500/20 border border-primary-100 dark:border-primary-800/40 flex items-center justify-center flex-shrink-0 text-primary-600 dark:text-primary-400 shadow-2xs">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <div class="font-bold text-gray-900 dark:text-white text-sm leading-tight">{{ $city->name }}</div>
+                                                        <div class="flex items-center gap-2 mt-1">
+                                                            <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">{{ $city->province }}</span>
+                                                            <span class="text-gray-300 dark:text-gray-600">•</span>
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 dark:bg-gray-700/80 text-gray-600 dark:text-gray-300">
+                                                                {{ $city->districts_count ?? 0 }} kecamatan
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-5 py-4 whitespace-nowrap">
+                                                @if($effectiveEnabled)
+                                                    <div class="inline-flex flex-col gap-0.5">
+                                                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 shadow-2xs">
+                                                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                            Mode Antrean Aktif
+                                                        </span>
+                                                        <span class="text-[10px] text-gray-400 dark:text-gray-500 pl-1 font-medium">
+                                                            {{ $currentChoice === 'inherit' ? '↳ Mewarisi Saklar Global' : '↳ Kustom Khusus Wilayah' }}
+                                                        </span>
+                                                    </div>
+                                                @else
+                                                    <div class="inline-flex flex-col gap-0.5">
+                                                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                                                            <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                                                            Langsung ke Daftar Bantuan
+                                                        </span>
+                                                        <span class="text-[10px] text-gray-400 dark:text-gray-500 pl-1 font-medium">
+                                                            {{ $currentChoice === 'inherit' ? '↳ Mewarisi Saklar Global' : '↳ Kustom Khusus Wilayah' }}
+                                                        </span>
+                                                    </div>
+                                                @endif
+                                            </td>
+                                            <td class="px-5 py-4 whitespace-nowrap text-right">
+                                                <div class="inline-block relative">
+                                                    <select wire:model.live="city_overrides.{{ $city->id }}"
+                                                        class="py-2 pl-3.5 pr-8 text-xs font-semibold border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50/80 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-2xs transition-all cursor-pointer">
+                                                        <option value="inherit">🌐 Ikuti Pengaturan Global (Bawaan)</option>
+                                                        <option value="enabled">⚡ Aktifkan Antrean Mitra</option>
+                                                        <option value="disabled">📋 Langsung ke Daftar Bantuan</option>
+                                                    </select>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="3" class="px-5 py-10 text-center text-gray-400 text-xs">
+                                                <div class="flex flex-col items-center justify-center gap-2.5">
+                                                    <div class="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
+                                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                        </svg>
+                                                    </div>
+                                                    <span class="font-medium text-gray-500 dark:text-gray-400">Tidak ada wilayah yang sesuai dengan pencarian "{{ $city_search }}".</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 2. Tampilan Khusus Mobile (< 768px - Bebas Overflow) -->
+                        <div class="block md:hidden divide-y divide-gray-100 dark:divide-gray-700/60">
+                            @forelse($regionalCities as $city)
+                                @php
+                                    $currentChoice = $city_overrides[$city->id] ?? 'inherit';
+                                    $effectiveEnabled = match($currentChoice) {
+                                        'enabled'  => true,
+                                        'disabled' => false,
+                                        default    => (bool) $matching_seeking_enabled,
+                                    };
+                                @endphp
+                                <div class="p-4 space-y-3.5 bg-white dark:bg-gray-800">
+                                    <!-- Header Wilayah -->
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-500/10 to-indigo-500/10 dark:from-primary-500/20 dark:to-indigo-500/20 border border-primary-100 dark:border-primary-800/40 flex items-center justify-center flex-shrink-0 text-primary-600 dark:text-primary-400 shadow-2xs mt-0.5">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="font-bold text-gray-900 dark:text-white text-sm truncate">{{ $city->name }}</div>
+                                            <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                                <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">{{ $city->province }}</span>
+                                                <span class="text-gray-300 dark:text-gray-600">•</span>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 dark:bg-gray-700/80 text-gray-600 dark:text-gray-300">
+                                                    {{ $city->districts_count ?? 0 }} kec
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Status Efektif Badge -->
+                                    <div class="flex items-center justify-between gap-2 pt-1 border-t border-gray-50 dark:border-gray-700/40">
+                                        <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Status Efektif:</span>
+                                        @if($effectiveEnabled)
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                Mode Antrean Aktif
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                                Langsung Daftar Bantuan
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <!-- Pilihan Pengaturan Dropdown (Full Width Mobile) -->
+                                    <div class="space-y-1">
+                                        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Pilihan Mode Kota</label>
+                                        <select wire:model.live="city_overrides.{{ $city->id }}"
+                                            class="w-full py-2 pl-3 pr-8 text-xs font-semibold border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50/80 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-2xs">
+                                            <option value="inherit">🌐 Ikuti Pengaturan Global (Bawaan)</option>
+                                            <option value="enabled">⚡ Aktifkan Antrean Mitra</option>
+                                            <option value="disabled">📋 Langsung ke Daftar Bantuan</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="p-8 text-center text-gray-400 text-xs">
+                                    <div class="flex flex-col items-center justify-center gap-2">
+                                        <div class="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                            </svg>
+                                        </div>
+                                        <span>Tidak ada wilayah yang sesuai dengan pencarian "{{ $city_search }}".</span>
+                                    </div>
+                                </div>
+                            @endforelse
+                        </div>
+
+                        <!-- 3. Pagination Footer -->
+                        @if($regionalCities->hasPages())
+                            <div class="p-3.5 bg-gray-50/70 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700">
+                                {{ $regionalCities->links('vendor.pagination.superadmin') }}
+                            </div>
+                        @endif
+                    </div>
                 </div>
 
                 <!-- Row 1: Parameter Teknis -->

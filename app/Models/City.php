@@ -17,11 +17,37 @@ class City extends Model
         'postal_code',
         'latitude',
         'longitude',
+        'is_matching_seeking_enabled',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
+        'is_active'                    => 'boolean',
+        'is_matching_seeking_enabled'  => 'boolean',
     ];
+
+    /**
+     * Cek status efektif seeking mode kota (dengan fallback ke global AppSetting).
+     */
+    public function isSeekingModeEffective(): bool
+    {
+        if ($this->is_matching_seeking_enabled !== null) {
+            return (bool) $this->is_matching_seeking_enabled;
+        }
+
+        return AppSetting::isMatchingSeekingEnabled();
+    }
+
+    /**
+     * Dapatkan label opsi konfigurasi seeking mode.
+     */
+    public function getSeekingModeConfigLabel(): string
+    {
+        if ($this->is_matching_seeking_enabled === null) {
+            return 'inherit';
+        }
+
+        return $this->is_matching_seeking_enabled ? 'enabled' : 'disabled';
+    }
 
     public function admin()
     {

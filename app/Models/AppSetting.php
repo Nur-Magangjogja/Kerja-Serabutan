@@ -398,8 +398,15 @@ class AppSetting extends Model
         return (bool) static::get('adjacent_district_matching_enabled', true);
     }
 
-    public static function isMatchingSeekingEnabled(): bool
+    public static function isMatchingSeekingEnabled(?int $cityId = null): bool
     {
+        if ($cityId) {
+            $cityOverride = City::where('id', $cityId)->value('is_matching_seeking_enabled');
+            if ($cityOverride !== null) {
+                return (bool) $cityOverride;
+            }
+        }
+
         return (bool) static::get('matching_seeking_enabled', true);
     }
 

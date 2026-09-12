@@ -4,8 +4,10 @@ namespace App\Livewire\SuperAdmin\Settings;
 
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use App\Models\AppSetting;
+use App\Models\City;
 use App\Models\Help;
 use App\Models\BalanceTransaction;
 use Carbon\Carbon;
@@ -15,6 +17,9 @@ use Illuminate\Support\Facades\Storage;
 class HelpSettings extends Component
 {
     use WithFileUploads;
+    use WithPagination;
+
+    protected $paginationTheme = 'tailwind';
 
     public $min_help_nominal;
     public $platform_service_fee = 2000;
@@ -41,6 +46,10 @@ class HelpSettings extends Component
     public $weight_reliability = 0.25;
     public $weight_fairness = 0.10;
     public $max_fairness_boost_minutes = 60;
+
+    // Regional Seeking Mode Overrides (City-Level)
+    public $city_search = '';
+    public $city_overrides = [];
 
     // QRIS Top-Up Settings (QRIS Tunggal)
     public $qris_image;
@@ -136,6 +145,19 @@ class HelpSettings extends Component
             'topup_qris_instructions',
             'Scan kode QRIS di atas menggunakan aplikasi mobile banking (BCA, Mandiri, BRI, BNI) atau e-wallet (GoPay, OVO, DANA, LinkAja, ShopeePay).'
         );
+
+        // Load City Seeking Overrides
+        $cities = City::orderBy('name')->get();
+        foreach ($cities as $city) {
+            $this->city_overrides[$city->id] = $city->getSeekingModeConfigLabel();
+        }
+    }
+
+    public function setCityOverride(int $cityId, string $mode): void
+    {
+        if (in_array($mode, ['inherit', 'enabled', 'disabled'], true)) {
+            $this->city_overrides[$cityId] = $mode;
+        }
     }
 
     public function save()
@@ -173,6 +195,15 @@ class HelpSettings extends Component
         AppSetting::set('weight_fairness', (string) $this->weight_fairness);
         AppSetting::set('max_fairness_boost_minutes', (string) $this->max_fairness_boost_minutes);
 
+        // Save City Seeking Overrides
+        foreach ($this->city_overrides as $cityId => $mode) {
+            $value = match ($mode) {
+                'enabled'  => 1,
+                'disabled' => 0,
+                default    => null, // inherit
+            };
+            City::where('id', $cityId)->update(['is_matching_seeking_enabled' => $value]);
+        }
 
         // Handle QRIS Image Upload
         if ($this->qris_image) {
@@ -217,10 +248,10 @@ class HelpSettings extends Component
         ];
         AppSetting::set('topup_payment_methods', json_encode($paymentMethods));
 
-        session()->flash('message', 'Pengaturan layanan bantuan dan metode pembayaran QRIS berhasil disimpan.');
+        session()->flash('message', 'Pengaturan layanan bantuan, kebijakan wilayah, dan metode pembayaran QRIS berhasil disimpan.');
 
         // Notify frontend
-        $this->dispatch('settingsSaved', ['message' => 'Pengaturan layanan bantuan dan metode pembayaran QRIS berhasil disimpan.']);
+        $this->dispatch('settingsSaved', ['message' => 'Pengaturan layanan bantuan, kebijakan wilayah, dan metode pembayaran QRIS berhasil disimpan.']);
     }
 
     public function removeQrisImage()
@@ -237,8 +268,26 @@ class HelpSettings extends Component
         $this->dispatch('settingsSaved', ['message' => 'Gambar QRIS berhasil dikosongkan.']);
     }
 
+    public function updatingCitySearch(): void
+    {
+        $this->resetPage('city_page');
+    }
+
     public function render()
     {
-        return view('livewire.superadmin.settings.help-settings');
+        $citiesQuery = City::withCount('districts');
+        if (!empty(trim($this->city_search))) {
+            $search = trim($this->city_search);
+            $citiesQuery->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('province', 'like', "%{$search}%");
+            });
+        }
+
+        $regionalCities = $citiesQuery->orderBy('name')->paginate(3, ['*'], 'city_page');
+
+        return view('livewire.superadmin.settings.help-settings', [
+            'regionalCities' => $regionalCities,
+        ]);
     }
 }

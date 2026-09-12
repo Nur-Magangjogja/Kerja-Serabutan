@@ -479,9 +479,9 @@ class HelpMatchingService
      */
     public function initiateMatching(Help $help): bool
     {
-        // 1. Cek konfigurasi SuperAdmin: Apakah fitur cari order / matching seeking aktif
-        if (!AppSetting::isMatchingSeekingEnabled()) {
-            Log::info("[HelpMatchingService] Cari order is globally disabled. Falling back to Open Pool for Help #{$help->id}.");
+        // 1. Cek konfigurasi SuperAdmin / Wilayah: Apakah fitur cari order / matching seeking aktif
+        if (!AppSetting::isMatchingSeekingEnabled($help->city_id)) {
+            Log::info("[HelpMatchingService] Cari order is disabled for City #{$help->city_id}. Falling back to Open Pool for Help #{$help->id}.");
             $this->fallbackToOpenPool($help);
             return false;
         }
