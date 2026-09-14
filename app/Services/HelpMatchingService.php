@@ -548,7 +548,7 @@ class HelpMatchingService
             // 1. Lock record Help dan verifikasi ketersediaan order
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
 
-            if (!$lockedHelp || $lockedHelp->mitra_id !== null || !in_array($lockedHelp->status, [Help::STATUS_MENUNGGU_MITRA, 'menunggu_mitra'])) {
+            if (!$lockedHelp || $lockedHelp->mitra_id !== null || $lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA) {
                 Log::warning("[HelpMatchingService] Cannot dispatch offer: Help #{$help->id} is already taken or unavailable.");
                 return null; // Order sudah diambil orang lain atau dibatalkan
             }
@@ -646,7 +646,7 @@ class HelpMatchingService
 
                 $lockedHelp = Help::where('id', $dispatchPeek->help_id)->lockForUpdate()->firstOrFail();
 
-                if ($lockedHelp->mitra_id !== null || !in_array($lockedHelp->status, [Help::STATUS_MENUNGGU_MITRA, 'menunggu_mitra'])) {
+                if ($lockedHelp->mitra_id !== null || $lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA) {
                     $this->onlineService->releaseCancelledOffer($mitra->id, $dispatchPeek->help_id);
                     throw new \RuntimeException('Bantuan ini sudah diambil, dibatalkan oleh pemesan, atau tidak lagi tersedia.');
                 }

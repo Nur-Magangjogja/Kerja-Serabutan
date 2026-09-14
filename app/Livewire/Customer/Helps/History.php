@@ -65,7 +65,7 @@ class History extends Component
     public function render()
     {
         $completedHelps = Help::where('user_id', auth()->id())
-            ->whereIn('status', ['selesai', 'completed'])
+            ->whereIn('status', [Help::STATUS_SELESAI, 'completed'])
             ->with([
                 'user',
                 'city',

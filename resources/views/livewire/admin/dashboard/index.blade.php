@@ -406,7 +406,7 @@
                         };
                         @endphp
                         <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-700/30 transition-colors duration-150">
-                            <td class="px-4 py-3.5 font-mono text-xs font-semibold text-gray-800 dark:text-gray-200">#{{ $help->order_id ?? $help->id }}</td>
+                            <td class="px-4 py-3.5 font-mono text-xs font-semibold text-gray-800 dark:text-gray-200">{{ $help->order_id ?? $help->id }}</td>
                             <td class="px-4 py-3.5">
                                 <div class="font-bold text-gray-900 dark:text-white">{{ $help->title }}</div>
                                 <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ optional($help->user)->name ?? (optional($help->customer)->name ?? '—') }}</div>

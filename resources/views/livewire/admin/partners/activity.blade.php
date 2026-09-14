@@ -500,7 +500,7 @@
                                         {{ $act->help->title }}
                                     </button>
                                     <span class="text-[10px] text-gray-400 block mt-0.5">
-                                        #{{ $act->help->id }} &bull; Rp {{ number_format($act->help->price ?? $act->help->amount ?? 0, 0, ',', '.') }}
+                                        Rp {{ number_format($act->help->price ?? $act->help->amount ?? 0, 0, ',', '.') }}
                                     </span>
                                 </div>
                                 @else
@@ -548,7 +548,7 @@
             <div class="flex items-start justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-3">
                 <div>
                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300">
-                        Bantuan #{{ $selectedHelp->id }}
+                        Bantuan
                     </span>
                     <h3 class="text-base font-bold text-gray-900 dark:text-white mt-1">
                         {{ $selectedHelp->title }}

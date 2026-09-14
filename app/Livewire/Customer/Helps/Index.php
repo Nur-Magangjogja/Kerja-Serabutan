@@ -18,10 +18,10 @@ class Index extends Component
     use WithPagination, WithFileUploads;
 
     protected $queryString = [
-        'statusFilter' => ['except' => 'menunggu_mitra'],
+        'statusFilter' => ['except' => Help::STATUS_MENUNGGU_MITRA],
     ];
 
-    public $statusFilter = 'menunggu_mitra';
+    public $statusFilter = Help::STATUS_MENUNGGU_MITRA;
 
     /** Status yang masuk dalam tab "Diproses" */
     protected function getDiprosesStatuses(): array

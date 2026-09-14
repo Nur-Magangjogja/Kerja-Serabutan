@@ -1,4 +1,4 @@
-<div @if(($onlineState?->matching_status ?? '') === 'searching') wire:poll.6s.visible @elseif(($onlineState?->matching_status ?? '') === 'offer_pending') wire:poll.3s.visible @endif
+<div @if(($onlineState?->matching_status ?? '') === 'searching') wire:poll.15s.visible @elseif(($onlineState?->matching_status ?? '') === 'offer_pending') wire:poll.3s.visible @endif
      x-data="{
          isGettingLocation: false,
          status: '{{ $onlineState?->matching_status ?? 'offline' }}',
@@ -329,7 +329,7 @@
             $estimatedMinutes  = null;
 
             if ($mitraLat && $mitraLng && $helpLat && $helpLng) {
-                $distanceMeters = app(\App\Services\LocationTrackingService::class)->calculateDistance(
+                $distanceMeters = app(\App\Services\HelpTrackingService::class)->calculateDistance(
                     (float) $mitraLat, (float) $mitraLng,
                     (float) $helpLat, (float) $helpLng
                 );

@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors" wire:poll.15s.visible>
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
     <style>
         :root{
             --brand-500: #0ea5a4;

@@ -181,7 +181,7 @@
                                     </div>
                                     <div class="min-w-0">
                                         <p class="font-bold text-gray-900 dark:text-white text-xs truncate">
-                                            {{ $u?->name ?? ($log->user_id ? "User #{$log->user_id}" : 'Sistem') }}
+                                            {{ $u?->name ?? ($log->user_id ? "User {$log->user_id}" : 'Sistem') }}
                                         </p>
                                         <p class="text-[11px] text-gray-400 truncate">{{ $u?->email ?? '—' }}</p>
                                     </div>
@@ -266,9 +266,6 @@
                             <div>
                                 <div class="flex items-center gap-2">
                                     <h3 class="text-sm font-extrabold text-gray-900 dark:text-white">Detail Riwayat Aktivitas</h3>
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
-                                        #{{ $selectedLog->id }}
-                                    </span>
                                 </div>
                                 <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
                                     {{ $selectedLog->created_at->translatedFormat('d F Y, H:i:s') }} ({{ $selectedLog->created_at->diffForHumans() }})
@@ -329,7 +326,7 @@
                                     </div>
                                 @else
                                     <p class="text-xs text-gray-700 dark:text-gray-300">
-                                        ID Pengguna Target: <strong class="font-mono">#{{ $props['target_user_id'] }}</strong>
+                                        ID Pengguna Target: <strong class="font-mono">{{ $props['target_user_id'] }}</strong>
                                     </p>
                                 @endif
                             </div>
@@ -343,10 +340,10 @@
                                 </span>
                                 @if($targetHelp)
                                     <p class="text-xs font-bold text-gray-900 dark:text-white">{{ $targetHelp->title }}</p>
-                                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Order ID: <strong class="font-mono">{{ $targetHelp->order_id ?: '#'.$targetHelp->id }}</strong> • Nominal: <span class="font-bold text-emerald-600">Rp {{ number_format($targetHelp->amount, 0, ',', '.') }}</span></p>
+                                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Order ID: <strong class="font-mono">{{ $targetHelp->order_id ?: $targetHelp->id }}</strong> • Nominal: <span class="font-bold text-emerald-600">Rp {{ number_format($targetHelp->amount, 0, ',', '.') }}</span></p>
                                 @else
                                     <p class="text-xs text-gray-700 dark:text-gray-300">
-                                        ID Bantuan: <strong class="font-mono">#{{ $props['help_id'] ?? $props['reference_id'] }}</strong>
+                                        ID Bantuan: <strong class="font-mono">{{ $props['help_id'] ?? $props['reference_id'] }}</strong>
                                     </p>
                                 @endif
                             </div>

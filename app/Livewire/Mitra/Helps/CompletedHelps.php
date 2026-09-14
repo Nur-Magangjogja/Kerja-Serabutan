@@ -41,7 +41,7 @@ class CompletedHelps extends Component
         $user = auth()->user();
 
         // 1. Stats Calculation
-        $completedHelpsQuery = Help::where('mitra_id', $user->id)->whereIn('status', ['selesai', 'completed']);
+        $completedHelpsQuery = Help::where('mitra_id', $user->id)->whereIn('status', [Help::STATUS_SELESAI, 'completed']);
         $totalCompletedCount = (clone $completedHelpsQuery)->count();
         $totalCompletedAmount = (clone $completedHelpsQuery)->sum('amount');
         $uniqueCustomersCount = (clone $completedHelpsQuery)->distinct('user_id')->count('user_id');
@@ -85,7 +85,7 @@ class CompletedHelps extends Component
         } else {
             $helpsQuery = Help::with(['user', 'city', 'rating'])
                 ->where('mitra_id', $user->id)
-                ->whereIn('status', ['selesai', 'completed']);
+                ->whereIn('status', [Help::STATUS_SELESAI, 'completed']);
 
             if ($this->search) {
                 $helpsQuery->where(function ($q) {

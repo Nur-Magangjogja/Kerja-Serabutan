@@ -4,7 +4,7 @@
 @endphp
 
 <div x-data="approvalModal()" @confirm-approve.window="openFromEvent($event)">
-    <div wire:poll.15s.visible>
+    <div wire:poll.30s.visible>
         {{-- ===== Page Header ===== --}}
         <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
             <div>
@@ -128,7 +128,6 @@
                 <table class="w-full text-sm text-left">
                     <thead>
                         <tr class="bg-gray-50/80 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
-                            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden">#</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Customer</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Wilayah / Kec.</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">Kode Request</th>
@@ -142,7 +141,6 @@
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
                         @forelse($transactions as $transaction)
                             <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-700/30 transition-colors">
-                                <td class="px-4 py-3.5 text-xs font-medium text-gray-400 dark:text-gray-500 hidden">#{{ $transaction->id }}</td>
                                 <td class="px-4 py-3.5">
                                     <div class="flex items-center gap-2.5">
                                         <div class="h-9 w-9 flex-shrink-0">
@@ -278,7 +276,7 @@
                 <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-6 py-4 rounded-t-3xl z-10 flex items-center justify-between">
                     <div>
                         <h2 class="text-base font-bold text-gray-900 dark:text-white">Detail Transaksi Top-Up</h2>
-                        <p class="text-xs text-gray-400 dark:text-gray-500">ID: #{{ $selectedTransaction->id }} • {{ $selectedTransaction->request_code ?? 'Manual' }}</p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500">{{ $selectedTransaction->request_code ?? 'Manual' }}</p>
                     </div>
                     <button wire:click="closeModal" class="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>

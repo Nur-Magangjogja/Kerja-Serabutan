@@ -22,7 +22,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div class="md:col-span-2">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Withdraw #{{ $withdraw->id }}</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Detail Permintaan Withdraw</h2>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Permintaan dari mitra berikut informasinya.</p>
                 </div>
                 <div class="md:text-right">

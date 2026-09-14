@@ -16,7 +16,7 @@ class Index extends Component
 
         // Get mitra statistics
         $totalHelped = Help::where('mitra_id', $user->id)->count();
-        $completedHelps = Help::where('mitra_id', $user->id)->where('status', 'selesai')->count();
+        $completedHelps = Help::where('mitra_id', $user->id)->where('status', Help::STATUS_SELESAI)->count();
         $averageRating = Rating::where('ratee_id', $user->id)->where(function($q) {
             $q->where('type', 'customer_to_mitra')->orWhereNull('type');
         })->avg('rating') ?? 0;

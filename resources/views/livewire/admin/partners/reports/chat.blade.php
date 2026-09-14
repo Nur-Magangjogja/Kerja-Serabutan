@@ -16,7 +16,7 @@
             </a>
             <div class="min-w-0">
                 <h1 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
-                    <span>💬 Ruang Obrolan Investigasi #{{ $report->id }}</span>
+                    <span>💬 Ruang Obrolan Investigasi</span>
                     <span class="text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold uppercase whitespace-nowrap {{ $report->status === 'resolved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
                         {{ ucfirst($report->status) }}
                     </span>
@@ -43,7 +43,7 @@
         </div>
         @if($report->reportedHelp)
             <div class="text-left sm:text-right shrink-0">
-                <span class="text-[10px] text-purple-700 dark:text-purple-300 block font-bold">Bantuan #{{ $report->reportedHelp->id }}</span>
+                <span class="text-[10px] text-purple-700 dark:text-purple-300 block font-bold">Bantuan</span>
                 <span class="text-xs font-extrabold text-purple-900 dark:text-purple-100">Rp {{ number_format($report->reportedHelp->amount, 0, ',', '.') }}</span>
             </div>
         @endif

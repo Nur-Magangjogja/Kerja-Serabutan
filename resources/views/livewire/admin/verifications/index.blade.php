@@ -1,4 +1,4 @@
-<div wire:poll.30s.visible>
+<div wire:poll.60s.visible>
     {{-- ===== Page Header ===== --}}
     <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div>
@@ -92,7 +92,6 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-12 hidden">#</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pengguna</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Peran</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">NIK</th>
@@ -116,7 +115,6 @@
                         : 'bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60';
                     @endphp
                     <tr class="hover:bg-gray-50/70 dark:hover:bg-gray-700/30 transition-colors duration-150">
-                        <td class="px-4 py-3.5 text-xs font-medium text-gray-400 dark:text-gray-500 hidden">#{{ $v->id }}</td>
                         <td class="px-4 py-3.5">
                             <div class="flex items-center gap-3">
                                 <div class="w-9 h-9 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-xs">
@@ -212,7 +210,7 @@
                                 {{ ucfirst($selected->role ?? 'customer') }}
                             </span>
                         </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ $selected->email ?? '—' }} • ID Registrasi: #{{ $selected->id }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ $selected->email ?? '—' }}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">

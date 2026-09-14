@@ -27,8 +27,12 @@ class Index extends Component
         'chart-refresh'                => 'updateChartData',
     ];
 
-    public function onTerritoryChanged()
+    public function onTerritoryChanged($payload = null)
     {
+        $user = auth()->user();
+        if ($user && is_array($payload) && isset($payload['type'])) {
+            $user->setActiveSuperadminTerritory($payload['type'], $payload['id'] ?? null);
+        }
         $this->updateChartData();
     }
 
@@ -37,7 +41,7 @@ class Index extends Component
         // Set default to current date
         $this->selectedDate = Carbon::today()->toDateString();
         $this->selectedMonth = Carbon::today()->format('Y-m');
-        $this->selectedYear = Carbon::today()->year;
+        $this->selectedYear = (int) Carbon::today()->year;
         $this->updateChartData();
     }
 
@@ -46,7 +50,7 @@ class Index extends Component
         // Update selectedMonth when date changes
         if ($this->selectedDate) {
             $this->selectedMonth = Carbon::parse($this->selectedDate)->format('Y-m');
-            $this->selectedYear = Carbon::parse($this->selectedDate)->year;
+            $this->selectedYear = (int) Carbon::parse($this->selectedDate)->year;
             $this->updateChartData();
         }
     }
@@ -56,22 +60,27 @@ class Index extends Component
         // Update selectedDate to first day of the month when month changes
         if ($this->selectedMonth) {
             $this->selectedDate = Carbon::parse($this->selectedMonth . '-01')->toDateString();
-            $this->selectedYear = Carbon::parse($this->selectedMonth)->year;
+            $this->selectedYear = (int) Carbon::parse($this->selectedMonth)->year;
             $this->updateChartData();
         }
     }
 
     protected function applyUserTerritoryScope($query, array $territory, array $districtIds)
     {
-        if ($territory['type'] === 'district' && $territory['id']) {
-            $query->where('district_id', (int) $territory['id']);
-        } elseif ($territory['type'] === 'city' && $territory['id']) {
+        if ($territory['type'] === 'district' && !empty($territory['id'])) {
+            $districtId = (int) $territory['id'];
+            $query->where(function ($q) use ($districtId) {
+                $q->where('district_id', $districtId)
+                  ->orWhereHas('district', fn($dq) => $dq->where('id', $districtId));
+            });
+        } elseif ($territory['type'] === 'city' && !empty($territory['id'])) {
             $cityId = (int) $territory['id'];
             $query->where(function ($q) use ($cityId, $districtIds) {
                 $q->where('city_id', $cityId);
                 if (!empty($districtIds)) {
                     $q->orWhereIn('district_id', $districtIds);
                 }
+                $q->orWhereHas('district', fn($dq) => $dq->where('city_id', $cityId));
             });
         }
         return $query;
@@ -83,6 +92,11 @@ class Index extends Component
         $territory = $user ? $user->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
         $districtIds = $user ? $user->getEffectiveSuperadminDistrictIds() : [];
 
+        $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
+        $dateGroupRaw = ($driver === 'sqlite') ? "strftime('%Y-%m-%d', created_at)" : "DATE(created_at)";
+        $monthGroupRaw = ($driver === 'sqlite') ? "CAST(strftime('%m', created_at) AS INTEGER)" : "MONTH(created_at)";
+        $yearGroupRaw = ($driver === 'sqlite') ? "CAST(strftime('%Y', created_at) AS INTEGER)" : "YEAR(created_at)";
+
         // 1. Daily - single grouped query for days in the selected month
         $selectedMonthCarbon = Carbon::parse($this->selectedMonth . '-01');
         $startOfMonth = $selectedMonthCarbon->copy()->startOfMonth();
@@ -93,7 +107,7 @@ class Index extends Component
         $this->applyUserTerritoryScope($dailyQuery, $territory, $districtIds);
 
         $dailyCounts = $dailyQuery
-            ->selectRaw('DATE(created_at) as date, count(*) as total')
+            ->selectRaw("{$dateGroupRaw} as date, count(*) as total")
             ->groupBy('date')
             ->pluck('total', 'date')
             ->all();
@@ -108,7 +122,7 @@ class Index extends Component
         }
 
         // 2. Monthly - single grouped query for 12 months of selected year
-        $selectedYearCarbon = Carbon::createFromDate($this->selectedYear, 1, 1);
+        $selectedYearCarbon = Carbon::createFromDate((int) $this->selectedYear, 1, 1);
         $startOfYear = $selectedYearCarbon->copy()->startOfYear();
         $endOfYear = $selectedYearCarbon->copy()->endOfYear();
 
@@ -116,7 +130,7 @@ class Index extends Component
         $this->applyUserTerritoryScope($monthlyQuery, $territory, $districtIds);
 
         $monthlyCounts = $monthlyQuery
-            ->selectRaw('MONTH(created_at) as month, count(*) as total')
+            ->selectRaw("{$monthGroupRaw} as month, count(*) as total")
             ->groupBy('month')
             ->pluck('total', 'month')
             ->all();
@@ -125,21 +139,21 @@ class Index extends Component
         $monthlyData = [];
         for ($i = 1; $i <= 12; $i++) {
             $m = $selectedYearCarbon->copy()->month($i);
-            $monthlyLabels[] = $m->format('M Y');
+            $monthlyLabels[] = $m->translatedFormat('M Y') ?: $m->format('M Y');
             $monthlyData[] = (int) ($monthlyCounts[$i] ?? 0);
         }
 
         // 3. Yearly - single grouped query for last 5 years from selected year
         $years = 5;
-        $startYear = Carbon::createFromDate($this->selectedYear, 1, 1)->subYears($years - 1);
+        $startYear = Carbon::createFromDate((int) $this->selectedYear, 1, 1)->subYears($years - 1);
         $startOf5Years = $startYear->copy()->startOfYear();
-        $endOf5Years = Carbon::createFromDate($this->selectedYear, 12, 31)->endOfDay();
+        $endOf5Years = Carbon::createFromDate((int) $this->selectedYear, 12, 31)->endOfDay();
 
         $yearlyQuery = User::whereBetween('created_at', [$startOf5Years, $endOf5Years]);
         $this->applyUserTerritoryScope($yearlyQuery, $territory, $districtIds);
 
         $yearlyCounts = $yearlyQuery
-            ->selectRaw('YEAR(created_at) as year, count(*) as total')
+            ->selectRaw("{$yearGroupRaw} as year, count(*) as total")
             ->groupBy('year')
             ->pluck('total', 'year')
             ->all();
@@ -158,6 +172,8 @@ class Index extends Component
             'monthly' => ['labels' => $monthlyLabels, 'data' => $monthlyData],
             'yearly'  => ['labels' => $yearlyLabels, 'data' => $yearlyData],
         ];
+
+        $this->dispatch('users-chart-updated', chartData: $this->userChart);
     }
 
     public function render()
@@ -168,6 +184,10 @@ class Index extends Component
         $cityId = ($territory['type'] === 'city') ? (int) $territory['id'] : null;
         $districtId = ($territory['type'] === 'district') ? (int) $territory['id'] : null;
 
+        if (empty($this->userChart) || empty($this->userChart['daily']['labels'])) {
+            $this->updateChartData();
+        }
+
         $userQuery = User::query();
         $helpQuery = Help::query();
         $regQuery = Registration::query();
@@ -175,7 +195,10 @@ class Index extends Component
         $topupQuery = BalanceTransaction::where('type', 'topup');
 
         if ($districtId) {
-            $userQuery->where('district_id', $districtId);
+            $userQuery->where(function ($q) use ($districtId) {
+                $q->where('district_id', $districtId)
+                  ->orWhereHas('district', fn($dq) => $dq->where('id', $districtId));
+            });
             $helpQuery->where(function ($q) use ($districtId) {
                 $q->where('district_id', $districtId)
                   ->orWhereHas('customer', fn($cq) => $cq->where('district_id', $districtId));
@@ -189,6 +212,7 @@ class Index extends Component
                 if (!empty($districtIds)) {
                     $q->orWhereIn('district_id', $districtIds);
                 }
+                $q->orWhereHas('district', fn($dq) => $dq->where('city_id', $cityId));
             });
             $helpQuery->where(function ($q) use ($cityId, $districtIds) {
                 $q->where('city_id', $cityId)

@@ -70,7 +70,7 @@ class Detail extends Component
         }
 
         // Kirim data tracking ke frontend bila map terbuka
-        if ($this->showMapModal && in_array($this->help->status, ['taken', 'partner_on_the_way', 'partner_arrived'])) {
+        if ($this->showMapModal && in_array($this->help->status, [Help::STATUS_TAKEN, Help::STATUS_PARTNER_ON_THE_WAY, Help::STATUS_PARTNER_ARRIVED])) {
             $this->dispatch('tracking-data-updated', [
                 'partnerLat'  => $this->help->partner_current_lat ?? ($this->help->mitra?->latitude ?? -6.2088),
                 'partnerLng'  => $this->help->partner_current_lng ?? ($this->help->mitra?->longitude ?? 106.8456),
@@ -99,7 +99,7 @@ class Detail extends Component
         }
 
         // Deteksi keputusan pembatalan mitra yang baru diterima
-        if ($oldStatus === 'partner_cancel_requested' && $newStatus !== 'partner_cancel_requested') {
+        if ($oldStatus === Help::STATUS_PARTNER_CANCEL_REQUESTED && $newStatus !== Help::STATUS_PARTNER_CANCEL_REQUESTED) {
             $this->dispatch('show-status-notification', message: 'Status pesanan diperbarui!');
         }
     }
@@ -365,7 +365,7 @@ class Detail extends Component
 
     public function showTrackingMap()
     {
-        if (!in_array($this->help->status, ['taken', 'partner_on_the_way', 'partner_arrived'])) {
+        if (!in_array($this->help->status, [Help::STATUS_TAKEN, Help::STATUS_PARTNER_ON_THE_WAY, Help::STATUS_PARTNER_ARRIVED])) {
             session()->flash('error', 'Tracking hanya tersedia saat mitra sedang menuju lokasi.');
             return;
         }

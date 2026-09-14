@@ -2,18 +2,17 @@
 
 namespace App\Livewire\Mitra\Dashboard;
 
+use App\Actions\Matching\MitraMatchingActions;
 use App\Models\Help;
 use App\Models\PartnerOnlineState;
-use App\Models\UserBalance;
+use App\Services\Dashboard\DashboardQueryService;
+use App\Services\DashboardStatsService;
 use App\Services\HelpTransactionService;
 use App\Services\PartnerOnlineService;
-use App\Notifications\HelpTakenNotification;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
-use Livewire\Component;
-use Livewire\Attributes\On;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
+use Livewire\Component;
 use Livewire\WithPagination;
 
 #[Layout('layouts.mitra')]
@@ -24,109 +23,100 @@ class Index extends Component
     public $activeTab = 'tersedia'; // tersedia, semua, diproses, selesai
 
     // ─────────────────────────────────────────────────────────────────────────
-    // ONLINE / SEARCHING STATE ACTIONS
+    // ONLINE / SEARCHING STATE ACTIONS (Delegated to MitraMatchingActions)
     // ─────────────────────────────────────────────────────────────────────────
 
-    public function toggleOnline($lat = null, $lng = null)
+    public function toggleOnline($lat = null, $lng = null): void
     {
-        $service = app(PartnerOnlineService::class);
-        $user    = auth()->user();
-        $state   = $service->getOrCreateState($user->id);
+        $user = auth()->user();
+        if (!$user) return;
 
-        try {
-            if ($state->matching_status === PartnerOnlineState::STATUS_OFFLINE) {
-                $service->goOnline($user, $lat ? (float) $lat : null, $lng ? (float) $lng : null);
-                $this->dispatch('show-status-notification', message: 'Status Anda sekarang ONLINE (Standby).');
-            } else {
-                $service->goOffline($user);
-                $this->dispatch('show-status-notification', message: 'Status Anda sekarang OFFLINE.');
-            }
-        } catch (\RuntimeException $e) {
-            session()->flash('error', $e->getMessage());
-        } catch (\Throwable $e) {
-            Log::error('[MitraDashboard] toggleOnline error: ' . $e->getMessage());
-            session()->flash('error', 'Gagal memperbarui status online.');
+        $state = app(PartnerOnlineService::class)->getOrCreateState($user->id);
+        $actions = app(MitraMatchingActions::class);
+
+        if ($state->matching_status === PartnerOnlineState::STATUS_OFFLINE) {
+            $res = $actions->goOnline($user, $lat ? (float) $lat : null, $lng ? (float) $lng : null);
+        } else {
+            $res = $actions->goOffline($user);
+        }
+
+        if ($res['success']) {
+            $this->dispatch('show-status-notification', message: $res['message']);
+            $this->dispatch('partner-state-changed');
+        } else {
+            session()->flash('error', $res['message']);
         }
     }
 
-    public function startSearching($lat = null, $lng = null)
+    public function startSearching($lat = null, $lng = null): void
     {
-        $service = app(PartnerOnlineService::class);
-        $user    = auth()->user();
+        $user = auth()->user();
+        if (!$user) return;
 
-        try {
-            $service->startSearching($user, $lat ? (float) $lat : null, $lng ? (float) $lng : null);
-            $this->dispatch('show-status-notification', message: 'Mode pencarian aktif! Anda akan menerima tawaran otomatis saat ada customer.');
-        } catch (\RuntimeException $e) {
-            session()->flash('error', $e->getMessage());
-        } catch (\Throwable $e) {
-            Log::error('[MitraDashboard] startSearching error: ' . $e->getMessage());
-            session()->flash('error', 'Gagal memulai pencarian order.');
+        $res = app(MitraMatchingActions::class)->startSearching($user, $lat ? (float) $lat : null, $lng ? (float) $lng : null);
+
+        if ($res['success']) {
+            $this->dispatch('show-status-notification', message: $res['message']);
+            $this->dispatch('partner-state-changed');
+        } else {
+            session()->flash('error', $res['message']);
         }
     }
 
-    public function stopSearching()
+    public function stopSearching(): void
     {
-        $service = app(PartnerOnlineService::class);
-        $user    = auth()->user();
+        $user = auth()->user();
+        if (!$user) return;
 
-        try {
-            $service->stopSearching($user);
-            $this->dispatch('show-status-notification', message: 'Pencarian dihentikan. Status kembali ke Online (Standby).');
-        } catch (\RuntimeException $e) {
-            session()->flash('error', $e->getMessage());
-        } catch (\Throwable $e) {
-            Log::error('[MitraDashboard] stopSearching error: ' . $e->getMessage());
-            session()->flash('error', 'Gagal menghentikan pencarian.');
+        $res = app(MitraMatchingActions::class)->stopSearching($user);
+
+        if ($res['success']) {
+            $this->dispatch('show-status-notification', message: $res['message']);
+            $this->dispatch('partner-state-changed');
+        } else {
+            session()->flash('error', $res['message']);
         }
     }
 
-    public function goOffline()
+    public function goOffline(): void
     {
-        $service = app(PartnerOnlineService::class);
-        $user    = auth()->user();
+        $user = auth()->user();
+        if (!$user) return;
 
-        try {
-            $service->goOffline($user);
-            $this->dispatch('show-status-notification', message: 'Status Anda sekarang OFFLINE.');
-        } catch (\RuntimeException $e) {
-            session()->flash('error', $e->getMessage());
-        } catch (\Throwable $e) {
-            Log::error('[MitraDashboard] goOffline error: ' . $e->getMessage());
-            session()->flash('error', 'Gagal mengubah status ke offline.');
+        $res = app(MitraMatchingActions::class)->goOffline($user);
+
+        if ($res['success']) {
+            $this->dispatch('show-status-notification', message: $res['message']);
+            $this->dispatch('partner-state-changed');
+        } else {
+            session()->flash('error', $res['message']);
         }
     }
 
-    public function heartbeat($lat = null, $lng = null)
+    public function heartbeat($lat = null, $lng = null): void
     {
-        if (!auth()->check()) {
-            return;
-        }
+        $user = auth()->user();
+        if (!$user) return;
 
-        app(PartnerOnlineService::class)->heartbeat(
-            auth()->user(),
-            $lat ? (float) $lat : null,
-            $lng ? (float) $lng : null
-        );
+        app(MitraMatchingActions::class)->heartbeat($user, $lat ? (float) $lat : null, $lng ? (float) $lng : null);
     }
 
-    public function mount()
+    public function mount(): void
     {
-        // Check if tab parameter is in the query string
         $tab = request()->query('tab');
-        if ($tab && in_array($tab, ['tersedia', 'semua', 'diproses', 'selesai'])) {
+        if ($tab && in_array($tab, ['tersedia', 'semua', 'diproses', 'selesai'], true)) {
             $this->activeTab = $tab;
         }
     }
 
     #[On('balance-updated')]
-    public function refreshBalance()
+    public function refreshBalance(): void
     {
         $this->clearDashboardCache();
         $this->dispatch('$refresh');
     }
 
-    public function setTab($tab)
+    public function setTab($tab): void
     {
         $this->activeTab = $tab;
         $this->resetPage();
@@ -137,7 +127,7 @@ class Index extends Component
         $help = Help::findOrFail($helpId);
 
         try {
-            app(\App\Services\HelpTransactionService::class)->takeHelp(
+            app(HelpTransactionService::class)->takeHelp(
                 $help,
                 auth()->user(),
                 $latitude ? (float) $latitude : null,
@@ -150,75 +140,66 @@ class Index extends Component
             session()->flash('error', $e->getMessage());
             return;
         } catch (\Throwable $e) {
-            \Log::error('[Mitra/Dashboard] takeHelp error: ' . $e->getMessage(), ['help_id' => $helpId]);
+            Log::error('[Mitra/Dashboard] takeHelp error: ' . $e->getMessage(), ['help_id' => $helpId]);
             session()->flash('error', 'Terjadi kesalahan saat mengambil bantuan.');
             return;
         }
-        
-        // Emit event untuk mulai GPS tracking
+
         $this->dispatch('start-gps-tracking', helpId: $helpId);
-        
         $this->setTab('diproses');
 
-        // Redirect mitra to the help detail page so they can see full info and navigation
         return $this->redirectRoute('mitra.helps.detail', ['id' => $helpId]);
     }
 
     public function acceptOffer(int $dispatchId)
     {
-        try {
-            $help = app(\App\Services\HelpMatchingService::class)->acceptOffer($dispatchId, auth()->user());
+        $user = auth()->user();
+        if (!$user) return;
+
+        $res = app(MitraMatchingActions::class)->acceptOffer($dispatchId, $user);
+
+        if ($res['success']) {
             $this->clearDashboardCache();
-            session()->flash('message', "Tawaran pekerjaan '{$help->title}' berhasil diterima! Segera menuju lokasi customer.");
-            $this->dispatch('start-gps-tracking', helpId: $help->id);
+            session()->flash('message', $res['message']);
+            $this->dispatch('start-gps-tracking', helpId: $res['help']->id);
             $this->setTab('diproses');
-            return $this->redirectRoute('mitra.helps.detail', ['id' => $help->id]);
-        } catch (\RuntimeException $e) {
-            session()->flash('error', $e->getMessage());
-        } catch (\Throwable $e) {
-            Log::error('[Mitra/Dashboard] acceptOffer error: ' . $e->getMessage(), ['dispatch_id' => $dispatchId]);
-            session()->flash('error', 'Gagal menerima tawaran pekerjaan.');
+            return $this->redirectRoute('mitra.helps.detail', ['id' => $res['help']->id]);
         }
+
+        session()->flash('error', $res['message']);
     }
 
-    public function rejectOffer(int $dispatchId, ?string $reason = 'Mitra menolak tawaran')
+    public function rejectOffer(int $dispatchId, ?string $reason = 'Mitra menolak tawaran'): void
     {
-        try {
-            app(\App\Services\HelpMatchingService::class)->rejectOffer($dispatchId, auth()->user(), $reason);
+        $user = auth()->user();
+        if (!$user) return;
+
+        $res = app(MitraMatchingActions::class)->rejectOffer($dispatchId, $user, $reason);
+
+        if ($res['success']) {
             $this->clearDashboardCache();
-            $state = app(\App\Services\PartnerOnlineService::class)->getOrCreateState(auth()->id());
-            if ($state->matching_status === PartnerOnlineState::STATUS_ONLINE) {
-                session()->flash('message', 'Tawaran dilewati. Batas penolakan berturut-turut tercapai, status dialihkan ke Standby. Klik "Cari Order" saat Anda siap menerima pesanan.');
-                $this->dispatch('show-status-notification', message: 'Status Anda beralih ke Standby.');
-            } else {
-                session()->flash('message', 'Tawaran dilewati. Status tetap AKTIF mencari order baru di sekitar Anda.');
-                $this->dispatch('show-status-notification', message: 'Tawaran dilewati. Tetap mencari order...');
-            }
-        } catch (\Throwable $e) {
-            Log::error('[Mitra/Dashboard] rejectOffer error: ' . $e->getMessage(), ['dispatch_id' => $dispatchId]);
-            session()->flash('error', 'Gagal menolak tawaran.');
+            session()->flash('message', $res['message']);
+            $this->dispatch('show-status-notification', message: $res['is_demoted_to_standby'] ? 'Status Anda beralih ke Standby.' : 'Tawaran dilewati. Tetap mencari order...');
+        } else {
+            session()->flash('error', $res['message']);
         }
     }
 
-    public function handleExpiry(int $dispatchId)
+    public function handleExpiry(int $dispatchId): void
     {
-        try {
-            app(\App\Services\HelpMatchingService::class)->handleExpiry($dispatchId, true);
+        $user = auth()->user();
+        if (!$user) return;
+
+        $res = app(MitraMatchingActions::class)->handleExpiry($dispatchId, $user);
+
+        if ($res['success']) {
             $this->clearDashboardCache();
-            $state = app(\App\Services\PartnerOnlineService::class)->getOrCreateState(auth()->id());
-            if ($state->matching_status === PartnerOnlineState::STATUS_ONLINE) {
-                session()->flash('message', 'Waktu tawaran habis. Status dialihkan ke Standby. Klik "Cari Order" untuk mulai matching lagi.');
-                $this->dispatch('show-status-notification', message: 'Waktu habis. Status beralih ke Standby.');
-            } else {
-                session()->flash('message', 'Waktu tawaran habis. Sistem melanjutkan pencarian order baru untuk Anda.');
-                $this->dispatch('show-status-notification', message: 'Waktu habis. Melanjutkan pencarian...');
-            }
-        } catch (\Throwable $e) {
-            Log::error('[Mitra/Dashboard] handleExpiry error: ' . $e->getMessage(), ['dispatch_id' => $dispatchId]);
+            session()->flash('message', $res['message']);
+            $this->dispatch('show-status-notification', message: $res['is_demoted_to_standby'] ? 'Waktu habis. Status beralih ke Standby.' : 'Waktu habis. Melanjutkan pencarian...');
         }
     }
 
-    public function completeHelp($helpId)
+    public function completeHelp($helpId): void
     {
         $help = Help::where('id', $helpId)
             ->where('mitra_id', auth()->id())
@@ -242,7 +223,7 @@ class Index extends Component
         if (!$uid) return;
 
         $userCityId = auth()->user()?->city_id;
-        app(\App\Services\DashboardStatsService::class)->clearStatsCache($uid, $userCityId);
+        app(DashboardStatsService::class)->clearStatsCache($uid, $userCityId);
     }
 
     public function render()
@@ -252,110 +233,38 @@ class Index extends Component
             return view('livewire.mitra.dashboard.index');
         }
 
-        $statsService = app(\App\Services\DashboardStatsService::class);
+        $queryService = app(DashboardQueryService::class);
+        $statsService = app(DashboardStatsService::class);
 
-        // 1. Statistik ringkas & saldo di-cache via DashboardStatsService
-        $stats               = $statsService->getSummaryStats($user);
-        $balance             = $stats['balance'];
-        $availableHelpsCount = $stats['available'];
-        $inProgressCount     = $stats['inProgress'];
-        $completedCount      = $stats['completed'];
+        // 1. Summary Stats
+        $stats = $queryService->getSummaryStats($user);
 
-        $userDistrictId = $user->district_id;
-        $userCityId     = $user->city_id;
+        // 2. Paginated Helps by Tab
+        $helps = $queryService->getHelpListByTab($user, $this->activeTab, 6);
 
-        // 2. Data paginasi berdasarkan tab aktif
-        if ($this->activeTab === 'tersedia' || $this->activeTab === 'semua') {
-            $helpsQuery = Help::where('status', 'menunggu_mitra')
-                ->where(function ($q) {
-                    $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
-                      ->orWhereNull('dispatch_mode');
-                })
-                ->whereNull('mitra_id')
-                ->availableForMitra($user->id)
-                ->where(function ($q) {
-                    $q->whereNull('expires_at')
-                      ->orWhere('expires_at', '>', now());
-                })
-                ->with(['user', 'city', 'district']);
-
-            if ($userDistrictId) {
-                $helpsQuery->orderByRaw("(district_id = ?) DESC", [$userDistrictId])->latest();
-            } elseif ($userCityId) {
-                $helpsQuery->orderByRaw("(city_id = ?) DESC", [$userCityId])->latest();
-            } else {
-                $helpsQuery->latest();
-            }
-
-            $helps = $helpsQuery->paginate(6);
-        } elseif ($this->activeTab === 'diproses') {
-            $inProgressStatuses = array_merge(Help::activeStatuses(), [
-                Help::STATUS_WAITING_CONFIRMATION,
-                Help::STATUS_PARTNER_CANCEL_REQUESTED,
-                Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
-            ]);
-
-            $helps = Help::where('mitra_id', $user->id)
-                ->whereIn('status', $inProgressStatuses)
-                ->with(['user', 'city', 'district'])
-                ->latest()
-                ->paginate(6);
-        } elseif ($this->activeTab === 'selesai') {
-            $helps = Help::where('mitra_id', $user->id)
-                ->where('status', Help::STATUS_SELESAI)
-                ->with(['user', 'city', 'district'])
-                ->latest()
-                ->paginate(6);
-        } else {
-            $helps = Help::where('mitra_id', $user->id)
-                ->with(['user', 'city', 'district'])
-                ->latest()
-                ->paginate(6);
-        }
-
-        // 3. Rekomendasi, Terbaru, dan Terdekat via DashboardStatsService
+        // 3. Recommended, Latest, Nearby, Unread Chat
         $recommendedHelps = $statsService->getRecommendedHelps($user, 3);
         $latestHelps      = $statsService->getLatestHelps($user, 5);
         $nearbyHelps      = $statsService->getNearbyHelps($user, 3);
+        $unreadChatCount  = $statsService->getUnreadChatCount($user);
 
-        // 4. Unread Chat Count via DashboardStatsService
-        $unreadChatCount = $statsService->getUnreadChatCount($user);
-
-        // 5. Real-Time State & Task Check (Terkonsolidasi dalam 1 Query Index Tunggal)
+        // 4. Partner Online State & Tasks
         $onlineState = app(PartnerOnlineService::class)->getOrCreateState($user->id);
-
-        $relevantMitraHelps = Help::where('mitra_id', $user->id)
-            ->where(function ($q) {
-                $q->active()
-                  ->orWhere('status', Help::STATUS_WAITING_CONFIRMATION);
-            })
-            ->with(['user', 'city', 'district'])
-            ->latest()
-            ->get();
-
-        $activeTask = $relevantMitraHelps->first(function ($h) {
-            return in_array($h->status, array_merge(Help::activeStatuses(), [
-                Help::STATUS_PARTNER_CANCEL_REQUESTED,
-            ]));
-        });
-
-        $waitingConfirmationHelps = $relevantMitraHelps->filter(function ($h) {
-            return $h->status === Help::STATUS_WAITING_CONFIRMATION;
-        })->take(3)->values();
+        $taskData    = $queryService->getActiveAndPendingTasks($user);
 
         return view('livewire.mitra.dashboard.index', [
             'helps'                    => $helps,
-            'balance'                  => $balance,
-            'availableHelpsCount'      => $availableHelpsCount,
-            'inProgressCount'          => $inProgressCount,
-            'completedCount'           => $completedCount,
+            'balance'                  => $stats['balance'],
+            'availableHelpsCount'      => $stats['available'],
+            'inProgressCount'          => $stats['inProgress'],
+            'completedCount'           => $stats['completed'],
             'user'                     => $user,
             'recommendedHelps'         => $recommendedHelps,
             'latestHelps'              => $latestHelps,
             'nearbyHelps'              => $nearbyHelps,
             'unreadChatCount'          => $unreadChatCount,
-            'activeTask'               => $activeTask,
-            'waitingConfirmationHelps' => $waitingConfirmationHelps,
+            'activeTask'               => $taskData['activeTask'],
+            'waitingConfirmationHelps' => $taskData['waitingConfirmationHelps'],
             'onlineState'              => $onlineState,
         ]);
     }

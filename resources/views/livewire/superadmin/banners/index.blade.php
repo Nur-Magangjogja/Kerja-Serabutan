@@ -121,7 +121,7 @@
                                     <!-- Thumbnail 16:9 -->
                                     <div class="relative w-full sm:w-32 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 shadow-2xs">
                                         <img src="{{ asset('storage/' . $imgPath) }}" alt="banner-customer-{{ $i }}" class="w-full h-full object-cover">
-                                        <span class="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-blue-600/90 text-white text-[9px] font-black tracking-wider uppercase">#{{ $i + 1 }}</span>
+                                        <span class="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-blue-600/90 text-white text-[9px] font-black tracking-wider uppercase">{{ $i + 1 }}</span>
                                     </div>
 
                                     <!-- Link Href Input -->
@@ -262,7 +262,7 @@
                                     <!-- Thumbnail 16:9 -->
                                     <div class="relative w-full sm:w-32 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 shadow-2xs">
                                         <img src="{{ asset('storage/' . $imgPath) }}" alt="banner-mitra-{{ $i }}" class="w-full h-full object-cover">
-                                        <span class="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-emerald-600/90 text-white text-[9px] font-black tracking-wider uppercase">#{{ $i + 1 }}</span>
+                                        <span class="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-emerald-600/90 text-white text-[9px] font-black tracking-wider uppercase">{{ $i + 1 }}</span>
                                     </div>
 
                                     <!-- Link Href Input -->

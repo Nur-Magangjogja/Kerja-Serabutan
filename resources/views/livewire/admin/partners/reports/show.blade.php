@@ -39,7 +39,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2 flex-wrap">
-                <h1 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white break-words">Detail Laporan Aduan #{{ $report->id }}</h1>
+                <h1 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white break-words">Detail Laporan Aduan</h1>
                 @if ($report->refund_status === 'requested')
                     <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800 animate-pulse whitespace-nowrap">
                         🛡️ Pengajuan Refund

@@ -17,6 +17,25 @@ class DashboardStatsService
     public const CHAT_TTL  = 15; // 15 seconds
 
     /**
+     * Base query for available pool jobs for a specific partner.
+     * Single source of truth for matching availability criteria.
+     */
+    public function availablePoolQuery(User $user): \Illuminate\Database\Eloquent\Builder
+    {
+        return Help::where('status', Help::STATUS_MENUNGGU_MITRA)
+            ->where(function ($q) {
+                $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
+                  ->orWhereNull('dispatch_mode');
+            })
+            ->whereNull('mitra_id')
+            ->availableForMitra($user->id)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                  ->orWhere('expires_at', '>', now());
+            });
+    }
+
+    /**
      * Aggregated summary metrics for partner dashboard.
      *
      * @return array{balance: float, available: int, inProgress: int, completed: int}
@@ -33,18 +52,7 @@ class DashboardStatsService
             $balanceRecord = UserBalance::where('user_id', $user->id)->first();
             $balance = $balanceRecord ? (float) $balanceRecord->balance : 0.0;
 
-            $available = Help::where('status', Help::STATUS_MENUNGGU_MITRA)
-                ->where(function ($q) {
-                    $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
-                      ->orWhereNull('dispatch_mode');
-                })
-                ->whereNull('mitra_id')
-                ->availableForMitra($user->id)
-                ->where(function ($q) {
-                    $q->whereNull('expires_at')
-                      ->orWhere('expires_at', '>', now());
-                })
-                ->count();
+            $available = $this->availablePoolQuery($user)->count();
 
             $inProgress = Help::where('mitra_id', $user->id)
                 ->whereIn('status', array_merge(Help::activeStatuses(), [
@@ -80,17 +88,7 @@ class DashboardStatsService
         }
 
         return Cache::remember($cacheKey, self::JOBS_TTL, function () use ($user, $cityId, $limit) {
-            return Help::where('status', Help::STATUS_MENUNGGU_MITRA)
-                ->where(function ($q) {
-                    $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
-                      ->orWhereNull('dispatch_mode');
-                })
-                ->whereNull('mitra_id')
-                ->availableForMitra($user->id)
-                ->where(function ($q) {
-                    $q->whereNull('expires_at')
-                      ->orWhere('expires_at', '>', now());
-                })
+            return $this->availablePoolQuery($user)
                 ->when($user->district_id, function ($query, $dId) {
                     return $query->where('district_id', $dId);
                 }, function ($query) use ($cityId) {
@@ -115,17 +113,7 @@ class DashboardStatsService
         }
 
         return Cache::remember($cacheKey, self::JOBS_TTL, function () use ($user, $limit) {
-            return Help::where('status', Help::STATUS_MENUNGGU_MITRA)
-                ->where(function ($q) {
-                    $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
-                      ->orWhereNull('dispatch_mode');
-                })
-                ->whereNull('mitra_id')
-                ->availableForMitra($user->id)
-                ->where(function ($q) {
-                    $q->whereNull('expires_at')
-                      ->orWhere('expires_at', '>', now());
-                })
+            return $this->availablePoolQuery($user)
                 ->with(['user', 'city', 'district'])
                 ->latest()
                 ->take($limit)
@@ -146,17 +134,7 @@ class DashboardStatsService
         }
 
         return Cache::remember($cacheKey, self::JOBS_TTL, function () use ($user, $cityId, $limit) {
-            return Help::where('status', Help::STATUS_MENUNGGU_MITRA)
-                ->where(function ($q) {
-                    $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
-                      ->orWhereNull('dispatch_mode');
-                })
-                ->whereNull('mitra_id')
-                ->availableForMitra($user->id)
-                ->where(function ($q) {
-                    $q->whereNull('expires_at')
-                      ->orWhere('expires_at', '>', now());
-                })
+            return $this->availablePoolQuery($user)
                 ->when($user->district_id, function ($query, $dId) {
                     return $query->where('district_id', $dId);
                 }, function ($query) use ($cityId) {

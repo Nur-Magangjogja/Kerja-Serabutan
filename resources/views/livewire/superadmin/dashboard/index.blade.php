@@ -193,7 +193,9 @@
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div class="min-w-0">
                     <h2 class="text-sm font-bold text-gray-900 dark:text-white truncate">Grafik Pendaftaran Pengguna</h2>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">Statistik pertumbuhan pengguna per periode</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+                        Statistik pertumbuhan pengguna per periode &bull; <span class="font-semibold text-primary-600 dark:text-primary-400">{{ $territory['label'] ?? 'Semua Wilayah (Nasional)' }}</span>
+                    </p>
                 </div>
                 <div id="chartRangeTabs" role="tablist" class="inline-flex bg-gray-100 dark:bg-gray-700/60 rounded-xl p-1 gap-1 w-full sm:w-auto justify-between sm:justify-start flex-shrink-0">
                     <button type="button" data-range="daily"   class="chart-range-tab flex-1 sm:flex-none text-center px-3 py-1.5 text-xs font-bold rounded-lg transition">Harian</button>
@@ -238,7 +240,7 @@
             </div>
             <div class="pt-3 mt-3 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
                 <span>Cakupan Sistem</span>
-                <span class="font-bold text-gray-700 dark:text-gray-300">Seluruh Wilayah</span>
+                <span class="font-bold text-gray-700 dark:text-gray-300">{{ $territory['label'] ?? 'Seluruh Wilayah' }}</span>
             </div>
         </div>
     </div>
@@ -471,6 +473,7 @@
 (function() {
     let usersChart = null;
     let observer = null;
+    let currentChartData = @json($userChart);
 
     function waitForChart(callback, maxAttempts = 50) {
         if (typeof Chart !== 'undefined') {
@@ -489,152 +492,174 @@
         }, 60);
     }
 
-    function initUsersChart() {
+    const isDark = () => document.documentElement.classList.contains('dark');
+
+    function getColors() {
+        return {
+            gridColor : isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+            tickColor : isDark() ? '#9ca3af' : '#6b7280',
+            bar       : isDark() ? 'rgba(99,102,241,0.85)' : 'rgba(59,130,246,0.85)',
+            barHover  : isDark() ? 'rgba(129,140,248,0.95)' : 'rgba(59,130,246,0.95)',
+            border    : isDark() ? 'rgba(129,140,248,1)' : 'rgba(59,130,246,1)',
+        };
+    }
+
+    function renderRange(range) {
         const canvas = document.getElementById('usersChart');
         if (!canvas || !canvas.isConnected || !canvas.ownerDocument || !document.body.contains(canvas)) return;
         const ctx = canvas.getContext('2d');
-        const chartData = @json($userChart);
-        const isDark = () => document.documentElement.classList.contains('dark');
 
-        function getColors() {
-            return {
-                gridColor : isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-                tickColor : isDark() ? '#9ca3af' : '#6b7280',
-                bar       : isDark() ? 'rgba(99,102,241,0.85)' : 'rgba(59,130,246,0.85)',
-                barHover  : isDark() ? 'rgba(129,140,248,0.95)' : 'rgba(59,130,246,0.95)',
-                border    : isDark() ? 'rgba(129,140,248,1)' : 'rgba(59,130,246,1)',
-            };
+        const container = document.getElementById('chartContainer');
+        if (container) {
+            container.style.opacity = '1';
+            container.style.transform = 'none';
         }
 
-        function renderRange(range) {
-            const container = document.getElementById('chartContainer');
-            if (container) {
-                container.style.opacity = '1';
-                container.style.transform = 'none';
+        const c = getColors();
+        const labels = currentChartData[range]?.labels || [];
+        const data = currentChartData[range]?.data || [];
+
+        // If chart exists and canvas is still valid, update smoothly
+        if (usersChart && usersChart.ctx && document.getElementById('usersChart') === usersChart.canvas) {
+            usersChart.data.labels = labels;
+            if (usersChart.data.datasets && usersChart.data.datasets[0]) {
+                usersChart.data.datasets[0].data = data;
+                usersChart.data.datasets[0].backgroundColor = c.bar;
+                usersChart.data.datasets[0].hoverBackgroundColor = c.barHover;
+                usersChart.data.datasets[0].borderColor = c.border;
             }
-
-            const c = getColors();
-            const labels = chartData[range]?.labels || [];
-            const data = chartData[range]?.data || [];
-
-            // If chart exists, update smoothly
-            if (usersChart && usersChart.ctx && document.getElementById('usersChart') === usersChart.canvas) {
-                usersChart.data.labels = labels;
-                if (usersChart.data.datasets && usersChart.data.datasets[0]) {
-                    usersChart.data.datasets[0].data = data;
-                    usersChart.data.datasets[0].backgroundColor = c.bar;
-                    usersChart.data.datasets[0].hoverBackgroundColor = c.barHover;
-                    usersChart.data.datasets[0].borderColor = c.border;
+            if (usersChart.options && usersChart.options.scales) {
+                if (usersChart.options.scales.x && usersChart.options.scales.x.ticks) {
+                    usersChart.options.scales.x.ticks.color = c.tickColor;
                 }
-                if (usersChart.options && usersChart.options.scales) {
-                    if (usersChart.options.scales.x && usersChart.options.scales.x.ticks) {
-                        usersChart.options.scales.x.ticks.color = c.tickColor;
-                    }
-                    if (usersChart.options.scales.y && usersChart.options.scales.y.ticks) {
-                        usersChart.options.scales.y.ticks.color = c.tickColor;
-                    }
+                if (usersChart.options.scales.y && usersChart.options.scales.y.ticks) {
+                    usersChart.options.scales.y.ticks.color = c.tickColor;
                 }
-                usersChart.update('none');
-                return;
             }
+            usersChart.update();
+            return;
+        }
 
-            const cfg = {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Pendaftaran',
-                        data: data,
-                        backgroundColor: c.bar,
-                        hoverBackgroundColor: c.barHover,
-                        borderColor: c.border,
-                        borderWidth: 1,
-                        borderRadius: 6,
-                        maxBarThickness: 36,
-                    }]
+        const cfg = {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Pendaftaran',
+                    data: data,
+                    backgroundColor: c.bar,
+                    hoverBackgroundColor: c.barHover,
+                    borderColor: c.border,
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    maxBarThickness: 36,
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: isDark() ? '#1e293b' : 'rgba(0,0,0,0.85)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        padding: 10,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: ctx => 'Pendaftaran: ' + Number(ctx.raw ?? (ctx.parsed ? ctx.parsed.y : 0) ?? 0).toLocaleString()
+                        }
+                    }
                 },
-                options: {
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: isDark() ? '#1e293b' : 'rgba(0,0,0,0.85)',
-                            titleColor: '#fff',
-                            bodyColor: '#fff',
-                            padding: 10,
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: ctx => 'Pendaftaran: ' + Number(ctx.raw ?? (ctx.parsed ? ctx.parsed.y : 0) ?? 0).toLocaleString()
-                            }
-                        }
+                scales: {
+                    x: {
+                        ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12, color: c.tickColor },
+                        grid: { display: false }
                     },
-                    scales: {
-                        x: {
-                            ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12, color: c.tickColor },
-                            grid: { display: false }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: { precision: 0, color: c.tickColor, callback: v => Number(v).toLocaleString() },
-                            grid: { color: c.gridColor }
-                        }
-                    },
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false
-                }
-            };
-
-            // Destroy old chart on canvas if it exists
-            if (typeof Chart !== 'undefined' && Chart.getChart) {
-                const existing = Chart.getChart(canvas) || Chart.getChart('usersChart');
-                if (existing) {
-                    try { existing.destroy(); } catch(e) {}
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0, color: c.tickColor, callback: v => Number(v).toLocaleString() },
+                        grid: { color: c.gridColor }
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 300
                 }
             }
-            if (usersChart) {
-                try { usersChart.destroy(); } catch(e) {}
-                usersChart = null;
-            }
-            if (window.usersChartInstance) {
-                try { window.usersChartInstance.destroy(); } catch(e) {}
-                window.usersChartInstance = null;
-            }
+        };
 
-            if (!canvas.isConnected || !canvas.ownerDocument || !document.body.contains(canvas)) return;
-
-            try {
-                usersChart = new Chart(ctx, cfg);
-                window.usersChartInstance = usersChart;
-            } catch(e) {}
+        // Destroy old chart on canvas if it exists
+        if (typeof Chart !== 'undefined' && Chart.getChart) {
+            const existing = Chart.getChart(canvas) || Chart.getChart('usersChart');
+            if (existing) {
+                try { existing.destroy(); } catch(e) {}
+            }
+        }
+        if (usersChart) {
+            try { usersChart.destroy(); } catch(e) {}
+            usersChart = null;
+        }
+        if (window.usersChartInstance) {
+            try { window.usersChartInstance.destroy(); } catch(e) {}
+            window.usersChartInstance = null;
         }
 
+        if (!canvas.isConnected || !canvas.ownerDocument || !document.body.contains(canvas)) return;
+
+        try {
+            usersChart = new Chart(ctx, cfg);
+            window.usersChartInstance = usersChart;
+        } catch(e) {}
+    }
+
+    function setActiveTab(range) {
         const tabs = document.querySelectorAll('.chart-range-tab');
-        const validRanges = ['daily', 'monthly', 'yearly'];
-        let initialRange = localStorage.getItem('superadmin.usersChart.range') || 'daily';
-        if (!validRanges.includes(initialRange)) initialRange = 'daily';
+        tabs.forEach(t => {
+            if (t.dataset.range === range) {
+                t.className = 'chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-bold rounded-md bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-xs';
+            } else {
+                t.className = 'chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200';
+            }
+        });
+    }
 
-        function setActive(range) {
-            tabs.forEach(t => {
-                if (t.dataset.range === range) {
-                    t.className = 'chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-xs';
-                } else {
-                    t.className = 'chart-range-tab flex-1 sm:flex-none text-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200';
-                }
-            });
-        }
-
+    function attachTabEvents() {
+        const tabs = document.querySelectorAll('.chart-range-tab');
         tabs.forEach(tab => {
+            if (tab._chartRangeBound) return;
+            tab._chartRangeBound = true;
             tab.addEventListener('click', function () {
                 const r = tab.dataset.range;
-                if (!validRanges.includes(r)) return;
-                setActive(r);
+                if (!['daily', 'monthly', 'yearly'].includes(r)) return;
+                setActiveTab(r);
                 localStorage.setItem('superadmin.usersChart.range', r);
                 renderRange(r);
             });
         });
+    }
 
-        // Immediately render and activate initial range on load
-        setActive(initialRange);
+    function handleChartUpdate(data) {
+        if (!data) return;
+        const chartDataObj = data.chartData || (Array.isArray(data) ? data[0]?.chartData : data);
+        if (chartDataObj && (chartDataObj.daily || chartDataObj.monthly || chartDataObj.yearly)) {
+            currentChartData = chartDataObj;
+            let range = localStorage.getItem('superadmin.usersChart.range') || 'daily';
+            if (!['daily', 'monthly', 'yearly'].includes(range)) range = 'daily';
+            setActiveTab(range);
+            renderRange(range);
+        }
+    }
+
+    function initUsersChart() {
+        const canvas = document.getElementById('usersChart');
+        if (!canvas || !canvas.isConnected || !document.body.contains(canvas)) return;
+
+        attachTabEvents();
+
+        let initialRange = localStorage.getItem('superadmin.usersChart.range') || 'daily';
+        if (!['daily', 'monthly', 'yearly'].includes(initialRange)) initialRange = 'daily';
+
+        setActiveTab(initialRange);
         renderRange(initialRange);
 
         let lastKnownDark = isDark();
@@ -644,7 +669,8 @@
                 if (currentDark !== lastKnownDark) {
                     lastKnownDark = currentDark;
                     if (usersChart && document.getElementById('usersChart')) {
-                        renderRange(localStorage.getItem('superadmin.usersChart.range') || 'daily');
+                        const range = localStorage.getItem('superadmin.usersChart.range') || 'daily';
+                        renderRange(range);
                     }
                 }
             });
@@ -670,6 +696,25 @@
         safeInit();
     }
     document.addEventListener('livewire:navigated', safeInit);
+
+    // Listen for custom chart update events from Livewire
+    window.addEventListener('users-chart-updated', (event) => {
+        handleChartUpdate(event.detail);
+    });
+
+    if (window.Livewire) {
+        window.Livewire.on('users-chart-updated', (data) => {
+            handleChartUpdate(data);
+        });
+    }
+
+    document.addEventListener('livewire:init', () => {
+        if (window.Livewire) {
+            window.Livewire.on('users-chart-updated', (data) => {
+                handleChartUpdate(data);
+            });
+        }
+    });
 
     document.addEventListener('livewire:navigating', function() {
         if (usersChart) {

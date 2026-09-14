@@ -2,10 +2,28 @@
 
 namespace App\Models;
 
+use App\Enums\HelpStatus;
+use App\Support\Presenters\HelpStatusPresenter;
 use Illuminate\Database\Eloquent\Model;
 
 class Help extends Model
 {
+    /**
+     * Dapatkan representasi Enum dari status saat ini.
+     */
+    public function statusEnum(): ?HelpStatus
+    {
+        return HelpStatus::tryFromOrNormalize($this->status);
+    }
+
+    /**
+     * Dapatkan metadata visual status (badge, warna, icon, label) untuk UI.
+     */
+    public function statusPresenter(): array
+    {
+        return HelpStatusPresenter::for($this);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // SERVICE TYPES & ORDER MODES (REVISI FINAL)
     // ─────────────────────────────────────────────────────────────────────────

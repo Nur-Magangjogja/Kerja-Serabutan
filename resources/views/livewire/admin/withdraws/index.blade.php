@@ -131,7 +131,7 @@
                             @php $u = $wd->user; @endphp
                             <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition">
                                 <td class="px-4 py-3.5 whitespace-nowrap">
-                                    <span class="font-mono font-bold text-gray-900 dark:text-white text-xs">#WD-{{ $wd->id }}</span>
+                                    <span class="font-mono font-bold text-gray-900 dark:text-white text-xs">WD-{{ $wd->id }}</span>
                                     <div class="mt-1">
                                         <div class="flex items-center gap-1.5">
                                             <p class="font-semibold text-gray-800 dark:text-gray-200">{{ $u?->name ?? 'User' }}</p>
@@ -212,7 +212,7 @@
                                         <div class="flex items-center justify-end gap-1.5">
                                             <button type="button" wire:click="openApproveModal({{ $wd->id }})"
                                                 class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition shadow-xs cursor-pointer">
-                                                ✓ Transfer & Setujui
+                                                Setujui
                                             </button>
                                             <button type="button" wire:click="openRejectModal({{ $wd->id }})"
                                                 class="px-2 py-1.5 bg-gray-100 hover:bg-rose-50 dark:bg-gray-700 text-gray-700 hover:text-rose-600 rounded-lg text-[11px] font-semibold transition cursor-pointer">

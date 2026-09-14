@@ -362,7 +362,7 @@ class Index extends Component
             // Completed Helps per Day
             $dailyCompletedHelps = (clone $baseHelpQuery)
                 ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->whereIn('status', ['completed', 'selesai'])
+                ->whereIn('status', [Help::STATUS_SELESAI, 'completed'])
                 ->selectRaw('DATE(created_at) as date, count(*) as total')
                 ->groupBy('date')
                 ->pluck('total', 'date')
@@ -371,7 +371,7 @@ class Index extends Component
             // Cancelled Helps per Day
             $dailyCancelledHelps = (clone $baseHelpQuery)
                 ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->whereIn('status', ['cancelled', 'dibatalkan', 'rejected'])
+                ->whereIn('status', [Help::STATUS_DIBATALKAN, 'cancelled', 'rejected'])
                 ->selectRaw('DATE(created_at) as date, count(*) as total')
                 ->groupBy('date')
                 ->pluck('total', 'date')
@@ -409,7 +409,7 @@ class Index extends Component
 
             $dailyCompletedHelps = (clone $baseHelpQuery)
                 ->whereBetween('created_at', [$startDate, $endDate])
-                ->whereIn('status', ['completed', 'selesai'])
+                ->whereIn('status', [Help::STATUS_SELESAI, 'completed'])
                 ->selectRaw('DATE(created_at) as date, count(*) as total')
                 ->groupBy('date')
                 ->pluck('total', 'date')
@@ -417,7 +417,7 @@ class Index extends Component
 
             $dailyCancelledHelps = (clone $baseHelpQuery)
                 ->whereBetween('created_at', [$startDate, $endDate])
-                ->whereIn('status', ['cancelled', 'dibatalkan', 'rejected'])
+                ->whereIn('status', [Help::STATUS_DIBATALKAN, 'cancelled', 'rejected'])
                 ->selectRaw('DATE(created_at) as date, count(*) as total')
                 ->groupBy('date')
                 ->pluck('total', 'date')

@@ -727,7 +727,7 @@
                                 <div class="flex flex-col gap-1 items-start">
                                     @if(!empty($t->reference_id))
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60">
-                                            Bantuan #{{ $t->reference_id }}
+                                            Bantuan {{ $t->reference_id }}
                                         </span>
                                     @endif
                                     @if(!empty($t->request_code))

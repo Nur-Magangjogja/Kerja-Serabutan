@@ -115,7 +115,6 @@
             <table class="w-full text-left text-sm">
                 <thead>
                     <tr class="bg-gray-50/80 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 uppercase text-xs font-semibold tracking-wider border-b border-gray-100 dark:border-gray-700">
-                        <th class="px-4 py-3 hidden">#ID</th>
                         <th class="px-4 py-3">Permohonan Bantuan</th>
                         <th class="px-4 py-3">Customer / Pemohon</th>
                         <th class="px-4 py-3 hidden md:table-cell">Mitra Pelaksana</th>
@@ -134,13 +133,13 @@
                             'menunggu_mitra'                                                => 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60',
                             'taken', 'in_progress', 'partner_on_the_way', 'partner_arrived', 'waiting_customer_confirmation' => 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60',
                             'dibatalkan', 'partner_cancel_requested', 'customer_cancel_requested' => 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60',
-                            default                                                         => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                            default                                                         => 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
                         };
                         $statusLabel = match($help->status) {
-                            'selesai'                                                       => 'Selesai',
                             'menunggu_mitra'                                                => 'Menunggu Mitra',
                             'taken'                                                         => 'Diambil Mitra',
                             'in_progress'                                                   => 'Sedang Dikerjakan',
+                            'selesai'                                                       => 'Selesai',
                             'partner_on_the_way'                                            => 'Mitra Menuju Lokasi',
                             'partner_arrived'                                               => 'Mitra Tiba',
                             'waiting_customer_confirmation'                                 => 'Menunggu Konfirmasi',
@@ -151,9 +150,6 @@
                         };
                         @endphp
                         <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-700/30 transition-colors duration-150">
-                            <td class="px-4 py-3.5 font-mono text-xs font-semibold text-gray-400 dark:text-gray-500 hidden">
-                                #{{ $help->order_id ?? $help->id }}
-                            </td>
                             <td class="px-4 py-3.5">
                                 <div class="font-bold text-gray-900 dark:text-white">{{ $help->title }}</div>
                                 <div class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs mt-0.5">{{ Str::limit($help->description, 55) }}</div>
@@ -251,7 +247,7 @@
                         {{-- Top Row: Order ID & Status Badges --}}
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600 shadow-2xs">
-                                #{{ $selectedHelp->order_id ?? $selectedHelp->id }}
+                                {{ $selectedHelp->order_id ?? $selectedHelp->id }}
                             </span>
 
                             @if($isCancelled)

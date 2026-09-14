@@ -116,7 +116,7 @@
                         @forelse($disputes as $help)
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
                                 <td class="p-4">
-                                    <span class="font-bold text-gray-900 dark:text-white">#{{ $help->id }} - {{ $help->title }}</span>
+                                    <span class="font-bold text-gray-900 dark:text-white">{{ $help->title }}</span>
                                     <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
                                         {{ $help->district ? 'Kec. ' . $help->district->name : ($help->city->name ?? '-') }} • {{ $help->disputed_at ? $help->disputed_at->translatedFormat('d M Y, H:i') : '-' }}
                                     </div>
@@ -203,7 +203,7 @@
                         @forelse($cancellations as $req)
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
                                 <td class="p-4">
-                                    <span class="font-bold text-gray-900 dark:text-white">#{{ $req->help_id }} - {{ $req->help->title ?? 'Bantuan' }}</span>
+                                    <span class="font-bold text-gray-900 dark:text-white">{{ $req->help->title ?? 'Bantuan' }}</span>
                                     <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
                                         Escrow: Rp {{ number_format($req->help->amount ?? 0, 0, ',', '.') }}
                                     </div>
@@ -315,7 +315,7 @@
                 <div class="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
                     <div>
                         <h3 class="font-bold text-base text-gray-900 dark:text-white">Arbitrase Sengketa Bantuan</h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Order #{{ $selectedHelp->id }} - {{ $selectedHelp->title }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $selectedHelp->title }}</p>
                     </div>
                     <button wire:click="closeResolveModal" class="p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -407,7 +407,7 @@
                 <div class="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
                     <div>
                         <h3 class="font-bold text-base text-gray-900 dark:text-white">Audit Pembatalan & Sanksi SP</h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Order #{{ $selectedCancelRequest->help_id }} - {{ $selectedCancelRequest->help->title ?? '' }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $selectedCancelRequest->help->title ?? 'Permohonan Bantuan' }}</p>
                     </div>
                     <button wire:click="closeCancelReviewModal" class="p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>

@@ -127,7 +127,7 @@
                             @endphp
                             <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition">
                                 <td class="px-4 py-3.5 whitespace-nowrap">
-                                    <span class="font-mono font-bold text-gray-900 dark:text-white text-xs">#{{ $report->id }}</span>
+                                    <span class="font-mono font-bold text-gray-900 dark:text-white text-xs">{{ $report->id }}</span>
                                     <div class="mt-1">
                                         <p class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1">
                                             <span>{{ $reporter?->name ?? 'User Tidak Diketahui' }}</span>

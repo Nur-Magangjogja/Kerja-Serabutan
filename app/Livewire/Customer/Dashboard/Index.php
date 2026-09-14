@@ -93,7 +93,7 @@ class Index extends Component
             } else {
                 // Untuk customer, tampilkan bantuan yang sudah selesai atau dibatalkan
                 $availableHelps = Help::where('user_id', $user->id)
-                    ->whereIn('status', ['selesai', 'dibatalkan'])
+                    ->whereIn('status', Help::terminalStatuses())
                     ->with(['mitra', 'city', 'district'])
                     ->latest()
                     ->take(10)
@@ -104,8 +104,8 @@ class Index extends Component
         if ($user->isCustomer()) {
             $stats = [
                 'total_helps' => Help::where('user_id', $user->id)->count(),
-                'pending_helps' => Help::where('user_id', $user->id)->where('status', 'menunggu_mitra')->count(),
-                'completed_helps' => Help::where('user_id', $user->id)->where('status', 'selesai')->count(),
+                'pending_helps' => Help::where('user_id', $user->id)->where('status', Help::STATUS_MENUNGGU_MITRA)->count(),
+                'completed_helps' => Help::where('user_id', $user->id)->where('status', Help::STATUS_SELESAI)->count(),
             ];
 
             $myHelps = Help::where('user_id', $user->id)

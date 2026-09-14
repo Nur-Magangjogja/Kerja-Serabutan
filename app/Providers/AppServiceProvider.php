@@ -75,12 +75,6 @@ class AppServiceProvider extends ServiceProvider
             }
         );
 
-        try {
-            $registerSqliteFunctions(\Illuminate\Support\Facades\DB::connection());
-        } catch (\Throwable $e) {
-            // Connection not ready yet
-        }
-
         // Redirect authenticated users based on their role
         $this->configureRedirectsForAuthentication();
     }

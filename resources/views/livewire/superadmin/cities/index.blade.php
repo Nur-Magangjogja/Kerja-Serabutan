@@ -322,21 +322,21 @@
             <form wire:submit.prevent="save" class="px-6 py-5 space-y-4">
                 <div>
                     <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Nama Kota <span class="text-red-500">*</span></label>
-                    <input type="text" wire:model.defer="name" placeholder="Contoh: Bandung"
-                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <input type="text" wire:model.defer="name" placeholder="Contoh: Kota Bandung / Kab. Sleman"
+                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     @error('name') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Provinsi <span class="text-red-500">*</span></label>
-                    <input type="text" wire:model.defer="province" placeholder="Contoh: Jawa Barat"
-                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <input type="text" wire:model.defer="province" placeholder="Contoh: Jawa Barat / D.I. Yogyakarta"
+                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     @error('province') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Admin Kota (opsional)</label>
                     <select wire:model.defer="admin_id"
                         class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                        <option value="">-- Tidak ada --</option>
+                        <option value="">-- Pilih Admin Pengelola Kota (Opsional) --</option>
                         @foreach($admins as $admin)
                         <option value="{{ $admin->id }}">{{ $admin->name }} ({{ $admin->email }})</option>
                         @endforeach
@@ -377,8 +377,8 @@
             <form wire:submit.prevent="saveProvince" class="px-6 py-5 space-y-4">
                 <div>
                     <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Nama Provinsi</label>
-                    <input type="text" wire:model.defer="provinceName"
-                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <input type="text" wire:model.defer="provinceName" placeholder="Contoh: Jawa Barat / D.I. Yogyakarta / Jawa Tengah"
+                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     @error('provinceName') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div class="flex items-center justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
@@ -715,14 +715,14 @@
 
                 <div>
                     <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Durasi Override (Jam)</label>
-                    <input type="number" wire:model="overrideHours" min="0" max="720" placeholder="0"
+                    <input type="number" wire:model="overrideHours" min="0" max="720" placeholder="Contoh: 24 (Isi 0 untuk permanen)"
                         class="w-full mt-1 px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700/80 text-gray-800 dark:text-gray-100 placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
                     <p class="text-[11px] text-gray-400 dark:text-gray-400 mt-1">Isi 0 untuk berlaku tanpa batas waktu (sampai dihapus).</p>
                 </div>
 
                 <div>
                     <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Catatan / Alasan Override</label>
-                    <textarea wire:model="overrideNotes" rows="3" placeholder="Contoh: Kebutuhan mitra tambahan event kota..."
+                    <textarea wire:model="overrideNotes" rows="3" placeholder="Contoh: Kebutuhan penambahan mitra baru untuk persiapan event kota..."
                         class="w-full mt-1 px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700/80 text-gray-800 dark:text-gray-100 placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none"></textarea>
                 </div>
 
@@ -763,14 +763,14 @@
             <form wire:submit.prevent="saveDistrict" class="px-6 py-5 space-y-4">
                 <div>
                     <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Nama Kecamatan <span class="text-red-500">*</span></label>
-                    <input type="text" wire:model.defer="districtName" placeholder="Contoh: Coblong"
-                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <input type="text" wire:model.defer="districtName" placeholder="Contoh: Coblong / Sukajadi / Depok"
+                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     @error('districtName') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Kode Wilayah / Kemendagri (opsional)</label>
-                    <input type="text" wire:model.defer="districtCode" placeholder="Contoh: 32.73.01"
-                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <input type="text" wire:model.defer="districtCode" placeholder="Contoh: 32.73.01 / 34.04.07"
+                        class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     @error('districtCode') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                 </div>
                 <label class="flex items-center gap-2 cursor-pointer pt-1">

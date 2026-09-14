@@ -66,7 +66,6 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-12 hidden">#</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pengguna</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">No. HP</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
@@ -89,7 +88,6 @@
                     $isActive = isset($user->status) && $user->status === 'active';
                     @endphp
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-150">
-                        <td class="px-4 py-3.5 text-xs font-medium text-gray-400 dark:text-gray-500 hidden">#{{ $user->id }}</td>
                         <td class="px-4 py-3.5">
                             <div class="flex items-center gap-3">
                                 <div class="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
@@ -385,7 +383,7 @@
                             <div class="bg-gray-50/70 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 sm:p-5 space-y-3">
                                 <div class="flex items-center justify-between">
                                     <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                                        <span>🪪</span> Foto e-KTP
+                                        <span></span> Foto e-KTP
                                     </h4>
                                     @if($selectedUser->verified)
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
@@ -432,9 +430,14 @@
                                 <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-900/10 shadow-xs aspect-4/3">
                                     <img src="{{ $selectedUser->selfie_url }}" alt="Selfie {{ $selectedUser->name }}" class="w-full h-full object-cover">
                                 </div>
-                                <div class="text-right">
-                                    <a href="{{ $selectedUser->selfie_url }}" target="_blank" class="text-xs text-primary-600 dark:text-primary-400 font-semibold hover:underline">
-                                        Buka Foto Asli &rarr;
+                                <div class="flex items-center justify-between text-xs pt-1">
+                                    <a href="{{ $selectedUser->selfie_url }}" target="_blank" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                        Buka Foto Asli
+                                    </a>
+                                    <a href="{{ $selectedUser->selfie_url }}" download class="text-gray-500 dark:text-gray-400 hover:underline flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                        Unduh
                                     </a>
                                 </div>
                             </div>

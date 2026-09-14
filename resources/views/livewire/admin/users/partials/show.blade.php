@@ -10,7 +10,7 @@
                 </div>
                 <div>
                     <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ $user->name }}</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ ucfirst($user->role) }} • ID: #{{ $user->id }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ ucfirst($user->role) }}</p>
                 </div>
             </div>
             <button type="button" id="modal-close-btn" class="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
