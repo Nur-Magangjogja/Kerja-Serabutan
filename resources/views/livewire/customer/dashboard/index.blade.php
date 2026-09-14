@@ -367,7 +367,7 @@
 
                             <div class="relative z-10 flex-shrink-0 mr-1 sm:mr-3">
                                 <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/15 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-lg shadow-black/10 transform -rotate-3 hover:rotate-0 transition-transform">
-                                    <span class="text-3xl sm:text-4xl">💰</span>
+                                    <span class="text-3xl sm:text-4xl"></span>
                                 </div>
                             </div>
                         </div>

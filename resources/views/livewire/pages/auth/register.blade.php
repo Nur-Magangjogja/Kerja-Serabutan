@@ -74,6 +74,19 @@ new #[Layout('layouts.guest')] class extends Component {
         }
     }
 
+    public function updatedEmail(): void
+    {
+        $this->email = strtolower(trim($this->email));
+        $this->validateOnly('email', [
+            'email' => ['required', 'string', 'email', 'ends_with:@gmail.com', 'max:255', 'unique:' . User::class],
+        ], [
+            'email.required'  => 'Alamat email wajib diisi.',
+            'email.email'     => 'Format email tidak valid.',
+            'email.ends_with' => 'Format email pendaftaran wajib menggunakan @gmail.com.',
+            'email.unique'    => 'Alamat email ini sudah terdaftar dan terverifikasi di sistem.',
+        ]);
+    }
+
     public function register(): void
     {
         if ($this->isSubmitting) {
@@ -118,7 +131,7 @@ new #[Layout('layouts.guest')] class extends Component {
             'name.required'         => 'Nama lengkap wajib diisi.',
             'email.required'        => 'Alamat email wajib diisi.',
             'email.email'           => 'Format email tidak valid.',
-            'email.ends_with'       => 'Pendaftaran akun wajib menggunakan email Google (@gmail.com).',
+            'email.ends_with'       => 'Format email pendaftaran wajib menggunakan @gmail.com.',
             'email.unique'          => 'Alamat email ini sudah terdaftar dan terverifikasi di sistem.',
             'password.required'     => 'Kata sandi wajib diisi.',
             'password.min'          => 'Kata sandi minimal 8 karakter.',
@@ -257,15 +270,16 @@ new #[Layout('layouts.guest')] class extends Component {
         <!-- 3. Alamat Email Google (Gmail) -->
         <div class="space-y-1">
             <label for="email" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center justify-between">
-                <span>Alamat Email </span>
+                <span>Alamat Email</span>
             </label>
             <div class="relative">
-                <input wire:model="email" id="email" type="email" required placeholder="@gmail.com"
+                <input wire:model.blur="email" id="email" type="email" required placeholder="nama@gmail.com"
                     class="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition">
                 <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
             </div>
+            <p class="text-[11px] text-gray-400 dark:text-gray-500">Format email pendaftaran wajib menggunakan akun <strong>@gmail.com</strong>.</p>
             @error('email')
                 <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p>
             @enderror

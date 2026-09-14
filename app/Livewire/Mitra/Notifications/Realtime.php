@@ -72,7 +72,7 @@ class Realtime extends Component
 
                     // Dispatch a browser event via inline JS so frontend can react
                     $this->js(sprintf(
-                        "console.log('🔔 Mitra help-status notification'); window.dispatchEvent(new CustomEvent('mitra-help-status', { detail: { helpId: %d, newStatus: '%s', message: '%s' } }));",
+                        "console.log(' Mitra help-status notification'); window.dispatchEvent(new CustomEvent('mitra-help-status', { detail: { helpId: %d, newStatus: '%s', message: '%s' } }));",
                         $helpId,
                         addslashes($newStatus ?? ''),
                         addslashes($data['message'] ?? '')

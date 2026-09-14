@@ -102,6 +102,11 @@ class HelpCancelRequest extends Model
         return $this->belongsTo(User::class, 'customer_id');
     }
 
+    public function user()
+    {
+        return $this->requestedBy();
+    }
+
     public function requestedBy()
     {
         if ($this->requester_type === self::REQUESTER_CUSTOMER) {

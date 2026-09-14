@@ -154,7 +154,7 @@
             @if($user->selfie_url)
             <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-3">
                 <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <span>🤳</span> Foto Selfie Verifikasi
+                    <span></span> Foto Selfie Verifikasi
                 </h3>
                 <div class="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-900/10 shadow-xs aspect-4/3">
                     <img src="{{ $user->selfie_url }}" alt="Selfie {{ $user->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">

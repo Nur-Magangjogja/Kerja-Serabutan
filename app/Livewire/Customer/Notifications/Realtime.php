@@ -83,7 +83,7 @@ class Realtime extends Component
                 );
 
                 $this->js(sprintf(
-                    "console.log('🔔 Dispatching help-taken event from backend'); window.dispatchEvent(new CustomEvent('help-taken', { detail: { helpId: %d, mitraName: '%s' } }))",
+                    "console.log(' Dispatching help-taken event from backend'); window.dispatchEvent(new CustomEvent('help-taken', { detail: { helpId: %d, mitraName: '%s' } }))",
                     $data['help_id'] ?? 0,
                     addslashes($data['mitra_name'] ?? 'Mitra')
                 ));
@@ -112,7 +112,7 @@ class Realtime extends Component
                 );
 
                 $this->js(sprintf(
-                    "console.log('🔔 Dispatching help-status event from backend'); window.dispatchEvent(new CustomEvent('help-status-update', { detail: { helpId: %d, status: '%s', message: '%s', mitraName: '%s' } }))",
+                    "console.log(' Dispatching help-status event from backend'); window.dispatchEvent(new CustomEvent('help-status-update', { detail: { helpId: %d, status: '%s', message: '%s', mitraName: '%s' } }))",
                     $helpId ?? 0,
                     addslashes($newStatus ?? ''),
                     addslashes($data['message'] ?? ''),
@@ -121,7 +121,7 @@ class Realtime extends Component
 
                 if ($newStatus && str_contains($newStatus, 'partner_on_the_way')) {
                     $this->js(sprintf(
-                        "console.log('🔔 Dispatching help-on-the-way event from backend'); window.dispatchEvent(new CustomEvent('help-on-the-way', { detail: { helpId: %d, mitraName: '%s' } }))",
+                        "console.log(' Dispatching help-on-the-way event from backend'); window.dispatchEvent(new CustomEvent('help-on-the-way', { detail: { helpId: %d, mitraName: '%s' } }))",
                         $helpId ?? 0,
                         addslashes($data['mitra_name'] ?? ($data['mitraName'] ?? 'Mitra'))
                     ));

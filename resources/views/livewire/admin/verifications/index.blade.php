@@ -248,8 +248,6 @@
                             <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5">Wilayah kota</h4>
                             <p class="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3 break-words">{{ $selected->full_address }}</p>
                             <div class="grid grid-cols-2 gap-2 text-xs">
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Kota / Kab</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->city ?? '-' }}</span></div>
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Provinsi</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->province ?? '-' }}</span></div>
                             </div>
                         </div>
                     </div>

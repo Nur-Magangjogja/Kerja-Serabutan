@@ -176,10 +176,7 @@
                         {{ strtoupper(substr($selectedUser->name, 0, 1)) }}
                     </div>
                     <div>
-                        <div class="flex items-center gap-2">
-                            <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ $selectedUser->name }}</h3>
-                            <span class="text-[11px] font-mono text-gray-400 dark:text-gray-500">#{{ $selectedUser->id }}</span>
-                        </div>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ $selectedUser->name }}</h3>
                         <p class="text-xs text-gray-500 dark:text-gray-400">{{ $selectedUser->email }}</p>
                     </div>
                 </div>
@@ -281,7 +278,24 @@
 
     {{-- ===== Create / Edit Admin Modal with Searchable District Picker ===== --}}
     @if($showCreateModal || $showEditModal)
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" wire:click.self="closeModal">
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" 
+        role="dialog" 
+        wire:click.self="closeModal"
+        x-data="{
+            scrollToAdminPassword() {
+                this.$nextTick(() => {
+                    const section = document.getElementById('admin-password-section');
+                    const input = document.getElementById('adminPasswordInput');
+                    if (section) {
+                        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    if (input) {
+                        setTimeout(() => input.focus(), 300);
+                    }
+                });
+            }
+        }"
+        x-on:focus-superadmin-password.window="scrollToAdminPassword()">
         <div class="w-full max-w-4xl bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200">
             
             {{-- Header --}}
@@ -365,17 +379,17 @@
                                 @error('phone') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
                             </div>
 
-                            {{-- Password --}}
+                            {{-- Password Akun Admin --}}
                             <div>
                                 <label class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                    Password @if($showEditModal)<span class="text-gray-400 dark:text-gray-500 font-normal">(kosongkan jika tidak diubah)</span>@else<span class="text-rose-500">*</span>@endif
+                                    Password Akun Admin @if($showEditModal)<span class="text-gray-400 dark:text-gray-500 font-normal">(kosongkan jika tidak diubah)</span>@else<span class="text-rose-500">*</span>@endif
                                 </label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                                     </div>
                                     <input type="password" wire:model="password"
-                                        placeholder="{{ $showEditModal ? 'Isi hanya jika ingin ganti password' : 'Minimal 8 karakter' }}"
+                                        placeholder="{{ $showEditModal ? 'Isi hanya jika ingin mengganti password admin ini' : 'Minimal 8 karakter' }}"
                                         class="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
                                 </div>
                                 @error('password') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
@@ -398,6 +412,7 @@
 
                     {{-- Section 2: Penugasan Kecamatan dengan Fitur Filter Kota & Pencarian --}}
                     <div class="bg-gray-50/60 dark:bg-gray-750/30 p-5 sm:p-6 rounded-2xl border border-gray-200/80 dark:border-gray-700 space-y-4 shadow-2xs">
+                        {{-- Header Section 2 --}}
                         <div class="flex items-center justify-between flex-wrap gap-3 pb-3.5 border-b border-gray-200/70 dark:border-gray-700/70">
                             <div class="flex items-center gap-2.5">
                                 <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs shadow-2xs">
@@ -411,75 +426,166 @@
                                 </div>
                             </div>
 
-                            {{-- Selected Counter Badge --}}
-                            <div class="flex items-center gap-2">
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800/60 shadow-2xs">
-                                    <span class="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></span>
-                                    {{ count($managed_district_ids) }} Kecamatan Dipilih
-                                </span>
-                            </div>
-                        </div>
-
-                        {{-- Filter Kota & Search Bar Kecamatan --}}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                            {{-- Filter Parent Kota --}}
-                            <div>
-                                <select wire:model.live="cityFilter"
-                                    class="w-full py-2 px-3 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
-                                    <option value="all">-- Semua Kota / Kabupaten --</option>
-                                    @foreach($cities as $c)
-                                        <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->province }})</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            {{-- Search Kecamatan --}}
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                                </div>
-                                <input type="text" wire:model.live.debounce.300ms="districtSearch" placeholder="Cari nama kecamatan..."
-                                    class="w-full pl-9 pr-8 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
-                                @if(!empty($districtSearch))
-                                    <button type="button" wire:click="$set('districtSearch', '')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                    </button>
+                            {{-- Selected Counter Badges --}}
+                            <div class="flex items-center gap-2 flex-wrap">
+                                @if(count($managed_district_ids) > 0)
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-2xs">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                        {{ count($managed_district_ids) }} Kecamatan Terpilih
+                                    </span>
+                                    @if(isset($selectedDistrictsList) && $selectedDistrictsList->isNotEmpty())
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 shadow-2xs">
+                                            {{ $selectedDistrictsList->pluck('city_id')->unique()->count() }} Kota/Kab
+                                        </span>
+                                    @endif
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
+                                        Belum ada kecamatan dipilih
+                                    </span>
                                 @endif
                             </div>
                         </div>
 
-                        {{-- Daftar Kecamatan Berkotak / Grid Card --}}
-                        <div class="max-h-64 overflow-y-auto dropdown-scrollbar rounded-2xl border border-gray-200 dark:border-gray-700 p-3 pr-2 bg-white/70 dark:bg-gray-800/60 shadow-inner">
+                        {{-- Chips / Tags Area for Currently Selected Districts --}}
+                        @if(!empty($managed_district_ids) && isset($selectedDistrictsList) && $selectedDistrictsList->isNotEmpty())
+                        <div class="p-3.5 bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-800/50 rounded-2xl space-y-2.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[11px] font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5 uppercase tracking-wide">
+                                    <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    Kecamatan Terpilih ({{ $selectedDistrictsList->count() }}):
+                                </span>
+                                <button type="button" wire:click="clearAllDistricts" class="text-[11px] font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 hover:underline flex items-center gap-1 transition cursor-pointer">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    Kosongkan Semua
+                                </button>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto dropdown-scrollbar pr-1">
+                                @foreach($selectedDistrictsList as $sd)
+                                <span class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-xl text-xs font-semibold bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-emerald-300/90 dark:border-emerald-700 shadow-2xs hover:border-emerald-400 transition group">
+                                    <span>📍</span>
+                                    <span>Kec. {{ $sd->name }}</span>
+                                    @if($sd->city)
+                                        <span class="text-[10px] text-gray-400 font-normal">({{ $sd->city->name }})</span>
+                                    @endif
+                                    <button type="button" wire:click="removeDistrict({{ $sd->id }})" class="p-0.5 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-full hover:bg-rose-50 dark:hover:bg-rose-950/50 transition">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                </span>
+                                @endforeach
+                            </div>
+                        </div>
+                        @else
+                        <div class="px-3.5 py-2.5 bg-gray-100/70 dark:bg-gray-750/50 rounded-xl border border-gray-200/70 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Silakan klik pada kartu kecamatan di bawah atau pilih kota untuk menugaskan wilayah kerja admin ini.</span>
+                        </div>
+                        @endif
+
+                        {{-- Filter Bar & Search --}}
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
+                            {{-- Dropdown Filter Kota --}}
+                            <div class="w-full sm:w-1/2">
+                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1 block">Filter Berdasarkan Kota / Kabupaten:</label>
+                                <select wire:model.live="cityFilter" class="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
+                                    <option value="all">🗺️ Tampilkan Semua Kota / Kabupaten ({{ $cities->count() }} Kota)</option>
+                                    @foreach($cities as $c)
+                                        <option value="{{ $c->id }}">📍 {{ $c->name }} ({{ $c->districts->count() }} Kecamatan)</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- Input Search Kecamatan --}}
+                            <div class="w-full sm:w-1/2">
+                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1 block">Cari Nama Kecamatan:</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                    </div>
+                                    <input type="text" wire:model.live.debounce.300ms="districtSearch"
+                                        placeholder="Ketik nama kecamatan..."
+                                        class="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
+                                    @if(!empty($districtSearch))
+                                        <button type="button" wire:click="$set('districtSearch', '')" class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-gray-600">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Batch Selector Buttons (Hanya muncul saat filter kota aktif atau sedang mencari kecamatan) --}}
+                        <div class="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-gray-200/60 dark:border-gray-700/60">
+                            <div class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                Menampilkan <span class="font-bold text-gray-800 dark:text-gray-200">{{ $districts->count() }}</span> kecamatan
+                                @if($cityFilter !== 'all' && is_numeric($cityFilter))
+                                    di <span class="font-bold text-primary-600 dark:text-primary-400">{{ optional($cities->firstWhere('id', $cityFilter))->name }}</span>
+                                @endif
+                            </div>
+                            @if($cityFilter !== 'all' || !empty($districtSearch))
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" wire:click="selectAllFilteredDistricts"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 rounded-lg transition cursor-pointer shadow-2xs">
+                                    <svg class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                    Pilih Semua di Filter
+                                </button>
+                                <button type="button" wire:click="deselectAllFilteredDistricts"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg transition cursor-pointer shadow-2xs">
+                                    <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    Batal Pilih di Filter
+                                </button>
+                            </div>
+                            @endif
+                        </div>
+
+                        {{-- Daftar Kecamatan Berkotak / Interactive Grid Card --}}
+                        <div class="max-h-72 overflow-y-auto dropdown-scrollbar rounded-2xl border border-gray-200 dark:border-gray-700 p-3 pr-2 bg-white/70 dark:bg-gray-800/60 shadow-inner">
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                                 @forelse($districts as $d)
                                 @php
-                                    $isSelected = in_array((int)$d->id, array_map('intval', (array)($managed_district_ids ?? [])));
+                                    $isSelected = in_array((int)$d->id, array_map('intval', (array)($managed_district_ids ?? [])), true);
                                 @endphp
-                                <label class="relative flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-150 select-none
-                                    {{ $isSelected ? 'bg-primary-50/90 dark:bg-primary-950/40 border-primary-400 dark:border-primary-500 shadow-xs' : 'bg-gray-50/50 dark:bg-gray-700/40 border-gray-200/80 dark:border-gray-600/70 hover:bg-gray-100/80 dark:hover:bg-gray-700 hover:border-gray-300' }}">
+                                <div wire:click="toggleDistrict({{ $d->id }})" role="button" tabindex="0"
+                                    wire:keydown.enter="toggleDistrict({{ $d->id }})"
+                                    class="relative flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-150 select-none text-left
+                                    {{ $isSelected ? 'bg-gradient-to-r from-emerald-50/95 to-teal-50/80 dark:from-emerald-950/50 dark:to-teal-950/40 border-emerald-500 dark:border-emerald-500 ring-1 ring-emerald-500/30 shadow-xs' : 'bg-white dark:bg-gray-750/70 border-gray-200/90 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/80 hover:border-emerald-300 dark:hover:border-emerald-600 shadow-2xs' }}">
                                     
-                                    <input type="checkbox" wire:model.live="managed_district_ids" value="{{ $d->id }}"
-                                        class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 cursor-pointer flex-shrink-0">
+                                    {{-- Status Checkbox Icon: Centang HANYA jika dipilih, kotak kosong jika belum --}}
+                                    @if($isSelected)
+                                        <div class="w-5 h-5 rounded-md bg-emerald-600 dark:bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                        </div>
+                                    @else
+                                        <div class="w-5 h-5 rounded-md border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 shrink-0"></div>
+                                    @endif
                                     
+                                    {{-- District Content --}}
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-center justify-between gap-1">
-                                            <p class="text-xs font-bold truncate {{ $isSelected ? 'text-primary-900 dark:text-primary-200' : 'text-gray-800 dark:text-gray-200' }}">
+                                            <p class="text-xs font-bold truncate {{ $isSelected ? 'text-emerald-950 dark:text-emerald-100' : 'text-gray-800 dark:text-gray-200' }}">
                                                 Kec. {{ $d->name }}
                                             </p>
                                             @if($isSelected)
-                                                <span class="text-[9px] font-bold text-primary-600 dark:text-primary-400 bg-primary-100/80 dark:bg-primary-900/60 px-1.5 py-0.2 rounded">Ditugaskan</span>
+                                                <span class="text-[9px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/90 dark:bg-emerald-900/80 px-1.5 py-0.5 rounded shadow-2xs">Ditugaskan</span>
                                             @endif
                                         </div>
                                         @if($d->city)
-                                            <p class="text-[10px] text-gray-400 dark:text-gray-400 truncate mt-0.5 flex items-center gap-1">
+                                            <p class="text-[10px] truncate mt-0.5 flex items-center gap-1 {{ $isSelected ? 'text-emerald-700/80 dark:text-emerald-300/80 font-medium' : 'text-gray-400 dark:text-gray-400' }}">
                                                 <span>📍</span> {{ $d->city->name }}
                                             </p>
                                         @endif
                                     </div>
-                                </label>
+                                </div>
                                 @empty
-                                <div class="col-span-full text-center py-6">
-                                    <p class="text-xs text-gray-400 dark:text-gray-500">Tidak ada data kecamatan yang cocok dengan filter.</p>
+                                <div class="col-span-full text-center py-8 px-4 space-y-2">
+                                    <div class="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto text-gray-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    </div>
+                                    <p class="text-xs font-semibold text-gray-700 dark:text-gray-300">Tidak ada data kecamatan yang cocok dengan filter.</p>
+                                    <p class="text-[11px] text-gray-400 dark:text-gray-500">Coba ubah kata kunci pencarian atau pilih kota/kabupaten lain.</p>
+                                    <button type="button" wire:click="$set('districtSearch', ''); $set('cityFilter', 'all');"
+                                        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/60 rounded-xl border border-primary-200 dark:border-primary-800 transition cursor-pointer">
+                                        Reset Filter & Pencarian
+                                    </button>
                                 </div>
                                 @endforelse
                             </div>
@@ -489,32 +595,43 @@
 
                     {{-- Konfirmasi Kata Sandi Superadmin saat Edit Admin --}}
                     @if($showEditModal)
-                    <div class="p-5 sm:p-6 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-800/70 rounded-2xl space-y-4 shadow-2xs">
-                        <div class="flex items-center gap-2.5 pb-3 border-b border-amber-200/70 dark:border-amber-800/60">
-                            <div class="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xs shadow-2xs flex-shrink-0">
+                    <div id="admin-password-section" 
+                        class="p-5 sm:p-6 transition-all duration-300 rounded-2xl space-y-4 shadow-2xs {{ $errors->has('adminPassword') ? 'bg-rose-50/95 dark:bg-rose-950/40 border-2 border-rose-400 dark:border-rose-600 ring-4 ring-rose-500/20' : 'bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-800/70' }}">
+                        
+                        <div class="flex items-center gap-2.5 pb-3 border-b {{ $errors->has('adminPassword') ? 'border-rose-200 dark:border-rose-800' : 'border-amber-200/70 dark:border-amber-800/60' }}">
+                            <div class="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shadow-2xs flex-shrink-0 {{ $errors->has('adminPassword') ? 'bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-400' : 'bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400' }}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                             </div>
                             <div>
-                                <h4 class="text-xs font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider">Otorisasi Keamanan Superadmin</h4>
-                                <p class="text-[11px] text-amber-700/80 dark:text-amber-400/80">Konfirmasi hak akses sebelum menyimpan perubahan</p>
+                                <h4 class="text-xs font-bold uppercase tracking-wider {{ $errors->has('adminPassword') ? 'text-rose-900 dark:text-rose-200' : 'text-amber-900 dark:text-amber-200' }}">Otorisasi Keamanan Superadmin</h4>
+                                <p class="text-[11px] {{ $errors->has('adminPassword') ? 'text-rose-700 dark:text-rose-300 font-medium' : 'text-amber-700/80 dark:text-amber-400/80' }}">Konfirmasi hak akses sebelum menyimpan perubahan</p>
                             </div>
                         </div>
 
-                        <p class="text-xs text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+                        <p class="text-xs leading-relaxed {{ $errors->has('adminPassword') ? 'text-rose-800 dark:text-rose-200 font-medium' : 'text-amber-800/90 dark:text-amber-300/90' }}">
                             Masukkan kata sandi akun Superadmin Anda untuk memvalidasi dan mengonfirmasi perubahan data atau penugasan wilayah kerja admin ini.
                         </p>
 
                         <div>
-                            <label class="text-xs font-semibold text-amber-900 dark:text-amber-200 mb-1.5 block">Kata Sandi Akun Superadmin <span class="text-rose-500">*</span></label>
+                            <label for="adminPasswordInput" class="text-xs font-semibold mb-1.5 block {{ $errors->has('adminPassword') ? 'text-rose-900 dark:text-rose-200' : 'text-amber-900 dark:text-amber-200' }}">
+                                Kata Sandi Akun Superadmin <span class="text-rose-500">*</span>
+                            </label>
                             <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-amber-500/70 dark:text-amber-400/70">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none {{ $errors->has('adminPassword') ? 'text-rose-500' : 'text-amber-500/70 dark:text-amber-400/70' }}">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                                 </div>
-                                <input type="password" wire:model.defer="adminPassword"
+                                <input type="password" 
+                                    id="adminPasswordInput"
+                                    wire:model="adminPassword"
                                     placeholder="Ketik kata sandi Superadmin Anda..."
-                                    class="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-amber-300/90 dark:border-amber-700/80 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-amber-400/60 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 transition shadow-2xs" />
+                                    class="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 transition shadow-2xs {{ $errors->has('adminPassword') ? 'border-rose-400 dark:border-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-500 placeholder-rose-300 dark:placeholder-rose-600' : 'border-amber-300/90 dark:border-amber-700/80 placeholder-amber-400/60 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500' }}" />
                             </div>
-                            @error('adminPassword') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1.5 font-medium">{{ $message }}</p> @enderror
+                            @error('adminPassword') 
+                                <div class="flex items-center gap-1.5 mt-2 text-xs text-rose-600 dark:text-rose-400 font-bold">
+                                    <svg class="w-4 h-4 shrink-0 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                    <span>{{ $message }}</span>
+                                </div>
+                            @enderror
                         </div>
                     </div>
                     @endif

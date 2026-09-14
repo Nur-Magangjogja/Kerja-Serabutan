@@ -23,14 +23,6 @@
         <div>
             <div class="flex items-center gap-2.5 flex-wrap">
                 <h1 class="text-xl font-bold text-gray-900 dark:text-white">Daftar Akun Diblokir</h1>
-                @if(!$isSuperAdmin && auth()->user() && auth()->user()->active_admin_city_label)
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary-50 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 shadow-2xs">
-                        <svg class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
-                        </svg>
-                        Wilayah: {{ auth()->user()->active_admin_city_label }}
-                    </span>
-                @endif
             </div>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola, blokir pengguna bermasalah, dan buka akses blokir akun mitra & customer</p>
         </div>

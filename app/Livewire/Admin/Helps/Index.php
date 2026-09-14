@@ -269,7 +269,7 @@ class Index extends Component
         $completedHelps = (clone $statsQuery)->where('status', Help::STATUS_SELESAI)->count();
         $cancelledHelps = (clone $statsQuery)->where('status', Help::STATUS_DIBATALKAN)->count();
 
-        $selectedHelp = $this->selectedHelpId ? Help::with(['customer', 'mitra', 'district', 'city', 'rating'])->find($this->selectedHelpId) : null;
+        $selectedHelp = $this->selectedHelpId ? Help::with(['customer', 'mitra', 'district.city', 'city', 'rating', 'cancelRequest.customer', 'cancelRequest.partner', 'escrowTransaction'])->find($this->selectedHelpId) : null;
         $helpActivities = $this->selectedHelpId ? \App\Models\PartnerActivity::with('user')->where('help_id', $this->selectedHelpId)->orderBy('created_at', 'asc')->get() : collect();
 
         return view('livewire.admin.helps.index', [

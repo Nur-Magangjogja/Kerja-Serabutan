@@ -461,13 +461,7 @@
                         <!-- Super Admin Territory Switcher (Kabupaten/Kota -> Kecamatan + Search) -->
                         <livewire:superadmin.territory-switcher />
 
-                        <!-- Quick actions (Refresh) -->
-                        <div class="hidden sm:flex items-center">
-                            <button onclick="location.reload()" class="inline-flex items-center gap-2 px-3 py-2 bg-gray-500/10 dark:bg-gray-400/10 border border-gray-500/15 dark:border-gray-400/15 text-xs font-semibold text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-500/15 dark:hover:bg-gray-400/20 shadow-2xs cursor-pointer active:scale-95 transition-transform" title="Muat ulang halaman">
-                                <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6"/></svg>
-                                <span class="hidden md:inline">Refresh</span>
-                            </button>
-                        </div>
+                        
 
                         <!-- Notifications Dropdown -->
                         <livewire:superadmin.notifications.dropdown />

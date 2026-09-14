@@ -235,7 +235,7 @@
                                     <div class="space-y-1">
                                         @if($req->evidence_photo)
                                             <a href="{{ asset('storage/' . $req->evidence_photo) }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:underline font-bold">
-                                                📷 Bukti Pengaju ↗
+                                                 Bukti Pengaju ↗
                                             </a>
                                         @else
                                             <span class="text-[11px] text-gray-400">Tanpa Foto</span>
@@ -448,7 +448,7 @@
                             <p class="text-emerald-900 dark:text-emerald-200 italic text-xs">"{{ $selectedCancelRequest->partner_clarification }}"</p>
                             @if($selectedCancelRequest->partner_clarification_photo)
                                 <a href="{{ asset('storage/' . $selectedCancelRequest->partner_clarification_photo) }}" target="_blank" class="mt-1 inline-block text-[11px] text-blue-600 hover:underline font-bold">
-                                    📷 Foto Bukti Pembelaan Mitra ↗
+                                     Foto Bukti Pembelaan Mitra ↗
                                 </a>
                             @endif
                         </div>

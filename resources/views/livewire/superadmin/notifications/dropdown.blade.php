@@ -27,7 +27,7 @@
             <!-- Header -->
             <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/90">
                 <div class="flex items-center gap-2">
-                    <h3 class="text-sm font-bold text-gray-900 dark:text-white">💰 Transaksi Keuangan</h3>
+                    <h3 class="text-sm font-bold text-gray-900 dark:text-white"> Transaksi Keuangan</h3>
                     @if($unreadCount > 0)
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300">
                             {{ $unreadCount }} baru
@@ -91,7 +91,7 @@
                 @empty
                     <div class="p-8 text-center">
                         <div class="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-700/60 text-gray-400 flex items-center justify-center mx-auto mb-2 text-xl">
-                            💰
+                            
                         </div>
                         <p class="text-xs font-bold text-gray-700 dark:text-gray-300">Tidak Ada Notifikasi Keuangan</p>
                         <p class="text-[11px] text-gray-400 mt-0.5">Permintaan top up dan withdraw baru akan ditampilkan di sini.</p>

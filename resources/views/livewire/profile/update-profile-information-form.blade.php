@@ -75,8 +75,12 @@
                 </span>
             </label>
             <input type="tel" wire:model.blur="phone" required
+                inputmode="tel"
+                maxlength="18"
+                oninput="this.value = this.value.replace(/(?!^\+)[^\d\s\-]/g, '')"
                 class="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 dark:focus:ring-primary-950/60 transition shadow-2xs outline-none"
-                placeholder="081234567890">
+                placeholder="08123456789 atau +62812... / +60...">
+            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Format Indonesia (08... / +62...) atau internasional (+...).</p>
             @error('phone')
                 <p class="mt-1.5 text-xs text-red-500 dark:text-red-400 flex items-center gap-1">
                     <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">

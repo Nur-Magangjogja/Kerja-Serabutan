@@ -318,7 +318,7 @@
                         const message = payloadMessage || fallbackMessage;
 
                         let type = 'info';
-                        let title = '🔔 Update Status';
+                        let title = ' Update Status';
                         const sLower = String(status).toLowerCase();
                         if (sLower.includes('selesai') || sLower.includes('completed')) {
                             type = 'completed';

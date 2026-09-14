@@ -86,21 +86,6 @@ new #[Layout('layouts.guest')] class extends Component {
             'selfie_photo.max' => 'Ukuran foto maksimal 2MB',
         ]);
 
-        try {
-            if ($this->selfie_photo && method_exists($this->selfie_photo, 'temporaryUrl')) {
-                $this->preview_url = $this->selfie_photo->temporaryUrl();
-            }
-        } catch (\Throwable $e) {
-            // ignore preview temporaryUrl failure
-        }
-    }
-
-    public function removePhoto(): void
-    {
-        $this->selfie_photo = null;
-        $this->preview_url = null;
-        $this->iteration++;
-
         $user = \Illuminate\Support\Facades\Auth::user();
         $userEmail = $user ? strtolower(trim($user->email)) : null;
 
@@ -109,19 +94,35 @@ new #[Layout('layouts.guest')] class extends Component {
             $registration = Registration::where('email', $userEmail)->latest()->first();
         }
 
-        if ($registration) {
-            if ($registration->selfie_photo_path) {
-                Storage::disk('public')->delete($registration->selfie_photo_path);
+        $uuid = Session::get('registration_uuid') ?? request()->cookie('registration_uuid');
+        if (!$registration && $uuid) {
+            $found = Registration::where('uuid', $uuid)->first();
+            if ($found && (!$userEmail || strtolower(trim($found->email ?? '')) === $userEmail)) {
+                $registration = $found;
             }
-            $registration->update([
-                'selfie_photo_path' => null,
-            ]);
         }
 
-        if ($user) {
-            $user->update([
-                'selfie_photo' => null,
+        if ($registration && $this->selfie_photo) {
+            // Hapus foto lama jika ada
+            if ($registration->selfie_photo_path && Storage::disk('public')->exists($registration->selfie_photo_path)) {
+                Storage::disk('public')->delete($registration->selfie_photo_path);
+            }
+
+            // Simpan file ke storage secara instan agar tidak hilang saat refresh
+            $path = $this->selfie_photo->store('selfie-photos', 'public');
+
+            $registration->update([
+                'selfie_photo_path' => $path,
+                'status' => 'in_progress',
             ]);
+
+            if ($user) {
+                $user->update([
+                    'selfie_photo' => $path,
+                ]);
+            }
+
+            $this->preview_url = asset('storage/' . $path);
         }
     }
 
@@ -133,6 +134,14 @@ new #[Layout('layouts.guest')] class extends Component {
         $registration = null;
         if ($userEmail) {
             $registration = Registration::where('email', $userEmail)->latest()->first();
+        }
+
+        $uuid = Session::get('registration_uuid') ?? request()->cookie('registration_uuid');
+        if (!$registration && $uuid) {
+            $found = Registration::where('uuid', $uuid)->first();
+            if ($found && (!$userEmail || strtolower(trim($found->email ?? '')) === $userEmail)) {
+                $registration = $found;
+            }
         }
 
         if (!$registration) {
@@ -149,12 +158,10 @@ new #[Layout('layouts.guest')] class extends Component {
                 'selfie_photo.max' => 'Ukuran foto maksimal 2MB',
             ]);
 
-            // Hapus foto lama jika ada
-            if ($registration->selfie_photo_path) {
+            if ($registration->selfie_photo_path && Storage::disk('public')->exists($registration->selfie_photo_path)) {
                 Storage::disk('public')->delete($registration->selfie_photo_path);
             }
 
-            // Simpan file ke storage
             $path = $this->selfie_photo->store('selfie-photos', 'public');
 
             $registration->update([
@@ -235,37 +242,28 @@ new #[Layout('layouts.guest')] class extends Component {
                 </div>
 
                 @if ($preview_url)
-                    <!-- Preview Image -->
-                    <div class="relative bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-lg border-2 border-primary-500">
-                        <img src="{{ $preview_url }}" alt="Preview Selfie" class="w-full max-h-72 object-contain bg-gray-950/5 dark:bg-gray-950/40">
+                    <!-- Preview Image Card (Responsive, Aspect-aware, No Crop) -->
+                    <div class="relative bg-slate-900/5 dark:bg-black/40 rounded-2xl overflow-hidden shadow-md border-2 border-primary-500/80 transition-all">
+                        <div class="relative w-full min-h-[220px] sm:min-h-[280px] max-h-[400px] sm:max-h-[460px] flex items-center justify-center p-2.5 sm:p-4 overflow-hidden">
+                            <img src="{{ $preview_url }}" alt="Preview Selfie" class="max-w-full max-h-[380px] sm:max-h-[440px] w-auto h-auto object-contain rounded-xl shadow-xs transition-transform duration-200">
+                        </div>
                         
                         <!-- Overlay Action Toolbar -->
-                        <div class="p-3 bg-gray-50/95 dark:bg-gray-800/95 border-t border-gray-100 dark:border-gray-700/80 flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                                </svg>
+                        <div class="p-3 bg-white/95 dark:bg-gray-800/95 border-t border-gray-100 dark:border-gray-700/80 flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 font-bold">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                                 <span>Foto Selfie Terpasang</span>
                             </div>
 
                             <div class="flex items-center gap-2">
                                 <!-- Tombol Ganti Foto -->
                                 <label for="selfie_photo"
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-semibold shadow-xs transition cursor-pointer">
+                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                     </svg>
                                     <span>Ganti Foto</span>
                                 </label>
-
-                                <!-- Tombol Hapus Foto -->
-                                <button type="button" wire:click="removePhoto"
-                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-semibold transition cursor-pointer">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                    <span>Hapus</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -312,21 +310,25 @@ new #[Layout('layouts.guest')] class extends Component {
                 <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3">Panduan Contoh Foto Selfie:</p>
                 <div class="grid grid-cols-2 gap-3">
                     <!-- Good Example -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl p-3 border-2 border-emerald-500/70 dark:border-emerald-600/70">
-                        <div class="aspect-square bg-emerald-50 dark:bg-emerald-950/40 rounded-lg overflow-hidden flex items-center justify-center mb-2">
-                            <img src="{{ asset('images/Sample-Ktp-Person-Valid.png') }}" alt="Contoh Selfie KTP Benar" class="w-full h-full object-cover">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-2.5 sm:p-3 border-2 border-emerald-500/70 dark:border-emerald-600/70 flex flex-col justify-between">
+                        <div class="w-full aspect-[4/5] sm:aspect-square bg-emerald-50 dark:bg-emerald-950/40 rounded-lg overflow-hidden flex items-center justify-center mb-2 p-1.5">
+                            <img src="{{ asset('images/Sample-Ktp-Person-Valid.png') }}" alt="Contoh Selfie KTP Benar" class="max-w-full max-h-full w-auto h-auto object-contain rounded">
                         </div>
-                        <p class="text-xs text-emerald-600 dark:text-emerald-400 font-bold text-center">✓ Benar</p>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-0.5">Wajah & KTP jelas</p>
+                        <div>
+                            <p class="text-xs text-emerald-600 dark:text-emerald-400 font-bold text-center">✓ Benar</p>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-0.5">Wajah & KTP jelas</p>
+                        </div>
                     </div>
 
                     <!-- Bad Example -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl p-3 border-2 border-red-500/70 dark:border-red-600/70">
-                        <div class="aspect-square bg-red-50 dark:bg-red-950/40 rounded-lg overflow-hidden flex items-center justify-center mb-2">
-                            <img src="{{ asset('images/Sample-Ktp-Person-Failed.png') }}" alt="Contoh Selfie KTP Salah" class="w-full h-full object-cover">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-2.5 sm:p-3 border-2 border-red-500/70 dark:border-red-600/70 flex flex-col justify-between">
+                        <div class="w-full aspect-[4/5] sm:aspect-square bg-red-50 dark:bg-red-950/40 rounded-lg overflow-hidden flex items-center justify-center mb-2 p-1.5">
+                            <img src="{{ asset('images/Sample-Ktp-Person-Failed.png') }}" alt="Contoh Selfie KTP Salah" class="max-w-full max-h-full w-auto h-auto object-contain rounded">
                         </div>
-                        <p class="text-xs text-red-600 dark:text-red-400 font-bold text-center">✗ Salah</p>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-0.5">Buram atau gelap</p>
+                        <div>
+                            <p class="text-xs text-red-600 dark:text-red-400 font-bold text-center">✗ Salah</p>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-0.5">Buram atau gelap</p>
+                        </div>
                     </div>
                 </div>
             </div>

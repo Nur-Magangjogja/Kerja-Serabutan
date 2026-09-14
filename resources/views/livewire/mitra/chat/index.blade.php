@@ -110,7 +110,7 @@
                                                         <span class="text-gray-400 dark:text-gray-500 font-medium">Anda: </span>
                                                     @endif
                                                     @if($conv->last_message->photo)
-                                                        <span class="inline-flex items-center gap-0.5 text-blue-600 dark:text-blue-400 font-medium">📷 Foto bukti • </span>
+                                                        <span class="inline-flex items-center gap-0.5 text-blue-600 dark:text-blue-400 font-medium"> Foto bukti • </span>
                                                     @endif
                                                     {{ $conv->last_message->message }}
                                                 @elseif($conv->latest_help)

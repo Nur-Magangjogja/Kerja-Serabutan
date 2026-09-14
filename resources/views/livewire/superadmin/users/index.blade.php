@@ -7,15 +7,7 @@
     <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div>
             <div class="flex items-center gap-2.5 flex-wrap">
-                <h1 class="text-xl font-bold text-gray-900 dark:text-white">Manajemen User</h1>
-                @if(auth()->user() && auth()->user()->role === 'admin' && auth()->user()->active_admin_city_label)
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary-50 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 shadow-2xs">
-                        <svg class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
-                        </svg>
-                        Wilayah: {{ auth()->user()->active_admin_city_label }}
-                    </span>
-                @endif
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white">Manajemen User</h1> 
             </div>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola semua pengguna dalam sistem</p>
         </div>
@@ -204,10 +196,7 @@
                         @endif
                     </div>
                     <div class="min-w-0">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <h3 class="text-base font-bold text-gray-900 dark:text-white truncate">{{ $selectedUser->name }}</h3>
-                            <span class="text-[11px] font-mono text-gray-400 dark:text-gray-500">#{{ $selectedUser->id }}</span>
-                        </div>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white truncate">{{ $selectedUser->name }}</h3>
                         <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $selectedUser->email }}</p>
                     </div>
                 </div>
@@ -438,7 +427,7 @@
                             @if($selectedUser->selfie_url)
                             <div class="bg-gray-50/70 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 space-y-2.5">
                                 <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <span>🤳</span> Foto Selfie Verifikasi
+                                    <span></span> Foto Selfie Verifikasi
                                 </h4>
                                 <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-900/10 shadow-xs aspect-4/3">
                                     <img src="{{ $selectedUser->selfie_url }}" alt="Selfie {{ $selectedUser->name }}" class="w-full h-full object-cover">

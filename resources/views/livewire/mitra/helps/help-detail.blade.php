@@ -293,11 +293,11 @@
                     </div>
                 @endif
 
-                {{-- 💰 Penyelesaian Finansial (HANYA UNTUK LAYANAN ANTAR / JEMPUT) --}}
+                {{--  Penyelesaian Finansial (HANYA UNTUK LAYANAN ANTAR / JEMPUT) --}}
                 @if($help->isPickup() && ($settlementLabel || ($cancelRequest && ($cancelRequest->payout_amount_mitra > 0 || $cancelRequest->refund_amount_customer > 0))))
                     <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl text-xs space-y-2 border border-gray-200/80 dark:border-gray-700">
                         <div class="font-bold text-gray-700 dark:text-gray-200 text-[11px] flex items-center gap-1">
-                            <span>💰 Penyelesaian Finansial:</span>
+                            <span> Penyelesaian Finansial:</span>
                         </div>
                         @if($settlementLabel)
                             <div class="text-[11px] text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-750 p-2 rounded-lg border border-gray-200/60 dark:border-gray-700/60 font-medium">

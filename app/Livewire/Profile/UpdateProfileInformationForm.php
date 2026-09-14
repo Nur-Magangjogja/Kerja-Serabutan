@@ -30,7 +30,7 @@ class UpdateProfileInformationForm extends Component
     protected $rules = [
         'name' => ['required', 'string', 'max:255'],
         'email' => ['required', 'email', 'max:255'],
-        'phone' => ['required', 'string', 'min:9', 'max:20', 'regex:/^[0-9+\s\-]+$/'],
+        'phone' => ['required', 'string', 'min:9', 'max:18', 'regex:/^(0[1-9][0-9]{8,12}|\+[1-9][0-9]{6,14})$/'],
         'city_id' => ['nullable', 'exists:cities,id'],
         'district_id' => ['nullable', 'exists:districts,id'],
         'city' => ['required', 'string', 'max:100'],
@@ -44,8 +44,8 @@ class UpdateProfileInformationForm extends Component
         'email.email' => 'Format email tidak valid.',
         'phone.required' => 'Nomor HP/WhatsApp wajib diisi.',
         'phone.min' => 'Nomor HP minimal 9 digit.',
-        'phone.max' => 'Nomor HP maksimal 20 digit.',
-        'phone.regex' => 'Format nomor HP tidak valid.',
+        'phone.max' => 'Nomor HP maksimal 18 karakter.',
+        'phone.regex' => 'Format nomor HP tidak valid. Gunakan format Indonesia (contoh: 08123456789 atau +62812...) atau format internasional (+<kode_negara><nomor>).',
         'city.required' => 'Kota / Kabupaten wajib diisi.',
         'province.required' => 'Provinsi wajib diisi.',
     ];

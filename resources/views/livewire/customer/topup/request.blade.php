@@ -305,7 +305,7 @@
                         <!-- Upload Bukti Transfer -->
                         <div>
                             <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
-                                <span>📷</span> Upload Bukti Transfer QRIS <span class="text-red-500">*</span>
+                                <span></span> Upload Bukti Transfer QRIS <span class="text-red-500">*</span>
                             </label>
                             <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/60 dark:bg-gray-700/30 rounded-xl p-5 text-center hover:border-blue-400 dark:hover:border-blue-500 transition relative">
                                 <input type="file" wire:model="proofOfPayment" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" class="hidden" id="proofUpload">

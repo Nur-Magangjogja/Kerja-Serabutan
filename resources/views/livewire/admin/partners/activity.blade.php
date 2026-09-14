@@ -486,7 +486,7 @@
                                 @if($act->photo)
                                     <a href="{{ asset('storage/' . $act->photo) }}" target="_blank"
                                         class="inline-flex items-center gap-1 mt-1 text-[11px] font-semibold text-primary-600 dark:text-primary-400 hover:underline">
-                                        <span>📷 Lihat Foto Bukti</span>
+                                        <span> Lihat Foto Bukti</span>
                                     </a>
                                 @endif
                             </td>

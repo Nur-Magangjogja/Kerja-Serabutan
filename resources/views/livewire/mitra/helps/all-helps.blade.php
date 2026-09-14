@@ -527,7 +527,7 @@
                 <!-- Foto Objek / Tugas (Jika ada) -->
                 <div id="previewPhotoSection" class="hidden space-y-1.5">
                     <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800 dark:text-gray-200">
-                        <span class="text-sky-500">📷</span>
+                        <span class="text-sky-500"></span>
                         <span>Foto Objek / Tempat Pekerjaan:</span>
                     </div>
                     <div class="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-black/5 dark:bg-black/20 max-h-56">

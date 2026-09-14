@@ -222,7 +222,7 @@
                                     @elseif ($wd->proof_of_transfer)
                                         <a href="{{ asset('storage/' . $wd->proof_of_transfer) }}" target="_blank"
                                             class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-primary-600 hover:underline">
-                                            <span>📷 Lihat Bukti</span>
+                                            <span> Lihat Bukti</span>
                                         </a>
                                     @else
                                         <span class="text-gray-400 text-[11px]">—</span>

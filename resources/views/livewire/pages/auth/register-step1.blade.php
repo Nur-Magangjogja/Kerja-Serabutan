@@ -195,6 +195,11 @@ new #[Layout('layouts.guest')] class extends Component {
     {
         if ($propertyName === 'phone') {
             $this->phone = \App\Models\User::normalizePhone($this->phone) ?? '';
+            if (!empty($this->phone)) {
+                $this->validateOnly('phone', [
+                    'phone' => ['required', 'string', 'min:9', 'max:18', 'regex:/^(0[1-9][0-9]{8,12}|\+[1-9][0-9]{6,14})$/'],
+                ], $this->getValidationMessages());
+            }
         }
 
         if ($propertyName === 'nik') {
@@ -234,7 +239,10 @@ new #[Layout('layouts.guest')] class extends Component {
             'province' => $this->province,
         ];
 
-        Cookie::queue('registration_step1_draft', json_encode($draft), 60 * 24 * 7);
+        // Simpan draf formulir step1 ke cookie selama 24 jam
+        Cookie::queue('registration_step1_draft', json_encode(array_merge($draft, [
+            'email' => \Illuminate\Support\Facades\Auth::user()?->email,
+        ])), 60 * 24);
     }
 
     protected function getNikRules(): array
@@ -287,9 +295,9 @@ new #[Layout('layouts.guest')] class extends Component {
             'full_name.required' => 'Nama lengkap sesuai KTP wajib diisi.',
             'full_name.min' => 'Nama lengkap minimal 3 karakter.',
             'phone.required' => 'Nomor HP / WhatsApp wajib diisi.',
-            'phone.min' => 'Nomor HP minimal 9 karakter.',
-            'phone.max' => 'Nomor HP maksimal 20 karakter.',
-            'phone.regex' => 'Format nomor HP tidak valid (gunakan angka).',
+            'phone.min' => 'Nomor HP minimal 9 digit.',
+            'phone.max' => 'Nomor HP maksimal 18 karakter.',
+            'phone.regex' => 'Format nomor HP tidak valid.',
             'gender.required' => 'Jenis kelamin wajib dipilih.',
             'gender.in' => 'Pilihan jenis kelamin tidak valid.',
             'city_id.required' => 'Kota / Kabupaten wajib dipilih dari daftar pencarian.',
@@ -329,7 +337,7 @@ new #[Layout('layouts.guest')] class extends Component {
             $rules = [
                 'nik' => $this->getNikRules(),
                 'full_name' => ['required', 'string', 'min:3', 'max:255'],
-                'phone' => ['required', 'string', 'min:9', 'max:20', 'regex:/^[0-9+\s\-]+$/'],
+                'phone' => ['required', 'string', 'min:9', 'max:18', 'regex:/^(0[1-9][0-9]{8,12}|\+[1-9][0-9]{6,14})$/'],
                 'gender' => ['required', 'in:Laki-laki,Perempuan'],
                 'province' => ['required', 'string', 'min:2', 'max:100'],
             ];
@@ -594,17 +602,25 @@ new #[Layout('layouts.guest')] class extends Component {
 
                 <!-- Nomor Telepon / WhatsApp -->
                 <div>
-                    <label for="phone" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Nomor HP / WhatsApp <span class="text-red-500">*</span></label>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="phone" class="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                            Nomor HP / WhatsApp <span class="text-red-500">*</span>
+                        </label>
+                        </div>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                             </svg>
                         </div>
-                        <input wire:model.blur="phone" id="phone" type="tel" placeholder="08xxxxxxxxxx"
+                        <input wire:model.blur="phone" id="phone" type="tel"
+                            inputmode="tel"
+                            maxlength="18"
+                            oninput="this.value = this.value.replace(/(?!^\+)[^\d\s\-]/g, '')"
+                            placeholder="08xxxxxxx"
                             class="w-full pl-10 pr-4 py-3 rounded-xl border @error('phone') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                     </div>
-                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Nomor aktif untuk koordinasi bantuan.</p>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Gunakan nomor aktif</p>
                     <x-input-error :messages="$errors->get('phone')" />
                 </div>
 

@@ -226,7 +226,7 @@ new #[Layout('layouts.guest')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-5" x-data="{ confirmCancelModal: false }">
+<div class="space-y-5" x-data="{ confirmCancelModal: false, previewModalImage: null, previewModalTitle: '' }">
     <!-- Step Header -->
     <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
         <div>
@@ -316,42 +316,78 @@ new #[Layout('layouts.guest')] class extends Component {
             </div>
         </div>
 
-        <!-- 3. Foto Dokumen KTP & Selfie -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- 3. Foto Dokumen KTP & Selfie (Responsive, Aspect-aware, Lightbox zoom) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <!-- Foto e-KTP -->
-            <div class="bg-gray-50/70 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-4">
-                <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-gray-200/60 dark:border-gray-700/60">
-                    <h3 class="font-bold text-xs text-gray-900 dark:text-white flex items-center gap-1.5">
-                        <span>📷</span> Foto e-KTP
+            <div class="bg-gray-50/70 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-4 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2.5 pb-2 border-b border-gray-200/60 dark:border-gray-700/60">
+                    <h3 class="font-bold text-xs sm:text-sm text-gray-900 dark:text-white flex items-center gap-1.5">
+                        <span></span> Foto e-KTP
                     </h3>
-                    <button type="button" wire:click="editStep(2)" class="text-primary-600 dark:text-sky-400 text-[11px] font-bold hover:underline cursor-pointer">
-                        Ubah
+                    <button type="button" wire:click="editStep(2)" class="inline-flex items-center gap-1 text-primary-600 dark:text-sky-400 text-xs font-bold hover:underline cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        <span>Ubah</span>
                     </button>
                 </div>
+                
                 @if(!empty($step2_data['ktp_photo_path']))
-                    <img src="{{ Storage::url($step2_data['ktp_photo_path']) }}" alt="Foto KTP" class="w-full h-36 rounded-xl border border-gray-200 dark:border-gray-700 object-cover">
+                    <div class="relative group cursor-pointer w-full h-44 sm:h-52 bg-slate-900/5 dark:bg-black/40 rounded-xl border border-gray-200 dark:border-gray-700/80 overflow-hidden flex items-center justify-center p-2.5 transition-all"
+                         @click="previewModalImage = '{{ asset('storage/' . $step2_data['ktp_photo_path']) }}'; previewModalTitle = 'Foto e-KTP'">
+                        <img src="{{ asset('storage/' . $step2_data['ktp_photo_path']) }}" 
+                             alt="Foto KTP" 
+                             class="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-2xs transition-transform duration-200 group-hover:scale-[1.03]">
+                        <div class="absolute inset-0 bg-gray-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-semibold backdrop-blur-2xs rounded-xl">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                            </svg>
+                            <span>Klik untuk perbesar</span>
+                        </div>
+                    </div>
                 @else
-                    <div class="w-full h-36 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-xs text-gray-400">
-                        Belum ada foto
+                    <div class="w-full h-44 sm:h-52 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center text-xs text-gray-400 gap-1">
+                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Belum ada foto</span>
                     </div>
                 @endif
             </div>
 
             <!-- Foto Selfie KTP -->
-            <div class="bg-gray-50/70 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-4">
-                <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-gray-200/60 dark:border-gray-700/60">
-                    <h3 class="font-bold text-xs text-gray-900 dark:text-white flex items-center gap-1.5">
-                        <span>🤳</span> Foto Selfie + KTP
+            <div class="bg-gray-50/70 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-4 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2.5 pb-2 border-b border-gray-200/60 dark:border-gray-700/60">
+                    <h3 class="font-bold text-xs sm:text-sm text-gray-900 dark:text-white flex items-center gap-1.5">
+                        <span></span> Foto Selfie + KTP
                     </h3>
-                    <button type="button" wire:click="editStep(3)" class="text-primary-600 dark:text-sky-400 text-[11px] font-bold hover:underline cursor-pointer">
-                        Ubah
+                    <button type="button" wire:click="editStep(3)" class="inline-flex items-center gap-1 text-primary-600 dark:text-sky-400 text-xs font-bold hover:underline cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        <span>Ubah</span>
                     </button>
                 </div>
+                
                 @if(!empty($step3_data['selfie_photo_path']))
-                    <img src="{{ Storage::url($step3_data['selfie_photo_path']) }}" alt="Foto Selfie" class="w-full h-36 rounded-xl border border-gray-200 dark:border-gray-700 object-cover">
+                    <div class="relative group cursor-pointer w-full h-44 sm:h-52 bg-slate-900/5 dark:bg-black/40 rounded-xl border border-gray-200 dark:border-gray-700/80 overflow-hidden flex items-center justify-center p-2.5 transition-all"
+                         @click="previewModalImage = '{{ asset('storage/' . $step3_data['selfie_photo_path']) }}'; previewModalTitle = 'Foto Selfie + KTP'">
+                        <img src="{{ asset('storage/' . $step3_data['selfie_photo_path']) }}" 
+                             alt="Foto Selfie" 
+                             class="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-2xs transition-transform duration-200 group-hover:scale-[1.03]">
+                        <div class="absolute inset-0 bg-gray-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-semibold backdrop-blur-2xs rounded-xl">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                            </svg>
+                            <span>Klik untuk perbesar</span>
+                        </div>
+                    </div>
                 @else
-                    <div class="w-full h-36 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-xs text-gray-400">
-                        Belum ada foto
+                    <div class="w-full h-44 sm:h-52 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center text-xs text-gray-400 gap-1">
+                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Belum ada foto</span>
                     </div>
                 @endif
             </div>
@@ -406,6 +442,52 @@ new #[Layout('layouts.guest')] class extends Component {
             </button>
         </div>
     </form>
+
+    <!-- Lightbox Modal untuk Preview Foto Step 4 (Alpine.js) -->
+    <div x-show="previewModalImage" 
+         x-cloak 
+         class="fixed inset-0 z-50 overflow-y-auto"
+         aria-labelledby="preview-modal-title" role="dialog" aria-modal="true">
+        <!-- Backdrop Blur Overlay -->
+        <div x-show="previewModalImage"
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity"
+             @click="previewModalImage = null"></div>
+
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
+            <div x-show="previewModalImage"
+                 x-transition:enter="ease-out duration-200"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-150"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="relative transform overflow-hidden rounded-3xl bg-white dark:bg-gray-900 text-left shadow-2xl border border-gray-100 dark:border-gray-700 transition-all sm:my-8 w-full max-w-lg p-5 sm:p-6">
+                
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800 mb-3">
+                    <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white" id="preview-modal-title" x-text="previewModalTitle"></h3>
+                    <button type="button" 
+                            @click="previewModalImage = null"
+                            class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center justify-center transition cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="flex items-center justify-center max-h-[70vh] overflow-hidden bg-gray-950/5 dark:bg-black/50 rounded-2xl p-2 sm:p-3">
+                    <img :src="previewModalImage" :alt="previewModalTitle" class="max-w-full max-h-[65vh] w-auto h-auto object-contain rounded-xl shadow-md">
+                </div>
+
+                
+            </div>
+        </div>
+    </div>
 
     <!-- Modal Konfirmasi Pembatalan Pendaftaran (Alpine.js) -->
     <div x-show="confirmCancelModal" 
