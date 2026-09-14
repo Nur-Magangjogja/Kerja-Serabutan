@@ -577,7 +577,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 <!-- NIK -->
                 <div>
                     <label for="nik" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">NIK <span class="text-red-500">*</span></label>
-                    <input wire:model.live.debounce.500ms="nik" id="nik" type="text" maxlength="16" placeholder="16 digit NIK"
+                    <input wire:model.live.debounce.500ms="nik" id="nik" type="text" maxlength="16" placeholder="NIK 16 digit"
                         oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                         class="w-full px-4 py-3 rounded-xl border @error('nik') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                     <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">{{ strlen($nik) }}/16 digit</p>
@@ -604,7 +604,7 @@ new #[Layout('layouts.guest')] class extends Component {
                         <input wire:model.blur="phone" id="phone" type="tel" placeholder="08xxxxxxxxxx"
                             class="w-full pl-10 pr-4 py-3 rounded-xl border @error('phone') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                     </div>
-                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Nomor aktif untuk koordinasi bantuan dan akun (otomatis diawali 08).</p>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Nomor aktif untuk koordinasi bantuan.</p>
                     <x-input-error :messages="$errors->get('phone')" />
                 </div>
 

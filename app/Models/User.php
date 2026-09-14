@@ -96,7 +96,9 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Helper to normalize Indonesian phone number to '08...' format.
+     * Helper to normalize phone numbers:
+     * - Indonesian numbers (+62, 62, 8, 08) normalized to local '08...' format.
+     * - International numbers (+<country_code><number>) preserved in '+...' E.164 format.
      */
     public static function normalizePhone(?string $phone): ?string
     {
@@ -109,23 +111,33 @@ class User extends Authenticatable implements MustVerifyEmail
             return '';
         }
 
-        // Ambil hanya digit angka
+        // 1. Jika nomor diawali '+' dan BUKAN kode negara Indonesia (+62)
+        //    Pertahankan format internasional (+<country_code><number>)
+        if (str_starts_with($phone, '+')) {
+            $digits = preg_replace('/[^0-9]/', '', $phone);
+            if (!empty($digits) && !str_starts_with($digits, '62')) {
+                return '+' . $digits;
+            }
+        }
+
+        // 2. Bersihkan karakter non-digit untuk nomor Indonesia / lokal
         $clean = preg_replace('/[^0-9]/', '', $phone);
         if ($clean === '') {
             return '';
         }
 
-        // Jika format diawali 620 (salah input +6208...)
+        // Tangani format Indonesia:
+        // - Jika diawali 620... (salah ketik +62 08...)
         if (str_starts_with($clean, '620')) {
-            $clean = '0' . substr($clean, 3);
+            return '0' . substr($clean, 3);
         }
-        // Jika diawali 62 (contoh: 62812... atau +62812...)
-        elseif (str_starts_with($clean, '62')) {
-            $clean = '0' . substr($clean, 2);
+        // - Jika diawali 62... (contoh: 62812... atau +62812...)
+        if (str_starts_with($clean, '62')) {
+            return '0' . substr($clean, 2);
         }
-        // Jika diawali 8 langsung tanpa 0 (contoh: 8123456789)
-        elseif (str_starts_with($clean, '8')) {
-            $clean = '0' . $clean;
+        // - Jika diawali 8... (tanpa 0 di depan, misal 8123456789)
+        if (str_starts_with($clean, '8') && strlen($clean) <= 13) {
+            return '0' . $clean;
         }
 
         return $clean;
