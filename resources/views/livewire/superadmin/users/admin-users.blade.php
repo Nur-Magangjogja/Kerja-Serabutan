@@ -333,7 +333,7 @@
                                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                                     </div>
-                                    <input type="text" wire:model="name" placeholder="Contoh: Budi Santoso"
+                                    <input type="text" wire:model="name" placeholder="Nama Lengkap"
                                         class="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition shadow-2xs">
                                 </div>
                                 @error('name') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror

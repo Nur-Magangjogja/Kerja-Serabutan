@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -92,6 +93,52 @@ class User extends Authenticatable implements MustVerifyEmail
             'warning_level' => 'integer',
             'latest_warning_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Helper to normalize Indonesian phone number to '08...' format.
+     */
+    public static function normalizePhone(?string $phone): ?string
+    {
+        if ($phone === null) {
+            return null;
+        }
+
+        $phone = trim($phone);
+        if ($phone === '') {
+            return '';
+        }
+
+        // Ambil hanya digit angka
+        $clean = preg_replace('/[^0-9]/', '', $phone);
+        if ($clean === '') {
+            return '';
+        }
+
+        // Jika format diawali 620 (salah input +6208...)
+        if (str_starts_with($clean, '620')) {
+            $clean = '0' . substr($clean, 3);
+        }
+        // Jika diawali 62 (contoh: 62812... atau +62812...)
+        elseif (str_starts_with($clean, '62')) {
+            $clean = '0' . substr($clean, 2);
+        }
+        // Jika diawali 8 langsung tanpa 0 (contoh: 8123456789)
+        elseif (str_starts_with($clean, '8')) {
+            $clean = '0' . $clean;
+        }
+
+        return $clean;
+    }
+
+    /**
+     * Mutator to ensure phone is always normalized when saved.
+     */
+    protected function phone(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => self::normalizePhone($value),
+        );
     }
 
     public function greylistLogs()

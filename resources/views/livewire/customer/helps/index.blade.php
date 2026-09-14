@@ -289,10 +289,15 @@
                                 <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 leading-relaxed">{{ Str::limit($help->description, 120) }}</p>
                             @endif
 
-                            @if($help->scheduled_at)
-                                <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            @if($help->isScheduled() && $help->scheduled_at)
+                                <div class="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1 font-medium">
                                     <span>📅</span>
-                                    <span>{{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') }}</span>
+                                    <span>Terjadwal: {{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') }} WIB</span>
+                                </div>
+                            @else
+                                <div class="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
+                                    <span>⚡</span>
+                                    <span>Pelaksanaan Segera</span>
                                 </div>
                             @endif
 
@@ -332,9 +337,6 @@
                                     <button type="button" wire:click.stop="confirmDelete({{ $help->id }})" class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 rounded-xl text-xs font-bold transition cursor-pointer">
                                         Batalkan
                                     </button>
-                                    <button type="button" wire:click.stop="editHelp({{ $help->id }})" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40 rounded-xl text-xs font-bold transition cursor-pointer">
-                                        Edit
-                                    </button>
                                 @elseif($statusFilter === 'waiting_customer_confirmation' || $help->status === 'waiting_customer_confirmation')
                                     <button type="button" wire:click.stop="confirmCompletion({{ $help->id }})" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
                                         Konfirmasi Selesai
@@ -365,86 +367,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Edit Modal (z-[70] to clear floating bottom nav) -->
-    @if(isset($editingHelp) && $editingHelp)
-        <div class="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4" wire:click.self="closeEdit">
-            <div class="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto hide-scrollbar text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700">
-                <!-- Modal Header -->
-                <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 rounded-t-3xl sm:rounded-t-2xl z-10">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Edit Permintaan</h3>
-                        <button type="button" wire:click="closeEdit" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition cursor-pointer">
-                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Modal Content -->
-                <form wire:submit.prevent="saveEdit" class="p-5 pb-24 space-y-4">
-                    <!-- Title -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Judul Permintaan *</label>
-                        <input type="text" wire:model="editTitle" placeholder="Contoh: Bantu bersihkan halaman rumah"
-                            class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white">
-                        @error('editTitle') <span class="text-rose-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- Amount -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nominal Bantuan (Rp) *</label>
-                        <input type="number" wire:model="editAmount" placeholder="10000"
-                            class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white">
-                        @error('editAmount') <span class="text-rose-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- Description -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Deskripsi Kebutuhan *</label>
-                        <textarea wire:model="editDescription" rows="3" placeholder="Jelaskan kebutuhan Anda..."
-                            class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white"></textarea>
-                        @error('editDescription') <span class="text-rose-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- City select -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Kota *</label>
-                        <select wire:model="editCityId" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white">
-                            <option value="">Pilih kota / kabupaten</option>
-                            @foreach($cities as $city)
-                                <option value="{{ $city->id }}">{{ $city->name }}@if($city->province), {{ $city->province }}@endif</option>
-                            @endforeach
-                        </select>
-                        @error('editCityId') <span class="text-rose-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- Full Address -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Alamat Lengkap</label>
-                        <textarea wire:model="editFullAddress" rows="2" placeholder="Alamat lengkap dengan patokan..."
-                            class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white"></textarea>
-                    </div>
-
-                    <!-- Action Buttons (Sticky Footer) -->
-                    <div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 pt-3 -mx-5 px-5 -mb-5 pb-5 mt-4">
-                        <div class="flex gap-2">
-                            <button type="button" wire:click="closeEdit" 
-                                class="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-bold text-xs hover:bg-gray-200 transition cursor-pointer">
-                                Batal
-                            </button>
-                            <button type="submit" wire:loading.attr="disabled" wire:target="saveEdit"
-                                class="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-xs transition shadow-md cursor-pointer disabled:opacity-50">
-                                <span wire:loading.remove wire:target="saveEdit">Simpan Perubahan</span>
-                                <span wire:loading wire:target="saveEdit">Menyimpan...</span>
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    @endif
 
     <!-- Delete Confirmation Modal (Centered Modal with z-[70] for Zero Interference) -->
     @if($showDeleteConfirm)

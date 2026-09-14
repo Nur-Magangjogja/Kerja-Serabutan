@@ -262,10 +262,15 @@
                         </div>
                     @endif
 
-                    @if(!empty($help->scheduled_at))
+                    @if($help->isScheduled() && !empty($help->scheduled_at))
                         <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
-                            <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-400 block mb-0.5">Jadwal Tugas:</span>
-                            <span class="font-bold text-gray-800 dark:text-gray-200 block">{{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') }} WIB</span>
+                            <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-400 block mb-0.5">Jadwal Pelaksanaan:</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200 block">📅 {{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') }} WIB</span>
+                        </div>
+                    @else
+                        <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
+                            <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-400 block mb-0.5">Waktu Pelaksanaan:</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400 block">⚡ Langsung Dikerjakan (Segera)</span>
                         </div>
                     @endif
                 </div>

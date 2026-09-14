@@ -76,6 +76,11 @@ class UpdateProfileInformationForm extends Component
         }
     }
 
+    public function updatedPhone($value): void
+    {
+        $this->phone = \App\Models\User::normalizePhone($value) ?? '';
+    }
+
     public function updatedCityQuery($value): void
     {
         $q = trim((string) $value);
@@ -151,6 +156,8 @@ class UpdateProfileInformationForm extends Component
         if (empty($this->city) && !empty($this->cityQuery)) {
             $this->city = $this->cityQuery;
         }
+
+        $this->phone = \App\Models\User::normalizePhone($this->phone) ?? '';
 
         $this->validate();
 

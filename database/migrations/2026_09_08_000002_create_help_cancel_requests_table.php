@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('help_cancel_requests', function (Blueprint $table) {
             $table->id();
             $table->foreignId('help_id')->constrained('helps')->cascadeOnDelete();
-            $table->foreignId('partner_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('partner_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('district_id')->nullable()->constrained('districts')->nullOnDelete();
             $table->string('previous_status', 50);
             $table->string('previous_stage', 50)->nullable();

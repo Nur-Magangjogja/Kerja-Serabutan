@@ -193,6 +193,10 @@ new #[Layout('layouts.guest')] class extends Component {
 
     public function updated($propertyName): void
     {
+        if ($propertyName === 'phone') {
+            $this->phone = \App\Models\User::normalizePhone($this->phone) ?? '';
+        }
+
         if ($propertyName === 'nik') {
             $this->nik = trim($this->nik);
             if (strlen($this->nik) >= 8) {
@@ -317,6 +321,8 @@ new #[Layout('layouts.guest')] class extends Component {
                 $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $matched->id);
             }
         }
+
+        $this->phone = \App\Models\User::normalizePhone($this->phone) ?? '';
 
         try {
             $hasCities = !empty($this->cities) && count($this->cities) > 0;
@@ -581,7 +587,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 <!-- Nama Lengkap -->
                 <div>
                     <label for="full_name" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Nama Lengkap Sesuai KTP <span class="text-red-500">*</span></label>
-                    <input wire:model="full_name" id="full_name" type="text" placeholder="Contoh: Budi Santoso"
+                    <input wire:model="full_name" id="full_name" type="text" placeholder="Nama Lengkap"
                         class="w-full px-4 py-3 rounded-xl border @error('full_name') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                     <x-input-error :messages="$errors->get('full_name')" />
                 </div>
@@ -595,10 +601,10 @@ new #[Layout('layouts.guest')] class extends Component {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                             </svg>
                         </div>
-                        <input wire:model="phone" id="phone" type="tel" placeholder="Contoh: 081234567890"
+                        <input wire:model.blur="phone" id="phone" type="tel" placeholder="08xxxxxxxxxx"
                             class="w-full pl-10 pr-4 py-3 rounded-xl border @error('phone') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
                     </div>
-                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Nomor aktif untuk koordinasi bantuan dan akun.</p>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Nomor aktif untuk koordinasi bantuan dan akun (otomatis diawali 08).</p>
                     <x-input-error :messages="$errors->get('phone')" />
                 </div>
 
@@ -609,14 +615,14 @@ new #[Layout('layouts.guest')] class extends Component {
                         <label class="flex items-center gap-3 p-3.5 rounded-xl border @if($gender === 'Laki-laki') border-primary-500 bg-primary-50/50 dark:bg-primary-950/40 ring-1 ring-primary-500 @elseif($errors->has('gender')) border-rose-400 bg-rose-50/20 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @endif cursor-pointer hover:border-primary-400 transition">
                             <input wire:model.live="gender" type="radio" value="Laki-laki" name="gender" class="text-primary-600 focus:ring-primary-500">
                             <div class="flex items-center gap-2">
-                                <span class="text-base">👨</span>
+                                <span class="text-base"></span>
                                 <span class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">Laki-laki</span>
                             </div>
                         </label>
                         <label class="flex items-center gap-3 p-3.5 rounded-xl border @if($gender === 'Perempuan') border-primary-500 bg-primary-50/50 dark:bg-primary-950/40 ring-1 ring-primary-500 @elseif($errors->has('gender')) border-rose-400 bg-rose-50/20 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @endif cursor-pointer hover:border-primary-400 transition">
                             <input wire:model.live="gender" type="radio" value="Perempuan" name="gender" class="text-primary-600 focus:ring-primary-500">
                             <div class="flex items-center gap-2">
-                                <span class="text-base">👩</span>
+                                <span class="text-base"></span>
                                 <span class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">Perempuan</span>
                             </div>
                         </label>
@@ -656,7 +662,7 @@ new #[Layout('layouts.guest')] class extends Component {
                                 <input type="text" 
                                     wire:model.live.debounce.300ms="cityQuery" 
                                     id="city-search-input"
-                                    placeholder="Ketik nama Kota atau Kabupaten (contoh: Sleman, Bandung)..."
+                                    placeholder="Ketik nama Kota atau Kabupaten"
                                     class="w-full pl-10 pr-10 py-3 rounded-xl border @error('city_id') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm" 
                                     autocomplete="off">
 

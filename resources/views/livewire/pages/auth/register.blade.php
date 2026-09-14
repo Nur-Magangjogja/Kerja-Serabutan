@@ -243,7 +243,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 Nama Lengkap
             </label>
             <div class="relative">
-                <input wire:model="name" id="name" type="text" required placeholder="Contoh: Budi Santoso"
+                <input wire:model="name" id="name" type="text" required placeholder="Nama Lengkap"
                     class="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition">
                 <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -260,7 +260,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 <span>Alamat Email </span>
             </label>
             <div class="relative">
-                <input wire:model="email" id="email" type="email" required placeholder="nama@gmail.com"
+                <input wire:model="email" id="email" type="email" required placeholder="@gmail.com"
                     class="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition">
                 <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />

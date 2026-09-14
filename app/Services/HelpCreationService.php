@@ -152,10 +152,10 @@ class HelpCreationService
                 'estimated_road_distance_km'    => ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY) ? $routeDistanceKm : null,
 
                 // Scheduling Fields
-                'scheduled_at'                  => $scheduleData['service_scheduled_at'],
+                'scheduled_at'                  => ($scheduleData['order_mode'] === Help::ORDER_MODE_SCHEDULED) ? $scheduleData['service_scheduled_at'] : null,
                 'published_at'                  => $scheduleData['published_at'],
                 'departure_at'                  => $scheduleData['departure_at'],
-                'service_scheduled_at'          => $scheduleData['service_scheduled_at'],
+                'service_scheduled_at'          => ($scheduleData['order_mode'] === Help::ORDER_MODE_SCHEDULED) ? $scheduleData['service_scheduled_at'] : null,
                 'pickup_scheduled_at'           => $scheduleData['pickup_scheduled_at'],
                 'delivery_deadline_at'          => $scheduleData['delivery_deadline_at'],
                 'early_departure_minutes'       => $scheduleData['early_departure_minutes'],

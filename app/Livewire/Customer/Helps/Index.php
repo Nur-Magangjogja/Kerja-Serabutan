@@ -426,7 +426,11 @@ class Index extends Component
                 } else {
                     $reason = "Tidak ada Rekan Jasa yang mengambil bantuan dalam batas waktu {$hours} jam";
                 }
-                app(\App\Services\HelpCancellationService::class)->checkAndAutoCancelExpiredRequests();
+                try {
+                    app(\App\Services\HelpCancellationService::class)->cancelOrderBeforePartnerTaken($expHelp, $user, $reason);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("[CustomerHelpsIndex] Auto-cancel failed for #{$expHelp->id}: " . $e->getMessage());
+                }
             }
         }
 

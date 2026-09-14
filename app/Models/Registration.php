@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -47,6 +48,16 @@ class Registration extends Model
         'city_id' => 'integer',
         'district_id' => 'integer',
     ];
+
+    /**
+     * Mutator to ensure phone is always normalized when saved.
+     */
+    protected function phone(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => User::normalizePhone($value),
+        );
+    }
 
     public function city()
     {

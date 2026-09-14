@@ -211,7 +211,7 @@ new #[Layout('layouts.guest')] class extends Component
             10:00
         </div>
         <p class="text-[11px] text-amber-700/80 dark:text-amber-400/80 leading-relaxed">
-            Jika melewati batas <strong>10 menit</strong>, akun akan otomatis dibatalkan & dihapus dari sistem.
+            Jika melewati batas <strong>10 menit</strong>, akun akan otomatis dibatalkan.
         </p>
     </div>
 

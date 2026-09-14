@@ -24,6 +24,7 @@ class HelpSettings extends Component
     public $min_help_nominal;
     public $platform_service_fee = 2000;
     public $admin_fee; // legacy
+    public $help_auto_cancel_hours = 24;
 
     // Pickup & Delivery Pricing & Policy Configurations
     public $pickup_delivery_base_fare = 10000;
@@ -64,6 +65,7 @@ class HelpSettings extends Component
             'min_help_nominal'                                       => 'required|numeric|min:0',
             'platform_service_fee'                                   => 'required|numeric|min:0',
             'admin_fee'                                              => 'nullable|numeric|min:0',
+            'help_auto_cancel_hours'                                 => 'required|integer|min:1|max:168',
             'pickup_delivery_base_fare'                              => 'required|numeric|min:1000',
             'pickup_delivery_price_per_km'                           => 'required|numeric|min:500',
             'pickup_delivery_long_distance_threshold'                => 'required|numeric|min:5|max:40',
@@ -92,24 +94,29 @@ class HelpSettings extends Component
     protected function messages()
     {
         return [
-            'min_help_nominal.required'     => 'Nominal minimal bantuan tidak boleh kosong.',
-            'min_help_nominal.numeric'      => 'Nominal minimal bantuan harus berupa angka.',
-            'platform_service_fee.required' => 'Biaya layanan platform tidak boleh kosong.',
-            'platform_service_fee.numeric'  => 'Biaya layanan platform harus berupa angka.',
-            'offer_timeout_seconds.min'     => 'Batas waktu respon penawaran minimal 15 detik.',
-            'offer_timeout_seconds.max'     => 'Batas waktu respon penawaran maksimal 300 detik.',
-            'qris_image.image'              => 'File QRIS harus berupa gambar.',
-            'qris_image.max'                => 'Ukuran gambar QRIS maksimal 3MB.',
-            'qris_image.mimes'              => 'Format gambar QRIS harus JPG, JPEG, PNG, atau WEBP.',
-            'qris_merchant_name.required'   => 'Nama Merchant / Akun QRIS wajib diisi.',
+            'min_help_nominal.required'       => 'Nominal minimal bantuan tidak boleh kosong.',
+            'min_help_nominal.numeric'        => 'Nominal minimal bantuan harus berupa angka.',
+            'platform_service_fee.required'   => 'Biaya layanan platform tidak boleh kosong.',
+            'platform_service_fee.numeric'    => 'Biaya layanan platform harus berupa angka.',
+            'help_auto_cancel_hours.required' => 'Batas waktu otomatis batal wajib diisi.',
+            'help_auto_cancel_hours.integer'  => 'Batas waktu otomatis batal harus berupa angka bulat jam.',
+            'help_auto_cancel_hours.min'      => 'Batas waktu otomatis batal minimal 1 jam.',
+            'help_auto_cancel_hours.max'      => 'Batas waktu otomatis batal maksimal 168 jam (7 hari).',
+            'offer_timeout_seconds.min'       => 'Batas waktu respon penawaran minimal 15 detik.',
+            'offer_timeout_seconds.max'       => 'Batas waktu respon penawaran maksimal 300 detik.',
+            'qris_image.image'                => 'File QRIS harus berupa gambar.',
+            'qris_image.max'                  => 'Ukuran gambar QRIS maksimal 3MB.',
+            'qris_image.mimes'                => 'Format gambar QRIS harus JPG, JPEG, PNG, atau WEBP.',
+            'qris_merchant_name.required'     => 'Nama Merchant / Akun QRIS wajib diisi.',
         ];
     }
 
     public function mount()
     {
-        $this->min_help_nominal     = (int) AppSetting::get('min_help_nominal', 10000);
-        $this->platform_service_fee = (int) AppSetting::getPlatformServiceFee();
-        $this->admin_fee            = (float) AppSetting::get('admin_fee', 0);
+        $this->min_help_nominal       = (int) AppSetting::get('min_help_nominal', 10000);
+        $this->platform_service_fee   = (int) AppSetting::getPlatformServiceFee();
+        $this->admin_fee              = (float) AppSetting::get('admin_fee', 0);
+        $this->help_auto_cancel_hours = (int) AppSetting::getHelpAutoCancelHours();
 
         // Load Pickup & Delivery pricing & limitations
         $this->pickup_delivery_base_fare                              = AppSetting::getPickupDeliveryBaseFare();
@@ -169,6 +176,7 @@ class HelpSettings extends Component
         AppSetting::set('platform_fixed_fee', (string) $this->platform_service_fee);
         AppSetting::set('platform_fee_type', 'fixed');
         AppSetting::set('platform_commission_rate', '0');
+        AppSetting::set('help_auto_cancel_hours', (string) $this->help_auto_cancel_hours);
         if ($this->admin_fee !== null) {
             AppSetting::set('admin_fee', (string) $this->admin_fee);
         }

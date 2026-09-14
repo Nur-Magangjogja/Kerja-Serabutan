@@ -257,14 +257,23 @@ class HelpCancellationService
 
             // Jika langsung dibatalkan (misal unassigned):
             return HelpCancelRequest::create([
-                'help_id'        => $help->id,
-                'requester_type' => HelpCancelRequest::REQUESTER_CUSTOMER,
-                'customer_id'    => $customer->id,
-                'reason'         => $reason,
-                'status'         => HelpCancelRequest::STATUS_APPROVED,
-                'settlement_type'=> HelpCancelRequest::SETTLEMENT_FULL_REFUND,
-                'requested_at'   => now(),
-                'reviewed_at'    => now(),
+                'help_id'                 => $help->id,
+                'requester_type'          => HelpCancelRequest::REQUESTER_CUSTOMER,
+                'customer_id'             => $customer->id,
+                'partner_id'              => $help->mitra_id,
+                'district_id'             => $help->district_id,
+                'previous_status'         => $help->status ?? Help::STATUS_MENUNGGU_MITRA,
+                'previous_stage'          => $help->service_stage,
+                'reason'                  => $reason,
+                'notes'                   => $notes,
+                'evidence_photo'          => $evidencePhoto,
+                'status'                  => HelpCancelRequest::STATUS_APPROVED,
+                'settlement_type'         => HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+                'refund_amount_customer'  => (float) ($help->total_amount > 0 ? $help->total_amount : $help->amount),
+                'payout_amount_mitra'     => 0,
+                'requested_at'            => now(),
+                'reviewed_at'             => now(),
+                'audit_decision'          => HelpCancelRequest::AUDIT_VALID_NO_SP,
             ]);
         }
 

@@ -112,7 +112,7 @@ class Detail extends Component
     {
         // Khusus pickup_delivery: Cek aturan Anti-Bypass Lock & Staged Cancellation
         if ($this->help->isPickup()) {
-            if ($this->help->status === Help::STATUS_MENUNGGU_MITRA) {
+            if ($this->help->status === Help::STATUS_MENUNGGU_MITRA || empty($this->help->mitra_id)) {
                 try {
                     app(HelpCancellationService::class)->cancelOrderBeforePartnerTaken($this->help, auth()->user(), 'Dibatalkan oleh customer sebelum ada mitra');
                     session()->flash('success', 'Permintaan bantuan antar/jemput berhasil dibatalkan dan saldo telah dikembalikan 100%.');
@@ -123,7 +123,7 @@ class Detail extends Component
                     return;
                 } catch (\Throwable $e) {
                     Log::error('[CustomerHelpDetail] cancelHelp pickup error: ' . $e->getMessage());
-                    session()->flash('error', 'Terjadi kesalahan saat membatalkan bantuan.');
+                    session()->flash('error', 'Terjadi kesalahan saat membatalkan bantuan: ' . $e->getMessage());
                     return;
                 }
             }
@@ -140,7 +140,7 @@ class Detail extends Component
                     return;
                 } catch (\Throwable $e) {
                     Log::error('[CustomerHelpDetail] cancelPickupDelivery error: ' . $e->getMessage());
-                    session()->flash('error', 'Terjadi kesalahan saat membatalkan pesanan antar/jemput.');
+                    session()->flash('error', 'Terjadi kesalahan saat membatalkan pesanan antar/jemput: ' . $e->getMessage());
                     return;
                 }
             } else {
@@ -151,17 +151,17 @@ class Detail extends Component
         }
 
         // Layanan Reguler (On-Site Service / Buy for Customer)
-        if ($this->help->status === Help::STATUS_MENUNGGU_MITRA) {
+        if ($this->help->status === Help::STATUS_MENUNGGU_MITRA || empty($this->help->mitra_id)) {
             try {
                 app(HelpCancellationService::class)->cancelOrderBeforePartnerTaken($this->help, auth()->user(), 'Dibatalkan oleh customer sebelum ada mitra');
-                session()->flash('success', 'Permintaan bantuan berhasil dibatalkan dan saldo telah dikembalikan.');
+                session()->flash('success', 'Permintaan bantuan berhasil dibatalkan dan saldo telah dikembalikan 100%.');
                 $this->showCancelConfirm = false;
                 return redirect()->route('customer.helps.index');
             } catch (\RuntimeException $e) {
                 session()->flash('error', $e->getMessage());
             } catch (\Throwable $e) {
                 Log::error('[CustomerHelpDetail] cancelHelp error: ' . $e->getMessage());
-                session()->flash('error', 'Terjadi kesalahan saat membatalkan bantuan.');
+                session()->flash('error', 'Terjadi kesalahan saat membatalkan bantuan: ' . $e->getMessage());
             }
         } else {
             // Jika sudah diambil mitra, arahkan ke modal pengajuan pembatalan customer

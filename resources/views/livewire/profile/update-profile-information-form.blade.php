@@ -74,7 +74,7 @@
                     <span class="text-red-500">*</span>
                 </span>
             </label>
-            <input type="tel" wire:model="phone" required
+            <input type="tel" wire:model.blur="phone" required
                 class="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 dark:focus:ring-primary-950/60 transition shadow-2xs outline-none"
                 placeholder="081234567890">
             @error('phone')
