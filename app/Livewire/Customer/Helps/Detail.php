@@ -20,6 +20,9 @@ class Detail extends Component
     // Modal state
     public $showCancelConfirm          = false;
     public $showCustomerCancelModal    = false;
+    public $cancelOption               = 'switch'; // 'switch' (Ganti Mitra) | 'withdraw' (Tarik Pekerjaan)
+    public $switchReason               = 'Mitra tidak bergerak / tidak merespons chat';
+    public $switchNotes                = '';
     public $customerCancelReason       = '';
     public $customerCancelNotes        = '';
     public $customerCancelPhoto        = null;
@@ -172,6 +175,9 @@ class Detail extends Component
 
     public function openCustomerCancelModal()
     {
+        $this->cancelOption         = 'switch';
+        $this->switchReason         = 'Mitra tidak bergerak / tidak kunjung datang';
+        $this->switchNotes          = '';
         $this->customerCancelReason = '';
         $this->customerCancelNotes  = '';
         $this->customerCancelPhoto  = null;
@@ -181,11 +187,49 @@ class Detail extends Component
     public function closeCustomerCancelModal()
     {
         $this->showCustomerCancelModal = false;
+        $this->cancelOption         = 'switch';
+        $this->switchReason         = 'Mitra tidak bergerak / tidak kunjung datang';
+        $this->switchNotes          = '';
         $this->customerCancelReason = '';
         $this->customerCancelNotes  = '';
         $this->customerCancelPhoto  = null;
     }
 
+    /**
+     * Customer memilih Ganti Mitra (Tetap Lanjut Cari Mitra Baru).
+     */
+    public function switchPartner()
+    {
+        $this->validate([
+            'switchReason' => 'required|string|min:3|max:255',
+            'switchNotes'  => 'nullable|string|max:1000',
+        ], [
+            'switchReason.required' => 'Pilih atau isi alasan penggantian mitra.',
+            'switchReason.min'      => 'Alasan minimal 3 karakter.',
+        ]);
+
+        try {
+            app(HelpCancellationService::class)->switchPartnerByCustomer(
+                $this->help,
+                auth()->user(),
+                $this->switchReason,
+                $this->switchNotes ?: null
+            );
+
+            $this->showCustomerCancelModal = false;
+            $this->loadHelp();
+            session()->flash('success', 'Mitra sebelumnya telah dilepaskan. Sistem sedang mencari mitra baru yang lebih responsif untuk Anda.');
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[CustomerHelpDetail] switchPartner error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat mengganti mitra: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Customer memilih Tarik Pekerjaan (Batal Total & Refund 100%).
+     */
     public function submitCustomerCancel()
     {
         $this->validate([
@@ -193,8 +237,8 @@ class Detail extends Component
             'customerCancelNotes'  => 'nullable|string|max:1000',
             'customerCancelPhoto'  => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
         ], [
-            'customerCancelReason.required' => 'Pilih atau isi alasan pembatalan.',
-            'customerCancelReason.min'      => 'Alasan pembatalan minimal 5 karakter.',
+            'customerCancelReason.required' => 'Pilih atau isi alasan penarikan pekerjaan.',
+            'customerCancelReason.min'      => 'Alasan penarikan minimal 5 karakter.',
             'customerCancelPhoto.image'     => 'Foto bukti harus berupa gambar (JPG/PNG).',
         ]);
 
@@ -214,7 +258,7 @@ class Detail extends Component
 
             $this->showCustomerCancelModal = false;
             $this->loadHelp();
-            session()->flash('warning', 'Pengajuan pembatalan Anda telah dikirim dan menunggu tinjauan Admin Wilayah.');
+            session()->flash('warning', 'Permintaan penarikan pekerjaan telah dikirimkan. Mitra akan mengonfirmasi dan kasus ini dipantau oleh Admin Wilayah.');
         } catch (\RuntimeException $e) {
             session()->flash('error', $e->getMessage());
         } catch (\Throwable $e) {

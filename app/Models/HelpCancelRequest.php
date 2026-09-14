@@ -13,6 +13,15 @@ class HelpCancelRequest extends Model
     public const REQUESTER_PARTNER  = 'partner';
     public const REQUESTER_CUSTOMER = 'customer';
 
+    public const ACTION_PARTNER_INCIDENT = 'partner_incident';
+    public const ACTION_SWITCH_PARTNER   = 'switch_partner';
+    public const ACTION_CUSTOMER_WITHDRAW = 'customer_withdraw';
+
+    public const PARTNER_RESPONSE_PENDING   = 'pending';
+    public const PARTNER_RESPONSE_CONFIRMED = 'confirmed';
+    public const PARTNER_RESPONSE_REJECTED  = 'rejected';
+    public const PARTNER_RESPONSE_EXPIRED   = 'expired';
+
     public const SP_TARGET_NONE     = 'none';
     public const SP_TARGET_PARTNER  = 'partner';
     public const SP_TARGET_CUSTOMER = 'customer';
@@ -31,6 +40,8 @@ class HelpCancelRequest extends Model
     protected $fillable = [
         'help_id',
         'requester_type',
+        'action_type',
+        'partner_response_type',
         'partner_id',
         'customer_id',
         'district_id',
@@ -42,6 +53,9 @@ class HelpCancelRequest extends Model
         'partner_clarification',
         'partner_clarification_photo',
         'partner_clarified_at',
+        'partner_response_notes',
+        'partner_response_photo',
+        'partner_responded_at',
         'item_purchased',
         'item_purchase_amount',
         'work_completed_percentage',
@@ -51,6 +65,15 @@ class HelpCancelRequest extends Model
         'compensation_amount',
         'refund_amount',
         'cancellation_stage',
+        'partner_start_lat',
+        'partner_start_lng',
+        'partner_cancel_lat',
+        'partner_cancel_lng',
+        'partner_moved_km',
+        'distance_to_target_km',
+        'time_elapsed_minutes',
+        'chat_messages_count',
+        'partner_last_chat_at',
         'status',
         'settlement_type',
         'refund_amount_customer',
@@ -74,6 +97,14 @@ class HelpCancelRequest extends Model
         'd_compensated_km'          => 'decimal:2',
         'compensation_amount'       => 'decimal:2',
         'refund_amount'             => 'decimal:2',
+        'partner_start_lat'         => 'float',
+        'partner_start_lng'         => 'float',
+        'partner_cancel_lat'        => 'float',
+        'partner_cancel_lng'        => 'float',
+        'partner_moved_km'          => 'decimal:2',
+        'distance_to_target_km'     => 'decimal:2',
+        'time_elapsed_minutes'      => 'integer',
+        'chat_messages_count'       => 'integer',
         'item_purchased'            => 'boolean',
         'item_purchase_amount'      => 'decimal:2',
         'work_completed_percentage' => 'decimal:2',
@@ -83,6 +114,8 @@ class HelpCancelRequest extends Model
         'customer_sp_level'         => 'integer',
         'requested_at'              => 'datetime',
         'partner_clarified_at'      => 'datetime',
+        'partner_responded_at'      => 'datetime',
+        'partner_last_chat_at'      => 'datetime',
         'reviewed_at'               => 'datetime',
         'expires_at'                => 'datetime',
     ];

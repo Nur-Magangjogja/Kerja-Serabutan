@@ -1259,12 +1259,12 @@
         </div>
     @endif
 
-    {{-- Modal Ajukan Pembatalan Customer (Pemeriksaan Admin Wilayah) --}}
+    {{-- Modal Pilihan Pembatalan Customer (Ganti Mitra vs Tarik Pekerjaan) --}}
     @if($showCustomerCancelModal)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
              wire:click.self="closeCustomerCancelModal">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
-                <div class="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-gray-100 dark:border-gray-700 max-h-[90vh] overflow-y-auto space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
                     <div class="flex items-center gap-2.5">
                         <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1272,8 +1272,8 @@
                             </svg>
                         </div>
                         <div>
-                            <h3 class="font-bold text-base text-gray-900 dark:text-white">Aduan Pembatalan Pesanan</h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Peninjauan & Tindak Lanjut oleh Admin</p>
+                            <h3 class="font-bold text-base text-gray-900 dark:text-white">Kendala / Pembatalan Pesanan</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Pilih opsi penanganan yang Anda butuhkan</p>
                         </div>
                     </div>
                     <button wire:click="closeCustomerCancelModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 cursor-pointer">
@@ -1281,27 +1281,17 @@
                     </button>
                 </div>
 
-                <div class="mb-4 p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-xl text-xs text-amber-900 dark:text-amber-200 leading-relaxed space-y-1.5">
-                    <p class="font-bold flex items-center gap-1.5">
-                        <span>ℹ️</span>
-                        <span>Informasi Prosedur Pembatalan:</span>
-                    </p>
-                    <p class="text-amber-800 dark:text-amber-300">
-                        Pengajuan aduan Anda akan langsung masuk ke <strong>Admin Wilayah</strong>. Admin akan menghubungi mitra untuk menindaklanjuti masalah, lalu menentukan apakah pesanan <strong>dibatalkan (refund 100% saldo)</strong> atau <strong>dialihkan kembali ke sistem untuk mencari mitra lain</strong>.
-                    </p>
-                </div>
-
-                {{-- Direct Contact Buttons --}}
-                <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-750 rounded-xl border border-gray-100 dark:border-gray-700/60 space-y-2">
-                    <span class="text-[11px] font-bold text-gray-600 dark:text-gray-300 block">Hubungi Langsung Sebelum Mengajukan:</span>
+                {{-- Direct Contact Shortcut --}}
+                <div class="p-3 bg-gray-50 dark:bg-gray-750 rounded-xl border border-gray-100 dark:border-gray-700/60 space-y-2 text-xs">
+                    <span class="text-[11px] font-bold text-gray-600 dark:text-gray-300 block">Hubungi Langsung:</span>
                     <div class="grid grid-cols-2 gap-2">
                         @php
                             $adminPhone = \App\Models\AppSetting::get('admin_whatsapp_contact', \App\Models\AppSetting::get('cs_phone', '6281234567890'));
                             $adminWaText = urlencode("Halo Admin SayaBantu, saya ingin meminta bantuan/klarifikasi untuk pesanan " . $help->order_id . ".");
                         @endphp
                         <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $adminPhone) }}?text={{ $adminWaText }}" target="_blank" rel="noopener"
-                           class="py-2 px-2.5 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition">
-                            <span>💬 CS Admin (WA)</span>
+                           class="py-1.5 px-2 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg font-bold flex items-center justify-center gap-1 transition">
+                            <span>💬 CS Admin</span>
                         </a>
                         @if($help->mitra)
                             @php
@@ -1309,59 +1299,129 @@
                             @endphp
                             @if(!empty($help->mitra->phone))
                                 <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $help->mitra->phone) }}?text={{ $mitraWaText }}" target="_blank" rel="noopener"
-                                   class="py-2 px-2.5 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition">
-                                    <span>📞 Chat Mitra</span>
+                                   class="py-1.5 px-2 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 rounded-lg font-bold flex items-center justify-center gap-1 transition">
+                                    <span>📞 WA Mitra</span>
                                 </a>
                             @else
-                                <a href="{{ route('chat.show', ['type' => 'help', 'id' => $help->id]) }}"
-                                   class="py-2 px-2.5 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition">
+                                <a href="{{ route('customer.chat', $help->id) }}"
+                                   class="py-1.5 px-2 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 rounded-lg font-bold flex items-center justify-center gap-1 transition">
                                     <span>💬 Chat Aplikasi</span>
                                 </a>
                             @endif
                         @else
-                            <div class="py-2 px-2.5 bg-gray-100 dark:bg-gray-700 text-gray-400 rounded-lg text-xs font-medium text-center">
+                            <div class="py-1.5 px-2 bg-gray-100 dark:bg-gray-700 text-gray-400 rounded-lg text-center font-medium">
                                 Mitra Belum Ada
                             </div>
                         @endif
                     </div>
                 </div>
 
-                <div class="space-y-3 mb-5 text-xs">
-                    <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Pilih Alasan Pembatalan / Aduan <span class="text-red-500">*</span></label>
-                        <select wire:model="customerCancelReason" class="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white">
-                            <option value="">-- Pilih Alasan --</option>
-                            <option value="Mitra Tidak Kunjung Datang / Lama">Mitra Tidak Kunjung Datang / Terlalu Lama</option>
-                            <option value="Mitra Tidak Dapat Dihubungi / Mangkir">Mitra Tidak Dapat Dihubungi / Mangkir</option>
-                            <option value="Mitra Meminta Batalkan Tanpa Prosedur">Mitra Meminta Batalkan Tanpa Prosedur</option>
-                            <option value="Pekerjaan Terbengkalai / Tidak Dikerjakan">Pekerjaan Terbengkalai / Tidak Dikerjakan</option>
-                            <option value="Perubahan Rencana Mendesak">Perubahan Rencana Mendesak</option>
-                            <option value="Lainnya">Lainnya (Tuliskan di catatan)</option>
-                        </select>
-                        @error('customerCancelReason') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                    </div>
+                {{-- Tab Selection Cards: Ganti Mitra vs Tarik Pekerjaan --}}
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Pilih Jenis Tindakan:</label>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <label wire:click="$set('cancelOption', 'switch')"
+                               class="p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between {{ $cancelOption === 'switch' ? 'border-primary-500 bg-primary-50/60 dark:bg-primary-950/40 ring-2 ring-primary-500/20' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750' }}">
+                            <div>
+                                <div class="flex items-center gap-1.5 mb-1">
+                                    <input type="radio" name="cancel_opt" {{ $cancelOption === 'switch' ? 'checked' : '' }} class="text-primary-600">
+                                    <strong class="text-gray-900 dark:text-white font-bold text-xs">Ganti Mitra</strong>
+                                </div>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">Lepaskan mitra yang lambat & cari mitra baru langsung.</p>
+                            </div>
+                            <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-2">✓ Saldo Tetap Aman</span>
+                        </label>
 
-                    <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Foto Bukti (Opsional)</label>
-                        <input type="file" wire:model="customerCancelPhoto" accept="image/*" class="w-full p-2 text-xs bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600 rounded-xl">
-                        @error('customerCancelPhoto') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                    </div>
-
-                    <div>
-                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Catatan Tambahan (Opsional)</label>
-                        <textarea wire:model="customerCancelNotes" rows="3" placeholder="Ceritakan detail kendala pengerjaan kepada Admin..." class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs"></textarea>
+                        <label wire:click="$set('cancelOption', 'withdraw')"
+                               class="p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between {{ $cancelOption === 'withdraw' ? 'border-rose-500 bg-rose-50/60 dark:bg-rose-950/40 ring-2 ring-rose-500/20' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750' }}">
+                            <div>
+                                <div class="flex items-center gap-1.5 mb-1">
+                                    <input type="radio" name="cancel_opt" {{ $cancelOption === 'withdraw' ? 'checked' : '' }} class="text-rose-600">
+                                    <strong class="text-gray-900 dark:text-white font-bold text-xs">Tarik Pekerjaan</strong>
+                                </div>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">Batalkan total pesanan & minta 100% refund saldo.</p>
+                            </div>
+                            <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 mt-2">100% Full Refund</span>
+                        </label>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2">
-                    <button wire:click="closeCustomerCancelModal" type="button" class="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl transition cursor-pointer">
-                        Tutup
-                    </button>
-                    <button wire:click="submitCustomerCancel" wire:loading.attr="disabled" wire:target="submitCustomerCancel, customerCancelPhoto" type="button" class="flex-1 py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50">
-                        <span wire:loading.remove wire:target="submitCustomerCancel">Kirim Aduan</span>
-                        <span wire:loading wire:target="submitCustomerCancel">Mengirim...</span>
-                    </button>
-                </div>
+                {{-- FORM CASE 1: GANTI MITRA --}}
+                @if($cancelOption === 'switch')
+                    <div class="p-3.5 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/70 rounded-xl text-xs space-y-3">
+                        <div class="text-blue-900 dark:text-blue-200 leading-relaxed text-[11px]">
+                            <strong>Alur Cepat:</strong> Mitra saat ini akan langsung dilepaskan dan order dikembalikan ke <strong>pool pencarian</strong> untuk diambil mitra lain. Kasus mitra yang tidak responsif akan diaudit oleh Admin Wilayah.
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan Ganti Mitra <span class="text-red-500">*</span></label>
+                            <select wire:model="switchReason" class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white">
+                                <option value="Mitra tidak bergerak / tidak kunjung datang">Mitra tidak kunjung bergerak / terlalu lama</option>
+                                <option value="Mitra tidak merespons chat / telepon">Mitra tidak merespons chat / telepon</option>
+                                <option value="Mitra meminta ganti mitra lain">Mitra meminta ganti mitra lain</option>
+                                <option value="Lainnya">Lainnya (Tuliskan di catatan)</option>
+                            </select>
+                            @error('switchReason') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Catatan Tambahan (Opsional)</label>
+                            <textarea wire:model="switchNotes" rows="2" placeholder="Tuliskan keterangan tambahan..." class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs"></textarea>
+                        </div>
+
+                        <div class="flex items-center gap-2 pt-1">
+                            <button wire:click="closeCustomerCancelModal" type="button" class="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl transition">
+                                Batal
+                            </button>
+                            <button wire:click="switchPartner" wire:loading.attr="disabled" type="button" class="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5">
+                                <span wire:loading.remove wire:target="switchPartner">🔄 Ganti Mitra Sekarang</span>
+                                <span wire:loading wire:target="switchPartner">Memproses...</span>
+                            </button>
+                        </div>
+                    </div>
+
+                {{-- FORM CASE 2: TARIK PEKERJAAN (BATAL TOTAL & REFUND) --}}
+                @else
+                    <div class="p-3.5 bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 rounded-xl text-xs space-y-3">
+                        <div class="text-rose-900 dark:text-rose-200 leading-relaxed text-[11px]">
+                            <strong>Konfirmasi 2 Arah:</strong> Notifikasi mendesak akan dikirimkan ke mitra. Jika mitra setuju, pesanan otomatis batal & saldo kembali 100%. Jika mitra menolak/membela diri, Admin Wilayah akan mengaudit telemetri GPS untuk keputusan yang adil.
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan Penarikan <span class="text-red-500">*</span></label>
+                            <select wire:model="customerCancelReason" class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white">
+                                <option value="">-- Pilih Alasan --</option>
+                                <option value="Perubahan Rencana Mendesak">Perubahan Rencana Mendesak</option>
+                                <option value="Mitra Tidak Kunjung Datang / Mangkir">Mitra Tidak Kunjung Datang / Mangkir</option>
+                                <option value="Sudah Selesai Sendiri / Tidak Butuh Lagi">Sudah Selesai Sendiri / Tidak Butuh Lagi</option>
+                                <option value="Kesalahan Input Data Bantuan">Kesalahan Input Data Bantuan</option>
+                                <option value="Lainnya">Lainnya (Tuliskan di catatan)</option>
+                            </select>
+                            @error('customerCancelReason') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Foto Bukti (Opsional)</label>
+                            <input type="file" wire:model="customerCancelPhoto" accept="image/*" class="w-full p-2 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl">
+                            @error('customerCancelPhoto') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Catatan Tambahan (Opsional)</label>
+                            <textarea wire:model="customerCancelNotes" rows="2" placeholder="Jelaskan alasan penarikan kepada mitra & admin..." class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs"></textarea>
+                        </div>
+
+                        <div class="flex items-center gap-2 pt-1">
+                            <button wire:click="closeCustomerCancelModal" type="button" class="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl transition">
+                                Batal
+                            </button>
+                            <button wire:click="submitCustomerCancel" wire:loading.attr="disabled" wire:target="submitCustomerCancel, customerCancelPhoto" type="button" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5">
+                                <span wire:loading.remove wire:target="submitCustomerCancel">🛑 Kirim Permintaan Tarik</span>
+                                <span wire:loading wire:target="submitCustomerCancel">Mengirim...</span>
+                            </button>
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
     @endif

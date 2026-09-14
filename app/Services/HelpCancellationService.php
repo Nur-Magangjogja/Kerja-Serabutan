@@ -230,9 +230,29 @@ class HelpCancellationService
     }
 
     /**
-     * Customer mengajukan pembatalan pada pesanan yang sudah diambil mitra.
-     * Untuk Layanan Biasa (On-Site): Masuk status 'customer_cancel_requested' / pending review Admin Wilayah (Konsep 2).
-     * Untuk Pickup & Delivery: Dievaluasi berdasarkan 6-kondisi kelayakan dan formula kompensasi.
+     * Customer memilih ganti mitra (untuk On-Site / Regular Service).
+     * Melepaskan mitra lama yang tidak responsif/tidak kunjung datang dan me-relist order ke pool.
+     */
+    public function switchPartnerByCustomer(
+        Help $help,
+        User $customer,
+        string $reason = 'Mitra tidak bergerak / tidak merespons chat',
+        ?string $notes = null
+    ): HelpCancelRequest {
+        $result = $this->onSiteCancellation->switchPartnerByCustomer(
+            $help,
+            $customer,
+            $reason,
+            $notes
+        );
+
+        return HelpCancelRequest::findOrFail($result['cancel_request_id']);
+    }
+
+    /**
+     * Customer mengajukan penarikan pekerjaan (Batal Total & Full Refund).
+     * Untuk Layanan Biasa (On-Site): Meminta konfirmasi mitra / diaudit Admin Wilayah jika mitra menolak.
+     * Untuk Pickup & Delivery: Menggunakan formula kompensasi bertahap.
      */
     public function submitCustomerCancelRequest(
         Help $help,
@@ -243,7 +263,7 @@ class HelpCancellationService
         int $deadlineMinutes = 30
     ): HelpCancelRequest {
         if ($help->isOnSite() || $help->isRegular()) {
-            $result = $this->onSiteCancellation->requestCancelByCustomer(
+            $result = $this->onSiteCancellation->requestWithdrawByCustomer(
                 $help,
                 $customer,
                 $reason,
@@ -255,10 +275,11 @@ class HelpCancellationService
                 return HelpCancelRequest::findOrFail($result['cancel_request_id']);
             }
 
-            // Jika langsung dibatalkan (misal unassigned):
+            // Jika langsung dibatalkan (misal belum ada mitra / unassigned):
             return HelpCancelRequest::create([
                 'help_id'                 => $help->id,
                 'requester_type'          => HelpCancelRequest::REQUESTER_CUSTOMER,
+                'action_type'             => HelpCancelRequest::ACTION_CUSTOMER_WITHDRAW,
                 'customer_id'             => $customer->id,
                 'partner_id'              => $help->mitra_id,
                 'district_id'             => $help->district_id,
@@ -285,6 +306,25 @@ class HelpCancellationService
             $notes
         );
         return HelpCancelRequest::findOrFail($result['cancel_request_id']);
+    }
+
+    /**
+     * Mitra merespons pengajuan penarikan pekerjaan oleh Customer (Setujui atau Tolak/Pembelaan).
+     */
+    public function respondWithdrawByPartner(
+        HelpCancelRequest $request,
+        User $partner,
+        bool $isConfirmed,
+        ?string $notes = null,
+        ?string $photo = null
+    ): array {
+        return $this->onSiteCancellation->respondWithdrawByPartner(
+            $request,
+            $partner,
+            $isConfirmed,
+            $notes,
+            $photo
+        );
     }
 
     /**
@@ -442,6 +482,8 @@ class HelpCancellationService
         $customerSpLevel  = isset($extraData['customer_sp_level']) ? (int) $extraData['customer_sp_level'] : null;
         $customerSpReason = $extraData['customer_sp_reason'] ?? 'Pelanggaran / kejanggalan dalam pesanan';
         $adminNotes       = $extraData['admin_notes'] ?? null;
+        $refundAmount     = isset($extraData['refund_amount']) ? (float) $extraData['refund_amount'] : null;
+        $partnerAmount    = isset($extraData['partner_amount']) ? (float) $extraData['partner_amount'] : null;
 
         $decision = $isApproved ? ($spTarget !== HelpCancelRequest::SP_TARGET_NONE ? 'penalty_issued' : 'valid_no_sp') : 'rejected';
 
@@ -454,7 +496,10 @@ class HelpCancellationService
             $partnerSpLevel,
             $partnerSpReason,
             $customerSpLevel,
-            $customerSpReason
+            $customerSpReason,
+            $settlementType,
+            $refundAmount,
+            $partnerAmount
         );
     }
 

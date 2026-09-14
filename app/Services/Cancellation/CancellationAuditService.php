@@ -27,7 +27,7 @@ class CancellationAuditService
     }
 
     /**
-     * Admin Wilayah mereview tiket pembatalan / sengketa On-Site.
+     * Admin Wilayah mereview tiket pembatalan / sengketa On-Site & Antar-Jemput.
      * Dapat memberikan keputusan:
      * - valid_no_sp   : Alasan darurat sah, tidak ada SP.
      * - penalty_issued: Dikenakan sanksi Surat Peringatan (SP 1, SP 2, atau SP 3).
@@ -42,7 +42,10 @@ class CancellationAuditService
         ?int $partnerSpLevel = null,
         ?string $partnerSpReason = null,
         ?int $customerSpLevel = null,
-        ?string $customerSpReason = null
+        ?string $customerSpReason = null,
+        string $settlementType = HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+        ?float $refundAmount = null,
+        ?float $partnerAmount = null
     ): HelpCancelRequest {
         return DB::transaction(function () use (
             $request,
@@ -53,7 +56,10 @@ class CancellationAuditService
             $partnerSpLevel,
             $partnerSpReason,
             $customerSpLevel,
-            $customerSpReason
+            $customerSpReason,
+            $settlementType,
+            $refundAmount,
+            $partnerAmount
         ) {
             $lockedReq = HelpCancelRequest::where('id', $request->id)->lockForUpdate()->firstOrFail();
 
@@ -88,41 +94,79 @@ class CancellationAuditService
                 }
             }
 
-            // 2. Tentukan status akhir dan settlement jika customer meminta cancel
+            // 2. Tentukan status akhir dan settlement
             $finalStatus = ($decision === 'rejected') ? HelpCancelRequest::STATUS_REJECTED : HelpCancelRequest::STATUS_APPROVED;
+            $finalRefund = 0.0;
+            $finalPayout = 0.0;
 
-            if ($help && $help->status === Help::STATUS_CUSTOMER_CANCEL_REQUESTED) {
+            if ($help) {
+                $gross = (float) ($help->total_amount > 0 ? $help->total_amount : $help->amount);
+
                 if ($decision === 'rejected') {
-                    // Kembalikan order ke status sebelumnya
-                    $help->update([
-                        'status'              => $lockedReq->previous_status ?: Help::STATUS_IN_PROGRESS,
-                        'cancel_requested_by' => null,
-                        'cancel_deadline_at'  => null,
-                    ]);
+                    // Kembalikan order ke status sebelumnya jika masih menunggu review
+                    if (in_array($help->status, [Help::STATUS_CUSTOMER_CANCEL_REQUESTED, Help::STATUS_PARTNER_CANCEL_REQUESTED])) {
+                        $help->update([
+                            'status'              => $lockedReq->previous_status ?: Help::STATUS_IN_PROGRESS,
+                            'cancel_requested_by' => null,
+                            'cancel_deadline_at'  => null,
+                        ]);
+                    }
                 } else {
-                    // Batalkan order dan refund
-                    $this->settlementService->processFullRefund($help, $adminNotes ?? 'Pembatalan disetujui Admin Wilayah.');
+                    // Disetujui
+                    if ($settlementType === HelpCancelRequest::SETTLEMENT_RELIST_POOL) {
+                        // Lepas mitra jika masih terpasang dan buka pool pencarian mitra baru
+                        if ($help->mitra_id) {
+                            $this->onlineService->releaseBusy($help->mitra_id, $help->id);
+                        }
+                        $help->update([
+                            'status'              => Help::STATUS_MENUNGGU_MITRA,
+                            'mitra_id'            => null,
+                            'dispatch_mode'       => Help::DISPATCH_MODE_POOL,
+                            'cancel_requested_by' => null,
+                            'cancel_deadline_at'  => null,
+                        ]);
+                        $finalRefund = 0.0;
+                        $finalPayout = 0.0;
+                    } elseif ($settlementType === HelpCancelRequest::SETTLEMENT_FULL_REFUND) {
+                        if ($help->status !== Help::STATUS_DIBATALKAN) {
+                            $this->settlementService->processFullRefund($help, $adminNotes ?? 'Pembatalan disetujui Admin Wilayah.');
+                        }
+                        $finalRefund = $gross;
+                        $finalPayout = 0.0;
+                    } elseif ($settlementType === HelpCancelRequest::SETTLEMENT_PARTIAL_SETTLEMENT || $settlementType === HelpCancelRequest::SETTLEMENT_ITEM_SETTLED) {
+                        $pAmt = (float) ($partnerAmount ?? 0);
+                        $rAmt = (float) ($refundAmount ?? max(0, $gross - $pAmt));
+                        if ($help->status !== Help::STATUS_DIBATALKAN) {
+                            $this->settlementService->processPartialSettlement($help, $pAmt, $rAmt, $adminNotes ?? 'Penyelesaian audit parsial admin.');
+                        }
+                        $finalRefund = $rAmt;
+                        $finalPayout = $pAmt;
+                    }
                 }
             }
 
             // 3. Update Tiket Audit
             $lockedReq->update([
-                'status'             => $finalStatus,
-                'reviewed_by'        => $adminUser->id,
-                'reviewed_at'        => now(),
-                'admin_notes'        => $adminNotes,
-                'sp_target'          => $spTarget ?? HelpCancelRequest::SP_TARGET_NONE,
-                'partner_sp_level'   => $partnerSpLevel,
-                'partner_sp_reason'  => $partnerSpReason,
-                'customer_sp_level'  => $customerSpLevel,
-                'customer_sp_reason' => $customerSpReason,
-                'audit_decision'     => $decision,
+                'status'                 => $finalStatus,
+                'reviewed_by'            => $adminUser->id,
+                'reviewed_at'            => now(),
+                'admin_notes'            => $adminNotes,
+                'settlement_type'        => $settlementType,
+                'refund_amount_customer' => $finalRefund,
+                'payout_amount_mitra'    => $finalPayout,
+                'sp_target'              => $spTarget ?? HelpCancelRequest::SP_TARGET_NONE,
+                'partner_sp_level'       => $partnerSpLevel,
+                'partner_sp_reason'      => $partnerSpReason,
+                'customer_sp_level'      => $customerSpLevel,
+                'customer_sp_reason'     => $customerSpReason,
+                'audit_decision'         => $decision,
             ]);
 
             Log::info("[CancellationAuditService] Cancel request reviewed by admin #{$adminUser->id}", [
-                'request_id' => $lockedReq->id,
-                'decision'   => $decision,
-                'sp_target'  => $spTarget,
+                'request_id'      => $lockedReq->id,
+                'decision'        => $decision,
+                'settlement_type' => $settlementType,
+                'sp_target'       => $spTarget,
             ]);
 
             return $lockedReq;

@@ -15,8 +15,9 @@
 >
     @php
         $isCompleted = in_array($help->status, ['selesai', 'completed', 'confirmed']);
-        $isCancelled = in_array($help->status, ['dibatalkan', 'cancelled', 'partner_cancel_requested', 'customer_cancel_requested']);
-        $isActive = !$isCompleted && !$isCancelled;
+        $isCancelled = in_array($help->status, ['dibatalkan', 'cancelled', 'partner_cancel_requested']);
+        $isCancelRequested = ($help->status === 'customer_cancel_requested');
+        $isActive = !$isCompleted && !$isCancelled && !$isCancelRequested;
         $customerReview = $help->rating;
         $settlementLabel = match($cancelRequest?->settlement_type ?? null) {
             'full_refund'        => 'Pengembalian Dana Penuh 100% ke Customer',
@@ -56,7 +57,7 @@
 
     {{-- Header Section (Dynamic Theme per Status) --}}
     <div class="px-5 pt-4 pb-5 relative overflow-hidden shadow-sm text-white rounded-b-2xl transition-colors duration-300
-        {{ $isCompleted ? 'bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700' : ($isCancelled ? 'bg-gradient-to-br from-rose-600 via-red-600 to-rose-700' : 'bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0]') }}">
+        {{ $isCompleted ? 'bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700' : (($isCancelled || $isCancelRequested) ? 'bg-gradient-to-br from-rose-600 via-red-600 to-rose-700' : 'bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0]') }}">
         <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
         <div class="relative z-10 max-w-md mx-auto">
@@ -80,6 +81,9 @@
                     @elseif($isCancelled)
                         <h1 class="text-base font-bold truncate">Detail Riwayat Pembatalan</h1>
                         <p class="text-xs text-rose-100 truncate mt-0.5">Catatan & keputusan pembatalan</p>
+                    @elseif($isCancelRequested)
+                        <h1 class="text-base font-bold truncate">Permintaan Penarikan</h1>
+                        <p class="text-xs text-amber-100 truncate mt-0.5">Customer mengajukan pembatalan</p>
                     @else
                         <h1 class="text-base font-bold truncate">Detail Pesanan</h1>
                         <p class="text-xs text-white/90 truncate mt-0.5">Informasi lengkap pesanan aktif</p>
@@ -152,6 +156,75 @@
                         {{ \Carbon\Carbon::parse($help->completed_at ?? $help->updated_at)->locale('id')->translatedFormat('l, d F Y • H:i') }} WIB
                     </span>
                 </div>
+            </div>
+        @endif
+
+        {{-- ───────────────────────────────────────────────────────────────── --}}
+        {{-- CASE: CUSTOMER MEMINTA PENARIKAN PEKERJAAN (WITHDRAWAL REQUEST)   --}}
+        {{-- ───────────────────────────────────────────────────────────────── --}}
+        @if ($isCancelRequested)
+            <div class="bg-gradient-to-br from-rose-50 via-amber-50/60 to-rose-100/50 dark:from-rose-950/40 dark:via-amber-950/30 dark:to-rose-900/40 border border-rose-200 dark:border-rose-800/70 rounded-2xl p-4 mb-3 shadow-xs space-y-3">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                            ⚠️
+                        </div>
+                        <div>
+                            <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                                Permintaan Penarikan
+                            </span>
+                            <h3 class="font-bold text-sm text-rose-950 dark:text-rose-100 mt-0.5">Customer Meminta Penarikan Pesanan</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white/80 dark:bg-gray-800/80 rounded-xl p-3 border border-rose-100 dark:border-rose-900/40 text-xs space-y-1.5 text-left">
+                    <div class="flex items-start gap-2">
+                        <span class="text-gray-400 font-medium shrink-0 w-20 text-[11px]">Alasan:</span>
+                        <span class="font-bold text-rose-600 dark:text-rose-400 break-words flex-1 text-xs">
+                            {{ $cancelRequest?->reason ?: 'Customer mengajukan pembatalan pesanan' }}
+                        </span>
+                    </div>
+                    @if($cancelRequest?->notes)
+                        <div class="flex items-start gap-2">
+                            <span class="text-gray-400 font-medium shrink-0 w-20 text-[11px]">Catatan:</span>
+                            <span class="text-gray-700 dark:text-gray-300 italic break-words flex-1 text-xs">
+                                "{{ $cancelRequest->notes }}"
+                            </span>
+                        </div>
+                    @endif
+                </div>
+
+                @if($cancelRequest?->partner_response_type === 'rejected')
+                    <div class="bg-rose-100/70 dark:bg-rose-950/60 p-3 rounded-xl border border-rose-200 dark:border-rose-800 text-xs text-rose-900 dark:text-rose-200 space-y-1">
+                        <p class="font-bold flex items-center gap-1">
+                            <span>✕ Anda Telah Menolak Penarikan Ini</span>
+                        </p>
+                        <p class="text-[11px] text-rose-800 dark:text-rose-300">
+                            Pembelaan Anda: <em>"{{ $cancelRequest->partner_response_notes }}"</em>
+                        </p>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                            Kasus ini sedang diaudit oleh Admin Wilayah dengan memeriksa telemetri pergerakan GPS Anda & log percakapan.
+                        </p>
+                    </div>
+                @else
+                    <div class="space-y-2 pt-1">
+                        <p class="text-[11px] text-gray-600 dark:text-gray-300">
+                            Customer ingin membatalkan pesanan ini dan menarik kembali dananya. Silakan tentukan respons Anda:
+                        </p>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <button type="button" wire:click="confirmWithdrawal" wire:loading.attr="disabled"
+                                    class="flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer shadow-xs">
+                                <span wire:loading.remove wire:target="confirmWithdrawal">✓ Setujui (Batal Total)</span>
+                                <span wire:loading wire:target="confirmWithdrawal">Memproses...</span>
+                            </button>
+                            <button type="button" wire:click="openRejectWithdrawModal"
+                                    class="flex-1 py-2.5 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer shadow-xs">
+                                <span>✕ Tolak & Ajukan Pembelaan</span>
+                            </button>
+                        </div>
+                    </div>
+                @endif
             </div>
         @endif
 
@@ -1410,6 +1483,64 @@
                                 <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                                 Memproses...
                             </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+    {{-- ───────────────────────────────────────────────────────────────── --}}
+    {{-- REJECT WITHDRAWAL MODAL                                           --}}
+    {{-- ───────────────────────────────────────────────────────────────── --}}
+    @if ($showRejectWithdrawModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+             wire:click.self="closeRejectWithdrawModal">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
+                <div class="bg-rose-600 px-5 py-4 text-white flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center font-bold">
+                            ✕
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm leading-tight">Tolak Penarikan & Ajukan Pembelaan</h3>
+                            <p class="text-[11px] text-rose-100">Kirim keterangan pembelaan untuk Admin Wilayah</p>
+                        </div>
+                    </div>
+                    <button wire:click="closeRejectWithdrawModal" class="p-1 rounded-lg hover:bg-white/20 transition cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <form wire:submit.prevent="rejectWithdrawal" class="p-5 space-y-3.5 text-xs">
+                    <div class="bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-200 dark:border-amber-800 text-[11px] text-amber-900 dark:text-amber-200 leading-relaxed">
+                        Jika Anda sudah dalam perjalanan atau telah tiba di lokasi, jelaskan alasan penolakan ini agar Admin Wilayah dapat mengaudit telemetri GPS dan memberikan kompensasi/sanksi yang adil.
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-gray-700 dark:text-gray-200 mb-1">
+                            Alasan Penolakan / Penjelasan Anda <span class="text-rose-500">*</span>
+                        </label>
+                        <textarea wire:model="rejectWithdrawNotes" rows="3"
+                                  placeholder="Contoh: Saya sudah di jalan menempuh 3 km dan hampir sampai di lokasi customer..."
+                                  class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-750 text-gray-900 dark:text-white placeholder-gray-400 text-xs focus:ring-2 focus:ring-rose-500"></textarea>
+                        @error('rejectWithdrawNotes') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-gray-700 dark:text-gray-200 mb-1">Foto Bukti Lapangan (Opsional)</label>
+                        <input type="file" wire:model="rejectWithdrawPhoto" accept="image/*" class="w-full p-2 text-xs bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600 rounded-xl">
+                        @error('rejectWithdrawPhoto') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                        <button type="button" wire:click="closeRejectWithdrawModal"
+                                class="flex-1 py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-100 dark:hover:bg-gray-750 transition">
+                            Batal
+                        </button>
+                        <button type="submit" wire:loading.attr="disabled" wire:target="rejectWithdrawal, rejectWithdrawPhoto"
+                                class="flex-1 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-md transition flex items-center justify-center gap-1.5 disabled:opacity-50">
+                            <span wire:loading.remove wire:target="rejectWithdrawal">Kirim Pembelaan</span>
+                            <span wire:loading wire:target="rejectWithdrawal">Mengirim...</span>
                         </button>
                     </div>
                 </form>

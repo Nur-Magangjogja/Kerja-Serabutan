@@ -32,10 +32,14 @@ class HelpDetail extends Component
     public $showPartnerCancelStatusModal = false;
     public $partnerCancelStatus          = null; // 'pending' | 'accepted' | 'rejected'
 
-    // Clarification on customer-requested cancel
+    // Clarification & Objection on customer-requested withdraw
     public $showClarificationModal       = false;
     public $partnerClarificationText     = '';
     public $partnerClarificationPhoto    = null;
+
+    public $showRejectWithdrawModal      = false;
+    public $rejectWithdrawNotes          = '';
+    public $rejectWithdrawPhoto          = null;
 
     // ─── Completion modal ────────────────────────────────────────────────────
     public $proof_photo;
@@ -329,6 +333,93 @@ class HelpDetail extends Component
             $this->showPartnerCancelModal = false;
             Log::error('[MitraHelpDetail] requestPartnerCancel error: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat membatalkan tugas: ' . $e->getMessage());
+        }
+    }
+
+    // ─── Customer Withdrawal Response (Setujui vs Tolak/Pembelaan) ─────────
+    public function confirmWithdrawal()
+    {
+        try {
+            $pendingRequest = \App\Models\HelpCancelRequest::where('help_id', $this->help->id)
+                ->where('status', \App\Models\HelpCancelRequest::STATUS_PENDING)
+                ->where('requester_type', \App\Models\HelpCancelRequest::REQUESTER_CUSTOMER)
+                ->latest()
+                ->first();
+
+            if (!$pendingRequest) {
+                session()->flash('error', 'Tidak ditemukan tiket permohonan penarikan yang aktif.');
+                return;
+            }
+
+            app(\App\Services\HelpCancellationService::class)->respondWithdrawByPartner(
+                $pendingRequest,
+                auth()->user(),
+                true
+            );
+
+            $this->loadHelp();
+            session()->flash('message', 'Anda telah menyetujui penarikan pesanan oleh customer. Pesanan resmi dibatalkan.');
+        } catch (\Throwable $e) {
+            Log::error('[MitraHelpDetail] confirmWithdrawal error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat menyetujui penarikan: ' . $e->getMessage());
+        }
+    }
+
+    public function openRejectWithdrawModal()
+    {
+        $this->reset(['rejectWithdrawNotes', 'rejectWithdrawPhoto']);
+        $this->showRejectWithdrawModal = true;
+    }
+
+    public function closeRejectWithdrawModal()
+    {
+        $this->showRejectWithdrawModal = false;
+        $this->reset(['rejectWithdrawNotes', 'rejectWithdrawPhoto']);
+    }
+
+    public function rejectWithdrawal()
+    {
+        $this->validate([
+            'rejectWithdrawNotes' => 'required|string|min:5|max:1000',
+            'rejectWithdrawPhoto' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+        ], [
+            'rejectWithdrawNotes.required' => 'Tuliskan alasan penolakan/pembelaan Anda.',
+            'rejectWithdrawNotes.min'      => 'Penjelasan minimal 5 karakter.',
+            'rejectWithdrawPhoto.image'    => 'Foto bukti harus berupa gambar (JPG/PNG).',
+        ]);
+
+        try {
+            $pendingRequest = \App\Models\HelpCancelRequest::where('help_id', $this->help->id)
+                ->where('status', \App\Models\HelpCancelRequest::STATUS_PENDING)
+                ->where('requester_type', \App\Models\HelpCancelRequest::REQUESTER_CUSTOMER)
+                ->latest()
+                ->first();
+
+            if (!$pendingRequest) {
+                session()->flash('error', 'Tidak ditemukan tiket permohonan penarikan yang aktif.');
+                $this->showRejectWithdrawModal = false;
+                return;
+            }
+
+            $photoPath = null;
+            if ($this->rejectWithdrawPhoto) {
+                $photoPath = $this->rejectWithdrawPhoto->store('cancel_objections', 'public');
+            }
+
+            app(\App\Services\HelpCancellationService::class)->respondWithdrawByPartner(
+                $pendingRequest,
+                auth()->user(),
+                false,
+                $this->rejectWithdrawNotes,
+                $photoPath
+            );
+
+            $this->showRejectWithdrawModal = false;
+            $this->loadHelp();
+            session()->flash('message', 'Penolakan Anda telah dicatat. Kasus ini diteruskan ke Admin Wilayah untuk diaudit secara adil.');
+        } catch (\Throwable $e) {
+            Log::error('[MitraHelpDetail] rejectWithdrawal error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat mengirim penolakan: ' . $e->getMessage());
         }
     }
 

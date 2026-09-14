@@ -64,9 +64,9 @@ class Index extends Component
     // SP Controls for Admin
     public $spTarget         = 'none'; // 'none', 'partner', 'customer', 'both'
     public $partnerSpLevel   = 1;
-    public $partnerSpReason  = 'Pelanggaran pembatalan tugas bantuan';
+    public $partnerSpReason  = '';
     public $customerSpLevel  = 1;
-    public $customerSpReason = 'Pelanggaran / kejanggalan pesanan bantuan';
+    public $customerSpReason = '';
 
     protected $queryString = [
         'activeTab'           => ['except' => 'disputes'],
@@ -208,6 +208,46 @@ class Index extends Component
 
     // ─── CANCELLATION REQUEST ACTIONS ────────────────────────────────────────
 
+    public function getWaLink(?string $phone, string $text = ''): ?string
+    {
+        if (!$phone) {
+            return null;
+        }
+        $clean = preg_replace('/[^0-9]/', '', $phone);
+        if (str_starts_with($clean, '0')) {
+            $clean = '62' . substr($clean, 1);
+        } elseif (str_starts_with($clean, '8')) {
+            $clean = '62' . $clean;
+        }
+        return 'https://wa.me/' . $clean . ($text ? '?text=' . urlencode($text) : '');
+    }
+
+    public function updatedSettlementType($val)
+    {
+        if (!$this->selectedCancelRequest || !$this->selectedCancelRequest->help) {
+            return;
+        }
+
+        $help = $this->selectedCancelRequest->help;
+        $gross = (float) ($help->total_amount > 0 ? $help->total_amount : $help->amount);
+
+        if ($val === 'relist_pool') {
+            $this->cancelRefundAmount = 0;
+            $this->cancelPartnerAmount = 0;
+        } elseif ($val === 'full_refund') {
+            $this->cancelRefundAmount = $gross;
+            $this->cancelPartnerAmount = 0;
+        } elseif ($val === 'item_settled') {
+            $pAmt = (float) ($this->selectedCancelRequest->item_purchase_amount ?: 0);
+            $this->cancelPartnerAmount = $pAmt;
+            $this->cancelRefundAmount = max(0, $gross - $pAmt);
+        } elseif ($val === 'partial_settlement') {
+            $pAmt = round($gross * 0.3);
+            $this->cancelPartnerAmount = $pAmt;
+            $this->cancelRefundAmount = max(0, $gross - $pAmt);
+        }
+    }
+
     public function openCancelReviewModal(int $cancelRequestId)
     {
         $this->selectedCancelRequestId = $cancelRequestId;
@@ -227,21 +267,39 @@ class Index extends Component
 
         $help = $this->selectedCancelRequest->help;
         $gross = (float) ($help->total_amount > 0 ? $help->total_amount : $help->amount);
+        $isPartner = ($this->selectedCancelRequest->requester_type === 'partner');
+        $actionType = $this->selectedCancelRequest->action_type;
+        $partnerResponse = $this->selectedCancelRequest->partner_response_type;
 
-        $this->cancelDecision     = 'approved';
-        $this->settlementType     = $this->selectedCancelRequest->item_purchased ? 'item_settled' : 'full_refund';
-        $this->cancelRefundAmount = $gross;
-        $this->cancelPartnerAmount= $this->selectedCancelRequest->item_purchase_amount ?: 0;
-        $this->cancelAdminNotes   = '';
+        $this->cancelDecision = 'approved';
+
+        if ($isPartner || $actionType === HelpCancelRequest::ACTION_PARTNER_INCIDENT || $actionType === HelpCancelRequest::ACTION_SWITCH_PARTNER) {
+            $this->settlementType      = 'relist_pool';
+            $this->cancelRefundAmount  = 0;
+            $this->cancelPartnerAmount = 0;
+        } elseif ($actionType === HelpCancelRequest::ACTION_CUSTOMER_WITHDRAW && $partnerResponse === HelpCancelRequest::PARTNER_RESPONSE_CONFIRMED) {
+            $this->settlementType      = 'full_refund';
+            $this->cancelRefundAmount  = $gross;
+            $this->cancelPartnerAmount = 0;
+        } elseif ($actionType === HelpCancelRequest::ACTION_CUSTOMER_WITHDRAW && $partnerResponse === HelpCancelRequest::PARTNER_RESPONSE_REJECTED) {
+            $this->settlementType      = 'partial_settlement';
+            $dist = (float) ($this->selectedCancelRequest->partner_moved_km ?? 0);
+            $pAmt = min(round($gross * 0.5), round($gross * min(1.0, max(0.2, $dist / 5.0))));
+            $this->cancelPartnerAmount = max(5000, $pAmt);
+            $this->cancelRefundAmount  = max(0, $gross - $this->cancelPartnerAmount);
+        } else {
+            $this->settlementType      = $this->selectedCancelRequest->item_purchased ? 'item_settled' : 'full_refund';
+            $this->cancelRefundAmount  = $gross;
+            $this->cancelPartnerAmount = $this->selectedCancelRequest->item_purchase_amount ?: 0;
+        }
+        $this->cancelAdminNotes = '';
 
         // Reset SP Controls
         $this->spTarget         = 'none';
         $this->partnerSpLevel   = 1;
-        $this->partnerSpReason  = ($this->selectedCancelRequest->requester_type === 'partner')
-            ? 'Mitra terbukti membatalkan tugas secara sepihak tanpa alasan sah'
-            : 'Mitra terbukti mangkir / menelantarkan tugas bantuan customer';
+        $this->partnerSpReason  = '';
         $this->customerSpLevel  = 1;
-        $this->customerSpReason = 'Customer terindikasi melakukan pembatalan tidak wajar / order fiktif';
+        $this->customerSpReason = '';
 
         $this->showCancelReviewModal = true;
     }
