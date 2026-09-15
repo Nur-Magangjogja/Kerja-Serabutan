@@ -1,12 +1,13 @@
 @php
     $isDarkActive = ($isDark ?? (request()->cookie('theme') === 'dark'));
+    $isChatPage = request()->routeIs('customer.chat') || request()->routeIs('mitra.chat') || request()->routeIs('*.chat*');
 @endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="{{ $isDarkActive ? 'dark' : '' }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="{{ $isDarkActive ? 'dark' : '' }} {{ $isChatPage ? 'h-[100dvh] max-h-[100dvh] overflow-hidden' : '' }}">
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="color-scheme" content="dark light">
 
@@ -96,17 +97,17 @@
 </head>
 
 
-<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-x-hidden">
+<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-x-hidden {{ $isChatPage ? 'h-[100dvh] max-h-[100dvh] overflow-hidden overscroll-none' : '' }}" style="{{ $isChatPage ? 'overscroll-behavior: none; overscroll-behavior-y: none;' : '' }}">
     <!-- Centered Container -->
-    <div class="min-h-screen flex items-start justify-center bg-gray-100 dark:bg-gray-950">
+    <div class="{{ $isChatPage ? 'h-[100dvh] max-h-[100dvh] overflow-hidden' : 'min-h-screen' }} flex items-start justify-center bg-gray-100 dark:bg-gray-950">
         <!-- Mobile Width Container -->
-        <div class="w-full max-w-md bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative shadow-2xl">
+        <div class="w-full max-w-md bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative shadow-2xl {{ $isChatPage ? 'h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden' : '' }}">
             <!-- Global notification (toast) for customer actions -->
             <div id="customer-global-notification" class="fixed top-4 inset-x-0 mx-auto w-full max-w-md px-4 pointer-events-none z-[99999]">
                 <div id="customer-global-notification-inner" class="mx-auto max-w-md"></div>
             </div>
             <!-- Content -->
-            <main class="pb-24">
+            <main class="{{ $isChatPage ? 'flex-1 min-h-0 flex flex-col overflow-hidden h-full max-h-full' : 'pb-24' }}">
                 @if($__env->hasSection('content'))
                     @yield('content')
                 @else

@@ -162,7 +162,7 @@
                                         </div>
 
                                         <div class="text-right flex-shrink-0">
-                                            <div class="text-sm font-bold text-primary-600 dark:text-sky-400">Rp {{ number_format($help->getNetEarning(), 0, ',', '.') }}</div>
+                                            <div class="text-1xl font-bold text-primary-600 dark:text-sky-400">Rp {{ number_format($help->getNetEarning(), 0, ',', '.') }}</div>
                                             <div class="flex flex-col items-end mt-1 gap-1">
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
                                                     <svg class="w-2.5 h-2.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -419,7 +419,7 @@
                                         {{-- Right Side Info --}}
                                         <div class="text-right flex-shrink-0">
                                             @if($help)
-                                                <div class="text-sm font-bold text-gray-800 dark:text-gray-200">
+                                                <div class="text-1xl font-bold text-red-700 dark:text-red-400">
                                                     Rp {{ number_format($help->getNetEarning(), 0, ',', '.') }}
                                                 </div>
                                             @endif

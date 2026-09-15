@@ -99,7 +99,7 @@
                                     </div>
 
                                     <div class="text-right flex-shrink-0">
-                                        <div class="text-sm font-bold text-primary-600 dark:text-sky-400">Rp {{ number_format($help->amount ?? 0, 0, ',', '.') }}</div>
+                                        <div class="text-1xl font-bold text-primary-600 dark:text-sky-400">Rp {{ number_format($help->amount ?? 0, 0, ',', '.') }}</div>
                                         <div class="flex flex-col items-end gap-1 mt-1">
                                             @if($isCancelled)
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-[10px] font-bold border border-rose-200 dark:border-rose-800/50">

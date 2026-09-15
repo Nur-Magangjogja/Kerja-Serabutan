@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Notifications\ChatMessageNotification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -326,6 +327,24 @@ class Index extends Component
         $this->photo = null;
     }
 
+    #[On('help-new-message')]
+    #[On('refresh-chat')]
+    public function handleNewIncomingMessage()
+    {
+        if ($this->selected_partner_id && !$this->is_admin_chat) {
+            ChatModel::where('customer_id', Auth::id())
+                ->where('mitra_id', $this->selected_partner_id)
+                ->whereIn('sender_type', ['mitra', 'system'])
+                ->whereNull('read_at')
+                ->update([
+                    'is_read' => true,
+                    'read_at' => now(),
+                ]);
+            $this->dispatch('play-notification-sound');
+            $this->dispatch('scroll-chat-bottom');
+        }
+    }
+
     public function sendMessage()
     {
         $this->validate();
@@ -381,6 +400,7 @@ class Index extends Component
             $this->message = '';
             $this->photo   = null;
             $this->dispatch('message-sent');
+            $this->dispatch('play-notification-sound');
             $this->dispatch('scroll-chat-bottom');
             return;
         }
@@ -434,6 +454,7 @@ class Index extends Component
         $this->message = '';
         $this->photo   = null;
         $this->dispatch('message-sent');
+        $this->dispatch('play-notification-sound');
         $this->dispatch('scroll-chat-bottom');
     }
 
