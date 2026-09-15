@@ -15,8 +15,15 @@ class Simulator extends Component
     public $currentLng;
     public $targetLat;
     public $targetLng;
-    public $stepSize = 5; // meter per step (ubah dari 20 ke 5 untuk lebih realistis)
-    public $simulationSpeed = 5; // detik per update (ubah dari 2 ke 5)
+    public $targetLabel = 'Lokasi Target';
+    public $stepSize = 25; // meter per step
+    public $simulationSpeed = 3; // detik per update
+
+    protected $listeners = [
+        'service-stage-changed' => 'syncTargetCoordinates',
+        'partner-stage-changed' => 'syncTargetCoordinates',
+        'status-changed'        => 'syncTargetCoordinates',
+    ];
 
     protected $locationService;
 
@@ -33,29 +40,39 @@ class Simulator extends Component
         if (!$help) {
             return;
         }
-        
-        // Set target sebagai lokasi customer
-        $this->targetLat = floatval($help->latitude);
-        $this->targetLng = floatval($help->longitude);
+
+        $this->syncTargetCoordinates();
         
         // Jika sudah ada partner location di database, gunakan itu
-        // Jika belum, set ke lokasi target dulu (akan diupdate saat simulasi dimulai)
         if ($help->partner_current_lat && $help->partner_current_lng) {
             $this->currentLat = floatval($help->partner_current_lat);
             $this->currentLng = floatval($help->partner_current_lng);
         } else {
-            // Set ke target location sebagai default (distance = 0)
-            // Akan generate random location hanya saat simulasi dimulai
             $this->currentLat = $this->targetLat;
             $this->currentLng = $this->targetLng;
         }
-        
-        Log::info('GPS Simulator Mounted', [
-            'help_id' => $this->helpId,
-            'current' => [$this->currentLat, $this->currentLng],
-            'target' => [$this->targetLat, $this->targetLng],
-            'distance' => $this->calculateDistanceSimple($this->currentLat, $this->currentLng, $this->targetLat, $this->targetLng)
-        ]);
+    }
+
+    public function syncTargetCoordinates(): void
+    {
+        $help = Help::find($this->helpId);
+        if (!$help) return;
+
+        if ($help->isPickup()) {
+            if (in_array($help->service_stage, [Help::STAGE_GOING_TO_DESTINATION, Help::STAGE_FINAL_APPROACH, Help::STAGE_ITEM_COLLECTED, Help::STAGE_AT_DESTINATION], true)) {
+                $this->targetLat = floatval($help->delivery_latitude ?: $help->latitude);
+                $this->targetLng = floatval($help->delivery_longitude ?: $help->longitude);
+                $this->targetLabel = 'Titik 2: Pengantaran / Tujuan';
+            } else {
+                $this->targetLat = floatval($help->pickup_latitude ?: $help->latitude);
+                $this->targetLng = floatval($help->pickup_longitude ?: $help->longitude);
+                $this->targetLabel = 'Titik 1: Penjemputan';
+            }
+        } else {
+            $this->targetLat = floatval($help->latitude);
+            $this->targetLng = floatval($help->longitude);
+            $this->targetLabel = 'Lokasi Pekerjaan Customer';
+        }
     }
     
     private function calculateDistanceSimple($lat1, $lng1, $lat2, $lng2)
@@ -148,15 +165,11 @@ class Simulator extends Component
 
     public function simulateStep()
     {
-        Log::info('GPS Simulator: simulateStep called', [
-            'help_id' => $this->helpId,
-            'is_simulating' => $this->isSimulating,
-            'current' => [$this->currentLat, $this->currentLng]
-        ]);
-        
         if (!$this->isSimulating) {
             return ['still_moving' => false, 'message' => 'Simulation not running'];
         }
+
+        $this->syncTargetCoordinates();
 
         // Hitung arah ke target
         $lat1 = deg2rad($this->currentLat);
@@ -248,6 +261,7 @@ class Simulator extends Component
 
     public function teleportToTarget()
     {
+        $this->syncTargetCoordinates();
         $this->currentLat = $this->targetLat;
         $this->currentLng = $this->targetLng;
         

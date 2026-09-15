@@ -36,8 +36,9 @@ class HelpStatusNotification extends Notification
         $statusNorm = Help::normalizeStatus($this->newStatus);
         $targetTime = $this->help->getScheduledTargetTime()?->format('H:i') ?? 'sesuai jadwal';
 
-        $title = match (strtolower($this->newStatus === 'scheduled_departure_due' ? 'scheduled_departure_due' : $statusNorm)) {
+        $title = match (strtolower($this->newStatus === 'scheduled_departure_due' ? 'scheduled_departure_due' : ($this->newStatus === 'near_arrival' ? 'near_arrival' : $statusNorm))) {
             'scheduled_departure_due'           => "⏰ Waktunya Berangkat (Tugas Terjadwal)",
+            'near_arrival'                      => "🛵 Rekan Jasa Hampir Sampai",
             Help::STATUS_TAKEN                  => "Rekan Jasa Mengambil Pesanan",
             Help::STATUS_MENUNGGU_MITRA         => "Mencari Rekan Jasa Baru",
             Help::STATUS_PARTNER_ON_THE_WAY     => "Rekan Jasa Menuju Lokasi",
@@ -54,8 +55,9 @@ class HelpStatusNotification extends Notification
             default                             => "Pembaruan Status Bantuan"
         };
 
-        $message = match (strtolower($this->newStatus === 'scheduled_departure_due' ? 'scheduled_departure_due' : $statusNorm)) {
+        $message = match (strtolower($this->newStatus === 'scheduled_departure_due' ? 'scheduled_departure_due' : ($this->newStatus === 'near_arrival' ? 'near_arrival' : $statusNorm))) {
             'scheduled_departure_due'           => "Tugas terjadwal '{$this->help->title}' dijadwalkan pada pukul {$targetTime}. Tombol keberangkatan sudah aktif, harap segera bersiap dan berangkat menuju lokasi.",
+            'near_arrival'                      => "Rekan Jasa $mitraName sudah hampir sampai di lokasi Anda (jarak < 250 meter). Silakan bersiap menyambut rekan jasa.",
             Help::STATUS_TAKEN                  => "Rekan Jasa $mitraName telah mengambil pesanan bantuan Anda '{$this->help->title}'. Silakan pantau perkembangannya.",
             Help::STATUS_MENUNGGU_MITRA         => "Pesanan Anda '{$this->help->title}' kembali tersedia dan sedang mencari Rekan Jasa baru.",
             Help::STATUS_PARTNER_ON_THE_WAY     => "Rekan Jasa $mitraName sedang dalam perjalanan menuju lokasi Anda.",

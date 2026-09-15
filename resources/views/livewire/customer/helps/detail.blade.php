@@ -368,7 +368,7 @@
             @php
                 $travelProgress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($help);
             @endphp
-            <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800 mt-2 space-y-3">
+            <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800 mt-2 space-y-3" wire:poll.4s>
                 <div class="flex items-center justify-between border-b border-indigo-800/60 pb-2.5">
                     <div class="flex items-center gap-2">
                         <span class="text-base">{{ $help->isPickup() ? '📦' : '🛵' }}</span>
@@ -379,10 +379,17 @@
                             <p class="text-[10px] text-indigo-300/80">Menuju: {{ $travelProgress['target_label'] }}</p>
                         </div>
                     </div>
-                    <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-900/80 text-emerald-300 border border-emerald-700/60' : 'bg-blue-900/80 text-blue-300 border border-blue-700/60 animate-pulse' }}">
-                        <span class="w-1.5 h-1.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-400' : 'bg-blue-400' }}"></span>
-                        {{ $travelProgress['is_arrived'] ? 'Tiba di Lokasi' : 'Live GPS Sync' }}
-                    </span>
+                    <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                        @if(!empty($travelProgress['is_near_arrival']) && !$travelProgress['is_arrived'])
+                            <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                                📍 Hampir Sampai
+                            </span>
+                        @endif
+                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-900/80 text-emerald-300 border border-emerald-700/60' : 'bg-blue-900/80 text-blue-300 border border-blue-700/60 animate-pulse' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-400' : 'bg-blue-400' }}"></span>
+                            {{ $travelProgress['is_arrived'] ? 'Tiba di Lokasi' : 'Live GPS Sync' }}
+                        </span>
+                    </div>
                 </div>
 
                 @if($travelProgress['is_arrived'])
@@ -423,8 +430,34 @@
                             </span>
                         </div>
                     </div>
+
+                    {{-- Traffic Condition Bar (Deteksi Evaluasi 10 Menit) --}}
+                    @if($help->status === 'partner_on_the_way')
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-1.5">
+                                <span>🚦</span>
+                                <span class="text-[11px] text-gray-300 font-medium">Kondisi Lalu Lintas:</span>
+                            </div>
+                            <div>
+                                @if(($travelProgress['traffic_status'] ?? '') === 'macet' || ($travelProgress['is_delayed'] ?? false))
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-950/80 text-rose-300 border border-rose-800 text-[10px] font-bold">
+                                        🔴 Macet / Padat
+                                    </span>
+                                @elseif(($travelProgress['traffic_status'] ?? '') === 'padat_merayap')
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-950/80 text-amber-300 border border-amber-800 text-[10px] font-bold">
+                                        🟡 Ramai Padat
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-[10px] font-bold">
+                                        🟢 Lancar
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="flex items-center justify-between text-[10px] text-indigo-300/80 pt-1 border-t border-indigo-900/60">
-                        <span>💡 Waktu tiba selalu disesuaikan otomatis mengikuti posisi GPS Rekan Jasa</span>
+                        <span>💡 Waktu tiba disesuaikan otomatis mengikuti posisi GPS Rekan Jasa</span>
                         @if($travelProgress['partner_last_seen'])
                             <span class="font-mono text-indigo-200">{{ $travelProgress['partner_last_seen'] }}</span>
                         @endif

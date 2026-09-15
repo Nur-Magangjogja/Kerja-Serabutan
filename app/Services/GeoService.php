@@ -163,20 +163,37 @@ class GeoService
         // Estimasi durasi berkendara motor dengan kecepatan perkotaan (default 25 km/jam)
         $durationMinutes = $this->getRouteDurationMinutes($distKm, 25.0, 2);
 
-        // Deteksi delay: perbandingan waktu tempuh aktual vs progres jarak
+        // Deteksi kondisi lalu lintas / macet (evaluasi interval 10 menit dan perbandingan waktu)
         $isDelayed = false;
         $delayMinutes = 0;
         $delayReason = null;
+        $trafficStatus = 'lancar'; // 'lancar' | 'padat_merayap' | 'macet'
 
         if ($startedMovingAt && $initialDistanceKm !== null && $initialDistanceKm > 0) {
             $elapsedMinutes = max(0, $startedMovingAt->diffInMinutes(now()));
             $expectedMinutes = $this->getRouteDurationMinutes($initialDistanceKm, 25.0, 0);
 
-            // Jika waktu yang dihabiskan sudah melebihi 1.5x estimasi awal dan jarak sisa masih > 50%
-            if ($elapsedMinutes > ($expectedMinutes * 1.5) && $distKm > ($initialDistanceKm * 0.5)) {
+            // Evaluasi interval 10 menit: cek pergerakan riil mitra vs kecepatan normal
+            if ($elapsedMinutes >= 10) {
+                $coveredDistKm = max(0, $initialDistanceKm - $distKm);
+                $actualSpeedKmh = ($elapsedMinutes > 0) ? ($coveredDistKm / ($elapsedMinutes / 60.0)) : 25.0;
+
+                if ($actualSpeedKmh < 8.0 && $distKm > 0.3) {
+                    $isDelayed = true;
+                    $trafficStatus = 'macet';
+                    $delayMinutes = max(5, (int) ($elapsedMinutes - ($coveredDistKm / 25.0 * 60)));
+                    $delayReason = 'Lalu lintas macet / padat merayap (kecepatan rata-rata < 8 km/jam).';
+                    $durationMinutes += min(15, (int) ($delayMinutes * 0.5));
+                } elseif ($actualSpeedKmh < 15.0 && $distKm > 0.3) {
+                    $trafficStatus = 'padat_merayap';
+                    $delayReason = 'Lalu lintas ramai lancar / padat.';
+                }
+            } elseif ($elapsedMinutes > ($expectedMinutes * 1.5) && $distKm > ($initialDistanceKm * 0.5)) {
                 $isDelayed = true;
+                $trafficStatus = 'macet';
                 $delayMinutes = (int) ($elapsedMinutes - $expectedMinutes);
                 $delayReason = 'Kondisi lalu lintas padat / macet di rute perjalanan.';
+                $durationMinutes += min(10, (int) ($delayMinutes * 0.5));
             }
         }
 
@@ -184,11 +201,13 @@ class GeoService
             ? round($distMeters) . ' meter'
             : number_format($distKm, 1, ',', '.') . ' KM';
 
-        $formattedEta = ($durationMinutes <= 2)
+        $isNearArrival = ($distMeters <= 250.0 || $durationMinutes <= 2);
+
+        $formattedEta = ($isNearArrival)
             ? '< 2 Menit (Hampir Tiba)'
             : "~{$durationMinutes} Menit";
 
-        if ($isDelayed) {
+        if ($isDelayed && !$isNearArrival) {
             $formattedEta .= ' (Potensi Macet)';
         }
 
@@ -199,10 +218,30 @@ class GeoService
             'formatted_distance'       => $formattedDistance,
             'formatted_eta'            => $formattedEta,
             'is_arrived'               => false,
+            'is_near_arrival'          => $isNearArrival,
+            'traffic_status'           => $trafficStatus,
             'is_delayed'               => $isDelayed,
             'delay_minutes'            => $delayMinutes,
             'delay_reason'             => $delayReason,
         ];
+    }
+
+    /**
+     * Verifikasi apakah posisi mitra sudah mendekati lokasi tujuan (radius <= 250m).
+     */
+    public function isWithinNearArrivalRadius(
+        float $currentLat,
+        float $currentLng,
+        float $targetLat,
+        float $targetLng,
+        float $nearRadiusMeters = 250.0
+    ): bool {
+        if ($currentLat == 0 || $currentLng == 0 || $targetLat == 0 || $targetLng == 0) {
+            return false;
+        }
+
+        $distanceMeters = $this->calculateDistanceMeters($currentLat, $currentLng, $targetLat, $targetLng);
+        return $distanceMeters <= $nearRadiusMeters;
     }
 
     /**

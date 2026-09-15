@@ -141,6 +141,41 @@
                                     <span class="font-semibold text-emerald-700 dark:text-emerald-300">{{ $this->scheduleTimeline['target_label'] }}</span>
                                 </div>
                             </div>
+
+                            <div class="flex items-start gap-2 text-xs pt-1.5 border-t border-blue-200/60 dark:border-blue-900/60">
+                                <span class="w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0 mt-0.5">4</span>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-500 dark:text-gray-400 text-[10px] block font-medium">Batas Waktu Pencarian Rekan Jasa:</span>
+                                        <span class="text-[9px] text-rose-600 dark:text-rose-400 font-bold bg-rose-100 dark:bg-rose-950/60 px-1.5 py-0.5 rounded">Batal Otomatis</span>
+                                    </div>
+                                    <span class="font-bold text-rose-600 dark:text-rose-400 block">{{ $confirmExpiresAt ?? $this->expiryPreview }}</span>
+                                    <span class="text-[9.5px] text-gray-400 dark:text-gray-500 block leading-tight mt-0.5">(Saldo 100% dikembalikan otomatis jika belum ada rekan jasa hingga batas waktu ini)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @else
+                    <div class="p-3.5 bg-gray-50 dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700 text-xs space-y-2">
+                        <div class="flex items-center justify-between font-bold text-gray-900 dark:text-gray-100">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Batas Waktu Pencarian Rekan Jasa
+                            </span>
+                            <span class="text-[9px] text-amber-600 dark:text-amber-400 font-bold bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded-full">
+                                Auto-Cancel & Refund 100%
+                            </span>
+                        </div>
+
+                        <div class="flex items-start gap-2 text-xs">
+                            <span class="w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0 mt-0.5">⏳</span>
+                            <div class="min-w-0 flex-1">
+                                <span class="text-gray-500 dark:text-gray-400 text-[10px] block">Batas Maksimal Pencarian:</span>
+                                <span class="font-bold text-rose-600 dark:text-rose-400">{{ $confirmExpiresAt ?? $this->expiryPreview }}</span>
+                                <span class="text-[9.5px] text-gray-400 dark:text-gray-500 block leading-tight mt-0.5">Pesanan disebarkan sekarang dan akan otomatis dibatalkan & saldo di-refund 100% jika belum diambil hingga batas waktu tersebut.</span>
+                            </div>
                         </div>
                     </div>
                 @endif

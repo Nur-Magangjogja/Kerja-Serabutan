@@ -17,6 +17,8 @@ class HelpDetail extends Component
 
     protected $listeners = [
         'closePartnerCancelStatusModal' => 'closePartnerCancelStatusModal',
+        'status-changed'                => 'loadHelp',
+        'partner-location-updated'      => 'loadHelp',
     ];
 
     public $helpId;

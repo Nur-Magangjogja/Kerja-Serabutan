@@ -209,6 +209,8 @@ class HelpScheduleService
             'partner_lng'           => $partnerLng,
             'partner_last_seen'     => $help->partner_location_updated_at ? \Carbon\Carbon::parse($help->partner_location_updated_at)->diffForHumans() : null,
             'is_arrived'            => $etaData['is_arrived'],
+            'is_near_arrival'       => $etaData['is_near_arrival'] ?? false,
+            'traffic_status'        => $etaData['traffic_status'] ?? 'lancar',
             'remaining_distance_km' => $etaData['distance_km'],
             'formatted_distance'    => $etaData['formatted_distance'],
             'formatted_eta'         => $etaData['formatted_eta'],

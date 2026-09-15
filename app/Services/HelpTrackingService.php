@@ -104,6 +104,36 @@ class HelpTrackingService
             // Jika memenuhi radius <= 50m DAN akurasi GPS valid
             if ($arrivalResult['arrived']) {
                 $statusChanged = $this->triggerAutomaticArrival($help);
+            } else {
+                // 2b. Evaluasi Notifikasi Hampir Sampai (<= 250m) jika belum tiba
+                $isNearArrival = $this->geoService->isWithinNearArrivalRadius(
+                    $currentLat,
+                    $currentLng,
+                    $targetCoords['lat'],
+                    $targetCoords['lng'],
+                    250.0
+                );
+
+                if ($isNearArrival) {
+                    $nearNotifCacheKey = "help_near_notif_{$help->id}_" . ($help->service_stage ?: 'default');
+                    if (!\Illuminate\Support\Facades\Cache::has($nearNotifCacheKey)) {
+                        \Illuminate\Support\Facades\Cache::put($nearNotifCacheKey, true, 3600);
+                        $this->notifyCustomer($help, 'near_arrival');
+
+                        if ($help->mitra) {
+                            try {
+                                $help->mitra->notify(new HelpStatusNotification(
+                                    $help,
+                                    $help->status,
+                                    'near_arrival',
+                                    $help->mitra
+                                ));
+                            } catch (\Throwable $e) {
+                                Log::warning("[HelpTrackingService] Gagal kirim near_arrival ke mitra: " . $e->getMessage());
+                            }
+                        }
+                    }
+                }
             }
         }
 

@@ -903,6 +903,7 @@ class Create extends Component
                 'departure_label' => 'Langsung Berangkat',
                 'target_label'    => 'Sekarang (Langsung Dikerjakan)',
                 'lead_minutes'    => 0,
+                'expiry_label'    => $this->expiryPreview,
             ];
         }
 
@@ -945,6 +946,7 @@ class Create extends Component
             'target_time'     => $targetDt->format('H:i'),
             'target_date'     => $targetDt->translatedFormat('d M Y'),
             'lead_minutes'    => $leadMinutes,
+            'expiry_label'    => $this->expiryPreview,
         ];
     }
 

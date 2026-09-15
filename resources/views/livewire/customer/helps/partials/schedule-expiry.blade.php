@@ -379,6 +379,18 @@
                         <span class="font-bold text-emerald-800 dark:text-emerald-300 block">{{ $this->scheduleTimeline['target_label'] }}</span>
                     </div>
                 </div>
+
+                <!-- Step 4: Batas Waktu Kadaluwarsa Pencarian -->
+                <div class="flex items-start gap-2.5 p-2 bg-white dark:bg-gray-800/90 rounded-lg border border-rose-100 dark:border-rose-900/40">
+                    <div class="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">4</div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Batas Waktu Pencarian Rekan Jasa:</span>
+                            <span class="text-[10px] text-rose-600 dark:text-rose-400 font-bold">BATAL OTOMATIS</span>
+                        </div>
+                        <span class="font-bold text-rose-700 dark:text-rose-300 block">{{ $this->expiryPreview }}</span>
+                    </div>
+                </div>
             </div>
         </div>
     @endif

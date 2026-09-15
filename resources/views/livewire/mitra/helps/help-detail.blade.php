@@ -519,13 +519,13 @@
         @endif
 
         {{-- ───────────────────────────────────────────────────────────────── --}}
-        {{-- LIVE ETA & NAVIGATION (Hanya Tampil Saat Sedang Dalam Perjalanan)  --}}
+        {{-- LIVE ETA & NAVIGATION & GPS SIMULATOR (Saat Penugasan Aktif)      --}}
         {{-- ───────────────────────────────────────────────────────────────── --}}
-        @if(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']))
+        @if(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress']) && $help->mitra_id === auth()->id())
             @php
                 $travelProgress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($help);
             @endphp
-            <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800 mb-3 space-y-3">
+            <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800 mb-3 space-y-3" wire:poll.5s>
                 <div class="flex items-center justify-between border-b border-indigo-800/60 pb-2.5">
                     <div class="flex items-center gap-2">
                         <span class="text-base">{{ $help->isPickup() ? '📦' : '🛵' }}</span>
@@ -536,24 +536,31 @@
                             <p class="text-[10px] text-indigo-300/80">{{ $travelProgress['target_label'] }}</p>
                         </div>
                     </div>
-                    <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-900/80 text-emerald-300 border border-emerald-700/60' : 'bg-blue-900/80 text-blue-300 border border-blue-700/60 animate-pulse' }}">
-                        <span class="w-1.5 h-1.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-400' : 'bg-blue-400' }}"></span>
-                        {{ $travelProgress['is_arrived'] ? 'Tiba di Lokasi' : 'Live ETA' }}
-                    </span>
+                    <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                        @if(!empty($travelProgress['is_near_arrival']) && !$travelProgress['is_arrived'])
+                            <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                                📍 Hampir Sampai
+                            </span>
+                        @endif
+                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-900/80 text-emerald-300 border border-emerald-700/60' : 'bg-blue-900/80 text-blue-300 border border-blue-700/60 animate-pulse' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-400' : 'bg-blue-400' }}"></span>
+                            {{ $travelProgress['is_arrived'] ? 'Tiba di Lokasi' : 'Live GPS ETA' }}
+                        </span>
+                    </div>
                 </div>
 
                 @if($travelProgress['is_arrived'])
                     <div class="bg-emerald-950/60 border border-emerald-800/80 rounded-xl p-3 text-center">
                         <p class="text-xs font-bold text-emerald-300 flex items-center justify-center gap-1.5">
                             <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                            Anda telah sampai di lokasi tujuan
+                            Anda telah sampai di lokasi sasaran
                         </p>
-                        <p class="text-[11px] text-emerald-200/80 mt-0.5">Segera temui pemesan bantuan untuk mulai melaksanakan tugas.</p>
+                        <p class="text-[11px] text-emerald-200/80 mt-0.5">Silakan koordinasi dan lanjutkan tahapan pekerjaan melalui tombol aksi di bawah.</p>
                     </div>
                 @else
                     <div class="grid grid-cols-2 gap-2 text-center">
                         <div class="bg-white/10 rounded-xl p-2.5">
-                            <span class="text-[10px] text-indigo-300 block font-medium">Jarak ke Tujuan</span>
+                            <span class="text-[10px] text-indigo-300 block font-medium">Jarak ke Sasaran</span>
                             <span class="text-sm font-extrabold text-white font-mono block mt-0.5">
                                 {{ $travelProgress['formatted_distance'] }}
                             </span>
@@ -565,6 +572,31 @@
                             </span>
                         </div>
                     </div>
+
+                    {{-- Traffic Condition Bar (Deteksi Evaluasi 10 Menit) --}}
+                    @if($help->status === 'partner_on_the_way')
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-1.5">
+                                <span>🚦</span>
+                                <span class="text-[11px] text-gray-300 font-medium">Kondisi Lalu Lintas:</span>
+                            </div>
+                            <div>
+                                @if(($travelProgress['traffic_status'] ?? '') === 'macet' || ($travelProgress['is_delayed'] ?? false))
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-950/80 text-rose-300 border border-rose-800 text-[10px] font-bold">
+                                        🔴 Macet / Padat
+                                    </span>
+                                @elseif(($travelProgress['traffic_status'] ?? '') === 'padat_merayap')
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-950/80 text-amber-300 border border-amber-800 text-[10px] font-bold">
+                                        🟡 Ramai Padat
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-[10px] font-bold">
+                                        🟢 Lancar
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
 
                     @if($travelProgress['target_lat'] && $travelProgress['target_lng'])
                         <div class="pt-1 flex items-center gap-2">
@@ -582,6 +614,11 @@
                         </div>
                     @endif
                 @endif
+            </div>
+
+            {{-- GPS Simulator Widget --}}
+            <div class="mb-3">
+                <livewire:mitra.gps.simulator :helpId="$help->id" :key="'gps-sim-'.$help->id" />
             </div>
         @endif
 
@@ -1180,6 +1217,12 @@
                         </svg>
                         <span>Mulai Pekerjaan</span>
                     </button>
+                @elseif ($help->service_stage === 'at_pickup')
+                    <button wire:click="advanceStage('going_to_destination')" wire:loading.attr="disabled"
+                        class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        <span>Barang / Penumpang Sudah Diambil (Mulai Pengantaran)</span>
+                    </button>
                 @else
                     <button wire:click="openCompletionModal"
                         class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
@@ -1197,13 +1240,21 @@
         @elseif ($help->status === 'in_progress')
             {{-- Action Controls saat In Progress --}}
             <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 space-y-2.5">
-                <button wire:click="openCompletionModal"
-                    class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    </svg>
-                    <span>Selesaikan & Upload Bukti Pekerjaan</span>
-                </button>
+                @if ($help->service_type === 'pickup_delivery' && $help->service_stage !== 'at_destination')
+                    <button wire:click="advanceStage('at_destination')" wire:loading.attr="disabled"
+                        class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span>Tiba di Lokasi Tujuan Customer</span>
+                    </button>
+                @else
+                    <button wire:click="openCompletionModal"
+                        class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        </svg>
+                        <span>{{ $help->service_type === 'pickup_delivery' ? 'Selesaikan & Unggah Bukti Serah Terima' : 'Selesaikan & Upload Bukti Pekerjaan' }}</span>
+                    </button>
+                @endif
 
                 <button type="button" wire:click="openPartnerCancelModal"
                     class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
