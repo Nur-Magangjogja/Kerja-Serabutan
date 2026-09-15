@@ -50,6 +50,7 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Nama</label>
                                     <input type="text" wire:model.defer="name"
+                                        oninput="this.value = this.value.replace(/[^a-zA-Z\s\.\'\-]/g, '')"
                                         class="mt-1 block w-full border rounded px-3 py-2" />
                                     @error('name') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                 </div>

@@ -7,7 +7,7 @@
                 <div id="help-modal-photo-wrap" class="w-16 h-16 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
                     <img id="help-modal-photo" src="" alt="Foto bantuan" class="w-full h-full object-cover hidden">
                     <div id="help-modal-initial"
-                        class="w-full h-full flex items-center justify-center text-white text-lg font-bold bg-gradient-to-br from-orange-300 to-orange-400">
+                        class="w-full h-full flex items-center justify-center text-white text-lg font-bold bg-orange-500">
                     </div>
                 </div>
 

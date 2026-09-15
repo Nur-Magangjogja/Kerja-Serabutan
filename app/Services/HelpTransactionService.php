@@ -87,6 +87,17 @@ class HelpTransactionService
             throw new \RuntimeException('Bantuan ini sudah diambil oleh Rekan Jasa lain atau tidak tersedia lagi.');
         }
 
+        // 5c. Validasi Expiry Bantuan
+        if ($help->isExpired()) {
+            app(HelpCancellationService::class)->autoCancelExpiredHelp($help, 'Batas waktu pencarian rekan jasa telah habis.');
+            throw new \RuntimeException('Batas waktu pencarian untuk bantuan ini telah habis.');
+        }
+
+        // 5d. Validasi Waktu Publikasi / Masuk Pool
+        if (!$help->isPublished()) {
+            throw new \RuntimeException('Bantuan ini belum dibuka untuk umum di pool.');
+        }
+
         // 6. Validasi Dispatch Mode (Harus Pool untuk pengambilan mandiri)
         if ($help->dispatch_mode && $help->dispatch_mode !== Help::DISPATCH_MODE_POOL) {
             throw new \RuntimeException('Pesanan ini sedang dalam penawaran sequential khusus dan belum dibuka untuk pool umum.');
@@ -149,6 +160,10 @@ class HelpTransactionService
 
             if (!$lockedHelp || $lockedHelp->mitra_id !== null || $lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA) {
                 throw new \RuntimeException('Bantuan ini sudah diambil oleh Rekan Jasa lain atau tidak tersedia lagi.');
+            }
+
+            if ($lockedHelp->isExpired()) {
+                throw new \RuntimeException('Batas waktu pencarian untuk bantuan ini telah habis.');
             }
 
             if ($lockedHelp->dispatch_mode && $lockedHelp->dispatch_mode !== Help::DISPATCH_MODE_POOL) {

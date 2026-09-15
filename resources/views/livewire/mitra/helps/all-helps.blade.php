@@ -58,14 +58,14 @@
 
     <div class="max-w-md mx-auto">
         <!-- Header Section -->
-        <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+        <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-[#0098e7] rounded-b-2xl shadow-sm text-white">
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
             
             <div class="relative z-10 space-y-3">
                 <div class="relative flex items-center justify-center min-h-[40px] text-white">
                     <div class="text-center w-full min-w-0 px-12">
                         <h1 class="text-base font-bold truncate">Semua Bantuan</h1>
-                        <p class="text-xs text-white/90 truncate mt-0.5">Cari bantuan yang tersedia</p>
+                        <p class="text-xs text-white font-medium truncate mt-0.5">Cari bantuan yang tersedia</p>
                     </div>
 
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
@@ -216,7 +216,7 @@
                                         @endif
                                     @else
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                            🛠️ Kerja di Lokasi
+                                            🛠️ Kerja Serabutan
                                         </span>
                                     @endif
 
@@ -547,7 +547,7 @@
                         Selesaikan Tugas Aktif
                     </a>
                 @else
-                    <button type="button" id="previewTakeBtn" onclick="takeHelpFromModal()" class="flex-[1.6] bg-gradient-to-r from-primary-600 to-blue-700 text-white py-3 rounded-xl font-bold text-xs hover:brightness-105 shadow-md transition active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5">
+                    <button type="button" id="previewTakeBtn" onclick="takeHelpFromModal()" class="flex-[1.6] bg-primary-600 hover:bg-primary-700 text-white py-3 rounded-xl font-bold text-xs shadow-md transition active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                         </svg>
@@ -667,7 +667,7 @@
                 }
             } else {
                 if (serviceTypeBadge) {
-                    serviceTypeBadge.textContent = '🛠️ Kerja di Lokasi';
+                    serviceTypeBadge.textContent = '🛠️ Kerja Serabutan';
                     serviceTypeBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800';
                     serviceTypeBadge.classList.remove('hidden');
                 }

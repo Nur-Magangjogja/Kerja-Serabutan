@@ -69,12 +69,15 @@ class Create extends Component
     public $req_regencies   = [];
     public $req_districts   = [];
 
-    // ─── Scheduling ──────────────────────────────────────────────────────────
-    public $scheduled_date = null;
-    public $scheduled_time = null;
+    // ─── Scheduling & Radar Pool Range ──────────────────────────────────────
+    public $scheduled_date          = null;
+    public $scheduled_time          = null;
+    public $publish_mode            = 'now'; // 'now', 'custom'
+    public $publish_date            = null;
+    public $publish_time            = null;
     public $early_departure_minutes = 60; // Jeda keberangkatan mitra: 30, 45, 60, 90, 120 menit
-    public $timezoneLabel  = 'WIB';
-    public $timezoneIana   = 'Asia/Jakarta';
+    public $timezoneLabel           = 'WIB';
+    public $timezoneIana            = 'Asia/Jakarta';
 
     // ─── Customer Saved Landmarks (Patokan Tempat dari Profil) ───────────────
     public array $savedLandmarks = [];
@@ -247,8 +250,12 @@ class Create extends Component
      */
     public function clearSchedule(): void
     {
-        $this->scheduled_date = null;
-        $this->scheduled_time = null;
+        $this->scheduled_date          = null;
+        $this->scheduled_time          = null;
+        $this->publish_mode            = 'now';
+        $this->publish_date            = null;
+        $this->publish_time            = null;
+        $this->early_departure_minutes = 60;
     }
 
     /**
@@ -268,6 +275,57 @@ class Create extends Component
             $t = now()->addDay()->setTime(13, 0);
             $this->scheduled_date = $t->format('Y-m-d');
             $this->scheduled_time = '13:00';
+        }
+        if ($this->publish_mode === 'custom') {
+            $this->publish_date = $this->scheduled_date;
+        }
+    }
+
+    /**
+     * Hook saat scheduled_date diupdate.
+     * Otomatis sinkronkan publish_date jika publish_mode custom.
+     */
+    public function updatedScheduledDate($value): void
+    {
+        if (!empty($value) && $this->publish_mode === 'custom') {
+            $this->publish_date = $value;
+        }
+    }
+
+    /**
+     * Hook saat scheduled_time diupdate.
+     * Otomatis set tanggal ke hari ini jika tanggal masih kosong.
+     */
+    public function updatedScheduledTime($value): void
+    {
+        if (!empty($value) && empty($this->scheduled_date)) {
+            $this->scheduled_date = now()->format('Y-m-d');
+        }
+    }
+
+    /**
+     * Hook saat publish_time diupdate.
+     * Otomatis set tanggal ke hari ini jika tanggal masih kosong dan switch mode ke custom.
+     */
+    public function updatedPublishTime($value): void
+    {
+        if (!empty($value) && empty($this->scheduled_date)) {
+            $this->scheduled_date = now()->format('Y-m-d');
+        }
+        if (!empty($value)) {
+            $this->publish_mode = 'custom';
+            $this->publish_date = $this->scheduled_date ?: now()->format('Y-m-d');
+        }
+    }
+
+    /**
+     * Hook saat custom_expiry_time diupdate.
+     * Otomatis set tanggal kadaluwarsa kustom ke hari ini jika masih kosong.
+     */
+    public function updatedCustomExpiryTime($value): void
+    {
+        if (!empty($value) && empty($this->custom_expiry_date)) {
+            $this->custom_expiry_date = now()->format('Y-m-d');
         }
     }
 
@@ -485,7 +543,7 @@ class Create extends Component
     }
 
     /**
-     * Sinkronisasi Tunggal Atomik untuk Kerja di Lokasi (On-Site).
+     * Sinkronisasi Tunggal Atomik untuk Kerja Serabutan (On-Site).
      * Mencegah multiple concurrent AJAX race conditions.
      */
     public function syncOnSiteLocation($lat, $lng, $fullAddress = null, $cityName = null, $districtName = null, $provinceName = null): void
@@ -708,10 +766,10 @@ class Create extends Component
         $this->expiry_option = $option;
         if ($option === 'custom') {
             if (!$this->custom_expiry_date) {
-                $this->custom_expiry_date = Carbon::now()->addDay()->format('Y-m-d');
+                $this->custom_expiry_date = $this->scheduled_date ?: Carbon::now()->format('Y-m-d');
             }
             if (!$this->custom_expiry_time) {
-                $this->custom_expiry_time = Carbon::now()->format('H:i');
+                $this->custom_expiry_time = $this->scheduled_time ?: Carbon::now()->format('H:i');
             }
         }
     }
@@ -736,17 +794,73 @@ class Create extends Component
         return $now;
     }
 
+    public function computePublishedAt(): Carbon
+    {
+        $now = Carbon::now();
+        if (!$this->scheduled_date) {
+            return $now;
+        }
+
+        $dateStr = trim($this->scheduled_date);
+        $timeStr = $this->scheduled_time ? trim($this->scheduled_time) : '08:00';
+        try {
+            $targetScheduledAt = Carbon::parse($dateStr . ' ' . $timeStr);
+        } catch (\Throwable $e) {
+            $targetScheduledAt = Carbon::parse($dateStr . ' 08:00');
+        }
+
+        $leadMinutes = isset($this->early_departure_minutes) && is_numeric($this->early_departure_minutes) ? (int) $this->early_departure_minutes : 60;
+        $departureAt = ($leadMinutes === 0) ? $targetScheduledAt->copy() : $targetScheduledAt->copy()->subMinutes($leadMinutes);
+        if ($departureAt->lt($now)) {
+            $departureAt = $now;
+        }
+
+        if ($this->publish_mode === 'custom' && !empty($this->publish_time)) {
+            $pubDateStr = $this->publish_date ?: $dateStr;
+            try {
+                $publishAt = Carbon::parse($pubDateStr . ' ' . trim($this->publish_time));
+            } catch (\Throwable $e) {
+                $publishAt = $now;
+            }
+        } elseif ($this->publish_mode === 'now') {
+            $publishAt = $now;
+        } else {
+            // Hitung published_at dinamis berdasarkan jarak waktu ke jadwal pelaksanaan
+            $deltaHours = $now->diffInHours($targetScheduledAt, false);
+            if ($deltaHours <= 2) {
+                $publishAt = $now;
+            } elseif ($deltaHours <= 24) {
+                $publishAt = $targetScheduledAt->copy()->subHours(2);
+            } else {
+                $publishAt = $targetScheduledAt->copy()->subHours(4);
+            }
+        }
+
+        if ($publishAt->lt($now)) {
+            $publishAt = $now;
+        }
+        if ($publishAt->gt($departureAt)) {
+            $publishAt = $departureAt;
+        }
+
+        return $publishAt;
+    }
+
     public function computeExpiresAt(): Carbon
     {
         $base = $this->computeBaseStartTime();
+        $publishedAt = $this->computePublishedAt();
 
         switch ($this->expiry_option) {
             case '1_hour':
-                return $base->copy()->addHour();
+                $dt = $base->copy()->addHour();
+                return $dt->lte($publishedAt) ? $publishedAt->copy()->addHour() : $dt;
             case '6_hours':
-                return $base->copy()->addHours(6);
+                $dt = $base->copy()->addHours(6);
+                return $dt->lte($publishedAt) ? $publishedAt->copy()->addHours(6) : $dt;
             case '24_hours':
-                return $base->copy()->addHours(24);
+                $dt = $base->copy()->addHours(24);
+                return $dt->lte($publishedAt) ? $publishedAt->copy()->addHours(24) : $dt;
             case 'custom':
                 if ($this->custom_expiry_date) {
                     $dateStr = trim($this->custom_expiry_date);
@@ -754,12 +868,12 @@ class Create extends Component
                     try {
                         return Carbon::parse($dateStr . ' ' . $timeStr);
                     } catch (\Throwable $e) {
-                        return $base->copy()->addHours(24);
+                        return $publishedAt->copy()->addHours(24);
                     }
                 }
-                return $base->copy()->addHours(24);
+                return $publishedAt->copy()->addHours(24);
             default:
-                return $base->copy()->addHours(24);
+                return $publishedAt->copy()->addHours(24);
         }
     }
 
@@ -774,6 +888,64 @@ class Create extends Component
         if (!$this->scheduled_date) return null;
         $base = $this->computeBaseStartTime();
         return $base->translatedFormat('d M Y, H:i') . ' ' . $this->timezoneLabel;
+    }
+
+    /**
+     * Dapatkan rincian alur jadwal & radar visibilitas 3-langkah (Timeline Array).
+     */
+    public function getScheduleTimelineProperty(): array
+    {
+        if (!$this->scheduled_date) {
+            return [
+                'has_schedule'    => false,
+                'publish_mode'    => $this->publish_mode,
+                'publish_label'   => 'Langsung Sekarang (Saat Dibuat)',
+                'departure_label' => 'Langsung Berangkat',
+                'target_label'    => 'Sekarang (Langsung Dikerjakan)',
+                'lead_minutes'    => 0,
+            ];
+        }
+
+        $dateStr = trim($this->scheduled_date);
+        $timeStr = $this->scheduled_time ? trim($this->scheduled_time) : '08:00';
+
+        try {
+            $targetDt = Carbon::parse($dateStr . ' ' . $timeStr);
+        } catch (\Throwable $e) {
+            $targetDt = Carbon::parse($dateStr . ' 08:00');
+        }
+
+        $leadMinutes = isset($this->early_departure_minutes) && is_numeric($this->early_departure_minutes) ? (int) $this->early_departure_minutes : 60;
+        $departureDt = ($leadMinutes === 0) ? $targetDt->copy() : $targetDt->copy()->subMinutes($leadMinutes);
+
+        // Publish time
+        if ($this->publish_mode === 'custom' && !empty($this->publish_time)) {
+            $pubDateStr = $this->publish_date ?: $dateStr;
+            try {
+                $publishDt = Carbon::parse($pubDateStr . ' ' . trim($this->publish_time));
+                $publishLabel = 'Pukul ' . $publishDt->format('H:i') . ' ' . $this->timezoneLabel . ($pubDateStr !== $dateStr ? ' (' . $publishDt->format('d M') . ')' : '');
+            } catch (\Throwable $e) {
+                $publishLabel = 'Pukul ' . $this->publish_time . ' ' . $this->timezoneLabel;
+            }
+        } else {
+            $publishLabel = 'Langsung Sekarang (Saat Dibuat)';
+        }
+
+        $departureLabel = ($leadMinutes === 0)
+            ? 'Pukul ' . $departureDt->format('H:i') . ' ' . $this->timezoneLabel . ' (Langsung / Sesuai Target)'
+            : 'Pukul ' . $departureDt->format('H:i') . ' ' . $this->timezoneLabel . ' (' . $leadMinutes . ' mnt sebelum)';
+
+        return [
+            'has_schedule'    => true,
+            'publish_mode'    => $this->publish_mode,
+            'publish_label'   => $publishLabel,
+            'departure_label' => $departureLabel,
+            'departure_time'  => $departureDt->format('H:i'),
+            'target_label'    => $targetDt->translatedFormat('d M Y, H:i') . ' ' . $this->timezoneLabel,
+            'target_time'     => $targetDt->format('H:i'),
+            'target_date'     => $targetDt->translatedFormat('d M Y'),
+            'lead_minutes'    => $leadMinutes,
+        ];
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -794,6 +966,9 @@ class Create extends Component
         'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         'scheduled_date'     => 'nullable|date',
         'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
+        'publish_time'       => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
+        'custom_expiry_date' => 'nullable|date',
+        'custom_expiry_time' => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
     ];
 
     protected $messages = [
@@ -818,6 +993,8 @@ class Create extends Component
         'delivery_longitude.required' => 'Titik 2 (Antar) pada peta wajib ditentukan.',
         'scheduled_date.date'  => 'Format tanggal tidak valid',
         'scheduled_time.regex' => 'Format waktu tidak valid. Gunakan format 24-jam HH:MM, contoh: 9:30 atau 09:30',
+        'publish_time.regex'   => 'Format jam mulai siar tidak valid. Gunakan format 24-jam HH:MM, contoh: 07:00',
+        'custom_expiry_time.regex' => 'Format jam batas waktu tidak valid. Gunakan format 24-jam HH:MM, contoh: 23:59',
         'photo.image'          => 'File harus berupa gambar (JPG, PNG, JPEG)',
         'photo.max'            => 'Ukuran foto maksimal 2MB',
     ];
@@ -1240,11 +1417,65 @@ class Create extends Component
                     : Carbon::parse($dateStr . ' 08:00');
             }
 
-            if ($scheduledAt->lt(Carbon::now()->subMinutes(5))) {
-                $this->addError('scheduled_date', 'Waktu jadwal tidak boleh berada di masa lalu');
+            $leadMinutes = isset($this->early_departure_minutes) && is_numeric($this->early_departure_minutes) ? (int) $this->early_departure_minutes : 60;
+            $minScheduledAt = Carbon::now()->addMinutes($leadMinutes);
+
+            if ($scheduledAt->lt($minScheduledAt->copy()->subMinutes(2))) {
+                if ($leadMinutes > 0) {
+                    $minTimeStr = $minScheduledAt->format('H:i');
+                    $this->addError('scheduled_time', "Waktu pelaksanaan tugas (Target Mulai) minimal Pukul {$minTimeStr} {$this->timezoneLabel} (Waktu saat ini + Jeda keberangkatan mitra {$leadMinutes} menit).");
+                } else {
+                    $this->addError('scheduled_time', 'Waktu pelaksanaan tugas (Target Mulai) tidak boleh berada di masa lalu.');
+                }
                 $this->dispatch('scroll-to-first-error');
                 return;
             }
+
+            $departureAt = ($leadMinutes === 0)
+                ? $scheduledAt->copy()
+                : $scheduledAt->copy()->subMinutes($leadMinutes);
+
+            if ($this->publish_mode === 'custom' && !empty($this->publish_time)) {
+                $pubDateStr = $this->publish_date ?: $dateStr;
+                try {
+                    $publishAt = Carbon::parse($pubDateStr . ' ' . trim($this->publish_time));
+                    if ($publishAt->gt($departureAt)) {
+                        $departureTimeStr = $departureAt->format('H:i');
+                        $this->addError('publish_time', "Jam mulai muncul di radar ({$this->publish_time}) tidak boleh melebihi waktu keberangkatan mitra (Pukul {$departureTimeStr} {$this->timezoneLabel}).");
+                        $this->dispatch('scroll-to-first-error');
+                        return;
+                    }
+                    if ($publishAt->lt(Carbon::now()->subMinutes(5))) {
+                        $this->addError('publish_time', "Jam mulai muncul di radar ({$this->publish_time}) sudah terlewat untuk tanggal yang dipilih. Silakan atur jam setelah waktu saat ini atau pilih 'Mulai Sekarang'.");
+                        $this->dispatch('scroll-to-first-error');
+                        return;
+                    }
+                } catch (\Throwable $e) {
+                    $this->addError('publish_time', 'Format waktu mulai siar tidak valid');
+                    $this->dispatch('scroll-to-first-error');
+                    return;
+                }
+            }
+        }
+
+        $publishedAt = $this->computePublishedAt();
+        $expiresAt   = $this->computeExpiresAt();
+
+        if ($expiresAt->lte($publishedAt)) {
+            $pubTimeStr = $publishedAt->translatedFormat('d M Y, H:i') . ' ' . $this->timezoneLabel;
+            if ($this->expiry_option === 'custom') {
+                $this->addError('custom_expiry_time', "Batas waktu pencarian rekan jasa ({$expiresAt->translatedFormat('d M Y, H:i')}) tidak boleh kurang dari atau sama dengan waktu kemunculan order ({$pubTimeStr}).");
+            } else {
+                $this->addError('expiry_option', "Batas waktu pencarian rekan jasa harus melebihi waktu kemunculan order ({$pubTimeStr}).");
+            }
+            $this->dispatch('scroll-to-first-error');
+            return;
+        }
+
+        if ($expiresAt->lt(Carbon::now()->subMinutes(5))) {
+            $this->addError('custom_expiry_time', 'Batas waktu pencarian rekan jasa tidak boleh berada di masa lalu.');
+            $this->dispatch('scroll-to-first-error');
+            return;
         }
 
         // Confirm modal data
@@ -1264,7 +1495,6 @@ class Create extends Component
             ? (date('d M Y', strtotime($this->scheduled_date)) . ($this->scheduled_time ? ' Pukul ' . $this->scheduled_time . ' ' . $this->timezoneLabel : ''))
             : null;
 
-        $expiresAt = $this->computeExpiresAt();
         $this->confirmExpiresAt = $expiresAt->translatedFormat('d M Y, H:i') . ' ' . $this->timezoneLabel;
 
         $this->showConfirmModal = true;
@@ -1397,6 +1627,9 @@ class Create extends Component
                 'delivery_longitude'            => $this->delivery_longitude,
                 'scheduled_date'                => $this->scheduled_date,
                 'scheduled_time'                => $this->scheduled_time,
+                'publish_mode'                  => $this->publish_mode,
+                'publish_date'                  => $this->publish_date,
+                'publish_time'                  => $this->publish_time,
                 'early_departure_minutes'       => $this->early_departure_minutes,
                 'expires_at'                    => $this->computeExpiresAt()->format('Y-m-d H:i:s'),
                 'photo_path'                    => $photoPath,
@@ -1405,7 +1638,7 @@ class Create extends Component
             $this->dispatch('draft-cleared');
             $this->dispatch('help:draft-cleared');
             session()->flash('message', 'Permintaan bantuan berhasil dibuat! Sistem sedang memproses untuk Anda.');
-            return redirect()->route('customer.helps.index');
+            return redirect()->route('customer.helps.detail', ['id' => $createdHelp->id]);
         } catch (\Throwable $e) {
             $this->addError('amount', $e->getMessage());
             return;
@@ -1496,6 +1729,15 @@ class Create extends Component
         if (isset($data['scheduled_time']) && is_string($data['scheduled_time'])) {
             $this->scheduled_time = $data['scheduled_time'];
         }
+        if (isset($data['publish_mode']) && in_array($data['publish_mode'], ['now', 'custom'])) {
+            $this->publish_mode = $data['publish_mode'];
+        }
+        if (isset($data['publish_date']) && is_string($data['publish_date'])) {
+            $this->publish_date = $data['publish_date'];
+        }
+        if (isset($data['publish_time']) && is_string($data['publish_time'])) {
+            $this->publish_time = $data['publish_time'];
+        }
         if (isset($data['early_departure_minutes']) && is_numeric($data['early_departure_minutes'])) {
             $this->early_departure_minutes = (int) $data['early_departure_minutes'];
         }
@@ -1543,6 +1785,10 @@ class Create extends Component
         $this->route_distance_km = 0.0;
         $this->scheduled_date = null;
         $this->scheduled_time = null;
+        $this->publish_mode = 'now';
+        $this->publish_date = null;
+        $this->publish_time = null;
+        $this->early_departure_minutes = 60;
         $this->order_mode = 'instant';
         $this->amount = $this->minHelpNominal;
         $this->dispatch('help:draft-cleared');

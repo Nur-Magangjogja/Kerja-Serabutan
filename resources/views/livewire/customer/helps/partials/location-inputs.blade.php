@@ -402,7 +402,7 @@
             </div>
         </div>
     @else
-        <!-- Mode Kerja di Lokasi (On-Site): 1 Alamat Tunggal -->
+        <!-- Mode Kerja Serabutan (On-Site): 1 Alamat Tunggal -->
         <div x-data="{
                  searchQuery: @entangle('location').live,
                  searchResults: [],

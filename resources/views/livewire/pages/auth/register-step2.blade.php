@@ -291,8 +291,8 @@ new #[Layout('layouts.guest')] class extends Component {
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                     </svg>
                     <div class="flex-1">
-                        <h4 class="text-xs sm:text-sm font-bold text-blue-900 dark:text-blue-200 mb-1.5">Tips Upload Foto KTP:</h4>
-                        <ul class="text-xs text-blue-800 dark:text-blue-300 space-y-1">
+                        <h4 class="text-xs sm:text-sm font-bold text-white-900 dark:text-white-200 mb-1.5">Tips Upload Foto KTP:</h4>
+                        <ul class="text-xs text-white-800 dark:text-white-300 space-y-1">
                             <li>• Pastikan foto KTP terlihat jelas, fokus, dan tidak buram.</li>
                             <li>• Semua teks & angka NIK di KTP harus terbaca dengan baik.</li>
                             <li>• Hindari pantulan kilau cahaya lampu atau bayangan gelap.</li>

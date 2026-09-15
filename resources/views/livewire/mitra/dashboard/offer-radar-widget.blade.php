@@ -403,7 +403,7 @@
                             @endif
                         @else
                             <span class="inline-flex items-center gap-1 text-[10px] uppercase font-extrabold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full">
-                                🛠️ Kerja di Lokasi
+                                🛠️ Kerja Serabutan
                             </span>
                         @endif
 

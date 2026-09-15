@@ -67,6 +67,11 @@ class Index extends Component
         $userBalance = UserBalance::where('user_id', $user->id)->first();
         $balance = $userBalance ? $userBalance->balance : 0;
 
+        // Auto-cancel bantuan milik user yang sudah kadaluwarsa
+        if ($user && $user->isCustomer()) {
+            app(\App\Services\HelpCancellationService::class)->sweepAndAutoCancelExpiredHelps($user->id);
+        }
+
         // Filter berdasarkan tab yang aktif
         if ($this->activeTab === 'latest') {
             // Ambil bantuan user sendiri (5 bantuan terakhir)

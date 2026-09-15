@@ -10,8 +10,8 @@
         <button type="button" wire:click="setServiceType('on_site_service')"
             class="p-3.5 rounded-xl border text-left transition-all cursor-pointer {{ $service_type === 'on_site_service' ? 'border-blue-500 bg-blue-50/80 dark:bg-blue-950/50 ring-2 ring-blue-500/20 shadow-sm' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300' }}">
             <div class="text-2xl mb-1.5">🛠️</div>
-            <div class="text-xs font-bold text-gray-900 dark:text-white">Kerja di Lokasi</div>
-            <div class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">On-Site bantuan serabutan di tempat</div>
+            <div class="text-xs font-bold text-gray-900 dark:text-white">Kerja Serabutan</div>
+            <div class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">Pekerjaan serabutan di lokasi</div>
         </button>
 
         <!-- Tab 2: Pickup / Antar-Jemput -->
@@ -19,7 +19,7 @@
             class="p-3.5 rounded-xl border text-left transition-all cursor-pointer {{ $service_type === 'pickup_delivery' ? 'border-blue-500 bg-blue-50/80 dark:bg-blue-950/50 ring-2 ring-blue-500/20 shadow-sm' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300' }}">
             <div class="text-2xl mb-1.5">🛵</div>
             <div class="text-xs font-bold text-gray-900 dark:text-white">Antar / Jemput</div>
-            <div class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">Antar penumpang / barang (Armada Motor &le; 40KM)</div>
+            <div class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5">Layanan antar/jemput</div>
         </button>
     </div>
 

@@ -41,14 +41,14 @@
 
     <div class="max-w-md mx-auto">
         <!-- Header Section -->
-        <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+        <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-[#0098e7] rounded-b-2xl shadow-sm text-white">
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
             
             <div class="relative z-10">
                 <div class="relative flex items-center justify-center min-h-[40px] text-white">
                     <div class="text-center w-full min-w-0 px-12">
                         <h1 class="text-base font-bold truncate">Bantuan Sedang Diproses</h1>
-                        <p class="text-xs text-white/90 truncate mt-0.5">Kelola pekerjaan yang sedang berjalan</p>
+                        <p class="text-xs text-white font-medium truncate mt-0.5">Kelola pekerjaan yang sedang berjalan</p>
                     </div>
 
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">

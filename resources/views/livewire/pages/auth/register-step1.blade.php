@@ -193,6 +193,15 @@ new #[Layout('layouts.guest')] class extends Component {
 
     public function updated($propertyName): void
     {
+        if ($propertyName === 'full_name') {
+            $this->full_name = trim($this->full_name);
+            if (!empty($this->full_name)) {
+                $this->validateOnly('full_name', [
+                    'full_name' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
+                ], $this->getValidationMessages());
+            }
+        }
+
         if ($propertyName === 'phone') {
             $this->phone = \App\Models\User::normalizePhone($this->phone) ?? '';
             if (!empty($this->phone)) {
@@ -294,6 +303,8 @@ new #[Layout('layouts.guest')] class extends Component {
             'nik.unique' => 'Nomor NIK ini sudah terdaftar di sistem. Setiap pengguna hanya dapat memiliki 1 akun.',
             'full_name.required' => 'Nama lengkap sesuai KTP wajib diisi.',
             'full_name.min' => 'Nama lengkap minimal 3 karakter.',
+            'full_name.max' => 'Nama lengkap maksimal 255 karakter.',
+            'full_name.regex' => 'Nama lengkap sesuai KTP hanya boleh berisi huruf alfabet, spasi, tanda hubung (-), titik (.), dan tanda petik (\'). Angka dan simbol khusus tidak diperbolehkan.',
             'phone.required' => 'Nomor HP / WhatsApp wajib diisi.',
             'phone.min' => 'Nomor HP minimal 9 digit.',
             'phone.max' => 'Nomor HP maksimal 18 karakter.',
@@ -336,7 +347,7 @@ new #[Layout('layouts.guest')] class extends Component {
             $hasCities = !empty($this->cities) && count($this->cities) > 0;
             $rules = [
                 'nik' => $this->getNikRules(),
-                'full_name' => ['required', 'string', 'min:3', 'max:255'],
+                'full_name' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
                 'phone' => ['required', 'string', 'min:9', 'max:18', 'regex:/^(0[1-9][0-9]{8,12}|\+[1-9][0-9]{6,14})$/'],
                 'gender' => ['required', 'in:Laki-laki,Perempuan'],
                 'province' => ['required', 'string', 'min:2', 'max:100'],
@@ -595,8 +606,10 @@ new #[Layout('layouts.guest')] class extends Component {
                 <!-- Nama Lengkap -->
                 <div>
                     <label for="full_name" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Nama Lengkap Sesuai KTP <span class="text-red-500">*</span></label>
-                    <input wire:model="full_name" id="full_name" type="text" placeholder="Nama Lengkap"
+                    <input wire:model.blur="full_name" id="full_name" type="text" placeholder="Nama Lengkap Sesuai KTP"
+                        oninput="this.value = this.value.replace(/[^a-zA-Z\s\.\'\-]/g, '')"
                         class="w-full px-4 py-3 rounded-xl border @error('full_name') border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30 dark:bg-rose-950/20 @else border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 @enderror text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs text-xs sm:text-sm">
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Hanya huruf alfabet, spasi, tanda hubung (-), titik (.), dan tanda petik ('). Tanpa angka atau simbol khusus.</p>
                     <x-input-error :messages="$errors->get('full_name')" />
                 </div>
 

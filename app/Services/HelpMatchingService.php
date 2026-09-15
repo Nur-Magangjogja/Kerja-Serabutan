@@ -646,9 +646,12 @@ class HelpMatchingService
 
                 $lockedHelp = Help::where('id', $dispatchPeek->help_id)->lockForUpdate()->firstOrFail();
 
-                if ($lockedHelp->mitra_id !== null || $lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA) {
+                if ($lockedHelp->mitra_id !== null || $lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA || $lockedHelp->isExpired()) {
+                    if ($lockedHelp->isExpired()) {
+                        app(\App\Services\HelpCancellationService::class)->autoCancelExpiredHelp($lockedHelp, 'Batas waktu pencarian rekan jasa telah habis.');
+                    }
                     $this->onlineService->releaseCancelledOffer($mitra->id, $dispatchPeek->help_id);
-                    throw new \RuntimeException('Bantuan ini sudah diambil, dibatalkan oleh pemesan, atau tidak lagi tersedia.');
+                    throw new \RuntimeException('Bantuan ini sudah diambil, dibatalkan oleh pemesan, atau batas waktu pencarian telah habis.');
                 }
 
                 // STEP 2 (Tier 2): Lock baris HelpDispatch

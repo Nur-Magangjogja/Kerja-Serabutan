@@ -7,6 +7,7 @@ use App\Models\Help;
 use App\Models\PartnerOnlineState;
 use App\Services\Dashboard\DashboardQueryService;
 use App\Services\DashboardStatsService;
+use App\Services\HelpCancellationService;
 use App\Services\HelpTransactionService;
 use App\Services\PartnerOnlineService;
 use Illuminate\Support\Facades\Log;
@@ -232,6 +233,9 @@ class Index extends Component
         if (!$user) {
             return view('livewire.mitra.dashboard.index');
         }
+
+        // Lazy sweep: Batalkan pesanan kedaluwarsa secara otomatis
+        app(HelpCancellationService::class)->sweepAndAutoCancelExpiredHelps();
 
         $queryService = app(DashboardQueryService::class);
         $statsService = app(DashboardStatsService::class);

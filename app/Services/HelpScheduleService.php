@@ -28,7 +28,8 @@ class HelpScheduleService
         float $travelDistanceKm = 0.0,
         string $serviceType = Help::SERVICE_TYPE_ON_SITE,
         float $serviceRouteDistanceKm = 0.0,
-        ?int $earlyDepartureMinutes = null
+        ?int $earlyDepartureMinutes = null,
+        ?Carbon $customPublishedAt = null
     ): array {
         $now = now();
         $travelMinutes = $this->geoService->getRouteDurationMinutes($travelDistanceKm, 25.0, 5);
@@ -60,26 +61,36 @@ class HelpScheduleService
         // Mode Scheduled: Waktu target ditentukan oleh Customer
         $serviceScheduledAt = $targetScheduledAt;
         
-        // Hitung published_at dinamis berdasarkan jarak waktu ke jadwal pelaksanaan
-        $deltaHours = $now->diffInHours($targetScheduledAt, false);
-        if ($deltaHours <= 2) {
-            $publishedAt = $now; // Jika kurang dari 2 jam, langsung publish
-        } elseif ($deltaHours <= 24) {
-            $publishedAt = $targetScheduledAt->copy()->subHours(2); // Jika 2 - 24 jam ke depan, muncul 2 jam sebelumnya
+        $leadMinutes = !is_null($earlyDepartureMinutes) ? (int) $earlyDepartureMinutes : (int) \App\Models\AppSetting::getScheduledEarlyDepartureWindowMinutes();
+        $departureAt = ($leadMinutes === 0)
+            ? $targetScheduledAt->copy()
+            : $targetScheduledAt->copy()->subMinutes(max($travelMinutes, $leadMinutes));
+
+        if ($departureAt->lt($now)) {
+            $departureAt = $now;
+        }
+
+        if ($customPublishedAt) {
+            $publishedAt = $customPublishedAt;
         } else {
-            $publishedAt = $targetScheduledAt->copy()->subHours(4); // Jika > 24 jam ke depan, muncul 4 jam sebelumnya
+            // Hitung published_at dinamis berdasarkan jarak waktu ke jadwal pelaksanaan
+            $deltaHours = $now->diffInHours($targetScheduledAt, false);
+            if ($deltaHours <= 2) {
+                $publishedAt = $now; // Jika kurang dari 2 jam, langsung publish
+            } elseif ($deltaHours <= 24) {
+                $publishedAt = $targetScheduledAt->copy()->subHours(2); // Jika 2 - 24 jam ke depan, muncul 2 jam sebelumnya
+            } else {
+                $publishedAt = $targetScheduledAt->copy()->subHours(4); // Jika > 24 jam ke depan, muncul 4 jam sebelumnya
+            }
         }
 
         // Pastikan published_at tidak melewati waktu sekarang jika sudah terlewat
         if ($publishedAt->lt($now)) {
             $publishedAt = $now;
         }
-
-        $leadMinutes = $earlyDepartureMinutes ?: \App\Models\AppSetting::getScheduledEarlyDepartureWindowMinutes();
-        $departureAt = $targetScheduledAt->copy()->subMinutes(max($travelMinutes, $leadMinutes));
-
-        if ($departureAt->lt($now)) {
-            $departureAt = $now;
+        // Batasi published_at agar tidak boleh melebihi waktu keberangkatan mitra (departure_at)
+        if ($publishedAt->gt($departureAt)) {
+            $publishedAt = $departureAt;
         }
 
         $pickupScheduledAt = null;

@@ -745,7 +745,7 @@ class Help extends Model
             }
             return 'Barang & Dokumen';
         }
-        return 'Kerja di Lokasi';
+        return 'Kerja Serabutan';
     }
 
     public function getServiceCategoryIconAttribute(): string
@@ -782,6 +782,23 @@ class Help extends Model
         return now()->gte($this->published_at);
     }
 
+    /**
+     * Cek apakah bantuan menunggu mitra ini sudah melewati batas waktu pencarian (expired).
+     */
+    public function isExpired(): bool
+    {
+        if ($this->status !== self::STATUS_MENUNGGU_MITRA || $this->mitra_id !== null) {
+            return false;
+        }
+
+        if ($this->expires_at) {
+            return now()->gte($this->expires_at);
+        }
+
+        $fallbackHours = \App\Models\AppSetting::getHelpAutoCancelHours();
+        return $this->created_at ? now()->gte($this->created_at->copy()->addHours($fallbackHours)) : false;
+    }
+
     public function isScheduled(): bool
     {
         return $this->order_mode === self::ORDER_MODE_SCHEDULED;
@@ -811,7 +828,7 @@ class Help extends Model
      */
     public function getDepartureLeadMinutesAttribute(): int
     {
-        return (int) ($this->early_departure_minutes ?: AppSetting::getScheduledEarlyDepartureWindowMinutes());
+        return !is_null($this->early_departure_minutes) ? (int) $this->early_departure_minutes : (int) AppSetting::getScheduledEarlyDepartureWindowMinutes();
     }
 
     /**

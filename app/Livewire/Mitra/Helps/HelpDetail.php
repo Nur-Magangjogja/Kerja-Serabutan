@@ -120,6 +120,36 @@ class HelpDetail extends Component
             $this->help->refresh();
         }
 
+        // Kirim notifikasi & trigger pengingat keberangkatan jika jeda waktu keberangkatan telah terbuka
+        if (
+            $this->help->status === Help::STATUS_TAKEN &&
+            $this->help->isScheduled() &&
+            $this->help->canPartnerStartDeparture() &&
+            !$this->help->departure_reminder_sent_at
+        ) {
+            $this->help->update(['departure_reminder_sent_at' => now()]);
+            $mitra = auth()->user();
+            if ($mitra && $mitra->id === $this->help->mitra_id) {
+                try {
+                    $mitra->notify(new \App\Notifications\HelpStatusNotification(
+                        $this->help,
+                        Help::STATUS_TAKEN,
+                        'scheduled_departure_due',
+                        $this->help->user
+                    ));
+                    app(\App\Services\HelpNotificationService::class)->logActivity(
+                        $mitra->id,
+                        $this->help->id,
+                        'scheduled_departure_reminder',
+                        "Pengingat keberangkatan tugas terjadwal #{$this->help->id} terkirim ke Mitra {$mitra->name}"
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning("[HelpDetail] Gagal kirim departure reminder: " . $e->getMessage());
+                }
+            }
+            $this->dispatch('show-status-notification', message: '⏰ Waktunya berangkat! Jendela keberangkatan untuk tugas terjadwal ini telah dibuka.');
+        }
+
         $newStatus = $this->help->status;
         $newFlag   = $this->help->partner_cancel_prev_status;
 

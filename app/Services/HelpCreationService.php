@@ -76,6 +76,15 @@ class HelpCreationService
             $targetScheduledAt = Carbon::parse($data['scheduled_date'] . ' ' . $time);
         }
 
+        $customPublishedAt = null;
+        $publishMode = $data['publish_mode'] ?? 'now';
+        if ($publishMode === 'custom' && !empty($data['publish_time'])) {
+            $publishDate = !empty($data['publish_date']) ? $data['publish_date'] : ($data['scheduled_date'] ?? now()->format('Y-m-d'));
+            $customPublishedAt = Carbon::parse($publishDate . ' ' . trim($data['publish_time']));
+        } elseif ($publishMode === 'now' && $targetScheduledAt) {
+            $customPublishedAt = now();
+        }
+
         $orderMode = $targetScheduledAt ? Help::ORDER_MODE_SCHEDULED : Help::ORDER_MODE_INSTANT;
         $scheduleData = $this->scheduleService->computeScheduleTimestamps(
             $orderMode,
@@ -83,12 +92,18 @@ class HelpCreationService
             0.0,
             $serviceType,
             $routeDistanceKm,
-            !empty($data['early_departure_minutes']) ? (int) $data['early_departure_minutes'] : null
+            isset($data['early_departure_minutes']) && is_numeric($data['early_departure_minutes']) ? (int) $data['early_departure_minutes'] : null,
+            $customPublishedAt
         );
 
         $expiresAt = !empty($data['expires_at'])
             ? Carbon::parse($data['expires_at'])
             : Carbon::now()->addHours(24);
+
+        $publishedAt = $scheduleData['published_at'];
+        if ($expiresAt->lte($publishedAt)) {
+            $expiresAt = $publishedAt->copy()->addHours(2);
+        }
 
         if ($targetScheduledAt && $expiresAt->lte($targetScheduledAt)) {
             $expiresAt = $targetScheduledAt->copy()->addHours(2);

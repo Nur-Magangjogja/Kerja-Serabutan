@@ -60,6 +60,12 @@ class Detail extends Component
             abort(403, 'Unauthorized access');
         }
 
+        // Auto-cancel jika batas waktu pencarian rekan jasa (expires_at) telah berakhir
+        if ($this->help->status === Help::STATUS_MENUNGGU_MITRA && $this->help->isExpired()) {
+            app(HelpCancellationService::class)->autoCancelExpiredHelp($this->help, 'Batas waktu pencarian Rekan Jasa telah berakhir');
+            $this->help->refresh();
+        }
+
         // Auto-confirm jika batas waktu 24 jam telah terlewati tanpa komplain/sengketa
         if (
             $this->help->status === Help::STATUS_WAITING_CONFIRMATION &&

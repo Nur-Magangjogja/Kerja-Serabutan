@@ -57,7 +57,7 @@
 
     {{-- Header Section (Dynamic Theme per Status) --}}
     <div class="px-5 pt-4 pb-5 relative overflow-hidden shadow-sm text-white rounded-b-2xl transition-colors duration-300
-        {{ $isCompleted ? 'bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700' : (($isCancelled || $isCancelRequested) ? 'bg-gradient-to-br from-rose-600 via-red-600 to-rose-700' : 'bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0]') }}">
+        {{ $isCompleted ? 'bg-emerald-600' : (($isCancelled || $isCancelRequested) ? 'bg-rose-600' : 'bg-[#0098e7]') }}">
         <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
         <div class="relative z-10 max-w-md mx-auto">
@@ -77,16 +77,16 @@
                 <div class="text-center flex-1 min-w-0 px-2">
                     @if($isCompleted)
                         <h1 class="text-base font-bold truncate">Detail Riwayat Selesai</h1>
-                        <p class="text-xs text-emerald-100 truncate mt-0.5">Tugas tuntas & pembayaran berhasil</p>
+                        <p class="text-xs text-white font-medium truncate mt-0.5">Tugas tuntas & pembayaran berhasil</p>
                     @elseif($isCancelled)
                         <h1 class="text-base font-bold truncate">Detail Riwayat Pembatalan</h1>
-                        <p class="text-xs text-rose-100 truncate mt-0.5">Catatan & keputusan pembatalan</p>
+                        <p class="text-xs text-white font-medium truncate mt-0.5">Catatan & keputusan pembatalan</p>
                     @elseif($isCancelRequested)
                         <h1 class="text-base font-bold truncate">Permintaan Penarikan</h1>
-                        <p class="text-xs text-amber-100 truncate mt-0.5">Customer mengajukan pembatalan</p>
+                        <p class="text-xs text-white font-medium truncate mt-0.5">Customer mengajukan pembatalan</p>
                     @else
                         <h1 class="text-base font-bold truncate">Detail Pesanan</h1>
-                        <p class="text-xs text-white/90 truncate mt-0.5">Informasi lengkap pesanan aktif</p>
+                        <p class="text-xs text-white font-medium truncate mt-0.5">Informasi lengkap pesanan aktif</p>
                     @endif
                 </div>
 
@@ -130,7 +130,7 @@
         {{-- CASE 1: BANTUAN SELESAI (COMPLETED) STATUS CARD                   --}}
         {{-- ───────────────────────────────────────────────────────────────── --}}
         @if ($isCompleted)
-            <div class="bg-gradient-to-br from-emerald-50 via-teal-50/60 to-emerald-100/50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-emerald-900/40 border border-emerald-200 dark:border-emerald-800/70 rounded-2xl p-4 mb-3 shadow-xs space-y-3">
+            <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/70 rounded-2xl p-4 mb-3 shadow-xs space-y-3">
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-2.5">
                         <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-lg shadow-sm shadow-emerald-500/30">
@@ -140,12 +140,12 @@
                             <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700">
                                 Selesai
                             </span>
-                            <h3 class="font-bold text-sm text-emerald-950 dark:text-emerald-100 mt-0.5">Tugas Berhasil Diselesaikan</h3>
+                            <h3 class="font-bold text-sm text-white-950 dark:text-white-100 mt-0.5">Tugas Berhasil Diselesaikan</h3>
                         </div>
                     </div>
                     <div class="text-right">
-                        <span class="text-[10px] text-emerald-700/80 dark:text-emerald-300/80 block font-medium">Upah Bersih Diterima:</span>
-                        <span class="text-lg sm:text-xl font-black text-emerald-700 dark:text-emerald-300">
+                        <span class="text-[10px] text-white-700/80 dark:text-white-300/80 block font-medium">Upah Bersih Diterima:</span>
+                        <span class="text-lg sm:text-xl font-black text-white-700 dark:text-white-300">
                             Rp {{ number_format($help->getNetEarning(), 0, ',', '.') }}
                         </span>
                     </div>
@@ -163,7 +163,7 @@
         {{-- CASE: CUSTOMER MEMINTA PENARIKAN PEKERJAAN (WITHDRAWAL REQUEST)   --}}
         {{-- ───────────────────────────────────────────────────────────────── --}}
         @if ($isCancelRequested)
-            <div class="bg-gradient-to-br from-rose-50 via-amber-50/60 to-rose-100/50 dark:from-rose-950/40 dark:via-amber-950/30 dark:to-rose-900/40 border border-rose-200 dark:border-rose-800/70 rounded-2xl p-4 mb-3 shadow-xs space-y-3">
+            <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70 rounded-2xl p-4 mb-3 shadow-xs space-y-3">
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-2.5">
                         <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
@@ -240,7 +240,7 @@
                     default     => ['class' => 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300', 'label' => 'Dibatalkan']
                 };
             @endphp
-            <div class="bg-gradient-to-br from-rose-50 via-red-50/60 to-amber-50/50 dark:from-rose-950/40 dark:via-red-950/30 dark:to-amber-950/30 border border-rose-200 dark:border-rose-800/70 rounded-2xl p-4 mb-3 shadow-xs space-y-3">
+            <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 rounded-2xl p-4 mb-3 shadow-xs space-y-3">
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-2.5">
                         <div class="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center font-bold text-lg shadow-sm shadow-rose-500/30">
@@ -415,7 +415,7 @@
                         @endif
                     @else
                         <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
-                            🛠️ Kerja di Lokasi
+                            🛠️ Kerja Serabutan
                         </span>
                     @endif
 
@@ -439,7 +439,7 @@
             </div>
 
             {{-- Earnings Display --}}
-            <div class="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded-2xl p-4 mb-3 shadow-2xs space-y-2.5">
+            <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded-2xl p-4 shadow-2xs space-y-2.5">
                 <div class="flex items-center justify-between">
                     <div>
                         <span class="text-xs font-bold text-emerald-900 dark:text-emerald-200 block">Upah Bersih Mitra:</span>
@@ -449,20 +449,6 @@
                         Rp {{ number_format($help->getNetEarning(), 0, ',', '.') }}
                     </div>
                 </div>
-            </div>
-
-            {{-- Order ID Row --}}
-            <div class="pt-2.5 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between gap-2">
-                <div class="flex items-center gap-1.5 min-w-0 flex-1">
-                    <span class="text-xs text-gray-400 dark:text-gray-400 font-semibold shrink-0">ID Pesanan:</span>
-                    <span class="font-mono font-bold text-xs sm:text-sm text-gray-800 dark:text-gray-200 truncate" title="{{ $help->order_id }}">{{ $help->order_id }}</span>
-                </div>
-                <button wire:click="copyOrderId" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 text-xs font-bold flex items-center gap-1 shrink-0 px-2.5 py-1 bg-primary-50 dark:bg-primary-950/60 hover:bg-primary-100 dark:hover:bg-primary-900/50 rounded-lg transition cursor-pointer border border-primary-100/80 dark:border-primary-900/40">
-                    <span>Salin</span>
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                    </svg>
-                </button>
             </div>
         </div>
 
@@ -539,7 +525,7 @@
             @php
                 $travelProgress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($help);
             @endphp
-            <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 text-white p-4 rounded-2xl shadow-md border border-indigo-800/60 mb-3 space-y-3">
+            <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800 mb-3 space-y-3">
                 <div class="flex items-center justify-between border-b border-indigo-800/60 pb-2.5">
                     <div class="flex items-center gap-2">
                         <span class="text-base">{{ $help->isPickup() ? '📦' : '🛵' }}</span>
@@ -639,7 +625,7 @@
                 <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-amber-200/80 dark:border-amber-800/60 shadow-xs mb-3">
                     <div class="flex items-center justify-between mb-3 pb-2.5 border-b border-gray-100 dark:border-gray-700/60">
                         <div class="flex items-center gap-2.5">
-                            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+                            <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
                                 ⭐
                             </div>
                             <div>
@@ -704,10 +690,10 @@
                 </div>
             @else
                 <div class="p-3 bg-emerald-50/70 dark:bg-emerald-950/40 rounded-xl border border-emerald-100 dark:border-emerald-900/50 space-y-1">
-                    <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                    <div class="flex items-center gap-1.5 text-xs font-bold text-white-900 dark:text-white-200">
                         <span>⚡ Segera (Langsung):</span>
                     </div>
-                    <p class="text-xs text-emerald-800 dark:text-emerald-300 leading-relaxed">
+                    <p class="text-xs text-white-800 dark:text-white-300 leading-relaxed">
                         Tugas ini tidak dijadwalkan secara khusus dan dilaksanakan langsung saat penugasan diterima.
                     </p>
                 </div>
@@ -1069,11 +1055,6 @@
                     </svg>
                     <span>Kembali ke Riwayat Bantuan</span>
                 </a>
-                
-                <a href="{{ $isCancelled ? route('mitra.helps.all') : route('mitra.dashboard') }}"
-                   class="w-full py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700/60 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-xl font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
-                    <span>{{ $isCancelled ? 'Cari Bantuan Lain di Pool ↗' : 'Kembali ke Dashboard Utama' }}</span>
-                </a>
             </div>
         @elseif ($help->status === 'taken' && $help->mitra_id === auth()->id())
             {{-- Action Controls saat status TAKEN --}}
@@ -1084,7 +1065,7 @@
             @endphp
 
             @if ($isScheduledLocked)
-                <div class="bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800/80 rounded-2xl p-4 mb-3 space-y-3 shadow-xs">
+                <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-2xl p-4 mb-3 space-y-3 shadow-xs">
                     <div class="flex items-start gap-3">
                         <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-amber-500/30 shadow-2xs">
                             <span class="text-lg">🔒</span>
@@ -1116,6 +1097,18 @@
                     </button>
                 </div>
             @else
+                @if ($help->isScheduled())
+                    <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/80 rounded-2xl p-4 mb-3 space-y-2 shadow-xs">
+                        <div class="flex items-center gap-2 text-blue-950 dark:text-blue-100 font-bold text-xs">
+                            <span class="text-base">⏰</span>
+                            <span>Waktunya Berangkat (Tugas Terjadwal)</span>
+                        </div>
+                        <p class="text-xs text-blue-900/85 dark:text-blue-200/90 leading-relaxed">
+                            Jadwal pelaksanaan tugas: <strong>Pukul {{ $targetTimeStr }}</strong>. Jendela keberangkatan telah dibuka, silakan segera mulai perjalanan menuju lokasi customer.
+                        </p>
+                    </div>
+                @endif
+
                 <div class="bg-white dark:bg-gray-800 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 space-y-3">
                     @if ($help->service_type === 'pickup_delivery')
                         <button wire:click="advanceStage('going_to_pickup')" wire:loading.attr="disabled"
@@ -1220,7 +1213,7 @@
             </div>
         @elseif ($help->status === 'waiting_customer_confirmation')
             {{-- Status Menunggu Konfirmasi Customer --}}
-            <div class="bg-gradient-to-br from-sky-50/90 via-blue-50/50 to-indigo-50/40 dark:from-sky-950/40 dark:via-blue-950/30 dark:to-gray-800/60 p-4 rounded-2xl border border-sky-200/80 dark:border-sky-800/60 shadow-xs mb-3 space-y-3">
+            <div class="bg-sky-50 dark:bg-sky-950/40 p-4 rounded-2xl border border-sky-200 dark:border-sky-800/60 shadow-xs mb-3 space-y-3">
                 <div class="flex items-center justify-between gap-4 flex-wrap mb-1">
                     <h4 class="font-bold text-sm text-sky-950 dark:text-sky-100">Menunggu Konfirmasi Customer</h4>
                     <span class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 shadow-2xs">

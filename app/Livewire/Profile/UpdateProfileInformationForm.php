@@ -28,7 +28,7 @@ class UpdateProfileInformationForm extends Component
     public bool $showLandmarkForm = false;
 
     protected $rules = [
-        'name' => ['required', 'string', 'max:255'],
+        'name' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
         'email' => ['required', 'email', 'max:255'],
         'phone' => ['required', 'string', 'min:9', 'max:18', 'regex:/^(0[1-9][0-9]{8,12}|\+[1-9][0-9]{6,14})$/'],
         'city_id' => ['nullable', 'exists:cities,id'],
@@ -40,6 +40,9 @@ class UpdateProfileInformationForm extends Component
 
     protected $messages = [
         'name.required' => 'Nama lengkap wajib diisi.',
+        'name.min' => 'Nama lengkap minimal 3 karakter.',
+        'name.max' => 'Nama lengkap maksimal 255 karakter.',
+        'name.regex' => 'Nama lengkap hanya boleh berisi huruf alfabet, spasi, tanda hubung (-), titik (.), dan tanda petik (\'). Angka dan simbol khusus tidak diperbolehkan.',
         'email.required' => 'Alamat email wajib diisi.',
         'email.email' => 'Format email tidak valid.',
         'phone.required' => 'Nomor HP/WhatsApp wajib diisi.',

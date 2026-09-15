@@ -402,36 +402,7 @@ class Index extends Component
 
         // Auto-cancel bantuan yang kadaluwarsa secara on-the-fly jika batas waktu terlewati
         if ($user) {
-            $now = \Carbon\Carbon::now();
-            $hours = \App\Models\AppSetting::getHelpAutoCancelHours();
-            $cutoff = $now->copy()->subHours($hours);
-            $expiredWaiting = Help::where('user_id', $user->id)
-                ->whereNull('mitra_id')
-                ->where('status', Help::STATUS_MENUNGGU_MITRA)
-                ->where(function ($q) use ($now, $cutoff) {
-                    $q->where(function ($sub) use ($now) {
-                        $sub->whereNotNull('expires_at')
-                            ->where('expires_at', '<=', $now);
-                    })
-                    ->orWhere(function ($sub) use ($cutoff) {
-                        $sub->whereNull('expires_at')
-                            ->where('created_at', '<=', $cutoff);
-                    });
-                })
-                ->get();
-
-            foreach ($expiredWaiting as $expHelp) {
-                if ($expHelp->expires_at && \Carbon\Carbon::parse($expHelp->expires_at)->isPast()) {
-                    $reason = 'Batas waktu pencarian Rekan Jasa yang ditentukan telah berakhir';
-                } else {
-                    $reason = "Tidak ada Rekan Jasa yang mengambil bantuan dalam batas waktu {$hours} jam";
-                }
-                try {
-                    app(\App\Services\HelpCancellationService::class)->cancelOrderBeforePartnerTaken($expHelp, $user, $reason);
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning("[CustomerHelpsIndex] Auto-cancel failed for #{$expHelp->id}: " . $e->getMessage());
-                }
-            }
+            app(\App\Services\HelpCancellationService::class)->sweepAndAutoCancelExpiredHelps($user->id);
         }
 
         $diprosesList = $this->getDiprosesStatuses();

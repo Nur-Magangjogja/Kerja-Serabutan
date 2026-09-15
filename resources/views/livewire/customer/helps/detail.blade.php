@@ -88,14 +88,14 @@
     </div>
 
     {{-- Header Section --}}
-    <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+    <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-[#0098e7] rounded-b-2xl shadow-sm text-white">
         <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
         <div class="relative z-10 max-w-md mx-auto">
             <div class="relative flex items-center justify-center min-h-[40px] text-white">
                 <div class="text-center w-full min-w-0 px-12">
                     <h1 class="text-base font-bold truncate">Detail Pesanan</h1>
-                    <p class="text-xs text-white/90 truncate mt-0.5">Detail permintaan bantuan Anda</p>
+                    <p class="text-xs text-white font-medium truncate mt-0.5">Detail permintaan bantuan Anda</p>
                 </div>
 
                 <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center justify-end">
@@ -115,22 +115,8 @@
 
     <!-- Content -->
     <div class="px-5 pt-5 pb-8 max-w-md mx-auto">
-        {{-- Order ID --}}
-        <div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700/70">
-            <span class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                <svg class="w-4 h-4 text-sky-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                ID Pesanan: <span class="font-bold text-gray-900 dark:text-white font-mono ml-0.5">{{ $help->order_id }}</span>
-            </span>
-            <button wire:click="copyOrderId" class="text-sky-600 hover:text-sky-700 dark:text-sky-400 text-xs sm:text-sm font-bold flex items-center gap-1 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 px-2.5 py-1 rounded-xl transition cursor-pointer">
-                <span>Salin</span>
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                </svg>
-            </button>
-        </div>
-
         {{-- Service Info --}}
-        <div class="bg-white dark:bg-gray-800 mt-2.5 p-4 sm:p-5 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700/70 space-y-4">
+        <div class="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700/70 space-y-4">
             <div class="flex items-start gap-3.5">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
@@ -147,7 +133,7 @@
                                 @endif
                             @else
                                 <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
-                                    🛠️ Kerja di Lokasi
+                                    🛠️ Kerja Serabutan
                                 </span>
                             @endif
 
@@ -188,7 +174,7 @@
                         @if($help->mitra->profile_photo ?? $help->mitra->photo)
                             <img src="{{ asset('storage/' . ($help->mitra->profile_photo ?? $help->mitra->photo)) }}" alt="{{ $help->mitra->name }}" class="w-11 h-11 rounded-full object-cover border-2 border-sky-200 dark:border-sky-800 shrink-0">
                         @else
-                            <div class="w-11 h-11 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold shrink-0 shadow-2xs">
+                            <div class="w-11 h-11 rounded-full bg-sky-600 flex items-center justify-center text-white font-bold shrink-0 shadow-2xs">
                                 {{ strtoupper(substr($help->mitra->name ?? 'M', 0, 1)) }}
                             </div>
                         @endif
@@ -336,7 +322,7 @@
             <div class="relative pt-2 pb-1">
                 <!-- Connecting Line -->
                 <div class="absolute top-6 left-6 right-6 h-1 bg-gray-100 dark:bg-gray-700 -z-0">
-                    <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-700 rounded-full"
+                    <div class="h-full bg-blue-600 transition-all duration-700 rounded-full"
                          style="width: {{ $stepCount > 1 ? max(0, min(100, ($activeIndex / ($stepCount - 1)) * 100)) : 0 }}%;"></div>
                 </div>
 
@@ -382,7 +368,7 @@
             @php
                 $travelProgress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($help);
             @endphp
-            <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 text-white p-4 rounded-2xl shadow-md border border-indigo-800/60 mt-2 space-y-3">
+            <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800 mt-2 space-y-3">
                 <div class="flex items-center justify-between border-b border-indigo-800/60 pb-2.5">
                     <div class="flex items-center gap-2">
                         <span class="text-base">{{ $help->isPickup() ? '📦' : '🛵' }}</span>
@@ -573,7 +559,7 @@
 
         {{-- Card Penjelasan Selesai Otomatis saat Sedang Berjalan --}}
         @if(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress']))
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 mt-2 px-4 py-3.5 rounded-xl border border-blue-200/80 dark:border-blue-800/60 flex items-start gap-3 shadow-xs">
+            <div class="bg-blue-50 dark:bg-blue-950/40 mt-2 px-4 py-3.5 rounded-xl border border-blue-200 dark:border-blue-800/60 flex items-start gap-3 shadow-xs">
                 <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -709,7 +695,7 @@
             @endphp
 
             @if($existingReport)
-                <div class="bg-gradient-to-br from-purple-50 to-indigo-50/50 dark:from-purple-950/50 dark:to-indigo-950/30 mt-2.5 p-4 rounded-2xl border border-purple-200 dark:border-purple-800/70 shadow-xs space-y-3">
+                <div class="bg-purple-50 dark:bg-purple-950/40 mt-2.5 p-4 rounded-2xl border border-purple-200 dark:border-purple-800/70 shadow-xs space-y-3">
                     <div class="flex items-start gap-3">
                         <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-purple-500/20">
                             <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -734,14 +720,14 @@
                             <span>{{ $msgCount > 0 ? $msgCount . ' pesan klarifikasi tersedia' : 'Ruang obrolan dengan tim Admin aktif' }}</span>
                         </div>
                         <a href="{{ route('customer.chat', ['admin' => 1, 'report' => $existingReport->id]) }}"
-                            class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                            class="w-full sm:w-auto px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                             <span>Buka Ruang Chat Admin</span>
                         </a>
                     </div>
                 </div>
             @elseif($isWithin24H)
-                <div class="bg-gradient-to-br from-sky-50/90 via-blue-50/50 to-indigo-50/40 dark:from-sky-950/40 dark:via-blue-950/30 dark:to-gray-800/60 mt-2.5 p-4 sm:p-5 rounded-2xl border border-sky-200/80 dark:border-sky-800/60 shadow-xs space-y-3.5">
+                <div class="bg-sky-50 dark:bg-sky-950/40 mt-2.5 p-4 sm:p-5 rounded-2xl border border-sky-200 dark:border-sky-800/60 shadow-xs space-y-3.5">
                     <div class="flex items-start gap-3">
                         <div class="w-9 h-9 rounded-xl bg-sky-500/15 dark:bg-sky-500/25 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-sky-500/20 shadow-2xs">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -764,7 +750,7 @@
                     </div>
 
                     <a href="{{ route('customer.reports.create', ['help_id' => $help->id, 'user_id' => $help->mitra_id, 'type' => 'klaim_refund_pekerjaan_fiktif']) }}" 
-                       class="w-full py-2.5 px-4 bg-gradient-to-r from-sky-600 to-[#0077cc] hover:from-sky-700 hover:to-[#0060b0] text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
+                       class="w-full py-2.5 px-4 bg-[#0098e7] hover:bg-[#0086cc] text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                         </svg>
@@ -776,7 +762,7 @@
 
         {{-- Status Pembekuan Sengketa (Disputed Freeze) --}}
         @if($help->isDisputed())
-            <div class="bg-gradient-to-br from-rose-50 to-red-100/60 dark:from-rose-950/60 dark:to-red-950/40 mt-2 px-5 py-5 border border-rose-300 dark:border-rose-800 rounded-2xl shadow-xs space-y-3">
+            <div class="bg-rose-50 dark:bg-rose-950/40 mt-2 px-5 py-5 border border-rose-200 dark:border-rose-800 rounded-2xl shadow-xs space-y-3">
                 <div class="flex items-start gap-3">
                     <div class="w-11 h-11 rounded-xl bg-rose-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -810,7 +796,7 @@
             @endphp
             <div class="bg-white dark:bg-gray-800 mt-2.5 p-5 border border-sky-200/80 dark:border-sky-500/30 rounded-2xl shadow-xs">
                 <div class="flex items-start gap-3 mb-3">
-                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center flex-shrink-0 text-white shadow-2xs">
+                    <div class="w-11 h-11 rounded-2xl bg-sky-600 flex items-center justify-center flex-shrink-0 text-white shadow-2xs">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
@@ -909,7 +895,7 @@
                 {{-- Rating Form --}}
                 <div class="bg-white dark:bg-gray-800 mt-2.5 px-5 py-5 border border-gray-100 dark:border-gray-700/80 rounded-2xl shadow-xs">
                     <div class="flex items-start gap-3.5 mb-4">
-                        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        <div class="w-11 h-11 rounded-2xl bg-sky-600 text-white flex items-center justify-center flex-shrink-0 shadow-2xs">
                             <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                             </svg>
@@ -966,7 +952,7 @@
                     <button 
                         wire:click="submitRating"
                         wire:loading.attr="disabled"
-                        class="w-full bg-gradient-to-r from-[#0098e7] to-[#0077cc] hover:from-sky-600 hover:to-blue-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="w-full bg-[#0098e7] hover:bg-[#0086cc] text-white font-bold py-3 px-4 rounded-xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                         <span wire:loading.remove wire:target="submitRating">Kirim Rating</span>
                         <span wire:loading wire:target="submitRating" class="inline-flex items-center gap-1.5">
                             <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -1110,7 +1096,7 @@
         <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" wire:click.self="closeMapModal" data-tracking-modal>
             <div class="bg-white rounded-2xl w-full max-w-md mx-auto flex flex-col shadow-2xl" style="max-height: 85vh;">
                 {{-- Header --}}
-                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl shrink-0">
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-[#0098e7] rounded-t-2xl shrink-0">
                     <div class="flex items-center gap-2.5">
                         <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
                             <svg class="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

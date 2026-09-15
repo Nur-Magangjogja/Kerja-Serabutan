@@ -60,6 +60,79 @@ class HelpCancellationService
         $this->settlementService->processFullRefund($help, $reason);
     }
 
+    /**
+     * Membatalkan pesanan yang kadaluwarsa (expired) secara otomatis.
+     * Mengembalikan 100% dana escrow ke customer dan menutup status pesanan.
+     */
+    public function autoCancelExpiredHelp(Help $help, string $reason = 'Batas waktu pencarian Rekan Jasa telah berakhir'): void
+    {
+        DB::transaction(function () use ($help, $reason) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
+
+            if (!$lockedHelp || $lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA || $lockedHelp->mitra_id !== null) {
+                return;
+            }
+
+            if ($lockedHelp->isPickup()) {
+                if ($lockedHelp->user) {
+                    $this->pickupCancellation->executeCancellation($lockedHelp, $lockedHelp->user, $reason);
+                } else {
+                    $this->settlementService->processFullRefund($lockedHelp, $reason);
+                }
+            } else {
+                $this->settlementService->processFullRefund($lockedHelp, $reason);
+            }
+
+            $lockedHelp->update([
+                'admin_notes' => "Dibatalkan otomatis oleh sistem. Alasan: {$reason}",
+            ]);
+        });
+    }
+
+    /**
+     * Menyapu dan membatalkan seluruh pesanan menunggu mitra yang sudah melewati batas waktu kadaluwarsa.
+     */
+    public function sweepAndAutoCancelExpiredHelps(?int $userId = null): int
+    {
+        $now = now();
+        $fallbackHours = AppSetting::getHelpAutoCancelHours();
+        $fallbackCutoff = $now->copy()->subHours($fallbackHours);
+
+        $query = Help::where('status', Help::STATUS_MENUNGGU_MITRA)
+            ->whereNull('mitra_id')
+            ->where(function ($q) use ($now, $fallbackCutoff) {
+                $q->where(function ($sub) use ($now) {
+                    $sub->whereNotNull('expires_at')
+                        ->where('expires_at', '<=', $now);
+                })->orWhere(function ($sub) use ($fallbackCutoff) {
+                    $sub->whereNull('expires_at')
+                        ->where('created_at', '<=', $fallbackCutoff);
+                });
+            });
+
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+
+        $expiredHelps = $query->take(20)->get();
+        $count = 0;
+
+        foreach ($expiredHelps as $help) {
+            try {
+                $reason = ($help->expires_at && \Carbon\Carbon::parse($help->expires_at)->isPast())
+                    ? 'Batas waktu pencarian Rekan Jasa yang ditentukan telah berakhir'
+                    : "Tidak ada Rekan Jasa yang mengambil bantuan dalam batas waktu {$fallbackHours} jam";
+
+                $this->autoCancelExpiredHelp($help, $reason);
+                $count++;
+            } catch (\Throwable $e) {
+                Log::warning("[HelpCancellationService] Failed to auto-cancel expired help #{$help->id}: " . $e->getMessage());
+            }
+        }
+
+        return $count;
+    }
+
     // ═════════════════════════════════════════════════════════════════════════
     // KHUSUS LAYANAN ANTAR / JEMPUT (PICKUP & DELIVERY)
     // SISTEM PEMBATALAN BERBASIS TAHAPAN PERJALANAN (ANTI-BYPASS LOCK)

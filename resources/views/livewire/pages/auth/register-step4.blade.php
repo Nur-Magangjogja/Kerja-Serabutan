@@ -263,7 +263,7 @@ new #[Layout('layouts.guest')] class extends Component {
                     <h4 class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">{{ auth()->user()->email }}</h4>
                 </div>
             </div>
-            <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-white dark:bg-gray-800 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-700 shadow-2xs">
+            <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-white dark:bg-gray-800 text-white-700 dark:text-white-300 border border-primary-200 dark:border-primary-700 shadow-2xs">
                 {{ ucfirst(auth()->user()->role) }}
             </span>
         </div>

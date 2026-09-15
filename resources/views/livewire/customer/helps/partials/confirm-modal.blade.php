@@ -29,7 +29,7 @@
                             </span>
                         @else
                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                                <span>🛠️</span> Kerja di Lokasi
+                                <span>🛠️</span> Kerja Serabutan
                             </span>
                         @endif
                     </div>
@@ -104,14 +104,43 @@
                 </div>
 
                 @if ($confirmScheduled)
-                    <div class="p-3 bg-blue-50/70 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900/40 text-xs flex items-center justify-between">
-                        <div>
-                            <span class="text-blue-800 dark:text-blue-300 font-medium block">Jadwal Tugas:</span>
-                            <span class="font-bold text-blue-950 dark:text-blue-100">{{ $confirmScheduled }}</span>
+                    <div class="p-3.5 bg-blue-50/70 dark:bg-blue-950/40 rounded-2xl border border-blue-200/70 dark:border-blue-800/60 text-xs space-y-2">
+                        <div class="flex items-center justify-between font-bold text-blue-900 dark:text-blue-200">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Alur & Jadwal Pelaksanaan
+                            </span>
+                            <span class="text-[10px] bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-semibold">
+                                {{ $this->scheduleTimeline['target_date'] ?? '' }}
+                            </span>
                         </div>
-                        <div class="text-right">
-                            <span class="text-[10px] text-gray-500 dark:text-gray-400 block">Jeda Keberangkatan:</span>
-                            <span class="font-bold text-blue-700 dark:text-blue-300">{{ $early_departure_minutes }} Menit Sebelum</span>
+
+                        <div class="space-y-1.5 pt-1">
+                            <div class="flex items-start gap-2 text-xs">
+                                <span class="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0 mt-0.5">1</span>
+                                <div class="min-w-0 flex-1">
+                                    <span class="text-gray-500 dark:text-gray-400 text-[10px] block">Mulai Muncul di Pool / Radar:</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white">{{ $this->scheduleTimeline['publish_label'] }}</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-2 text-xs">
+                                <span class="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0 mt-0.5">2</span>
+                                <div class="min-w-0 flex-1">
+                                    <span class="text-gray-500 dark:text-gray-400 text-[10px] block">Mitra Mulai Berangkat:</span>
+                                    <span class="font-semibold text-amber-700 dark:text-amber-300">{{ $this->scheduleTimeline['departure_label'] }}</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-2 text-xs">
+                                <span class="w-4 h-4 rounded-full bg-emerald-600 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0 mt-0.5">3</span>
+                                <div class="min-w-0 flex-1">
+                                    <span class="text-gray-500 dark:text-gray-400 text-[10px] block">Target Pelaksanaan Tugas:</span>
+                                    <span class="font-semibold text-emerald-700 dark:text-emerald-300">{{ $this->scheduleTimeline['target_label'] }}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 @endif
@@ -137,7 +166,7 @@
                     Kembali
                 </button>
                 <button wire:click="save" type="button" wire:loading.attr="disabled"
-                    class="flex-1 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold hover:from-blue-600 hover:to-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md">
+                    class="flex-1 px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md">
                     <span wire:loading.remove wire:target="save">Konfirmasi & Buat</span>
                     <span wire:loading wire:target="save" class="flex items-center justify-center gap-2">
                         <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">

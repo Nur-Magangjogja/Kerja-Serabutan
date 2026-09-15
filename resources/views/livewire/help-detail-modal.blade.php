@@ -16,7 +16,7 @@
                                         class="w-full h-full object-cover">
                                 @else
                                     <div
-                                        class="w-full h-full flex items-center justify-center text-white text-lg font-bold bg-gradient-to-br from-orange-300 to-orange-400">
+                                        class="w-full h-full flex items-center justify-center text-white text-lg font-bold bg-orange-500">
                                         {{ strtoupper(substr($help->user->name ?? 'U', 0, 1)) }}
                                     </div>
                                 @endif

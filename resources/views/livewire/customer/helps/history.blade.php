@@ -1,13 +1,13 @@
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
 	<div class="max-w-md mx-auto">
 		<!-- Header Section -->
-		<div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+		<div class="px-5 pt-4 pb-5 relative overflow-hidden bg-[#0098e7] rounded-b-2xl shadow-sm text-white">
 			<div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 			
 			<div class="relative z-10 space-y-3">
 				<div class="text-white text-center">
 					<h1 class="text-base font-bold truncate">Riwayat Bantuan</h1>
-					<p class="text-xs text-white/90 truncate mt-0.5">Bantuan yang telah selesai & tuntas</p>
+					<p class="text-xs text-white font-medium truncate mt-0.5">Bantuan yang telah selesai & tuntas</p>
 				</div>
 
 				{{-- Stats Cards --}}
@@ -77,7 +77,7 @@
 												@endif
 											@else
 												<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200">
-													🛠️ Kerja di Lokasi
+													🛠️ Kerja Serabutan
 												</span>
 											@endif
 										</div>

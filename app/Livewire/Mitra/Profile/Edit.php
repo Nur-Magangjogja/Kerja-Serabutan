@@ -18,11 +18,18 @@ class Edit extends Component
     public ?string $bio = null;
 
     protected array $rules = [
-        'name' => 'required|string|max:255',
+        'name' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
         'phone' => 'nullable|string|max:40',
         'city_id' => 'nullable|exists:cities,id',
         'district_id' => 'nullable|exists:districts,id',
         'bio' => 'nullable|string|max:1000',
+    ];
+
+    protected array $messages = [
+        'name.required' => 'Nama lengkap wajib diisi.',
+        'name.min' => 'Nama lengkap minimal 3 karakter.',
+        'name.max' => 'Nama lengkap maksimal 255 karakter.',
+        'name.regex' => 'Nama lengkap hanya boleh berisi huruf alfabet, spasi, tanda hubung (-), titik (.), dan tanda petik (\'). Angka dan simbol khusus tidak diperbolehkan.',
     ];
 
     #[On('openEditProfile')]

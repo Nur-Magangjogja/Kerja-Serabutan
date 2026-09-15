@@ -74,6 +74,21 @@ new #[Layout('layouts.guest')] class extends Component {
         }
     }
 
+    public function updatedName(): void
+    {
+        $this->name = trim($this->name);
+        if (!empty($this->name)) {
+            $this->validateOnly('name', [
+                'name' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
+            ], [
+                'name.required' => 'Nama lengkap wajib diisi.',
+                'name.min'      => 'Nama lengkap minimal 3 karakter.',
+                'name.max'      => 'Nama lengkap maksimal 255 karakter.',
+                'name.regex'    => 'Nama lengkap hanya boleh berisi huruf alfabet, spasi, tanda hubung (-), titik (.), dan tanda petik (\'). Angka dan simbol khusus tidak diperbolehkan.',
+            ]);
+        }
+    }
+
     public function updatedEmail(): void
     {
         $this->email = strtolower(trim($this->email));
@@ -122,13 +137,16 @@ new #[Layout('layouts.guest')] class extends Component {
         User::purgeExpiredInactive($normalizedEmail);
 
         $validated = $this->validate([
-            'name'        => ['required', 'string', 'max:255'],
+            'name'        => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
             'email'       => ['required', 'string', 'email', 'ends_with:@gmail.com', 'max:255', 'unique:' . User::class],
             'password'    => ['required', 'string', 'min:8', 'confirmed'],
             'role'        => ['required', 'in:customer,mitra'],
             'agree_terms' => ['accepted'],
         ], [
             'name.required'         => 'Nama lengkap wajib diisi.',
+            'name.min'              => 'Nama lengkap minimal 3 karakter.',
+            'name.max'              => 'Nama lengkap maksimal 255 karakter.',
+            'name.regex'            => 'Nama lengkap hanya boleh berisi huruf alfabet, spasi, tanda hubung (-), titik (.), dan tanda petik (\'). Angka dan simbol khusus tidak diperbolehkan.',
             'email.required'        => 'Alamat email wajib diisi.',
             'email.email'           => 'Format email tidak valid.',
             'email.ends_with'       => 'Format email pendaftaran wajib menggunakan @gmail.com.',
@@ -241,7 +259,7 @@ new #[Layout('layouts.guest')] class extends Component {
                     </div>
                     <div>
                         <span class="text-xs font-bold block">Mitra Jasa</span>
-                        <span class="text-[10px] text-gray-500 dark:text-gray-400 block leading-tight">Penyedia Layanan</span>
+                        <span class="text-[10px] text-gray-500 dark:text-gray-400 block leading-tight">Pekerja</span>
                     </div>
                 </button>
             </div>
@@ -256,12 +274,14 @@ new #[Layout('layouts.guest')] class extends Component {
                 Nama Lengkap
             </label>
             <div class="relative">
-                <input wire:model="name" id="name" type="text" required placeholder="Nama Lengkap"
+                <input wire:model.blur="name" id="name" type="text" required placeholder="Nama Lengkap"
+                    oninput="this.value = this.value.replace(/[^a-zA-Z\s\.\'\-]/g, '')"
                     class="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition">
                 <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
             </div>
+            <p class="text-[11px] text-gray-400 dark:text-gray-500">Hanya huruf alfabet, spasi, tanda hubung (-), titik (.), dan tanda petik ('). Tanpa angka atau simbol khusus.</p>
             @error('name')
                 <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p>
             @enderror

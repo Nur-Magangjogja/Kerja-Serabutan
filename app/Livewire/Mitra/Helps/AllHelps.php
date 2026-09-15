@@ -146,6 +146,9 @@ class AllHelps extends Component
             ]);
         }
 
+        // Sapu bantuan expired yang belum dibatalkan
+        app(\App\Services\HelpCancellationService::class)->sweepAndAutoCancelExpiredHelps();
+
         // Base Pool Query: Bantuan menunggu mitra yang terbuka untuk pool (belum kadaluwarsa)
         $basePoolQuery = Help::where('status', Help::STATUS_MENUNGGU_MITRA)
             ->where(function ($q) {

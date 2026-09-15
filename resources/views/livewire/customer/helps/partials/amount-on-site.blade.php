@@ -1,4 +1,4 @@
-<!-- Nominal Imbalan Pekerjaan (Khusus Kerja di Lokasi / On-Site) -->
+<!-- Nominal Imbalan Pekerjaan (Khusus Kerja Serabutan / On-Site) -->
 @if($service_type !== 'pickup_delivery')
     <div id="group-amount" class="space-y-2">
         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">

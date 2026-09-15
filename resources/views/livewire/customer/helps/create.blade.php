@@ -48,12 +48,12 @@
     <div id="main-content" class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <div class="max-w-md mx-auto">
             <!-- Header Section -->
-            <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+            <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-[#0098e7] rounded-b-2xl shadow-sm text-white">
                 <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
                 <div class="relative z-10 text-white text-center">
                     <h1 class="text-base font-bold truncate">Buat Permintaan Bantuan</h1>
-                    <p class="text-xs text-white/90 truncate mt-0.5">Pilih layanan dan tentukan imbalan secara transparan</p>
+                    <p class="text-xs text-white font-medium truncate mt-0.5">Pilih layanan dan tentukan imbalan secara transparan</p>
                 </div>
             </div>
 
@@ -128,7 +128,7 @@
                         </div>
                     @endif
 
-                    <!-- 4. Nominal Imbalan Pekerjaan (Hanya untuk On-Site / Kerja di Lokasi) -->
+                    <!-- 4. Nominal Imbalan Pekerjaan (Hanya untuk On-Site / Kerja Serabutan) -->
                     @include('livewire.customer.helps.partials.amount-on-site')
 
                     <!-- Hidden inputs for City & District (Otomatis ditentukan secara akurat dari titik Peta/GPS) -->
@@ -387,6 +387,9 @@
                             order_mode: lw.get('order_mode'),
                             scheduled_date: lw.get('scheduled_date'),
                             scheduled_time: lw.get('scheduled_time'),
+                            publish_mode: lw.get('publish_mode'),
+                            publish_date: lw.get('publish_date'),
+                            publish_time: lw.get('publish_time'),
                             early_departure_minutes: lw.get('early_departure_minutes'),
                             expiry_option: lw.get('expiry_option'),
                             custom_expiry_date: lw.get('custom_expiry_date'),
