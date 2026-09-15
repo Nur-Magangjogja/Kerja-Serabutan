@@ -393,27 +393,27 @@
                         {{-- Service Subcategory Badge --}}
                         @if($activeOffer->help->service_type === 'pickup_delivery')
                             @if($activeOffer->help->service_category === 'passenger')
-                                <span class="inline-flex items-center gap-1 text-[10px] uppercase font-extrabold bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-full">
+                                <span class="inline-flex items-center gap-1 text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600 px-2 py-0.5 rounded-lg">
                                     👥 Antar Penumpang
                                 </span>
                             @else
-                                <span class="inline-flex items-center gap-1 text-[10px] uppercase font-extrabold bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 px-2 py-0.5 rounded-full">
+                                <span class="inline-flex items-center gap-1 text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600 px-2 py-0.5 rounded-lg">
                                     📦 Barang & Dokumen
                                 </span>
                             @endif
                         @else
-                            <span class="inline-flex items-center gap-1 text-[10px] uppercase font-extrabold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full">
+                            <span class="inline-flex items-center gap-1 text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600 px-2 py-0.5 rounded-lg">
                                 🛠️ Kerja Serabutan
                             </span>
                         @endif
 
                         {{-- Order Mode / Schedule Badge --}}
                         @if($activeOffer->help->isScheduled())
-                            <span class="inline-flex items-center gap-1 text-[10px] font-bold bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded-full">
+                            <span class="inline-flex items-center gap-1 text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600 px-2 py-0.5 rounded-lg">
                                 📅 Terjadwal: {{ \Carbon\Carbon::parse($activeOffer->help->scheduled_at ?? $activeOffer->help->service_scheduled_at)->locale('id')->translatedFormat('d M Y, H:i') }} WIB
                             </span>
                         @else
-                            <span class="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full">
+                            <span class="inline-flex items-center gap-1 text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600 px-2 py-0.5 rounded-lg">
                                 ⚡ Segera
                             </span>
                         @endif

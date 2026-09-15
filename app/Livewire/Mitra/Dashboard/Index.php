@@ -210,7 +210,7 @@ class Index extends Component
             app(HelpTransactionService::class)->submitCompletion($help, auth()->user(), null, 'Selesai dari dashboard');
 
             $this->clearDashboardCache();
-            session()->flash('message', 'Pekerjaan selesai! Dana escrow diamankan (maks. 24 jam). Status Anda kembali Bebas Tugas — Klik "Cari Order" untuk mulai pekerjaan baru.');
+            session()->flash('message', 'Pekerjaan selesai! Dana tahan diamankan (maks. 24 jam). Status Anda kembali Bebas Tugas — Klik "Cari Order" untuk mulai pekerjaan baru.');
             $this->setTab('diproses');
         } catch (\Throwable $e) {
             Log::error('[MitraDashboard] completeHelp error: ' . $e->getMessage(), ['help_id' => $helpId]);

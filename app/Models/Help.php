@@ -783,6 +783,34 @@ class Help extends Model
     }
 
     /**
+     * Dapatkan batas waktu pencarian efektif (expires_at jika ada, atau fallback jam setting sistem).
+     */
+    public function getEffectiveExpiresAtAttribute(): ?\Carbon\Carbon
+    {
+        if ($this->expires_at) {
+            return \Carbon\Carbon::parse($this->expires_at);
+        }
+
+        $fallbackHours = \App\Models\AppSetting::getHelpAutoCancelHours();
+        return $this->created_at 
+            ? $this->created_at->copy()->addHours($fallbackHours) 
+            : now()->addHours($fallbackHours ?: 24);
+    }
+
+    /**
+     * Sisa detik pencarian mitra sebelum tugas berakhir.
+     */
+    public function getSearchRemainingSecondsAttribute(): int
+    {
+        $expiry = $this->effective_expires_at;
+        if (!$expiry) {
+            return 0;
+        }
+
+        return max(0, (int) now()->diffInSeconds($expiry, false));
+    }
+
+    /**
      * Cek apakah bantuan menunggu mitra ini sudah melewati batas waktu pencarian (expired).
      */
     public function isExpired(): bool
@@ -791,12 +819,8 @@ class Help extends Model
             return false;
         }
 
-        if ($this->expires_at) {
-            return now()->gte($this->expires_at);
-        }
-
-        $fallbackHours = \App\Models\AppSetting::getHelpAutoCancelHours();
-        return $this->created_at ? now()->gte($this->created_at->copy()->addHours($fallbackHours)) : false;
+        $expiry = $this->effective_expires_at;
+        return $expiry ? now()->gte($expiry) : false;
     }
 
     public function isScheduled(): bool
@@ -1381,7 +1405,7 @@ class Help extends Model
     public function getItemFundModeLabelAttribute(): string
     {
         return match($this->item_fund_mode) {
-            self::ITEM_FUND_CUSTOMER_PAID   => 'Dibayar Pemesan di Aplikasi (Escrow)',
+            self::ITEM_FUND_CUSTOMER_PAID   => 'Dibayar Pemesan di Aplikasi (Dana Tahan)',
             self::ITEM_FUND_PARTNER_ADVANCE => 'Ditalangi Mitra Terlebih Dahulu (Reimburse)',
             self::ITEM_FUND_COD             => 'Bayar Tunai di Tempat (COD)',
             default                         => 'Dalam Aplikasi',

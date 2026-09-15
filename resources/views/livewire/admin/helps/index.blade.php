@@ -320,7 +320,7 @@
                             </div>
 
                             <div class="bg-white/80 dark:bg-gray-800/80 p-3 rounded-xl border border-rose-100 dark:border-rose-900/40 space-y-1">
-                                <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase block">Status Pengembalian Dana (Escrow):</span>
+                                <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase block">Status Pengembalian Dana Tahan:</span>
                                 <p class="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                                     <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                                     100% Refund (Rp {{ number_format($totalAmount, 0, ',', '.') }})
@@ -454,7 +454,7 @@
                                 </span>
                             </div>
                             <div class="bg-white dark:bg-gray-800 p-2.5 rounded-xl border border-gray-200/70 dark:border-gray-700 shadow-2xs">
-                                <span class="text-[10px] text-gray-400 block font-medium">Status Escrow</span>
+                                <span class="text-[10px] text-gray-400 block font-medium">Status Dana Tahan</span>
                                 <span class="font-bold {{ $isCancelled ? 'text-rose-600 dark:text-rose-400' : 'text-primary-600 dark:text-primary-400' }}">
                                     {{ $isCancelled ? 'Refunded' : ucfirst($selectedHelp->escrow_status ?? 'Secured') }}
                                 </span>
@@ -577,7 +577,7 @@
                             </div>
                         @else
                             {{-- Generated Lifecycle Chronology based on Help Record --}}
-                            <div class="relative pl-6 space-y-3.5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-200 dark:before:bg-gray-700">
+                            <div class="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-200 dark:before:bg-gray-700">
                                 {{-- Milestone 1: Created --}}
                                 <div class="relative flex items-start gap-3">
                                     <div class="absolute -left-6 top-1 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center ring-4 ring-white dark:ring-gray-800 shadow-2xs">
@@ -585,19 +585,14 @@
                                     </div>
                                     <div class="flex-1 bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200/70 dark:border-gray-700 shadow-2xs">
                                         <div class="flex items-center justify-between gap-2 mb-1">
-                                            <span class="font-bold text-xs text-gray-800 dark:text-gray-200">
-                                                Permohonan Bantuan Dibuat
-                                                <span class="text-[10px] font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.2 rounded ml-1">Customer</span>
-                                            </span>
+                                            <span class="font-bold text-xs text-gray-800 dark:text-gray-200">Permintaan Bantuan Dibuat</span>
                                             <span class="text-[10px] text-gray-400">{{ optional($selectedHelp->created_at)->format('d M Y, H:i') }}</span>
                                         </div>
-                                        <p class="text-xs text-gray-600 dark:text-gray-300">
-                                            {{ $selectedHelp->customer->name ?? 'Customer' }} membuat permintaan bantuan "{{ $selectedHelp->title }}".
-                                        </p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-300">Customer memposting permintaan ke sistem radar.</p>
                                     </div>
                                 </div>
 
-                                {{-- Milestone 2: Escrow Secured --}}
+                                {{-- Milestone 2: Dana Tahan Secured --}}
                                 <div class="relative flex items-start gap-3">
                                     <div class="absolute -left-6 top-1 w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center ring-4 ring-white dark:ring-gray-800 shadow-2xs">
                                         <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
@@ -605,13 +600,13 @@
                                     <div class="flex-1 bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200/70 dark:border-gray-700 shadow-2xs">
                                         <div class="flex items-center justify-between gap-2 mb-1">
                                             <span class="font-bold text-xs text-gray-800 dark:text-gray-200">
-                                                Dana Diamankan di Sistem Escrow
+                                                Dana Diamankan di Sistem Dana Tahan
                                                 <span class="text-[10px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded ml-1">Sistem</span>
                                             </span>
                                             <span class="text-[10px] text-gray-400">{{ optional($selectedHelp->created_at)->format('d M Y, H:i') }}</span>
                                         </div>
                                         <p class="text-xs text-gray-600 dark:text-gray-300">
-                                            Pembayaran sebesar Rp {{ number_format($totalAmount, 0, ',', '.') }} berhasil didebet dan ditampung aman di rekening penampung escrow SayaBantu.
+                                            Pembayaran sebesar Rp {{ number_format($totalAmount, 0, ',', '.') }} berhasil didebet dan ditampung aman di rekening penampung dana tahan SayaBantu.
                                         </p>
                                     </div>
                                 </div>

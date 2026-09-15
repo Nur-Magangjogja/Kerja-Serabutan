@@ -328,7 +328,7 @@
                                     Posting tugas Anda & temukan mitra terdekat siap membantu dalam hitungan menit.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('customer.helps.create') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-sky-700 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('customer.helps.create') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-sky-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Buat Permintaan</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -358,7 +358,7 @@
                                     Pembayaran via QRIS & Transfer Bank dengan konfirmasi instan dan aman.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('customer.topup.request') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-emerald-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('customer.topup.request') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-emerald-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Top Up Sekarang</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -367,13 +367,13 @@
 
                             <div class="relative z-10 flex-shrink-0 mr-1 sm:mr-3">
                                 <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/15 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-lg shadow-black/10 transform -rotate-3 hover:rotate-0 transition-transform">
-                                    <span class="text-3xl sm:text-4xl"></span>
+                                    <span class="text-3xl sm:text-4xl">💸</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Slide 3 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-rose-600 dark:bg-rose-800">
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-yellow-600 dark:bg-yellow-800">
                             <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
                             <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-amber-400/20 blur-xl pointer-events-none"></div>
 
@@ -388,7 +388,7 @@
                                     Mitra terverifikasi siap menyelesaikan pekerjaan dengan hasil terbaik.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('customer.helps.history') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-orange-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('customer.helps.history') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-yellow-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Lihat Riwayat</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>

@@ -106,6 +106,7 @@ class Index extends Component
     // ─── Delete modal ────────────────────────────────────────────────────────
     public $showDeleteConfirm = false;
     public $deletingHelpId    = null;
+    public $deletingHelp      = null;
 
     // ─── Completion confirmation ──────────────────────────────────────────────
     public $confirmingHelpId = null;
@@ -130,12 +131,14 @@ class Index extends Component
             return;
         }
         $this->deletingHelpId    = $id;
+        $this->deletingHelp      = $help;
         $this->showDeleteConfirm = true;
     }
 
     public function cancelDelete()
     {
         $this->deletingHelpId    = null;
+        $this->deletingHelp      = null;
         $this->showDeleteConfirm = false;
     }
 

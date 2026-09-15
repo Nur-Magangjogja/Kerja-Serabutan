@@ -238,22 +238,22 @@
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-start justify-between gap-2">
                                         <h3 class="font-bold text-sm text-gray-900 dark:text-gray-100 truncate leading-snug">{{ $help->title }}</h3>
-                                        <span class="text-xs font-bold text-primary-600 dark:text-sky-400 whitespace-nowrap shrink-0">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
+                                        <span class="text-1xl font-bold text-primary-600 dark:text-sky-400 whitespace-nowrap shrink-0">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
                                     </div>
 
                                     <div class="flex items-center gap-2 mt-1 flex-wrap">
                                         @if($help->status === 'partner_cancel_requested')
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800/60">
                                                 <span>⚠️</span>
                                                 <span>Menunggu Konfirmasi Pembatalan</span>
                                             </span>
                                         @elseif($statusFilter === 'waiting_customer_confirmation' || $help->status === 'waiting_customer_confirmation')
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 dark:bg-orange-950/70 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800/60">
                                                 <span>📸</span>
                                                 <span>Menunggu Konfirmasi Anda</span>
                                             </span>
                                         @elseif($statusFilter === 'menunggu_mitra' || $help->status === 'menunggu_mitra')
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800/60">
                                                 <span>🔍</span>
                                                 <span>Mencari Rekan Jasa</span>
                                             </span>
@@ -287,6 +287,48 @@
                             <!-- Description (Full Width) -->
                             @if($help->description)
                                 <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 leading-relaxed">{{ Str::limit($help->description, 120) }}</p>
+                            @endif
+
+                            {{-- Countdown Batas Waktu Pencarian Rekan Jasa (Khusus Status Menunggu Mitra) --}}
+                            @if($help->status === 'menunggu_mitra')
+                                @php
+                                    $effectiveExpiry = $help->effective_expires_at;
+                                    $expiryIso = $effectiveExpiry ? $effectiveExpiry->toIso8601String() : null;
+                                @endphp
+                                <div x-data="customerCountdownTimer('{{ $expiryIso }}')" class="bg-gray-50 dark:bg-gray-750/70 border border-gray-200/70 dark:border-gray-700/80 rounded-xl p-3 space-y-2 shadow-2xs">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                            <span>⏳</span>
+                                            <span>Batas Waktu Pencarian Rekan Jasa:</span>
+                                        </div>
+                                        <span class="text-[10px] font-medium px-2 py-0.5 rounded-lg" 
+                                              :class="isExpired ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border border-rose-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'" 
+                                              x-text="isExpired ? 'Waktu Habis' : 'Mencari mitra'">
+                                            Mencari mitra
+                                        </span>
+                                    </div>
+
+                                    <div class="flex items-center justify-between gap-2 flex-wrap pt-0.5">
+                                        <div class="flex items-center gap-1.5 font-mono text-xs font-bold text-gray-900 dark:text-gray-100">
+                                            <span class="text-[11px] font-sans font-medium text-gray-600 dark:text-gray-400">Sisa:</span>
+                                            <div class="inline-flex items-center gap-1 bg-white dark:bg-gray-800 px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 shadow-2xs tabular-nums">
+                                                <span x-text="hours" class="font-bold text-gray-900 dark:text-white">00</span>
+                                                <span class="text-gray-400 dark:text-gray-500 font-bold">:</span>
+                                                <span x-text="minutes" class="font-bold text-gray-900 dark:text-white">00</span>
+                                                <span class="text-gray-400 dark:text-gray-500 font-bold">:</span>
+                                                <span x-text="seconds" class="font-bold text-rose-600 dark:text-rose-400">00</span>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="text-[10px] text-gray-400 dark:text-gray-500 block font-medium">Batas Waktu:</span>
+                                            <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ $effectiveExpiry ? $effectiveExpiry->translatedFormat('d M, H:i') . ' WIB' : '-' }}</span>
+                                        </div>
+                                    </div>
+
+                                    <p class="text-[10.5px] text-gray-500 dark:text-gray-400 leading-tight border-t border-gray-200/60 dark:border-gray-700/60 pt-1.5">
+                                        💡 Jika waktu habis tanpa ada rekan jasa yang mengambil, pesanan otomatis batal & dana tahan 100% dikembalikan ke saldo dompet Anda.
+                                    </p>
+                                </div>
                             @endif
 
                             @if($help->isScheduled() && $help->scheduled_at)
@@ -372,21 +414,41 @@
     @if($showDeleteConfirm)
         <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" wire:click.self="cancelDelete">
             <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in duration-150">
-                <div class="p-6 text-center space-y-4">
-                    <div class="w-14 h-14 rounded-2xl bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-xs">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="p-5 text-center space-y-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-xs">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                     </div>
 
                     <div>
-                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Batalkan Permintaan?</h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                            Anda yakin ingin membatalkan permintaan bantuan ini? Dana yang ditahan di sistem akan otomatis dikembalikan 100% ke saldo Anda.
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Batalkan Permintaan Bantuan?</h3>
+                        @if($deletingHelp)
+                            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1 truncate">
+                                "{{ $deletingHelp->title }}"
+                            </p>
+                        @endif
+                    </div>
+
+                    <div class="bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/50 rounded-xl p-3 text-left space-y-1.5 text-xs text-amber-900 dark:text-amber-200">
+                        <div class="flex items-center justify-between font-medium text-[11px]">
+                            <span>Batas Waktu Pencarian:</span>
+                            <span class="font-bold text-amber-950 dark:text-amber-100">
+                                {{ $deletingHelp?->effective_expires_at?->translatedFormat('d M, H:i') ?? '-' }} WIB
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between font-medium text-[11px] pt-1 border-t border-amber-200/50 dark:border-amber-800/50">
+                            <span>Jaminan Refund Saldo:</span>
+                            <span class="font-bold text-emerald-700 dark:text-emerald-300">
+                                100% (Rp {{ number_format($deletingHelp ? ($deletingHelp->total_amount ?: $deletingHelp->amount) : 0, 0, ',', '.') }})
+                            </span>
+                        </div>
+                        <p class="text-[10.5px] text-amber-800/90 dark:text-amber-300/90 pt-1 leading-relaxed">
+                            💡 Seluruh dana yang ditahan di sistem akan langsung dikembalikan ke saldo dompet Anda seketika.
                         </p>
                     </div>
 
-                    <div class="flex gap-2.5 pt-2">
+                    <div class="flex gap-2.5 pt-1">
                         <button type="button" wire:click="cancelDelete" class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 rounded-xl font-bold text-xs transition cursor-pointer">
                             Kembali
                         </button>
@@ -431,4 +493,55 @@
             </div>
         </div>
     @endif
+
+    <script>
+        function customerCountdownTimer(isoExpiry) {
+            return {
+                isoExpiry: isoExpiry,
+                timeString: '--:--:--',
+                isExpired: false,
+                hours: '00',
+                minutes: '00',
+                seconds: '00',
+                timer: null,
+                init() {
+                    if (!this.isoExpiry) {
+                        this.timeString = 'Batas sistem';
+                        return;
+                    }
+                    this.update();
+                    this.timer = setInterval(() => this.update(), 1000);
+                },
+                update() {
+                    const target = new Date(this.isoExpiry).getTime();
+                    const now = new Date().getTime();
+                    const diff = target - now;
+
+                    if (diff <= 0) {
+                        this.isExpired = true;
+                        this.timeString = '00:00:00 (Waktu Habis)';
+                        this.hours = '00';
+                        this.minutes = '00';
+                        this.seconds = '00';
+                        if (this.timer) {
+                            clearInterval(this.timer);
+                            this.timer = null;
+                        }
+                        return;
+                    }
+
+                    const totalSeconds = Math.max(0, Math.floor(diff / 1000));
+                    const h = Math.floor(totalSeconds / 3600);
+                    const m = Math.floor((totalSeconds % 3600) / 60);
+                    const s = totalSeconds % 60;
+
+                    const pad = (n) => String(n).padStart(2, '0');
+                    this.hours = pad(h);
+                    this.minutes = pad(m);
+                    this.seconds = pad(s);
+                    this.timeString = `${this.hours}:${this.minutes}:${this.seconds}`;
+                }
+            };
+        }
+    </script>
 </div>

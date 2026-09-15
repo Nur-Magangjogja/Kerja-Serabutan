@@ -238,7 +238,7 @@
         {{-- Secondary Metric Badges Sesuai Periode --}}
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             <div class="bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-3 flex flex-col">
-                <span class="text-amber-800 dark:text-amber-300 font-semibold">🔒 Escrow Lock (Holding):</span>
+                <span class="text-amber-800 dark:text-amber-300 font-semibold">🔒 Dana Tahan (Holding):</span>
                 <span class="font-bold text-sm text-amber-900 dark:text-amber-200 mt-0.5">Rp {{ number_format($periodEscrow, 0, ',', '.') }}</span>
                 <span class="text-[10px] text-amber-700 dark:text-amber-400 mt-1">All-Time: Rp {{ number_format($allTimeEscrow, 0, ',', '.') }}</span>
             </div>
@@ -314,7 +314,7 @@
                     :class="activeDatasets.escrow_lock ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border-amber-400' : 'bg-gray-100 dark:bg-gray-700/50 text-gray-400 border-transparent opacity-60'"
                     class="px-3 py-1.5 rounded-xl font-bold border transition flex items-center gap-1.5 cursor-pointer">
                     <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                    Escrow Lock
+                    Dana Tahan
                 </button>
 
                 <button type="button" @click="toggleDataset('refund')"
@@ -366,7 +366,7 @@
                             <th class="px-4 py-3 text-right text-blue-600 dark:text-blue-400">Komisi Platform</th>
                             <th class="px-4 py-3 text-right text-purple-600 dark:text-purple-400">Earning Mitra</th>
                             <th class="px-4 py-3 text-right text-rose-600 dark:text-rose-400">Withdraw</th>
-                            <th class="px-4 py-3 text-right text-amber-600 dark:text-amber-400">Escrow Lock</th>
+                            <th class="px-4 py-3 text-right text-amber-600 dark:text-amber-400">Dana Tahan</th>
                             <th class="px-4 py-3 text-right text-cyan-600 dark:text-cyan-400">Refund</th>
                             <th class="px-4 py-3 text-right font-bold">Net Arus Kas (+/-)</th>
                             <th class="px-4 py-3 text-center">Transaksi</th>
@@ -609,7 +609,7 @@
                             <option value="platform_fee">Komisi Platform (Kas)</option>
                             <option value="earning">Earning Mitra (Gaji Masuk)</option>
                             <option value="withdraw">Withdraw (Pencairan)</option>
-                            <option value="escrow_lock">Escrow Lock (Holding)</option>
+                            <option value="escrow_lock">Dana Tahan (Holding)</option>
                             <option value="refund">Refund (Pengembalian)</option>
                             <option value="cancellation">Pembatalan Tugas</option>
                             <option value="deduction">Potongan (Deduction)</option>
@@ -662,7 +662,7 @@
                             'platform_fee' => ['bg' => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/60', 'label' => '🏢 Komisi Platform'],
                             'earning'      => ['bg' => 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800/60', 'label' => '🤝 Earning Mitra'],
                             'withdraw'     => ['bg' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/60', 'label' => '↑ Withdraw'],
-                            'escrow_lock'  => ['bg' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60', 'label' => '🔒 Escrow Lock'],
+                            'escrow_lock'  => ['bg' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60', 'label' => '🔒 Dana Tahan'],
                             'refund'       => ['bg' => 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800/60', 'label' => '↩️ Refund 100%'],
                             'cancellation', 'penalty' => ['bg' => 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700/60', 'label' => '⚠️ Pembatalan'],
                             'deduction'    => ['bg' => 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600', 'label' => 'Potongan'],
@@ -873,7 +873,7 @@
                     },
                     {
                         key: 'escrow_lock',
-                        label: 'Escrow Lock',
+                        label: 'Dana Tahan',
                         data: dataObj.escrow_lock || [],
                         borderColor: '#f59e0b',
                         backgroundColor: isDark ? 'rgba(245, 158, 11, 0.35)' : 'rgba(245, 158, 11, 0.2)',

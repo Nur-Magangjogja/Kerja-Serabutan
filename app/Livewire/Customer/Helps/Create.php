@@ -896,12 +896,14 @@ class Create extends Component
     public function getScheduleTimelineProperty(): array
     {
         if (!$this->scheduled_date) {
+            $todayStr = Carbon::now()->translatedFormat('d M Y');
             return [
                 'has_schedule'    => false,
                 'publish_mode'    => $this->publish_mode,
                 'publish_label'   => 'Langsung Sekarang (Saat Dibuat)',
-                'departure_label' => 'Langsung Berangkat',
-                'target_label'    => 'Sekarang (Langsung Dikerjakan)',
+                'departure_label' => 'Langsung Berangkat (Setelah Terima Order)',
+                'target_label'    => 'Segera Dikerjakan (Hari ini, ' . $todayStr . ')',
+                'target_date'     => 'Pelaksanaan Segera',
                 'lead_minutes'    => 0,
                 'expiry_label'    => $this->expiryPreview,
             ];

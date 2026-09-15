@@ -115,56 +115,121 @@
 
     <!-- Content -->
     <div class="px-5 pt-5 pb-8 max-w-md mx-auto">
-        {{-- Service Info --}}
-        <div class="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700/70 space-y-4">
-            <div class="flex items-start gap-3.5">
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            @if($help->isPickup())
-                                @if($help->service_category === 'passenger')
-                                    <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
-                                        👥 Antar Penumpang
-                                    </span>
-                                @else
-                                    <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60">
-                                        📦 Barang & Dokumen
-                                    </span>
-                                @endif
-                            @else
-                                <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
-                                    🛠️ Kerja Serabutan
-                                </span>
-                            @endif
+        {{-- Hero Card Batas Waktu Pencarian Rekan Jasa (Khusus Status Menunggu Mitra) --}}
+        @if($help->status === 'menunggu_mitra')
+            @php
+                $effectiveExpiry = $help->effective_expires_at;
+                $expiryIso = $effectiveExpiry ? $effectiveExpiry->toIso8601String() : null;
+            @endphp
+            <div x-data="customerDetailCountdownTimer('{{ $expiryIso }}')" class="bg-gradient-to-br from-primary-800 via-primary-900 to-primary-900 rounded-2xl p-4 sm:p-5 text-white shadow-lg space-y-3.5 mb-3.5 animate-in fade-in duration-200 relative overflow-hidden">
+                <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
 
-                            @if($help->isScheduled())
-                                <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
-                                    📅 Terjadwal
-                                </span>
-                            @else
-                                <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
-                                    ⚡ Segera
-                                </span>
-                            @endif
-                        </div>
-                        <div class="text-right">
-                            <span class="text-[10px] text-gray-400 block font-medium">Total Terbayar (Escrow)</span>
-                            <span class="text-base font-black text-sky-600 dark:text-sky-400">
-                                Rp {{ number_format($help->amount, 0, ',', '.') }}
-                            </span>
+                <div class="flex items-center justify-between gap-2 relative z-10">
+                    <div class="flex items-center gap-2">
+                        <div>
+                            <h3 class="font-bold text-sm sm:text-base leading-tight">Sedang Mencari Rekan Jasa</h3>
+                            <p class="text-[11px] text-white/90">Sistem sedang menunggu mitra terdekat</p>
                         </div>
                     </div>
-                    <h2 class="font-bold text-base text-gray-900 dark:text-white leading-snug">{{ $help->title }}</h2>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-black/20 text-white border border-white/30 backdrop-blur-xs">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        <span x-text="isExpired ? 'Waktu Habis' : 'Aktif'">Aktif</span>
+                    </span>
+                </div>
+
+                <!-- Digital Countdown Timer Display -->
+                <div class="bg-sky-900/10 backdrop-blur-md rounded-xl p-3.5 border border-white/10 relative z-10">
+                    <div class="flex items-center justify-between text-xs font-semibold text-white mb-2.5">
+                        <span>⏳ Batas Waktu Pencarian Rekan Jasa:</span>
+                        <span class="text-[11px] text-white font-bold">{{ $effectiveExpiry ? $effectiveExpiry->translatedFormat('d M Y, H:i') . ' WIB' : '-' }}</span>
+                    </div>
+
+                    <div class="flex items-center justify-center gap-2 font-mono">
+                        <div class="flex flex-col items-center bg-white/95 text-gray-900 rounded-xl px-3 py-1.5 shadow-sm min-w-[56px]">
+                            <span x-text="hours" class="text-lg sm:text-xl font-black text-amber-950">00</span>
+                            <span class="text-[9px] font-sans font-semibold text-gray-500 uppercase tracking-wider">Jam</span>
+                        </div>
+                        <span class="text-xl font-bold text-white pb-2">:</span>
+                        <div class="flex flex-col items-center bg-white/95 text-gray-900 rounded-xl px-3 py-1.5 shadow-sm min-w-[56px]">
+                            <span x-text="minutes" class="text-lg sm:text-xl font-black text-amber-950">00</span>
+                            <span class="text-[9px] font-sans font-semibold text-gray-500 uppercase tracking-wider">Menit</span>
+                        </div>
+                        <span class="text-xl font-bold text-white pb-2">:</span>
+                        <div class="flex flex-col items-center bg-white/95 text-gray-900 rounded-xl px-3 py-1.5 shadow-sm min-w-[56px]">
+                            <span x-text="seconds" class="text-lg sm:text-xl font-black text-rose-600 animate-pulse">00</span>
+                            <span class="text-[9px] font-sans font-semibold text-rose-600 uppercase tracking-wider">Detik</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Jaminan Pengembalian Dana Tahan 100% -->
+                <div class="bg-gray-800/20 backdrop-blur-xs rounded-xl p-3 text-xs leading-relaxed text-white border border-white/10 relative z-10 flex items-start gap-2.5">
+                    <span class="text-base shrink-0"></span>
+                    <div>
+                        <span class="font-bold block text-white text-[11.5px] mb-0.5">Jaminan 100% Saldo Kembali (Dana Tahan)</span>
+                        <p class="text-[11px] text-white">
+                            Pembayaran Anda sebesar <strong>Rp {{ number_format($help->total_amount > 0 ? $help->total_amount : $help->amount, 0, ',', '.') }}</strong> saat ini aman ditahan oleh sistem. Jika hingga batas waktu di atas tidak ada mitra yang mengambil, tugas akan otomatis berakhir dan dana langsung 100% dikembalikan ke saldo dompet Anda.
+                        </p>
+                    </div>
                 </div>
             </div>
+        @endif
 
-            {{-- Financial Breakdown --}}
-            <div class="bg-gray-50/80 dark:bg-gray-750/70 p-3 rounded-xl border border-gray-100 dark:border-gray-700/60 grid grid-cols-2 gap-2 text-xs">
-                <div>
-                    <span class="text-[10px] text-gray-400 block font-medium">Biaya Jasa</span>
-                    <span class="font-bold text-gray-800 dark:text-gray-200">Rp {{ number_format($help->service_fee ?: $help->amount, 0, ',', '.') }}</span>
+        {{-- Service Info --}}
+        <div class="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700/70 space-y-3.5">
+            {{-- Title --}}
+            <div>
+                <h2 class="font-bold text-base sm:text-lg text-gray-900 dark:text-white leading-snug break-words">
+                    {{ $help->title }}
+                </h2>
+            </div>
+
+            {{-- Category & Schedule Tags --}}
+            <div class="flex items-center gap-1.5 flex-wrap">
+                @if($help->isPickup())
+                    @if($help->service_category === 'passenger')
+                        <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-600">
+                            <span>👥</span>
+                            <span>Antar Penumpang</span>
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-600">
+                            <span>📦</span>
+                            <span>Barang & Dokumen</span>
+                        </span>
+                    @endif
+                @else
+                    <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-600">
+                        <span>🛠️</span>
+                        <span>Kerja Serabutan</span>
+                    </span>
+                @endif
+
+                @if($help->isScheduled())
+                    <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-600">
+                        <span>📅</span>
+                        <span>Terjadwal</span>
+                    </span>
+                @else
+                    <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-600">
+                        <span>⚡</span>
+                        <span>Segera</span>
+                    </span>
+                @endif
+            </div>
+
+            {{-- Clean Neutral Payment Bar --}}
+            <div class="bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/80 rounded-xl p-3 sm:p-3.5 flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 block">Total Terbayar (Dana Tahan)</span>
+                    <span class="text-[11px] text-gray-400 dark:text-gray-500 block truncate">Pembayaran aman tersimpan</span>
                 </div>
 
+                <div class="text-right shrink-0">
+                    <span class="text-base sm:text-lg font-bold text-gray-900 dark:text-white font-mono tracking-tight block">
+                        Rp {{ number_format($help->total_amount > 0 ? $help->total_amount : $help->amount, 0, ',', '.') }}
+                    </span>
+                </div>
             </div>
 
             {{-- Partner Info --}}
@@ -541,18 +606,18 @@
                             <path fill-rule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
                         </svg>
                         <h4 class="text-xs font-bold {{ !empty($help->full_address) ? 'text-amber-900 dark:text-amber-200' : 'text-gray-600 dark:text-gray-400' }}">
-                            Detail Patokan Tempat / Ciri Rumah
+                            Detail Ciri" Tempat
                         </h4>
                         <span class="text-[11px] font-normal text-gray-400 dark:text-gray-500">(Opsional)</span>
                     </div>
 
                     @if(!empty($help->full_address))
-                        <p class="text-xs text-amber-950 dark:text-amber-100 font-medium leading-relaxed whitespace-pre-line break-words pl-5">
+                        <p class="text-xs text-white dark:text-white font-medium leading-relaxed whitespace-pre-line break-words pl-5">
                             {{ $help->full_address }}
                         </p>
                     @else
                         <p class="text-xs text-gray-400 dark:text-gray-500 italic pl-5">
-                            Anda tidak menyertakan patokan/ciri khusus rumah. Rekan jasa akan mengikuti navigasi GPS.
+                            Anda tidak menyertakan patokan/ ciri khusus rumah. Rekan jasa akan mengikuti navigasi GPS.
                         </p>
                     @endif
                 </div>
@@ -569,18 +634,12 @@
                     <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Waktu Pelaksanaan</h3>
                     @if($help->isScheduled())
                         <div class="flex items-center gap-2">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
-                                📅 Terjadwal
-                            </span>
                             <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">
                                 {{ \Carbon\Carbon::parse($help->scheduled_at ?? $help->service_scheduled_at)->locale('id')->translatedFormat('l, d F Y • H:i') }} WIB
                             </span>
                         </div>
                     @else
                         <div class="flex items-center gap-2">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
-                                ⚡ Segera
-                            </span>
                             <span class="text-xs text-gray-500 dark:text-gray-400">
                                 Dikerjakan langsung setelah pesanan diambil oleh Rekan Jasa
                             </span>
@@ -806,7 +865,7 @@
                         <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
                             <h3 class="font-bold text-sm text-rose-950 dark:text-rose-100">Pesanan Dalam Proses Sengketa / Mediasi</h3>
                             <span class="text-[10px] font-extrabold bg-rose-200 text-rose-800 dark:bg-rose-900/80 dark:text-rose-200 px-2.5 py-0.5 rounded-full">
-                                Escrow Dibekukan
+                                Dana Tahan Dibekukan
                             </span>
                         </div>
                         <p class="text-xs text-rose-900/85 dark:text-rose-300 leading-relaxed">
@@ -1000,12 +1059,6 @@
         <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="font-bold text-sm text-gray-900 dark:text-white">Rincian Pembayaran</h3>
-                @if($help->isV2Model() && !in_array($help->status, ['selesai', 'completed', 'dibatalkan', 'cancelled']))
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
-                        <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                        Dana Ditahan (Escrow)
-                    </span>
-                @endif
             </div>
 
             <div class="space-y-3">
@@ -1043,7 +1096,7 @@
             <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 rounded-lg">
                 <p class="text-xs text-gray-700 dark:text-blue-200 leading-relaxed">
                     @if($help->isV2Model())
-                        🛡️ <strong>Proteksi Escrow:</strong> Pembayaran Anda ditahan aman oleh sistem SayaBantu selama pengerjaan. Dana baru akan diteruskan ke Rekan Jasa setelah Anda mengonfirmasi pekerjaan selesai dengan baik.
+                        🛡️ <strong>Proteksi Dana Tahan:</strong> Pembayaran Anda ditahan aman oleh sistem SayaBantu selama pengerjaan. Dana baru akan diteruskan ke Rekan Jasa setelah Anda mengonfirmasi pekerjaan selesai dengan baik.
                     @else
                         Kamu dapat meminta tindakan tambahan selama sesi layanan berlangsung. Pastikan semua pembayaran dilakukan melalui aplikasi agar pesananmu tercatat dan terlindungi.
                     @endif
@@ -1237,7 +1290,7 @@
                         </div>
                         <div>
                             <h3 class="font-bold text-base text-gray-900 dark:text-white">Ajukan Komplain / Sengketa</h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Pembekuan dana escrow & mediasi admin</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Pembekuan dana tahan & mediasi admin</p>
                         </div>
                     </div>
                     <button wire:click="closeDisputeModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">
@@ -1246,7 +1299,7 @@
                 </div>
 
                 <div class="mb-4 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-                    Pengajuan komplain akan <strong>membekukan dana pembayaran (escrow freeze)</strong> secara seketika dan meneruskan bukti pengerjaan ke Admin Wilayah untuk mediasi.
+                    Pengajuan komplain akan <strong>membekukan dana pembayaran (dana tahan dibekukan)</strong> secara seketika dan meneruskan bukti pengerjaan ke Admin Wilayah untuk mediasi.
                 </div>
 
                 <div class="mb-4">
@@ -2162,8 +2215,57 @@
         })();
     </script>
 
-    {{-- Toast notification for copy --}}
+    {{-- Toast notification for copy & Search Countdown Timer --}}
     <script>
+        function customerDetailCountdownTimer(isoExpiry) {
+            return {
+                isoExpiry: isoExpiry,
+                timeString: '--:--:--',
+                isExpired: false,
+                hours: '00',
+                minutes: '00',
+                seconds: '00',
+                timer: null,
+                init() {
+                    if (!this.isoExpiry) {
+                        this.timeString = 'Batas sistem';
+                        return;
+                    }
+                    this.update();
+                    this.timer = setInterval(() => this.update(), 1000);
+                },
+                update() {
+                    const target = new Date(this.isoExpiry).getTime();
+                    const now = new Date().getTime();
+                    const diff = target - now;
+
+                    if (diff <= 0) {
+                        this.isExpired = true;
+                        this.timeString = '00:00:00 (Waktu Habis)';
+                        this.hours = '00';
+                        this.minutes = '00';
+                        this.seconds = '00';
+                        if (this.timer) {
+                            clearInterval(this.timer);
+                            this.timer = null;
+                        }
+                        return;
+                    }
+
+                    const totalSeconds = Math.max(0, Math.floor(diff / 1000));
+                    const h = Math.floor(totalSeconds / 3600);
+                    const m = Math.floor((totalSeconds % 3600) / 60);
+                    const s = totalSeconds % 60;
+
+                    const pad = (n) => String(n).padStart(2, '0');
+                    this.hours = pad(h);
+                    this.minutes = pad(m);
+                    this.seconds = pad(s);
+                    this.timeString = `${this.hours}:${this.minutes}:${this.seconds}`;
+                }
+            };
+        }
+
         document.addEventListener('livewire:init', () => {
             Livewire.on('copied', (event) => {
                 // Show toast notification

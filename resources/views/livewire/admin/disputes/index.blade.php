@@ -9,7 +9,7 @@
                 </span>
             </h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Pusat arbitrase sengketa saldo escrow dan audit manual klaim pembatalan berdasar kesaksian, bukti, serta penjatuhan SP.
+                Pusat arbitrase sengketa saldo dana tahan dan audit manual klaim pembatalan berdasar kesaksian, bukti, serta penjatuhan SP.
             </p>
         </div>
     </div>
@@ -33,7 +33,7 @@
     <div class="flex items-center gap-2 mb-4 border-b border-gray-200 dark:border-gray-800">
         <button wire:click="$set('activeTab', 'disputes')" 
                 class="pb-3 px-4 font-bold text-xs transition border-b-2 flex items-center gap-2 {{ $activeTab === 'disputes' ? 'border-primary-600 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400' }}">
-            <span>⚖️ Mediasi Sengketa Escrow</span>
+            <span>⚖️ Mediasi Sengketa Dana Tahan</span>
         </button>
         <button wire:click="$set('activeTab', 'cancellations')" 
                 class="pb-3 px-4 font-bold text-xs transition border-b-2 flex items-center gap-2 {{ $activeTab === 'cancellations' ? 'border-primary-600 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400' }}">
@@ -108,7 +108,7 @@
                             <th class="p-4">Customer & Mitra</th>
                             <th class="p-4">Nominal Bruto</th>
                             <th class="p-4">Alasan Komplain</th>
-                            <th class="p-4">Status Escrow</th>
+                            <th class="p-4">Status Dana Tahan</th>
                             <th class="p-4 text-center">Aksi</th>
                         </tr>
                     </thead>
@@ -205,7 +205,7 @@
                                 <td class="p-4">
                                     <span class="font-bold text-gray-900 dark:text-white">{{ $req->help->title ?? 'Bantuan' }}</span>
                                     <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                                        Escrow: Rp {{ number_format($req->help->amount ?? 0, 0, ',', '.') }}
+                                        Dana Tahan: Rp {{ number_format($req->help->amount ?? 0, 0, ',', '.') }}
                                     </div>
                                 </td>
                                 <td class="p-4">
@@ -669,7 +669,7 @@
                                     <span>Status Operasional: Relist Otomatis ke Pool Mitra Selesai</span>
                                 </div>
                                 <p class="text-emerald-800 dark:text-emerald-300/90 leading-relaxed text-[11px]">
-                                    Sistem telah <strong>otomatis melepaskan tugas</strong> dari mitra ini dan <strong>mengembalikan pesanan ke pool terbuka</strong> agar customer segera mendapatkan mitra pengganti. Saldo Escrow <strong>(Rp {{ number_format($gross, 0, ',', '.') }})</strong> tetap aman di sistem.
+                                    Sistem telah <strong>otomatis melepaskan tugas</strong> dari mitra ini dan <strong>mengembalikan pesanan ke pool terbuka</strong> agar customer segera mendapatkan mitra pengganti. Saldo Dana Tahan <strong>(Rp {{ number_format($gross, 0, ',', '.') }})</strong> tetap aman di sistem.
                                 </p>
                                 <div class="pt-1.5 border-t border-emerald-200 dark:border-emerald-800 text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">
                                     💡 <em>Tugas Admin: Tinjau telemetri GPS dan foto bukti di atas untuk evaluasi sanksi SP (tanpa SP jika kendala darurat sah).</em>
@@ -699,7 +699,7 @@
                                     <span>Status Operasional: Batal Total & Full Refund Otomatis Selesai</span>
                                 </div>
                                 <p class="text-emerald-800 dark:text-emerald-300/90 leading-relaxed text-[11px]">
-                                    Mitra telah menyetujui konfirmasi penarikan pekerjaan. Pesanan telah ditutup dan <strong>100% saldo escrow (Rp {{ number_format($gross, 0, ',', '.') }})</strong> telah dikembalikan otomatis ke dompet customer.
+                                    Mitra telah menyetujui konfirmasi penarikan pekerjaan. Pesanan telah ditutup dan <strong>100% saldo dana tahan (Rp {{ number_format($gross, 0, ',', '.') }})</strong> telah dikembalikan otomatis ke dompet customer.
                                 </p>
                             </div>
 
@@ -711,7 +711,7 @@
                                     <span>Sengketa Penarikan: Mitra Mengajukan Keberatan / Pembelaan</span>
                                 </div>
                                 <p class="text-amber-800 dark:text-amber-300/90 leading-relaxed text-[11px]">
-                                    Mitra menolak pembatalan sepihak karena mengklaim telah menempuh perjalanan menuju lokasi. Berdasarkan data telemetri GPS dan pembelaan di atas, tentukan keputusan penyelesaian saldo escrow (Rp {{ number_format($gross, 0, ',', '.') }}):
+                                    Mitra menolak pembatalan sepihak karena mengklaim telah menempuh perjalanan menuju lokasi. Berdasarkan data telemetri GPS dan pembelaan di atas, tentukan keputusan penyelesaian saldo dana tahan (Rp {{ number_format($gross, 0, ',', '.') }}):
                                 </p>
                             </div>
 

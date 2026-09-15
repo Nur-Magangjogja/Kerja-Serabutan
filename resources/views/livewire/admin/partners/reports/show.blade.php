@@ -336,7 +336,7 @@
                 <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs p-4 sm:p-6 space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100 dark:border-gray-700">
                         <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <span>🛡️ Informasi Tugas & Aliran Dana Escrow</span>
+                            <span>🛡️ Informasi Tugas & Aliran Dana Tahan</span>
                         </h3>
                         <span class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 self-start sm:self-auto whitespace-nowrap">
                             Status Bantuan: {{ strtoupper($help->status) }}

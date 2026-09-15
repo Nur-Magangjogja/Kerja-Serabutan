@@ -237,7 +237,7 @@
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <h4 class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">Pekerjaan Selesai — Menunggu Konfirmasi</h4>
                                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200">
-                                        Rp {{ number_format($wcHelp->amount, 0, ',', '.') }} di Escrow
+                                        Rp {{ number_format($wcHelp->amount, 0, ',', '.') }} di Dana Tahan
                                     </span>
                                 </div>
                                 <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5 truncate">
@@ -331,7 +331,7 @@
                     <!-- Fallback High-Aesthetic Interactive Slides for Mitra -->
                     <div class="flex h-full transition-transform duration-700 ease-out" :style="'transform: translateX(-' + (active * 100) + '%)'">
                         <!-- Slide 1 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-sky-600 dark:bg-sky-800">
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-rose-600 dark:bg-rose-800">
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
                                     <span>Peluang Kerja</span>
@@ -343,7 +343,7 @@
                                     Ambil pekerjaan di sekitarmu dan atur jadwal kerja secara fleksibel.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('mitra.helps.all') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-blue-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('mitra.helps.all') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-rose-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Cari Pekerjaan</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -358,7 +358,7 @@
                         </div>
 
                         <!-- Slide 2 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-violet-600 dark:bg-violet-800">
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-emerald-600 dark:bg-emerald-800">
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
                                     <span>Penarikan Kilat</span>
@@ -370,7 +370,7 @@
                                     Cairkan pendapatanmu langsung ke rekening bank terdaftar tanpa repot.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('mitra.withdraw.form') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-indigo-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('mitra.withdraw.form') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-emerald-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Tarik Saldo</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -385,7 +385,7 @@
                         </div>
 
                         <!-- Slide 3 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-emerald-600 dark:bg-emerald-800">
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-yellow-600 dark:bg-yellow-800">
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
                                     <span>Mitra Unggulan</span>
@@ -397,7 +397,7 @@
                                     Berikan pelayanan terbaik untuk meraih bintang 5 dan order prioritas.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('mitra.withdraw.history') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-emerald-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('mitra.withdraw.history') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-yellow-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Riwayat Tugas</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -582,13 +582,13 @@
                 <!-- Judul & Badges -->
                 <div class="bg-gray-50 dark:bg-gray-750/60 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4">
                     <div class="flex items-center gap-1.5 flex-wrap mb-2">
-                        <span id="previewServiceTypeBadge" class="hidden inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                        <span id="previewServiceTypeBadge" class="hidden inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600">
                             📦 Antar-Jemput
                         </span>
-                        <span id="previewScheduledBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        <span id="previewScheduledBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600">
                             ⚡ Butuh Cepat
                         </span>
-                        <span id="previewDistanceBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <span id="previewDistanceBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600">
                             📍 Terverifikasi
                         </span>
                     </div>
@@ -758,10 +758,10 @@
             if (schedBadge) {
                 if (data.is_scheduled && data.scheduled_at) {
                     schedBadge.textContent = '📅 Terjadwal: ' + data.scheduled_at + (data.departure_window_opens_at ? ' (Buka Pkl ' + data.departure_window_opens_at + ')' : '');
-                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800';
+                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600';
                 } else {
                     schedBadge.textContent = '⚡ Segera';
-                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800';
+                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600';
                 }
             }
 
@@ -814,9 +814,7 @@
                 const isPassenger = data.service_category === 'passenger';
                 if (serviceTypeBadge) {
                     serviceTypeBadge.textContent = isPassenger ? '👥 Antar Penumpang' : '📦 Barang & Dokumen';
-                    serviceTypeBadge.className = isPassenger 
-                        ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
-                        : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800';
+                    serviceTypeBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600';
                     serviceTypeBadge.classList.remove('hidden');
                 }
                 if (locHeaderTitle) locHeaderTitle.textContent = isPassenger ? 'Rute Antar Penumpang:' : 'Rute Pengantaran Barang:';
@@ -845,7 +843,7 @@
             } else {
                 if (serviceTypeBadge) {
                     serviceTypeBadge.textContent = '🛠️ Kerja Serabutan';
-                    serviceTypeBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800';
+                    serviceTypeBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600';
                     serviceTypeBadge.classList.remove('hidden');
                 }
                 if (locHeaderTitle) locHeaderTitle.textContent = 'Area & Patokan Lokasi:';

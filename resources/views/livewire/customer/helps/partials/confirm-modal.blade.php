@@ -95,7 +95,7 @@
                     <div class="border-t border-gray-200 dark:border-gray-700 pt-3 flex items-center justify-between">
                         <div>
                             <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block">Total Saldo yang Dibutuhkan</span>
-                            <span class="text-[10px] text-gray-400 dark:text-gray-500">Ditahan aman (Escrow) hingga selesai</span>
+                            <span class="text-[10px] text-gray-400 dark:text-gray-500">Ditahan aman (Dana Tahan) hingga selesai</span>
                         </div>
                         <div class="text-xl font-extrabold text-blue-600 dark:text-blue-400">
                             Rp {{ number_format($confirmTotal ?? 0, 0, ',', '.') }}
@@ -103,84 +103,60 @@
                     </div>
                 </div>
 
-                @if ($confirmScheduled)
-                    <div class="p-3.5 bg-blue-50/70 dark:bg-blue-950/40 rounded-2xl border border-blue-200/70 dark:border-blue-800/60 text-xs space-y-2">
-                        <div class="flex items-center justify-between font-bold text-blue-900 dark:text-blue-200">
-                            <span class="flex items-center gap-1.5">
-                                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Alur & Jadwal Pelaksanaan
-                            </span>
-                            <span class="text-[10px] bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-semibold">
-                                {{ $this->scheduleTimeline['target_date'] ?? '' }}
-                            </span>
-                        </div>
-
-                        <div class="space-y-1.5 pt-1">
-                            <div class="flex items-start gap-2 text-xs">
-                                <span class="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0 mt-0.5">1</span>
-                                <div class="min-w-0 flex-1">
-                                    <span class="text-gray-500 dark:text-gray-400 text-[10px] block">Mulai Muncul di Pool / Radar:</span>
-                                    <span class="font-semibold text-gray-900 dark:text-white">{{ $this->scheduleTimeline['publish_label'] }}</span>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start gap-2 text-xs">
-                                <span class="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0 mt-0.5">2</span>
-                                <div class="min-w-0 flex-1">
-                                    <span class="text-gray-500 dark:text-gray-400 text-[10px] block">Mitra Mulai Berangkat:</span>
-                                    <span class="font-semibold text-amber-700 dark:text-amber-300">{{ $this->scheduleTimeline['departure_label'] }}</span>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start gap-2 text-xs">
-                                <span class="w-4 h-4 rounded-full bg-emerald-600 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0 mt-0.5">3</span>
-                                <div class="min-w-0 flex-1">
-                                    <span class="text-gray-500 dark:text-gray-400 text-[10px] block">Target Pelaksanaan Tugas:</span>
-                                    <span class="font-semibold text-emerald-700 dark:text-emerald-300">{{ $this->scheduleTimeline['target_label'] }}</span>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start gap-2 text-xs pt-1.5 border-t border-blue-200/60 dark:border-blue-900/60">
-                                <span class="w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0 mt-0.5">4</span>
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-gray-500 dark:text-gray-400 text-[10px] block font-medium">Batas Waktu Pencarian Rekan Jasa:</span>
-                                        <span class="text-[9px] text-rose-600 dark:text-rose-400 font-bold bg-rose-100 dark:bg-rose-950/60 px-1.5 py-0.5 rounded">Batal Otomatis</span>
-                                    </div>
-                                    <span class="font-bold text-rose-600 dark:text-rose-400 block">{{ $confirmExpiresAt ?? $this->expiryPreview }}</span>
-                                    <span class="text-[9.5px] text-gray-400 dark:text-gray-500 block leading-tight mt-0.5">(Saldo 100% dikembalikan otomatis jika belum ada rekan jasa hingga batas waktu ini)</span>
-                                </div>
-                            </div>
-                        </div>
+                <!-- 3. Alur & Jadwal Pelaksanaan (Seragam untuk Terjadwal maupun Pelaksanaan Segera) -->
+                <div class="p-3.5 bg-blue-50/70 dark:bg-blue-950/40 rounded-2xl border border-blue-200/70 dark:border-blue-800/60 text-xs space-y-2">
+                    <div class="flex items-center justify-between font-bold text-blue-900 dark:text-blue-200">
+                        <span class="flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Alur & Jadwal Pelaksanaan
+                        </span>
+                        <span class="text-[10px] bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-semibold">
+                            {{ $this->scheduleTimeline['target_date'] ?? 'Pelaksanaan Segera' }}
+                        </span>
                     </div>
-                @else
-                    <div class="p-3.5 bg-gray-50 dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700 text-xs space-y-2">
-                        <div class="flex items-center justify-between font-bold text-gray-900 dark:text-gray-100">
-                            <span class="flex items-center gap-1.5">
-                                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Batas Waktu Pencarian Rekan Jasa
-                            </span>
-                            <span class="text-[9px] text-amber-600 dark:text-amber-400 font-bold bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded-full">
-                                Auto-Cancel & Refund 100%
-                            </span>
+
+                    <div class="space-y-1.5 pt-1">
+                        <div class="flex items-start gap-2 text-xs">
+                            <span class="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0 mt-0.5">1</span>
+                            <div class="min-w-0 flex-1">
+                                <span class="text-gray-500 dark:text-gray-400 text-[10px] block">Mulai Muncul di Pool / Radar:</span>
+                                <span class="font-semibold text-gray-900 dark:text-white">{{ $this->scheduleTimeline['publish_label'] }}</span>
+                            </div>
                         </div>
 
                         <div class="flex items-start gap-2 text-xs">
-                            <span class="w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0 mt-0.5">⏳</span>
+                            <span class="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0 mt-0.5">2</span>
                             <div class="min-w-0 flex-1">
-                                <span class="text-gray-500 dark:text-gray-400 text-[10px] block">Batas Maksimal Pencarian:</span>
-                                <span class="font-bold text-rose-600 dark:text-rose-400">{{ $confirmExpiresAt ?? $this->expiryPreview }}</span>
-                                <span class="text-[9.5px] text-gray-400 dark:text-gray-500 block leading-tight mt-0.5">Pesanan disebarkan sekarang dan akan otomatis dibatalkan & saldo di-refund 100% jika belum diambil hingga batas waktu tersebut.</span>
+                                <span class="text-gray-500 dark:text-gray-400 text-[10px] block">Mitra Mulai Berangkat:</span>
+                                <span class="font-semibold text-amber-700 dark:text-amber-300">{{ $this->scheduleTimeline['departure_label'] }}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-2 text-xs">
+                            <span class="w-4 h-4 rounded-full bg-emerald-600 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0 mt-0.5">3</span>
+                            <div class="min-w-0 flex-1">
+                                <span class="text-gray-500 dark:text-gray-400 text-[10px] block">Target Pelaksanaan Tugas:</span>
+                                <span class="font-semibold text-emerald-700 dark:text-emerald-300">{{ $this->scheduleTimeline['target_label'] }}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-2 text-xs pt-1.5 border-t border-blue-200/60 dark:border-blue-900/60">
+                            <span class="w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] flex items-center justify-center font-bold flex-shrink-0 mt-0.5">4</span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-gray-500 dark:text-gray-400 text-[10px] block font-medium">Batas Waktu Pencarian Rekan Jasa:</span>
+                                    <span class="text-[9px] text-rose-600 dark:text-rose-400 font-bold bg-rose-100 dark:bg-rose-950/60 px-1.5 py-0.5 rounded">Batal Otomatis</span>
+                                </div>
+                                <span class="font-bold text-rose-600 dark:text-rose-400 block">{{ $confirmExpiresAt ?? $this->expiryPreview }}</span>
+                                <span class="text-[9.5px] text-gray-400 dark:text-gray-500 block leading-tight mt-0.5">(Saldo 100% dikembalikan otomatis jika belum ada rekan jasa hingga batas waktu ini)</span>
                             </div>
                         </div>
                     </div>
-                @endif
+                </div>
 
-                <!-- 3. Info Box Escrow -->
+                <!-- 3. Info Box Dana Tahan -->
                 <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/80 rounded-xl p-3.5">
                     <div class="flex gap-2.5">
                         <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,7 +164,7 @@
                         </svg>
                         <div class="text-xs text-blue-900 dark:text-blue-200 leading-relaxed">
                             <p class="font-bold mb-0.5">Jaminan 100% Saldo Aman :</p>
-                            Dana sebesar <strong>Rp {{ number_format($confirmTotal ?? 0, 0, ',', '.') }}</strong> akan dikunci di saldo Escrow selama tugas berlangsung. Uang baru akan diteruskan ke Rekan Jasa setelah Anda mengonfirmasi pekerjaan selesai. Jika tugas dibatalkan, dana 100% dikembalikan utuh ke saldo Anda.
+                            Dana sebesar <strong>Rp {{ number_format($confirmTotal ?? 0, 0, ',', '.') }}</strong> akan dikunci di saldo dana tahan selama tugas berlangsung. Uang baru akan diteruskan ke Rekan Jasa setelah Anda mengonfirmasi pekerjaan selesai. Jika tugas dibatalkan, dana 100% dikembalikan utuh ke saldo Anda.
                         </div>
                     </div>
                 </div>

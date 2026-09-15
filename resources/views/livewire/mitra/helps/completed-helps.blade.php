@@ -141,17 +141,17 @@
                                             <div class="flex items-center gap-1.5 flex-wrap mb-1">
                                                 @if($help->service_type === 'pickup_delivery')
                                                     @if($help->service_category === 'passenger')
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                                                            👥 Antar Penumpang
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600">
+                                                             Antar Penumpang
                                                         </span>
                                                     @else
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
-                                                            📦 Barang & Dokumen
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600">
+                                                             Barang & Dokumen
                                                         </span>
                                                     @endif
                                                 @else
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                                        🛠️ Kerja Serabutan
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600">
+                                                         Kerja Serabutan
                                                     </span>
                                                 @endif
                                             </div>
@@ -392,17 +392,17 @@
                                             <div class="flex items-center gap-1.5 flex-wrap mb-1">
                                                 @if($help?->service_type === 'pickup_delivery')
                                                     @if($help?->service_category === 'passenger')
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                                                            👥 Antar Penumpang
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600">
+                                                             Antar Penumpang
                                                         </span>
                                                     @else
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
-                                                            📦 Barang & Dokumen
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600">
+                                                             Barang & Dokumen
                                                         </span>
                                                     @endif
                                                 @else
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                                        🛠️ Kerja Serabutan
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600">
+                                                         Kerja Serabutan
                                                     </span>
                                                 @endif
                                             </div>
