@@ -82,10 +82,7 @@
                             $data = $notification->data;
                             $type = $data['type'] ?? 'general';
 
-                            if($type === 'chat_message') {
-                                $titleText = 'Pesan Baru';
-                                $iconColor = 'text-blue-500 bg-blue-50';
-                            } elseif($type === 'help_request') {
+                            if($type === 'help_request') {
                                 $titleText = $data['title'] ?? 'Permintaan Bantuan Baru';
                                 $iconColor = 'text-emerald-500 bg-emerald-50';
                             } elseif($type === 'rating_received') {

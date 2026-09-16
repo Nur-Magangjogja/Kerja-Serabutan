@@ -98,8 +98,14 @@ class Index extends Component
 
     public function render()
     {
-        $notifications = auth()->user()->notifications()->latest()->paginate($this->perPage);
-        $totalCount = auth()->user()->notifications()->count();
+        $query = auth()->user()->notifications()
+            ->where('type', '!=', 'App\Notifications\ChatMessageNotification')
+            ->where(function ($q) {
+                $q->whereNull('data->type')->orWhere('data->type', '!=', 'chat_message');
+            });
+
+        $notifications = (clone $query)->latest()->paginate($this->perPage);
+        $totalCount    = (clone $query)->count();
 
         return view('livewire.customer.notifications.index', [
             'notifications' => $notifications,

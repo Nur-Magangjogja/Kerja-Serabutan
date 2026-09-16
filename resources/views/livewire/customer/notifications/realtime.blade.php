@@ -1,16 +1,16 @@
-<div></div>
+<div wire:poll.5s="poll"></div>
 
 <script>
     // Listen for Livewire dispatched events and re-dispatch as browser events
     document.addEventListener('livewire:init', () => {
         Livewire.on('help-taken', (event) => {
-            console.log('Livewire help-taken received:', event);
-            window.dispatchEvent(new CustomEvent('help-taken', { detail: event }));
+            const data = Array.isArray(event) ? (event[0] || {}) : event;
+            window.dispatchEvent(new CustomEvent('help-taken', { detail: data }));
         });
 
         Livewire.on('help-new-message', (event) => {
-            console.log('Livewire help-new-message received:', event);
-            window.dispatchEvent(new CustomEvent('help-new-message', { detail: event }));
+            const data = Array.isArray(event) ? (event[0] || {}) : event;
+            window.dispatchEvent(new CustomEvent('help-new-message', { detail: data }));
         });
 
         // Bridge status changes (from Mitra GPS tracker) to browser events

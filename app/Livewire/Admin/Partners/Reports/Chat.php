@@ -47,6 +47,13 @@ class Chat extends Component
             'photo' => 'nullable|image|max:5120',
         ]);
 
+        $photoName = $this->photo ? $this->photo->getClientOriginalName() : '';
+        $lockKey = 'send_msg_' . auth()->id() . '_report_' . $this->report->id . '_' . $this->activeTab . '_' . md5(($this->message ?? '') . '_' . $photoName);
+
+        if (!\Illuminate\Support\Facades\Cache::add($lockKey, true, 2)) {
+            return;
+        }
+
         $photoPath = null;
         if ($this->photo) {
             $photoPath = $this->photo->store('reports/messages', 'public');

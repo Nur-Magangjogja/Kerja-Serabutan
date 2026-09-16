@@ -23,13 +23,10 @@ class Realtime extends Component
     public function poll()
     {
         if (!auth()->check()) {
-            Log::info('[Customer\\RealtimeNotifications] poll called but no auth user.');
             return;
         }
 
-        Log::info('[Customer\\RealtimeNotifications] polling for customer_id=' . auth()->id() . ' last_chat_id=' . $this->last_chat_id);
-
-        // Check for new chat messages
+        // Check for new incoming chat messages
         $new = ChatModel::where('customer_id', auth()->id())
             ->whereIn('sender_type', ['mitra', 'system'])
             ->where('id', '>', $this->last_chat_id)
@@ -37,17 +34,15 @@ class Realtime extends Component
             ->first();
 
         if ($new) {
-            Log::info('[Customer\\RealtimeNotifications] found new chat id=' . $new->id . ' help_id=' . $new->help_id . ' message=' . Str::limit($new->message, 120));
-
             $this->last_chat_id = $new->id;
-
             $senderName = $new->sender_type === 'system' ? 'Sistem SayaBantu' : (optional($new->mitra)->name ?? 'Mitra');
 
             $this->dispatch(
                 'help-new-message',
                 helpId: $new->help_id,
                 message: Str::limit($new->message, 150),
-                from: $senderName
+                from: $senderName,
+                fromId: $new->mitra_id
             );
         }
 

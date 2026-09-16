@@ -7,8 +7,8 @@ use App\Models\Help;
 use App\Models\PartnerReport;
 use App\Models\PartnerReportMessage;
 use App\Models\User;
-use App\Notifications\ChatMessageNotification;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -49,6 +49,10 @@ class Index extends Component
             $helpModel = Help::with(['mitra', 'user'])->find($help);
 
             if ($helpModel) {
+                if ($helpModel->user_id !== Auth::id()) {
+                    return redirect()->route('customer.chat');
+                }
+
                 if ($helpModel->mitra_id) {
                     $this->selectPartner($helpModel->mitra_id, $helpModel->id);
                 } else {
@@ -59,6 +63,8 @@ class Index extends Component
                         $this->unassigned_help = $helpModel;
                     }
                 }
+            } else {
+                return redirect()->route('customer.chat');
             }
         }
     }
@@ -132,12 +138,16 @@ class Index extends Component
             $mitras = $mitrasQuery->get();
             $filteredMitraIds = $mitras->pluck('id');
 
-            // Bulk eager load last messages in a single query
-            $allChats = ChatModel::where('customer_id', $userId)
+            // Bulk eager load last messages using MAX(id) per mitra
+            $latestChatIds = ChatModel::where('customer_id', $userId)
                 ->whereIn('mitra_id', $filteredMitraIds)
-                ->orderByDesc('created_at')
+                ->selectRaw('MAX(id) as id')
+                ->groupBy('mitra_id')
+                ->pluck('id');
+
+            $lastMessages = ChatModel::whereIn('id', $latestChatIds)
                 ->get()
-                ->groupBy('mitra_id');
+                ->keyBy('mitra_id');
 
             // Bulk eager load unread counts in a single query
             $unreadCounts = ChatModel::where('customer_id', $userId)
@@ -148,17 +158,21 @@ class Index extends Component
                 ->groupBy('mitra_id')
                 ->pluck('total', 'mitra_id');
 
-            // Bulk eager load latest helps in a single query
-            $latestHelps = Help::where('user_id', $userId)
+            // Bulk eager load latest helps using MAX(id) per mitra
+            $latestHelpIds = Help::where('user_id', $userId)
                 ->whereIn('mitra_id', $filteredMitraIds)
-                ->orderByDesc('updated_at')
-                ->get()
-                ->groupBy('mitra_id');
+                ->selectRaw('MAX(id) as id')
+                ->groupBy('mitra_id')
+                ->pluck('id');
 
-            $conversations = $mitras->map(function ($mitra) use ($allChats, $unreadCounts, $latestHelps) {
-                $lastMessage = $allChats->get($mitra->id)?->first();
+            $latestHelps = Help::whereIn('id', $latestHelpIds)
+                ->get()
+                ->keyBy('mitra_id');
+
+            $conversations = $mitras->map(function ($mitra) use ($lastMessages, $unreadCounts, $latestHelps) {
+                $lastMessage = $lastMessages->get($mitra->id);
                 $unreadCount = (int) ($unreadCounts->get($mitra->id) ?? 0);
-                $latestHelp = $latestHelps->get($mitra->id)?->first();
+                $latestHelp = $latestHelps->get($mitra->id);
 
                 return (object) [
                     'partner'      => $mitra,
@@ -256,6 +270,7 @@ class Index extends Component
                 'read_at' => now(),
             ]);
 
+        $this->dispatch('chat-messages-read');
         $this->dispatch('scroll-chat-bottom');
     }
 
@@ -294,6 +309,8 @@ class Index extends Component
                     'help_id'     => $m->report?->reported_help_id,
                     'help'        => $m->report?->reportedHelp,
                     'is_admin'    => $m->isFromAdmin(),
+                    'is_read'     => (bool) $m->is_read,
+                    'read_at'     => $m->read_at,
                 ];
             });
         }
@@ -332,7 +349,7 @@ class Index extends Component
     public function handleNewIncomingMessage()
     {
         if ($this->selected_partner_id && !$this->is_admin_chat) {
-            ChatModel::where('customer_id', Auth::id())
+            $updated = ChatModel::where('customer_id', Auth::id())
                 ->where('mitra_id', $this->selected_partner_id)
                 ->whereIn('sender_type', ['mitra', 'system'])
                 ->whereNull('read_at')
@@ -340,7 +357,9 @@ class Index extends Component
                     'is_read' => true,
                     'read_at' => now(),
                 ]);
-            $this->dispatch('play-notification-sound');
+            if ($updated > 0) {
+                $this->dispatch('chat-messages-read');
+            }
             $this->dispatch('scroll-chat-bottom');
         }
     }
@@ -355,6 +374,15 @@ class Index extends Component
         }
 
         $customerId = Auth::id();
+
+        // Backend Duplicate Protection (2 detik)
+        $convKey = $this->is_admin_chat ? ('admin_' . ($this->selected_report_id ?? 'new')) : ('partner_' . $this->selected_partner_id . '_' . ($this->active_help_id ?? 'any'));
+        $photoName = $this->photo ? $this->photo->getClientOriginalName() : '';
+        $lockKey = 'send_msg_' . $customerId . '_' . $convKey . '_' . md5(($this->message ?? '') . '_' . $photoName);
+
+        if (!Cache::add($lockKey, true, 2)) {
+            return;
+        }
 
         $photoPath = null;
         if ($this->photo) {
@@ -400,7 +428,6 @@ class Index extends Component
             $this->message = '';
             $this->photo   = null;
             $this->dispatch('message-sent');
-            $this->dispatch('play-notification-sound');
             $this->dispatch('scroll-chat-bottom');
             return;
         }
@@ -441,20 +468,10 @@ class Index extends Component
             'is_read'     => false,
         ]);
 
-        if ($this->selected_partner && !($this->selected_partner->is_admin ?? false)) {
-            try {
-                $this->selected_partner->notify(
-                    new ChatMessageNotification($helpId, Str::limit($msgText, 150), $customerId, Auth::user()->name)
-                );
-            } catch (\Throwable $e) {
-                \Log::warning('[CustomerChat] Failed to notify mitra: ' . $e->getMessage());
-            }
-        }
-
+        // Chat messages are saved in chats table and checked via realtime poll, no database notifications needed
         $this->message = '';
         $this->photo   = null;
         $this->dispatch('message-sent');
-        $this->dispatch('play-notification-sound');
         $this->dispatch('scroll-chat-bottom');
     }
 

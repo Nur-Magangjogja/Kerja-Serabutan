@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Chat;
 use App\Models\Help;
 use App\Models\User;
-use App\Notifications\ChatMessageNotification;
 use Illuminate\Support\Facades\Log;
 
 class HelpChatService
@@ -30,8 +29,6 @@ class HelpChatService
                 'sender_type' => 'mitra',
                 'read_at'     => null,
             ]);
-
-            $customer->notify(new ChatMessageNotification($help->id, $message, $mitra->id, $mitra->name));
         } catch (\Throwable $e) {
             Log::warning('[HelpChatService] Failed to send welcome chat: ' . $e->getMessage());
         }
@@ -57,8 +54,6 @@ class HelpChatService
                 'sender_type' => 'mitra',
                 'read_at'     => null,
             ]);
-
-            $customer->notify(new ChatMessageNotification($help->id, $message, $mitra->id, $mitra->name));
         } catch (\Throwable $e) {
             Log::warning('[HelpChatService] Failed to send service started chat: ' . $e->getMessage());
         }
@@ -85,8 +80,6 @@ class HelpChatService
                 'sender_type' => 'mitra',
                 'read_at'     => null,
             ]);
-
-            $customer->notify(new ChatMessageNotification($help->id, $caption, $mitra->id, $mitra->name));
         } catch (\Throwable $e) {
             Log::warning('[HelpChatService] Failed to send completion chat: ' . $e->getMessage());
         }
@@ -110,8 +103,6 @@ class HelpChatService
                 'sender_type' => 'customer',
                 'read_at'     => null,
             ]);
-
-            $mitra->notify(new ChatMessageNotification($help->id, $message, $customer->id, $customer->name));
         } catch (\Throwable $e) {
             Log::warning('[HelpChatService] Failed to send confirmation chat: ' . $e->getMessage());
         }
@@ -138,8 +129,6 @@ class HelpChatService
                 'sender_type' => 'mitra',
                 'read_at'     => null,
             ]);
-
-            $customer->notify(new ChatMessageNotification($help->id, $message, $mitra->id, $mitra->name));
         } catch (\Throwable $e) {
             Log::warning('[HelpChatService] Failed to send cancellation request chat: ' . $e->getMessage());
         }
@@ -165,8 +154,6 @@ class HelpChatService
                     'sender_type' => 'system',
                     'read_at'     => null,
                 ]);
-
-                $customer->notify(new ChatMessageNotification($help->id, $message, $customer->id, 'Sistem SayaBantu'));
             } elseif ($action === 'accepted') {
                 $message = "Sistem SayaBantu: Permintaan pembatalan untuk bantuan '{$help->title}' telah disetujui oleh Customer. Pesanan ini telah dikembalikan ke pencarian Rekan Jasa lain.";
 
@@ -178,8 +165,6 @@ class HelpChatService
                     'sender_type' => 'system',
                     'read_at'     => null,
                 ]);
-
-                $mitra->notify(new ChatMessageNotification($help->id, $message, $customer->id, 'Sistem SayaBantu'));
             } else {
                 $message = "Halo Rekan Jasa {$mitra->name}, permintaan pembatalan Anda untuk bantuan '{$help->title}' ditolak oleh Customer. Mohon untuk melanjutkan pengerjaan bantuan ini.";
 
@@ -191,8 +176,6 @@ class HelpChatService
                     'sender_type' => 'system',
                     'read_at'     => null,
                 ]);
-
-                $mitra->notify(new ChatMessageNotification($help->id, $message, $customer->id, 'Sistem SayaBantu'));
             }
         } catch (\Throwable $e) {
             Log::warning('[HelpChatService] Failed to send cancellation resolved chat: ' . $e->getMessage());

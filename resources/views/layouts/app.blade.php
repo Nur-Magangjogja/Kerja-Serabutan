@@ -209,11 +209,25 @@
 
                 // Listen for various help status updates
                 window.addEventListener('help-new-message', function (e) {
-                    const helpId = e && e.detail && e.detail.helpId ? e.detail.helpId : null;
-                    const from = e && e.detail && e.detail.from ? e.detail.from : 'Mitra';
-                    const message = e && e.detail && e.detail.message ? e.detail.message : '';
-                    const url = helpId ? customerChatRoute + '?help=' + encodeURIComponent(helpId) : customerChatRoute;
-                    window.showCustomerNotification({ title: 'Pesan Baru dari ' + from, message: message || 'Ketuk untuk membuka chat.', url, timeout: 6000, type: 'message' });
+                    const d = (e && e.detail && Array.isArray(e.detail)) ? (e.detail[0] || {}) : (e && e.detail ? e.detail : {});
+                    const helpId = d.helpId || d.help_id || null;
+                    const fromId = d.fromId || d.from_id || null;
+                    const from = d.from || d.from_name || 'Mitra';
+                    const message = d.message || '';
+
+                    const chatWrapper = document.getElementById('messagesWrapper');
+                    if (chatWrapper) {
+                        const activeHelpId = chatWrapper.dataset.activeHelpId;
+                        const activePartnerId = chatWrapper.dataset.activePartnerId;
+
+                        if ((helpId && activeHelpId && String(helpId) === String(activeHelpId)) ||
+                            (fromId && activePartnerId && String(fromId) === String(activePartnerId))) {
+                            return;
+                        }
+                    }
+
+                    const url = helpId ? customerChatRoute + '/' + encodeURIComponent(helpId) : customerChatRoute;
+                    window.showCustomerNotification({ title: 'Pesan Baru dari ' + from, message: message || 'Ketuk untuk membuka chat.', url: url, timeout: 6000, type: 'message' });
                 });
 
                 window.addEventListener('help-taken', function (e) {

@@ -204,6 +204,8 @@
 
         <!-- Messages Stream Feed -->
         <div id="messagesWrapper"
+             data-active-partner-id="{{ $selected_partner_id }}"
+             data-active-help-id="{{ $active_help_id }}"
              x-data="{
                  scrollToBottom(smooth = false) {
                      this.$nextTick(() => {
@@ -290,9 +292,20 @@
                                 @endif
 
                                 <p class="text-xs leading-relaxed break-words whitespace-pre-line">{{ $msg->message }}</p>
-                                <div class="text-[10px] mt-1 text-right {{ $msg->sender_type === 'mitra' ? 'text-white/80' : 'text-gray-400 dark:text-gray-500' }}">
-                                    {{ $msg->created_at->format('H:i') }}
-                                </div>
+                                @if($msg->sender_type === 'mitra')
+                                    <div class="text-[10px] mt-1 flex items-center justify-end gap-1 text-white/80 select-none">
+                                        <span>{{ $msg->created_at->format('H:i') }}</span>
+                                        @if(!empty($msg->is_read) || !empty($msg->read_at))
+                                            <span class="text-blue-200 font-bold" title="Dibaca">✓✓</span>
+                                        @else
+                                            <span class="text-white/60 font-medium" title="Terkirim">✓</span>
+                                        @endif
+                                    </div>
+                                @else
+                                    <div class="text-[10px] mt-1 text-right text-gray-400 dark:text-gray-500 select-none">
+                                        {{ $msg->created_at->format('H:i') }}
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     @endif
@@ -305,7 +318,7 @@
         </div>
 
         <!-- Bottom Fixed Input Bar -->
-        <form wire:submit.prevent="sendMessage" class="shrink-0 p-2.5 sm:p-3 border-t border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-850 space-y-2 shadow-lg">
+        <form wire:submit="sendMessage" class="shrink-0 p-2.5 sm:p-3 border-t border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-850 space-y-2 shadow-lg">
             @if($photo)
                 <div class="flex items-center gap-2 p-2 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/80 rounded-xl">
                     @php
@@ -345,7 +358,9 @@
                     autofocus>
 
                 <button type="submit"
-                    class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1 cursor-pointer flex-shrink-0">
+                    wire:loading.attr="disabled"
+                    wire:target="sendMessage"
+                    class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1 cursor-pointer flex-shrink-0 disabled:opacity-75 disabled:cursor-not-allowed">
                     Kirim
                 </button>
             </div>
@@ -370,18 +385,13 @@
     document.addEventListener('livewire:navigated', () => setTimeout(() => scrollMitraChatToBottom(false), 60));
     
     window.addEventListener('message-sent', () => {
-        if (typeof window.playNotificationSound === 'function') {
-            window.playNotificationSound({ volume: 0.65 });
-        }
         setTimeout(() => scrollMitraChatToBottom(true), 60);
     });
 
     window.addEventListener('scroll-chat-bottom', () => setTimeout(() => scrollMitraChatToBottom(false), 40));
 
     window.addEventListener('help-new-message', () => {
-        if (typeof window.playNotificationSound === 'function') {
-            window.playNotificationSound({ volume: 0.85 });
-        }
+        setTimeout(() => scrollMitraChatToBottom(false), 60);
     });
 
     const mitraObserver = new MutationObserver(() => {

@@ -86,10 +86,24 @@
     @livewire('mitra.notifications.realtime')
 
     <script>
+        window.USER_SOUND_ENABLED = {{ (auth()->check() && (auth()->user()->notification_settings['sound_enabled'] ?? true)) ? 'true' : 'false' }};
+        window.DEFAULT_NOTIFICATION_SOUND = "{{ asset('sfx/mixkit-software-interface-start-2574.mp3') }}";
+        window.getNotificationSoundEnabled = function() {
+            if (typeof window.USER_SOUND_ENABLED !== 'undefined') {
+                return window.USER_SOUND_ENABLED;
+            }
+            return true;
+        };
+
         (function () {
             if (!window.showMitraNotification) {
                 window.showMitraNotification = function({ title = 'Notifikasi', message = '', url = '#' , timeout = 4000, type = 'success' }) {
                     try {
+                        // Mainkan audio notifikasi jika aktif
+                        if (typeof window.playNotificationSound === 'function') {
+                            window.playNotificationSound();
+                        }
+
                         const container = document.getElementById('mitra-global-notification-inner');
                         if (!container) return;
 
@@ -146,18 +160,26 @@
                     window.showMitraNotification({ title: 'Bantuan Diambil', message: 'Anda berhasil mengambil bantuan. Ketuk untuk melihat detail.', url });
                 });
 
-                window.addEventListener('message-sent', function (e) {
-                    const helpId = e && e.detail && e.detail.helpId ? e.detail.helpId : null;
-                    const url = helpId ? mitraChatRoute + '?help=' + encodeURIComponent(helpId) : mitraChatRoute;
-                    window.showMitraNotification({ title: 'Pesan Terkirim', message: 'Pesan berhasil dikirim. Ketuk untuk membuka chat.', url });
-                });
-
                 window.addEventListener('help-new-message', function (e) {
-                    const helpId = e && e.detail && e.detail.helpId ? e.detail.helpId : null;
-                    const from = e && e.detail && e.detail.from ? e.detail.from : 'Customer';
-                    const message = e && e.detail && e.detail.message ? e.detail.message : '';
-                    const url = helpId ? mitraChatRoute + '?help=' + encodeURIComponent(helpId) : mitraChatRoute;
-                    window.showMitraNotification({ title: 'Pesan Baru dari ' + from, message: message || 'Ketuk untuk membuka chat.', url, timeout: 6000 });
+                    const d = (e && e.detail && Array.isArray(e.detail)) ? (e.detail[0] || {}) : (e && e.detail ? e.detail : {});
+                    const helpId = d.helpId || d.help_id || null;
+                    const fromId = d.fromId || d.from_id || null;
+
+                    const chatWrapper = document.getElementById('messagesWrapper');
+                    if (chatWrapper) {
+                        const activeHelpId = chatWrapper.dataset.activeHelpId;
+                        const activePartnerId = chatWrapper.dataset.activePartnerId;
+
+                        if ((helpId && activeHelpId && String(helpId) === String(activeHelpId)) ||
+                            (fromId && activePartnerId && String(fromId) === String(activePartnerId))) {
+                            return;
+                        }
+                    }
+
+                    const from = d.from || d.from_name || 'Customer';
+                    const message = d.message || '';
+                    const url = helpId ? mitraChatRoute + '/' + encodeURIComponent(helpId) : mitraChatRoute;
+                    window.showMitraNotification({ title: 'Pesan Baru dari ' + from, message: message || 'Ketuk untuk membuka chat.', url: url, timeout: 6000, type: 'message' });
                 });
 
                 window.triggerMitraNotification = function (payload) {

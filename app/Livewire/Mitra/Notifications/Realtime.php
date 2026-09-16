@@ -23,12 +23,10 @@ class Realtime extends Component
     public function poll()
     {
         if (!auth()->check()) {
-            Log::info('[RealtimeNotifications] poll called but no auth user.');
             return;
         }
 
-        Log::info('[RealtimeNotifications] polling for mitra_id=' . auth()->id() . ' last_chat_id=' . $this->last_chat_id);
-
+        // Check for new incoming chat messages
         $new = ChatModel::where('mitra_id', auth()->id())
             ->whereIn('sender_type', ['customer', 'system'])
             ->where('id', '>', $this->last_chat_id)
@@ -36,10 +34,7 @@ class Realtime extends Component
             ->first();
 
         if ($new) {
-            Log::info('[RealtimeNotifications] found new chat id=' . $new->id . ' help_id=' . $new->help_id . ' message=' . Str::limit($new->message, 120));
-
             $this->last_chat_id = $new->id;
-
             $senderName = $new->sender_type === 'system' ? 'Sistem SayaBantu' : (optional($new->customer)->name ?? 'Customer');
 
             // Dispatch with named parameters so Livewire exposes them as event detail in the browser
@@ -47,7 +42,8 @@ class Realtime extends Component
                 'help-new-message',
                 helpId: $new->help_id,
                 message: Str::limit($new->message, 150),
-                from: $senderName
+                from: $senderName,
+                fromId: $new->customer_id
             );
         }
 

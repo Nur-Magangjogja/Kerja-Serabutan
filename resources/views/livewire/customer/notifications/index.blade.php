@@ -82,11 +82,7 @@
                             $data = $notification->data;
                             $type = $data['type'] ?? 'general';
 
-                            if($type === 'chat_message') {
-                                $titleText = 'Pesan Baru';
-                                $badgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
-                                $iconColor = 'text-blue-500 bg-blue-50';
-                            } elseif($type === 'help_taken') {
+                            if($type === 'help_taken') {
                                 $titleText = $data['title'] ?? 'Bantuan Diambil';
                                 $badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
                                 $iconColor = 'text-emerald-500 bg-emerald-50';

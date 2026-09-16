@@ -132,7 +132,10 @@
                 <input type="text" wire:model="message" placeholder="Tulis pesan ke {{ $activeTab === 'customer' ? 'Customer' : 'Mitra' }}..."
                     class="flex-1 min-w-0 px-3.5 sm:px-4 py-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
 
-                <button type="submit" class="px-3.5 sm:px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0">
+                <button type="submit"
+                    wire:loading.attr="disabled"
+                    wire:target="sendMessage"
+                    class="px-3.5 sm:px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-75 disabled:cursor-not-allowed">
                     <span>Kirim</span>
                     <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </button>
