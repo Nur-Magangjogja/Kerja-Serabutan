@@ -1,4 +1,4 @@
-<div class="h-full flex-1 min-h-0 flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100" @if($selected_partner_id) wire:poll.2500ms.visible @else wire:poll.6s.visible @endif style="overscroll-behavior: none; overscroll-behavior-y: none;">
+<div class="h-full flex-1 min-h-0 flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100" @if($selected_partner_id) wire:poll.2500ms.visible @else wire:poll.10s.visible @endif style="overscroll-behavior: none; overscroll-behavior-y: none;">
     {{-- CASE 1: Help belum memiliki mitra --}}
     @if($unassigned_help)
         <!-- Top Header Section -->
@@ -35,7 +35,7 @@
                     <button wire:click="closeChat" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-xl transition cursor-pointer">
                         Lihat Semua Pesan
                     </button>
-                    <a href="{{ route('customer.helps.detail', $unassigned_help->id) }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition shadow-sm">
+                    <a href="{{ route('customer.helps.detail', $unassigned_help->id) }}" wire:navigate class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition shadow-sm">
                         Lihat Detail Pesanan
                     </a>
                 </div>
@@ -51,7 +51,7 @@
 
             <div class="relative z-10 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <a href="{{ route('customer.dashboard') }}" aria-label="Kembali ke Beranda" class="p-2 -ml-1 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center">
+                    <a href="{{ route('customer.dashboard') }}" wire:navigate aria-label="Kembali ke Beranda" class="p-2 -ml-1 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                         </svg>
@@ -232,12 +232,12 @@
                 <!-- Right: Action Buttons -->
                 <div class="flex items-center gap-1.5 flex-shrink-0">
                     @if($active_help)
-                        <a href="{{ route('customer.helps.detail', $active_help->id) }}" class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white text-[11px] font-bold rounded-lg transition border border-white/20 shadow-xs" title="Rincian Pesanan">
+                        <a href="{{ route('customer.helps.detail', $active_help->id) }}" wire:navigate class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white text-[11px] font-bold rounded-lg transition border border-white/20 shadow-xs" title="Rincian Pesanan">
                             Pesanan
                         </a>
                     @endif
                     @if(!($selected_partner->is_admin ?? false))
-                        <a href="{{ route('customer.reports.create.user', $selected_partner->id) }}" class="px-2.5 py-1 bg-rose-500/80 hover:bg-rose-600 text-white text-[11px] font-bold rounded-lg transition border border-rose-400/50 shadow-xs" title="Laporkan">
+                        <a href="{{ route('customer.reports.create.user', $selected_partner->id) }}" wire:navigate class="px-2.5 py-1 bg-rose-500/80 hover:bg-rose-600 text-white text-[11px] font-bold rounded-lg transition border border-rose-400/50 shadow-xs" title="Laporkan">
                             Lapor
                         </a>
                     @endif
@@ -329,7 +329,7 @@
                                         </a>
                                         <div class="px-2 py-1 bg-black/60 text-[10px] text-white flex items-center gap-1">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                            Lampiran Foto Bukti
+                                            Lampiran Foto
                                         </div>
                                     </div>
                                 @endif
@@ -447,8 +447,11 @@
         }
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
+    function initChatObserver() {
         const el = document.getElementById('messagesWrapper');
         if (el) observer.observe(el, { childList: true, subtree: true });
-    });
+    }
+
+    document.addEventListener('DOMContentLoaded', initChatObserver);
+    document.addEventListener('livewire:navigated', initChatObserver);
 </script>

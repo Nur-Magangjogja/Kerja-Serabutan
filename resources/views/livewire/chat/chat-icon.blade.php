@@ -1,4 +1,4 @@
-<div wire:poll.4s="refreshCount" class="inline-flex">
+<div wire:poll.20s.visible="refreshCount" class="inline-flex">
     <a
         href="{{ $route }}"
         wire:navigate

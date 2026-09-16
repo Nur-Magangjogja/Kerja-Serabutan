@@ -203,7 +203,7 @@
                                         </div>
                                     @elseif($help->mitra)
                                         <div class="pt-2">
-                                            <a href="{{ route('customer.helps.detail', $help->id) }}" class="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition shadow-xs">
+                                            <a href="{{ route('customer.helps.detail', $help->id) }}" wire:navigate class="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition shadow-xs">
                                                 <span>⭐ Beri Penilaian untuk Mitra</span>
                                             </a>
                                         </div>
@@ -211,7 +211,7 @@
                                 @endif
 
                                 <div class="pt-1 flex items-center justify-end">
-                                    <a href="{{ route('customer.helps.detail', $help->id) }}" class="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-semibold transition">
+                                    <a href="{{ route('customer.helps.detail', $help->id) }}" wire:navigate class="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-semibold transition">
                                         Halaman Detail Lengkap
                                     </a>
                                 </div>
@@ -359,7 +359,7 @@
                                             <span class="text-xs font-semibold text-gray-800 dark:text-gray-200 max-w-[90px] truncate">{{ $help->mitra->name }}</span>
                                         </div>
 
-                                        <a href="{{ route('customer.chat', $help->id) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition shadow-xs cursor-pointer relative" aria-label="Buka chat">
+                                        <a href="{{ route('customer.chat', $help->id) }}" wire:navigate class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition shadow-xs cursor-pointer relative" aria-label="Buka chat">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4-.8L3 20l1.2-4A7.963 7.963 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                             </svg>
@@ -385,7 +385,7 @@
                                     </button>
                                 @endif
 
-                                <a href="{{ route('customer.helps.detail', $help->id) }}" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-600/60 rounded-xl text-xs font-bold transition text-center cursor-pointer">
+                                <a href="{{ route('customer.helps.detail', $help->id) }}" wire:navigate class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-600/60 rounded-xl text-xs font-bold transition text-center cursor-pointer">
                                     Detail
                                 </a>
                             </div>

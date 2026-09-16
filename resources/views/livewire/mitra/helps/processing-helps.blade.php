@@ -118,7 +118,7 @@
                                 <div class="flex items-center justify-between gap-3">
                                     <span class="text-xs text-gray-500">👤 {{ optional($help->user)->name ?? 'Customer' }}</span>
                                     <div class="flex items-center gap-2">
-                                        <a href="{{ route('mitra.helps.detail', $help->id) }}" class="px-3 py-1.5 bg-blue-500 text-white rounded-md text-xs hover:bg-blue-600 transition">
+                                        <a href="{{ route('mitra.helps.detail', $help->id) }}" wire:navigate class="px-3 py-1.5 bg-blue-500 text-white rounded-md text-xs hover:bg-blue-600 transition">
                                             Detail
                                         </a>
                                         @if(optional($help->user)->phone)
@@ -128,7 +128,7 @@
                                                 </svg>
                                             </a>
                                         @endif
-                                        <a href="{{ route('mitra.chat', ['help' => $help->id]) }}" class="p-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition">
+                                        <a href="{{ route('mitra.chat', ['help' => $help->id]) }}" wire:navigate class="p-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition">
                                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                                                 <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
                                             </svg>

@@ -37,8 +37,10 @@
 
             <div class="mt-6 flex gap-3">
                 <a href="{{ route('mitra.withdraw.history') }}"
+                    wire:navigate
                     class="flex-1 px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold text-center transition shadow-xs">Lihat Riwayat</a>
                 <a href="{{ route('mitra.withdraw.form', ['force' => 1]) }}"
+                    wire:navigate
                     class="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-bold text-center transition">Ajukan Ulang</a>
             </div>
         </div>

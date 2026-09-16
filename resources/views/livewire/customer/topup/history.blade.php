@@ -138,6 +138,7 @@
                         <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">Belum Ada Riwayat</h3>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Mulai top-up saldo Anda sekarang</p>
                         <a href="{{ route('customer.topup.request') }}"
+                            wire:navigate
                             class="inline-block px-6 py-3 text-white rounded-xl font-semibold hover:shadow-lg transition cursor-pointer"
                             style="background: linear-gradient(to bottom right, #0098e7, #0060b0);">
                             Top-Up Saldo

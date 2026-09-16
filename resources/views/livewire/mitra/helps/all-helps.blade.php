@@ -139,7 +139,7 @@
                                 </p>
                             </div>
                         </div>
-                        <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" class="flex-shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap">
+                        <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" wire:navigate class="flex-shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap">
                             Buka Tugas
                         </a>
                     </div>
@@ -574,7 +574,7 @@
                     Kembali
                 </button>
                 @if(!empty($activeTask))
-                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" class="flex-[1.6] bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center text-center">
+                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" wire:navigate class="flex-[1.6] bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center text-center">
                         Selesaikan Tugas Aktif
                     </a>
                 @else

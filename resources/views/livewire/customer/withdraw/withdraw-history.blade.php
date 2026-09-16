@@ -6,7 +6,7 @@
 
             <div class="relative z-10">
                 <div class="relative flex items-center justify-center min-h-[40px] text-white">
-                    <a href="{{ route('customer.withdraw.form') }}" aria-label="Kembali" class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/20 rounded-xl transition cursor-pointer">
+                    <a href="{{ route('customer.withdraw.form') }}" wire:navigate aria-label="Kembali" class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/20 rounded-xl transition cursor-pointer">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                         </svg>
@@ -17,7 +17,7 @@
                         <p class="text-xs text-white/90 truncate mt-0.5">Daftar penarikan saldo ke rekening</p>
                     </div>
 
-                    <a href="{{ route('customer.withdraw.form') }}" class="absolute right-0 top-1/2 -translate-y-1/2 z-20 px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-xs font-bold transition">
+                    <a href="{{ route('customer.withdraw.form') }}" wire:navigate class="absolute right-0 top-1/2 -translate-y-1/2 z-20 px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-xs font-bold transition">
                         + Tarik
                     </a>
                 </div>

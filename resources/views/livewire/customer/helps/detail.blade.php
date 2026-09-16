@@ -93,6 +93,11 @@
 
         <div class="relative z-10 max-w-md mx-auto">
             <div class="relative flex items-center justify-center min-h-[40px] text-white">
+                <a href="{{ route('customer.helps.index') }}" wire:navigate class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center" title="Kembali">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </a>
                 <div class="text-center w-full min-w-0 px-12">
                     <h1 class="text-base font-bold truncate">Detail Pesanan</h1>
                     <p class="text-xs text-white font-medium truncate mt-0.5">Detail permintaan bantuan Anda</p>
@@ -267,7 +272,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <a href="{{ route('customer.chat', $help->id) }}" class="w-10 h-10 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-sky-50 dark:hover:bg-gray-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-2xs text-gray-700 dark:text-gray-200 cursor-pointer">
+                        <a href="{{ route('customer.chat', $help->id) }}" wire:navigate class="w-10 h-10 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-sky-50 dark:hover:bg-gray-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-2xs text-gray-700 dark:text-gray-200 cursor-pointer">
                             <svg class="w-5 h-5 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                             </svg>
@@ -433,7 +438,7 @@
             @php
                 $travelProgress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($help);
             @endphp
-            <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800 mt-2 space-y-3" wire:poll.4s>
+            <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800 mt-2 space-y-3" wire:poll.5s.visible>
                 <div class="flex items-center justify-between border-b border-indigo-800/60 pb-2.5">
                     <div class="flex items-center gap-2">
                         <span class="text-base">{{ $help->isPickup() ? '📦' : '🛵' }}</span>
@@ -812,6 +817,7 @@
                             <span>{{ $msgCount > 0 ? $msgCount . ' pesan klarifikasi tersedia' : 'Ruang obrolan dengan tim Admin aktif' }}</span>
                         </div>
                         <a href="{{ route('customer.chat', ['admin' => 1, 'report' => $existingReport->id]) }}"
+                            wire:navigate
                             class="w-full sm:w-auto px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                             <span>Buka Ruang Chat Admin</span>
@@ -842,6 +848,7 @@
                     </div>
 
                     <a href="{{ route('customer.reports.create', ['help_id' => $help->id, 'user_id' => $help->mitra_id, 'type' => 'klaim_refund_pekerjaan_fiktif']) }}" 
+                       wire:navigate
                        class="w-full py-2.5 px-4 bg-[#0098e7] hover:bg-[#0086cc] text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
@@ -1130,7 +1137,7 @@
                             <p class="text-[11px] text-gray-500 dark:text-gray-400">Pengantaran fisik telah dimulai / mendekati tujuan. Hubungi CS bila ada kendala darurat.</p>
                         </div>
                     </div>
-                    <a href="{{ route('customer.chat', ['admin' => 1]) }}" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold text-[11px] shrink-0 hover:bg-blue-700 transition">
+                    <a href="{{ route('customer.chat', ['admin' => 1]) }}" wire:navigate class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold text-[11px] shrink-0 hover:bg-blue-700 transition">
                         Bantuan CS
                     </a>
                 </div>
@@ -1376,6 +1383,7 @@
                                 </a>
                             @else
                                 <a href="{{ route('customer.chat', $help->id) }}"
+                                   wire:navigate
                                    class="py-1.5 px-2 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 rounded-lg font-bold flex items-center justify-center gap-1 transition">
                                     <span>💬 Chat Aplikasi</span>
                                 </a>

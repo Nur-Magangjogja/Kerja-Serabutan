@@ -1034,21 +1034,30 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->mitra_rating_count ?: $this->customer_rating_count;
     }
 
-    // Customer Rating Methods
+    // Customer Rating Methods (static request-level cache — 1 query per user per request)
+    protected static $customerRatingCache = [];
+
+    protected function loadCustomerRatingStats(): object
+    {
+        $uid = $this->id;
+        if (!isset(static::$customerRatingCache[$uid])) {
+            static::$customerRatingCache[$uid] = Rating::where('ratee_id', $uid)
+                ->where('type', 'mitra_to_customer')
+                ->selectRaw('AVG(rating) as avg_rating, COUNT(*) as total_count')
+                ->first() ?? (object) ['avg_rating' => null, 'total_count' => 0];
+        }
+        return static::$customerRatingCache[$uid];
+    }
+
     public function getCustomerAverageRatingAttribute()
     {
-        $avg = Rating::where('ratee_id', $this->id)
-            ->where('type', 'mitra_to_customer')
-            ->avg('rating');
-
-        return $avg ? round((float) $avg, 1) : 0;
+        $stats = $this->loadCustomerRatingStats();
+        return $stats->avg_rating ? round((float) $stats->avg_rating, 1) : 0;
     }
 
     public function getCustomerRatingCountAttribute()
     {
-        return Rating::where('ratee_id', $this->id)
-            ->where('type', 'mitra_to_customer')
-            ->count();
+        return (int) $this->loadCustomerRatingStats()->total_count;
     }
 
     public function getCustomerRatingBadgeAttribute()
@@ -1082,25 +1091,59 @@ class User extends Authenticatable implements MustVerifyEmail
         }
     }
 
-    // Mitra Rating Methods
+    // Mitra Rating Methods (static request-level cache — 1 query per user per request)
+    protected static $mitraRatingCache = [];
+
+    protected function loadMitraRatingStats(): object
+    {
+        $uid = $this->id;
+        if (!isset(static::$mitraRatingCache[$uid])) {
+            static::$mitraRatingCache[$uid] = Rating::where('ratee_id', $uid)
+                ->where(function ($q) {
+                    $q->where('type', 'customer_to_mitra')
+                      ->orWhereNull('type');
+                })
+                ->selectRaw('AVG(rating) as avg_rating, COUNT(*) as total_count')
+                ->first() ?? (object) ['avg_rating' => null, 'total_count' => 0];
+        }
+        return static::$mitraRatingCache[$uid];
+    }
+
     public function getMitraAverageRatingAttribute()
     {
-        $avg = Rating::where('ratee_id', $this->id)
-            ->where(function ($q) {
-                $q->where('type', 'customer_to_mitra')
-                  ->orWhereNull('type');
-            })->avg('rating');
-
-        return $avg ? round((float) $avg, 1) : 0;
+        $stats = $this->loadMitraRatingStats();
+        return $stats->avg_rating ? round((float) $stats->avg_rating, 1) : 0;
     }
 
     public function getMitraRatingCountAttribute()
     {
-        return Rating::where('ratee_id', $this->id)
-            ->where(function ($q) {
-                $q->where('type', 'customer_to_mitra')
-                  ->orWhereNull('type');
-            })->count();
+        return (int) $this->loadMitraRatingStats()->total_count;
+    }
+
+    // Unread Notifications Count (static request-level cache — 1 query per user per request)
+    protected static $unreadNotificationCountCache = [];
+
+    public function getUnreadNonChatNotificationsCount(): int
+    {
+        $uid = $this->id;
+        if (!isset(static::$unreadNotificationCountCache[$uid])) {
+            static::$unreadNotificationCountCache[$uid] = (int) $this->unreadNotifications()
+                ->where('type', '!=', 'App\Notifications\ChatMessageNotification')
+                ->where(function ($q) {
+                    $q->whereNull('data->type')->orWhere('data->type', '!=', 'chat_message');
+                })
+                ->count();
+        }
+        return static::$unreadNotificationCountCache[$uid];
+    }
+
+    public static function clearUnreadNotificationCache(?int $userId = null): void
+    {
+        if ($userId !== null) {
+            unset(static::$unreadNotificationCountCache[$userId]);
+        } else {
+            static::$unreadNotificationCountCache = [];
+        }
     }
 
     public function onlineState()

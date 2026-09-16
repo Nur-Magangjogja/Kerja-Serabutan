@@ -36,11 +36,8 @@
     </style>
 
     @php
-        // Mitra stats
-        $totalHelped = \App\Models\Help::where('mitra_id', $user->id)->count();
-        $completedHelps = \App\Models\Help::where('mitra_id', $user->id)->whereIn('status', ['selesai', 'completed'])->count();
-        $averageRating = round($user->mitra_average_rating ?? $user->average_rating ?? 0, 1);
-        $totalRatings = $user->mitra_rating_count ?? $user->rating_count ?? 0;
+        // Data sudah dikirim dari Livewire component — tidak perlu query ulang
+        // $totalHelped, $completedHelps, $averageRating, $totalRatings sudah tersedia
     @endphp
 
     <div class="max-w-md mx-auto">

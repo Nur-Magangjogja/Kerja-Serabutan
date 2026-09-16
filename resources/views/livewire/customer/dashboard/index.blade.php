@@ -328,7 +328,7 @@
                                     Posting tugas Anda & temukan mitra terdekat siap membantu dalam hitungan menit.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('customer.helps.create') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-sky-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('customer.helps.create') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-sky-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Buat Permintaan</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -358,7 +358,7 @@
                                     Pembayaran via QRIS & Transfer Bank dengan konfirmasi instan dan aman.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('customer.topup.request') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-emerald-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('customer.topup.request') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-emerald-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Top Up Sekarang</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -388,7 +388,7 @@
                                     Mitra terverifikasi siap menyelesaikan pekerjaan dengan hasil terbaik.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('customer.helps.history') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-yellow-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('customer.helps.history') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-yellow-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Lihat Riwayat</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -419,7 +419,7 @@
         <div class="mb-5">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="text-base font-bold text-gray-900 dark:text-white">Bantuan Saya</h2>
-                <a href="{{ route('customer.helps.index') }}" class="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline">Lihat Semua →</a>
+                <a href="{{ route('customer.helps.index') }}" wire:navigate class="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline">Lihat Semua →</a>
             </div>
 
             <div class="space-y-3">
@@ -432,6 +432,7 @@
                     @endphp
                     @forelse($waitingHelps as $help)
                         <a href="{{ route('customer.helps.detail', $help->id) }}"
+                            wire:navigate
                             class="block w-full text-left bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-xs hover:shadow-md border border-gray-100 dark:border-gray-700/70 transition-all group">
                             <div class="flex items-start gap-3.5">
                                 <div class="w-16 h-16 rounded-2xl overflow-hidden bg-gradient-to-br from-sky-100 to-blue-50 dark:from-sky-950/60 dark:to-blue-900/40 border border-sky-200/60 dark:border-sky-800/60 flex-shrink-0 flex items-center justify-center shadow-2xs">

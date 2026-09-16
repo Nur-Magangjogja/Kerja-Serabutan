@@ -38,6 +38,9 @@ class NotificationIcon extends Component
     #[On('notifications-updated')]
     public function refreshCount()
     {
+        if (Auth::check()) {
+            \App\Models\User::clearUnreadNotificationCache(Auth::id());
+        }
         $this->unreadCount = $this->getUnreadCount();
     }
 
@@ -48,12 +51,7 @@ class NotificationIcon extends Component
         }
 
         try {
-            return Auth::user()->unreadNotifications()
-                ->where('type', '!=', 'App\Notifications\ChatMessageNotification')
-                ->where(function ($q) {
-                    $q->whereNull('data->type')->orWhere('data->type', '!=', 'chat_message');
-                })
-                ->count();
+            return Auth::user()->getUnreadNonChatNotificationsCount();
         } catch (\Throwable $e) {
             return 0;
         }

@@ -28,11 +28,11 @@ class Index extends Component
                     ->orWhereNull('type');
             });
 
-        $ratings = (clone $baseQuery)->latest()->paginate($this->perPage);
-
-        $totalRatings = (clone $baseQuery)->count();
-        $averageRating = (clone $baseQuery)->avg('rating') ?: 0;
-        $averageRating = round($averageRating, 1);
+        $ratings = $baseQuery->latest()->paginate($this->perPage);
+        $totalRatings = $ratings->total();
+        $averageRating = $totalRatings > 0 
+            ? round((float) (clone $baseQuery)->avg('rating'), 1) 
+            : 0.0;
 
         return view('livewire.customer.ratings.index', [
             'ratings' => $ratings,

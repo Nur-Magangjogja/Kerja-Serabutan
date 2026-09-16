@@ -131,8 +131,8 @@ class AllHelps extends Component
             return view('livewire.mitra.helps.all-helps', [
                 'helps'           => $emptyPaginator,
                 'needsCity'       => false,
-                'userDistrict'    => $user->district_id ? \App\Models\District::find($user->district_id) : null,
-                'userCity'        => $user->city_id ? \App\Models\City::find($user->city_id) : null,
+                'userDistrict'    => $user->district ?? null,
+                'userCity'        => $user->city ?? null,
                 'districtFilter'  => $this->districtFilter,
                 'sortBy'          => $this->sortBy,
                 'search'          => $this->search,
@@ -306,8 +306,8 @@ class AllHelps extends Component
         return view('livewire.mitra.helps.all-helps', [
             'helps'           => $helps,
             'needsCity'       => false,
-            'userDistrict'    => $user && $user->district_id ? \App\Models\District::find($user->district_id) : null,
-            'userCity'        => $user && $user->city_id ? \App\Models\City::find($user->city_id) : null,
+            'userDistrict'    => $user?->district ?? null,
+            'userCity'        => $user?->city ?? null,
             'districtFilter'  => $this->districtFilter,
             'sortBy'          => $this->sortBy,
             'search'          => $this->search,

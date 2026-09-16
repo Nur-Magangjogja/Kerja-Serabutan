@@ -107,22 +107,39 @@ class Index extends Component
         }
 
         if ($user->isCustomer()) {
+            // 1 query agregasi menggantikan 3 query COUNT terpisah
+            $agg = Help::where('user_id', $user->id)
+                ->selectRaw("COUNT(*) as total_helps")
+                ->selectRaw("SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending_helps", [Help::STATUS_MENUNGGU_MITRA])
+                ->selectRaw("SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as completed_helps", [Help::STATUS_SELESAI])
+                ->first();
+
             $stats = [
-                'total_helps' => Help::where('user_id', $user->id)->count(),
-                'pending_helps' => Help::where('user_id', $user->id)->where('status', Help::STATUS_MENUNGGU_MITRA)->count(),
-                'completed_helps' => Help::where('user_id', $user->id)->where('status', Help::STATUS_SELESAI)->count(),
+                'total_helps' => (int) $agg->total_helps,
+                'pending_helps' => (int) $agg->pending_helps,
+                'completed_helps' => (int) $agg->completed_helps,
             ];
 
-            $myHelps = Help::where('user_id', $user->id)
-                ->with(['city', 'district', 'mitra'])
-                ->latest()
-                ->take(5)
-                ->get();
+            // Reuse $availableHelps jika tab = 'latest' untuk menghindari duplikasi query
+            $myHelps = ($this->activeTab === 'latest')
+                ? $availableHelps
+                : Help::where('user_id', $user->id)
+                    ->with(['city', 'district', 'mitra'])
+                    ->latest()
+                    ->take(5)
+                    ->get();
         } elseif ($user->isMitra()) {
+            // 1 query agregasi menggantikan 3 query COUNT terpisah
+            $aggMitra = Help::where('mitra_id', $user->id)
+                ->selectRaw("COUNT(*) as total_helped")
+                ->selectRaw("SUM(CASE WHEN status IN (" . implode(',', array_fill(0, count(Help::activeStatuses()), '?')) . ") THEN 1 ELSE 0 END) as in_progress", Help::activeStatuses())
+                ->selectRaw("SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as completed", [Help::STATUS_SELESAI])
+                ->first();
+
             $stats = [
-                'total_helped' => Help::where('mitra_id', $user->id)->count(),
-                'in_progress' => Help::where('mitra_id', $user->id)->whereIn('status', Help::activeStatuses())->count(),
-                'completed' => Help::where('mitra_id', $user->id)->where('status', Help::STATUS_SELESAI)->count(),
+                'total_helped' => (int) $aggMitra->total_helped,
+                'in_progress' => (int) $aggMitra->in_progress,
+                'completed' => (int) $aggMitra->completed,
             ];
 
             $myHelps = Help::where('mitra_id', $user->id)

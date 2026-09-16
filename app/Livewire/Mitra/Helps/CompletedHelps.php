@@ -40,11 +40,17 @@ class CompletedHelps extends Component
     {
         $user = auth()->user();
 
-        // 1. Stats Calculation
-        $completedHelpsQuery = Help::where('mitra_id', $user->id)->whereIn('status', [Help::STATUS_SELESAI, 'completed']);
-        $totalCompletedCount = (clone $completedHelpsQuery)->count();
-        $totalCompletedAmount = (clone $completedHelpsQuery)->sum('amount');
-        $uniqueCustomersCount = (clone $completedHelpsQuery)->distinct('user_id')->count('user_id');
+        // 1 query agregasi menggantikan 3 query terpisah (count, sum, distinct count)
+        $completedStats = Help::where('mitra_id', $user->id)
+            ->whereIn('status', [Help::STATUS_SELESAI, 'completed'])
+            ->selectRaw("COUNT(*) as total_count")
+            ->selectRaw("COALESCE(SUM(amount), 0) as total_amount")
+            ->selectRaw("COUNT(DISTINCT user_id) as unique_customers")
+            ->first();
+
+        $totalCompletedCount = (int) $completedStats->total_count;
+        $totalCompletedAmount = (int) $completedStats->total_amount;
+        $uniqueCustomersCount = (int) $completedStats->unique_customers;
 
         $cancellationQuery = HelpCancelRequest::where(function ($q) use ($user) {
             $q->where('partner_id', $user->id)

@@ -6,6 +6,7 @@
         <div class="max-w-2xl mx-auto">
             <div class="mb-6">
                 <a href="{{ route('mitra.reports.create') }}"
+                    wire:navigate
                     class="inline-flex items-center text-primary-600 dark:text-primary-400 hover:text-primary-700 mb-4 text-sm font-semibold">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -66,7 +67,7 @@
                 </div>
 
                 <div class="mt-6 flex justify-end">
-                    <a href="{{ route('mitra.dashboard') }}" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl transition">
+                    <a href="{{ route('mitra.dashboard') }}" wire:navigate class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl transition">
                         Kembali ke Dashboard
                     </a>
                 </div>

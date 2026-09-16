@@ -250,7 +250,7 @@
 
                     <!-- Submit Button -->
                     <div class="flex gap-3 pt-4">
-                        <a href="{{ route('dashboard') }}" onclick="handleCancelCreateHelp()"
+                        <a href="{{ route('dashboard') }}" wire:navigate onclick="handleCancelCreateHelp()"
                             class="flex-1 inline-flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-5 py-3 text-sm rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
                             Batal
                         </a>

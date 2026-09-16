@@ -54,17 +54,22 @@ class DashboardStatsService
 
             $available = $this->availablePoolQuery($user)->count();
 
-            $inProgress = Help::where('mitra_id', $user->id)
-                ->whereIn('status', array_merge(Help::activeStatuses(), [
-                    Help::STATUS_WAITING_CONFIRMATION,
-                    Help::STATUS_PARTNER_CANCEL_REQUESTED,
-                    Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
-                ]))
-                ->count();
+            $inProgressStatuses = array_merge(Help::activeStatuses(), [
+                Help::STATUS_WAITING_CONFIRMATION,
+                Help::STATUS_PARTNER_CANCEL_REQUESTED,
+                Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+            ]);
+            $inProgressSql = implode("','", $inProgressStatuses);
 
-            $completed = Help::where('mitra_id', $user->id)
-                ->where('status', Help::STATUS_SELESAI)
-                ->count();
+            $helpStats = Help::where('mitra_id', $user->id)
+                ->selectRaw("
+                    COUNT(CASE WHEN status IN ('" . $inProgressSql . "') THEN 1 END) as in_progress_count,
+                    COUNT(CASE WHEN status = '" . Help::STATUS_SELESAI . "' THEN 1 END) as completed_count
+                ")
+                ->first();
+
+            $inProgress = (int) ($helpStats->in_progress_count ?? 0);
+            $completed  = (int) ($helpStats->completed_count ?? 0);
 
             return [
                 'balance'    => $balance,

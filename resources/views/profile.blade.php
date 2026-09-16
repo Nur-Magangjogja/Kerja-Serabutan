@@ -159,15 +159,19 @@
         @php
             $user = auth()->user();
             
-            // Riwayat Bantuan (bantuan yang telah selesai dan tampil di riwayat)
-            $completedHelps = \App\Models\Help::where('user_id', $user->id)
-                ->where('status', \App\Models\Help::STATUS_SELESAI)
-                ->count();
+            // Bantuan stats dikonsolidasi dalam 1 query
+            $activeStatuses = array_merge([\App\Models\Help::STATUS_MENUNGGU_MITRA, \App\Models\Help::STATUS_WAITING_CONFIRMATION], \App\Models\Help::activeStatuses());
+            $activeStatusesSql = implode("','", $activeStatuses);
 
-            // Bantuan yang sedang aktif (menunggu mitra, aktif dikerjakan, menunggu konfirmasi)
-            $activeHelps = \App\Models\Help::where('user_id', $user->id)
-                ->whereIn('status', array_merge([\App\Models\Help::STATUS_MENUNGGU_MITRA, \App\Models\Help::STATUS_WAITING_CONFIRMATION], \App\Models\Help::activeStatuses()))
-                ->count();
+            $helpStats = \App\Models\Help::where('user_id', $user->id)
+                ->selectRaw("
+                    COUNT(CASE WHEN status = '" . \App\Models\Help::STATUS_SELESAI . "' THEN 1 END) as completed_count,
+                    COUNT(CASE WHEN status IN ('" . $activeStatusesSql . "') THEN 1 END) as active_count
+                ")
+                ->first();
+
+            $completedHelps = (int) ($helpStats->completed_count ?? 0);
+            $activeHelps = (int) ($helpStats->active_count ?? 0);
 
             // Total ulasan yang diberikan customer kepada mitra
             $reviewsGivenCount = \App\Models\Rating::where('rater_id', $user->id)->count();

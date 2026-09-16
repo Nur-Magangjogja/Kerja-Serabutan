@@ -104,8 +104,8 @@ class Index extends Component
                 $q->whereNull('data->type')->orWhere('data->type', '!=', 'chat_message');
             });
 
-        $notifications = (clone $query)->latest()->paginate($this->perPage);
-        $totalCount    = (clone $query)->count();
+        $notifications = $query->latest()->paginate($this->perPage);
+        $totalCount    = $notifications->total();
 
         return view('livewire.mitra.notifications.index', [
             'notifications' => $notifications,

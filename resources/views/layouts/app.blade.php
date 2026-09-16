@@ -189,7 +189,11 @@
                         wrap.addEventListener('click', function (ev) {
                             ev.preventDefault();
                             if (url && url !== '#') {
-                                window.location.href = url;
+                                if (window.Livewire && typeof window.Livewire.navigate === 'function' && !url.startsWith('http://') && !url.startsWith('https://')) {
+                                    window.Livewire.navigate(url);
+                                } else {
+                                    window.location.href = url;
+                                }
                             }
                             container.innerHTML = '';
                         });

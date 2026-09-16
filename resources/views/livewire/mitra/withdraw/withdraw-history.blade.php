@@ -11,7 +11,7 @@
                         <p class="text-xs text-white/90 truncate mt-0.5">Daftar pencairan penghasilan Mitra</p>
                     </div>
 
-                    <a href="{{ route('mitra.withdraw.form') }}" class="absolute right-0 top-1/2 -translate-y-1/2 z-20 px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-xs font-bold transition">
+                    <a href="{{ route('mitra.withdraw.form') }}" wire:navigate class="absolute right-0 top-1/2 -translate-y-1/2 z-20 px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-xs font-bold transition">
                         + Cairkan
                     </a>
                 </div>

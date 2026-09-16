@@ -65,6 +65,7 @@
                 {{-- Back Navigation Arrow --}}
                 <div class="flex items-center">
                     <a href="{{ ($isCompleted || $isCancelled) ? route('mitra.helps.completed') : route('mitra.dashboard') }}" 
+                       wire:navigate
                        class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center text-white"
                        title="{{ ($isCompleted || $isCancelled) ? 'Kembali ke Riwayat' : 'Kembali ke Dashboard' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -525,7 +526,7 @@
             @php
                 $travelProgress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($help);
             @endphp
-            <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800 mb-3 space-y-3" wire:poll.5s>
+            <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800 mb-3 space-y-3" wire:poll.5s.visible>
                 <div class="flex items-center justify-between border-b border-indigo-800/60 pb-2.5">
                     <div class="flex items-center gap-2">
                         <span class="text-base">{{ $help->isPickup() ? '📦' : '🛵' }}</span>
@@ -763,6 +764,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <a href="{{ route('mitra.chat', ['help' => $help->id]) }}"
+                    wire:navigate
                     class="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition text-xs font-semibold">
                     <svg class="w-4 h-4 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1086,6 +1088,7 @@
             {{-- Tombol Navigasi Riwayat untuk Completed / Cancelled --}}
             <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 space-y-2.5">
                 <a href="{{ route('mitra.helps.completed') }}"
+                   wire:navigate
                    class="w-full py-3.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -1638,7 +1641,11 @@
 
             function initMap() {
                 const mapEl = document.getElementById('mitra-route-map');
-                if (!mapEl || mapInstance) return;
+                if (!mapEl) return;
+                if (mapInstance) {
+                    try { mapInstance.remove(); } catch(e) {}
+                    mapInstance = null;
+                }
 
                 @if($help->isPickup())
                     const pLat = parseFloat("{{ $help->pickup_latitude ?: $help->latitude }}") || -7.7956;

@@ -106,6 +106,7 @@
 
         <!-- View All Link -->
         <a href="{{ \Illuminate\Support\Facades\Route::has('transactions.index') ? route('transactions.index') : '#' }}"
+            wire:navigate
             class="block text-center text-primary-600 text-sm font-semibold mt-4 hover:text-primary-700">
             Lihat Semua Transaksi →
         </a>

@@ -56,6 +56,7 @@ class Realtime extends Component
 
         if ($newNotifications->count() > 0) {
             $this->last_notification_check = $newNotifications->last()->created_at;
+            $this->dispatch('notifications-updated');
         }
 
         foreach ($newNotifications as $notification) {

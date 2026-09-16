@@ -233,12 +233,23 @@ class Index extends Component
             $helpQuery->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
         }
 
-        // Calculate Synchronized Operational Metrics
-        $totalHelps = (clone $helpQuery)->count();
-        $pendingHelps = (clone $helpQuery)->where('status', Help::STATUS_MENUNGGU_MITRA)->count();
-        $activeHelps = (clone $helpQuery)->whereIn('status', array_merge(Help::activeStatuses(), [Help::STATUS_WAITING_CONFIRMATION]))->count();
-        $completedHelps = (clone $helpQuery)->where('status', Help::STATUS_SELESAI)->count();
-        $cancelledHelps = (clone $helpQuery)->where('status', Help::STATUS_DIBATALKAN)->count();
+        // 1 query agregasi menggantikan 5 query COUNT terpisah
+        $activeStatusList = array_merge(Help::activeStatuses(), [Help::STATUS_WAITING_CONFIRMATION]);
+        $activePlaceholders = implode(',', array_fill(0, count($activeStatusList), '?'));
+
+        $statsAgg = (clone $helpQuery)
+            ->selectRaw("COUNT(*) as total_helps")
+            ->selectRaw("SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending_helps", [Help::STATUS_MENUNGGU_MITRA])
+            ->selectRaw("SUM(CASE WHEN status IN ($activePlaceholders) THEN 1 ELSE 0 END) as active_helps", $activeStatusList)
+            ->selectRaw("SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as completed_helps", [Help::STATUS_SELESAI])
+            ->selectRaw("SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as cancelled_helps", [Help::STATUS_DIBATALKAN])
+            ->first();
+
+        $totalHelps = (int) ($statsAgg->total_helps ?? 0);
+        $pendingHelps = (int) ($statsAgg->pending_helps ?? 0);
+        $activeHelps = (int) ($statsAgg->active_helps ?? 0);
+        $completedHelps = (int) ($statsAgg->completed_helps ?? 0);
+        $cancelledHelps = (int) ($statsAgg->cancelled_helps ?? 0);
 
         // 3. KTP / Registration Verifications
         $baseRegQuery = Registration::query();
@@ -351,31 +362,16 @@ class Index extends Component
         if (!$isAllPeriod) {
             $daysInMonth = $selectedMonthCarbon->daysInMonth;
 
-            // Total Helps per Day
-            $dailyTotalHelps = (clone $baseHelpQuery)
+            // 1 query GROUP BY menggantikan 3 query terpisah (total, completed, cancelled)
+            $dailyHelpMetrics = (clone $baseHelpQuery)
                 ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->selectRaw('DATE(created_at) as date, count(*) as total')
+                ->selectRaw('DATE(created_at) as date')
+                ->selectRaw('COUNT(*) as total')
+                ->selectRaw("SUM(CASE WHEN status IN (?, 'completed') THEN 1 ELSE 0 END) as completed", [Help::STATUS_SELESAI])
+                ->selectRaw("SUM(CASE WHEN status IN (?, 'cancelled', 'rejected') THEN 1 ELSE 0 END) as cancelled", [Help::STATUS_DIBATALKAN])
                 ->groupBy('date')
-                ->pluck('total', 'date')
-                ->all();
-
-            // Completed Helps per Day
-            $dailyCompletedHelps = (clone $baseHelpQuery)
-                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->whereIn('status', [Help::STATUS_SELESAI, 'completed'])
-                ->selectRaw('DATE(created_at) as date, count(*) as total')
-                ->groupBy('date')
-                ->pluck('total', 'date')
-                ->all();
-
-            // Cancelled Helps per Day
-            $dailyCancelledHelps = (clone $baseHelpQuery)
-                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->whereIn('status', [Help::STATUS_DIBATALKAN, 'cancelled', 'rejected'])
-                ->selectRaw('DATE(created_at) as date, count(*) as total')
-                ->groupBy('date')
-                ->pluck('total', 'date')
-                ->all();
+                ->get()
+                ->keyBy('date');
 
             // Registration / KTP per Day
             $dailyRegistrations = (clone $baseRegQuery)
@@ -390,9 +386,10 @@ class Index extends Component
                 $chartLabels[] = $date->format('j M');
                 $dateKey = $date->toDateString();
 
-                $chartHelpsData[] = (int) ($dailyTotalHelps[$dateKey] ?? 0);
-                $chartCompletedData[] = (int) ($dailyCompletedHelps[$dateKey] ?? 0);
-                $chartCancelledData[] = (int) ($dailyCancelledHelps[$dateKey] ?? 0);
+                $row = $dailyHelpMetrics[$dateKey] ?? null;
+                $chartHelpsData[] = (int) ($row->total ?? 0);
+                $chartCompletedData[] = (int) ($row->completed ?? 0);
+                $chartCancelledData[] = (int) ($row->cancelled ?? 0);
                 $chartVerificationsData[] = (int) ($dailyRegistrations[$dateKey] ?? 0);
             }
         } else {
@@ -400,28 +397,16 @@ class Index extends Component
             $startDate = Carbon::today()->subDays(13)->startOfDay();
             $endDate = Carbon::today()->endOfDay();
 
-            $dailyTotalHelps = (clone $baseHelpQuery)
+            // 1 query GROUP BY menggantikan 3 query terpisah (total, completed, cancelled)
+            $dailyHelpMetrics = (clone $baseHelpQuery)
                 ->whereBetween('created_at', [$startDate, $endDate])
-                ->selectRaw('DATE(created_at) as date, count(*) as total')
+                ->selectRaw('DATE(created_at) as date')
+                ->selectRaw('COUNT(*) as total')
+                ->selectRaw("SUM(CASE WHEN status IN (?, 'completed') THEN 1 ELSE 0 END) as completed", [Help::STATUS_SELESAI])
+                ->selectRaw("SUM(CASE WHEN status IN (?, 'cancelled', 'rejected') THEN 1 ELSE 0 END) as cancelled", [Help::STATUS_DIBATALKAN])
                 ->groupBy('date')
-                ->pluck('total', 'date')
-                ->all();
-
-            $dailyCompletedHelps = (clone $baseHelpQuery)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->whereIn('status', [Help::STATUS_SELESAI, 'completed'])
-                ->selectRaw('DATE(created_at) as date, count(*) as total')
-                ->groupBy('date')
-                ->pluck('total', 'date')
-                ->all();
-
-            $dailyCancelledHelps = (clone $baseHelpQuery)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->whereIn('status', [Help::STATUS_DIBATALKAN, 'cancelled', 'rejected'])
-                ->selectRaw('DATE(created_at) as date, count(*) as total')
-                ->groupBy('date')
-                ->pluck('total', 'date')
-                ->all();
+                ->get()
+                ->keyBy('date');
 
             $dailyRegistrations = (clone $baseRegQuery)
                 ->whereBetween('created_at', [$startDate, $endDate])
@@ -435,9 +420,10 @@ class Index extends Component
                 $chartLabels[] = $day->format('j M');
                 $dateKey = $day->toDateString();
 
-                $chartHelpsData[] = (int) ($dailyTotalHelps[$dateKey] ?? 0);
-                $chartCompletedData[] = (int) ($dailyCompletedHelps[$dateKey] ?? 0);
-                $chartCancelledData[] = (int) ($dailyCancelledHelps[$dateKey] ?? 0);
+                $row = $dailyHelpMetrics[$dateKey] ?? null;
+                $chartHelpsData[] = (int) ($row->total ?? 0);
+                $chartCompletedData[] = (int) ($row->completed ?? 0);
+                $chartCancelledData[] = (int) ($row->cancelled ?? 0);
                 $chartVerificationsData[] = (int) ($dailyRegistrations[$dateKey] ?? 0);
             }
         }

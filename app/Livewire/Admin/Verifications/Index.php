@@ -339,8 +339,12 @@ class Index extends Component
         }
 
         $verifications = $query->latest()->paginate($this->perPage);
-        $districts = $isSuperAdmin ? District::with('city')->orderBy('name')->get() : ($authUser ? $authUser->getAdminDistricts() : collect());
-        $cities = City::orderBy('name')->get();
+
+        // Cache master data distrik & kota selama 10 menit agar tidak query ulang saat paging/search
+        $districts = $isSuperAdmin
+            ? cache()->remember('admin_all_districts_with_city', 600, fn() => District::with('city')->orderBy('name')->get())
+            : ($authUser ? $authUser->getAdminDistricts() : collect());
+        $cities = cache()->remember('admin_all_cities', 600, fn() => City::orderBy('name')->get());
 
         $layout = ($authUser && in_array($authUser->role, ['super_admin', 'superadmin'])) 
             ? 'layouts.superadmin' 

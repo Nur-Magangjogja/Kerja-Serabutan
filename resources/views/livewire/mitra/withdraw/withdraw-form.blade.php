@@ -11,7 +11,7 @@
                         <p class="text-xs text-white/90 truncate mt-0.5">Tarik saldo ke rekening bank / e-wallet</p>
                     </div>
 
-                    <a href="{{ route('mitra.withdraw.history') }}" class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/20 rounded-xl transition text-xs font-bold flex items-center gap-1" title="Riwayat Pencairan">
+                    <a href="{{ route('mitra.withdraw.history') }}" wire:navigate class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/20 rounded-xl transition text-xs font-bold flex items-center gap-1" title="Riwayat Pencairan">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>

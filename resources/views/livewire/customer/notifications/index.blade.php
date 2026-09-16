@@ -157,7 +157,7 @@
 
                                         <!-- Help Detail Link -->
                                         @if(isset($data['help_id']))
-                                            <a href="{{ route('customer.helps.detail', $data['help_id']) }}" class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400">
+                                            <a href="{{ route('customer.helps.detail', $data['help_id']) }}" wire:navigate class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400">
                                                 <span>Lihat Bantuan</span>
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>

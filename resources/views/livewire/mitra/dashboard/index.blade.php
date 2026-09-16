@@ -123,6 +123,7 @@
                 <div class="flex items-center gap-1.5 flex-shrink-0">
                     <a
                         href="{{ route('mitra.withdraw.form') }}"
+                        wire:navigate
                         class="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold text-white transition-all duration-200 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 shadow-xs active:scale-95 whitespace-nowrap"
                     >
                         <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,7 +213,7 @@
                             </p>
                         </div>
                     </div>
-                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" class="flex-shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap">
+                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" wire:navigate class="flex-shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap">
                         Buka Tugas
                     </a>
                 </div>
@@ -245,7 +246,7 @@
                                 </p>
                             </div>
                         </div>
-                        <a href="{{ route('mitra.helps.detail', $wcHelp->id) }}" class="flex-shrink-0 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-xs whitespace-nowrap">
+                        <a href="{{ route('mitra.helps.detail', $wcHelp->id) }}" wire:navigate class="flex-shrink-0 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-xs whitespace-nowrap">
                             Detail
                         </a>
                     </div>
@@ -343,7 +344,7 @@
                                     Ambil pekerjaan di sekitarmu dan atur jadwal kerja secara fleksibel.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('mitra.helps.all') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-rose-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('mitra.helps.all') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-rose-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Cari Pekerjaan</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -370,7 +371,7 @@
                                     Cairkan pendapatanmu langsung ke rekening bank terdaftar tanpa repot.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('mitra.withdraw.form') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-emerald-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('mitra.withdraw.form') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-emerald-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Tarik Saldo</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -397,7 +398,7 @@
                                     Berikan pelayanan terbaik untuk meraih bintang 5 dan order prioritas.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('mitra.withdraw.history') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-yellow-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('mitra.withdraw.history') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-yellow-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Riwayat Tugas</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -719,7 +720,7 @@
                     Batal
                 </button>
                 @if(!empty($activeTask))
-                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" class="flex-[1.6] bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center text-center">
+                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" wire:navigate class="flex-[1.6] bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center text-center">
                         Selesaikan Tugas Aktif
                     </a>
                 @else

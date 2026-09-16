@@ -432,14 +432,28 @@ class Index extends Component
 
         $helps = $query->latest()->paginate(10);
 
+        // 1 query agregasi menggantikan 4 query COUNT terpisah untuk badge tab
+        $diprosesPlaceholders = implode(',', array_fill(0, count($diprosesList), '?'));
+        $terminalPlaceholders = implode(',', array_fill(0, count(Help::terminalStatuses()), '?'));
+
+        $agg = Help::where('user_id', $user->id)
+            ->selectRaw("SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as menunggu", [Help::STATUS_MENUNGGU_MITRA])
+            ->selectRaw("SUM(CASE WHEN status IN ($diprosesPlaceholders) THEN 1 ELSE 0 END) as diproses", $diprosesList)
+            ->selectRaw("SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as konfirmasi", [Help::STATUS_WAITING_CONFIRMATION])
+            ->selectRaw("SUM(CASE WHEN status IN ($terminalPlaceholders) THEN 1 ELSE 0 END) as selesai", Help::terminalStatuses())
+            ->first();
+
         $counts = [
-            'menunggu'   => Help::where('user_id', $user->id)->where('status', Help::STATUS_MENUNGGU_MITRA)->count(),
-            'diproses'   => Help::where('user_id', $user->id)->whereIn('status', $diprosesList)->count(),
-            'konfirmasi' => Help::where('user_id', $user->id)->where('status', Help::STATUS_WAITING_CONFIRMATION)->count(),
-            'selesai'    => Help::where('user_id', $user->id)->whereIn('status', Help::terminalStatuses())->count(),
+            'menunggu'   => (int) ($agg->menunggu ?? 0),
+            'diproses'   => (int) ($agg->diproses ?? 0),
+            'konfirmasi' => (int) ($agg->konfirmasi ?? 0),
+            'selesai'    => (int) ($agg->selesai ?? 0),
         ];
 
-        $this->cities = City::where('is_active', true)->orderBy('name')->get();
+        // Cache daftar kota aktif selama 10 menit agar tidak query ulang setiap interaksi
+        $this->cities = cache()->remember('active_cities_list', 600, function () {
+            return City::where('is_active', true)->orderBy('name')->get();
+        });
 
         return view('livewire.customer.helps.index', [
             'helps'  => $helps,

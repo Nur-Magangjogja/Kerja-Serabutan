@@ -42,7 +42,7 @@
 					</div>
 					<h3 class="text-base font-bold text-gray-900 dark:text-white mb-1">Belum Ada Riwayat</h3>
 					<p class="text-xs text-gray-500 dark:text-gray-400 mb-5">Belum ada permintaan bantuan yang diselesaikan</p>
-					<a href="{{ route('customer.helps.create') }}" class="inline-flex items-center gap-1.5 text-white text-xs px-5 py-2.5 rounded-xl font-bold bg-gradient-to-r from-sky-600 to-[#0077cc] hover:from-sky-700 hover:to-[#0060b0] shadow-xs hover:shadow-md transition cursor-pointer">
+					<a href="{{ route('customer.helps.create') }}" wire:navigate class="inline-flex items-center gap-1.5 text-white text-xs px-5 py-2.5 rounded-xl font-bold bg-gradient-to-r from-sky-600 to-[#0077cc] hover:from-sky-700 hover:to-[#0060b0] shadow-xs hover:shadow-md transition cursor-pointer">
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
 						<span>Buat Bantuan Baru</span>
 					</a>

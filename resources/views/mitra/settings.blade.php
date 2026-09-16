@@ -8,7 +8,7 @@
 
             <div class="relative z-10">
                 <div class="relative flex items-center justify-center min-h-[40px] text-white">
-                    <a href="{{ route('mitra.profile') }}" aria-label="Kembali" class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/20 rounded-xl transition cursor-pointer">
+                    <a href="{{ route('mitra.profile') }}" wire:navigate aria-label="Kembali" class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/20 rounded-xl transition cursor-pointer">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                         </svg>
@@ -79,7 +79,7 @@
             </div>
 
             <!-- Notification Settings -->
-            <a href="{{ route('mitra.settings.notifications') }}"
+            <a href="{{ route('mitra.settings.notifications') }}" wire:navigate
                 class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3.5 hover:shadow-md hover:border-primary-500/30 transition">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex-shrink-0">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,7 +97,7 @@
             </a>
 
             <!-- Password Settings -->
-            <a href="{{ route('mitra.settings.password') }}"
+            <a href="{{ route('mitra.settings.password') }}" wire:navigate
                 class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3.5 hover:shadow-md hover:border-primary-500/30 transition">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex-shrink-0">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
