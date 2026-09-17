@@ -79,10 +79,10 @@
                 <div class="grid {{ ($userDistrict && $userCity) ? 'grid-cols-3' : (($userDistrict || $userCity) ? 'grid-cols-2' : 'grid-cols-1') }} gap-1.5 bg-black/20 backdrop-blur-md p-1.5 rounded-xl border border-white/20 text-center">
                     <!-- Tab 1: Radius 10 KM -->
                     <button type="button" wire:click="$set('districtFilter', 'all')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center leading-tight {{ $districtFilter === 'all' ? 'bg-primary-600 text-white dark:bg-white dark:text-primary-700 shadow-md scale-[1.02]' : 'text-white/90 hover:bg-white/10' }}"
+                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center leading-tight {{ $districtFilter === 'all' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-md scale-[1.02]' : 'text-white/90 hover:bg-white/10' }}"
                         title="Semua bantuan dalam radius 10 KM dari posisi berdiri">
                         <span class="truncate">📍 ≤ 10 KM</span>
-                        <span class="text-[10px] font-medium {{ $districtFilter === 'all' ? 'text-white/80 dark:text-primary-600' : 'text-white/75' }}">({{ $countRadius10km ?? 0 }})</span>
+                        <span class="text-[10px] font-medium {{ $districtFilter === 'all' ? 'text-primary-600 dark:!text-white/80' : 'text-white/75' }}">({{ $countRadius10km ?? 0 }})</span>
                     </button>
                     <!-- Tab 2: Kecamatan -->
                     @if($userDistrict)
@@ -90,10 +90,10 @@
                         $userDistrictName = is_object($userDistrict) ? ($userDistrict->name ?? '') : (string) $userDistrict;
                     @endphp
                     <button type="button" wire:click="$set('districtFilter', 'my_district')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center leading-tight truncate {{ $districtFilter === 'my_district' ? 'bg-primary-600 text-white dark:bg-white dark:text-primary-700 shadow-md scale-[1.02]' : 'text-white/90 hover:bg-white/10' }}"
+                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center leading-tight truncate {{ $districtFilter === 'my_district' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-md scale-[1.02]' : 'text-white/90 hover:bg-white/10' }}"
                         title="Semua bantuan di Kecamatan {{ $userDistrictName }}">
                         <span class="truncate">Kec. {{ $userDistrictName }}</span>
-                        <span class="text-[10px] font-medium {{ $districtFilter === 'my_district' ? 'text-white/80 dark:text-primary-600' : 'text-white/75' }}">({{ $countDistrict ?? 0 }})</span>
+                        <span class="text-[10px] font-medium {{ $districtFilter === 'my_district' ? 'text-primary-600 dark:!text-white/80' : 'text-white/75' }}">({{ $countDistrict ?? 0 }})</span>
                     </button>
                     @endif
                     <!-- Tab 3: Kota / Kabupaten -->
@@ -102,10 +102,10 @@
                         $userCityName = is_object($userCity) ? ($userCity->name ?? '') : (string) $userCity;
                     @endphp
                     <button type="button" wire:click="$set('districtFilter', 'my_city')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center leading-tight truncate {{ $districtFilter === 'my_city' ? 'bg-primary-600 text-white dark:bg-white dark:text-primary-700 shadow-md scale-[1.02]' : 'text-white/90 hover:bg-white/10' }}"
+                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center leading-tight truncate {{ $districtFilter === 'my_city' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-md scale-[1.02]' : 'text-white/90 hover:bg-white/10' }}"
                         title="Semua bantuan di {{ $userCityName }}">
                         <span class="truncate">{{ $userCityName }}</span>
-                        <span class="text-[10px] font-medium {{ $districtFilter === 'my_city' ? 'text-white/80 dark:text-primary-600' : 'text-white/75' }}">({{ $countCity ?? 0 }})</span>
+                        <span class="text-[10px] font-medium {{ $districtFilter === 'my_city' ? 'text-primary-600 dark:!text-white/80' : 'text-white/75' }}">({{ $countCity ?? 0 }})</span>
                     </button>
                     @endif
                 </div>

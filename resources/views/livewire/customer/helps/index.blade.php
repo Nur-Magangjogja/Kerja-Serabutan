@@ -36,31 +36,31 @@
                 <!-- Filter Tabs - Segmented Grid (No Overflow) -->
                 <div class="grid grid-cols-4 gap-1 bg-black/15 backdrop-blur-md p-1 rounded-xl border border-white/20 text-center">
                     <button type="button" wire:click="$set('statusFilter', 'menunggu_mitra')" role="tab"
-                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'menunggu_mitra' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
+                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'menunggu_mitra' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
                         <span>Menunggu</span>
                         @if(!empty($counts['menunggu']) && $counts['menunggu'] > 0)
-                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'menunggu_mitra' ? 'bg-primary-100 text-primary-700' : 'bg-white/20 text-white' }}">{{ $counts['menunggu'] }}</span>
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'menunggu_mitra' ? 'bg-primary-100 text-primary-700 dark:bg-white/20 dark:text-white' : 'bg-white/20 text-white' }}">{{ $counts['menunggu'] }}</span>
                         @endif
                     </button>
                     <button type="button" wire:click="$set('statusFilter', 'diproses')" role="tab"
-                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'diproses' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
+                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'diproses' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
                         <span>Diproses</span>
                         @if(!empty($counts['diproses']) && $counts['diproses'] > 0)
-                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'diproses' ? 'bg-primary-100 text-primary-700' : 'bg-white/20 text-white' }}">{{ $counts['diproses'] }}</span>
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'diproses' ? 'bg-primary-100 text-primary-700 dark:bg-white/20 dark:text-white' : 'bg-white/20 text-white' }}">{{ $counts['diproses'] }}</span>
                         @endif
                     </button>
                     <button type="button" wire:click="$set('statusFilter', 'waiting_customer_confirmation')" role="tab"
-                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'waiting_customer_confirmation' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
+                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'waiting_customer_confirmation' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
                         <span>Konfirmasi</span>
                         @if(!empty($counts['konfirmasi']) && $counts['konfirmasi'] > 0)
-                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'waiting_customer_confirmation' ? 'bg-amber-100 text-amber-800' : 'bg-amber-400/80 text-gray-900 font-extrabold' }} animate-pulse">{{ $counts['konfirmasi'] }}</span>
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'waiting_customer_confirmation' ? 'bg-amber-100 text-amber-800 dark:bg-amber-400 dark:text-amber-950 font-extrabold' : 'bg-amber-400/80 text-gray-900 font-extrabold' }} animate-pulse">{{ $counts['konfirmasi'] }}</span>
                         @endif
                     </button>
                     <button type="button" wire:click="$set('statusFilter', 'selesai')" role="tab"
-                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'selesai' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
+                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'selesai' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
                         <span>Selesai</span>
                         @if(!empty($counts['selesai']) && $counts['selesai'] > 0)
-                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'selesai' ? 'bg-gray-100 text-gray-700' : 'bg-white/20 text-white' }}">{{ $counts['selesai'] }}</span>
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'selesai' ? 'bg-gray-100 text-gray-700 dark:bg-white/20 dark:text-white' : 'bg-white/20 text-white' }}">{{ $counts['selesai'] }}</span>
                         @endif
                     </button>
                 </div>

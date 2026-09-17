@@ -607,6 +607,28 @@ html.dark [class*="dark:text-gray-300"] {
     color: #d1d5db !important;
 }
 
+/* Dark Mode Primary Background Overrides (Prevents .bg-white dark override from conflicting) */
+html.dark .dark\:bg-primary-600,
+html.dark [class*="dark:bg-primary-600"],
+html.dark .dark\:\!bg-primary-600,
+html.dark [class*="dark:!bg-primary-600"] {
+    background-color: #0284c7 !important;
+}
+
+html.dark .dark\:bg-primary-500,
+html.dark [class*="dark:bg-primary-500"],
+html.dark .dark\:\!bg-primary-500,
+html.dark [class*="dark:!bg-primary-500"] {
+    background-color: #0ea5e9 !important;
+}
+
+html.dark .dark\:bg-primary-700,
+html.dark [class*="dark:bg-primary-700"],
+html.dark .dark\:\!bg-primary-700,
+html.dark [class*="dark:!bg-primary-700"] {
+    background-color: #0369a1 !important;
+}
+
 /* Comprehensive Dark Mode Fallback for Form Controls & Modals */
 html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="file"]),
 html.dark textarea,
