@@ -16,8 +16,8 @@ class Index extends Component
 {
     use WithPagination;
 
-    public $activeTab = 'cancellations'; // Default to cancellations since cancellations are frequent
-    public $status = 'pending'; // 'frozen', 'resolved', 'all' (or 'pending', 'approved', 'rejected' for cancellations)
+    public $activeTab = 'cancellations'; // Default to cancellations
+    public $status = 'pending'; // 'frozen', 'resolved', 'all' for disputes | 'pending', 'approved', 'rejected', 'all' for cancellations
     public $search = '';
     public $requesterTypeFilter = 'all'; // 'all', 'partner', 'customer'
 
@@ -29,15 +29,18 @@ class Index extends Component
 
     public function mount()
     {
-        if (request()->routeIs('*disputes*') && !request()->has('tab')) {
+        if (request()->routeIs('*disputes*') || request('tab') === 'disputes') {
             $this->activeTab = 'disputes';
-            $this->status = 'frozen';
-        } elseif (request('tab') === 'disputes') {
-            $this->activeTab = 'disputes';
-            $this->status = 'frozen';
+            $this->status = request('status', 'frozen');
+            if (!in_array($this->status, ['frozen', 'resolved', 'all'], true)) {
+                $this->status = 'frozen';
+            }
         } else {
             $this->activeTab = 'cancellations';
-            $this->status = 'pending';
+            $this->status = request('status', 'pending');
+            if (!in_array($this->status, ['pending', 'approved', 'rejected', 'all'], true)) {
+                $this->status = 'pending';
+            }
         }
     }
 
@@ -71,12 +74,11 @@ class Index extends Component
     public $customerSpReason = '';
 
     protected $queryString = [
-        'activeTab'           => ['except' => 'disputes'],
-        'status'              => ['except' => 'frozen'],
+        'activeTab'           => ['except' => 'cancellations'],
+        'status'              => ['except' => ''],
         'requesterTypeFilter' => ['except' => 'all'],
         'search'              => ['except' => ''],
     ];
-
 
     public function updatingSearch()
     {
@@ -93,10 +95,17 @@ class Index extends Component
         $this->resetPage();
     }
 
-    public function updatingActiveTab()
+    public function setActiveTab(string $tab): void
     {
+        $this->activeTab = ($tab === 'disputes') ? 'disputes' : 'cancellations';
+        $this->status = ($this->activeTab === 'disputes') ? 'frozen' : 'pending';
         $this->resetPage();
-        $this->status = ($this->activeTab === 'cancellations') ? 'pending' : 'frozen';
+    }
+
+    public function updatedActiveTab($value): void
+    {
+        $this->status = ($value === 'disputes') ? 'frozen' : 'pending';
+        $this->resetPage();
     }
 
     // ─── DISPUTE ACTIONS ─────────────────────────────────────────────────────
@@ -447,7 +456,68 @@ class Index extends Component
         $admin        = auth()->user();
         $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
 
+        // Hitung count untuk indikator badge tab secara dinamis
+        $pendingCancelsCount = 0;
+        $activeFrozenDisputesCount = 0;
+
+        if (!$isSuperAdmin) {
+            $districtIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
+            if (!empty($districtIds)) {
+                $pendingCancelsCount = HelpCancelRequest::where('status', HelpCancelRequest::STATUS_PENDING)
+                    ->where(function ($q) use ($districtIds) {
+                        $q->whereIn('district_id', $districtIds)
+                          ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $districtIds));
+                    })->count();
+
+                $activeFrozenDisputesCount = Help::where('escrow_status', Help::ESCROW_STATUS_DISPUTED_FREEZE)
+                    ->where(function ($q) use ($districtIds) {
+                        $q->whereIn('district_id', $districtIds)
+                          ->orWhereHas('user', fn($uq) => $uq->whereIn('district_id', $districtIds));
+                    })->count();
+            }
+        } else {
+            $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+            $cancelCountQuery = HelpCancelRequest::where('status', HelpCancelRequest::STATUS_PENDING);
+            $disputeCountQuery = Help::where('escrow_status', Help::ESCROW_STATUS_DISPUTED_FREEZE);
+
+            if ($territory['type'] === 'district' && $territory['id']) {
+                $dId = (int) $territory['id'];
+                $cancelCountQuery->where(function ($q) use ($dId) {
+                    $q->where('district_id', $dId)
+                      ->orWhereHas('help', fn($hq) => $hq->where('district_id', $dId));
+                });
+                $disputeCountQuery->where(function ($q) use ($dId) {
+                    $q->where('district_id', $dId)
+                      ->orWhereHas('user', fn($uq) => $uq->where('district_id', $dId));
+                });
+            } elseif ($territory['type'] === 'city' && $territory['id']) {
+                $cId = (int) $territory['id'];
+                $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
+                $cancelCountQuery->where(function ($q) use ($cId, $districtIds) {
+                    $q->whereHas('help', fn($hq) => $hq->where('city_id', $cId));
+                    if (!empty($districtIds)) {
+                        $q->orWhereIn('district_id', $districtIds)
+                          ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $districtIds));
+                    }
+                });
+                $disputeCountQuery->where(function ($q) use ($cId, $districtIds) {
+                    $q->where('city_id', $cId)
+                      ->orWhereHas('user', fn($uq) => $uq->where('city_id', $cId));
+                    if (!empty($districtIds)) {
+                        $q->orWhereIn('district_id', $districtIds)
+                          ->orWhereHas('user', fn($uq) => $uq->whereIn('district_id', $districtIds));
+                    }
+                });
+            }
+            $pendingCancelsCount = $cancelCountQuery->count();
+            $activeFrozenDisputesCount = $disputeCountQuery->count();
+        }
+
         if ($this->activeTab === 'cancellations') {
+            if (!in_array($this->status, ['pending', 'approved', 'rejected', 'all'], true)) {
+                $this->status = 'pending';
+            }
+
             $query = HelpCancelRequest::with([
                 'help.user', 
                 'help.mitra', 
@@ -511,10 +581,17 @@ class Index extends Component
             $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 
             return view('livewire.admin.disputes.index', [
-                'cancellations' => $cancellations,
-                'disputes'      => collect(),
-                'isSuperAdmin'  => $isSuperAdmin,
+                'cancellations'             => $cancellations,
+                'disputes'                  => collect(),
+                'isSuperAdmin'              => $isSuperAdmin,
+                'pendingCancelsCount'       => $pendingCancelsCount,
+                'activeFrozenDisputesCount' => $activeFrozenDisputesCount,
             ])->layout($layout);
+        }
+
+        // Tab Disputes
+        if (!in_array($this->status, ['frozen', 'resolved', 'all'], true)) {
+            $this->status = 'frozen';
         }
 
         $query = Help::with(['user.district', 'mitra.district', 'district', 'city', 'disputeResolvedBy'])
@@ -579,9 +656,11 @@ class Index extends Component
         $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 
         return view('livewire.admin.disputes.index', [
-            'disputes'      => $disputes,
-            'cancellations' => collect(),
-            'isSuperAdmin'  => $isSuperAdmin,
+            'disputes'                  => $disputes,
+            'cancellations'             => collect(),
+            'isSuperAdmin'              => $isSuperAdmin,
+            'pendingCancelsCount'       => $pendingCancelsCount,
+            'activeFrozenDisputesCount' => $activeFrozenDisputesCount,
         ])->layout($layout);
     }
 }

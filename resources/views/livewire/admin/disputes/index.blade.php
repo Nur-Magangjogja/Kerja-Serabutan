@@ -31,13 +31,23 @@
 
     {{-- Main Tabs Switcher --}}
     <div class="flex items-center gap-2 mb-4 border-b border-gray-200 dark:border-gray-800">
-        <button wire:click="$set('activeTab', 'disputes')" 
-                class="pb-3 px-4 font-bold text-xs transition border-b-2 flex items-center gap-2 {{ $activeTab === 'disputes' ? 'border-primary-600 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400' }}">
+        <button wire:click="setActiveTab('disputes')" 
+                class="pb-3 px-4 font-bold text-xs transition border-b-2 flex items-center gap-2 cursor-pointer {{ $activeTab === 'disputes' ? 'border-primary-600 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400' }}">
             <span>⚖️ Mediasi Sengketa Dana Tahan</span>
+            @if(($activeFrozenDisputesCount ?? 0) > 0)
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500 text-white shadow-xs">
+                    {{ $activeFrozenDisputesCount > 99 ? '99+' : $activeFrozenDisputesCount }}
+                </span>
+            @endif
         </button>
-        <button wire:click="$set('activeTab', 'cancellations')" 
-                class="pb-3 px-4 font-bold text-xs transition border-b-2 flex items-center gap-2 {{ $activeTab === 'cancellations' ? 'border-primary-600 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400' }}">
+        <button wire:click="setActiveTab('cancellations')" 
+                class="pb-3 px-4 font-bold text-xs transition border-b-2 flex items-center gap-2 cursor-pointer {{ $activeTab === 'cancellations' ? 'border-primary-600 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400' }}">
             <span>🛑 Audit Pembatalan Mitra & Customer</span>
+            @if(($pendingCancelsCount ?? 0) > 0)
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white shadow-xs">
+                    {{ $pendingCancelsCount > 99 ? '99+' : $pendingCancelsCount }}
+                </span>
+            @endif
         </button>
     </div>
 
