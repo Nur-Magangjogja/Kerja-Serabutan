@@ -292,8 +292,11 @@
                 </div>
 
                 <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <button type="button" wire:click="closeApproveModal" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold cursor-pointer">Batal</button>
-                    <button type="button" wire:click="submitApprove" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer">Setujui & Selesaikan</button>
+                    <button type="button" wire:click="closeApproveModal" wire:loading.attr="disabled" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold cursor-pointer">Batal</button>
+                    <button type="button" wire:click="submitApprove" wire:loading.attr="disabled" wire:target="submitApprove, proofPhoto" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span wire:loading.remove wire:target="submitApprove">Setujui & Selesaikan</span>
+                        <span wire:loading wire:target="submitApprove">Memproses...</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -342,8 +345,11 @@
                     @error('rejectReason') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
                 </div>
                 <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <button type="button" wire:click="closeRejectModal" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold cursor-pointer">Batal</button>
-                    <button type="button" wire:click="submitReject" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer">Tolak Pencairan</button>
+                    <button type="button" wire:click="closeRejectModal" wire:loading.attr="disabled" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold cursor-pointer">Batal</button>
+                    <button type="button" wire:click="submitReject" wire:loading.attr="disabled" wire:target="submitReject" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span wire:loading.remove wire:target="submitReject">Tolak Pencairan</span>
+                        <span wire:loading wire:target="submitReject">Memproses...</span>
+                    </button>
                 </div>
             </div>
         </div>

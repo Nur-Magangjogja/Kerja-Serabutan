@@ -107,6 +107,7 @@
                         @php
                             $rating = $help->rating;
                             $isCancelled = in_array($help->status, ['dibatalkan', 'cancelled']);
+                            $fullCustomerPrice = $help->total_amount > 0 ? (float)$help->total_amount : (float)(($help->amount ?? 0) + $help->getPlatformFee());
                         @endphp
                         <div x-data="{ isExpanded: false }" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs hover:shadow-md transition">
                             <div class="p-4">
@@ -132,7 +133,7 @@
                                     </div>
 
                                     <div class="text-right flex-shrink-0">
-                                        <div class="text-1xl font-bold text-primary-600 dark:text-sky-400">Rp {{ number_format($help->amount ?? 0, 0, ',', '.') }}</div>
+                                        <div class="text-1xl font-bold text-primary-600 dark:text-sky-400">Rp {{ number_format($fullCustomerPrice, 0, ',', '.') }}</div>
                                         <div class="flex flex-col items-end gap-1 mt-1">
                                             @if($isCancelled)
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-[10px] font-bold border border-rose-200 dark:border-rose-800/50">
@@ -271,7 +272,7 @@
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-start justify-between gap-2">
                                         <h3 class="font-bold text-sm text-gray-900 dark:text-gray-100 truncate leading-snug">{{ $help->title }}</h3>
-                                        <span class="text-1xl font-bold text-primary-600 dark:text-sky-400 whitespace-nowrap shrink-0">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
+                                        <span class="text-1xl font-bold text-primary-600 dark:text-sky-400 whitespace-nowrap shrink-0">Rp {{ number_format($help->total_amount > 0 ? $help->total_amount : ($help->amount + $help->getPlatformFee()), 0, ',', '.') }}</span>
                                     </div>
 
                                     <div class="flex items-center gap-2 mt-1 flex-wrap">

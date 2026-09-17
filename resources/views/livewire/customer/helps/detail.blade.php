@@ -979,14 +979,22 @@
                 <div class="space-y-2">
                     <button wire:click="confirmCompletion" 
                             wire:loading.attr="disabled"
-                            class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            wire:target="confirmCompletion"
+                            class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none">
+                        <svg wire:loading.remove wire:target="confirmCompletion" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
-                        Konfirmasi Selesai & Teruskan Dana
+                        <svg wire:loading wire:target="confirmCompletion" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        <span wire:loading.remove wire:target="confirmCompletion">Konfirmasi Selesai & Teruskan Dana</span>
+                        <span wire:loading wire:target="confirmCompletion">Memproses Konfirmasi...</span>
                     </button>
 
                     <button wire:click="openDisputeModal" 
+                            wire:loading.attr="disabled"
+                            wire:target="confirmCompletion"
                             type="button"
                             class="w-full bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer text-xs">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

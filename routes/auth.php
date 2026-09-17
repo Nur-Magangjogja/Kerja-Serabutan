@@ -91,4 +91,4 @@ Route::match(['GET', 'POST'], 'logout', function () {
 
     // Redirect all users cleanly to unified login
     return redirect()->route('login');
-})->name('logout');
+})->middleware('throttle:15,1')->name('logout');

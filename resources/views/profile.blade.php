@@ -237,12 +237,16 @@
                         <p class="text-xs text-gray-500 dark:text-gray-400">Apakah Anda yakin ingin keluar dari aplikasi?</p>
                     </div>
 
-                    <form action="{{ route('logout') }}" method="POST" class="space-y-2.5">
+                    <form action="{{ route('logout') }}" method="POST" class="space-y-2.5" x-data="{ submitting: false }" @submit="if (submitting) { $event.preventDefault(); return false; } submitting = true;">
                         @csrf
-                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-red-600/30 cursor-pointer text-sm">
-                            Ya, Logout
+                        <button type="submit" :disabled="submitting" :class="submitting ? 'opacity-60 cursor-not-allowed pointer-events-none' : ''" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-red-600/30 cursor-pointer text-sm flex items-center justify-center gap-2">
+                            <svg x-show="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span x-text="submitting ? 'Mengeluarkan Akun...' : 'Ya, Logout'">Ya, Logout</span>
                         </button>
-                        <button type="button" onclick="document.getElementById('logout-modal').classList.add('hidden')" class="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-pointer text-sm">
+                        <button type="button" :disabled="submitting" onclick="document.getElementById('logout-modal').classList.add('hidden')" class="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-pointer text-sm">
                             Batal
                         </button>
                     </form>
