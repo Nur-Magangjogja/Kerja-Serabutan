@@ -221,9 +221,6 @@
                                 <td class="p-4">
                                     <div class="flex items-center gap-1.5 flex-wrap">
                                         <span class="font-bold text-gray-900 dark:text-white">{{ $req->help->title ?? 'Bantuan' }}</span>
-                                        @if($req->help?->order_id)
-                                            <span class="text-[10px] text-gray-400 font-mono">({{ $req->help->order_id }})</span>
-                                        @endif
                                     </div>
                                     <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
                                         Dana Tahan: Rp {{ number_format($req->help->total_amount > 0 ? $req->help->total_amount : ($req->help->amount ?? 0), 0, ',', '.') }}
@@ -370,10 +367,7 @@
                                                     <span class="text-base">📜</span>
                                                     <div>
                                                         <h4 class="font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
-                                                            Log & Kronologi Pembatalan ID Pekerjaan #{{ $req->help_id }}
-                                                            @if($req->help?->order_id)
-                                                                <span class="text-xs font-mono text-gray-500 font-normal">({{ $req->help->order_id }})</span>
-                                                            @endif
+                                                            Log & Kronologi Pembatalan Tugas Bantuan
                                                         </h4>
                                                         <p class="text-[11px] text-gray-500 dark:text-gray-400">Total ditemukan {{ $cancelCount }} aktivitas pembatalan / pengalihan mitra pada tugas ini.</p>
                                                     </div>
@@ -590,14 +584,14 @@
             $isKonsep2 = ($isPartner && (($selectedCancelRequest->cancellation_stage ?? '') === 'in_progress' || ($selectedCancelRequest->previous_status ?? '') === 'in_progress' || ($help?->status ?? '') === 'partner_cancel_requested'));
 
             if ($isKonsep2) {
-                $customerWaText = "Halo Kak " . ($customer?->name ?? 'Customer') . ", kami dari Tim Admin SayaBantu menindaklanjuti kendala pengerjaan yang diajukan oleh mitra pada tugas #" . ($help?->id ?? '') . " (" . ($help?->title ?? 'Bantuan') . ") dengan alasan: \"" . $selectedCancelRequest->reason . "\". Kami ingin mengonfirmasi kondisi di lokasi untuk menyepakati pengembalian dana (refund) yang adil. Terima kasih.";
-                $mitraWaText = "Halo Rekan " . ($partner?->name ?? 'Mitra') . ", kami dari Tim Admin SayaBantu menindaklanjuti pengajuan kendala lapangan tugas #" . ($help?->id ?? '') . " (" . ($help?->title ?? 'Bantuan') . ") dengan alasan: \"" . $selectedCancelRequest->reason . "\". Kami sedang memverifikasi dengan customer untuk penyelesaian saldo pengerjaan. Terima kasih.";
+                $customerWaText = "Halo Kak " . ($customer?->name ?? 'Customer') . ", kami dari Tim Admin SayaBantu menindaklanjuti kendala pengerjaan yang diajukan oleh mitra pada tugas '" . ($help?->title ?? 'Bantuan') . "' dengan alasan: \"" . $selectedCancelRequest->reason . "\". Kami ingin mengonfirmasi kondisi di lokasi untuk menyepakati pengembalian dana (refund) yang adil. Terima kasih.";
+                $mitraWaText = "Halo Rekan " . ($partner?->name ?? 'Mitra') . ", kami dari Tim Admin SayaBantu menindaklanjuti pengajuan kendala lapangan tugas '" . ($help?->title ?? 'Bantuan') . "' dengan alasan: \"" . $selectedCancelRequest->reason . "\". Kami sedang memverifikasi dengan customer untuk penyelesaian saldo pengerjaan. Terima kasih.";
             } elseif ($isPartner) {
-                $customerWaText = "Halo Kak " . ($customer?->name ?? 'Customer') . ", kami dari Tim Admin SayaBantu menginformasikan bahwa mitra sebelumnya mengajukan pembatalan tugas #" . ($help?->id ?? '') . " (" . ($help?->title ?? 'Bantuan') . ") karena kendala: \"" . $selectedCancelRequest->reason . "\". Saat ini sistem telah mengalihkan pesanan ke pool pencarian mitra baru. Mohon info jika ada catatan khusus. Terima kasih.";
-                $mitraWaText = "Halo Rekan " . ($partner?->name ?? 'Mitra') . ", kami dari Tim Admin SayaBantu menindaklanjuti pengajuan pembatalan tugas #" . ($help?->id ?? '') . " (" . ($help?->title ?? 'Bantuan') . ") dengan alasan: \"" . $selectedCancelRequest->reason . "\". Mohon klarifikasi atau konfirmasi tambahan terkait kendala tersebut. Terima kasih.";
+                $customerWaText = "Halo Kak " . ($customer?->name ?? 'Customer') . ", kami dari Tim Admin SayaBantu menginformasikan bahwa mitra sebelumnya mengajukan pembatalan tugas '" . ($help?->title ?? 'Bantuan') . "' karena kendala: \"" . $selectedCancelRequest->reason . "\". Saat ini sistem telah mengalihkan pesanan ke pool pencarian mitra baru. Mohon info jika ada catatan khusus. Terima kasih.";
+                $mitraWaText = "Halo Rekan " . ($partner?->name ?? 'Mitra') . ", kami dari Tim Admin SayaBantu menindaklanjuti pengajuan pembatalan tugas '" . ($help?->title ?? 'Bantuan') . "' dengan alasan: \"" . $selectedCancelRequest->reason . "\". Mohon klarifikasi atau konfirmasi tambahan terkait kendala tersebut. Terima kasih.";
             } else {
-                $customerWaText = "Halo Kak " . ($customer?->name ?? 'Customer') . ", kami dari Tim Admin SayaBantu menindaklanjuti permohonan pembatalan tugas #" . ($help?->id ?? '') . " (" . ($help?->title ?? 'Bantuan') . ") dengan alasan: \"" . $selectedCancelRequest->reason . "\". Mohon konfirmasi apakah Anda ingin kami carikan mitra baru (lempar ke pool) atau batalkan total & refund 100% saldo? Terima kasih.";
-                $mitraWaText = "Halo Rekan " . ($partner?->name ?? 'Mitra') . ", kami dari Tim Admin SayaBantu menindaklanjuti laporan/pengajuan pembatalan dari customer pada tugas #" . ($help?->id ?? '') . " (" . ($help?->title ?? 'Bantuan') . ") dengan alasan: \"" . $selectedCancelRequest->reason . "\". Mohon klarifikasi segera mengenai kondisi tugas di lapangan. Terima kasih.";
+                $customerWaText = "Halo Kak " . ($customer?->name ?? 'Customer') . ", kami dari Tim Admin SayaBantu menindaklanjuti permohonan pembatalan tugas '" . ($help?->title ?? 'Bantuan') . "' dengan alasan: \"" . $selectedCancelRequest->reason . "\". Mohon konfirmasi apakah Anda ingin kami carikan mitra baru (lempar ke pool) atau batalkan total & refund 100% saldo? Terima kasih.";
+                $mitraWaText = "Halo Rekan " . ($partner?->name ?? 'Mitra') . ", kami dari Tim Admin SayaBantu menindaklanjuti laporan/pengajuan pembatalan dari customer pada tugas '" . ($help?->title ?? 'Bantuan') . "' dengan alasan: \"" . $selectedCancelRequest->reason . "\". Mohon klarifikasi segera mengenai kondisi tugas di lapangan. Terima kasih.";
             }
 
             $customerWaUrl = $formatWa($customer?->phone, $customerWaText);

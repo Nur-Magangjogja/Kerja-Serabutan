@@ -1,6 +1,6 @@
 <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex">
     <!-- Sidebar -->
-    <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg fixed inset-y-0 left-0 flex flex-col z-30 h-screen max-h-screen overscroll-contain">
+    <aside class="w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg fixed inset-y-0 left-0 flex flex-col z-30 h-screen max-h-screen overscroll-contain">
         @php
             $siteName = \App\Models\AppSetting::get('app_name', 'SayaBantu');
             $siteLogo = \App\Models\AppSetting::get('app_logo');
@@ -34,77 +34,77 @@
 
         <!-- Scrollable Navigation Menu -->
         <nav tabindex="-1"
-             class="flex-1 min-h-0 h-0 overflow-y-auto overflow-x-hidden p-4 space-y-1.5 custom-scrollbar overscroll-contain touch-pan-y outline-none focus:outline-none"
+             class="flex-1 min-h-0 h-0 overflow-y-auto overflow-x-hidden p-3.5 space-y-1 custom-scrollbar overscroll-contain touch-pan-y outline-none focus:outline-none"
              style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
             <a href="{{ route('admin.dashboard') }}"
-                class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.dashboard') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('admin.dashboard') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                 <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
-                Dashboard
+                <span class="whitespace-nowrap">Dashboard</span>
             </a>
 
             @if(auth()->user()->role === 'super_admin')
-                <div class="pt-4 pb-1">
-                    <p class="px-4 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Super Admin</p>
+                <div class="pt-3.5 pb-1">
+                    <p class="px-3.5 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Super Admin</p>
                 </div>
 
                 <a href="{{ route('superadmin.users') }}"
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.users*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('superadmin.users*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
-                    Manajemen User
+                    <span class="whitespace-nowrap">Manajemen User</span>
                 </a>
 
                 <a href="{{ route('superadmin.cities') }}"
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('superadmin.cities*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('superadmin.cities*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    Kelola Wilayah
+                    <span class="whitespace-nowrap">Kelola Wilayah</span>
                 </a>
             @endif
 
-            <div class="pt-4 pb-1">
-                <p class="px-4 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Moderasi</p>
+            <div class="pt-3.5 pb-1">
+                <p class="px-3.5 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Moderasi</p>
             </div>
 
             <a href="{{ route('admin.helps') }}"
-                class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.helps*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('admin.helps*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                 <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                Moderasi Bantuan
+                <span class="whitespace-nowrap">Moderasi Bantuan</span>
             </a>
 
             <a href="{{ route('admin.verifications') }}"
-                class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.verifications*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('admin.verifications*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                 <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
                 </svg>
-                Verifikasi KTP
+                <span class="whitespace-nowrap">Verifikasi KTP</span>
             </a>
 
-            <div class="pt-4 pb-1">
-                <p class="px-4 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Keuangan</p>
+            <div class="pt-3.5 pb-1">
+                <p class="px-3.5 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Keuangan</p>
             </div>
 
             <a href="{{ route('admin.withdraws.index') }}"
-                class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.withdraws.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('admin.withdraws.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                 <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                Manajemen Withdraw
+                <span class="whitespace-nowrap">Manajemen Withdraw</span>
             </a>
 
             <a href="{{ route('admin.topup.approvals') }}"
-                class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.topup*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('admin.topup*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                 <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Approval Top-Up
+                <span class="whitespace-nowrap">Approval Top-Up</span>
             </a>
 
         </nav>
@@ -133,7 +133,7 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 ml-64 min-h-screen">
+    <main class="flex-1 ml-72 min-h-screen">
         <!-- Header -->
         <header class="shadow-xs border-b sticky top-0 z-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <div class="px-8 py-5">

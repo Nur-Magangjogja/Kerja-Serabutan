@@ -387,10 +387,9 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="bg-gray-50/80 dark:bg-gray-700/40 border-b border-gray-100 dark:border-gray-700">
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Order ID</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer / Pemohon</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Jumlah</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total (Biaya + Pajak)</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Waktu</th>
                         </tr>
                     </thead>
@@ -404,9 +403,15 @@
                             'dibatalkan', 'partner_cancel_requested', 'customer_cancel_requested' => 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400',
                             default => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                         };
+
+                        $baseAmount = (float) ($help->amount ?? 0);
+                        $platformFee = (float) $help->getPlatformFee();
+                        if ($platformFee <= 0 && (float)$help->total_amount > $baseAmount) {
+                            $platformFee = (float) ($help->total_amount - $baseAmount);
+                        }
+                        $totalAmount = (float) ($help->total_amount > 0 ? $help->total_amount : ($baseAmount + $platformFee));
                         @endphp
                         <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-700/30 transition-colors duration-150">
-                            <td class="px-4 py-3.5 font-mono text-xs font-semibold text-gray-800 dark:text-gray-200">{{ $help->order_id ?? $help->id }}</td>
                             <td class="px-4 py-3.5">
                                 <div class="font-bold text-gray-900 dark:text-white">{{ $help->title }}</div>
                                 <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ optional($help->user)->name ?? (optional($help->customer)->name ?? '—') }}</div>
@@ -416,8 +421,15 @@
                                     {{ ucfirst(str_replace('_', ' ', $help->status)) }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3.5 text-right font-bold text-gray-800 dark:text-gray-100">
-                                Rp {{ number_format($help->amount ?? 0, 0, ',', '.') }}
+                            <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                <div class="font-extrabold text-gray-900 dark:text-white text-sm">
+                                    Rp {{ number_format($totalAmount, 0, ',', '.') }}
+                                </div>
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 flex items-center justify-end gap-1.5 flex-wrap">
+                                    <span>Jasa: <strong class="text-gray-700 dark:text-gray-300">Rp {{ number_format($baseAmount, 0, ',', '.') }}</strong></span>
+                                    <span class="text-gray-300 dark:text-gray-600">+</span>
+                                    <span class="text-emerald-600 dark:text-emerald-400">Pajak: <strong class="text-emerald-700 dark:text-emerald-300">Rp {{ number_format($platformFee, 0, ',', '.') }}</strong></span>
+                                </div>
                             </td>
                             <td class="px-4 py-3.5 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
                                 {{ $help->created_at ? $help->created_at->translatedFormat('d M Y, H:i') : '—' }}

@@ -232,6 +232,8 @@ class HelpCancelRequest extends Model
 
             if (!$isSuperAdmin) {
                 $districtIds = $user->getEffectiveAdminDistrictIds();
+                $adminCityId = $user->city_id;
+
                 if (!empty($districtIds)) {
                     $cancelQuery->where(function ($q) use ($districtIds) {
                         $q->whereIn('district_id', $districtIds)
@@ -240,6 +242,12 @@ class HelpCancelRequest extends Model
                     $disputeQuery->where(function ($q) use ($districtIds) {
                         $q->whereIn('district_id', $districtIds)
                           ->orWhereHas('user', fn($uq) => $uq->whereIn('district_id', $districtIds));
+                    });
+                } elseif ($adminCityId) {
+                    $cancelQuery->whereHas('help', fn($hq) => $hq->where('city_id', $adminCityId));
+                    $disputeQuery->where(function ($q) use ($adminCityId) {
+                        $q->where('city_id', $adminCityId)
+                          ->orWhereHas('user', fn($uq) => $uq->where('city_id', $adminCityId));
                     });
                 } else {
                     return 0;

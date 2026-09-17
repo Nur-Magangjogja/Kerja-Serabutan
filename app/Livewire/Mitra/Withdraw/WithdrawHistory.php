@@ -21,10 +21,19 @@ class WithdrawHistory extends Component
         $this->resetPage();
     }
 
-    public function viewProof($id, $url)
+    public function viewProof($id, $url = null)
     {
-        $this->selectedWithdrawId = $id;
-        $this->selectedProofUrl = $url;
+        $withdraw = WithdrawRequest::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if (!$withdraw) {
+            session()->flash('error', 'Data penarikan tidak ditemukan.');
+            return;
+        }
+
+        $this->selectedWithdrawId = $withdraw->id;
+        $this->selectedProofUrl = $withdraw->proof_photo_path ?? $withdraw->transfer_proof ?? $url;
         $this->showProofModal = true;
     }
 

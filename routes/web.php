@@ -134,6 +134,11 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
                 return response()->json(['error' => 'Not found'], 404);
             }
 
+            // Authorization: Pastikan hanya customer pemilik atau mitra yang bertugas yang dapat melihat koordinat
+            if ($help->user_id !== auth()->id() && $help->mitra_id !== auth()->id()) {
+                return response()->json(['error' => 'Unauthorized access'], 403);
+            }
+
             return response()->json([
                 'partnerLat' => $help->partner_current_lat,
                 'partnerLng' => $help->partner_current_lng,
@@ -148,6 +153,11 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::get('/helps/{id}/json', function ($id) {
             $help = \App\Models\Help::with(['city','mitra','user'])->find($id);
             if (! $help) return response()->json(['error' => 'Not found'], 404);
+
+            // Authorization: Pastikan hanya pemilik atau mitra yang bertugas yang dapat melihat data JSON
+            if ($help->user_id !== auth()->id() && $help->mitra_id !== auth()->id()) {
+                return response()->json(['error' => 'Unauthorized access'], 403);
+            }
 
             return response()->json([
                 'id' => $help->id,

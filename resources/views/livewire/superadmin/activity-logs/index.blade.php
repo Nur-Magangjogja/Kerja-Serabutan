@@ -533,9 +533,9 @@
                         @endif
                         @if($targetHelp)
                         <div class="bg-white dark:bg-gray-800 p-2.5 rounded-xl border border-sky-200/60 dark:border-sky-800">
-                            <span class="text-[10px] text-gray-400 block">Pesanan / Tugas Bantuan:</span>
-                            <span class="font-bold text-gray-900 dark:text-white">{{ $targetHelp->order_id }}</span>
-                            <span class="text-[11px] text-gray-500 block line-clamp-1">{{ $targetHelp->title }}</span>
+                            <span class="text-[10px] text-gray-400 block">Tugas Bantuan:</span>
+                            <span class="font-bold text-gray-900 dark:text-white line-clamp-1">{{ $targetHelp->title }}</span>
+                            <span class="text-[11px] text-gray-500 block">Rp {{ number_format($targetHelp->amount ?? 0, 0, ',', '.') }} • {{ ucfirst(str_replace('_', ' ', $targetHelp->status ?? '')) }}</span>
                         </div>
                         @endif
                     </div>

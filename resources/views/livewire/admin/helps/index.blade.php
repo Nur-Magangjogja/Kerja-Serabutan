@@ -244,12 +244,8 @@
                 {{-- Header (Solid Clean & Professional, No Gradient, No Red Background) --}}
                 <div class="px-6 py-5 bg-white dark:bg-gray-800 border-b border-gray-200/80 dark:border-gray-700 flex items-start justify-between gap-4 shrink-0">
                     <div class="space-y-1.5 flex-1 min-w-0">
-                        {{-- Top Row: Order ID & Status Badges --}}
+                        {{-- Top Row: Status Badges --}}
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600 shadow-2xs">
-                                {{ $selectedHelp->order_id ?? $selectedHelp->id }}
-                            </span>
-
                             @if($isCancelled)
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60">
                                     <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
