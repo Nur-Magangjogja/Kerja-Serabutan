@@ -185,11 +185,11 @@ class HelpCreationService
                 'escrow_locked_at'              => now(),
             ]);
 
-            // Escrow Lock ke Saldo Customer
-            $customerBalance = UserBalance::firstOrCreate(
-                ['user_id' => $customer->id],
-                ['balance' => 0]
-            );
+            // Escrow Lock ke Saldo Customer dengan database lock
+            $customerBalance = UserBalance::where('user_id', $customer->id)->lockForUpdate()->first();
+            if (!$customerBalance) {
+                $customerBalance = UserBalance::create(['user_id' => $customer->id, 'balance' => 0]);
+            }
 
             $descParts = [];
             $descParts[] = ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY ? "Ongkos Antar: " : "Jasa: ") . "Rp " . number_format($estimate['service_fee'], 0, ',', '.');

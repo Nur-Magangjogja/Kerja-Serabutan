@@ -629,7 +629,7 @@ class HelpTransactionService
             // 1. Jika dana sudah pernah dicairkan ke Mitra (escrow released), tarik kembali (clawback) dana earning mitra ke escrow holding
             if ($lockedHelp->escrow_status === Help::ESCROW_STATUS_RELEASED && $lockedHelp->mitra_id) {
                 $netEarning = (float) $lockedHelp->getNetEarning();
-                $mitraBalance = UserBalance::firstOrCreate(
+                $mitraBalance = UserBalance::where('user_id', $lockedHelp->mitra_id)->lockForUpdate()->firstOrCreate(
                     ['user_id' => $lockedHelp->mitra_id],
                     ['balance' => 0]
                 );
@@ -732,7 +732,7 @@ class HelpTransactionService
                     throw new \RuntimeException('Customer tidak ditemukan.');
                 }
 
-                $customerBalance = UserBalance::firstOrCreate(
+                $customerBalance = UserBalance::where('user_id', $customer->id)->lockForUpdate()->firstOrCreate(
                     ['user_id' => $customer->id],
                     ['balance' => 0]
                 );
@@ -764,7 +764,7 @@ class HelpTransactionService
 
                 // 1. Credit Mitra
                 if ($partnerAmount > 0 && $lockedHelp->mitra_id) {
-                    $mitraBalance = UserBalance::firstOrCreate(
+                    $mitraBalance = UserBalance::where('user_id', $lockedHelp->mitra_id)->lockForUpdate()->firstOrCreate(
                         ['user_id' => $lockedHelp->mitra_id],
                         ['balance' => 0]
                     );
@@ -781,7 +781,7 @@ class HelpTransactionService
                 if ($customerRefund > 0) {
                     $customer = $lockedHelp->user ?? User::find($lockedHelp->user_id);
                     if ($customer) {
-                        $custBal = UserBalance::firstOrCreate(
+                        $custBal = UserBalance::where('user_id', $customer->id)->lockForUpdate()->firstOrCreate(
                             ['user_id' => $customer->id],
                             ['balance' => 0]
                         );
@@ -1072,7 +1072,7 @@ class HelpTransactionService
             }
 
             // Kembalikan dana ke saldo customer
-            $customerBalance = UserBalance::firstOrCreate(
+            $customerBalance = UserBalance::where('user_id', $customer->id)->lockForUpdate()->firstOrCreate(
                 ['user_id' => $customer->id],
                 ['balance' => 0]
             );

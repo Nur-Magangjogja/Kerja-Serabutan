@@ -148,41 +148,51 @@ class Index extends Component
             'proofPhoto.image' => 'File bukti harus berupa gambar.',
         ]);
 
-        $withdraw = WithdrawRequest::with(['user'])->findOrFail($this->selectedWithdrawId);
+        try {
+            DB::transaction(function () {
+                $withdraw = WithdrawRequest::where('id', $this->selectedWithdrawId)->lockForUpdate()->firstOrFail();
 
-        if (!$this->isAuthorizedForWithdraw($withdraw)) {
+                if (!$this->isAuthorizedForWithdraw($withdraw)) {
+                    throw new \RuntimeException('Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah wewenang Anda.');
+                }
+
+                if (!in_array($withdraw->status, ['pending', 'waiting_approval'])) {
+                    throw new \RuntimeException('Permintaan penarikan ini sudah diproses sebelumnya.');
+                }
+
+                $photoPath = $this->proofPhoto->store('withdraws/proofs', 'public');
+
+                $withdraw->update([
+                    'status' => 'completed',
+                    'proof_of_transfer' => $photoPath,
+                    'processed_at' => now(),
+                ]);
+
+                // Update corresponding balance transaction if any
+                BalanceTransaction::where(function ($q) use ($withdraw) {
+                    $q->where('order_id', 'WD-' . $withdraw->id)
+                      ->orWhere('reference_id', $withdraw->id);
+                })->where('type', 'withdraw')->update([
+                    'status' => 'success',
+                    'proof_of_payment' => $photoPath,
+                    'processed_at' => now(),
+                ]);
+
+                // Catat ke log aktivitas sistem
+                \App\Models\ActivityLog::record(
+                    auth()->user(),
+                    'withdraw_approved',
+                    "Admin " . (auth()->user()->name ?? 'Admin') . " menyetujui pencairan dana #WD-{$withdraw->id} sebesar Rp " . number_format($withdraw->amount, 0, ',', '.') . " untuk user {$withdraw->user?->name}",
+                    ['withdraw_id' => $withdraw->id, 'amount' => $withdraw->amount, 'user_id' => $withdraw->user_id]
+                );
+            });
+
             $this->showApproveModal = false;
-            session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah wewenang Anda.');
-            return;
+            session()->flash('success', "Pencairan dana #WD-{$this->selectedWithdrawId} berhasil disetujui & bukti transfer tersimpan.");
+        } catch (\Throwable $e) {
+            $this->showApproveModal = false;
+            session()->flash('error', $e->getMessage());
         }
-
-        $photoPath = $this->proofPhoto->store('withdraws/proofs', 'public');
-
-        $withdraw->update([
-            'status' => 'completed',
-            'proof_of_transfer' => $photoPath,
-            'processed_at' => now(),
-        ]);
-
-        // Update corresponding balance transaction if any
-        BalanceTransaction::where('order_id', 'WD-' . $withdraw->id)
-            ->orWhere('reference_id', $withdraw->id)
-            ->update([
-                'status' => 'success',
-                'proof_of_payment' => $photoPath,
-                'processed_at' => now(),
-            ]);
-
-        // Catat ke log aktivitas sistem
-        \App\Models\ActivityLog::record(
-            auth()->user(),
-            'withdraw_approved',
-            "Admin " . (auth()->user()->name ?? 'Admin') . " menyetujui pencairan dana #WD-{$withdraw->id} sebesar Rp " . number_format($withdraw->amount, 0, ',', '.') . " untuk user {$withdraw->user->name}",
-            ['withdraw_id' => $withdraw->id, 'amount' => $withdraw->amount, 'user_id' => $withdraw->user_id]
-        );
-
-        $this->showApproveModal = false;
-        session()->flash('success', "Pencairan dana #WD-{$withdraw->id} berhasil disetujui & bukti transfer tersimpan.");
     }
 
     public function openRejectModal($id)
@@ -214,49 +224,60 @@ class Index extends Component
             'rejectReason.min' => 'Alasan penolakan minimal 5 karakter.',
         ]);
 
-        $withdraw = WithdrawRequest::with(['user'])->findOrFail($this->selectedWithdrawId);
+        try {
+            DB::transaction(function () {
+                $withdraw = WithdrawRequest::where('id', $this->selectedWithdrawId)->lockForUpdate()->firstOrFail();
 
-        if (!$this->isAuthorizedForWithdraw($withdraw)) {
+                if (!$this->isAuthorizedForWithdraw($withdraw)) {
+                    throw new \RuntimeException('Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah wewenang Anda.');
+                }
+
+                if (!in_array($withdraw->status, ['pending', 'waiting_approval'])) {
+                    throw new \RuntimeException('Permintaan penarikan ini sudah diproses sebelumnya.');
+                }
+
+                $user = $withdraw->user;
+                $refundAmount = (float) ($withdraw->amount + ($withdraw->admin_fee ?? 0));
+
+                // Refund balance back to user
+                if ($user) {
+                    $userBalance = UserBalance::where('user_id', $user->id)->lockForUpdate()->firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
+                    $userBalance->increment('balance', $refundAmount);
+                }
+
+                $withdraw->update([
+                    'status' => 'rejected',
+                    'description' => $this->rejectReason,
+                    'processed_at' => now(),
+                ]);
+
+                BalanceTransaction::create([
+                    'idempotency_key' => "withdraw:{$withdraw->id}:refund",
+                    'user_id' => $withdraw->user_id,
+                    'order_id' => 'REFUND-WD-' . $withdraw->id,
+                    'reference_id' => $withdraw->id,
+                    'type' => 'refund',
+                    'amount' => $refundAmount,
+                    'total_payment' => $refundAmount,
+                    'status' => 'success',
+                    'description' => "Pengembalian dana penarikan #WD-{$withdraw->id} yang ditolak: {$this->rejectReason}",
+                ]);
+
+                // Catat ke log aktivitas sistem
+                \App\Models\ActivityLog::record(
+                    auth()->user(),
+                    'withdraw_rejected',
+                    "Admin " . (auth()->user()->name ?? 'Admin') . " menolak pencairan dana #WD-{$withdraw->id} sebesar Rp " . number_format($refundAmount, 0, ',', '.') . " untuk user {$user?->name}. Alasan: {$this->rejectReason}",
+                    ['withdraw_id' => $withdraw->id, 'amount' => $refundAmount, 'user_id' => $withdraw->user_id, 'reason' => $this->rejectReason]
+                );
+            });
+
             $this->showRejectModal = false;
-            session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah wewenang Anda.');
-            return;
+            session()->flash('success', "Pencairan dana #WD-{$this->selectedWithdrawId} telah ditolak dan saldo telah dikembalikan ke user.");
+        } catch (\Throwable $e) {
+            $this->showRejectModal = false;
+            session()->flash('error', $e->getMessage());
         }
-
-        $user = $withdraw->user;
-        $refundAmount = (float) ($withdraw->amount + ($withdraw->admin_fee ?? 0));
-
-        // Refund balance back to user
-        if ($user) {
-            $userBalance = UserBalance::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
-            $userBalance->increment('balance', $refundAmount);
-        }
-
-        $withdraw->update([
-            'status' => 'rejected',
-            'description' => $this->rejectReason,
-            'processed_at' => now(),
-        ]);
-
-        BalanceTransaction::create([
-            'user_id' => $user->id,
-            'order_id' => 'REFUND-WD-' . $withdraw->id,
-            'type' => 'refund',
-            'amount' => $refundAmount,
-            'total_payment' => $refundAmount,
-            'status' => 'success',
-            'description' => "Pengembalian dana penarikan #WD-{$withdraw->id} yang ditolak: {$this->rejectReason}",
-        ]);
-
-        // Catat ke log aktivitas sistem
-        \App\Models\ActivityLog::record(
-            auth()->user(),
-            'withdraw_rejected',
-            "Admin " . (auth()->user()->name ?? 'Admin') . " menolak pencairan dana #WD-{$withdraw->id} sebesar Rp " . number_format($refundAmount, 0, ',', '.') . " untuk user {$user->name}. Alasan: {$this->rejectReason}",
-            ['withdraw_id' => $withdraw->id, 'amount' => $refundAmount, 'user_id' => $user->id, 'reason' => $this->rejectReason]
-        );
-
-        $this->showRejectModal = false;
-        session()->flash('success', "Pencairan dana #WD-{$withdraw->id} telah ditolak dan saldo telah dikembalikan ke user.");
     }
 
     public function render()

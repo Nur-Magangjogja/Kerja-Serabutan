@@ -30,14 +30,13 @@ class CancellationSettlementService
         DB::transaction(function () use ($help, $reason) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
 
-            if ($lockedHelp->escrow_status === Help::ESCROW_STATUS_REFUNDED) {
-                Log::info("[CancellationSettlementService] Escrow already refunded for Help #{$lockedHelp->id}");
-                return;
-            }
-
-            $customer = $lockedHelp->user;
-            if ($customer) {
-                $this->escrowService->refundFromEscrow($lockedHelp, $customer);
+            if ($lockedHelp->escrow_status !== Help::ESCROW_STATUS_REFUNDED) {
+                $customer = $lockedHelp->user;
+                if ($customer) {
+                    $this->escrowService->refundFromEscrow($lockedHelp, $customer);
+                }
+            } else {
+                Log::info("[CancellationSettlementService] Escrow was already refunded for Help #{$lockedHelp->id}, finalizing status cancellation.");
             }
 
             $lockedHelp->update([

@@ -72,6 +72,53 @@ class UpdatePhoto extends Component
         }
     }
 
+    public function saveCroppedPhoto(string $dataUrl)
+    {
+        if (!str_starts_with($dataUrl, 'data:image/')) {
+            $this->addError('photo', 'Format gambar tidak valid.');
+            return;
+        }
+
+        try {
+            $user = auth()->user();
+
+            // Delete old profile photo if exists
+            if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
+                Storage::disk('public')->delete($user->profile_photo);
+            }
+
+            $imageParts = explode(';base64,', $dataUrl);
+            $imageData = base64_decode($imageParts[1] ?? '');
+
+            if (!$imageData) {
+                $this->addError('photo', 'Gagal memproses data gambar.');
+                return;
+            }
+
+            // Max 5MB
+            if (strlen($imageData) > 5 * 1024 * 1024) {
+                $this->addError('photo', 'Ukuran foto maksimal 5MB.');
+                return;
+            }
+
+            $filename = 'profile-photos/' . uniqid('avatar_') . '.jpg';
+            Storage::disk('public')->put($filename, $imageData);
+
+            $user->update([
+                'profile_photo' => $filename,
+            ]);
+
+            session()->flash('status', 'Foto profil berhasil diperbarui!');
+            $this->closeModal();
+            $this->dispatch('profile-photo-updated');
+
+            return redirect()->route('mitra.profile');
+        } catch (\Exception $e) {
+            \Log::error('Error saving cropped mitra profile photo: ' . $e->getMessage());
+            $this->addError('photo', 'Terjadi kesalahan saat menyimpan foto.');
+        }
+    }
+
     #[On('removePhoto')]
     public function removePhoto()
     {

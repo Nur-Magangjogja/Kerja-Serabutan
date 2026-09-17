@@ -1,4 +1,50 @@
 <div>
+    @if(auth()->user()?->role === 'mitra' || auth()->user()?->hasRole('mitra'))
+        @livewire('mitra.profile.update-photo')
+    @else
+        @livewire('customer.profile.update-photo')
+    @endif
+
+    <!-- Avatar Header Card -->
+    <div class="mb-5 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs flex items-center gap-4">
+        <div class="relative flex-shrink-0">
+            @php
+                $authUser = auth()->user();
+                $authAvatar = $authUser?->profile_photo ?? $authUser?->photo;
+            @endphp
+            @if($authAvatar)
+                <img src="{{ asset('storage/' . $authAvatar) }}" 
+                     alt="Avatar" 
+                     class="w-16 h-16 rounded-full object-cover ring-2 ring-primary-500/30 shadow-md">
+            @else
+                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-white text-xl font-bold flex items-center justify-center ring-2 ring-primary-500/30 shadow-md">
+                    {{ strtoupper(substr($authUser?->name ?? 'U', 0, 1)) }}
+                </div>
+            @endif
+            <button type="button" 
+                    onclick="if(window.Livewire){ Livewire.dispatch('openModal'); }" 
+                    class="absolute -bottom-1 -right-1 bg-primary-600 hover:bg-primary-700 text-white p-1.5 rounded-full shadow-md transition-transform hover:scale-105 active:scale-95 cursor-pointer border-2 border-white dark:border-gray-800"
+                    title="Ubah Foto Profil">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </button>
+        </div>
+        <div class="min-w-0 flex-1">
+            <h3 class="text-sm font-bold text-gray-900 dark:text-white truncate">{{ $authUser?->name }}</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $authUser?->email }}</p>
+            <button type="button" 
+                    onclick="if(window.Livewire){ Livewire.dispatch('openModal'); }" 
+                    class="mt-1.5 text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1 cursor-pointer">
+                <span>Ubah Foto Profil</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
     @if(session()->has('message'))
         <div class="mb-5 p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-2xl text-xs sm:text-sm text-emerald-800 dark:text-emerald-200 flex items-center gap-3 shadow-xs animate-in fade-in duration-200">
             <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center flex-shrink-0 text-emerald-600 dark:text-emerald-400">

@@ -21,7 +21,23 @@ class Index extends Component
         'statusFilter' => ['except' => Help::STATUS_MENUNGGU_MITRA],
     ];
 
+    protected $listeners = [
+        'refreshHelps'      => '$refresh',
+        'handleExpiredHelp' => 'handleExpiredHelp',
+    ];
+
     public $statusFilter = Help::STATUS_MENUNGGU_MITRA;
+
+    /**
+     * Handler saat batas waktu pencarian berakhir (expired) secara live dari frontend
+     */
+    public function handleExpiredHelp()
+    {
+        $user = auth()->user();
+        if ($user) {
+            app(\App\Services\HelpCancellationService::class)->sweepAndAutoCancelExpiredHelps($user->id);
+        }
+    }
 
     /** Status yang masuk dalam tab "Diproses" */
     protected function getDiprosesStatuses(): array

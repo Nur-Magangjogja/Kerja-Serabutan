@@ -10,7 +10,7 @@
 
                     <div class="text-center flex-1 min-w-0 px-2">
                         <h1 class="text-base font-bold truncate">Riwayat Transaksi</h1>
-                        <p class="text-xs text-white/90 truncate mt-0.5">Mutasi saldo & pengembalian dana</p>
+                        <p class="text-xs text-white/90 truncate mt-0.5">Mutasi saldo, pembayaran & pekerjaan selesai</p>
                     </div>
 
                     <div class="w-10 flex items-center justify-end">
@@ -43,7 +43,7 @@
             </div>
         @endif
 
-        <!-- Filter Tabs (Modern Glassmorphic Segmented Control) -->
+        <!-- Filter Tabs (Modern Segmented Control with Selesai Tab) -->
         <div class="px-5 pt-3.5">
             <div class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-1.5 rounded-2xl shadow-xs border border-gray-200/70 dark:border-gray-700/80 space-y-1.5">
                 <div class="grid grid-cols-3 gap-1.5">
@@ -57,11 +57,14 @@
                         <span>Tarik Saldo</span>
                     </button>
                 </div>
-                <div class="grid grid-cols-2 gap-1.5">
-                    <button wire:click="setFilter('payment')" class="group py-2 px-2 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 {{ $filterType === 'payment' ? 'bg-gradient-to-r from-primary-600 to-sky-600 text-white shadow-md shadow-primary-500/25 ring-2 ring-primary-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span>Pembayaran</span>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button wire:click="setFilter('payment')" class="group py-2 px-1.5 rounded-xl text-[11px] sm:text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1 {{ in_array($filterType, ['payment', 'escrow']) ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md shadow-indigo-500/25 ring-2 ring-indigo-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}" title="Dana pembayaran yang sedang ditahan di escrow">
+                        <span>Dana Tahan</span>
                     </button>
-                    <button wire:click="setFilter('refund')" class="group py-2 px-2 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 {{ $filterType === 'refund' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
+                    <button wire:click="setFilter('completed')" class="group py-2 px-1.5 rounded-xl text-[11px] sm:text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1 {{ in_array($filterType, ['completed', 'selesai']) ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}" title="Riwayat pekerjaan bantuan yang sudah selesai">
+                        <span>Selesai</span>
+                    </button>
+                    <button wire:click="setFilter('refund')" class="group py-2 px-1.5 rounded-xl text-[11px] sm:text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1 {{ $filterType === 'refund' ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-md shadow-teal-500/25 ring-2 ring-teal-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
                         <span>Dana Kembali</span>
                     </button>
                 </div>
@@ -80,15 +83,26 @@
                             $isRejected = ($t->status === 'rejected');
                             $isCredit = in_array($type, ['topup', 'refund', 'earning'], true);
 
-                            $typeLabel = match($type) {
-                                'topup' => 'Top Up Saldo',
-                                'withdraw' => 'Penarikan Saldo (Withdraw)',
-                                'refund' => 'Pengembalian Dana (Refund)',
-                                'escrow_lock' => 'Pembayaran Bantuan',
-                                'deduction' => 'Potongan Saldo',
-                                'cancellation', 'penalty' => 'Pembatalan Tugas',
-                                default => 'Transaksi Saldo',
-                            };
+                            $isHelp = !empty($t->help);
+                            $isHelpCompleted = $isHelp && ($t->help->status === \App\Models\Help::STATUS_SELESAI || $t->help->escrow_status === \App\Models\Help::ESCROW_STATUS_RELEASED);
+
+                            if ($type === 'topup') {
+                                $typeLabel = 'Top Up Saldo';
+                            } elseif ($type === 'withdraw') {
+                                $typeLabel = 'Penarikan Saldo (Withdraw)';
+                            } elseif ($type === 'refund') {
+                                $typeLabel = 'Pengembalian Dana (Refund)';
+                            } elseif ($type === 'escrow_lock' || $type === 'deduction') {
+                                if ($isHelpCompleted) {
+                                    $typeLabel = 'Pekerjaan Selesai';
+                                } else {
+                                    $typeLabel = 'Pembayaran Bantuan';
+                                }
+                            } elseif (in_array($type, ['cancellation', 'penalty'], true)) {
+                                $typeLabel = 'Pembatalan Tugas';
+                            } else {
+                                $typeLabel = 'Transaksi Saldo';
+                            }
                         @endphp
                         {{-- Interactive Transaction Card --}}
                         <div wire:click="showTransaction({{ $t->id }})" 
@@ -132,12 +146,20 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                                             </svg>
                                         </div>
-                                    @elseif($type === 'escrow_lock')
-                                        <div class="w-11 h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-50 dark:from-blue-950/80 dark:to-indigo-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/50 shadow-2xs group-hover:scale-105 transition-transform">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                            </svg>
-                                        </div>
+                                    @elseif($type === 'escrow_lock' || $type === 'deduction')
+                                        @if($isHelpCompleted)
+                                            <div class="w-11 h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br from-emerald-100 to-teal-50 dark:from-emerald-950/80 dark:to-teal-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50 shadow-2xs group-hover:scale-105 transition-transform">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                        @else
+                                            <div class="w-11 h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-50 dark:from-blue-950/80 dark:to-indigo-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/50 shadow-2xs group-hover:scale-105 transition-transform">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                                </svg>
+                                            </div>
+                                        @endif
                                     @else
                                         <div class="w-11 h-11 rounded-2xl flex items-center justify-center bg-gray-100 dark:bg-gray-750 text-gray-600 dark:text-gray-300 border border-gray-200/60 dark:border-gray-700 shadow-2xs group-hover:scale-105 transition-transform">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -170,6 +192,14 @@
                                             <span class="px-2 py-0.2 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold rounded-full border border-emerald-200 dark:border-emerald-800/50">
                                                 Dana Masuk
                                             </span>
+                                        @elseif($isHelpCompleted)
+                                            <span class="px-2 py-0.2 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold rounded-full border border-emerald-200 dark:border-emerald-800/50">
+                                                Selesai • Dana Diteruskan
+                                            </span>
+                                        @elseif($type === 'escrow_lock')
+                                            <span class="px-2 py-0.2 bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold rounded-full border border-blue-200 dark:border-blue-800/50">
+                                                Dana Tahan (Escrow)
+                                            </span>
                                         @endif
                                     </div>
                                     <p class="text-xs text-gray-500 dark:text-gray-400 truncate font-medium">
@@ -182,8 +212,13 @@
                                             @endif
                                         @elseif($type === 'refund')
                                             {{ $t->description ?? ($t->help?->title ? 'Refund: ' . $t->help->title : 'Pengembalian Dana Bantuan ' . $t->reference_id) }}
+                                        @elseif($isHelpCompleted)
+                                            {{ $t->help?->title ? $t->help->title : ($t->description ?? 'Pekerjaan Selesai') }}
+                                            @if($t->help?->mitra)
+                                                • Rekan: {{ $t->help->mitra->name }}
+                                            @endif
                                         @elseif($type === 'escrow_lock')
-                                            {{ $t->description ?? ($t->help?->title ? 'Bantuan: ' . $t->help->title : 'Pembayaran Bantuan ' . $t->reference_id) }}
+                                            {{ $t->help?->title ? 'Bantuan: ' . $t->help->title : ($t->description ?? 'Pembayaran Bantuan ' . $t->reference_id) }}
                                         @else
                                             {{ $t->description ?? 'Mutasi Saldo' }}
                                         @endif
@@ -208,6 +243,10 @@
                                             </p>
                                         @elseif($type === 'refund')
                                             <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Refund 100%</p>
+                                        @elseif($isHelpCompleted)
+                                            <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Pekerjaan Selesai</p>
+                                        @elseif($type === 'escrow_lock')
+                                            <p class="text-[10px] text-blue-600 dark:text-blue-400 font-bold">Dana Ditahan</p>
                                         @elseif($isPending)
                                             <p class="text-[10px] text-amber-600 dark:text-amber-400 font-bold">Diproses</p>
                                         @else
@@ -232,8 +271,24 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <h3 class="text-sm font-bold text-gray-900 dark:text-gray-100">Belum Ada Riwayat Transaksi</h3>
-                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-xs mx-auto">Mutasi saldo, top up, dan pembayaran pesanan Anda akan tercatat rapi di sini.</p>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-gray-100">
+                            @if($filterType === 'completed' || $filterType === 'selesai')
+                                Belum Ada Riwayat Pekerjaan Selesai
+                            @elseif($filterType === 'payment' || $filterType === 'escrow')
+                                Tidak Ada Dana Tahan Aktif
+                            @else
+                                Belum Ada Riwayat Transaksi
+                            @endif
+                        </h3>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-xs mx-auto">
+                            @if($filterType === 'completed' || $filterType === 'selesai')
+                                Transaksi bantuan yang telah selesai dan dana yang telah diteruskan ke Rekan Jasa akan tercatat di sini.
+                            @elseif($filterType === 'payment' || $filterType === 'escrow')
+                                Pembayaran pesanan bantuan yang sedang berlangsung dan tersimpan aman di escrow akan tampil di sini.
+                            @else
+                                Mutasi saldo, top up, pembayaran, dan pekerjaan selesai akan tercatat rapi di sini.
+                            @endif
+                        </p>
                     </div>
                 @endif
             </div>
@@ -247,6 +302,7 @@
             $isModalCancelled = (($selectedTransaction['status'] ?? '') === 'cancelled');
             $isModalRejected = (($selectedTransaction['status'] ?? '') === 'rejected');
             $isModalCredit = $selectedTransaction['is_credit'] ?? false;
+            $isModalHelpCompleted = $selectedTransaction['is_help_completed'] ?? false;
         @endphp
         <div class="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 transition-all duration-300"
              wire:click.self="closeTransaction">
@@ -273,7 +329,7 @@
                 <div class="pt-4">
                     <!-- Icon Big Receipt -->
                     <div class="flex justify-center mb-3">
-                        <div class="w-16 h-16 rounded-3xl flex items-center justify-center shadow-inner {{ $isModalCredit ? ($isModalPending ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400' : ($isModalCancelled ? 'bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400' : ($isModalRejected ? 'bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400'))) : 'bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400' }}">
+                        <div class="w-16 h-16 rounded-3xl flex items-center justify-center shadow-inner {{ $isModalCredit ? ($isModalPending ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400' : ($isModalCancelled ? 'bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400' : ($isModalRejected ? 'bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400'))) : ($isModalHelpCompleted ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400' : ($selectedTransaction['type'] === 'escrow_lock' ? 'bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400' : 'bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400')) }}">
                             @if($isModalCredit)
                                 @if($isModalPending)
                                     <svg class="w-8 h-8 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -292,6 +348,14 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m0 0l-4-4m4 4l4-4" />
                                     </svg>
                                 @endif
+                            @elseif($isModalHelpCompleted)
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            @elseif($selectedTransaction['type'] === 'escrow_lock')
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
                             @else
                                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20V4m0 0l4 4m-4-4l-4 4" />
@@ -346,6 +410,26 @@
                                     <p class="mt-0.5 text-emerald-700/90 dark:text-emerald-400/90">Dana 100% tanpa potongan telah dikembalikan ke saldo dompet Anda akibat pembatalan bantuan.</p>
                                 </div>
                             </div>
+                        @elseif($isModalHelpCompleted)
+                            <div class="mt-2.5 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl text-left text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2.5">
+                                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <div>
+                                    <p class="font-bold">Pekerjaan Bantuan Selesai</p>
+                                    <p class="mt-0.5 text-emerald-700/90 dark:text-emerald-400/90">Pekerjaan telah selesai dan dana pembayaran telah berhasil diteruskan ke Rekan Jasa ({{ $selectedTransaction['mitra_name'] ?? 'Mitra' }}).</p>
+                                </div>
+                            </div>
+                        @elseif($selectedTransaction['type'] === 'escrow_lock')
+                            <div class="mt-2.5 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-2xl text-left text-xs text-blue-800 dark:text-blue-300 flex items-start gap-2.5">
+                                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                                <div>
+                                    <p class="font-bold">Dana Ditahan (Escrow Aman)</p>
+                                    <p class="mt-0.5 text-blue-700/90 dark:text-blue-400/90">Dana pembayaran tersimpan aman di sistem SayaBantu selama pengerjaan bantuan berlangsung, dan akan diteruskan ke Rekan Jasa setelah pekerjaan selesai dikonfirmasi.</p>
+                                </div>
+                            </div>
                         @endif
                     </div>
 
@@ -369,6 +453,10 @@
                                 <span class="font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-2.5 py-0.5 rounded-full border border-purple-200 dark:border-purple-800/50">Dibatalkan / Koreksi</span>
                             @elseif($isModalRejected || ($selectedTransaction['status'] ?? '') === 'rejected')
                                 <span class="font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-800/50">Ditolak</span>
+                            @elseif($isModalHelpCompleted)
+                                <span class="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">Pekerjaan Selesai</span>
+                            @elseif($selectedTransaction['type'] === 'escrow_lock')
+                                <span class="font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800/50">Dana Ditahan (Escrow)</span>
                             @elseif(in_array($selectedTransaction['status'] ?? '', ['approved', 'completed']))
                                 <span class="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">Berhasil</span>
                             @else
@@ -380,6 +468,20 @@
                             <div class="flex justify-between items-start text-xs sm:text-sm pt-1 border-t border-gray-100 dark:border-gray-800">
                                 <span class="text-gray-500 dark:text-gray-400 shrink-0">Judul Bantuan</span>
                                 <span class="font-bold text-gray-900 dark:text-gray-100 text-right truncate max-w-[180px]">{{ $selectedTransaction['help_title'] }}</span>
+                            </div>
+                        @endif
+
+                        @if(!empty($selectedTransaction['mitra_name']))
+                            <div class="flex justify-between items-center text-xs sm:text-sm">
+                                <span class="text-gray-500 dark:text-gray-400">Rekan Jasa</span>
+                                <span class="font-bold text-gray-900 dark:text-gray-100">{{ $selectedTransaction['mitra_name'] }}</span>
+                            </div>
+                        @endif
+
+                        @if(!empty($selectedTransaction['help_status_label']) && !$isModalHelpCompleted)
+                            <div class="flex justify-between items-center text-xs sm:text-sm">
+                                <span class="text-gray-500 dark:text-gray-400">Progres Bantuan</span>
+                                <span class="font-medium text-blue-600 dark:text-blue-400">{{ $selectedTransaction['help_status_label'] }}</span>
                             </div>
                         @endif
 
@@ -401,6 +503,13 @@
                             <div class="flex justify-between items-center text-xs sm:text-sm">
                                 <span class="text-gray-500 dark:text-gray-400">ID Referensi</span>
                                 <span class="font-mono font-bold text-xs text-gray-800 dark:text-gray-200">{{ $selectedTransaction['reference_id'] }}</span>
+                            </div>
+                        @endif
+
+                        @if($selectedTransaction['completed_at'])
+                            <div class="flex justify-between items-center text-xs sm:text-sm">
+                                <span class="text-gray-500 dark:text-gray-400">Waktu Selesai</span>
+                                <span class="font-semibold text-emerald-600 dark:text-emerald-400">{{ $selectedTransaction['completed_at'] }}</span>
                             </div>
                         @endif
 
@@ -443,4 +552,4 @@
             </div>
         </div>
     @endif
-</div></div>
+</div>

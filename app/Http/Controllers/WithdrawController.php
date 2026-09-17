@@ -148,7 +148,18 @@ class WithdrawController extends Controller
             $desc = 'A/N: ' . $accountName;
 
             $withdraw = DB::transaction(function () use ($user, $amount, $adminFee, $netAmount, $totalDeduction, $bankCode, $request, $desc) {
-                $userBalanceModel = \App\Models\UserBalance::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
+                $userBalanceModel = \App\Models\UserBalance::where('user_id', $user->id)->lockForUpdate()->first();
+                if (!$userBalanceModel || (float) $userBalanceModel->balance < $totalDeduction) {
+                    throw new \RuntimeException('Saldo dompet tidak mencukupi untuk melakukan penarikan.');
+                }
+
+                $hasActive = WithdrawRequest::where('user_id', $user->id)
+                    ->whereIn('status', [WithdrawRequest::STATUS_PENDING, WithdrawRequest::STATUS_PROCESSING])
+                    ->exists();
+                if ($hasActive) {
+                    throw new \RuntimeException('Anda masih memiliki permintaan penarikan yang sedang diproses.');
+                }
+
                 $userBalanceModel->decrement('balance', $totalDeduction);
 
                 $w = WithdrawRequest::create([

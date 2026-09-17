@@ -115,6 +115,20 @@ class TopupController extends Controller
             $fraudStatus = $notification->fraud_status;
             $orderId = $notification->order_id;
 
+            // Verify Midtrans SHA512 Signature Key for security
+            $serverKey = config('services.midtrans.server_key');
+            $signatureKey = $notification->signature_key ?? null;
+            $statusCode = $notification->status_code ?? null;
+            $grossAmount = $notification->gross_amount ?? null;
+
+            if ($serverKey && $signatureKey && $statusCode && $grossAmount && $orderId) {
+                $expectedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
+                if (!hash_equals($expectedSignature, (string) $signatureKey)) {
+                    Log::warning('Midtrans notification: invalid signature key rejected', ['order_id' => $orderId]);
+                    return response()->json(['status' => 'error', 'message' => 'Invalid signature key'], 403);
+                }
+            }
+
             Log::info('Midtrans notification', [
                 'order_id' => $orderId,
                 'transaction_status' => $transactionStatus,
@@ -319,31 +333,9 @@ class TopupController extends Controller
 
                 $transaction->save();
 
-                // If completed, make sure balance is recalculated (observer should handle it)
+                // If completed, let the BalanceTransactionObserver handle the increment safely
                 if ($transaction->status === 'completed') {
                     Log::info('Client callback: transaction marked completed', ['order_id' => $orderId, 'transaction_id' => $transaction->id]);
-
-                    // Safety fallback: recompute user's balance from completed topups
-                    try {
-                        $sum = BalanceTransaction::where('user_id', $transaction->user_id)
-                            ->where('type', 'topup')
-                            ->whereRaw("LOWER(TRIM(status)) = 'completed'")
-                            ->sum('amount');
-
-                        UserBalance::updateOrCreate(
-                            ['user_id' => $transaction->user_id],
-                            ['balance' => (float) $sum]
-                        );
-                        Log::info('Client callback: recomputed user balance (safety fallback)', ['user_id' => $transaction->user_id, 'balance' => $sum]);
-                        try {
-                            $ubAfter = UserBalance::where('user_id', $transaction->user_id)->first();
-                            Log::info('Client callback: user balance after recompute', ['user_id' => $transaction->user_id, 'balance_after' => $ubAfter ? $ubAfter->balance : null]);
-                        } catch (\Throwable $__e) {
-                            Log::warning('Client callback: failed to read user balance after recompute', ['error' => $__e->getMessage()]);
-                        }
-                    } catch (\Throwable $e) {
-                        Log::warning('Client callback: failed to recompute user balance', ['user_id' => $transaction->user_id, 'error' => $e->getMessage()]);
-                    }
                 }
 
                 return response()->json(['status' => 'processed', 'transaction_status' => $transaction->status]);

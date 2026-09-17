@@ -177,15 +177,16 @@ class Approval extends Component
 
     public function approve($transactionId)
     {
-        $transaction = BalanceTransaction::with('user')->find($transactionId);
-
-        if (!$transaction || $transaction->status !== 'waiting_approval' || !$this->isAuthorizedForTransaction($transaction)) {
-            session()->flash('error', 'Request top-up tidak valid, sudah diproses, atau berada di luar wilayah wewenang Anda.');
-            return;
-        }
-
         try {
             DB::beginTransaction();
+
+            $transaction = BalanceTransaction::with('user')->where('id', $transactionId)->lockForUpdate()->first();
+
+            if (!$transaction || $transaction->status !== 'waiting_approval' || !$this->isAuthorizedForTransaction($transaction)) {
+                DB::rollBack();
+                session()->flash('error', 'Request top-up tidak valid, sudah diproses, atau berada di luar wilayah wewenang Anda.');
+                return;
+            }
 
             // Update status transaction to 'completed'
             $transaction->update([
@@ -196,7 +197,7 @@ class Approval extends Component
             ]);
 
             // Update user balance
-            $userBalance = UserBalance::firstOrCreate(
+            $userBalance = UserBalance::where('user_id', $transaction->user_id)->lockForUpdate()->firstOrCreate(
                 ['user_id' => $transaction->user_id],
                 ['balance' => 0]
             );
@@ -249,19 +250,24 @@ class Approval extends Component
             'rejectionReason.min' => 'Alasan penolakan minimal 3 karakter',
         ]);
 
-        if (!$this->selectedTransaction || $this->selectedTransaction->status !== 'waiting_approval') {
+        if (!$this->selectedTransaction) {
             session()->flash('error', 'Request tidak valid atau sudah diproses.');
             return;
         }
 
-        if (!$this->isAuthorizedForTransaction($this->selectedTransaction)) {
-            session()->flash('error', 'Anda tidak memiliki wewenang untuk menolak transaksi di luar wilayah wewenang Anda.');
-            $this->closeModal();
-            return;
-        }
-
         try {
-            $this->selectedTransaction->update([
+            DB::beginTransaction();
+
+            $transaction = BalanceTransaction::where('id', $this->selectedTransaction->id)->lockForUpdate()->first();
+
+            if (!$transaction || $transaction->status !== 'waiting_approval' || !$this->isAuthorizedForTransaction($transaction)) {
+                DB::rollBack();
+                session()->flash('error', 'Request top-up tidak valid, sudah diproses, atau berada di luar wilayah wewenang Anda.');
+                $this->closeModal();
+                return;
+            }
+
+            $transaction->update([
                 'status' => 'rejected',
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
@@ -273,7 +279,7 @@ class Approval extends Component
                 ActivityLog::create([
                     'user_id' => auth()->id(),
                     'action' => 'topup_rejected',
-                    'description' => 'Admin (Kec. ' . $districtLabel . ') menolak top-up #' . ($this->selectedTransaction->request_code ?? $this->selectedTransaction->id) . ' milik ' . ($this->selectedTransaction->user->name ?? 'Customer') . '. Alasan: ' . $this->rejectionReason,
+                    'description' => 'Admin (Kec. ' . $districtLabel . ') menolak top-up #' . ($transaction->request_code ?? $transaction->id) . ' milik ' . ($transaction->user->name ?? 'Customer') . '. Alasan: ' . $this->rejectionReason,
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                 ]);
@@ -281,9 +287,11 @@ class Approval extends Component
                 Log::warning('ActivityLog failed on topup reject: ' . $e->getMessage());
             }
 
+            DB::commit();
+
             // Send notification to customer
-            if ($this->selectedTransaction->user) {
-                $this->selectedTransaction->user->notify(new TopupRejected($this->selectedTransaction));
+            if ($transaction->user) {
+                $transaction->user->notify(new TopupRejected($transaction));
             }
 
             session()->flash('success', 'Request top-up telah ditolak.');
@@ -291,6 +299,7 @@ class Approval extends Component
             $this->closeModal();
 
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Error rejecting topup by admin: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
@@ -305,26 +314,29 @@ class Approval extends Component
             'cancellationReason.min' => 'Alasan pembatalan minimal 5 karakter',
         ]);
 
-        if (!$this->selectedTransaction || !in_array($this->selectedTransaction->status, ['completed', 'approved'])) {
+        if (!$this->selectedTransaction) {
             session()->flash('error', 'Transaksi tidak valid atau belum disetujui.');
-            return;
-        }
-
-        if (!$this->isAuthorizedForTransaction($this->selectedTransaction)) {
-            session()->flash('error', 'Anda tidak memiliki wewenang untuk membatalkan transaksi di luar wilayah wewenang Anda.');
-            $this->closeModal();
             return;
         }
 
         try {
             DB::beginTransaction();
 
-            $amount = (float) $this->selectedTransaction->amount;
-            $customer = $this->selectedTransaction->user;
+            $transaction = BalanceTransaction::where('id', $this->selectedTransaction->id)->lockForUpdate()->first();
+
+            if (!$transaction || !in_array($transaction->status, ['completed', 'approved']) || !$this->isAuthorizedForTransaction($transaction)) {
+                DB::rollBack();
+                session()->flash('error', 'Transaksi tidak valid, belum disetujui, atau di luar wilayah wewenang Anda.');
+                $this->closeModal();
+                return;
+            }
+
+            $amount = (float) $transaction->amount;
+            $customer = $transaction->user;
 
             // 1. Tarik/kurangi kembali saldo customer
-            $userBalance = UserBalance::firstOrCreate(
-                ['user_id' => $this->selectedTransaction->user_id],
+            $userBalance = UserBalance::where('user_id', $transaction->user_id)->lockForUpdate()->firstOrCreate(
+                ['user_id' => $transaction->user_id],
                 ['balance' => 0]
             );
 
@@ -332,17 +344,17 @@ class Approval extends Component
 
             // 2. Buat mutasi koreksi deduction
             BalanceTransaction::create([
-                'user_id' => $this->selectedTransaction->user_id,
+                'user_id' => $transaction->user_id,
                 'amount' => $amount,
                 'type' => 'deduction',
-                'description' => 'Penarikan/Koreksi Saldo: Top-Up #' . ($this->selectedTransaction->request_code ?? $this->selectedTransaction->id) . ' Dibatalkan oleh Admin (Alasan: ' . $this->cancellationReason . ')',
-                'reference_id' => $this->selectedTransaction->id,
+                'description' => 'Penarikan/Koreksi Saldo: Top-Up #' . ($transaction->request_code ?? $transaction->id) . ' Dibatalkan oleh Admin (Alasan: ' . $this->cancellationReason . ')',
+                'reference_id' => $transaction->id,
                 'status' => 'completed',
                 'processed_at' => now(),
             ]);
 
             // 3. Update status top-up menjadi 'cancelled'
-            $this->selectedTransaction->update([
+            $transaction->update([
                 'status' => 'cancelled',
                 'rejection_reason' => '[DIBATALKAN ADMIN: ' . auth()->user()->name . '] ' . $this->cancellationReason,
             ]);
@@ -353,7 +365,7 @@ class Approval extends Component
                 ActivityLog::create([
                     'user_id' => auth()->id(),
                     'action' => 'topup_approval_cancelled',
-                    'description' => 'Admin (Kec. ' . $districtLabel . ') membatalkan approval top-up #' . ($this->selectedTransaction->request_code ?? $this->selectedTransaction->id) . ' milik ' . ($customer->name ?? 'Customer') . ' (Rp ' . number_format($amount, 0, ',', '.') . '). Alasan: ' . $this->cancellationReason,
+                    'description' => 'Admin (Kec. ' . $districtLabel . ') membatalkan approval top-up #' . ($transaction->request_code ?? $transaction->id) . ' milik ' . ($customer->name ?? 'Customer') . ' (Rp ' . number_format($amount, 0, ',', '.') . '). Alasan: ' . $this->cancellationReason,
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                 ]);
@@ -365,7 +377,7 @@ class Approval extends Component
 
             // 5. Send notification
             if ($customer) {
-                $customer->notify(new TopupCancelled($this->selectedTransaction, $this->cancellationReason));
+                $customer->notify(new TopupCancelled($transaction, $this->cancellationReason));
             }
 
             session()->flash('success', 'Top-up berhasil dibatalkan! Saldo sebesar Rp ' . number_format($amount, 0, ',', '.') . ' telah dikurangi kembali dari akun customer.');

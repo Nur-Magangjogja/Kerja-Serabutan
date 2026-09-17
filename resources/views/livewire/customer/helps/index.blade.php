@@ -69,7 +69,38 @@
 
         <!-- Content List with Extra Bottom Padding for Float Nav -->
         <div class="px-5 pt-4 pb-36 min-h-[60vh]"> 
-            <div class="space-y-3.5 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="statusFilter">
+            {{-- Flash Messages --}}
+            @if (session()->has('message'))
+                <div x-data="{ show: true }" x-show="show" class="mb-3.5 p-3.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-start justify-between gap-2 text-xs text-emerald-800 dark:text-emerald-200 shadow-2xs animate-in fade-in">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">✅</span>
+                        <span class="font-medium">{{ session('message') }}</span>
+                    </div>
+                    <button @click="show = false" class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-900 cursor-pointer text-base leading-none">&times;</button>
+                </div>
+            @endif
+
+            @if (session()->has('info'))
+                <div x-data="{ show: true }" x-show="show" class="mb-3.5 p-3.5 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-xl flex items-start justify-between gap-2 text-xs text-blue-800 dark:text-blue-200 shadow-2xs animate-in fade-in">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">ℹ️</span>
+                        <span class="font-medium">{{ session('info') }}</span>
+                    </div>
+                    <button @click="show = false" class="text-blue-600 dark:text-blue-400 hover:text-blue-900 cursor-pointer text-base leading-none">&times;</button>
+                </div>
+            @endif
+
+            @if (session()->has('error'))
+                <div x-data="{ show: true }" x-show="show" class="mb-3.5 p-3.5 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl flex items-start justify-between gap-2 text-xs text-rose-800 dark:text-rose-200 shadow-2xs animate-in fade-in">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">⚠️</span>
+                        <span class="font-medium">{{ session('error') }}</span>
+                    </div>
+                    <button @click="show = false" class="text-rose-600 dark:text-rose-400 hover:text-rose-900 cursor-pointer text-base leading-none">&times;</button>
+                </div>
+            @endif
+
+            <div class="space-y-3.5 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="statusFilter" @if(in_array($statusFilter, ['menunggu_mitra', 'diproses', 'waiting_customer_confirmation'])) wire:poll.10s.visible="handleExpiredHelp" @endif>
                 @forelse($helps as $help)
                     @if($statusFilter === 'selesai')
                         {{-- COMPLETED / CANCELLED CARD (with expandable accordion & rating info) --}}
@@ -506,6 +537,7 @@
                 minutes: '00',
                 seconds: '00',
                 timer: null,
+                hasTriggeredExpire: false,
                 init() {
                     if (!this.isoExpiry) {
                         this.timeString = 'Batas sistem';
@@ -528,6 +560,15 @@
                         if (this.timer) {
                             clearInterval(this.timer);
                             this.timer = null;
+                        }
+                        if (!this.hasTriggeredExpire) {
+                            this.hasTriggeredExpire = true;
+                            // Panggil server Livewire untuk sweep & auto-cancel pesanan kadaluwarsa secara realtime
+                            if (typeof this.$wire !== 'undefined' && typeof this.$wire.handleExpiredHelp === 'function') {
+                                this.$wire.handleExpiredHelp();
+                            } else if (typeof Livewire !== 'undefined') {
+                                Livewire.dispatch('refreshHelps');
+                            }
                         }
                         return;
                     }

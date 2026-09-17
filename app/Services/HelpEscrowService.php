@@ -46,7 +46,7 @@ class HelpEscrowService
             ->sum('amount');
 
         if ($totalEarned <= $totalClawedBack) {
-            $mitraBalance = UserBalance::firstOrCreate(
+            $mitraBalance = UserBalance::where('user_id', $lockedHelp->mitra_id)->lockForUpdate()->firstOrCreate(
                 ['user_id' => $lockedHelp->mitra_id],
                 ['balance' => 0]
             );
@@ -126,7 +126,7 @@ class HelpEscrowService
             return;
         }
 
-        $customerBalance = UserBalance::firstOrCreate(
+        $customerBalance = UserBalance::where('user_id', $customer->id)->lockForUpdate()->firstOrCreate(
             ['user_id' => $customer->id],
             ['balance' => 0]
         );
@@ -156,7 +156,7 @@ class HelpEscrowService
             return;
         }
 
-        $mitraBalance = UserBalance::firstOrCreate(
+        $mitraBalance = UserBalance::where('user_id', $mitra->id)->lockForUpdate()->firstOrCreate(
             ['user_id' => $mitra->id],
             ['balance' => 0]
         );
@@ -196,7 +196,7 @@ class HelpEscrowService
             return;
         }
 
-        $customerBalance = UserBalance::firstOrCreate(
+        $customerBalance = UserBalance::where('user_id', $customer->id)->lockForUpdate()->firstOrCreate(
             ['user_id' => $customer->id],
             ['balance' => 0]
         );

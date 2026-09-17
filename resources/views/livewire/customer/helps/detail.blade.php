@@ -2337,6 +2337,7 @@
                 minutes: '00',
                 seconds: '00',
                 timer: null,
+                hasTriggeredExpire: false,
                 init() {
                     if (!this.isoExpiry) {
                         this.timeString = 'Batas sistem';
@@ -2359,6 +2360,14 @@
                         if (this.timer) {
                             clearInterval(this.timer);
                             this.timer = null;
+                        }
+                        if (!this.hasTriggeredExpire) {
+                            this.hasTriggeredExpire = true;
+                            if (typeof this.$wire !== 'undefined' && typeof this.$wire.loadHelp === 'function') {
+                                this.$wire.loadHelp();
+                            } else if (typeof Livewire !== 'undefined') {
+                                Livewire.dispatch('refreshHelp');
+                            }
                         }
                         return;
                     }
