@@ -55,7 +55,7 @@ class HelpDetail extends Component
     public function mount($id)
     {
         $this->helpId = $id;
-        $this->help   = Help::with(['user', 'city', 'rating', 'latestCancelRequest.reviewedBy', 'latestCancelRequest.customer', 'latestCancelRequest.partner'])->findOrFail($id);
+        $this->help   = Help::with(['user', 'city', 'rating'])->findOrFail($id);
 
         if ($this->help->mitra_id !== auth()->id()) {
             // Akses diizinkan jika pernah terlibat (audit activity, cancel request, atau notifikasi)
@@ -108,7 +108,7 @@ class HelpDetail extends Component
         $oldFlag   = $this->help?->partner_cancel_prev_status;
 
         $this->help->refresh();
-        $this->help->load(['user', 'city', 'rating', 'latestCancelRequest.reviewedBy', 'latestCancelRequest.customer', 'latestCancelRequest.partner']);
+        $this->help->load(['user', 'city', 'rating']);
 
         // Auto-confirm jika batas waktu 24 jam telah terlewati tanpa komplain/sengketa
         if (
@@ -554,7 +554,7 @@ class HelpDetail extends Component
 
     public function render()
     {
-        $cancelRequest = \App\Models\HelpCancelRequest::with(['customer', 'partner', 'reviewedBy'])
+        $cancelRequest = \App\Models\HelpCancelRequest::with('reviewedBy')
             ->where('help_id', $this->help->id)
             ->where(function ($q) {
                 $q->where('partner_id', auth()->id())
@@ -564,7 +564,7 @@ class HelpDetail extends Component
             ->first();
 
         if (!$cancelRequest) {
-            $cancelRequest = \App\Models\HelpCancelRequest::with(['customer', 'partner', 'reviewedBy'])
+            $cancelRequest = \App\Models\HelpCancelRequest::with('reviewedBy')
                 ->where('help_id', $this->help->id)
                 ->latest()
                 ->first();

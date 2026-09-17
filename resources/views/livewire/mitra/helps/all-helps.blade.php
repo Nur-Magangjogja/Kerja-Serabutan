@@ -84,19 +84,25 @@
                     </button>
                     <!-- Tab 2: Kecamatan -->
                     @if($userDistrict)
+                    @php
+                        $userDistrictName = is_object($userDistrict) ? ($userDistrict->name ?? '') : (string) $userDistrict;
+                    @endphp
                     <button type="button" wire:click="$set('districtFilter', 'my_district')" role="tab"
                         class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center leading-tight truncate {{ $districtFilter === 'my_district' ? 'bg-primary-600 text-white dark:bg-white dark:text-primary-700 shadow-md scale-[1.02]' : 'text-white/90 hover:bg-white/10' }}"
-                        title="Semua bantuan di Kecamatan {{ $userDistrict->name }}">
-                        <span class="truncate">Kec. {{ $userDistrict->name }}</span>
+                        title="Semua bantuan di Kecamatan {{ $userDistrictName }}">
+                        <span class="truncate">Kec. {{ $userDistrictName }}</span>
                         <span class="text-[10px] font-medium {{ $districtFilter === 'my_district' ? 'text-white/80 dark:text-primary-600' : 'text-white/75' }}">({{ $countDistrict ?? 0 }})</span>
                     </button>
                     @endif
                     <!-- Tab 3: Kota / Kabupaten -->
                     @if($userCity)
+                    @php
+                        $userCityName = is_object($userCity) ? ($userCity->name ?? '') : (string) $userCity;
+                    @endphp
                     <button type="button" wire:click="$set('districtFilter', 'my_city')" role="tab"
                         class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center leading-tight truncate {{ $districtFilter === 'my_city' ? 'bg-primary-600 text-white dark:bg-white dark:text-primary-700 shadow-md scale-[1.02]' : 'text-white/90 hover:bg-white/10' }}"
-                        title="Semua bantuan di {{ $userCity->name }}">
-                        <span class="truncate">{{ $userCity->name }}</span>
+                        title="Semua bantuan di {{ $userCityName }}">
+                        <span class="truncate">{{ $userCityName }}</span>
                         <span class="text-[10px] font-medium {{ $districtFilter === 'my_city' ? 'text-white/80 dark:text-primary-600' : 'text-white/75' }}">({{ $countCity ?? 0 }})</span>
                     </button>
                     @endif
@@ -121,31 +127,31 @@
             @endif
 
             @if (!empty($activeTask))
-                <div class="mb-4 bg-blue-50/70 dark:bg-gray-800 border border-blue-200/80 dark:border-gray-700 rounded-2xl p-4 shadow-sm">
+                <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700 rounded-2xl p-4 shadow-sm">
                     <div class="flex items-start justify-between gap-3 mb-2.5">
                         <div class="flex items-start gap-2.5 min-w-0">
-                            <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-base flex-shrink-0 font-bold shadow-xs">
+                            <div class="w-9 h-9 rounded-xl bg-primary-50 dark:bg-gray-750 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-gray-700 flex items-center justify-center text-base flex-shrink-0 font-bold shadow-xs">
                                 {{ $activeTask->progress_icon }}
                             </div>
                             <div class="min-w-0">
                                 <div class="flex items-center gap-2">
-                                    <h4 class="text-xs font-bold text-blue-900 dark:text-blue-200 truncate">Tugas Aktif Berjalan</h4>
-                                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-600 text-white shadow-xs">
+                                    <h4 class="text-xs font-bold text-gray-900 dark:text-white truncate">Tugas Aktif Berjalan</h4>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 border border-gray-200 dark:border-gray-700 shadow-2xs">
                                         {{ $activeTask->progress_percentage }}%
                                     </span>
                                 </div>
-                                <p class="text-xs text-blue-800 dark:text-blue-300 mt-0.5 font-medium truncate">
-                                    "{{ $activeTask->title }}" • <span class="font-bold">{{ $activeTask->progress_summary }}</span>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5 font-medium truncate">
+                                    "{{ $activeTask->title }}" • <span class="font-bold text-primary-600 dark:text-primary-400">{{ $activeTask->progress_summary }}</span>
                                 </p>
                             </div>
                         </div>
-                        <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" wire:navigate class="flex-shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap">
+                        <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" wire:navigate class="flex-shrink-0 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap">
                             Buka Tugas
                         </a>
                     </div>
                     <!-- Mini Progress Track -->
-                    <div class="w-full bg-blue-100/70 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
-                        <div class="h-full rounded-full bg-blue-600 dark:bg-blue-500 transition-all duration-500 {{ $activeTask->progress_percentage < 100 ? 'animate-pulse' : '' }}"
+                    <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                        <div class="h-full rounded-full bg-primary-600 dark:bg-primary-500 transition-all duration-500 {{ $activeTask->progress_percentage < 100 ? 'animate-pulse' : '' }}"
                              style="width: {{ $activeTask->progress_percentage }}%;"></div>
                     </div>
                 </div>
@@ -335,9 +341,9 @@
                             @elseif($districtFilter === 'all')
                                 Tidak ada bantuan dalam radius 10 KM
                             @elseif($districtFilter === 'my_district')
-                                Tidak ada bantuan di Kecamatan {{ $userDistrict->name ?? '' }}
+                                Tidak ada bantuan di Kecamatan {{ is_object($userDistrict) ? ($userDistrict->name ?? '') : (string) $userDistrict }}
                             @elseif($districtFilter === 'my_city')
-                                Tidak ada bantuan di {{ $userCity->name ?? '' }}
+                                Tidak ada bantuan di {{ is_object($userCity) ? ($userCity->name ?? '') : (string) $userCity }}
                             @else
                                 Tidak ada bantuan di wilayah ini
                             @endif

@@ -44,19 +44,18 @@ class Index extends Component
             return;
         }
 
-        if ($help) {
-            $helpModel = Help::with(['user', 'mitra'])->find($help);
+        if (request()->query('customer')) {
+            $this->selectPartner((int) request()->query('customer'), request()->query('help') ?? $help);
+            return;
+        }
 
-            if ($helpModel) {
-                if ($helpModel->mitra_id !== Auth::id()) {
-                    return redirect()->route('mitra.chat');
-                }
+        $helpId = $help ?? request()->query('help') ?? request()->route('help');
 
-                if ($helpModel->user_id) {
-                    $this->selectPartner($helpModel->user_id, $helpModel->id);
-                }
-            } else {
-                return redirect()->route('mitra.chat');
+        if ($helpId) {
+            $helpModel = Help::with(['user', 'mitra'])->find($helpId);
+
+            if ($helpModel && $helpModel->user_id) {
+                $this->selectPartner($helpModel->user_id, $helpModel->id);
             }
         }
     }

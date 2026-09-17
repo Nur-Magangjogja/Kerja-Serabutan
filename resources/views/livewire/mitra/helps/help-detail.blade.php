@@ -433,9 +433,6 @@
 
                 <div class="flex-1 min-w-0">
                     <h2 class="font-bold text-base text-gray-900 dark:text-white leading-snug">{{ $help->title }}</h2>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">
-                        {{ $isCompleted ? 'Tugas Selesai' : ($isCancelled ? 'Tugas Dibatalkan' : 'Tugas yang sedang dikerjakan') }}
-                    </p>
                 </div>
             </div>
 
@@ -462,12 +459,12 @@
                     <div>
                         <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Progres & Tahapan Layanan</span>
                         <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5 mt-0.5">
-                            <span>{{ $help->progress_icon }}</span>
-                            <span>{{ $help->progress_summary }}</span>
+                            <span class="text-base">{{ $help->progress_icon }}</span>
+                            <span class="text-primary-600 dark:text-primary-400 font-bold">{{ $help->progress_summary }}</span>
                         </h3>
                     </div>
                     <div class="text-right">
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-extrabold bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 border border-gray-200 dark:border-gray-700 shadow-2xs">
                             {{ $help->multi_stage_progress_percentage }}%
                         </span>
                     </div>
@@ -489,7 +486,7 @@
 
                 <div class="relative pt-2 pb-1">
                     <div class="absolute top-6 left-6 right-6 h-1 bg-gray-100 dark:bg-gray-700 -z-0">
-                        <div class="h-full bg-blue-600 dark:bg-blue-500 transition-all duration-700 rounded-full"
+                        <div class="h-full bg-primary-600 dark:bg-primary-500 transition-all duration-700 rounded-full"
                              style="width: {{ $stepCount > 1 ? max(0, min(100, ($activeIndex / ($stepCount - 1)) * 100)) : 0 }}%;"></div>
                     </div>
 
@@ -502,14 +499,14 @@
                             @endphp
                             <div class="flex flex-col items-center text-center" style="width: {{ $colWidth }}%;">
                                 <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 shadow-xs
-                                    {{ $isPassed ? 'bg-blue-600 text-white shadow-blue-500/30' : ($isCurrent ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 dark:ring-indigo-900/50 animate-pulse' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500') }}">
+                                    {{ $isPassed ? 'bg-primary-600 text-white shadow-primary-500/20' : ($isCurrent ? 'bg-primary-600 text-white ring-4 ring-primary-100 dark:ring-primary-950/60 animate-pulse' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500') }}">
                                     @if($isPassed)
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                                     @else
                                         <span>{{ $s['icon'] }}</span>
                                     @endif
                                 </div>
-                                <span class="text-[10px] font-semibold mt-1.5 leading-tight {{ $isCurrent ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ($isPassed ? 'text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500') }}">
+                                <span class="text-[10px] mt-1.5 leading-tight {{ $isCurrent ? 'text-primary-600 dark:text-primary-400 font-bold' : ($isPassed ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-400 dark:text-gray-500 font-normal') }}">
                                     {{ $s['title'] }}
                                 </span>
                             </div>
@@ -526,49 +523,59 @@
             @php
                 $travelProgress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($help);
             @endphp
-            <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800 mb-3 space-y-3" wire:poll.5s.visible>
-                <div class="flex items-center justify-between border-b border-indigo-800/60 pb-2.5">
-                    <div class="flex items-center gap-2">
-                        <span class="text-base">{{ $help->isPickup() ? '📦' : '🛵' }}</span>
-                        <div>
-                            <h4 class="text-xs font-bold text-indigo-200">
+            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4 rounded-2xl shadow-xs border border-gray-200 dark:border-gray-700 mb-3 space-y-3 transition-colors" wire:poll.5s.visible>
+                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700/80 pb-2.5">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0 {{ $help->isPickup() ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shadow-2xs' : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/60 shadow-2xs' }}">
+                            @if($help->isPassenger())
+                                <span>🛵</span>
+                            @elseif($help->isPickup())
+                                <span>📦</span>
+                            @else
+                                <span>🛠️</span>
+                            @endif
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="text-xs font-bold text-gray-900 dark:text-white truncate">
                                 {{ $travelProgress['is_arrived'] ? 'Telah Tiba di Lokasi' : 'Perjalanan Menuju Lokasi Sasaran' }}
                             </h4>
-                            <p class="text-[10px] text-indigo-300/80">{{ $travelProgress['target_label'] }}</p>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">{{ $travelProgress['target_label'] }}</p>
+                            </div>
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5 flex-wrap justify-end">
                         @if(!empty($travelProgress['is_near_arrival']) && !$travelProgress['is_arrived'])
-                            <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                            <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 animate-pulse">
                                 📍 Hampir Sampai
                             </span>
                         @endif
-                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-900/80 text-emerald-300 border border-emerald-700/60' : 'bg-blue-900/80 text-blue-300 border border-blue-700/60 animate-pulse' }}">
-                            <span class="w-1.5 h-1.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-400' : 'bg-blue-400' }}"></span>
+                        <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60' : 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300 dark:border-blue-700/60 animate-pulse' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-blue-600 dark:bg-blue-400' }}"></span>
                             {{ $travelProgress['is_arrived'] ? 'Tiba di Lokasi' : 'Live GPS ETA' }}
                         </span>
                     </div>
                 </div>
 
                 @if($travelProgress['is_arrived'])
-                    <div class="bg-emerald-950/60 border border-emerald-800/80 rounded-xl p-3 text-center">
-                        <p class="text-xs font-bold text-emerald-300 flex items-center justify-center gap-1.5">
-                            <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                            Anda telah sampai di lokasi sasaran
+                    <div class="bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/80 rounded-xl p-3 text-center">
+                        <p class="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            <span>Anda telah sampai di lokasi sasaran</span>
                         </p>
-                        <p class="text-[11px] text-emerald-200/80 mt-0.5">Silakan koordinasi dan lanjutkan tahapan pekerjaan melalui tombol aksi di bawah.</p>
+                        <p class="text-[11px] text-emerald-700 dark:text-emerald-300/80 mt-0.5">Silakan koordinasi dan lanjutkan tahapan pekerjaan melalui tombol aksi di bawah.</p>
                     </div>
                 @else
                     <div class="grid grid-cols-2 gap-2 text-center">
-                        <div class="bg-white/10 rounded-xl p-2.5">
-                            <span class="text-[10px] text-indigo-300 block font-medium">Jarak ke Sasaran</span>
-                            <span class="text-sm font-extrabold text-white font-mono block mt-0.5">
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-2.5 border border-gray-200/70 dark:border-gray-700/60">
+                            <span class="text-[10px] text-gray-500 dark:text-gray-400 block font-medium">Jarak ke Sasaran</span>
+                            <span class="text-sm font-extrabold text-gray-900 dark:text-white font-mono block mt-0.5">
                                 {{ $travelProgress['formatted_distance'] }}
                             </span>
                         </div>
-                        <div class="bg-white/10 rounded-xl p-2.5">
-                            <span class="text-[10px] text-indigo-300 block font-medium">Estimasi Waktu Tiba (ETA)</span>
-                            <span class="text-sm font-extrabold text-emerald-300 font-mono block mt-0.5">
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-2.5 border border-gray-200/70 dark:border-gray-700/60">
+                            <span class="text-[10px] text-gray-500 dark:text-gray-400 block font-medium">Estimasi Waktu Tiba (ETA)</span>
+                            <span class="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 font-mono block mt-0.5">
                                 {{ $travelProgress['formatted_eta'] }}
                             </span>
                         </div>
@@ -576,22 +583,22 @@
 
                     {{-- Traffic Condition Bar (Deteksi Evaluasi 10 Menit) --}}
                     @if($help->status === 'partner_on_the_way')
-                        <div class="bg-white/5 border border-white/10 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                        <div class="bg-gray-50 dark:bg-gray-700/40 border border-gray-200/70 dark:border-gray-700 rounded-xl p-2.5 flex items-center justify-between text-xs">
                             <div class="flex items-center gap-1.5">
                                 <span>🚦</span>
-                                <span class="text-[11px] text-gray-300 font-medium">Kondisi Lalu Lintas:</span>
+                                <span class="text-[11px] text-gray-600 dark:text-gray-300 font-medium">Kondisi Lalu Lintas:</span>
                             </div>
                             <div>
                                 @if(($travelProgress['traffic_status'] ?? '') === 'macet' || ($travelProgress['is_delayed'] ?? false))
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-950/80 text-rose-300 border border-rose-800 text-[10px] font-bold">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-800 text-[10px] font-bold">
                                         🔴 Macet / Padat
                                     </span>
                                 @elseif(($travelProgress['traffic_status'] ?? '') === 'padat_merayap')
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-950/80 text-amber-300 border border-amber-800 text-[10px] font-bold">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[10px] font-bold">
                                         🟡 Ramai Padat
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-[10px] font-bold">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[10px] font-bold">
                                         🟢 Lancar
                                     </span>
                                 @endif
@@ -603,13 +610,13 @@
                         <div class="pt-1 flex items-center gap-2">
                             <a href="https://www.google.com/maps/dir/?api=1&destination={{ $travelProgress['target_lat'] }},{{ $travelProgress['target_lng'] }}" 
                                target="_blank" rel="noopener noreferrer"
-                               class="flex-1 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                               class="flex-1 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                                 <span>Google Maps</span>
                             </a>
                             <a href="https://waze.com/ul?ll={{ $travelProgress['target_lat'] }},{{ $travelProgress['target_lng'] }}&navigate=yes" 
                                target="_blank" rel="noopener noreferrer"
-                               class="py-2 px-3 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                               class="py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs">
                                 <span>Waze</span>
                             </a>
                         </div>
@@ -773,9 +780,24 @@
                     <span>Ruang Chat</span>
                 </a>
                 @if($help->user->phone ?? null)
-                    <a href="tel:{{ $help->user->phone }}"
-                        class="px-4 py-2.5 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/60 rounded-xl text-blue-600 dark:text-blue-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-blue-100 transition">
-                        <span>📞 Telepon</span>
+                    @php
+                        $rawPhone = $help->user->phone ?? '';
+                        $waPhone = preg_replace('/[^0-9]/', '', $rawPhone);
+                        if (str_starts_with($waPhone, '0')) {
+                            $waPhone = '62' . substr($waPhone, 1);
+                        } elseif (str_starts_with($waPhone, '8')) {
+                            $waPhone = '62' . $waPhone;
+                        }
+                        $waText = urlencode("Halo Kak " . ($help->user->name ?? 'Customer') . ", saya " . (auth()->user()->name ?? 'Mitra SayaBantu') . " terkait pesanan bantuan #" . ($help->order_id ?: $help->id) . ".");
+                    @endphp
+                    <a href="https://wa.me/{{ $waPhone }}?text={{ $waText }}"
+                        target="_blank"
+                        rel="noopener"
+                        class="px-4 py-2.5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-emerald-600 dark:text-emerald-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition">
+                        <svg class="w-4 h-4 fill-current text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24">
+                            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2zm.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 012.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.196 8.196 0 01-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24zm4.52 11.45c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.24-.74-.66-1.24-1.48-1.39-1.73-.14-.25-.02-.39.11-.51.11-.11.25-.29.37-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.34-.76-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.71 4.3 3.8.6.26 1.07.41 1.44.53.61.19 1.16.17 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.23-.17-.48-.29z"/>
+                        </svg>
+                        <span>WhatsApp</span>
                     </a>
                 @endif
             </div>
@@ -811,7 +833,7 @@
             </div>
 
             {{-- Leaflet Route Map --}}
-            <div class="relative w-full h-72 bg-gray-100 dark:bg-gray-700">
+            <div class="relative w-full h-72 bg-gray-100 dark:bg-gray-700" wire:ignore>
                 <div id="mitra-route-map" class="w-full h-full z-0"></div>
 
                 {{-- Map Overlay Info Bar --}}
@@ -1633,90 +1655,159 @@
 @endpush
 
 @push('scripts')
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         (function() {
             let mapInstance = null;
             let markersGroup = null;
 
-            function initMap() {
-                const mapEl = document.getElementById('mitra-route-map');
-                if (!mapEl) return;
-                if (mapInstance) {
-                    try { mapInstance.remove(); } catch(e) {}
-                    mapInstance = null;
+            function ensureLeaflet(callback) {
+                if (typeof window.L !== 'undefined') {
+                    callback();
+                    return;
                 }
 
-                @if($help->isPickup())
-                    const pLat = parseFloat("{{ $help->pickup_latitude ?: $help->latitude }}") || -7.7956;
-                    const pLng = parseFloat("{{ $help->pickup_longitude ?: $help->longitude }}") || 110.3695;
-                    const dLat = parseFloat("{{ $help->delivery_latitude ?: $help->latitude }}") || pLat;
-                    const dLng = parseFloat("{{ $help->delivery_longitude ?: $help->longitude }}") || pLng;
-                @else
-                    const pLat = parseFloat("{{ $help->latitude }}") || -7.7956;
-                    const pLng = parseFloat("{{ $help->longitude }}") || 110.3695;
-                    const dLat = null;
-                    const dLng = null;
-                @endif
-
-                mapInstance = L.map(mapEl, {
-                    zoomControl: false,
-                    attributionControl: false
-                }).setView([pLat, pLng], 14);
-
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19
-                }).addTo(mapInstance);
-
-                markersGroup = L.featureGroup().addTo(mapInstance);
-
-                // Pickup / Main marker
-                const pIcon = L.divIcon({
-                    className: 'mitra-pulse-icon',
-                    html: '<div class="mitra-pulse-dot" style="background: #10b981;"></div>',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
-                });
-                const m1 = L.marker([pLat, pLng], { icon: pIcon }).addTo(markersGroup)
-                    .bindPopup("{{ $help->isPickup() ? '1. Titik Jemput' : 'Lokasi Tugas Customer' }}");
-
-                // Delivery marker (if pickup_delivery)
-                if (dLat && dLng && (dLat !== pLat || dLng !== pLng)) {
-                    const dIcon = L.divIcon({
-                        className: 'dest-pulse-icon',
-                        html: '<div class="dest-pulse-dot"></div>',
-                        iconSize: [22, 22],
-                        iconAnchor: [11, 11]
-                    });
-                    const m2 = L.marker([dLat, dLng], { icon: dIcon }).addTo(markersGroup)
-                        .bindPopup("2. Titik Antar / Tujuan");
-
-                    // Simple route line
-                    L.polyline([[pLat, pLng], [dLat, dLng]], {
-                        color: '#2563eb',
-                        weight: 4,
-                        opacity: 0.8,
-                        dashArray: '8, 8'
-                    }).addTo(markersGroup);
-
-                    mapInstance.fitBounds(markersGroup.getBounds().pad(0.2));
+                if (!document.querySelector('link[href*="leaflet.css"]')) {
+                    const link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                    document.head.appendChild(link);
                 }
 
-                const recenterBtn = document.getElementById('btn-recenter-route-map');
-                if (recenterBtn) {
-                    recenterBtn.addEventListener('click', function() {
-                        if (markersGroup && markersGroup.getLayers().length > 0) {
-                            mapInstance.fitBounds(markersGroup.getBounds().pad(0.2));
-                        } else {
-                            mapInstance.setView([pLat, pLng], 14);
+                let script = document.querySelector('script[src*="leaflet.js"]');
+                if (!script) {
+                    script = document.createElement('script');
+                    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                    script.onload = function() {
+                        callback();
+                    };
+                    document.head.appendChild(script);
+                } else {
+                    let attempts = 0;
+                    const interval = setInterval(function() {
+                        attempts++;
+                        if (typeof window.L !== 'undefined') {
+                            clearInterval(interval);
+                            callback();
+                        } else if (attempts > 50) {
+                            clearInterval(interval);
                         }
-                    });
+                    }, 50);
                 }
             }
 
-            document.addEventListener('DOMContentLoaded', initMap);
-            document.addEventListener('livewire:navigated', initMap);
-            setTimeout(initMap, 400);
+            function initMitraRouteMap() {
+                const mapEl = document.getElementById('mitra-route-map');
+                if (!mapEl) return;
+
+                ensureLeaflet(function() {
+                    if (mapInstance) {
+                        try { mapInstance.remove(); } catch(e) {}
+                        mapInstance = null;
+                    }
+
+                    if (mapEl._leaflet_id) {
+                        mapEl._leaflet_id = null;
+                    }
+
+                    @if($help->isPickup())
+                        const pLat = parseFloat("{{ $help->pickup_latitude ?: $help->latitude }}") || -7.7956;
+                        const pLng = parseFloat("{{ $help->pickup_longitude ?: $help->longitude }}") || 110.3695;
+                        const dLat = parseFloat("{{ $help->delivery_latitude ?: $help->latitude }}") || pLat;
+                        const dLng = parseFloat("{{ $help->delivery_longitude ?: $help->longitude }}") || pLng;
+                    @else
+                        const pLat = parseFloat("{{ $help->latitude }}") || -7.7956;
+                        const pLng = parseFloat("{{ $help->longitude }}") || 110.3695;
+                        const dLat = null;
+                        const dLng = null;
+                    @endif
+
+                    try {
+                        mapInstance = L.map(mapEl, {
+                            zoomControl: false,
+                            attributionControl: false
+                        }).setView([pLat, pLng], 14);
+
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 19
+                        }).addTo(mapInstance);
+
+                        markersGroup = L.featureGroup().addTo(mapInstance);
+
+                        // Pickup / Main marker
+                        const pIcon = L.divIcon({
+                            className: 'mitra-pulse-icon',
+                            html: '<div class="mitra-pulse-dot" style="background: #10b981;"></div>',
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        });
+                        L.marker([pLat, pLng], { icon: pIcon }).addTo(markersGroup)
+                            .bindPopup("{{ $help->isPickup() ? '1. Titik Jemput' : 'Lokasi Tugas Customer' }}");
+
+                        // Delivery marker (if pickup_delivery)
+                        if (dLat && dLng && (dLat !== pLat || dLng !== pLng)) {
+                            const dIcon = L.divIcon({
+                                className: 'dest-pulse-icon',
+                                html: '<div class="dest-pulse-dot"></div>',
+                                iconSize: [22, 22],
+                                iconAnchor: [11, 11]
+                            });
+                            L.marker([dLat, dLng], { icon: dIcon }).addTo(markersGroup)
+                                .bindPopup("2. Titik Antar / Tujuan");
+
+                            L.polyline([[pLat, pLng], [dLat, dLng]], {
+                                color: '#2563eb',
+                                weight: 4,
+                                opacity: 0.8,
+                                dashArray: '8, 8'
+                            }).addTo(markersGroup);
+
+                            mapInstance.fitBounds(markersGroup.getBounds().pad(0.2));
+                        }
+
+                        const recenterBtn = document.getElementById('btn-recenter-route-map');
+                        if (recenterBtn) {
+                            recenterBtn.onclick = function() {
+                                if (markersGroup && markersGroup.getLayers().length > 0) {
+                                    mapInstance.fitBounds(markersGroup.getBounds().pad(0.2));
+                                } else {
+                                    mapInstance.setView([pLat, pLng], 14);
+                                }
+                            };
+                        }
+
+                        setTimeout(function() {
+                            if (mapInstance) mapInstance.invalidateSize();
+                        }, 120);
+
+                        setTimeout(function() {
+                            if (mapInstance) mapInstance.invalidateSize();
+                        }, 450);
+                    } catch(err) {
+                        console.warn('[MitraMap] Init warning:', err);
+                    }
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', initMitraRouteMap);
+            document.addEventListener('livewire:navigated', function() {
+                setTimeout(initMitraRouteMap, 60);
+            });
+            document.addEventListener('livewire:init', function() {
+                if (window.Livewire) {
+                    Livewire.hook('commit', function({ component, commit, respond, succeed, fail }) {
+                        succeed(function() {
+                            setTimeout(function() {
+                                const mapEl = document.getElementById('mitra-route-map');
+                                if (mapEl && (!mapInstance || !mapEl.hasChildNodes())) {
+                                    initMitraRouteMap();
+                                } else if (mapInstance) {
+                                    mapInstance.invalidateSize();
+                                }
+                            }, 100);
+                        });
+                    });
+                }
+            });
         })();
     </script>
 @endpush

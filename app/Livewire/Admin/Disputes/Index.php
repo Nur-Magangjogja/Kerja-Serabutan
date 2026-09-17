@@ -55,6 +55,8 @@ class Index extends Component
     public $showCancelReviewModal     = false;
     public $selectedCancelRequestId   = null;
     public $selectedCancelRequest     = null;
+    public $cancelLogs                = [];
+    public $expandedHelpIds           = [];
     public $cancelDecision           = 'approved'; // 'approved' | 'rejected'
     public $settlementType           = 'full_refund'; // 'full_refund' | 'item_settled' | 'partial_settlement'
     public $cancelRefundAmount       = 0;
@@ -248,10 +250,25 @@ class Index extends Component
         }
     }
 
+    public function toggleHelpLogs(int $helpId)
+    {
+        if (in_array($helpId, $this->expandedHelpIds, true)) {
+            $this->expandedHelpIds = array_values(array_diff($this->expandedHelpIds, [$helpId]));
+        } else {
+            $this->expandedHelpIds[] = $helpId;
+        }
+    }
+
     public function openCancelReviewModal(int $cancelRequestId)
     {
         $this->selectedCancelRequestId = $cancelRequestId;
         $this->selectedCancelRequest   = HelpCancelRequest::with(['help.user', 'help.mitra', 'requestedBy', 'district'])->findOrFail($cancelRequestId);
+
+        // Muat seluruh log pembatalan untuk ID pekerjaan yang sama
+        $this->cancelLogs = HelpCancelRequest::with(['requestedBy', 'partner', 'customer', 'reviewedBy'])
+            ->where('help_id', $this->selectedCancelRequest->help_id)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         $admin = auth()->user();
         if ($admin && $admin->role === 'admin') {
@@ -261,6 +278,7 @@ class Index extends Component
                 session()->flash('error', 'Anda tidak memiliki wewenang untuk meninjau pembatalan di luar wilayah kecamatan Anda.');
                 $this->selectedCancelRequest = null;
                 $this->selectedCancelRequestId = null;
+                $this->cancelLogs = [];
                 return;
             }
         }
@@ -307,6 +325,7 @@ class Index extends Component
     public function closeCancelReviewModal()
     {
         $this->showCancelReviewModal = false;
+        $this->cancelLogs = [];
         $this->reset([
             'selectedCancelRequestId',
             'selectedCancelRequest',
@@ -377,7 +396,17 @@ class Index extends Component
         $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
 
         if ($this->activeTab === 'cancellations') {
-            $query = HelpCancelRequest::with(['help.user', 'help.mitra', 'requestedBy', 'district', 'reviewedBy']);
+            $query = HelpCancelRequest::with([
+                'help.user', 
+                'help.mitra', 
+                'help.cancelRequests.requestedBy', 
+                'help.cancelRequests.partner', 
+                'help.cancelRequests.customer', 
+                'help.cancelRequests.reviewedBy', 
+                'requestedBy', 
+                'district', 
+                'reviewedBy'
+            ]);
 
             if (!$isSuperAdmin) {
                 $districtIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];

@@ -201,12 +201,42 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                         @forelse($cancellations as $req)
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-900 transition">
+                            @php
+                                $helpLogs = $req->help?->cancelRequests ?? collect([$req]);
+                                $cancelCount = $helpLogs->count();
+                                $hasMultipleCancels = ($cancelCount > 1);
+                                $isExpanded = in_array($req->help_id, $expandedHelpIds, true);
+                            @endphp
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-900 transition {{ $hasMultipleCancels ? 'bg-amber-50/20 dark:bg-amber-950/10' : '' }}">
                                 <td class="p-4">
-                                    <span class="font-bold text-gray-900 dark:text-white">{{ $req->help->title ?? 'Bantuan' }}</span>
-                                    <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                                        Dana Tahan: Rp {{ number_format($req->help->amount ?? 0, 0, ',', '.') }}
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="font-bold text-gray-900 dark:text-white">{{ $req->help->title ?? 'Bantuan' }}</span>
+                                        @if($req->help?->order_id)
+                                            <span class="text-[10px] text-gray-400 font-mono">({{ $req->help->order_id }})</span>
+                                        @endif
                                     </div>
+                                    <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                        Dana Tahan: Rp {{ number_format($req->help->total_amount > 0 ? $req->help->total_amount : ($req->help->amount ?? 0), 0, ',', '.') }}
+                                    </div>
+
+                                    {{-- Log Pembatalan Per ID Tugas --}}
+                                    @if($hasMultipleCancels)
+                                        <div class="mt-2 flex items-center gap-1.5 flex-wrap">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700 animate-pulse">
+                                                🔁 {{ $cancelCount }}x Aktivitas Pembatalan
+                                            </span>
+                                            <button type="button" wire:click="toggleHelpLogs({{ $req->help_id }})" class="text-[10.5px] font-bold text-primary-600 dark:text-primary-400 hover:underline cursor-pointer flex items-center gap-0.5">
+                                                <span>{{ $isExpanded ? '▲ Sembunyikan Log' : '▼ Lihat ' . $cancelCount . ' Log' }}</span>
+                                            </button>
+                                        </div>
+                                    @else
+                                        <div class="mt-1.5 flex items-center gap-1.5 text-[10.5px] text-gray-400">
+                                            <span>Pengajuan ke-1</span>
+                                            <button type="button" wire:click="toggleHelpLogs({{ $req->help_id }})" class="text-[10.5px] font-bold text-gray-500 dark:text-gray-400 hover:underline cursor-pointer">
+                                                {{ $isExpanded ? '▲ Tutup Log' : '▼ Log' }}
+                                            </button>
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="p-4">
                                     <div class="flex items-center gap-1.5 mb-1">
@@ -222,7 +252,7 @@
                                         <span class="font-bold text-gray-900 dark:text-white">{{ $req->requestedBy->name ?? 'User' }}</span>
                                     </div>
                                     <div class="text-[10px] text-gray-500 dark:text-gray-400">
-                                        Cust: {{ $req->help->user->name ?? '-' }} • Mitra: {{ $req->help->mitra->name ?? '-' }}
+                                        Cust: {{ $req->help->user->name ?? '-' }} • Mitra: {{ $req->help->mitra->name ?? ($req->partner->name ?? '-') }}
                                     </div>
                                 </td>
                                 <td class="p-4 max-w-xs">
@@ -282,12 +312,113 @@
                                             Audit Wilayah
                                         </button>
                                     @else
-                                        <span class="text-[11px] text-gray-400">
-                                            Ditutup oleh {{ $req->reviewedBy->name ?? 'Sistem' }}
-                                        </span>
+                                        <button wire:click="openCancelReviewModal({{ $req->id }})"
+                                                class="px-3 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-bold transition cursor-pointer">
+                                            Detail Log
+                                        </button>
+                                        <div class="text-[10px] text-gray-400 mt-0.5">
+                                            Oleh {{ $req->reviewedBy->name ?? 'Sistem' }}
+                                        </div>
                                     @endif
                                 </td>
                             </tr>
+
+                            {{-- Expanded Sub-row for Historical Logs on this Help Task --}}
+                            @if($isExpanded)
+                                <tr class="bg-gray-50/90 dark:bg-gray-950/90 border-b border-gray-200 dark:border-gray-800">
+                                    <td colspan="6" class="p-4 sm:p-5">
+                                        <div class="bg-white dark:bg-black p-4 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
+                                            <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2.5">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-base">📜</span>
+                                                    <div>
+                                                        <h4 class="font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
+                                                            Log & Kronologi Pembatalan ID Pekerjaan #{{ $req->help_id }}
+                                                            @if($req->help?->order_id)
+                                                                <span class="text-xs font-mono text-gray-500 font-normal">({{ $req->help->order_id }})</span>
+                                                            @endif
+                                                        </h4>
+                                                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Total ditemukan {{ $cancelCount }} aktivitas pembatalan / pengalihan mitra pada tugas ini.</p>
+                                                    </div>
+                                                </div>
+                                                <button type="button" wire:click="toggleHelpLogs({{ $req->help_id }})" class="px-2.5 py-1 text-xs font-bold text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-lg transition cursor-pointer">
+                                                    ✕ Tutup Log
+                                                </button>
+                                            </div>
+
+                                            <div class="space-y-2.5">
+                                                @foreach($helpLogs as $lIdx => $log)
+                                                    @php
+                                                        $isCurrentRow = ($log->id === $req->id);
+                                                        $logNumber = $cancelCount - $lIdx;
+                                                    @endphp
+                                                    <div class="p-3 rounded-xl border text-xs transition {{ $isCurrentRow ? 'bg-primary-50/40 dark:bg-primary-950/30 border-primary-300 dark:border-primary-800 ring-1 ring-primary-500/20' : 'bg-gray-50/70 dark:bg-gray-900/70 border-gray-200 dark:border-gray-800' }}">
+                                                        <div class="flex items-center justify-between flex-wrap gap-1.5 mb-1.5">
+                                                            <div class="flex items-center gap-2 flex-wrap">
+                                                                <span class="font-extrabold text-[11px] {{ $isCurrentRow ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300' }}">
+                                                                    Log #{{ $logNumber }} • {{ $log->created_at ? $log->created_at->translatedFormat('d M Y, H:i') : '-' }} WIB
+                                                                </span>
+                                                                @if($isCurrentRow)
+                                                                    <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-primary-600 text-white">
+                                                                        Baris Ini
+                                                                    </span>
+                                                                @endif
+                                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold {{ $log->requester_type === 'customer' ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' }}">
+                                                                    {{ $log->requester_type === 'customer' ? 'Customer' : 'Mitra' }}: {{ $log->requestedBy?->name ?? 'User' }}
+                                                                </span>
+                                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                                                    Aksi: {{ strtoupper(str_replace('_', ' ', $log->action_type ?? 'cancel')) }}
+                                                                </span>
+                                                            </div>
+                                                            <div class="flex items-center gap-2">
+                                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold {{ $log->status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : ($log->status === 'rejected' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300') }}">
+                                                                    {{ strtoupper($log->status) }}
+                                                                </span>
+                                                                @if($log->status === 'pending')
+                                                                    <button type="button" wire:click="openCancelReviewModal({{ $log->id }})" class="text-[10px] font-bold text-amber-600 hover:underline">
+                                                                        Audit Ini →
+                                                                    </button>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-gray-100 dark:border-gray-800">
+                                                            <div>
+                                                                <span class="text-gray-500 dark:text-gray-400">Mitra Saat Itu:</span>
+                                                                <strong class="text-gray-800 dark:text-gray-200">{{ $log->partner?->name ?? '-' }}</strong>
+                                                                <div class="mt-0.5">
+                                                                    <span class="text-gray-500 dark:text-gray-400">Alasan:</span>
+                                                                    <strong class="text-gray-800 dark:text-gray-200">"{{ $log->reason }}"</strong>
+                                                                    @if($log->notes)
+                                                                        <span class="italic text-gray-500 dark:text-gray-400">({{ $log->notes }})</span>
+                                                                    @endif
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                @if($log->status !== 'pending')
+                                                                    <div class="text-gray-500 dark:text-gray-400">
+                                                                        Ditinjau oleh: <strong class="text-gray-700 dark:text-gray-300">{{ $log->reviewedBy?->name ?? 'Sistem / Admin' }}</strong>
+                                                                        @if($log->admin_notes)
+                                                                            <p class="italic text-gray-600 dark:text-gray-300 mt-0.5">Catatan: "{{ $log->admin_notes }}"</p>
+                                                                        @endif
+                                                                        @if($log->sp_target && $log->sp_target !== 'none')
+                                                                            <span class="text-rose-600 dark:text-rose-400 font-bold block mt-0.5">⚠️ Sanksi SP: {{ strtoupper($log->sp_target) }} (Tingkat {{ $log->partner_sp_level ?? $log->customer_sp_level ?? 1 }})</span>
+                                                                        @endif
+                                                                    </div>
+                                                                @else
+                                                                    <div class="text-amber-700 dark:text-amber-400 font-medium">
+                                                                        ⏳ Sedang dalam antrean audit wilayah
+                                                                    </div>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endif
                         @empty
                             <tr>
                                 <td colspan="6" class="p-8 text-center text-gray-400 text-xs">
@@ -591,6 +722,88 @@
                                 @endif
                             </div>
                         @endif
+                    </div>
+
+                    {{-- Riwayat & Log Pembatalan Tugas Ini --}}
+                    @php
+                        $totalLogs = count($cancelLogs);
+                    @endphp
+                    <div class="bg-white dark:bg-black p-3.5 sm:p-4 rounded-2xl border {{ $totalLogs > 1 ? 'border-amber-300 dark:border-amber-700/80 ring-1 ring-amber-500/20' : 'border-gray-200 dark:border-gray-800' }} text-xs space-y-3 shadow-xs">
+                        <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2.5 flex-wrap gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm">📜</span>
+                                <span class="font-bold text-gray-900 dark:text-gray-100 text-xs">
+                                    Log Aktivitas Pembatalan Tugas (ID: #{{ $selectedCancelRequest->help_id }})
+                                </span>
+                            </div>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black {{ $totalLogs > 1 ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700 animate-pulse' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' }}">
+                                Total: {{ $totalLogs }}x Aktivitas
+                            </span>
+                        </div>
+
+                        @if($totalLogs > 1)
+                            <div class="p-2.5 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl text-[11px] text-amber-900 dark:text-amber-200 leading-relaxed flex items-start gap-2">
+                                <span class="text-xs shrink-0 mt-0.5">⚠️</span>
+                                <span><strong>Aktivitas Pembatalan Berulang Terdeteksi:</strong> Tugas ini telah mengalami {{ $totalLogs }} kali pengajuan pembatalan/ganti mitra. Tinjau kronologi di bawah untuk memahami seluruh riwayat sebelum mengambil keputusan audit.</span>
+                            </div>
+                        @endif
+
+                        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                            @foreach($cancelLogs as $idx => $cLog)
+                                @php
+                                    $isCurrent = ($cLog->id === $selectedCancelRequest->id);
+                                    $logNum = $totalLogs - $idx;
+                                @endphp
+                                <div class="p-2.5 rounded-xl border text-[11px] transition {{ $isCurrent ? 'bg-primary-50/40 dark:bg-primary-950/30 border-primary-400 dark:border-primary-700 ring-1 ring-primary-500/20' : 'bg-gray-50/60 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800' }}">
+                                    <div class="flex items-center justify-between flex-wrap gap-1 mb-1">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="font-extrabold {{ $isCurrent ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300' }}">
+                                                Log #{{ $logNum }} • {{ $cLog->created_at ? $cLog->created_at->translatedFormat('d M Y, H:i') : '-' }} WIB
+                                            </span>
+                                            @if($isCurrent)
+                                                <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-primary-600 text-white">
+                                                    Sedang Ditinjau
+                                                </span>
+                                            @endif
+                                            <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold {{ $cLog->requester_type === 'customer' ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' }}">
+                                                {{ $cLog->requester_type === 'customer' ? 'Customer' : 'Mitra' }}: {{ $cLog->requestedBy?->name ?? 'User' }}
+                                            </span>
+                                            <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                                Aksi: {{ strtoupper(str_replace('_', ' ', $cLog->action_type ?? 'cancel')) }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span class="px-2 py-0.5 rounded-full text-[9.5px] font-extrabold {{ $cLog->status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : ($cLog->status === 'rejected' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300') }}">
+                                                {{ strtoupper($cLog->status) }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="text-[10.5px] text-gray-600 dark:text-gray-400 space-y-0.5 pt-1 border-t border-gray-100 dark:border-gray-800/60">
+                                        <div>
+                                            <span class="text-gray-500 dark:text-gray-500">Mitra Terkait:</span>
+                                            <strong class="text-gray-800 dark:text-gray-200">{{ $cLog->partner?->name ?? '-' }}</strong>
+                                            • <span class="text-gray-500">Alasan:</span>
+                                            <strong class="text-gray-800 dark:text-gray-200">"{{ $cLog->reason }}"</strong>
+                                            @if($cLog->notes)
+                                                <span class="italic text-gray-500">({{ $cLog->notes }})</span>
+                                            @endif
+                                        </div>
+                                        @if($cLog->status !== 'pending')
+                                            <div class="text-[10px] text-gray-500 dark:text-gray-400">
+                                                Ditinjau oleh: <span class="font-bold text-gray-700 dark:text-gray-300">{{ $cLog->reviewedBy?->name ?? 'Sistem / Admin' }}</span>
+                                                @if($cLog->admin_notes)
+                                                    • Catatan: <em>"{{ $cLog->admin_notes }}"</em>
+                                                @endif
+                                                @if($cLog->sp_target && $cLog->sp_target !== 'none')
+                                                    • <span class="text-rose-600 dark:text-rose-400 font-bold">SP: {{ strtoupper($cLog->sp_target) }}</span>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
 
                     {{-- Fitur Chat / Klarifikasi Dua Arah (Customer & Mitra) --}}

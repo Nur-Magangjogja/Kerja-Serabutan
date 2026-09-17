@@ -1221,22 +1221,22 @@ class Help extends Model
     }
 
     /**
-     * Warna badge status (Tailwind classes).
+     * Warna badge status (Tailwind classes) - Bersih: bg-white pada mode terang, dark:bg-gray-800 pada mode gelap, text-primary.
      */
     public function getStatusColorAttribute(): string
     {
         return match($this->status) {
-            self::STATUS_MENUNGGU_MITRA            => 'bg-blue-100 text-blue-700',
-            self::STATUS_TAKEN                     => 'bg-blue-100 text-blue-700',
-            self::STATUS_PARTNER_ON_THE_WAY        => 'bg-indigo-100 text-indigo-700',
-            self::STATUS_PARTNER_ARRIVED           => 'bg-green-100 text-green-700',
-            self::STATUS_IN_PROGRESS               => 'bg-cyan-100 text-cyan-700',
-            self::STATUS_WAITING_CONFIRMATION      => 'bg-orange-100 text-orange-700',
-            self::STATUS_SELESAI                   => 'bg-green-100 text-green-700',
-            self::STATUS_DIBATALKAN                => 'bg-red-100 text-red-700',
-            self::STATUS_PARTNER_CANCEL_REQUESTED  => 'bg-yellow-100 text-yellow-700',
-            self::STATUS_CUSTOMER_CANCEL_REQUESTED => 'bg-yellow-100 text-yellow-700',
-            default                                => 'bg-gray-100 text-gray-700',
+            self::STATUS_MENUNGGU_MITRA,
+            self::STATUS_TAKEN,
+            self::STATUS_PARTNER_ON_THE_WAY,
+            self::STATUS_IN_PROGRESS               => 'bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 border border-primary-200/70 dark:border-gray-700 shadow-2xs',
+            self::STATUS_PARTNER_ARRIVED           => 'bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 border border-emerald-200/70 dark:border-gray-700 shadow-2xs',
+            self::STATUS_WAITING_CONFIRMATION      => 'bg-white dark:bg-gray-800 text-amber-600 dark:text-amber-400 border border-amber-200/70 dark:border-gray-700 shadow-2xs',
+            self::STATUS_SELESAI                   => 'bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 border border-emerald-200/70 dark:border-gray-700 shadow-2xs',
+            self::STATUS_DIBATALKAN                => 'bg-white dark:bg-gray-800 text-rose-600 dark:text-rose-400 border border-rose-200/70 dark:border-gray-700 shadow-2xs',
+            self::STATUS_PARTNER_CANCEL_REQUESTED,
+            self::STATUS_CUSTOMER_CANCEL_REQUESTED => 'bg-white dark:bg-gray-800 text-amber-600 dark:text-amber-400 border border-amber-200/70 dark:border-gray-700 shadow-2xs',
+            default                                => 'bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 border border-gray-200 dark:border-gray-700 shadow-2xs',
         };
     }
 

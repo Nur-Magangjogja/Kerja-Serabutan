@@ -194,7 +194,7 @@
                         </a>
                     @endif
                     @if(!($selected_partner->is_admin ?? false))
-                        <a href="{{ route('mitra.reports.create.user', $selected_partner->id) }}" wire:navigate class="px-2.5 py-1 bg-rose-500/80 hover:bg-rose-600 text-white text-[11px] font-bold rounded-lg transition border border-rose-400/50 shadow-xs" title="Laporkan">
+                        <a href="{{ route('mitra.reports.create.user', ['user_id' => $selected_partner->id, 'help_id' => $active_help_id ?? ($active_help->id ?? null)]) }}" wire:navigate class="px-2.5 py-1 bg-rose-500/80 hover:bg-rose-600 text-white text-[11px] font-bold rounded-lg transition border border-rose-400/50 shadow-xs" title="Laporkan">
                             Lapor
                         </a>
                     @endif
@@ -369,43 +369,43 @@
             @enderror
         </form>
     @endif
-</div>
 
-<script>
-    function scrollMitraChatToBottom(smooth = false) {
-        const el = document.getElementById('messagesWrapper');
-        if (!el) return;
-        el.scrollTo({
-            top: el.scrollHeight,
-            behavior: smooth ? 'smooth' : 'instant'
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => setTimeout(() => scrollMitraChatToBottom(false), 60));
-    document.addEventListener('livewire:navigated', () => setTimeout(() => scrollMitraChatToBottom(false), 60));
-    
-    window.addEventListener('message-sent', () => {
-        setTimeout(() => scrollMitraChatToBottom(true), 60);
-    });
-
-    window.addEventListener('scroll-chat-bottom', () => setTimeout(() => scrollMitraChatToBottom(false), 40));
-
-    window.addEventListener('help-new-message', () => {
-        setTimeout(() => scrollMitraChatToBottom(false), 60);
-    });
-
-    const mitraObserver = new MutationObserver(() => {
-        const el = document.getElementById('messagesWrapper');
-        if (el) {
-            const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
-            if (isNearBottom || el.scrollTop === 0) {
-                el.scrollTop = el.scrollHeight;
-            }
+    <script>
+        function scrollMitraChatToBottom(smooth = false) {
+            const el = document.getElementById('messagesWrapper');
+            if (!el) return;
+            el.scrollTo({
+                top: el.scrollHeight,
+                behavior: smooth ? 'smooth' : 'instant'
+            });
         }
-    });
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const el = document.getElementById('messagesWrapper');
-        if (el) mitraObserver.observe(el, { childList: true, subtree: true });
-    });
-</script>
+        document.addEventListener('DOMContentLoaded', () => setTimeout(() => scrollMitraChatToBottom(false), 60));
+        document.addEventListener('livewire:navigated', () => setTimeout(() => scrollMitraChatToBottom(false), 60));
+        
+        window.addEventListener('message-sent', () => {
+            setTimeout(() => scrollMitraChatToBottom(true), 60);
+        });
+
+        window.addEventListener('scroll-chat-bottom', () => setTimeout(() => scrollMitraChatToBottom(false), 40));
+
+        window.addEventListener('help-new-message', () => {
+            setTimeout(() => scrollMitraChatToBottom(false), 60);
+        });
+
+        const mitraObserver = new MutationObserver(() => {
+            const el = document.getElementById('messagesWrapper');
+            if (el) {
+                const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+                if (isNearBottom || el.scrollTop === 0) {
+                    el.scrollTop = el.scrollHeight;
+                }
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const el = document.getElementById('messagesWrapper');
+            if (el) mitraObserver.observe(el, { childList: true, subtree: true });
+        });
+    </script>
+</div>

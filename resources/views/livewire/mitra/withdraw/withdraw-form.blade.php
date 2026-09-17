@@ -66,7 +66,7 @@
                         @endif
                     </div>
                     <div class="flex items-center justify-between text-gray-900 dark:text-white text-sm pt-2 border-t border-gray-200 dark:border-gray-600">
-                        <span>Total Saldo yang Dipotong:</span>
+                        <span>Total Saldo Sesudah Dipotong:</span>
                         <span class="text-emerald-600 dark:text-emerald-400 font-black">Rp {{ number_format($totalDeduction, 0, ',', '.') }}</span>
                     </div>
                 </div>
@@ -103,10 +103,10 @@
                             x-model="formattedAmount"
                             @input="handleInput($event)"
                             placeholder="Min. {{ number_format($minAmount, 0, ',', '.') }}"
-                            class="w-full pl-12 pr-4 py-3 text-sm font-bold border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500">
+                            class="w-full pl-12 pr-4 py-3 text-sm font-bold border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
                     @error('amount') <span class="text-rose-500 text-xs mt-1 block font-medium">{{ $message }}</span> @enderror
-                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Batas pencairan min: Rp {{ number_format($minAmount, 0, ',', '.') }} (Kelipatan Rp 100)</p>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Batas pencairan min: Rp {{ number_format($minAmount, 0, ',', '.') }}</p>
                 </div>
 
                 <div x-data="{
@@ -268,14 +268,14 @@
                 <div>
                     <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nomor Rekening / No. E-Wallet *</label>
                     <input type="text" wire:model="accountNumber" placeholder="Contoh: 1234567890 / 08123456789"
-                        class="w-full px-3.5 py-2.5 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500">
+                        class="w-full px-3.5 py-2.5 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-emerald-500">
                     @error('accountNumber') <span class="text-rose-500 text-xs mt-1 block font-medium">{{ $message }}</span> @enderror
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nama Pemilik Rekening / Akun *</label>
                     <input type="text" wire:model="accountName" placeholder="Nama lengkap sesuai buku tabungan / e-wallet..."
-                        class="w-full px-3.5 py-2.5 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500">
+                        class="w-full px-3.5 py-2.5 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-emerald-500">
                     @error('accountName') <span class="text-rose-500 text-xs mt-1 block font-medium">{{ $message }}</span> @enderror
                 </div>
 

@@ -258,7 +258,18 @@
                                                 <div class="font-bold text-gray-800 dark:text-gray-200 truncate">{{ $help->user->name }}</div>
                                             </div>
                                             @if($help->user->phone)
-                                                <a href="tel:{{ $help->user->phone }}" class="text-[11px] font-semibold text-primary-600 dark:text-sky-400 hover:underline">📞 {{ $help->user->phone }}</a>
+                                                @php
+                                                    $rawPhone = $help->user->phone ?? '';
+                                                    $waPhone = preg_replace('/[^0-9]/', '', $rawPhone);
+                                                    if (str_starts_with($waPhone, '0')) {
+                                                        $waPhone = '62' . substr($waPhone, 1);
+                                                    } elseif (str_starts_with($waPhone, '8')) {
+                                                        $waPhone = '62' . $waPhone;
+                                                    }
+                                                @endphp
+                                                <a href="https://wa.me/{{ $waPhone }}" target="_blank" rel="noopener" class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1">
+                                                    <span>💬 WA: {{ $help->user->phone }}</span>
+                                                </a>
                                             @endif
                                         </div>
                                     @endif
@@ -345,7 +356,7 @@
                         @foreach($cancellations as $item)
                             @php
                                 $help = $item->help;
-                                $customer = $item->customer ?? $help?->user;
+                                $customer = $help?->user ?? $item->customer;
                                 $evidencePhoto = $item->evidence_photo ?: $help?->cancel_evidence_photo;
 
                                 $statusBadge = match($item->status) {
@@ -525,8 +536,17 @@
                                                             {{ $customer->name }}
                                                         </div>
                                                         @if($customer->phone)
-                                                            <a href="tel:{{ $customer->phone }}" class="text-[11px] font-semibold text-primary-600 dark:text-sky-400 hover:underline inline-block mt-0.5">
-                                                                📞 {{ $customer->phone }}
+                                                            @php
+                                                                $rawPhone = $customer->phone ?? '';
+                                                                $waPhone = preg_replace('/[^0-9]/', '', $rawPhone);
+                                                                if (str_starts_with($waPhone, '0')) {
+                                                                    $waPhone = '62' . substr($waPhone, 1);
+                                                                } elseif (str_starts_with($waPhone, '8')) {
+                                                                    $waPhone = '62' . $waPhone;
+                                                                }
+                                                            @endphp
+                                                            <a href="https://wa.me/{{ $waPhone }}" target="_blank" rel="noopener" class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 mt-0.5">
+                                                                <span>💬 WA: {{ $customer->phone }}</span>
                                                             </a>
                                                         @endif
                                                     </div>

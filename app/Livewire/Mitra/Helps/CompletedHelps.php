@@ -59,8 +59,11 @@ class CompletedHelps extends Component
         $totalCancelledCount = (clone $cancellationQuery)->count();
 
         // 2. Tab Query
+        $perPage = 10;
+        $page = $this->getPage();
+
         if ($this->activeTab === 'cancelled') {
-            $cancellationsQuery = HelpCancelRequest::with(['help.user', 'help.city', 'help.rating', 'customer', 'partner', 'reviewedBy'])
+            $cancellationsQuery = HelpCancelRequest::with(['help.user', 'help.city', 'reviewedBy'])
                 ->where(function ($q) use ($user) {
                     $q->where('partner_id', $user->id)
                       ->orWhereHas('help', fn($h) => $h->where('mitra_id', $user->id));
@@ -86,7 +89,19 @@ class CompletedHelps extends Component
                 $cancellationsQuery->latest('requested_at');
             }
 
-            $cancellations = $cancellationsQuery->paginate(10);
+            if (empty($this->search)) {
+                $items = $cancellationsQuery->forPage($page, $perPage)->get();
+                $cancellations = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $items,
+                    $totalCancelledCount,
+                    $perPage,
+                    $page,
+                    ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(), 'pageName' => 'page']
+                );
+            } else {
+                $cancellations = $cancellationsQuery->paginate($perPage);
+            }
+
             $helps = null;
         } else {
             $helpsQuery = Help::with(['user', 'city', 'rating'])
@@ -109,7 +124,19 @@ class CompletedHelps extends Component
                 $helpsQuery->latest();
             }
 
-            $helps = $helpsQuery->paginate(10);
+            if (empty($this->search)) {
+                $items = $helpsQuery->forPage($page, $perPage)->get();
+                $helps = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $items,
+                    $totalCompletedCount,
+                    $perPage,
+                    $page,
+                    ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(), 'pageName' => 'page']
+                );
+            } else {
+                $helps = $helpsQuery->paginate($perPage);
+            }
+
             $cancellations = null;
         }
 

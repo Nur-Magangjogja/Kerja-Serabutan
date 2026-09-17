@@ -195,31 +195,31 @@
 
         <!-- Active Task Banner if Mitra already has an active task -->
         @if(!empty($activeTask))
-            <div class="mb-5 bg-blue-50/70 dark:bg-gray-800 border border-blue-200/80 dark:border-gray-700 rounded-2xl p-4 shadow-sm">
+            <div class="mb-5 bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700 rounded-2xl p-4 shadow-sm">
                 <div class="flex items-start justify-between gap-3 mb-2.5">
                     <div class="flex items-start gap-2.5 min-w-0">
-                        <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-base flex-shrink-0 font-bold shadow-xs">
+                        <div class="w-9 h-9 rounded-xl bg-primary-50 dark:bg-gray-750 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-gray-700 flex items-center justify-center text-base flex-shrink-0 font-bold shadow-xs">
                             {{ $activeTask->progress_icon }}
                         </div>
                         <div class="min-w-0">
                             <div class="flex items-center gap-2">
-                                <h4 class="text-xs font-bold text-blue-900 dark:text-blue-200 truncate">Tugas Aktif Berjalan</h4>
-                                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-600 text-white shadow-xs">
+                                <h4 class="text-xs font-bold text-gray-900 dark:text-white truncate">Tugas Aktif Berjalan</h4>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 border border-gray-200 dark:border-gray-700 shadow-2xs">
                                     {{ $activeTask->progress_percentage }}%
                                 </span>
                             </div>
-                            <p class="text-xs text-blue-800 dark:text-blue-300 mt-0.5 font-medium truncate">
-                                "{{ $activeTask->title }}" • <span class="font-bold">{{ $activeTask->progress_summary }}</span>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5 font-medium truncate">
+                                "{{ $activeTask->title }}" • <span class="font-bold text-primary-600 dark:text-primary-400">{{ $activeTask->progress_summary }}</span>
                             </p>
                         </div>
                     </div>
-                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" wire:navigate class="flex-shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap">
+                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" wire:navigate class="flex-shrink-0 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap">
                         Buka Tugas
                     </a>
                 </div>
                 <!-- Mini Progress Track -->
-                <div class="w-full bg-blue-100/70 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
-                    <div class="h-full rounded-full bg-blue-600 dark:bg-blue-500 transition-all duration-500 {{ $activeTask->progress_percentage < 100 ? 'animate-pulse' : '' }}"
+                <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                    <div class="h-full rounded-full bg-primary-600 dark:bg-primary-500 transition-all duration-500 {{ $activeTask->progress_percentage < 100 ? 'animate-pulse' : '' }}"
                          style="width: {{ $activeTask->progress_percentage }}%;"></div>
                 </div>
             </div>

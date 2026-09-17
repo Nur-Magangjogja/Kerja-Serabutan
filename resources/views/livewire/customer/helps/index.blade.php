@@ -258,7 +258,7 @@
                                                 <span>Mencari Rekan Jasa</span>
                                             </span>
                                         @else
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold {{ $help->status_color }} dark:bg-opacity-20 border border-current border-opacity-20">
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $help->status_color }}">
                                                 <span>{{ $help->progress_icon }}</span>
                                                 <span>{{ $help->progress_summary }}</span>
                                             </span>

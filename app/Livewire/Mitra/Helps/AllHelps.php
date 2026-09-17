@@ -131,8 +131,8 @@ class AllHelps extends Component
             return view('livewire.mitra.helps.all-helps', [
                 'helps'           => $emptyPaginator,
                 'needsCity'       => false,
-                'userDistrict'    => $user->district ?? null,
-                'userCity'        => $user->city ?? null,
+                'userDistrict'    => $user?->district ?? ($user?->district_id ? \App\Models\District::find($user->district_id) : null) ?? $user?->kecamatan ?? null,
+                'userCity'        => ($user?->city_id ? \App\Models\City::find($user->city_id) : null) ?? $user?->city_name ?? $user?->city ?? null,
                 'districtFilter'  => $this->districtFilter,
                 'sortBy'          => $this->sortBy,
                 'search'          => $this->search,
@@ -288,8 +288,38 @@ class AllHelps extends Component
                 : $query->latest(),
         };
 
-        // Native Database Pagination
-        $helps = $query->with(['user', 'city', 'district'])->paginate(15);
+        // Native Database Pagination (Reuse pre-calculated active tab count to avoid duplicate count query)
+        $perPage = 15;
+        $page    = $this->getPage();
+
+        $totalCount = null;
+        if (empty($this->search)) {
+            $totalCount = match ($this->districtFilter) {
+                'my_district'        => $countDistrict,
+                'my_city'            => $countCity,
+                'all', 'radius_10km' => $countRadius10km,
+                default              => null,
+            };
+        }
+
+        if ($totalCount !== null) {
+            $items = $query->with(['user', 'city', 'district'])
+                ->forPage($page, $perPage)
+                ->get();
+
+            $helps = new \Illuminate\Pagination\LengthAwarePaginator(
+                $items,
+                $totalCount,
+                $perPage,
+                $page,
+                [
+                    'path'     => \Illuminate\Pagination\Paginator::resolveCurrentPath(),
+                    'pageName' => 'page',
+                ]
+            );
+        } else {
+            $helps = $query->with(['user', 'city', 'district'])->paginate($perPage);
+        }
 
         // Format angka distance_km jika dihitung dari SQL
         if ($hasGps) {
@@ -306,8 +336,8 @@ class AllHelps extends Component
         return view('livewire.mitra.helps.all-helps', [
             'helps'           => $helps,
             'needsCity'       => false,
-            'userDistrict'    => $user?->district ?? null,
-            'userCity'        => $user?->city ?? null,
+            'userDistrict'    => $user?->district ?? ($user?->district_id ? \App\Models\District::find($user->district_id) : null) ?? $user?->kecamatan ?? null,
+            'userCity'        => ($user?->city_id ? \App\Models\City::find($user->city_id) : null) ?? $user?->city_name ?? $user?->city ?? null,
             'districtFilter'  => $this->districtFilter,
             'sortBy'          => $this->sortBy,
             'search'          => $this->search,

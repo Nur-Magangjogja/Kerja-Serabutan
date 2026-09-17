@@ -224,12 +224,12 @@ class Detail extends Component
 
             $this->showCustomerCancelModal = false;
             $this->loadHelp();
-            session()->flash('success', 'Mitra sebelumnya telah dilepaskan. Sistem sedang mencari mitra baru yang lebih responsif untuk Anda.');
+            session()->flash('success', 'Permintaan ganti mitra berhasil diajukan. Tim Admin dan mitra akan berkoordinasi dan pesanan dialihkan untuk mencari mitra baru.');
         } catch (\RuntimeException $e) {
             session()->flash('error', $e->getMessage());
         } catch (\Throwable $e) {
             Log::error('[CustomerHelpDetail] switchPartner error: ' . $e->getMessage());
-            session()->flash('error', 'Terjadi kesalahan saat mengganti mitra: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat mengajukan ganti mitra: ' . $e->getMessage());
         }
     }
 
@@ -238,6 +238,26 @@ class Detail extends Component
      */
     public function submitCustomerCancel()
     {
+        // Guard: Pastikan mitra belum mulai bekerja (hanya saat dalam perjalanan)
+        $isPartnerWorking = in_array($this->help->status, [
+            Help::STATUS_PARTNER_ARRIVED,
+            Help::STATUS_IN_PROGRESS,
+            Help::STATUS_WAITING_CONFIRMATION,
+            Help::STATUS_SELESAI,
+        ]) || ($this->help->isPickup() && in_array($this->help->service_stage, [
+            Help::STAGE_AT_PICKUP,
+            Help::STAGE_ITEM_COLLECTED,
+            Help::STAGE_GOING_TO_DELIVERY,
+            Help::STAGE_FINAL_APPROACH,
+            Help::STAGE_AT_DESTINATION,
+        ]));
+
+        if ($isPartnerWorking) {
+            session()->flash('error', 'Opsi penarikan pekerjaan tidak tersedia karena mitra telah tiba di lokasi atau sedang bekerja. Silakan gunakan opsi Ganti Mitra atau hubungi Bantuan CS.');
+            $this->showCustomerCancelModal = false;
+            return;
+        }
+
         $this->validate([
             'customerCancelReason' => 'required|string|min:5|max:255',
             'customerCancelNotes'  => 'nullable|string|max:1000',
