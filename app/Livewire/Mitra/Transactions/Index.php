@@ -14,7 +14,7 @@ class Index extends Component
 
     protected $paginationTheme = 'tailwind';
 
-    public $filterType = 'all'; // 'all', 'earning', 'cancellation', 'withdraw', 'topup'
+    public $filterType = 'all'; // 'all', 'earning', 'withdraw', 'cancellation'
     public $selectedTransaction = null;
 
     protected $listeners = [
@@ -38,15 +38,14 @@ class Index extends Component
         }
 
         $type = $transaction->type ?? 'earning';
-        $isCredit = in_array($type, ['earning', 'topup', 'refund'], true);
+        $isCredit = in_array($type, ['earning', 'refund'], true);
 
         $typeLabel = match($type) {
             'earning' => 'Pendapatan Bantuan Selesai',
             'cancellation', 'penalty' => 'Pembatalan Tugas',
-            'withdraw' => 'Penarikan Dana (Withdraw)',
-            'topup' => 'Isi Ulang Saldo',
+            'withdraw' => 'Penarikan Saldo (Withdraw)',
             'deduction' => 'Potongan Saldo',
-            'refund' => 'Pengembalian Dana',
+            'refund' => 'Pengembalian / Kompensasi Dana',
             default => 'Transaksi Saldo',
         };
 
@@ -80,7 +79,8 @@ class Index extends Component
     public function render()
     {
         $query = BalanceTransaction::with('help')
-            ->where('user_id', auth()->id());
+            ->where('user_id', auth()->id())
+            ->where('type', '!=', 'topup');
 
         if ($this->filterType === 'earning') {
             $query->where('type', 'earning');
@@ -88,8 +88,6 @@ class Index extends Component
             $query->whereIn('type', ['cancellation', 'penalty']);
         } elseif ($this->filterType === 'withdraw') {
             $query->where('type', 'withdraw');
-        } elseif ($this->filterType === 'topup') {
-            $query->where('type', 'topup');
         }
 
         $transactions = $query->latest()->paginate(10);

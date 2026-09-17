@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AppSetting;
 use App\Models\Help;
 use App\Models\HelpCancelRequest;
+use App\Models\HelpPartnerExclusion;
 use App\Models\User;
 use App\Notifications\HelpStatusNotification;
 use App\Services\Cancellation\CancellationAuditService;
@@ -449,6 +450,8 @@ class HelpCancellationService
                 $this->escrowService->refundFromEscrowDirect($lockedHelp, $customer, $totalPaid, 'Customer Menerima Pembatalan Mitra');
             }
 
+            $partnerId = $lockedHelp->mitra_id;
+
             $lockedHelp->update([
                 'status'         => Help::STATUS_DIBATALKAN,
                 'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
@@ -456,6 +459,10 @@ class HelpCancellationService
                 'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
                 'admin_notes'    => "Customer menyetujui pembatalan dari Mitra. Pengembalian 100% Saldo Escrow berhasil.",
             ]);
+
+            if ($partnerId) {
+                $this->onlineService->releaseBusy($partnerId, $lockedHelp->id);
+            }
 
             // Update tiket cancel request jika ada
             HelpCancelRequest::where('help_id', $lockedHelp->id)
@@ -470,6 +477,84 @@ class HelpCancellationService
                 ]);
 
             Log::info("[HelpCancellationService] Customer #{$customer->id} accepted cancellation for Help #{$lockedHelp->id}.");
+        });
+    }
+
+    /**
+     * Customer memilih mencari rekan jasa pengganti (kembalikan ke pool) saat mitra mengajukan pembatalan.
+     * Syarat: Batas waktu pencarian pesanan (effective_expires_at) belum berakhir.
+     */
+    public function customerRelistPartnerCancellation(Help $help, User $customer): void
+    {
+        DB::transaction(function () use ($help, $customer) {
+            $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
+
+            if ($lockedHelp->user_id !== $customer->id) {
+                throw new \RuntimeException('Hanya customer pemilik pesanan yang dapat mengelola pembatalan.');
+            }
+
+            if ($lockedHelp->status !== Help::STATUS_PARTNER_CANCEL_REQUESTED) {
+                throw new \RuntimeException('Pesanan tidak sedang dalam pengajuan pembatalan mitra.');
+            }
+
+            $effectiveExpiry = $lockedHelp->effective_expires_at;
+            if ($effectiveExpiry && now()->gte($effectiveExpiry)) {
+                throw new \RuntimeException('Batas waktu pencarian pesanan telah berakhir. Silakan pilih opsi Batalkan & Tarik Saldo (Refund 100%).');
+            }
+
+            $oldPartnerId = $lockedHelp->mitra_id;
+
+            // 1. Rekam eksklusi agar mitra yang membatalkan tidak mengambil order yang sama kembali
+            if ($oldPartnerId) {
+                HelpPartnerExclusion::firstOrCreate(
+                    [
+                        'help_id'  => $lockedHelp->id,
+                        'mitra_id' => $oldPartnerId,
+                    ],
+                    [
+                        'reason' => "Customer memilih mencari mitra pengganti atas pembatalan mitra #{$oldPartnerId}.",
+                    ]
+                );
+
+                // 2. Lepaskan status busy mitra lama
+                $this->onlineService->releaseBusy($oldPartnerId, $lockedHelp->id);
+            }
+
+            // 3. Kembalikan tugas ke pool pencarian rekan jasa baru (STATUS_MENUNGGU_MITRA)
+            $lockedHelp->update([
+                'status'                      => Help::STATUS_MENUNGGU_MITRA,
+                'mitra_id'                    => null,
+                'service_stage'               => null,
+                'partner_initial_lat'         => null,
+                'partner_initial_lng'         => null,
+                'partner_current_lat'         => null,
+                'partner_current_lng'         => null,
+                'partner_started_at'          => null,
+                'partner_started_moving_at'   => null,
+                'partner_arrived_at'          => null,
+                'arrived_at'                  => null,
+                'partner_location_updated_at' => null,
+                'cancel_requested_by'         => null,
+                'cancel_deadline_at'          => null,
+                'partner_cancel_reason'       => null,
+                'dispatch_mode'               => Help::DISPATCH_MODE_POOL,
+                'pool_opened_at'              => now(),
+                'admin_notes'                 => "Customer memilih mencari mitra pengganti atas pengajuan kendala Mitra #{$oldPartnerId}. Tugas dialihkan kembali ke pool.",
+            ]);
+
+            // 4. Update tiket audit cancel request jika ada
+            HelpCancelRequest::where('help_id', $lockedHelp->id)
+                ->where('status', HelpCancelRequest::STATUS_PENDING)
+                ->update([
+                    'status'                 => HelpCancelRequest::STATUS_APPROVED,
+                    'settlement_type'        => HelpCancelRequest::SETTLEMENT_RELIST_POOL,
+                    'refund_amount_customer' => 0,
+                    'payout_amount_mitra'    => 0,
+                    'reviewed_at'            => now(),
+                    'admin_notes'            => 'Disetujui oleh Customer untuk mencari rekan jasa pengganti (Kembalikan ke Pool).',
+                ]);
+
+            Log::info("[HelpCancellationService] Customer #{$customer->id} relisted Help #{$lockedHelp->id} back to pool after partner cancel request.");
         });
     }
 
@@ -617,5 +702,94 @@ class HelpCancellationService
                 'admin_notes' => $adminNotes,
             ]
         );
+    }
+
+    /**
+     * Admin membantu memisahkan/membebaskan mitra dari tugas saat customer lambat atau belum merespon pembatalan.
+     * Mitra dilepaskan & dibebaskan dari status BUSY agar dapat langsung menerima pekerjaan lain.
+     * Tugas ditahan (pending / dispatch_mode closed) sehingga TIDAK muncul di pool sampai customer mengonfirmasi.
+     */
+    public function adminUnlinkPartnerAndHoldTask(
+        HelpCancelRequest $request,
+        User $adminUser,
+        ?string $adminNotes = null
+    ): void {
+        DB::transaction(function () use ($request, $adminUser, $adminNotes) {
+            $lockedReq = HelpCancelRequest::where('id', $request->id)->lockForUpdate()->firstOrFail();
+            $help = Help::where('id', $lockedReq->help_id)->lockForUpdate()->firstOrFail();
+
+            $partnerId = $help->mitra_id ?? $lockedReq->partner_id;
+
+            if ($partnerId) {
+                // 1. Rekam eksklusi agar mitra yang bersangkutan tidak otomatis mengambil tugas ini lagi
+                HelpPartnerExclusion::firstOrCreate(
+                    [
+                        'help_id'  => $help->id,
+                        'mitra_id' => $partnerId,
+                    ],
+                    [
+                        'reason' => "Admin memisahkan mitra dari tugas karena customer belum merespons kendala pembatalan.",
+                    ]
+                );
+
+                // 2. Bebaskan status BUSY mitra agar dapat menerima tugas lain
+                $this->onlineService->releaseBusy($partnerId, $help->id);
+            }
+
+            // 3. Update status tugas: lepaskan mitra & kunci pool (closed) agar TIDAK muncul di pool sampai customer konfirmasi
+            $help->update([
+                'mitra_id'                    => null,
+                'service_stage'               => null,
+                'status'                      => Help::STATUS_PARTNER_CANCEL_REQUESTED,
+                'dispatch_mode'               => Help::DISPATCH_MODE_CLOSED,
+                'partner_initial_lat'         => null,
+                'partner_initial_lng'         => null,
+                'partner_current_lat'         => null,
+                'partner_current_lng'         => null,
+                'partner_started_at'          => null,
+                'partner_started_moving_at'   => null,
+                'partner_arrived_at'          => null,
+                'arrived_at'                  => null,
+                'partner_location_updated_at' => null,
+                'admin_notes'                 => ($help->admin_notes ? $help->admin_notes . ' | ' : '') . "Admin #{$adminUser->id} ({$adminUser->name}) memisahkan Mitra #{$partnerId}. Tugas ditahan (pending) hingga Customer mengonfirmasi.",
+            ]);
+
+            // 4. Update tiket cancel request
+            $lockedReq->update([
+                'reviewed_by'     => $adminUser->id,
+                'reviewed_at'     => now(),
+                'admin_notes'     => ($lockedReq->admin_notes ? $lockedReq->admin_notes . ' | ' : '') . ($adminNotes ?: "Mitra dipisahkan & dibebaskan oleh Admin. Tugas ditahan menunggu respon Customer."),
+                'settlement_type' => HelpCancelRequest::SETTLEMENT_PARTNER_UNLINKED_HELD,
+            ]);
+
+            // 5. Kirim notifikasi ke Mitra & Customer
+            if ($partner = User::find($partnerId)) {
+                try {
+                    $partner->notify(new HelpStatusNotification(
+                        $help,
+                        null,
+                        'partner_unlinked_free',
+                        $partner
+                    ));
+                } catch (\Throwable $e) {
+                    Log::warning("[HelpCancellationService] Failed notifying partner of unlinking: " . $e->getMessage());
+                }
+            }
+
+            if ($customer = $help->user) {
+                try {
+                    $customer->notify(new HelpStatusNotification(
+                        $help,
+                        null,
+                        'partner_cancel_requested',
+                        $partner ?? null
+                    ));
+                } catch (\Throwable $e) {
+                    Log::warning("[HelpCancellationService] Failed notifying customer of unlinking: " . $e->getMessage());
+                }
+            }
+
+            Log::info("[HelpCancellationService] Admin #{$adminUser->id} unlinked Partner #{$partnerId} from Help #{$help->id}. Task held pending customer confirmation.");
+        });
     }
 }

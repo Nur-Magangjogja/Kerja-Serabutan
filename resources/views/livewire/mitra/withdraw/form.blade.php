@@ -10,23 +10,27 @@
 
     <!-- Header Bar -->
     <div class="px-4 py-3.5 bg-gradient-to-r from-[#0098e7] via-[#0077cc] to-[#0060b0] text-white shadow-xs rounded-b-2xl">
-        <div class="relative flex items-center justify-center min-h-[40px]">
-            <a href="{{ route('mitra.dashboard') }}" wire:navigate class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/15 rounded-xl transition cursor-pointer" aria-label="Kembali">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
-            </a>
+        <div class="flex items-center justify-between min-h-[40px]">
+            <div class="w-10 flex items-center">
+                <a href="{{ route('mitra.dashboard') }}" wire:navigate class="p-2 hover:bg-white/15 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white" aria-label="Kembali">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </a>
+            </div>
 
-            <div class="text-center w-full min-w-0 px-12">
+            <div class="text-center flex-1 min-w-0 px-2">
                 <h1 class="text-sm font-bold tracking-tight truncate">Tarik Saldo Mitra</h1>
                 <p class="text-[11px] text-white/80 truncate">Cairkan pendapatan ke rekening / e-wallet</p>
             </div>
 
-            <a href="{{ route('mitra.withdraw.history') }}" wire:navigate class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/15 rounded-xl transition cursor-pointer" title="Riwayat Penarikan" aria-label="Riwayat">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-            </a>
+            <div class="w-10 flex items-center justify-end">
+                <a href="{{ route('mitra.withdraw.history') }}" wire:navigate class="p-2 hover:bg-white/15 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white" title="Riwayat Penarikan" aria-label="Riwayat">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </a>
+            </div>
         </div>
     </div>
 

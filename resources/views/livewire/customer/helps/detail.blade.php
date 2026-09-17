@@ -92,19 +92,22 @@
         <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
         <div class="relative z-10 max-w-md mx-auto">
-            <div class="relative flex items-center justify-center min-h-[40px] text-white">
-                <a href="{{ route('customer.helps.index') }}" wire:navigate class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center" title="Kembali">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                </a>
-                <div class="text-center w-full min-w-0 px-12">
+            <div class="flex items-center justify-between min-h-[40px] text-white">
+                <div class="w-10 flex items-center">
+                    <a href="{{ route('customer.helps.index') }}" wire:navigate class="p-2 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white" title="Kembali" aria-label="Kembali">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </a>
+                </div>
+
+                <div class="text-center flex-1 min-w-0 px-2">
                     <h1 class="text-base font-bold truncate">Detail Pesanan</h1>
                     <p class="text-xs text-white font-medium truncate mt-0.5">Detail permintaan bantuan Anda</p>
                 </div>
 
-                <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center justify-end">
-                    <button wire:click="loadHelp" wire:loading.attr="disabled" title="Segarkan Status" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center">
+                <div class="w-10 flex items-center justify-end">
+                    <button wire:click="loadHelp" wire:loading.attr="disabled" title="Segarkan Status" aria-label="Segarkan Status" class="p-2 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white">
                         <svg wire:loading.remove wire:target="loadHelp" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
@@ -176,6 +179,42 @@
                             Pembayaran Anda sebesar <strong>Rp {{ number_format($help->total_amount > 0 ? $help->total_amount : $help->amount, 0, ',', '.') }}</strong> saat ini aman ditahan oleh sistem. Jika hingga batas waktu di atas tidak ada mitra yang mengambil, tugas akan otomatis berakhir dan dana langsung 100% dikembalikan ke saldo dompet Anda.
                         </p>
                     </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- Review Banner (Khusus Status Pengajuan Batal / Kendala Lapangan oleh Mitra - Konsep 2) --}}
+        @if($help->status === 'partner_cancel_requested')
+            @php
+                $effectiveExpiry = $help->effective_expires_at;
+                $isSearchExpired = $effectiveExpiry ? now()->gte($effectiveExpiry) : false;
+                $reasonText = $help->partner_cancel_reason ?: ($help->cancel_reason ?: 'Kendala lapangan saat proses pengerjaan');
+            @endphp
+            <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 rounded-2xl p-4 mb-3.5 shadow-xs space-y-2.5 animate-in fade-in duration-200">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                            ⚠️
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xs sm:text-sm text-rose-950 dark:text-rose-100 leading-tight">
+                                Mitra Melaporkan Kendala Lapangan
+                            </h3>
+                            <p class="text-[11px] text-rose-700 dark:text-rose-300">Pengajuan pembatalan / kendala pengerjaan mitra</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-200 border border-rose-300 dark:border-rose-700">
+                        Menunggu Keputusan Anda
+                    </span>
+                </div>
+
+                <p class="text-xs text-rose-900/90 dark:text-rose-200/90 leading-relaxed">
+                    Mitra <strong>{{ $help->mitra?->name ?? 'Mitra' }}</strong> melaporkan kendala dan mengajukan pembatalan. Anda dapat memilih untuk <strong>mencari rekan jasa pengganti</strong> (mengembalikan pesanan ke pool daftar mitra) atau <strong>menyetujui pembatalan (refund saldo 100%)</strong> pada panel di bagian bawah.
+                </p>
+
+                <div class="p-2.5 bg-white/80 dark:bg-gray-800/80 rounded-xl border border-rose-200/70 dark:border-rose-800/60 text-xs">
+                    <span class="font-bold text-gray-700 dark:text-gray-300 block mb-0.5 text-[11px]">Alasan Dilaporkan Mitra:</span>
+                    <span class="text-rose-700 dark:text-rose-400 font-semibold italic">"{{ $reasonText }}"</span>
                 </div>
             </div>
         @endif
@@ -1157,25 +1196,83 @@
                 </button>
             </div>
         @elseif($help->status === 'partner_cancel_requested')
-            <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mt-3 space-y-3">
-                <div class="flex items-start gap-2.5">
-                    <span class="text-xl leading-none">⚠️</span>
-                    <div>
-                        <h4 class="font-bold text-sm text-amber-900 dark:text-amber-200">Mitra Mengajukan Pembatalan</h4>
-                        <p class="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
-                            Alasan: <strong>"{{ $help->partner_cancel_reason ?? 'Kendala lapangan' }}"</strong>
+            @php
+                $effectiveExpiry = $help->effective_expires_at;
+                $isSearchExpired = $effectiveExpiry ? now()->gte($effectiveExpiry) : false;
+                $cancelReasonText = $help->partner_cancel_reason ?: ($help->cancel_reason ?: 'Kendala lapangan saat proses bantuan');
+            @endphp
+            <div class="bg-white dark:bg-gray-800 border-2 border-amber-300/80 dark:border-amber-600/70 rounded-2xl p-4 sm:p-5 mt-3 shadow-md space-y-4 animate-in fade-in duration-200">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800 shadow-2xs font-bold text-lg">
+                        ⚠️
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2 flex-wrap mb-0.5">
+                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Konfirmasi Pembatalan dari Mitra</h4>
+                            <span class="text-[10px] font-extrabold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-700">
+                                Butuh Respon Anda
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                            Mitra <strong class="text-gray-900 dark:text-white">{{ $help->mitra?->name ?? 'Mitra' }}</strong> melaporkan kendala dan tidak dapat melanjutkan tugas ini.
                         </p>
-                        @if($help->cancel_deadline_at)
-                            <p class="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
-                                Batas konfirmasi otomatis: {{ $help->cancel_deadline_at->diffForHumans() }}. Jika tidak dikonfirmasi, order otomatis batal & saldo kembali 100%.
-                            </p>
-                        @endif
                     </div>
                 </div>
-                <div class="flex gap-2 pt-1">
-                    <button wire:click="acceptPartnerCancel" wire:loading.attr="disabled" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1">
-                        <span wire:loading.remove wire:target="acceptPartnerCancel">✓ Terima Pembatalan (Refund 100% Saldo)</span>
-                        <span wire:loading wire:target="acceptPartnerCancel">Memproses...</span>
+
+                {{-- Box Alasan & Catatan Mitra --}}
+                <div class="p-3 bg-amber-50/80 dark:bg-amber-950/40 rounded-xl border border-amber-200/80 dark:border-amber-800/60 text-xs space-y-1.5">
+                    <div class="flex items-start gap-1.5">
+                        <span class="font-bold text-amber-950 dark:text-amber-200 shrink-0 text-[11px]">Alasan Mitra:</span>
+                        <span class="text-amber-900 dark:text-amber-300 font-semibold italic">"{{ $cancelReasonText }}"</span>
+                    </div>
+                    @if($help->cancel_deadline_at)
+                        <p class="text-[10.5px] text-amber-700 dark:text-amber-400 pt-1 border-t border-amber-200/60 dark:border-amber-800/40">
+                            ⏳ Batas respon otomatis: <strong>{{ $help->cancel_deadline_at->diffForHumans() }}</strong>. Jika belum direspon, sistem otomatis membatalkan & refund 100%.
+                        </p>
+                    @endif
+                </div>
+
+                {{-- Opsi Aksi Customer --}}
+                <div class="space-y-2.5 pt-1">
+                    {{-- Opsi 1: Relist ke Pool (Cari Pengganti) --}}
+                    @if(!$isSearchExpired)
+                        <button wire:click="relistPartnerCancel" 
+                                wire:loading.attr="disabled"
+                                class="w-full py-3 px-4 bg-gradient-to-r from-primary-600 to-sky-600 hover:from-primary-700 hover:to-sky-700 active:scale-[0.99] text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-primary-500/20 flex items-center justify-center gap-2 cursor-pointer">
+                            <span wire:loading.remove wire:target="relistPartnerCancel" class="flex items-center gap-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                <span>Cari Rekan Jasa Lain (Kembalikan ke Pool)</span>
+                            </span>
+                            <span wire:loading wire:target="relistPartnerCancel" class="inline-flex items-center gap-1.5">
+                                <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span>Mengembalikan ke Pool...</span>
+                            </span>
+                        </button>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center px-1">
+                            Tugas Anda akan langsung ditayangkan kembali untuk dicari oleh mitra lain. Saldo Anda tetap aman tersimpan.
+                        </p>
+                    @else
+                        <div class="p-2.5 bg-gray-100 dark:bg-gray-750 rounded-xl text-center text-xs text-gray-600 dark:text-gray-300">
+                            ⏱️ <em>Batas waktu pencarian awal pesanan ini telah berakhir. Opsi pencarian pengganti dinonaktifkan.</em>
+                        </div>
+                    @endif
+
+                    {{-- Opsi 2: Terima Pembatalan & Full Refund --}}
+                    <button wire:click="acceptPartnerCancel" 
+                            wire:loading.attr="disabled"
+                            class="w-full py-2.5 px-4 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span wire:loading.remove wire:target="acceptPartnerCancel" class="flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            <span>Batalkan & Tarik Saldo (Refund 100%)</span>
+                        </span>
+                        <span wire:loading wire:target="acceptPartnerCancel" class="inline-flex items-center gap-1.5">
+                            <svg class="animate-spin h-3.5 w-3.5 text-rose-600 dark:text-rose-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <span>Memproses Refund...</span>
+                        </span>
                     </button>
                 </div>
             </div>
@@ -1467,14 +1564,34 @@
                         </div>
 
                         <div>
-                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Foto Bukti (Opsional)</label>
-                            <input type="file" wire:model="customerCancelPhoto" accept="image/*" class="w-full p-2 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl">
-                            @error('customerCancelPhoto') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                                Foto Bukti Kendala <span class="text-rose-500 font-bold">* Wajib</span>
+                            </label>
+                            @if ($customerCancelPhoto)
+                                <div class="relative rounded-xl overflow-hidden border border-rose-300 dark:border-rose-700 bg-white dark:bg-gray-800 p-2 mb-2 flex items-center justify-between">
+                                    <span class="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[240px]">
+                                        📸 {{ method_exists($customerCancelPhoto, 'getClientOriginalName') ? $customerCancelPhoto->getClientOriginalName() : 'Foto bukti terpilih' }}
+                                    </span>
+                                    <button type="button" wire:click="$set('customerCancelPhoto', null)" class="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer">
+                                        Hapus
+                                    </button>
+                                </div>
+                            @else
+                                <input type="file" wire:model="customerCancelPhoto" accept="image/*" class="w-full p-2 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl cursor-pointer text-gray-700 dark:text-gray-200 file:mr-2.5 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 dark:file:bg-rose-950 dark:file:text-rose-300">
+                            @endif
+                            <div wire:loading wire:target="customerCancelPhoto" class="text-[11px] text-blue-600 font-medium mt-1 flex items-center gap-1.5">
+                                <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                Mengunggah foto bukti...
+                            </div>
+                            @error('customerCancelPhoto') <p class="text-xs text-red-500 font-semibold mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
-                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Catatan Tambahan (Opsional)</label>
-                            <textarea wire:model="customerCancelNotes" rows="2" placeholder="Jelaskan alasan penarikan kepada mitra & admin..." class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white"></textarea>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                                Catatan Tambahan <span class="text-rose-500 font-bold">* Wajib</span>
+                            </label>
+                            <textarea wire:model="customerCancelNotes" rows="2" placeholder="Jelaskan alasan penarikan kepada mitra & admin..." class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition"></textarea>
+                            @error('customerCancelNotes') <p class="text-xs text-red-500 font-semibold mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="flex items-center gap-2 pt-1">

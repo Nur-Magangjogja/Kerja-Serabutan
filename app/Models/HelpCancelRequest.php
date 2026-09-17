@@ -36,6 +36,7 @@ class HelpCancelRequest extends Model
     public const SETTLEMENT_ITEM_SETTLED       = 'item_settled';
     public const SETTLEMENT_NO_REFUND          = 'no_refund';
     public const SETTLEMENT_RELIST_POOL        = 'relist_pool';
+    public const SETTLEMENT_PARTNER_UNLINKED_HELD = 'partner_unlinked_held';
 
     protected $fillable = [
         'help_id',

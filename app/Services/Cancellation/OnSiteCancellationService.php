@@ -79,6 +79,8 @@ class OnSiteCancellationService
             $chatCount   = Chat::where('help_id', $lockedHelp->id)->count();
             $lastChat    = Chat::where('help_id', $lockedHelp->id)->where('sender_type', 'mitra')->latest()->value('created_at');
 
+            $isWorkStarted = ($lockedHelp->status === Help::STATUS_IN_PROGRESS || in_array($lockedHelp->service_stage, ['in_progress', 'at_customer', 'at_destination'], true));
+
             // 2. Rekam eksklusi mitra pada order ini
             HelpPartnerExclusion::firstOrCreate(
                 [
@@ -90,7 +92,78 @@ class OnSiteCancellationService
                 ]
             );
 
-            // 3. Relist order kembali ke pool pencarian mitra baru
+            // ─────────────────────────────────────────────────────────────────
+            // KONSEP 2: Mitra membatalkan tugas SETELAH menekan "Mulai Pekerjaan" (in_progress).
+            // Alur:
+            // 1. Kunci status tugas ke STATUS_PARTNER_CANCEL_REQUESTED (tidak dilempar langsung ke pool).
+            // 2. Buat tiket HelpCancelRequest dengan cancellation_stage = 'in_progress'.
+            // 3. Admin Wilayah wajib meninjau & menghubungi Customer terlebih dahulu untuk klarifikasi dan kesepakatan refund.
+            // ─────────────────────────────────────────────────────────────────
+            if ($isWorkStarted) {
+                $lockedHelp->update([
+                    'status'                      => Help::STATUS_PARTNER_CANCEL_REQUESTED,
+                    'cancel_requested_by'         => 'partner',
+                    'partner_cancel_requested_at' => now(),
+                    'partner_cancel_reason'       => $reason,
+                    'cancel_deadline_at'          => now()->addHours(24),
+                    'cancel_evidence_photo'       => $evidencePhotoPath,
+                    'admin_notes'                 => "Mitra #{$mitra->id} mengajukan kendala lapangan (Konsep 2 - Pengerjaan Dimulai): {$reason}. Menunggu klarifikasi Admin ke Customer.",
+                ]);
+
+                $cancelRequest = HelpCancelRequest::create([
+                    'help_id'               => $lockedHelp->id,
+                    'requester_type'        => HelpCancelRequest::REQUESTER_PARTNER,
+                    'action_type'           => HelpCancelRequest::ACTION_PARTNER_INCIDENT,
+                    'cancellation_stage'    => 'in_progress',
+                    'partner_id'            => $mitra->id,
+                    'customer_id'           => $lockedHelp->user_id,
+                    'district_id'           => $lockedHelp->district_id,
+                    'previous_status'       => $prevStatus,
+                    'previous_stage'        => $prevStage,
+                    'reason'                => $reason,
+                    'notes'                 => $notes,
+                    'evidence_photo'        => $evidencePhotoPath,
+                    'partner_start_lat'     => $startLat ?: null,
+                    'partner_start_lng'     => $startLng ?: null,
+                    'partner_cancel_lat'    => $cancelLat ?: null,
+                    'partner_cancel_lng'    => $cancelLng ?: null,
+                    'partner_moved_km'      => $partnerMovedKm,
+                    'distance_to_target_km' => $distToTargetKm,
+                    'time_elapsed_minutes'  => $timeElapsed,
+                    'chat_messages_count'   => $chatCount,
+                    'partner_last_chat_at'  => $lastChat,
+                    'status'                => HelpCancelRequest::STATUS_PENDING,
+                    'settlement_type'       => HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+                    'sp_target'             => HelpCancelRequest::SP_TARGET_NONE,
+                    'requested_at'          => now(),
+                    'expires_at'            => now()->addHours(24),
+                ]);
+
+                // Pastikan status online mitra tetap terkunci ke BUSY agar tidak dapat mengambil tugas lain sementara waktu
+                $this->onlineService->markBusy($mitra->id, $lockedHelp->id);
+
+                Log::info("[OnSiteCancellationService] Mitra on-site cancel (Konsep 2). Locked in partner_cancel_requested & BUSY state, waiting admin & customer clarification.", [
+                    'help_id'           => $lockedHelp->id,
+                    'mitra_id'          => $mitra->id,
+                    'cancel_request_id' => $cancelRequest->id,
+                ]);
+
+                return [
+                    'success'           => true,
+                    'relisted'          => false,
+                    'under_review'      => true,
+                    'cancel_request_id' => $cancelRequest->id,
+                    'message'           => 'Pengajuan kendala pengerjaan (Konsep 2) berhasil dikirim. Admin Wilayah akan menghubungi Customer terlebih dahulu untuk konfirmasi dan proses kesepakatan refund.',
+                ];
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // KONSEP 1: Mitra membatalkan tugas SEBELUM mulai pengerjaan (saat perjalanan/tiba).
+            // Alur:
+            // 1. Relist order kembali ke pool pencarian mitra baru.
+            // 2. Bebaskan status BUSY mitra.
+            // 3. Buat tiket audit HelpCancelRequest (cancellation_stage = 'transit') untuk evaluasi SP Admin.
+            // ─────────────────────────────────────────────────────────────────
             $lockedHelp->update([
                 'status'                      => Help::STATUS_MENUNGGU_MITRA,
                 'mitra_id'                    => null,
@@ -108,14 +181,15 @@ class OnSiteCancellationService
                 'pool_opened_at'              => now(),
             ]);
 
-            // 4. Bebaskan status BUSY mitra
+            // Bebaskan status BUSY mitra
             $this->onlineService->releaseBusy($mitra->id, $lockedHelp->id);
 
-            // 5. Buat tiket audit untuk Admin Wilayah
+            // Buat tiket audit untuk Admin Wilayah
             $cancelRequest = HelpCancelRequest::create([
                 'help_id'               => $lockedHelp->id,
                 'requester_type'        => HelpCancelRequest::REQUESTER_PARTNER,
                 'action_type'           => HelpCancelRequest::ACTION_PARTNER_INCIDENT,
+                'cancellation_stage'    => 'transit',
                 'partner_id'            => $mitra->id,
                 'customer_id'           => $lockedHelp->user_id,
                 'district_id'           => $lockedHelp->district_id,
@@ -140,7 +214,7 @@ class OnSiteCancellationService
                 'expires_at'            => now()->addHours(24),
             ]);
 
-            Log::info("[OnSiteCancellationService] Mitra incident cancel. Relisted to pool, audit ticket created.", [
+            Log::info("[OnSiteCancellationService] Mitra incident cancel (Konsep 1). Relisted to pool, audit ticket created.", [
                 'help_id'           => $lockedHelp->id,
                 'mitra_id'          => $mitra->id,
                 'cancel_request_id' => $cancelRequest->id,

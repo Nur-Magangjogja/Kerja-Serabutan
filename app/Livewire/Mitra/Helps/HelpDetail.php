@@ -329,13 +329,18 @@ class HelpDetail extends Component
     {
         $this->validate([
             'partnerCancelReason'   => 'required|string|min:3|max:255',
-            'partnerCancelNotes'    => 'nullable|string|max:1000',
-            'cancel_evidence_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'partnerCancelNotes'    => 'required|string|min:5|max:1000',
+            'cancel_evidence_photo' => 'required|image|mimes:jpg,jpeg,png|max:5120',
         ], [
-            'partnerCancelReason.required' => 'Pilih atau isi alasan pembatalan.',
-            'partnerCancelReason.min'      => 'Alasan pembatalan minimal 3 karakter.',
-            'cancel_evidence_photo.image'  => 'Foto bukti harus berupa file gambar (JPG/PNG).',
-            'cancel_evidence_photo.max'    => 'Ukuran foto bukti maksimal 5MB.',
+            'partnerCancelReason.required'   => 'Pilih atau isi alasan pembatalan.',
+            'partnerCancelReason.min'        => 'Alasan pembatalan minimal 3 karakter.',
+            'cancel_evidence_photo.required' => 'Foto bukti kendala wajib diunggah.',
+            'cancel_evidence_photo.image'    => 'Foto bukti harus berupa file gambar (JPG/PNG).',
+            'cancel_evidence_photo.mimes'    => 'Format foto bukti harus JPG, JPEG, atau PNG.',
+            'cancel_evidence_photo.max'      => 'Ukuran foto bukti maksimal 5MB.',
+            'partnerCancelNotes.required'    => 'Catatan tambahan kendala wajib diisi.',
+            'partnerCancelNotes.min'         => 'Catatan tambahan minimal 5 karakter.',
+            'partnerCancelNotes.max'         => 'Catatan tambahan maksimal 1000 karakter.',
         ]);
 
         try {
@@ -343,6 +348,8 @@ class HelpDetail extends Component
             if ($this->cancel_evidence_photo) {
                 $evidencePath = $this->cancel_evidence_photo->store('cancel_evidence', 'public');
             }
+
+            $wasInProgress = ($this->help->status === 'in_progress');
 
             app(\App\Services\HelpCancellationService::class)->submitPartnerCancelRequest(
                 $this->help,
@@ -356,8 +363,14 @@ class HelpDetail extends Component
             );
 
             $this->showPartnerCancelModal = false;
-            session()->flash('message', 'Tugas berhasil dibatalkan. Akun Anda telah aktif kembali untuk menerima pekerjaan lain.');
-            return $this->redirectRoute('mitra.dashboard');
+
+            if ($wasInProgress) {
+                $this->loadHelp();
+                session()->flash('message', 'Pengajuan kendala pengerjaan (Konsep 2) berhasil dikirim. Menunggu peninjauan Admin Wilayah dan klarifikasi dengan Customer.');
+            } else {
+                session()->flash('message', 'Tugas berhasil dibatalkan dan dialihkan ke pencarian mitra lain. Akun Anda telah aktif kembali.');
+                return $this->redirectRoute('mitra.dashboard');
+            }
         } catch (\RuntimeException $e) {
             $this->showPartnerCancelModal = false;
             session()->flash('error', $e->getMessage());

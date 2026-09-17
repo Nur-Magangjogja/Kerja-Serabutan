@@ -11,27 +11,25 @@
             }
         }
 
-        @keyframes slideInUp {
+        @keyframes fadeIn {
             from {
-                transform: translateY(20px);
                 opacity: 0;
             }
             to {
-                transform: translateY(0);
                 opacity: 1;
             }
         }
 
         .stats-card {
-            animation: scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+            animation: fadeIn 0.4s ease-out backwards;
         }
 
         .avatar-container {
-            animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+            animation: fadeIn 0.4s ease-out backwards;
         }
 
         .logout-modal-content {
-            animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: fadeIn 0.25s ease-out;
         }
     </style>
 
@@ -47,12 +45,12 @@
             <div class="absolute bottom-0 left-0 w-36 h-36 bg-white/5 rounded-full blur-xl -ml-12 -mb-12 pointer-events-none"></div>
             
             <div class="relative z-10">
-                <div class="relative flex items-center justify-center text-white mb-4 min-h-[40px]">
-                    <div class="text-center w-full min-w-0 px-12">
+                <div class="flex items-center justify-between text-white mb-4 min-h-[40px]">
+                    <div class="w-10"></div>
+                    <div class="text-center flex-1 min-w-0 px-2">
                         <h1 class="text-base font-bold truncate">Profil Saya</h1>
                     </div>
-
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                    <div class="w-10 flex items-center justify-end">
                         <x-mitra.notification-icon />
                     </div>
                 </div>
@@ -121,7 +119,7 @@
                     </svg>
                 </x-profile-menu-item>
 
-                <x-profile-menu-item :href="route('mitra.transactions.index')" title="Riwayat Mutasi Saldo" subtitle="Catatan pendapatan & mutasi saldo" iconBg="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                <x-profile-menu-item :href="route('mitra.transactions.index')" title="Riwayat Mutasi" subtitle="Catatan pendapatan & mutasi saldo" iconBg="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                     </svg>

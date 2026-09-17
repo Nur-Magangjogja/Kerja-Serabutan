@@ -50,7 +50,7 @@ class HelpStatusNotification extends Notification
             Help::STATUS_CUSTOMER_CANCEL_REQUESTED => "Pengajuan Pembatalan Customer",
             'cancel_accepted'                   => "Pembatalan Diterima",
             'cancel_rejected'                   => "Pembatalan Ditolak",
-            'customer_cancelled_during_matching', 'customer_cancelled' => "Pesanan Bantuan Dibatalkan Pemesan",
+            'partner_unlinked_free'             => "🔓 Anda Telah Dibebaskan dari Tugas",
             Help::STATUS_DIBATALKAN             => "Bantuan Dibatalkan",
             default                             => "Pembaruan Status Bantuan"
         };
@@ -70,6 +70,7 @@ class HelpStatusNotification extends Notification
             'cancel_accepted'                   => "Permintaan pembatalan telah diterima. Kami sedang mencari Rekan Jasa lain untuk Anda.",
             'cancel_rejected'                   => "Permintaan pembatalan ditolak. Pekerjaan akan tetap dilanjutkan.",
             'customer_cancelled_during_matching', 'customer_cancelled' => "Permintaan bantuan '{$this->help->title}' telah dibatalkan oleh pemesan saat proses pencarian. Radar Anda otomatis kembali mencari order lain.",
+            'partner_unlinked_free'             => "Admin telah memisahkan Anda dari tugas '{$this->help->title}'. Status sibuk Anda telah dibebaskan dan Anda kini dapat menerima tugas baru kembali.",
             Help::STATUS_DIBATALKAN             => "Permintaan bantuan '{$this->help->title}' telah dibatalkan.",
             default                             => "Status bantuan '{$this->help->title}' kini menjadi: {$this->newStatus}."
         };

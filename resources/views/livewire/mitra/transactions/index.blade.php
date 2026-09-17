@@ -5,13 +5,21 @@
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
             
             <div class="relative z-10">
-                <div class="relative flex items-center justify-center min-h-[40px] text-white">
-                    <div class="text-center w-full min-w-0 px-12">
-                        <h1 class="text-base font-bold truncate">Riwayat Mutasi Saldo</h1>
+                <div class="flex items-center justify-between min-h-[40px] text-white">
+                    <div class="w-10 flex items-center">
+                        <a href="{{ route('mitra.profile') }}" wire:navigate aria-label="Kembali ke Profil" class="p-2 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </a>
+                    </div>
+
+                    <div class="text-center flex-1 min-w-0 px-2">
+                        <h1 class="text-base font-bold truncate">Riwayat Mutasi</h1>
                         <p class="text-xs text-white/90 truncate mt-0.5">Pendapatan & penarikan saldo</p>
                     </div>
 
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                    <div class="w-10 flex items-center justify-end">
                         <x-mitra.notification-icon />
                     </div>
                 </div>
@@ -20,23 +28,18 @@
 
         <!-- Filter Tabs (Modern Glassmorphic Segmented Control) -->
         <div class="px-5 pt-3.5">
-            <div class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-1.5 rounded-2xl shadow-xs border border-gray-200/70 dark:border-gray-700/80 space-y-1.5">
-                <div class="grid grid-cols-3 gap-1.5">
-                    <button wire:click="setFilter('all')" class="group py-2 px-2 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 {{ $filterType === 'all' ? 'bg-gradient-to-r from-primary-600 to-sky-600 text-white shadow-md shadow-primary-500/25 ring-2 ring-primary-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
+            <div class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-1.5 rounded-2xl shadow-xs border border-gray-200/70 dark:border-gray-700/80">
+                <div class="grid grid-cols-4 gap-1.5">
+                    <button wire:click="setFilter('all')" class="group py-2 px-1 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center {{ $filterType === 'all' ? 'bg-gradient-to-r from-primary-600 to-sky-600 text-white shadow-md shadow-primary-500/25 ring-2 ring-primary-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
                         <span>Semua</span>
                     </button>
-                    <button wire:click="setFilter('earning')" class="group py-2 px-2 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 {{ $filterType === 'earning' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
+                    <button wire:click="setFilter('earning')" class="group py-2 px-1 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center {{ $filterType === 'earning' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
                         <span>Pendapatan</span>
                     </button>
-                    <button wire:click="setFilter('withdraw')" class="group py-2 px-2 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 {{ $filterType === 'withdraw' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25 ring-2 ring-blue-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
+                    <button wire:click="setFilter('withdraw')" class="group py-2 px-1 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center {{ $filterType === 'withdraw' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25 ring-2 ring-blue-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
                         <span>Penarikan</span>
                     </button>
-                </div>
-                <div class="grid grid-cols-2 gap-1.5">
-                    <button wire:click="setFilter('topup')" class="group py-2 px-2 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 {{ $filterType === 'topup' ? 'bg-gradient-to-r from-primary-600 to-sky-600 text-white shadow-md shadow-primary-500/25 ring-2 ring-primary-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span>Top Up</span>
-                    </button>
-                    <button wire:click="setFilter('cancellation')" class="group py-2 px-2 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 {{ ($filterType === 'cancellation' || $filterType === 'penalty') ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-md shadow-rose-500/25 ring-2 ring-rose-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
+                    <button wire:click="setFilter('cancellation')" class="group py-2 px-1 rounded-xl text-xs font-bold text-center transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center {{ ($filterType === 'cancellation' || $filterType === 'penalty') ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-md shadow-rose-500/25 ring-2 ring-rose-500/20' : 'bg-gray-50 dark:bg-gray-750/80 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
                         <span>Pembatalan</span>
                     </button>
                 </div>
@@ -52,13 +55,12 @@
                             $type = $t->type ?? 'earning';
                             $isPending = in_array($t->status, ['waiting_approval', 'pending']);
                             $isCancelled = ($t->status === 'cancelled');
-                            $isCredit = in_array($type, ['earning', 'topup', 'refund'], true);
+                            $isCredit = in_array($type, ['earning', 'refund'], true);
 
                             $typeLabel = match($type) {
                                 'earning' => 'Pendapatan Bantuan',
                                 'cancellation', 'penalty' => 'Pembatalan Tugas',
                                 'withdraw' => 'Penarikan Saldo (Withdraw)',
-                                'topup' => 'Top Up Saldo',
                                 'deduction' => 'Potongan Saldo',
                                 'refund' => 'Pengembalian Dana',
                                 default => 'Transaksi Saldo',
@@ -90,12 +92,6 @@
                                         <div class="w-11 h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-50 dark:from-blue-950/80 dark:to-indigo-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/50 shadow-2xs group-hover:scale-105 transition-transform">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                            </svg>
-                                        </div>
-                                    @elseif($type === 'topup')
-                                        <div class="w-11 h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br from-emerald-100 to-teal-50 dark:from-emerald-950/80 dark:to-teal-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50 shadow-2xs group-hover:scale-105 transition-transform">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m0 0l-4-4m4 4l4-4" />
                                             </svg>
                                         </div>
                                     @else

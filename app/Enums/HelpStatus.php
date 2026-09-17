@@ -29,6 +29,8 @@ enum HelpStatus: string
             self::PARTNER_ON_THE_WAY->value,
             self::PARTNER_ARRIVED->value,
             self::IN_PROGRESS->value,
+            self::PARTNER_CANCEL_REQUESTED->value,
+            self::CUSTOMER_CANCEL_REQUESTED->value,
         ];
     }
 
@@ -44,6 +46,8 @@ enum HelpStatus: string
             self::PARTNER_ON_THE_WAY,
             self::PARTNER_ARRIVED,
             self::IN_PROGRESS,
+            self::PARTNER_CANCEL_REQUESTED,
+            self::CUSTOMER_CANCEL_REQUESTED,
         ];
     }
 

@@ -7,7 +7,7 @@
 
             <div class="relative z-10 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <button wire:click="closeChat" aria-label="Kembali ke Daftar Percakapan" class="p-2 -ml-1 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center">
+                    <button wire:click="closeChat" aria-label="Kembali ke Daftar Percakapan" class="p-2 -ml-1 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                         </svg>
@@ -51,7 +51,7 @@
 
             <div class="relative z-10 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <a href="{{ route('customer.dashboard') }}" wire:navigate aria-label="Kembali ke Beranda" class="p-2 -ml-1 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center">
+                    <a href="{{ route('customer.dashboard') }}" wire:navigate aria-label="Kembali ke Beranda" class="p-2 -ml-1 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                         </svg>
@@ -197,7 +197,7 @@
                 <!-- Left: Back Button + Avatar + Name -->
                 <div class="flex items-center gap-2.5 min-w-0 flex-1">
                     <button wire:click="closeChat" aria-label="Kembali ke Daftar Percakapan"
-                        class="p-1.5 -ml-1 hover:bg-white/20 rounded-xl transition cursor-pointer flex-shrink-0 flex items-center justify-center">
+                        class="p-1.5 -ml-1 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex-shrink-0 flex items-center justify-center">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                         </svg>

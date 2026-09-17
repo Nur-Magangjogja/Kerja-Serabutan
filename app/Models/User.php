@@ -832,6 +832,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(\App\Models\PartnerActivity::class, 'user_id')->latestOfMany();
     }
 
+    public function activityLogs()
+    {
+        return $this->hasMany(\App\Models\ActivityLog::class, 'user_id');
+    }
+
+    public function latestActivityLog()
+    {
+        return $this->hasOne(\App\Models\ActivityLog::class, 'user_id')->latestOfMany();
+    }
+
 
 
 

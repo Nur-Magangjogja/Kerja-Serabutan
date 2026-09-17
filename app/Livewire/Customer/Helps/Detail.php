@@ -260,12 +260,18 @@ class Detail extends Component
 
         $this->validate([
             'customerCancelReason' => 'required|string|min:5|max:255',
-            'customerCancelNotes'  => 'nullable|string|max:1000',
-            'customerCancelPhoto'  => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'customerCancelNotes'  => 'required|string|min:5|max:1000',
+            'customerCancelPhoto'  => 'required|image|mimes:jpg,jpeg,png|max:5120',
         ], [
             'customerCancelReason.required' => 'Pilih atau isi alasan penarikan pekerjaan.',
             'customerCancelReason.min'      => 'Alasan penarikan minimal 5 karakter.',
+            'customerCancelPhoto.required'  => 'Foto bukti kendala wajib diunggah.',
             'customerCancelPhoto.image'     => 'Foto bukti harus berupa gambar (JPG/PNG).',
+            'customerCancelPhoto.mimes'     => 'Format foto bukti harus JPG, JPEG, atau PNG.',
+            'customerCancelPhoto.max'       => 'Ukuran foto bukti maksimal 5MB.',
+            'customerCancelNotes.required'  => 'Catatan tambahan wajib diisi.',
+            'customerCancelNotes.min'       => 'Catatan tambahan minimal 5 karakter.',
+            'customerCancelNotes.max'       => 'Catatan tambahan maksimal 1000 karakter.',
         ]);
 
         try {
@@ -304,6 +310,20 @@ class Detail extends Component
         } catch (\Throwable $e) {
             Log::error('[CustomerHelpDetail] acceptPartnerCancel error: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat menyetujui pembatalan mitra.');
+        }
+    }
+
+    public function relistPartnerCancel()
+    {
+        try {
+            app(HelpCancellationService::class)->customerRelistPartnerCancellation($this->help, auth()->user());
+            $this->loadHelp();
+            session()->flash('success', 'Tugas berhasil dikembalikan ke pool pencarian. Sistem sedang mencari rekan jasa pengganti untuk Anda.');
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[CustomerHelpDetail] relistPartnerCancel error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat mengembalikan tugas ke pool: ' . $e->getMessage());
         }
     }
 

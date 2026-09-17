@@ -15,9 +15,10 @@
 >
     @php
         $isCompleted = in_array($help->status, ['selesai', 'completed', 'confirmed']);
-        $isCancelled = in_array($help->status, ['dibatalkan', 'cancelled', 'partner_cancel_requested']);
+        $isCancelled = in_array($help->status, ['dibatalkan', 'cancelled']);
+        $isPartnerCancelRequested = ($help->status === 'partner_cancel_requested');
         $isCancelRequested = ($help->status === 'customer_cancel_requested');
-        $isActive = !$isCompleted && !$isCancelled && !$isCancelRequested;
+        $isActive = !$isCompleted && !$isCancelled && !$isCancelRequested && !$isPartnerCancelRequested;
         $customerReview = $help->rating;
         $settlementLabel = match($cancelRequest?->settlement_type ?? null) {
             'full_refund'        => 'Pengembalian Dana Penuh 100% ke Customer',
@@ -57,17 +58,18 @@
 
     {{-- Header Section (Dynamic Theme per Status) --}}
     <div class="px-5 pt-4 pb-5 relative overflow-hidden shadow-sm text-white rounded-b-2xl transition-colors duration-300
-        {{ $isCompleted ? 'bg-emerald-600' : (($isCancelled || $isCancelRequested) ? 'bg-rose-600' : 'bg-[#0098e7]') }}">
+        {{ $isCompleted ? 'bg-emerald-600' : (($isCancelled || $isCancelRequested || $isPartnerCancelRequested) ? 'bg-rose-600' : 'bg-[#0098e7]') }}">
         <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
         <div class="relative z-10 max-w-md mx-auto">
             <div class="relative flex items-center justify-between min-h-[40px] text-white">
                 {{-- Back Navigation Arrow --}}
                 <div class="flex items-center">
-                    <a href="{{ ($isCompleted || $isCancelled) ? route('mitra.helps.completed') : route('mitra.dashboard') }}" 
+                    <a href="{{ $isCancelled ? route('mitra.helps.completed') : route('mitra.dashboard') }}" 
                        wire:navigate
-                       class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center text-white"
-                       title="{{ ($isCompleted || $isCancelled) ? 'Kembali ke Riwayat' : 'Kembali ke Dashboard' }}">
+                       class="p-2 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white"
+                       title="{{ $isCancelled ? 'Kembali ke Riwayat' : 'Kembali ke Dashboard' }}"
+                       aria-label="{{ $isCancelled ? 'Kembali ke Riwayat' : 'Kembali ke Dashboard' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                         </svg>
@@ -82,6 +84,9 @@
                     @elseif($isCancelled)
                         <h1 class="text-base font-bold truncate">Detail Riwayat Pembatalan</h1>
                         <p class="text-xs text-white font-medium truncate mt-0.5">Catatan & keputusan pembatalan</p>
+                    @elseif($isPartnerCancelRequested)
+                        <h1 class="text-base font-bold truncate">Pengajuan Kendala Lapangan</h1>
+                        <p class="text-xs text-white font-medium truncate mt-0.5">Menunggu peninjauan & konfirmasi Admin</p>
                     @elseif($isCancelRequested)
                         <h1 class="text-base font-bold truncate">Permintaan Penarikan</h1>
                         <p class="text-xs text-white font-medium truncate mt-0.5">Customer mengajukan pembatalan</p>
@@ -93,7 +98,7 @@
 
                 {{-- Refresh Button --}}
                 <div class="flex items-center justify-end">
-                    <button wire:click="loadHelp" wire:loading.attr="disabled" title="Segarkan Status" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center">
+                    <button wire:click="loadHelp" wire:loading.attr="disabled" title="Segarkan Status" aria-label="Segarkan Status" class="p-2 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white">
                         <svg wire:loading.remove wire:target="loadHelp" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
@@ -156,6 +161,90 @@
                     <span class="font-bold">
                         {{ \Carbon\Carbon::parse($help->completed_at ?? $help->updated_at)->locale('id')->translatedFormat('l, d F Y • H:i') }} WIB
                     </span>
+                </div>
+            </div>
+        @endif
+
+        {{-- ───────────────────────────────────────────────────────────────── --}}
+        {{-- CASE: MITRA MENGAJUKAN KENDALA LAPANGAN (KONSEP 2 IN-PROGRESS)    --}}
+        {{-- ───────────────────────────────────────────────────────────────── --}}
+        @if ($isPartnerCancelRequested)
+            <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 rounded-2xl p-4 mb-3 shadow-xs space-y-3">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                            ⏳
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                                    Menunggu Tinjauan Admin
+                                </span>
+                                <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
+                                    Konsep 2 (Saat Pengerjaan)
+                                </span>
+                            </div>
+                            <h3 class="font-bold text-sm text-gray-900 dark:text-white mt-1">Pengajuan Kendala Lapangan</h3>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 text-[10px] font-bold border border-amber-300 dark:border-amber-700">
+                            🔒 Akun Sibuk
+                        </span>
+                    </div>
+                </div>
+
+                {{-- Detail Pengajuan --}}
+                <div class="bg-white/90 dark:bg-gray-800/90 rounded-xl p-3 border border-rose-100 dark:border-rose-900/40 text-xs space-y-2 text-left">
+                    <div class="flex items-start gap-2">
+                        <span class="text-gray-400 dark:text-gray-500 font-medium shrink-0 w-24 text-[11px]">Pemohon:</span>
+                        <span class="font-bold text-blue-600 dark:text-blue-400 text-xs">
+                            Diajukan oleh Anda (Mitra)
+                        </span>
+                    </div>
+
+                    <div class="flex items-start gap-2">
+                        <span class="text-gray-400 dark:text-gray-500 font-medium shrink-0 w-24 text-[11px]">Alasan:</span>
+                        <span class="font-bold text-rose-600 dark:text-rose-400 break-words flex-1 text-xs">
+                            {{ $cancelRequest?->reason ?: ($help->cancel_reason ?: 'Kendala lapangan saat proses pengerjaan') }}
+                        </span>
+                    </div>
+
+                    @if($cancelRequest?->notes)
+                        <div class="flex items-start gap-2">
+                            <span class="text-gray-400 dark:text-gray-500 font-medium shrink-0 w-24 text-[11px]">Catatan:</span>
+                            <span class="text-gray-700 dark:text-gray-300 italic break-words flex-1 text-xs">
+                                "{{ $cancelRequest->notes }}"
+                            </span>
+                        </div>
+                    @endif
+
+                    @if($evidencePhoto)
+                        <div class="pt-2 border-t border-rose-100 dark:border-rose-900/40 space-y-1.5">
+                            <span class="text-gray-500 dark:text-gray-400 font-medium text-[11px] block">Foto Bukti Kendala Lapangan:</span>
+                            <div class="relative group cursor-pointer w-full max-w-[200px] rounded-xl overflow-hidden border border-rose-200 dark:border-rose-800 bg-black/5"
+                                 @click="previewPhotoUrl = '{{ asset('storage/' . $evidencePhoto) }}'">
+                                <img src="{{ asset('storage/' . $evidencePhoto) }}" 
+                                     alt="Bukti Kendala Lapangan" 
+                                     class="w-full h-28 object-cover group-hover:scale-105 transition duration-200">
+                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-[11px] font-semibold gap-1">
+                                    <span>🔍 Perbesar</span>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 rounded-xl text-xs text-amber-900 dark:text-amber-200 space-y-1.5">
+                    <p class="font-bold flex items-center gap-1.5 text-[11px]">
+                        <span>📞</span> Tim Admin Wilayah Sedang Menindaklanjuti
+                    </p>
+                    <p class="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                        Admin Wilayah sedang menghubungi Customer terlebih dahulu untuk memvalidasi kendala lapangan dan menyepakati pengembalian dana (refund) yang adil. Anda akan dihubungi jika diperlukan informasi tambahan.
+                    </p>
+                    <p class="text-[10px] text-amber-700 dark:text-amber-400 pt-1 border-t border-amber-200/60 dark:border-amber-800/40">
+                        ℹ️ <strong>Status Akun:</strong> Akun Anda berstatus <strong>SIBUK</strong> sementara dan tidak dapat mengambil pesanan lain hingga evaluasi pesanan ini diputuskan oleh Admin.
+                    </p>
                 </div>
             </div>
         @endif
@@ -1155,7 +1244,7 @@
                     <button type="button" wire:click="openPartnerCancelModal"
                         class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
                         <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        <span>Batalkan Penugasan (Kendala Mitra)</span>
+                        <span>Batalkan Penugasan (Kendala Perjalanan)</span>
                     </button>
                 </div>
             @else
@@ -1189,7 +1278,7 @@
                     <button type="button" wire:click="openPartnerCancelModal"
                         class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
                         <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        <span>Batalkan Penugasan (Kendala Mitra)</span>
+                        <span>Batalkan Penugasan (Kendala Perjalanan)</span>
                     </button>
                 </div>
             @endif
@@ -1227,7 +1316,7 @@
                 <button type="button" wire:click="openPartnerCancelModal"
                     class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
                     <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    <span>Batalkan Penugasan (Kendala Mitra)</span>
+                    <span>Batalkan Penugasan (Kendala Perjalanan)</span>
                 </button>
             </div>
         @elseif ($help->status === 'partner_arrived' || in_array($help->service_stage, ['at_customer', 'at_destination']))
@@ -1259,7 +1348,7 @@
                 <button type="button" wire:click="openPartnerCancelModal"
                     class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
                     <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    <span>Batalkan Penugasan (Kendala Mitra)</span>
+                    <span>Batalkan Penugasan (Kendala Perjalanan)</span>
                 </button>
             </div>
         @elseif ($help->status === 'in_progress')
@@ -1284,7 +1373,7 @@
                 <button type="button" wire:click="openPartnerCancelModal"
                     class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
                     <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    <span>Batalkan Penugasan (Kendala Mitra)</span>
+                    <span>Ajukan Kendala Lapangan (Konsep 2)</span>
                 </button>
             </div>
         @elseif ($help->status === 'waiting_customer_confirmation')
@@ -1322,6 +1411,9 @@
     {{-- PARTNER CANCEL MODAL                                              --}}
     {{-- ───────────────────────────────────────────────────────────────── --}}
     @if ($showPartnerCancelModal)
+        @php
+            $isInProgress = ($help->status === 'in_progress');
+        @endphp
         <div class="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in" 
              wire:click.self="closePartnerCancelModal">
             <div class="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl animate-slide-up relative max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700" 
@@ -1330,16 +1422,18 @@
                 <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 flex-shrink-0 z-10">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
-                            <div class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
+                            <div class="w-8 h-8 rounded-xl {{ $isInProgress ? 'bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400' : 'bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400' }} flex items-center justify-center flex-shrink-0">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                 </svg>
                             </div>
                             <div>
                                 <h3 class="text-base font-bold text-gray-900 dark:text-white leading-tight">
-                                    Batalkan Penugasan
+                                    {{ $isInProgress ? 'Ajukan Kendala Lapangan' : 'Batalkan Penugasan' }}
                                 </h3>
-                                <p class="text-[11px] text-gray-500 dark:text-gray-400">Pengajuan pembatalan akibat kendala mitra</p>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                                    {{ $isInProgress ? 'Pengajuan pembatalan tahap pengerjaan (Konsep 2)' : 'Pengajuan pembatalan kendala perjalanan (Konsep 1)' }}
+                                </p>
                             </div>
                         </div>
                         <button type="button" 
@@ -1353,19 +1447,37 @@
                 </div>
 
                 <form wire:submit.prevent="requestPartnerCancel" class="p-5 overflow-y-auto space-y-4 text-xs">
-                    <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-3.5 space-y-2">
-                        <div class="flex items-start gap-2.5">
-                            <span class="text-lg leading-none mt-0.5">ℹ️</span>
-                            <div class="text-amber-900 dark:text-amber-200 leading-relaxed text-xs">
-                                <strong class="block font-bold mb-0.5">Pelepasan Tugas & Audit Wilayah:</strong>
-                                Akun Anda akan langsung dibebaskan agar dapat mencari order lain. Pengajuan ini akan ditinjau oleh <strong>Admin Wilayah</strong>.
+                    @if($isInProgress)
+                        {{-- INFO BANNER KONSEP 2: PENGERJAAN SUDAH DIMULAI --}}
+                        <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-2xl p-3.5 space-y-2">
+                            <div class="flex items-start gap-2.5">
+                                <span class="text-lg leading-none mt-0.5">⚠️</span>
+                                <div class="text-rose-950 dark:text-rose-200 leading-relaxed text-xs">
+                                    <strong class="block font-bold mb-0.5">Penting (Tahap Pengerjaan Berjalan):</strong>
+                                    Karena Anda telah menekan 'Mulai Pekerjaan', pembatalan ini memerlukan verifikasi dan konfirmasi dari <strong>Admin Wilayah</strong>.
+                                </div>
+                            </div>
+                            <div class="pt-2 border-t border-rose-200/60 dark:border-rose-800/60 text-[11px] text-rose-900 dark:text-rose-300 space-y-1">
+                                <p>📞 Tim Admin akan <strong>menghubungi Customer terlebih dahulu</strong> untuk klarifikasi kendala lapangan dan menyepakati pengembalian dana (refund) yang adil.</p>
+                                <p>📸 <strong>Wajib / Sangat Disarankan:</strong> Sertakan foto bukti kondisi lapangan agar audit dan penyesuaian saldo berjalan lancar.</p>
                             </div>
                         </div>
-                        <div class="pt-2 border-t border-amber-200/60 dark:border-amber-800/60 text-[11px] text-amber-800 dark:text-amber-300">
-                            ✓ <strong>Bukti Sah (Darurat / Kendala Nyata):</strong> Bebas Surat Peringatan (SP).<br>
-                            ⚠️ <strong>Klaim Palsu / Berbohong:</strong> Admin Wilayah berhak memberikan sanksi SP (SP 1 / SP 2 / SP 3).
+                    @else
+                        {{-- INFO BANNER KONSEP 1: SAAT PERJALANAN / BELUM MULAI KERJA --}}
+                        <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-3.5 space-y-2">
+                            <div class="flex items-start gap-2.5">
+                                <span class="text-lg leading-none mt-0.5">ℹ️</span>
+                                <div class="text-amber-900 dark:text-amber-200 leading-relaxed text-xs">
+                                    <strong class="block font-bold mb-0.5">Pelepasan Tugas & Relist ke Pool:</strong>
+                                    Tugas ini akan langsung dilepaskan dan dicarikan mitra lain agar customer tidak menunggu lama. Pengajuan Anda akan ditinjau oleh <strong>Admin Wilayah</strong>.
+                                </div>
+                            </div>
+                            <div class="pt-2 border-t border-amber-200/60 dark:border-amber-800/60 text-[11px] text-amber-800 dark:text-amber-300">
+                                ✓ <strong>Bukti Sah (Darurat / Kendala Nyata):</strong> Bebas Surat Peringatan (SP).<br>
+                                ⚠️ <strong>Klaim Palsu / Berbohong:</strong> Admin Wilayah berhak memberikan sanksi SP (SP 1 / SP 2 / SP 3).
+                            </div>
                         </div>
-                    </div>
+                    @endif
 
                     <div class="space-y-3.5">
                         <div>
@@ -1374,13 +1486,23 @@
                             </label>
                             <select wire:model="partnerCancelReason" 
                                     class="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition cursor-pointer">
-                                <option value="">-- Pilih Alasan Pembatalan --</option>
-                                <option value="Kendaraan Bermasalah / Mogok">Kendaraan Bermasalah / Mogok</option>
-                                <option value="Kondisi Darurat Pribadi / Sakit Mendadak">Kondisi Darurat Pribadi / Sakit Mendadak</option>
-                                <option value="Barang / Toko Tidak Ditemukan / Tutup">Barang / Toko Tidak Ditemukan / Tutup</option>
-                                <option value="Customer Tidak Dapat Dihubungi">Customer Tidak Dapat Dihubungi</option>
-                                <option value="Lokasi Tidak Memungkinkan Dijangkau / Bahaya">Lokasi Tidak Memungkinkan Dijangkau / Bahaya</option>
-                                <option value="Lainnya">Lainnya (Tuliskan rincian di catatan)</option>
+                                @if($isInProgress)
+                                    <option value="">-- Pilih Alasan Kendala Lapangan (Konsep 2) --</option>
+                                    <option value="Lokasi / Kondisi Kerja Berbahaya & Tidak Aman">Lokasi / Kondisi Kerja Berbahaya & Tidak Aman</option>
+                                    <option value="Beban / Volume Pekerjaan Melebihi Kesepakatan Awal">Beban / Volume Pekerjaan Melebihi Kesepakatan Awal</option>
+                                    <option value="Alat Kerja / Material Mengalami Kerusakan di Lokasi">Alat Kerja / Material Mengalami Kerusakan di Lokasi</option>
+                                    <option value="Customer Tidak Kooperatif / Meminta Penghentian Pekerjaan">Customer Tidak Kooperatif / Meminta Penghentian Pekerjaan</option>
+                                    <option value="Mitra Mengalami Cedera / Sakit Mendadak Saat Bekerja">Mitra Mengalami Cedera / Sakit Mendadak Saat Bekerja</option>
+                                    <option value="Lainnya">Lainnya (Tuliskan rincian di catatan)</option>
+                                @else
+                                    <option value="">-- Pilih Alasan Kendala Perjalanan (Konsep 1) --</option>
+                                    <option value="Kendaraan Bermasalah / Mogok / Ban Bocor">Kendaraan Bermasalah / Mogok / Ban Bocor</option>
+                                    <option value="Terjebak Macet Total / Cuaca Ekstrem Tidak Memungkinkan">Terjebak Macet Total / Cuaca Ekstrem Tidak Memungkinkan</option>
+                                    <option value="Kondisi Darurat Pribadi / Sakit di Perjalanan">Kondisi Darurat Pribadi / Sakit di Perjalanan</option>
+                                    <option value="Customer Tidak Dapat Dihubungi Sebelum Mulai">Customer Tidak Dapat Dihubungi Sebelum Mulai</option>
+                                    <option value="Lokasi / Akses Menuju Titik Ditutup / Bahaya">Lokasi / Akses Menuju Titik Ditutup / Bahaya</option>
+                                    <option value="Lainnya">Lainnya (Tuliskan rincian di catatan)</option>
+                                @endif
                             </select>
                             @error('partnerCancelReason') 
                                 <p class="text-[11px] text-rose-500 font-semibold mt-1">{{ $message }}</p> 
@@ -1389,7 +1511,7 @@
 
                         <div>
                             <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
-                                Foto Bukti Kendala (Opsional)
+                                Foto Bukti Kendala <span class="text-rose-500 font-bold">* Wajib</span>
                             </label>
                             
                             @if ($cancel_evidence_photo)
@@ -1413,16 +1535,18 @@
                             @error('cancel_evidence_photo') 
                                 <p class="text-[11px] text-rose-500 font-semibold mt-1">{{ $message }}</p> 
                             @enderror
-                            <p class="text-[10px] text-gray-400 mt-1">Unggah foto ban bocor, kendala teknis, atau kondisi darurat untuk mempermudah audit bebas SP.</p>
+                            <p class="text-[10px] text-gray-400 mt-1">
+                                {{ $isInProgress ? 'Unggah foto kondisi di tempat kerja/material rusak untuk memudahkan klarifikasi Admin dan Customer.' : 'Unggah foto ban bocor, kendala teknis, atau kondisi darurat untuk mempermudah audit bebas SP.' }}
+                            </p>
                         </div>
 
                         <div>
                             <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
-                                Catatan Tambahan (Opsional)
+                                Catatan Tambahan <span class="text-rose-500 font-bold">* Wajib</span>
                             </label>
                             <textarea wire:model="partnerCancelNotes" rows="3"
                                       class="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition"
-                                      placeholder="Jelaskan kendala darurat yang dialami secara rinci..."></textarea>
+                                      placeholder="{{ $isInProgress ? 'Jelaskan kronologi kendala pengerjaan di lokasi secara detail...' : 'Jelaskan kendala darurat yang dialami secara rinci...' }}"></textarea>
                             @error('partnerCancelNotes') 
                                 <p class="text-[11px] text-rose-500 font-semibold mt-1">{{ $message }}</p> 
                             @enderror
@@ -1439,7 +1563,9 @@
                                 wire:loading.attr="disabled"
                                 wire:target="requestPartnerCancel, cancel_evidence_photo"
                                 class="flex-1 px-4 py-3 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl text-xs font-bold transition disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shadow-rose-500/20 active:scale-[0.99]">
-                            <span wire:loading.remove wire:target="requestPartnerCancel">Kirim Pengajuan Batal</span>
+                            <span wire:loading.remove wire:target="requestPartnerCancel">
+                                {{ $isInProgress ? 'Kirim Pengajuan (Konsep 2)' : 'Kirim Pengajuan Batal' }}
+                            </span>
                             <span wire:loading wire:target="requestPartnerCancel" class="inline-flex items-center gap-1">
                                 <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                                 Memproses...
@@ -1616,6 +1742,28 @@
             </div>
         </div>
     @endif
+
+    {{-- Photo Preview Modal (Tap to Zoom) --}}
+    <div x-show="previewPhotoUrl" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+         @click="previewPhotoUrl = null"
+         style="display: none;">
+        <div class="relative max-w-2xl w-full bg-transparent p-2 text-center" @click.stop>
+            <button type="button" @click="previewPhotoUrl = null" 
+                    class="absolute top-4 right-4 bg-black/60 hover:bg-black text-white rounded-full p-2.5 transition z-10 cursor-pointer shadow-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            <img :src="previewPhotoUrl" alt="Foto Bukti Diperbesar" class="max-h-[85vh] w-auto mx-auto rounded-2xl shadow-2xl object-contain border border-white/10">
+        </div>
+    </div>
 </div>
 
 @push('styles')

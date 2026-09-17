@@ -2,31 +2,18 @@
     <x-slot name="title">Profile</x-slot>
 
     <style>
-        @keyframes ripple {
-            0% {
-                transform: scale(0);
-                opacity: 0.6;
-            }
-            100% {
-                transform: scale(4);
-                opacity: 0;
-            }
-        }
-
-        @keyframes slideInUp {
+        @keyframes fadeIn {
             from {
-                transform: translateY(20px);
                 opacity: 0;
             }
             to {
-                transform: translateY(0);
                 opacity: 1;
             }
         }
 
         @keyframes scaleIn {
             from {
-                transform: scale(0.9);
+                transform: scale(0.96);
                 opacity: 0;
             }
             to {
@@ -35,123 +22,56 @@
             }
         }
 
-        @keyframes bounce-gentle {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-5px);
-            }
-        }
-
         .menu-card {
             position: relative;
             overflow: hidden;
-            animation: slideInUp 0.5s ease-out backwards;
+            animation: fadeIn 0.4s ease-out backwards;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
         }
 
-        .menu-card:nth-child(1) { animation-delay: 0.1s; }
-        .menu-card:nth-child(2) { animation-delay: 0.15s; }
-        .menu-card:nth-child(3) { animation-delay: 0.2s; }
-        .menu-card:nth-child(4) { animation-delay: 0.25s; }
-        .menu-card:nth-child(5) { animation-delay: 0.3s; }
-        .menu-card:nth-child(6) { animation-delay: 0.35s; }
-
-        .menu-card::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(0, 152, 231, 0.2);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .menu-card:active::before {
-            width: 300px;
-            height: 300px;
-        }
+        .menu-card:nth-child(1) { animation-delay: 0.05s; }
+        .menu-card:nth-child(2) { animation-delay: 0.1s; }
+        .menu-card:nth-child(3) { animation-delay: 0.15s; }
+        .menu-card:nth-child(4) { animation-delay: 0.2s; }
+        .menu-card:nth-child(5) { animation-delay: 0.25s; }
+        .menu-card:nth-child(6) { animation-delay: 0.3s; }
 
         .menu-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px -10px rgba(0, 152, 231, 0.3);
+            box-shadow: 0 8px 20px -8px rgba(0, 152, 231, 0.25);
         }
 
         .menu-card:active {
-            transform: translateY(-2px) scale(0.98);
+            opacity: 0.92;
         }
 
         .icon-gradient {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .menu-card:hover .icon-gradient {
-            transform: rotate(5deg) scale(1.1);
-        }
-
-        .menu-card:active .icon-gradient {
-            transform: rotate(0deg) scale(0.95);
+            transition: opacity 0.2s ease, filter 0.2s ease;
         }
 
         .stats-card {
-            animation: scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+            animation: scaleIn 0.4s ease-out backwards;
         }
 
         .avatar-container {
-            animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+            animation: fadeIn 0.4s ease-out backwards;
         }
 
         .logout-modal-content {
-            animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
-        }
-
-        .float-animation {
-            animation: float 3s ease-in-out infinite;
+            animation: scaleIn 0.25s ease-out;
         }
 
         .btn-primary {
             position: relative;
             overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .btn-primary::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .btn-primary:active::after {
-            width: 300px;
-            height: 300px;
+            transition: background-color 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px -6px rgba(220, 38, 38, 0.4);
+            box-shadow: 0 6px 16px -4px rgba(220, 38, 38, 0.35);
         }
 
         .btn-primary:active {
-            transform: translateY(0) scale(0.98);
+            opacity: 0.9;
         }
     </style>
 
@@ -184,12 +104,13 @@
                 <div class="absolute bottom-0 left-0 w-36 h-36 bg-white/5 rounded-full blur-xl -ml-12 -mb-12 pointer-events-none"></div>
                 
                 <div class="relative z-10">
-                    <div class="relative flex items-center justify-center text-white mb-4 min-h-[40px]">
-                        <div class="text-center w-full min-w-0 px-12">
+                    <div class="flex items-center justify-between text-white mb-4 min-h-[40px]">
+                        <div class="w-10"></div>
+                        <div class="text-center flex-1 min-w-0 px-2">
                             <h1 class="text-base font-bold truncate">Profil Saya</h1>
                         </div>
 
-                        <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                        <div class="w-10 flex items-center justify-end">
                             <x-customer.notification-icon />
                         </div>
                     </div>

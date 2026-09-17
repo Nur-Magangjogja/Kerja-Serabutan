@@ -105,6 +105,8 @@ class Help extends Model
             self::STATUS_PARTNER_ON_THE_WAY,
             self::STATUS_PARTNER_ARRIVED,
             self::STATUS_IN_PROGRESS,
+            self::STATUS_PARTNER_CANCEL_REQUESTED,
+            self::STATUS_CUSTOMER_CANCEL_REQUESTED,
         ];
     }
 

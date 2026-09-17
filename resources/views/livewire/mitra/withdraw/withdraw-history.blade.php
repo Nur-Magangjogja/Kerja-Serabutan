@@ -5,15 +5,25 @@
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
             <div class="relative z-10">
-                <div class="relative flex items-center justify-center min-h-[40px] text-white">
-                    <div class="text-center w-full min-w-0 px-20">
+                <div class="flex items-center justify-between min-h-[40px] text-white">
+                    <div class="w-16 flex items-center">
+                        <a href="{{ route('mitra.profile') }}" wire:navigate aria-label="Kembali ke Profil" class="p-2 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </a>
+                    </div>
+
+                    <div class="text-center flex-1 min-w-0 px-2">
                         <h1 class="text-base font-bold truncate">Riwayat Pencairan Saldo</h1>
                         <p class="text-xs text-white/90 truncate mt-0.5">Daftar pencairan penghasilan Mitra</p>
                     </div>
 
-                    <a href="{{ route('mitra.withdraw.form') }}" wire:navigate class="absolute right-0 top-1/2 -translate-y-1/2 z-20 px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-xs font-bold transition">
-                        + Cairkan
-                    </a>
+                    <div class="w-16 flex items-center justify-end">
+                        <a href="{{ route('mitra.withdraw.form') }}" wire:navigate class="px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-xs font-bold transition-colors duration-200">
+                            + Cairkan
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

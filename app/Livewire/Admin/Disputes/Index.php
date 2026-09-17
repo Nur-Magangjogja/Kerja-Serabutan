@@ -244,10 +244,30 @@ class Index extends Component
             $this->cancelPartnerAmount = $pAmt;
             $this->cancelRefundAmount = max(0, $gross - $pAmt);
         } elseif ($val === 'partial_settlement') {
-            $pAmt = round($gross * 0.3);
+            $pAmt = round($gross * 0.5);
             $this->cancelPartnerAmount = $pAmt;
             $this->cancelRefundAmount = max(0, $gross - $pAmt);
         }
+    }
+
+    public function updatedCancelRefundAmount($val)
+    {
+        if (!$this->selectedCancelRequest || !$this->selectedCancelRequest->help) {
+            return;
+        }
+        $gross = (float) ($this->selectedCancelRequest->help->total_amount > 0 ? $this->selectedCancelRequest->help->total_amount : $this->selectedCancelRequest->help->amount);
+        $refund = (float) ($val ?: 0);
+        $this->cancelPartnerAmount = max(0, round($gross - $refund));
+    }
+
+    public function updatedCancelPartnerAmount($val)
+    {
+        if (!$this->selectedCancelRequest || !$this->selectedCancelRequest->help) {
+            return;
+        }
+        $gross = (float) ($this->selectedCancelRequest->help->total_amount > 0 ? $this->selectedCancelRequest->help->total_amount : $this->selectedCancelRequest->help->amount);
+        $payout = (float) ($val ?: 0);
+        $this->cancelRefundAmount = max(0, round($gross - $payout));
     }
 
     public function toggleHelpLogs(int $helpId)
@@ -288,10 +308,19 @@ class Index extends Component
         $isPartner = ($this->selectedCancelRequest->requester_type === 'partner');
         $actionType = $this->selectedCancelRequest->action_type;
         $partnerResponse = $this->selectedCancelRequest->partner_response_type;
+        $cancellationStage = $this->selectedCancelRequest->cancellation_stage;
 
         $this->cancelDecision = 'approved';
 
-        if ($isPartner || $actionType === HelpCancelRequest::ACTION_PARTNER_INCIDENT || $actionType === HelpCancelRequest::ACTION_SWITCH_PARTNER) {
+        $isKonsep2PartnerCancel = ($isPartner && ($cancellationStage === 'in_progress' || $this->selectedCancelRequest->previous_status === 'in_progress' || $help?->status === Help::STATUS_PARTNER_CANCEL_REQUESTED));
+
+        if ($isKonsep2PartnerCancel) {
+            // Konsep 2: Mitra membatalkan saat pengerjaan telah dimulai -> Default Full Refund / Penyesuaian Saldo Admin & Customer
+            $this->settlementType      = 'full_refund';
+            $this->cancelRefundAmount  = $gross;
+            $this->cancelPartnerAmount = 0;
+        } elseif ($actionType === HelpCancelRequest::ACTION_SWITCH_PARTNER || ($isPartner && $actionType === HelpCancelRequest::ACTION_PARTNER_INCIDENT)) {
+            // Konsep 1: Transit / Kendala perjalanan / Ganti Mitra -> Relist Pool
             $this->settlementType      = 'relist_pool';
             $this->cancelRefundAmount  = 0;
             $this->cancelPartnerAmount = 0;
@@ -384,6 +413,29 @@ class Index extends Component
         } catch (\Throwable $e) {
             Log::error('[AdminDisputes] executeCancelReview error: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat memproses permintaan pembatalan: ' . $e->getMessage());
+        }
+    }
+
+    public function unlinkPartnerAndHoldTask()
+    {
+        if (!$this->selectedCancelRequest) {
+            return;
+        }
+
+        try {
+            app(HelpCancellationService::class)->adminUnlinkPartnerAndHoldTask(
+                $this->selectedCancelRequest,
+                auth()->user(),
+                $this->cancelAdminNotes ?: 'Mitra dipisahkan & dibebaskan oleh Admin karena customer belum mengonfirmasi.'
+            );
+
+            session()->flash('message', "Mitra berhasil dipisahkan dan dibebaskan dari tugas #{$this->selectedCancelRequest->help_id}. Tugas ditahan (tidak tampil di pool) sampai Customer mengonfirmasi.");
+            $this->closeCancelReviewModal();
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[AdminDisputes] unlinkPartnerAndHoldTask error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat memisahkan mitra dari tugas: ' . $e->getMessage());
         }
     }
 

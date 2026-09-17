@@ -5,8 +5,20 @@
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
             
             <div class="relative z-10 space-y-4">
-                <div class="text-white text-center">
-                    <h1 class="text-base font-bold truncate">Ulasan Saya</h1>
+                <div class="flex items-center justify-between min-h-[40px] text-white">
+                    <div class="w-10 flex items-center">
+                        <a href="{{ route('profile') }}" wire:navigate aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </a>
+                    </div>
+
+                    <div class="text-center flex-1 min-w-0 px-2">
+                        <h1 class="text-base font-bold truncate">Ulasan Saya</h1>
+                    </div>
+
+                    <div class="w-10 flex items-center justify-end"></div>
                 </div>
 
                 <!-- Rating Summary Card (compact) -->

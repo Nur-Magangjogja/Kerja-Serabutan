@@ -239,15 +239,24 @@
                                     @endif
                                 </td>
                                 <td class="p-4">
-                                    <div class="flex items-center gap-1.5 mb-1">
+                                    <div class="flex items-center gap-1.5 mb-1 flex-wrap">
                                         @if($req->requester_type === 'customer')
                                             <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                                                 Customer
                                             </span>
                                         @else
-                                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                                Mitra
-                                            </span>
+                                            @php
+                                                $isReqKonsep2 = (($req->cancellation_stage ?? '') === 'in_progress' || ($req->previous_status ?? '') === 'in_progress' || ($req->help?->status ?? '') === 'partner_cancel_requested');
+                                            @endphp
+                                            @if($isReqKonsep2)
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800" title="Pembatalan Tahap Pengerjaan">
+                                                    Mitra (Konsep 2)
+                                                </span>
+                                            @else
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800" title="Pembatalan Kendala Perjalanan">
+                                                    Mitra (Konsep 1)
+                                                </span>
+                                            @endif
                                         @endif
                                         <span class="font-bold text-gray-900 dark:text-white">{{ $req->requestedBy->name ?? 'User' }}</span>
                                     </div>
@@ -281,22 +290,40 @@
                                 <td class="p-4">
                                     <div class="space-y-1">
                                         @if($req->status === 'pending')
-                                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                                PENDING AUDIT
-                                            </span>
-                                            @if($req->expires_at)
+                                            @if($req->settlement_type === 'partner_unlinked_held')
+                                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                                                    MITRA BEBAS (DITAHAN)
+                                                </span>
                                                 <div class="text-[10px] text-gray-500 dark:text-gray-400">
-                                                    Batas: {{ $req->expires_at->diffForHumans() }}
+                                                    Menunggu respon Customer
                                                 </div>
+                                            @else
+                                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                                    PENDING AUDIT
+                                                </span>
+                                                @if($req->expires_at)
+                                                    <div class="text-[10px] text-gray-500 dark:text-gray-400">
+                                                        Batas: {{ $req->expires_at->diffForHumans() }}
+                                                    </div>
+                                                @endif
                                             @endif
                                         @elseif($req->status === 'approved')
-                                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                                DISETUJUI ({{ $req->settlement_type }})
-                                            </span>
-                                            @if($req->sp_target !== 'none')
-                                                <div class="text-[10px] text-rose-600 dark:text-rose-400 font-bold">
-                                                    ⚠️ Sanksi SP: {{ strtoupper($req->sp_target) }}
+                                            @if($req->settlement_type === 'partner_unlinked_held')
+                                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                                                    MITRA BEBAS (DITAHAN)
+                                                </span>
+                                                <div class="text-[10px] text-gray-500 dark:text-gray-400">
+                                                    Menunggu respon Customer
                                                 </div>
+                                            @else
+                                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                                    DISETUJUI ({{ $req->settlement_type }})
+                                                </span>
+                                                @if($req->sp_target !== 'none')
+                                                    <div class="text-[10px] text-rose-600 dark:text-rose-400 font-bold">
+                                                        ⚠️ Sanksi SP: {{ strtoupper($req->sp_target) }}
+                                                    </div>
+                                                @endif
                                             @endif
                                         @else
                                             <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
@@ -550,7 +577,12 @@
                 return 'https://wa.me/' . $clean . ($text ? '?text=' . urlencode($text) : '');
             };
 
-            if ($isPartner) {
+            $isKonsep2 = ($isPartner && (($selectedCancelRequest->cancellation_stage ?? '') === 'in_progress' || ($selectedCancelRequest->previous_status ?? '') === 'in_progress' || ($help?->status ?? '') === 'partner_cancel_requested'));
+
+            if ($isKonsep2) {
+                $customerWaText = "Halo Kak " . ($customer?->name ?? 'Customer') . ", kami dari Tim Admin SayaBantu menindaklanjuti kendala pengerjaan yang diajukan oleh mitra pada tugas #" . ($help?->id ?? '') . " (" . ($help?->title ?? 'Bantuan') . ") dengan alasan: \"" . $selectedCancelRequest->reason . "\". Kami ingin mengonfirmasi kondisi di lokasi untuk menyepakati pengembalian dana (refund) yang adil. Terima kasih.";
+                $mitraWaText = "Halo Rekan " . ($partner?->name ?? 'Mitra') . ", kami dari Tim Admin SayaBantu menindaklanjuti pengajuan kendala lapangan tugas #" . ($help?->id ?? '') . " (" . ($help?->title ?? 'Bantuan') . ") dengan alasan: \"" . $selectedCancelRequest->reason . "\". Kami sedang memverifikasi dengan customer untuk penyelesaian saldo pengerjaan. Terima kasih.";
+            } elseif ($isPartner) {
                 $customerWaText = "Halo Kak " . ($customer?->name ?? 'Customer') . ", kami dari Tim Admin SayaBantu menginformasikan bahwa mitra sebelumnya mengajukan pembatalan tugas #" . ($help?->id ?? '') . " (" . ($help?->title ?? 'Bantuan') . ") karena kendala: \"" . $selectedCancelRequest->reason . "\". Saat ini sistem telah mengalihkan pesanan ke pool pencarian mitra baru. Mohon info jika ada catatan khusus. Terima kasih.";
                 $mitraWaText = "Halo Rekan " . ($partner?->name ?? 'Mitra') . ", kami dari Tim Admin SayaBantu menindaklanjuti pengajuan pembatalan tugas #" . ($help?->id ?? '') . " (" . ($help?->title ?? 'Bantuan') . ") dengan alasan: \"" . $selectedCancelRequest->reason . "\". Mohon klarifikasi atau konfirmasi tambahan terkait kendala tersebut. Terima kasih.";
             } else {
@@ -573,9 +605,13 @@
                             <h3 class="font-bold text-base sm:text-lg text-gray-900 dark:text-white leading-tight">
                                 Audit Pembatalan & Sanksi SP
                             </h3>
-                            @if($isPartner)
+                            @if($isKonsep2)
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shrink-0">
+                                    🛵 Mitra (Konsep 2 - In Progress)
+                                </span>
+                            @elseif($isPartner)
                                 <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-black text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shrink-0">
-                                    🛵 Pengaju: Mitra
+                                    🛵 Mitra (Konsep 1 - Transit)
                                 </span>
                             @else
                                 <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-black text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
@@ -874,12 +910,124 @@
 
                     {{-- Pilihan Keputusan & Penyelesaian Berdasarkan Pengaju & Status Otomatis --}}
                     <div class="space-y-3 pt-1">
-                        @if($isPartner || ($selectedCancelRequest->action_type ?? '') === 'partner_incident')
+                        @if($isKonsep2)
+                            {{-- KONDISI KONSEP 2: PEMBATALAN TAHAP PENGERJAAN OLEH MITRA (IN-PROGRESS) --}}
+                            <div class="p-3.5 bg-rose-50/70 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 rounded-2xl text-xs space-y-2">
+                                <div class="font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5 text-xs sm:text-sm">
+                                    <span class="text-base">⚠️</span>
+                                    <span>Konsep 2: Pengajuan Pembatalan Saat Pengerjaan Telah Dimulai</span>
+                                </div>
+                                <p class="text-rose-800 dark:text-rose-300/90 leading-relaxed text-[11px]">
+                                    Mitra mengajukan pembatalan tugas setelah menekan 'Mulai Pekerjaan'. Sesuai SOP, Admin <strong>wajib menghubungi Customer terlebih dahulu</strong> via WhatsApp/Telepon untuk klarifikasi kondisi riil di lapangan dan menentukan pengembalian dana (refund) berdasarkan kesepakatan.
+                                </p>
+                                <div class="p-2.5 bg-white dark:bg-black rounded-xl border border-rose-200 dark:border-rose-800/80 text-[11px] text-gray-700 dark:text-gray-300 flex items-center justify-between flex-wrap gap-2">
+                                    <span>Dana Tahan Escrow: <strong>Rp {{ number_format($gross, 0, ',', '.') }}</strong></span>
+                                    <span class="text-rose-600 dark:text-rose-400 font-bold">Status: Terkunci (Partner Cancel Requested)</span>
+                                </div>
+                            </div>
+
+                            {{-- Bantuan Cepat Admin: Pisahkan & Bebaskan Mitra --}}
+                            @if($selectedCancelRequest->status === 'pending' && ($selectedCancelRequest->help?->mitra_id || $selectedCancelRequest->partner_id))
+                                <div class="p-3.5 bg-sky-50/80 dark:bg-sky-950/40 border-2 border-sky-300 dark:border-sky-700/80 rounded-2xl text-xs space-y-2.5">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-base">🔓</span>
+                                            <div>
+                                                <h5 class="font-bold text-sky-950 dark:text-sky-100 text-xs sm:text-sm">Bantuan Admin: Pisahkan & Bebaskan Mitra</h5>
+                                                <p class="text-[11px] text-sky-800 dark:text-sky-300">Customer lambat / belum merespons pembatalan?</p>
+                                            </div>
+                                        </div>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 dark:bg-sky-900/60 dark:text-sky-200 border border-sky-300 dark:border-sky-700">
+                                            Bebaskan Status Sibuk
+                                        </span>
+                                    </div>
+                                    <p class="text-[11px] text-sky-900/90 dark:text-sky-200/90 leading-relaxed">
+                                        Jika Customer tidak kunjung merespons sehingga Mitra tertahan dalam status sibuk, Admin dapat <strong>membebaskan mitra</strong> agar dapat kembali mengambil tugas lain. Tugas akan <strong>ditahan (tidak tampil di pool)</strong> sampai Customer membuka aplikasi dan memilih mencari pengganti atau refund.
+                                    </p>
+                                    <div class="pt-1">
+                                        <button type="button" 
+                                                wire:click="unlinkPartnerAndHoldTask" 
+                                                wire:loading.attr="disabled"
+                                                wire:confirm="Yakin ingin memisahkan dan membebaskan mitra dari tugas ini? Status sibuk mitra akan langsung dilepas dan tugas ditahan (tidak tampil di pool) sampai customer mengonfirmasi."
+                                                class="w-full py-2.5 px-3 bg-sky-600 hover:bg-sky-700 active:scale-[0.99] text-white font-bold rounded-xl text-xs transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                                            <span wire:loading.remove wire:target="unlinkPartnerAndHoldTask">⚡ Pisahkan Mitra & Tahan Tugas (Bebaskan Akun Mitra)</span>
+                                            <span wire:loading wire:target="unlinkPartnerAndHoldTask">Memproses Pelepasan Mitra...</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
+
+                            {{-- Opsi Keputusan Penyelesaian Saldo & Refund (Konsep 2) --}}
+                            <div class="space-y-2">
+                                <label class="block font-bold text-gray-800 dark:text-gray-200 text-xs mb-1">
+                                    Pilihan Penyelesaian Saldo / Refund (Sesuai Kesepakatan Customer & Admin):
+                                </label>
+                                
+                                <div class="space-y-2 text-xs">
+                                    {{-- Opsi A: Full Refund 100% ke Customer --}}
+                                    <label wire:click="$set('settlementType', 'full_refund')"
+                                           class="flex items-start gap-2.5 p-2.5 rounded-xl border bg-white dark:bg-black cursor-pointer transition {{ $settlementType === 'full_refund' ? 'border-primary-500 ring-2 ring-primary-500/20 font-semibold text-primary-900 dark:text-primary-300' : 'border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900' }}">
+                                        <input type="radio" name="konsep2_settlement_radio" {{ $settlementType === 'full_refund' ? 'checked' : '' }} class="mt-0.5 text-primary-600">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-center justify-between">
+                                                <strong class="text-gray-900 dark:text-white">💰 100% Full Refund ke Customer</strong>
+                                                <span class="text-emerald-600 font-bold font-mono">Rp {{ number_format($gross, 0, ',', '.') }}</span>
+                                            </div>
+                                            <p class="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">Seluruh saldo dikembalikan ke customer (Rp 0 ke Mitra). Pilih jika pekerjaan sama sekali belum terlaksana atau kendala di pihak mitra.</p>
+                                        </div>
+                                    </label>
+
+                                    {{-- Opsi B: Bagi Rata / 50:50 Split --}}
+                                    <label wire:click="$set('settlementType', 'partial_settlement'); $set('cancelRefundAmount', {{ round($gross * 0.5) }}); $set('cancelPartnerAmount', {{ round($gross * 0.5) }})"
+                                           class="flex items-start gap-2.5 p-2.5 rounded-xl border bg-white dark:bg-black cursor-pointer transition {{ ($settlementType === 'partial_settlement' && $cancelRefundAmount == round($gross * 0.5)) ? 'border-purple-500 ring-2 ring-purple-500/20 font-semibold text-purple-900 dark:text-purple-300' : 'border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900' }}">
+                                        <input type="radio" name="konsep2_settlement_radio" {{ ($settlementType === 'partial_settlement' && $cancelRefundAmount == round($gross * 0.5)) ? 'checked' : '' }} class="mt-0.5 text-purple-600">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-center justify-between">
+                                                <strong class="text-purple-800 dark:text-purple-300">⚖️ Bagi Rata (50:50 Split)</strong>
+                                                <span class="text-purple-600 font-bold font-mono">Cust: Rp {{ number_format(round($gross*0.5), 0, ',', '.') }} • Mitra: Rp {{ number_format(round($gross*0.5), 0, ',', '.') }}</span>
+                                            </div>
+                                            <p class="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">Saldo dibagi 50% untuk Customer dan 50% untuk Mitra atas pekerjaan yang telah separuh jalan.</p>
+                                        </div>
+                                    </label>
+
+                                    {{-- Opsi C: Penyesuaian Kustom (Sesuai Negosiasi) --}}
+                                    <label wire:click="$set('settlementType', 'partial_settlement')"
+                                           class="flex items-start gap-2.5 p-2.5 rounded-xl border bg-white dark:bg-black cursor-pointer transition {{ ($settlementType === 'partial_settlement' && $cancelRefundAmount != round($gross * 0.5)) ? 'border-indigo-500 ring-2 ring-indigo-500/20 font-semibold text-indigo-900 dark:text-indigo-300' : 'border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900' }}">
+                                        <input type="radio" name="konsep2_settlement_radio" {{ ($settlementType === 'partial_settlement' && $cancelRefundAmount != round($gross * 0.5)) ? 'checked' : '' }} class="mt-0.5 text-indigo-600">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-center justify-between">
+                                                <strong class="text-indigo-800 dark:text-indigo-300">📝 Nominal Kustom (Hasil Kesepakatan WA/Telp)</strong>
+                                                <span class="text-indigo-600 font-bold text-[11px]">Input Manual</span>
+                                            </div>
+                                            <p class="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">Masukkan pembagian nominal khusus sesuai kesepakatan langsung antara Admin dan Customer.</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {{-- Form Input Nominal Kustom if partial_settlement --}}
+                            @if($settlementType === 'partial_settlement')
+                                <div class="p-3 bg-white dark:bg-black border border-indigo-200 dark:border-indigo-800 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                    <div>
+                                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Pengembalian ke Customer (Rp) <span class="text-rose-500">*</span></label>
+                                        <input type="number" wire:model.live="cancelRefundAmount" class="w-full p-2 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Pembayaran ke Mitra (Rp) <span class="text-rose-500">*</span></label>
+                                        <input type="number" wire:model.live="cancelPartnerAmount" class="w-full p-2 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                                    </div>
+                                    <div class="sm:col-span-2 text-[10px] text-gray-500 dark:text-gray-400">
+                                        Total bruto: Rp {{ number_format($gross, 0, ',', '.') }}. Perubahan pada salah satu nominal akan otomatis menghitung sisa nominal lainnya.
+                                    </div>
+                                </div>
+                            @endif
+
+                        @elseif($isPartner || ($selectedCancelRequest->action_type ?? '') === 'partner_incident')
                             {{-- KONDISI 1: PEMBATALAN KENDALA MITRA (OTOMATIS SELESAI) --}}
                             <div class="p-3.5 bg-white dark:bg-black border border-emerald-300 dark:border-emerald-800 rounded-2xl text-xs space-y-1.5">
                                 <div class="font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
                                     <span class="text-sm">⚡</span>
-                                    <span>Status Operasional: Relist Otomatis ke Pool Mitra Selesai</span>
+                                    <span>Status Operasional: Relist Otomatis ke Pool Mitra Selesai (Konsep 1)</span>
                                 </div>
                                 <p class="text-emerald-800 dark:text-emerald-300/90 leading-relaxed text-[11px]">
                                     Sistem telah <strong>otomatis melepaskan tugas</strong> dari mitra ini dan <strong>mengembalikan pesanan ke pool terbuka</strong> agar customer segera mendapatkan mitra pengganti. Saldo Dana Tahan <strong>(Rp {{ number_format($gross, 0, ',', '.') }})</strong> tetap aman di sistem.
