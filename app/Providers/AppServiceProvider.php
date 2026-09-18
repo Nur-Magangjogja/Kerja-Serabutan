@@ -77,52 +77,11 @@ class AppServiceProvider extends ServiceProvider
 
         // Redirect authenticated users based on their role
         $this->configureRedirectsForAuthentication();
-
-        // Auto-start Laravel Reverb in local development if not already running
-        if ($this->app->environment('local') && !$this->app->runningInConsole()) {
-            $this->ensureReverbServerRunning();
-        }
-    }
-
-    /**
-     * Ensure Laravel Reverb server is running in local environment without manual intervention.
-     */
-    private function ensureReverbServerRunning(): void
-    {
-        $host = config('reverb.servers.reverb.host', '127.0.0.1');
-        $port = (int) config('reverb.servers.reverb.port', 8080);
-        if ($host === '0.0.0.0') {
-            $host = '127.0.0.1';
-        }
-
-        // Check throttled to once every 15s to maintain 0ms overhead on requests
-        $lockKey = 'auto_reverb_check_lock';
-        if (!\Illuminate\Support\Facades\Cache::add($lockKey, true, 15)) {
-            return;
-        }
-
-        $connection = @fsockopen($host, $port, $errno, $errstr, 0.05);
-        if (is_resource($connection)) {
-            fclose($connection);
-            return;
-        }
-
-        try {
-            $artisanPath = escapeshellarg(base_path('artisan'));
-            $phpBinary = PHP_BINARY ? escapeshellarg(PHP_BINARY) : 'php';
-
-            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                pclose(popen("start /B {$phpBinary} {$artisanPath} reverb:start > NUL 2>&1", "r"));
-            } else {
-                exec("{$phpBinary} {$artisanPath} reverb:start > /dev/null 2>&1 &");
-            }
-        } catch (\Throwable $e) {
-            // Silently fallback if execution is disabled in PHP ini
-        }
     }
 
     /**
      * Configure redirects after authentication
+
      */
     private function configureRedirectsForAuthentication(): void
     {

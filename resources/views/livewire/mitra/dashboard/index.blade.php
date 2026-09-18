@@ -295,15 +295,12 @@
             },
             init() {
                 this.startAuto();
-                document.addEventListener('visibilitychange', () => {
-                    if (document.hidden) {
-                        this.stopAuto();
-                    } else {
-                        this.startAuto();
-                    }
-                });
+            },
+            destroy() {
+                this.stopAuto();
             }
-        }" @mouseenter="stopAuto()" @mouseleave="startAuto()" @touchstart="stopAuto()" @touchend="startAuto()">
+        }" @visibilitychange.window="document.hidden ? stopAuto() : startAuto()" @mouseenter="stopAuto()" @mouseleave="startAuto()" @touchstart="stopAuto()" @touchend="startAuto()">
+
             <div class="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg shadow-sky-500/5 border border-gray-100/80 dark:border-gray-700/60 h-44 sm:h-48 bg-gray-900">
                 @if(!empty($mitraBanners) && count($mitraBanners))
                     <div class="flex h-full transition-transform duration-700 ease-out" :style="'transform: translateX(-' + (active * 100) + '%)'">
@@ -926,12 +923,6 @@
             if (e.target === this) {
                 window.closePreviewModal();
             }
-        });
-
-        // Listen for help-taken event from Livewire
-        window.addEventListener('help-taken', function(event) {
-            // Reload page to show updated list
-            window.location.reload();
         });
     })();
     </script>

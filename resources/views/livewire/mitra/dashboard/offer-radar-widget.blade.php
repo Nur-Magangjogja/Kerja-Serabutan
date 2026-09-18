@@ -1,4 +1,5 @@
 <div @if(($onlineState?->matching_status ?? '') === 'searching') wire:poll.15s.visible @elseif(($onlineState?->matching_status ?? '') === 'offer_pending') wire:poll.3s.visible @endif
+     @visibilitychange.window="if (!document.hidden) scheduleHeartbeat()"
      x-data="{
          isGettingLocation: false,
          status: '{{ $onlineState?->matching_status ?? 'offline' }}',
@@ -82,11 +83,16 @@
 
          init() {
              this.scheduleHeartbeat();
-             document.addEventListener('visibilitychange', () => {
-                 if (!document.hidden) this.scheduleHeartbeat();
-             });
+         },
+
+         destroy() {
+             if (this.heartbeatTimer) {
+                 clearTimeout(this.heartbeatTimer);
+                 this.heartbeatTimer = null;
+             }
          }
      }">
+
 
     <!-- Card Status Mitra Online / Offline / Searching / Busy -->
     <div class="px-5 mt-3.5 sm:mt-4 relative z-10">

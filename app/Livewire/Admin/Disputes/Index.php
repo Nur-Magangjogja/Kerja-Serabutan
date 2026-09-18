@@ -302,10 +302,12 @@ class Index extends Component
             'help_id'     => $help->id,
             'customer_id' => $customer?->id ?? $help->user_id,
             'mitra_id'    => $partner?->id ?? $help->mitra_id,
-            'sender_type' => 'admin',
+            'sender_id'   => auth()->id(),
+            'sender_type' => \App\Enums\ChatSenderType::ADMIN->value,
             'message'     => $formattedMessage,
             'is_read'     => false,
         ]);
+
 
         // Notifikasi ke pihak yang dituju
         try {

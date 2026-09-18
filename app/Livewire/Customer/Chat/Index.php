@@ -657,12 +657,14 @@ class Index extends Component
         ChatModel::create([
             'customer_id' => $customerId,
             'mitra_id'    => $mitraId,
+            'sender_id'   => $customerId,
             'help_id'     => $helpId,
             'sender_type' => 'customer',
             'message'     => $msgText,
             'photo'       => $photoPath,
             'is_read'     => false,
         ]);
+
 
         $this->active_help_id = $helpId;
 

@@ -11,6 +11,7 @@ class Chat extends Model
         'help_id',
         'mitra_id',
         'customer_id',
+        'sender_id',
         'message',
         'photo',
         'sender_type',
@@ -40,6 +41,12 @@ class Chat extends Model
     {
         return $this->belongsTo(User::class, 'customer_id');
     }
+
+    public function sender(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sender_id');
+    }
+
 
     protected static function booted(): void
     {

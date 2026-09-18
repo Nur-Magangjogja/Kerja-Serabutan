@@ -953,11 +953,15 @@
         window.addEventListener('help-taken', function(event) {
             var helpId = event?.detail?.helpId ?? event?.detail ?? null;
             if (!helpId) {
-                window.location.reload();
                 return;
             }
             var detailUrlTemplate = @json(route('mitra.helps.detail', ['id' => 'REPLACE_ID']));
-            window.location.href = detailUrlTemplate.replace('REPLACE_ID', helpId);
+            var targetUrl = detailUrlTemplate.replace('REPLACE_ID', helpId);
+            if (typeof Livewire !== 'undefined' && typeof Livewire.navigate === 'function') {
+                Livewire.navigate(targetUrl);
+            } else {
+                window.location.href = targetUrl;
+            }
         });
     </script>
     @endscript

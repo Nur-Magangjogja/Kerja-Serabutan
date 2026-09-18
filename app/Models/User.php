@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -911,40 +912,50 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     // Helper methods
-    public function isSuperAdmin()
+    public function hasRole(UserRole|string $role): bool
     {
-        return $this->role === 'super_admin';
+        $roleValue = $role instanceof UserRole ? $role->value : $role;
+        if ($roleValue === 'super_admin') {
+            return in_array($this->role, ['super_admin', 'superadmin'], true);
+        }
+        return $this->role === $roleValue;
     }
 
-    public function isAdmin()
+    public function isSuperAdmin(): bool
     {
-        return $this->role === 'admin';
+        return in_array($this->role, [UserRole::SUPER_ADMIN->value, 'superadmin'], true);
     }
 
-    public function isMitra()
+    public function isAdmin(): bool
     {
-        return $this->role === 'mitra';
+        return $this->role === UserRole::ADMIN->value;
     }
 
-    public function isCustomer()
+    public function isMitra(): bool
     {
-        return $this->role === 'customer';
+        return $this->role === UserRole::MITRA->value;
     }
 
-    public function isKustomer()
+    public function isCustomer(): bool
+    {
+        return $this->role === UserRole::CUSTOMER->value;
+    }
+
+    public function isKustomer(): bool
     {
         return $this->isCustomer();
     }
 
-    public function isVerified()
+    public function isVerified(): bool
     {
-        return $this->verified;
+        return (bool) $this->verified;
     }
 
-    public function isActive()
+    public function isActive(): bool
     {
         return $this->status === 'active';
     }
+
 
     /**
      * Waktu aktivitas terakhir pengguna (berdasarkan permintaan/pekerjaan bantuan terbaru).
