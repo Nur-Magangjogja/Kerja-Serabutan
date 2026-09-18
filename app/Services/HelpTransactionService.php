@@ -550,15 +550,18 @@ class HelpTransactionService
             $refundAmt = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
 
             $partnerReport = PartnerReport::create([
-                'reporter_id'      => $customer->id,
-                'reported_id'      => $lockedHelp->mitra_id,
-                'reported_help_id' => $lockedHelp->id,
-                'report_type'      => 'dispute',
-                'title'            => "Sengketa Bantuan #{$lockedHelp->id}: {$lockedHelp->title}",
-                'message'          => $reason,
-                'refund_amount'    => $refundAmt,
-                'refund_status'    => 'requested',
-                'status'           => 'pending',
+                'reporter_id'        => $customer->id,
+                'reported_user_id'   => $lockedHelp->mitra_id,
+                'reported_help_id'   => $lockedHelp->id,
+                'reported_help_text' => $lockedHelp->title,
+                'reported_user_text' => $lockedHelp->mitra?->name,
+                'report_type'        => 'dispute',
+                'category'           => 'dari_customer',
+                'title'              => "Sengketa: {$lockedHelp->title}",
+                'message'            => $reason,
+                'refund_amount'      => $refundAmt,
+                'refund_status'      => 'requested',
+                'status'             => 'pending',
             ]);
 
             return $partnerReport;
@@ -667,7 +670,7 @@ class HelpTransactionService
                 'reported_help_id'   => $lockedHelp->id,
                 'reported_help_text' => $lockedHelp->title,
                 'reported_user_text' => $lockedHelp->mitra?->name,
-                'title'              => "Klaim Garansi 1x24 Jam: Bantuan #{$lockedHelp->id} - {$lockedHelp->title}",
+                'title'              => "Klaim Garansi: {$lockedHelp->title}",
                 'message'            => $reason,
                 'evidence_photo'     => $evidencePath,
                 'report_type'        => $reportType,

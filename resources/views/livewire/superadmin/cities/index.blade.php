@@ -35,14 +35,14 @@
         <div class="flex flex-wrap gap-2">
             <button wire:click="$set('filterProvinceId', null)"
                 class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-full transition-colors
-                {{ is_null($filterProvinceId) ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                {{ is_null($filterProvinceId) ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600' }}">
                 Semua
             </button>
             @foreach($provinces as $prov)
             <div class="inline-flex items-center gap-1 group">
                 <button wire:click="selectProvince({{ $prov->id }})"
                     class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-full transition-colors
-                    {{ $filterProvinceId === $prov->id ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                    {{ $filterProvinceId === $prov->id ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600' }}">
                     {{ $prov->name }}
                 </button>
                 <div class="hidden group-hover:flex items-center gap-0.5">

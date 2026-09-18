@@ -321,7 +321,7 @@
                                 </div>
                                 <div class="min-w-0">
                                     <h3 class="font-bold text-sm text-gray-900 dark:text-gray-100 truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                                        {{ $rep->title ?: $rep->report_type_label }}
+                                        {{ $rep->display_title }}
                                     </h3>
                                     <p class="text-[11px] text-gray-400 dark:text-gray-400">
                                         {{ $rep->created_at->format('d M Y, H:i') }}
@@ -353,7 +353,7 @@
                             <div class="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
                                 <span class="text-gray-500 dark:text-gray-400 font-medium">Terkait:</span>
                                 <span class="font-semibold text-gray-800 dark:text-gray-200 truncate">
-                                    {{ $rep->reportedHelp?->title ?? ($rep->reported_help_text ?? 'Layanan Platform') }}
+                                    {{ $rep->display_topic }}
                                 </span>
                             </div>
                             <div class="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
@@ -558,8 +558,8 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0 flex-1">
                             <span class="text-sm shrink-0">📋</span>
-                            <span class="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 truncate" title="{{ $selected_report->title ?: $selected_report->report_type_label }}">
-                                {{ $selected_report->title ?: $selected_report->report_type_label }}
+                            <span class="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 truncate" title="{{ $selected_report->display_title }}">
+                                {{ $selected_report->display_title }}
                             </span>
                         </div>
                         @php
@@ -585,7 +585,7 @@
                     <div class="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-[11px] text-gray-600 dark:text-gray-300">
                         <div class="flex items-center gap-1 min-w-0">
                             <span class="text-gray-500 dark:text-gray-400 shrink-0">Terkait:</span>
-                            <span class="font-medium text-gray-800 dark:text-gray-200 truncate">{{ $selected_report->reportedHelp?->title ?? ($selected_report->reported_help_text ?? 'Layanan Platform') }}</span>
+                            <span class="font-medium text-gray-800 dark:text-gray-200 truncate">{{ $selected_report->display_topic }}</span>
                         </div>
                         <div class="flex items-center gap-1 min-w-0">
                             <span class="text-gray-500 dark:text-gray-400 shrink-0">Pihak:</span>

@@ -271,4 +271,108 @@ class PartnerReport extends Model
     {
         return $this->category === 'dari_customer' ? 'Dari Customer' : 'Dari Mitra';
     }
+
+    /**
+     * Membersihkan string judul dari prefix sistem seperti "Klarifikasi Tugas #168:",
+     * "Sengketa Bantuan #168:", "Klaim Garansi: Bantuan #168 -", "Klarifikasi /", atau "#168:".
+     */
+    public function cleanTitleString(?string $str): string
+    {
+        if (!$str) return '';
+
+        // Hapus prefix pola "Klarifikasi Tugas #168:", "Sengketa Bantuan #168:", "Tugas #168:", "Bantuan #168 -"
+        $cleaned = preg_replace('/^(?:Klarifikasi\s+(?:Tugas|Bantuan)?|Sengketa\s+Bantuan|Tugas|Bantuan)\s*#\d+\s*[:\-–—]?\s*/iu', '', $str);
+
+        // Hapus "Klaim Garansi ...: Bantuan #168 - "
+        $cleaned = preg_replace('/^Klaim\s+Garansi[^:]*:\s*Bantuan\s*#\d+\s*[:\-–—]?\s*/iu', 'Klaim Garansi: ', $cleaned);
+
+        // Hapus leading "Klarifikasi / " atau "Klarifikasi "
+        $cleaned = preg_replace('/^Klarifikasi\s*(?:\/|\-)?\s*/iu', '', $cleaned);
+
+        // Hapus prefix ID seperti "#123: " atau "#123 - "
+        $cleaned = preg_replace('/^#\d+\s*[:\-–—]?\s*/iu', '', $cleaned);
+
+        return trim($cleaned);
+    }
+
+    /**
+     * Judul tampilan yang informatif dan bersih untuk ruang obrolan / daftar laporan
+     * tanpa kata 'Klarifikasi Tugas #' atau ID '#' yang mengganggu.
+     */
+    public function getDisplayTitleAttribute(): string
+    {
+        $rawTitle = $this->title ?? '';
+        $cleanedRaw = $this->cleanTitleString($rawTitle);
+
+        // Jika judul asli bertipe auto-generated ("Klarifikasi Tugas #...", kosong, atau angka saja),
+        // cek apakah di kronologi / pesan terdapat nama tugas spesifik
+        if ($cleanedRaw === '' || is_numeric($cleanedRaw) || str_starts_with(strtolower($rawTitle), 'klarifikasi tugas #')) {
+            if (!empty($this->message) && preg_match('/(?:untuk tugas|pada tugas|tugas)\s*[:\-–—]\s*["\']?([^"\'\n\r]+)["\']?/iu', $this->message, $matches)) {
+                $extracted = trim($matches[1]);
+                if (!empty($extracted) && !is_numeric($extracted)) {
+                    return $this->cleanTitleString($extracted);
+                }
+            }
+        }
+
+        // Jika judul setelah dibersihkan merupakan teks deskriptif valid (bukan angka murni)
+        if ($cleanedRaw !== '' && !is_numeric($cleanedRaw)) {
+            return $cleanedRaw;
+        }
+
+        // Coba dari judul relasi reportedHelp atau reported_help_text
+        $helpTitle = $this->reportedHelp?->title ?? $this->reported_help_text;
+        if ($helpTitle) {
+            $cleanedHelp = $this->cleanTitleString($helpTitle);
+            if ($cleanedHelp !== '' && !is_numeric($cleanedHelp)) {
+                return $cleanedHelp;
+            }
+        }
+
+        // Jika hanya ada judul numerik
+        if ($cleanedRaw !== '') {
+            return $cleanedRaw;
+        }
+        if ($helpTitle) {
+            $cleanedHelp = $this->cleanTitleString($helpTitle);
+            if ($cleanedHelp !== '') return $cleanedHelp;
+        }
+
+        return $this->report_type_label ?? 'Laporan Aduan';
+    }
+
+    /**
+     * Topik / Tugas terkait yang bersih untuk tampilan sub-header (Terkait: ...)
+     */
+    public function getDisplayTopicAttribute(): string
+    {
+        $helpTitle = $this->reportedHelp?->title ?? $this->reported_help_text;
+        if ($helpTitle) {
+            $cleanedHelp = $this->cleanTitleString($helpTitle);
+            if ($cleanedHelp !== '' && !is_numeric($cleanedHelp)) {
+                return $cleanedHelp;
+            }
+        }
+
+        // Coba ekstrak dari kronologi / pesan jika ada
+        if (!empty($this->message) && preg_match('/(?:untuk tugas|pada tugas|tugas)\s*[:\-–—]\s*["\']?([^"\'\n\r]+)["\']?/iu', $this->message, $matches)) {
+            $extracted = trim($matches[1]);
+            if (!empty($extracted) && !is_numeric($extracted)) {
+                return $this->cleanTitleString($extracted);
+            }
+        }
+
+        if ($helpTitle) {
+            $cleanedHelp = $this->cleanTitleString($helpTitle);
+            if ($cleanedHelp !== '') return $cleanedHelp;
+        }
+
+        if (!empty($this->title)) {
+            $cleanedTitle = $this->cleanTitleString($this->title);
+            if ($cleanedTitle !== '') return $cleanedTitle;
+        }
+
+        return 'Layanan Platform';
+    }
 }
+

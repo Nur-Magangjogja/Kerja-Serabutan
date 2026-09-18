@@ -6,11 +6,11 @@
     <button type="button" @click="open = !open"
         class="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold shadow-2xs cursor-pointer active:scale-95 transition-all max-w-[130px] xs:max-w-[160px] sm:max-w-[220px] shrink-0
         @if($territory['type'] === 'district')
-            bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ring-2 ring-emerald-500/20
+            bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-700 dark:text-white border border-emerald-500/30 ring-2 ring-emerald-500/20
         @elseif($territory['type'] === 'city')
-            bg-indigo-500/15 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 ring-2 ring-indigo-500/20
+            bg-indigo-500/15 dark:bg-indigo-500/20 text-indigo-700 dark:text-white border border-indigo-500/30 ring-2 ring-indigo-500/20
         @else
-            bg-primary-500/10 dark:bg-primary-500/20 text-primary-700 dark:text-primary-300 border border-primary-500/30 hover:bg-primary-500/20
+            bg-primary-500/10 dark:bg-primary-500/20 text-primary-700 dark:text-white border border-primary-500/30 hover:bg-primary-500/20
         @endif"
         title="{{ $territory['label'] }} (Klik untuk ganti filter wilayah)">
         
@@ -61,10 +61,10 @@
         <div class="pb-2.5 mb-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
             <div class="flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></span>
-                <span class="text-xs font-bold text-gray-800 dark:text-gray-200">Filter Wilayah Super Admin</span>
+                <span class="text-xs font-bold text-gray-800 dark:text-white">Filter Wilayah Super Admin</span>
             </div>
             <div class="flex items-center gap-2">
-                <span class="text-[10px] font-semibold text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                <span class="text-[10px] font-semibold text-gray-400 bg-gray-100 dark:bg-gray-700 dark:text-gray-200 px-2 py-0.5 rounded-full">
                     {{ $totalCities }} Kota • {{ $totalDistricts }} Kec.
                 </span>
                 {{-- Close Button for Mobile --}}
@@ -75,14 +75,14 @@
         </div>
 
         {{-- Guide Banner: 2 Opsi --}}
-        <div class="mb-2 p-2 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60 text-[10px] text-gray-500 dark:text-gray-400 space-y-1">
+        <div class="mb-2 p-2 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60 text-[10px] text-gray-500 dark:text-gray-300 space-y-1">
             <div class="flex items-center gap-1.5 font-medium">
                 <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
-                <span><strong>Opsi 1:</strong> Klik <span class="text-indigo-600 dark:text-indigo-400 font-bold">Semua Data Kota</span> untuk pantau 1 kota utuh</span>
+                <span><strong>Opsi 1:</strong> Klik <span class="text-indigo-600 dark:text-indigo-300 font-bold">Semua Data Kota</span> untuk pantau 1 kota utuh</span>
             </div>
             <div class="flex items-center gap-1.5 font-medium">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                <span><strong>Opsi 2:</strong> Buka kota lalu klik salah satu <span class="text-emerald-600 dark:text-emerald-400 font-bold">Kecamatan</span> khusus</span>
+                <span><strong>Opsi 2:</strong> Buka kota lalu klik salah satu <span class="text-emerald-600 dark:text-emerald-300 font-bold">Kecamatan</span> khusus</span>
             </div>
         </div>
 
@@ -110,19 +110,19 @@
             <button type="button" wire:click="selectTerritory('all'); open = false"
                 class="w-full flex items-center justify-between p-2 sm:p-2.5 rounded-xl text-xs font-bold transition text-left cursor-pointer
                 @if($territory['type'] === 'all')
-                    bg-primary-50 dark:bg-primary-950/70 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 shadow-2xs
+                    bg-primary-50 dark:bg-primary-950/70 text-primary-700 dark:text-white border border-primary-200 dark:border-primary-800 shadow-2xs
                 @else
-                    text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 border border-transparent
+                    text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-750 border border-transparent
                 @endif">
                 <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                    <div class="w-7 h-7 rounded-lg @if($territory['type'] === 'all') bg-primary-600 text-white @else bg-gray-100 dark:bg-gray-700 text-gray-500 @endif flex items-center justify-center shrink-0">
+                    <div class="w-7 h-7 rounded-lg @if($territory['type'] === 'all') bg-primary-600 text-white @else bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-200 @endif flex items-center justify-center shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
                     <div class="min-w-0">
-                        <p class="font-bold leading-tight truncate">Semua Wilayah (Nasional)</p>
-                        <p class="text-[10px] font-normal text-gray-400 mt-0.5 truncate">Monitoring global tanpa filter wilayah</p>
+                        <p class="font-bold leading-tight truncate text-gray-900 dark:text-white">Semua Wilayah (Nasional)</p>
+                        <p class="text-[10px] font-normal text-gray-400 dark:text-gray-300 mt-0.5 truncate">Monitoring global tanpa filter wilayah</p>
                     </div>
                 </div>
                 @if($territory['type'] === 'all')
@@ -181,26 +181,26 @@
 
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-1 sm:gap-1.5 flex-wrap">
-                                    <span class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{{ $city->name }}</span>
+                                    <span class="text-xs font-bold text-gray-900 dark:text-white truncate">{{ $city->name }}</span>
                                     
                                     {{-- Pinned Badge --}}
                                     @if($isPinnedCity)
-                                        <span class="text-[9px] font-bold text-amber-700 dark:text-amber-300 bg-amber-500/15 dark:bg-amber-500/25 px-1.5 py-0.2 rounded-md border border-amber-500/30 shrink-0">📌 Tersemat</span>
+                                        <span class="text-[9px] font-bold text-amber-700 dark:text-amber-200 bg-amber-500/15 dark:bg-amber-500/25 px-1.5 py-0.2 rounded-md border border-amber-500/30 shrink-0">📌 Tersemat</span>
                                     @endif
 
                                     @if($isCityActive)
-                                        <span class="text-[9px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-500/15 px-1.5 py-0.2 rounded-md shrink-0">Kota Aktif</span>
+                                        <span class="text-[9px] font-bold text-indigo-700 dark:text-indigo-200 bg-indigo-500/15 px-1.5 py-0.2 rounded-md shrink-0">Kota Aktif</span>
                                     @elseif($hasActiveChildDistrict)
-                                        <span class="text-[9px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 px-1.5 py-0.2 rounded-md shrink-0">Kec. Aktif</span>
+                                        <span class="text-[9px] font-bold text-emerald-700 dark:text-emerald-200 bg-emerald-500/15 px-1.5 py-0.2 rounded-md shrink-0">Kec. Aktif</span>
                                     @endif
 
                                     @if($city->province && !$isPinnedCity)
-                                        <span class="text-[9px] text-gray-400 truncate hidden xs:inline">({{ $city->province }})</span>
+                                        <span class="text-[9px] text-gray-400 dark:text-gray-300 truncate hidden xs:inline">({{ $city->province }})</span>
                                     @endif
                                 </div>
-                                <span class="text-[10px] text-gray-400 block truncate">
+                                <span class="text-[10px] text-gray-400 dark:text-gray-300 block truncate">
                                     {{ $city->districts_count ?? ($city->relationLoaded('districts') ? $city->districts->count() : 0) }} Kec. • 
-                                    <span class="hover:underline text-primary-600 dark:text-primary-400 font-medium">
+                                    <span class="hover:underline text-primary-600 dark:text-primary-300 font-medium">
                                         {{ $isCityExpanded ? 'Tutup daftar' : 'Buka daftar' }}
                                     </span>
                                 </span>
@@ -214,7 +214,7 @@
                                 @if($isCityActive)
                                     bg-indigo-600 text-white shadow-xs
                                 @else
-                                    bg-white dark:bg-gray-700 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700/60 hover:bg-indigo-600 hover:text-white
+                                    bg-white dark:bg-gray-700 text-indigo-700 dark:text-white border border-indigo-200 dark:border-indigo-700/60 hover:bg-indigo-600 hover:text-white
                                 @endif"
                                 title="Opsi 1: Pantau seluruh data di kota {{ $city->name }}">
                                 <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
@@ -230,12 +230,12 @@
                     {{-- Opsi 2: Expanded Districts List (Kecamatan Spesifik Dimuat On-Demand) --}}
                     @if($isCityExpanded)
                         <div class="px-2 sm:px-2.5 pb-2.5 pt-1.5 border-t border-gray-100 dark:border-gray-700/80 bg-white/80 dark:bg-gray-800/80 space-y-1.5 transition-all">
-                            <div class="text-[9px] font-bold text-gray-400 uppercase tracking-wider py-0.5 flex items-center justify-between">
+                            <div class="text-[9px] font-bold text-gray-400 dark:text-gray-300 uppercase tracking-wider py-0.5 flex items-center justify-between">
                                 <span class="flex items-center gap-1 truncate">
                                     <span>↳</span>
                                     <span class="truncate">Opsi 2: Pilih 1 Kec. di {{ $city->name }}</span>
                                 </span>
-                                <span class="text-[9px] font-normal text-emerald-600 dark:text-emerald-400 shrink-0 hidden xs:inline">Filter khusus</span>
+                                <span class="text-[9px] font-normal text-emerald-600 dark:text-emerald-300 shrink-0 hidden xs:inline">Filter khusus</span>
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-44 overflow-y-auto dropdown-scrollbar pr-1">
@@ -250,11 +250,11 @@
                                     <button type="button" wire:click="selectTerritory('district', {{ $district->id }}); open = false"
                                         class="flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition text-left cursor-pointer min-w-0
                                         @if($isDistrictActive)
-                                            bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800 shadow-2xs
+                                            bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-white font-bold border border-emerald-300 dark:border-emerald-800 shadow-2xs
                                         @elseif($isMatched)
-                                            bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 font-semibold border border-emerald-500/30 ring-1 ring-emerald-500/20
+                                            bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-800 dark:text-white font-semibold border border-emerald-500/30 ring-1 ring-emerald-500/20
                                         @else
-                                            text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/70 font-medium
+                                            text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700/70 font-medium
                                         @endif">
                                         <div class="flex items-center gap-1.5 truncate min-w-0">
                                             <span class="w-1.5 h-1.5 rounded-full shrink-0 @if($isDistrictActive) bg-emerald-500 @elseif($isMatched) bg-emerald-400 animate-pulse @else bg-gray-300 dark:bg-gray-600 @endif"></span>
@@ -265,11 +265,11 @@
                                                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                             </svg>
                                         @elseif($isMatched)
-                                            <span class="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter shrink-0 ml-1">Cocok</span>
+                                            <span class="text-[9px] font-bold text-emerald-600 dark:text-emerald-300 uppercase tracking-tighter shrink-0 ml-1">Cocok</span>
                                         @endif
                                     </button>
                                 @empty
-                                    <div class="col-span-1 sm:col-span-2 py-3 text-center text-gray-400 text-xs">
+                                    <div class="col-span-1 sm:col-span-2 py-3 text-center text-gray-400 dark:text-gray-300 text-xs">
                                         Tidak ada data kecamatan
                                     </div>
                                 @endforelse
@@ -278,7 +278,7 @@
                     @endif
                 </div>
             @empty
-                <div class="py-6 text-center text-gray-400 text-xs">
+                <div class="py-6 text-center text-gray-400 dark:text-gray-300 text-xs">
                     <p>Tidak ditemukan wilayah yang sesuai kata kunci "{{ $search }}"</p>
                 </div>
             @endforelse
@@ -287,7 +287,7 @@
         {{-- Popover Footer --}}
         @if($territory['type'] !== 'all')
             <div class="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-[11px]">
-                <span class="text-gray-500 dark:text-gray-400 truncate mr-2">Filter aktif: <strong class="text-gray-800 dark:text-gray-200">{{ $territory['label'] }}</strong></span>
+                <span class="text-gray-500 dark:text-gray-300 truncate mr-2">Filter aktif: <strong class="text-gray-800 dark:text-white">{{ $territory['label'] }}</strong></span>
                 <button type="button" wire:click="selectTerritory('all'); open = false" class="text-primary-600 dark:text-primary-400 font-bold hover:underline cursor-pointer shrink-0">
                     Reset Global
                 </button>

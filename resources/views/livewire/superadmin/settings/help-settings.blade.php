@@ -197,8 +197,8 @@
                 <!-- Toggle Fitur Cari Order / Antrean Mitra (Global Switch) -->
                 <div class="p-4 bg-indigo-50/60 dark:bg-indigo-950/30 rounded-xl border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between gap-4">
                     <div>
-                        <h4 class="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-200">Saklar Global: Fitur Cari Order / Antrean Mitra</h4>
-                        <p class="text-[11px] sm:text-xs text-indigo-700/80 dark:text-indigo-400 mt-0.5">
+                        <h4 class="text-xs sm:text-sm font-bold text-indigo-950 dark:text-white">Saklar Global: Fitur Cari Order / Antrean Mitra</h4>
+                        <p class="text-[11px] sm:text-xs text-indigo-700/80 dark:text-gray-200 mt-0.5">
                             Bila dinonaktifkan secara global, mitra di wilayah yang mengikuti pengaturan global tidak perlu mengaktifkan mode mencari antrean (order langsung masuk ke daftar bantuan).
                         </p>
                     </div>
@@ -219,7 +219,7 @@
                                 </svg>
                                 Pengaturan Kebijakan Wilayah / Kota
                             </h4>
-                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                            <p class="text-[11px] text-gray-500 dark:text-gray-300 mt-0.5">
                                 Atur mode pencarian order untuk masing-masing kota secara fleksibel tanpa perlu berganti wilayah.
                             </p>
                         </div>
@@ -238,7 +238,7 @@
                         <!-- 1. Tampilan Desktop & Tablet (Tabular Grid) -->
                         <div class="hidden md:block overflow-x-auto">
                             <table class="w-full text-left text-xs">
-                                <thead class="bg-gray-50/90 dark:bg-gray-900/80 text-[11px] uppercase font-bold text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                                <thead class="bg-gray-50/90 dark:bg-gray-900/80 text-[11px] uppercase font-bold text-gray-500 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700">
                                     <tr>
                                         <th scope="col" class="px-5 py-3.5">Wilayah & Administrasi</th>
                                         <th scope="col" class="px-5 py-3.5">Status Kebijakan Efektif</th>
@@ -267,9 +267,9 @@
                                                     <div>
                                                         <div class="font-bold text-gray-900 dark:text-white text-sm leading-tight">{{ $city->name }}</div>
                                                         <div class="flex items-center gap-2 mt-1">
-                                                            <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">{{ $city->province }}</span>
+                                                            <span class="text-xs text-gray-500 dark:text-gray-300 font-medium">{{ $city->province }}</span>
                                                             <span class="text-gray-300 dark:text-gray-600">•</span>
-                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 dark:bg-gray-700/80 text-gray-600 dark:text-gray-300">
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 dark:bg-gray-700/80 text-gray-600 dark:text-white">
                                                                 {{ $city->districts_count ?? 0 }} kecamatan
                                                             </span>
                                                         </div>
@@ -279,21 +279,21 @@
                                             <td class="px-5 py-4 whitespace-nowrap">
                                                 @if($effectiveEnabled)
                                                     <div class="inline-flex flex-col gap-0.5">
-                                                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 shadow-2xs">
+                                                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-white border border-emerald-200 dark:border-emerald-800/80 shadow-2xs">
                                                             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                                                             Mode Antrean Aktif
                                                         </span>
-                                                        <span class="text-[10px] text-gray-400 dark:text-gray-500 pl-1 font-medium">
-                                                            {{ $currentChoice === 'inherit' ? '↳ Mewarisi Saklar Global' : '↳ Kustom Khusus Wilayah' }}
+                                                        <span class="text-[10px] text-gray-400 dark:text-gray-300 pl-1 font-medium">
+                                                             {{ $currentChoice === 'inherit' ? '↳ Mewarisi Saklar Global' : '↳ Kustom Khusus Wilayah' }}
                                                         </span>
                                                     </div>
                                                 @else
                                                     <div class="inline-flex flex-col gap-0.5">
-                                                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                                                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800/70 text-slate-700 dark:text-white border border-slate-200 dark:border-slate-700 shadow-2xs">
                                                             <span class="w-2 h-2 rounded-full bg-slate-400"></span>
                                                             Langsung ke Daftar Bantuan
                                                         </span>
-                                                        <span class="text-[10px] text-gray-400 dark:text-gray-500 pl-1 font-medium">
+                                                        <span class="text-[10px] text-gray-400 dark:text-gray-300 pl-1 font-medium">
                                                             {{ $currentChoice === 'inherit' ? '↳ Mewarisi Saklar Global' : '↳ Kustom Khusus Wilayah' }}
                                                         </span>
                                                     </div>
@@ -302,7 +302,7 @@
                                             <td class="px-5 py-4 whitespace-nowrap text-right">
                                                 <div class="inline-block relative">
                                                     <select wire:model.live="city_overrides.{{ $city->id }}"
-                                                        class="py-2 pl-3.5 pr-8 text-xs font-semibold border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50/80 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-2xs transition-all cursor-pointer">
+                                                        class="py-2 pl-3.5 pr-8 text-xs font-semibold border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50/80 dark:bg-gray-900 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-2xs transition-all cursor-pointer">
                                                         <option value="inherit">🌐 Ikuti Pengaturan Global (Bawaan)</option>
                                                         <option value="enabled">⚡ Aktifkan Antrean Mitra</option>
                                                         <option value="disabled">📋 Langsung ke Daftar Bantuan</option>
@@ -319,7 +319,7 @@
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                                         </svg>
                                                     </div>
-                                                    <span class="font-medium text-gray-500 dark:text-gray-400">Tidak ada wilayah yang sesuai dengan pencarian "{{ $city_search }}".</span>
+                                                    <span class="font-medium text-gray-500 dark:text-gray-300">Tidak ada wilayah yang sesuai dengan pencarian "{{ $city_search }}".</span>
                                                 </div>
                                             </td>
                                         </tr>
@@ -351,9 +351,9 @@
                                         <div class="flex-1 min-w-0">
                                             <div class="font-bold text-gray-900 dark:text-white text-sm truncate">{{ $city->name }}</div>
                                             <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
-                                                <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">{{ $city->province }}</span>
+                                                <span class="text-xs text-gray-500 dark:text-gray-300 font-medium">{{ $city->province }}</span>
                                                 <span class="text-gray-300 dark:text-gray-600">•</span>
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 dark:bg-gray-700/80 text-gray-600 dark:text-gray-300">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 dark:bg-gray-700/80 text-gray-600 dark:text-white">
                                                     {{ $city->districts_count ?? 0 }} kec
                                                 </span>
                                             </div>
@@ -362,14 +362,14 @@
 
                                     <!-- Status Efektif Badge -->
                                     <div class="flex items-center justify-between gap-2 pt-1 border-t border-gray-50 dark:border-gray-700/40">
-                                        <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Status Efektif:</span>
+                                        <span class="text-[11px] text-gray-500 dark:text-gray-300 font-medium">Status Efektif:</span>
                                         @if($effectiveEnabled)
-                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-white border border-emerald-200 dark:border-emerald-800/80">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                                 Mode Antrean Aktif
                                             </span>
                                         @else
-                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-800/70 text-slate-700 dark:text-white border border-slate-200 dark:border-slate-700">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                                                 Langsung Daftar Bantuan
                                             </span>
@@ -378,9 +378,9 @@
 
                                     <!-- Pilihan Pengaturan Dropdown (Full Width Mobile) -->
                                     <div class="space-y-1">
-                                        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Pilihan Mode Kota</label>
+                                        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-300">Pilihan Mode Kota</label>
                                         <select wire:model.live="city_overrides.{{ $city->id }}"
-                                            class="w-full py-2 pl-3 pr-8 text-xs font-semibold border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50/80 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-2xs">
+                                            class="w-full py-2 pl-3 pr-8 text-xs font-semibold border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50/80 dark:bg-gray-900 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-2xs">
                                             <option value="inherit">🌐 Ikuti Pengaturan Global (Bawaan)</option>
                                             <option value="enabled">⚡ Aktifkan Antrean Mitra</option>
                                             <option value="disabled">📋 Langsung ke Daftar Bantuan</option>

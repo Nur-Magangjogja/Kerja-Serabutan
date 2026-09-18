@@ -31,7 +31,7 @@
             </a>
             <div class="min-w-0">
                 <h1 class="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 flex-wrap">
-                    <span>{{ $cancelRequest->job_icon }} Klarifikasi & Investigasi: {{ $help?->title ?? 'Tugas Bantuan' }}</span>
+                    <span>{{ $cancelRequest->job_icon }} {{ $help?->title ?? 'Tugas Bantuan' }}</span>
                     <span class="text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full font-bold uppercase whitespace-nowrap {{ $cancelRequest->status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : ($cancelRequest->status === 'rejected' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300') }}">
                         {{ ucfirst($cancelRequest->status) }}
                     </span>

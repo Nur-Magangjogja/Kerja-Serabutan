@@ -120,6 +120,12 @@ class Create extends Component
     {
         $this->validate();
 
+        // Cegah laporan diri sendiri
+        if ($this->reported_user_id && (int) $this->reported_user_id === auth()->id()) {
+            $this->addError('reported_user_id', 'Anda tidak dapat melaporkan akun Anda sendiri.');
+            return;
+        }
+
         // If help_id is selected, ensure reported_help_id is set
         if ($this->help_id) {
             $help = Help::find($this->help_id);

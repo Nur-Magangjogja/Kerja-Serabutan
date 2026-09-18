@@ -15,9 +15,24 @@
             return 'https://wa.me/' . $clean . ($text ? '?text=' . urlencode($text) : '');
         };
 
-        $custWaUrl = $formatWa($customer?->phone, "Halo Kak " . ($customer?->name ?? 'Customer') . ", Tim Admin SayaBantu ingin mengklarifikasi laporan aduan '" . ($report->title ?: 'Laporan Aduan') . "'.");
-        $mitraWaUrl = $formatWa($mitra?->phone, "Halo Rekan " . ($mitra?->name ?? 'Mitra') . ", Tim Admin SayaBantu ingin mengklarifikasi laporan aduan '" . ($report->title ?: 'Laporan Aduan') . "'.");
+        $custWaUrl = $formatWa($customer?->phone, "Halo Kak " . ($customer?->name ?? 'Customer') . ", Tim Admin SayaBantu ingin mengklarifikasi laporan aduan '" . ($report->display_title ?: 'Laporan Aduan') . "'.");
+        $mitraWaUrl = $formatWa($mitra?->phone, "Halo Rekan " . ($mitra?->name ?? 'Mitra') . ", Tim Admin SayaBantu ingin mengklarifikasi laporan aduan '" . ($report->display_title ?: 'Laporan Aduan') . "'.");
     @endphp
+
+    {{-- Peringatan Data Tidak Valid: Reporter = Reported User --}}
+    @if($report->reporter_id && $report->reported_user_id && $report->reporter_id === $report->reported_user_id)
+        <div class="flex items-start gap-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-700 rounded-2xl p-3.5 shadow-xs">
+            <span class="text-xl shrink-0">⚠️</span>
+            <div class="min-w-0">
+                <p class="text-xs font-bold text-rose-800 dark:text-rose-200">Data Laporan Tidak Valid — Pelapor dan Terlapor adalah Orang yang Sama</p>
+                <p class="text-[11px] text-rose-700 dark:text-rose-300 mt-0.5">
+                    Laporan ini tercatat dengan <code class="font-mono bg-rose-100 dark:bg-rose-900 px-1 rounded">reporter_id = reported_user_id = {{ $report->reporter_id }}</code>
+                    ({{ $report->reporter?->name ?? 'Tidak Diketahui' }}). Kemungkinan besar ini adalah data dummy/seeder yang salah atau ada bug saat laporan dibuat.
+                    Sistem telah diperbaiki untuk mencegah kejadian serupa di masa mendatang.
+                </p>
+            </div>
+        </div>
+    @endif
 
     {{-- Header Navigation --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-gray-850 p-4 rounded-2xl border border-gray-200/80 dark:border-gray-750 shadow-xs">
@@ -30,13 +45,13 @@
             </a>
             <div class="min-w-0">
                 <h1 class="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 flex-wrap">
-                    <span>💬 Ruang Obrolan Investigasi Aduan</span>
+                    <span>💬 {{ $report->display_title }}</span>
                     <span class="text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold uppercase whitespace-nowrap {{ $report->status === 'resolved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' }}">
                         {{ ucfirst($report->status) }}
                     </span>
-                    @if($report->reportedHelp)
+                    @if($report->display_topic && $report->display_topic !== 'Layanan Platform')
                         <span class="text-[10px] px-2 py-0.5 rounded-md font-bold bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
-                            Terkait: {{ $report->reportedHelp->title ?? 'Tugas Bantuan' }}
+                            Terkait: {{ $report->display_topic }}
                         </span>
                     @endif
                 </h1>
