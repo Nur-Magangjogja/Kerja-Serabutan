@@ -170,13 +170,104 @@
             return true;
         };
 
+        function playWebAudioChime() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                if (!window._notifAudioCtx || window._notifAudioCtx.state === 'closed') {
+                    window._notifAudioCtx = new AudioCtx();
+                }
+                const ctx = window._notifAudioCtx;
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+                const now = ctx.currentTime;
+                
+                // Tone 1: 587.33 Hz (D5)
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(587.33, now);
+                gain1.gain.setValueAtTime(0.25, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.3);
+
+                // Tone 2: 880 Hz (A5)
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(880, now + 0.08);
+                gain2.gain.setValueAtTime(0.25, now + 0.08);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(now + 0.08);
+                osc2.stop(now + 0.5);
+            } catch(e) {}
+        }
+
+        window.playNotificationSound = function(options = {}) {
+            try {
+                const force = options && options.force === true;
+                const soundEnabled = (typeof window.getNotificationSoundEnabled === 'function')
+                    ? window.getNotificationSoundEnabled()
+                    : (window.USER_SOUND_ENABLED !== false);
+
+                if (!force && soundEnabled === false) return;
+
+                const defaultUrl = window.DEFAULT_NOTIFICATION_SOUND || "{{ asset('sfx/mixkit-software-interface-start-2574.mp3') }}";
+                const soundUrl = options.url || defaultUrl;
+                const audio = new Audio(soundUrl);
+                audio.volume = typeof options.volume === 'number' ? Math.max(0, Math.min(1, options.volume)) : 0.9;
+                const p = audio.play();
+                if (p !== undefined) {
+                    p.catch(() => {
+                        playWebAudioChime();
+                    });
+                }
+            } catch (e) {
+                playWebAudioChime();
+            }
+        };
+
+        // Pre-unlock audio on user interaction
+        (function() {
+            let unlocked = false;
+            const unlock = () => {
+                if (unlocked) return;
+                try {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) {
+                        if (!window._notifAudioCtx) {
+                            window._notifAudioCtx = new AudioCtx();
+                        }
+                        if (window._notifAudioCtx.state === 'suspended') {
+                            window._notifAudioCtx.resume();
+                        }
+                    }
+                    const a = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+                    a.volume = 0;
+                    const p = a.play();
+                    if (p !== undefined) {
+                        p.then(() => { unlocked = true; }).catch(() => {});
+                    }
+                } catch(e) {}
+            };
+            ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown', 'scroll'].forEach(evt => {
+                window.addEventListener(evt, unlock, { once: true, passive: true });
+            });
+        })();
+
         (function () {
             if (!window.showMitraNotification) {
-                window.showMitraNotification = function({ title = 'Notifikasi', message = '', url = '#' , timeout = 4000, type = 'success' }) {
+                window.showMitraNotification = function({ title = 'Notifikasi', message = '', url = '#' , timeout = 6000, type = 'success' }) {
                     try {
                         // Mainkan audio notifikasi jika aktif
                         if (typeof window.playNotificationSound === 'function') {
-                            window.playNotificationSound();
+                            window.playNotificationSound({ force: true });
                         }
 
                         const container = document.getElementById('mitra-global-notification-inner');
@@ -184,23 +275,40 @@
                         container.innerHTML = '';
 
                         const wrap = document.createElement('div');
-                        wrap.className = 'bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-3 max-w-md mx-3 pointer-events-auto transition transform duration-300';
-                        wrap.style.boxShadow = '0 10px 30px rgba(2,6,23,0.08)';
+                        wrap.className = 'bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/80 dark:border-gray-700/80 p-3.5 max-w-md mx-auto pointer-events-auto transition-all duration-300 transform translate-y-0 opacity-100 flex items-center gap-3.5 cursor-pointer select-none';
+                        wrap.style.boxShadow = '0 16px 40px -8px rgba(0, 0, 0, 0.25)';
 
-                        // Text-only body (matching customer notification style)
+                        // Icon badge
+                        const iconWrap = document.createElement('div');
+                        iconWrap.className = 'w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-sky-500/20';
+                        iconWrap.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>';
+
+                        // Body
                         const body = document.createElement('div');
-                        body.className = 'min-w-0';
+                        body.className = 'flex-1 min-w-0';
+
+                        const headerRow = document.createElement('div');
+                        headerRow.className = 'flex items-center justify-between gap-1';
+
                         const titleEl = document.createElement('div');
-                        titleEl.className = 'text-sm font-semibold text-gray-900 dark:text-white';
-                        titleEl.innerText = String(title || 'Notifikasi');
+                        titleEl.className = 'text-xs font-bold text-gray-900 dark:text-white truncate';
+                        titleEl.innerText = String(title || 'Pesan Baru');
+
+                        const badgeEl = document.createElement('span');
+                        badgeEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 shrink-0';
+                        badgeEl.innerText = 'Pesan Baru';
+
+                        headerRow.appendChild(titleEl);
+                        headerRow.appendChild(badgeEl);
 
                         const msgEl = document.createElement('div');
-                        msgEl.className = 'text-xs text-gray-600 dark:text-gray-300 mt-0.5';
-                        msgEl.innerText = String(message || '');
+                        msgEl.className = 'text-xs text-gray-600 dark:text-gray-300 mt-0.5 line-clamp-2 leading-snug';
+                        msgEl.innerText = String(message || 'Ketuk untuk membuka obrolan.');
 
-                        body.appendChild(titleEl);
-                        if ((message || '').toString().trim() !== '') body.appendChild(msgEl);
+                        body.appendChild(headerRow);
+                        body.appendChild(msgEl);
 
+                        wrap.appendChild(iconWrap);
                         wrap.appendChild(body);
 
                         wrap.addEventListener('click', function (ev) {
@@ -217,7 +325,10 @@
 
                         container.appendChild(wrap);
                         const effectiveTimeout = (type === 'error' || type === 'warning' || type === 'danger') ? Math.max(timeout, 8000) : timeout;
-                        setTimeout(() => { container.innerHTML = ''; }, effectiveTimeout);
+                        setTimeout(() => { 
+                            wrap.classList.add('opacity-0', '-translate-y-2');
+                            setTimeout(() => { container.innerHTML = ''; }, 300);
+                        }, effectiveTimeout);
                     } catch (err) { console.error('showMitraNotification error', err); }
                 };
             }
@@ -238,21 +349,33 @@
                     const d = (e && e.detail && Array.isArray(e.detail)) ? (e.detail[0] || {}) : (e && e.detail ? e.detail : {});
                     const helpId = d.helpId || d.help_id || null;
                     const fromId = d.fromId || d.from_id || null;
+                    const cancelId = d.cancelId || d.cancel_id || null;
+                    const reportId = d.reportId || d.report_id || null;
+
+                    // Selalu bunyikan nada notifikasi setiap ada pesan baru
+                    if (typeof window.playNotificationSound === 'function') {
+                        window.playNotificationSound({ force: true });
+                    }
 
                     const chatWrapper = document.getElementById('messagesWrapper');
                     if (chatWrapper) {
                         const activeHelpId = chatWrapper.dataset.activeHelpId;
                         const activePartnerId = chatWrapper.dataset.activePartnerId;
+                        const activeCancelId = chatWrapper.dataset.activeCancelId;
+                        const activeReportId = chatWrapper.dataset.activeReportId;
 
                         if ((helpId && activeHelpId && String(helpId) === String(activeHelpId)) ||
-                            (fromId && activePartnerId && String(fromId) === String(activePartnerId))) {
+                            (fromId && activePartnerId && String(fromId) === String(activePartnerId)) ||
+                            (cancelId && activeCancelId && String(cancelId) === String(activeCancelId)) ||
+                            (reportId && activeReportId && String(reportId) === String(activeReportId))) {
                             return;
                         }
                     }
 
                     const from = d.from || d.from_name || 'Customer';
                     const message = d.message || '';
-                    const url = helpId ? mitraChatRoute + '/' + encodeURIComponent(helpId) : mitraChatRoute;
+                    const defaultUrl = helpId ? mitraChatRoute + '/' + encodeURIComponent(helpId) : mitraChatRoute;
+                    const url = d.url || defaultUrl;
                     window.showMitraNotification({ title: 'Pesan Baru dari ' + from, message: message || 'Ketuk untuk membuka chat.', url: url, timeout: 6000, type: 'message' });
                 });
 

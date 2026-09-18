@@ -164,6 +164,11 @@ class HelpCancelRequest extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
+    public function messages()
+    {
+        return $this->hasMany(HelpCancelMessage::class, 'help_cancel_request_id');
+    }
+
     public function getRefundAmountAttribute()
     {
         return $this->refund_amount_customer;
@@ -172,6 +177,114 @@ class HelpCancelRequest extends Model
     public function getPartnerAmountAttribute()
     {
         return $this->payout_amount_mitra;
+    }
+
+    /**
+     * Dapatkan ikon representatif sesuai jenis pekerjaan / layanan
+     */
+    public function getJobIconAttribute(): string
+    {
+        $help = $this->help;
+        if (!$help) {
+            return '🛵';
+        }
+
+        if ($help->isPickup()) {
+            if ($help->isPassenger()) {
+                return '🛵';
+            }
+            return '📦';
+        }
+
+        return '🛠️';
+    }
+
+    /**
+     * Dapatkan label jenis pekerjaan / layanan
+     */
+    public function getJobLabelAttribute(): string
+    {
+        $help = $this->help;
+        if (!$help) {
+            return 'Layanan SayaBantu';
+        }
+
+        if ($help->isPickup()) {
+            if ($help->isPassenger()) {
+                return 'Antar Penumpang';
+            }
+            return 'Kurir Barang & Dokumen';
+        }
+
+        return 'Kerja Serabutan Di Lokasi';
+    }
+
+    /**
+     * Class CSS container ikon pekerjaan
+     */
+    public function getJobIconBoxClassAttribute(): string
+    {
+        $help = $this->help;
+        if (!$help || $help->isOnSite()) {
+            return 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20 dark:border-amber-500/30';
+        }
+
+        if ($help->isPassenger()) {
+            return 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 dark:border-emerald-500/30';
+        }
+
+        return 'bg-sky-500/10 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/20 dark:border-sky-500/30';
+    }
+
+    /**
+     * Class CSS badge kategori pekerjaan
+     */
+    public function getJobCategoryBadgeClassAttribute(): string
+    {
+        $help = $this->help;
+        if (!$help || $help->isOnSite()) {
+            return 'bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/60';
+        }
+
+        if ($help->isPassenger()) {
+            return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60';
+        }
+
+        return 'bg-sky-50 text-sky-700 dark:bg-sky-950/70 dark:text-sky-300 border-sky-200/80 dark:border-sky-800/60';
+    }
+
+    /**
+     * Dapatkan label kondisi & tipe pembatalan spesifik
+     */
+    public function getCancellationTypeLabelAttribute(): string
+    {
+        $help = $this->help;
+        $isPartner = ($this->requester_type === self::REQUESTER_PARTNER);
+
+        if (!$help || $help->isOnSite()) {
+            $isKonsep2 = ($isPartner && (
+                $this->cancellation_stage === 'in_progress' || 
+                $this->previous_status === 'in_progress' || 
+                ($help?->status === Help::STATUS_PARTNER_CANCEL_REQUESTED)
+            ));
+
+            if ($isKonsep2) {
+                return 'Saat Pengerjaan (Konsep 2)';
+            }
+            if ($isPartner) {
+                return 'Kendala Lapangan (Konsep 1)';
+            }
+            return 'Permohonan Customer';
+        }
+
+        $stage = $this->cancellation_stage ?: ($this->previous_stage ?: $help->service_stage);
+        return match($stage) {
+            'going_to_pickup', Help::STAGE_GOING_TO_PICKUP => 'Menuju Titik Jemput',
+            'at_pickup', Help::STAGE_AT_PICKUP, Help::STAGE_WAITING_FOR_CUSTOMER => 'Di Titik Jemput',
+            'item_collected', Help::STAGE_ITEM_COLLECTED, 'going_to_destination', Help::STAGE_GOING_TO_DESTINATION => 'Dalam Pengantaran',
+            'at_destination', Help::STAGE_AT_DESTINATION, Help::STAGE_FINAL_APPROACH => 'Tiba di Tujuan',
+            default => $isPartner ? 'Kendala Pengantaran Driver' : 'Pembatalan Customer'
+        };
     }
 
     public function isPending(): bool

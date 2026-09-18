@@ -2179,19 +2179,116 @@
     </script>
 
     <script>
-        // Expose current help id so polling can start immediately
+        // Expose current help id so polling and WebSocket subscription can start immediately
         window.currentHelpId = '{{ $help->id }}';
 
-        // Client-side polling runs continuously and updates Alpine + map
         (function() {
             let pollingInterval = null;
-            const POLL_MS = 4000; // poll every 4 seconds
+            let echoChannel = null;
+            const POLL_MS = 25000; // Relaxed 25s fallback poll (WebSockets provide real-time updates)
+
+            function applyTrackingData(data) {
+                if (!data) return;
+
+                // Update Alpine's trackingData so UI and any bindings reflect latest coords
+                try {
+                    if (window.Alpine) {
+                        const alpineEl = document.querySelector('[x-data]');
+                        if (alpineEl) {
+                            const alpine = Alpine.$data(alpineEl);
+                            if (alpine && alpine.trackingData) {
+                                if (data.partnerLat != null) alpine.trackingData.partnerLat = data.partnerLat;
+                                if (data.partnerLng != null) alpine.trackingData.partnerLng = data.partnerLng;
+                                if (data.customerLat != null) alpine.trackingData.customerLat = data.customerLat;
+                                if (data.customerLng != null) alpine.trackingData.customerLng = data.customerLng;
+                                if (data.partnerName != null) alpine.trackingData.partnerName = data.partnerName;
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Failed updating Alpine data', err);
+                }
+
+                // Call existing global function used by map code to update markers & route
+                if (window.updateMapFromTracking) {
+                    window.updateMapFromTracking({
+                        partnerLat: data.partnerLat,
+                        partnerLng: data.partnerLng,
+                        customerLat: data.customerLat,
+                        customerLng: data.customerLng
+                    });
+                }
+
+                // Calculate simple straight-line distance + ETA fallback and update summary + modal placeholders
+                try {
+                    const pLat = parseFloat(data.partnerLat);
+                    const pLng = parseFloat(data.partnerLng);
+                    const cLat = parseFloat(data.customerLat);
+                    const cLng = parseFloat(data.customerLng);
+
+                    if (!isNaN(pLat) && !isNaN(pLng) && !isNaN(cLat) && !isNaN(cLng)) {
+                        function haversine(lat1, lon1, lat2, lon2) {
+                            const R = 6371; // km
+                            const dLat = (lat2 - lat1) * Math.PI / 180;
+                            const dLon = (lon2 - lon1) * Math.PI / 180;
+                            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+                            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                            return R * c;
+                        }
+
+                        const distKm = haversine(pLat, pLng, cLat, cLng);
+                        const distText = distKm >= 1 ? distKm.toFixed(1) + ' km' : Math.round(distKm * 1000) + ' m';
+
+                        const estMinutes = Math.max(1, Math.ceil((distKm / 30) * 60));
+                        const hours = Math.floor(estMinutes / 60);
+                        const minutes = estMinutes % 60;
+                        const etaText = hours > 0 ? `${hours} jam ${minutes} menit` : `${minutes} menit`;
+
+                        const summaryD = document.getElementById('summary-distance');
+                        const summaryE = document.getElementById('summary-eta');
+                        if (summaryD) summaryD.textContent = distText;
+                        if (summaryE) summaryE.textContent = etaText;
+
+                        const modalD = document.getElementById('distance-text');
+                        const modalE = document.getElementById('eta-time');
+                        if (modalD) modalD.textContent = distText;
+                        if (modalE) modalE.textContent = etaText;
+                    }
+                } catch (err) {
+                    console.warn('Failed calculating distance/ETA fallback', err);
+                }
+            }
+
+            function subscribeToEcho(helpId) {
+                if (!helpId || typeof window.Echo === 'undefined' || typeof window.Echo.private !== 'function') return;
+                try {
+                    if (echoChannel) {
+                        window.Echo.leave('chat.help.' + helpId);
+                    }
+                    echoChannel = window.Echo.private('chat.help.' + helpId)
+                        .listen('PartnerLocationUpdated', (data) => {
+                            applyTrackingData(data);
+                        })
+                        .listen('.PartnerLocationUpdated', (data) => {
+                            applyTrackingData(data);
+                        });
+                } catch (e) {
+                    console.warn('Echo tracking subscription error:', e);
+                }
+            }
+
+            function unsubscribeEcho(helpId) {
+                if (!helpId || typeof window.Echo === 'undefined' || typeof window.Echo.leave !== 'function') return;
+                try {
+                    window.Echo.leave('chat.help.' + helpId);
+                    echoChannel = null;
+                } catch (e) {}
+            }
 
             function startPolling(helpId) {
                 if (!helpId) return;
+                subscribeToEcho(helpId);
                 if (pollingInterval) return; // already running
-                console.log('🔁 Starting tracking polling for help', helpId);
-                // immediate fetch
                 fetchAndUpdate(helpId);
                 pollingInterval = setInterval(() => fetchAndUpdate(helpId), POLL_MS);
             }
@@ -2200,7 +2297,6 @@
                 if (pollingInterval) {
                     clearInterval(pollingInterval);
                     pollingInterval = null;
-                    console.log('⏹️ Stopped tracking polling');
                 }
             }
 
@@ -2211,106 +2307,28 @@
                         headers: { 'Accept': 'application/json' }
                     });
                     if (!resp.ok) {
-                        console.warn('Tracking endpoint returned', resp.status);
                         return;
                     }
                     const data = await resp.json();
-
-                    // Update Alpine's trackingData so UI and any bindings reflect latest coords
-                    try {
-                        if (window.Alpine) {
-                            const alpineEl = document.querySelector('[x-data]');
-                            if (alpineEl) {
-                                const alpine = Alpine.$data(alpineEl);
-                                if (alpine && alpine.trackingData) {
-                                    alpine.trackingData.partnerLat = data.partnerLat ?? alpine.trackingData.partnerLat;
-                                    alpine.trackingData.partnerLng = data.partnerLng ?? alpine.trackingData.partnerLng;
-                                    alpine.trackingData.customerLat = data.customerLat ?? alpine.trackingData.customerLat;
-                                    alpine.trackingData.customerLng = data.customerLng ?? alpine.trackingData.customerLng;
-                                    alpine.trackingData.partnerName = data.partnerName ?? alpine.trackingData.partnerName;
-                                }
-                            }
-                        }
-                    } catch (err) {
-                        console.warn('Failed updating Alpine data', err);
-                    }
-
-                    // Call existing global function used by map code to update markers & route
-                    if (window.updateMapFromTracking && data) {
-                        window.updateMapFromTracking({
-                            partnerLat: data.partnerLat,
-                            partnerLng: data.partnerLng,
-                            customerLat: data.customerLat,
-                            customerLng: data.customerLng
-                        });
-                    }
-
-                    // Calculate simple straight-line distance + ETA fallback and update summary + modal placeholders
-                    try {
-                        const pLat = parseFloat(data.partnerLat);
-                        const pLng = parseFloat(data.partnerLng);
-                        const cLat = parseFloat(data.customerLat);
-                        const cLng = parseFloat(data.customerLng);
-
-                        if (!isNaN(pLat) && !isNaN(pLng) && !isNaN(cLat) && !isNaN(cLng)) {
-                            // Haversine formula (km)
-                            function haversine(lat1, lon1, lat2, lon2) {
-                                const R = 6371; // km
-                                const dLat = (lat2 - lat1) * Math.PI / 180;
-                                const dLon = (lon2 - lon1) * Math.PI / 180;
-                                const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-                                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                                return R * c;
-                            }
-
-                            const distKm = haversine(pLat, pLng, cLat, cLng);
-                            const distText = distKm >= 1 ? distKm.toFixed(1) + ' km' : Math.round(distKm * 1000) + ' m';
-
-                            // Estimate time assuming avg speed 30 km/h in city
-                            const estMinutes = Math.max(1, Math.ceil((distKm / 30) * 60));
-                            const hours = Math.floor(estMinutes / 60);
-                            const minutes = estMinutes % 60;
-                            const etaText = hours > 0 ? `${hours} jam ${minutes} menit` : `${minutes} menit`;
-
-                            // Update always-visible summary
-                            const summaryD = document.getElementById('summary-distance');
-                            const summaryE = document.getElementById('summary-eta');
-                            if (summaryD) summaryD.textContent = distText;
-                            if (summaryE) summaryE.textContent = etaText;
-
-                            // Also update modal placeholders if present
-                            const modalD = document.getElementById('distance-text');
-                            const modalE = document.getElementById('eta-time');
-                            if (modalD) modalD.textContent = distText;
-                            if (modalE) modalE.textContent = etaText;
-                        }
-                    } catch (err) {
-                        console.warn('Failed calculating distance/ETA fallback', err);
-                    }
-
+                    applyTrackingData(data);
                 } catch (err) {
-                    console.error('Error fetching tracking data:', err);
+                    // silent fallback
                 }
             }
 
-            // Start polling immediately for the current help id (so modal doesn't need open/close)
+            // Start polling & websocket immediately for the current help id
             try {
                 const initialId = window.currentHelpId || null;
                 if (initialId) startPolling(initialId);
             } catch (e) {
-                console.error('Error starting initial polling:', e);
+                console.error('Error starting initial tracking:', e);
             }
 
-            // Hook into Livewire modal events to ensure polling persists or can be stopped if desired
+            // Hook into Livewire modal events
             document.addEventListener('livewire:init', () => {
                 Livewire.on('mapModalOpened', (helpId) => {
                     const idToUse = helpId || window.currentHelpId;
                     startPolling(idToUse);
-                });
-
-                // stop polling when modal closed (optional) - we will keep polling in background, so don't stop here
-                Livewire.on('mapModalClosed', () => {
-                    // intentionally left blank to allow continuous background polling
                 });
             });
 
@@ -2320,6 +2338,7 @@
                     clearTimeout(mapResizeTimer);
                     mapResizeTimer = null;
                 }
+                unsubscribeEcho(window.currentHelpId);
                 stopPolling();
                 if (map) {
                     try { map.remove(); } catch(e){}
@@ -2330,7 +2349,10 @@
                     mapEl._leaflet_id = null;
                 }
             });
-            window.addEventListener('beforeunload', stopPolling);
+            window.addEventListener('beforeunload', () => {
+                unsubscribeEcho(window.currentHelpId);
+                stopPolling();
+            });
         })();
     </script>
 

@@ -95,13 +95,104 @@
             return true;
         };
 
+        function playWebAudioChime() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                if (!window._notifAudioCtx || window._notifAudioCtx.state === 'closed') {
+                    window._notifAudioCtx = new AudioCtx();
+                }
+                const ctx = window._notifAudioCtx;
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+                const now = ctx.currentTime;
+                
+                // Tone 1: 587.33 Hz (D5)
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(587.33, now);
+                gain1.gain.setValueAtTime(0.25, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.3);
+
+                // Tone 2: 880 Hz (A5)
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(880, now + 0.08);
+                gain2.gain.setValueAtTime(0.25, now + 0.08);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(now + 0.08);
+                osc2.stop(now + 0.5);
+            } catch(e) {}
+        }
+
+        window.playNotificationSound = function(options = {}) {
+            try {
+                const force = options && options.force === true;
+                const soundEnabled = (typeof window.getNotificationSoundEnabled === 'function')
+                    ? window.getNotificationSoundEnabled()
+                    : (window.USER_SOUND_ENABLED !== false);
+
+                if (!force && soundEnabled === false) return;
+
+                const defaultUrl = window.DEFAULT_NOTIFICATION_SOUND || "{{ asset('sfx/mixkit-software-interface-start-2574.mp3') }}";
+                const soundUrl = options.url || defaultUrl;
+                const audio = new Audio(soundUrl);
+                audio.volume = typeof options.volume === 'number' ? Math.max(0, Math.min(1, options.volume)) : 0.9;
+                const p = audio.play();
+                if (p !== undefined) {
+                    p.catch(() => {
+                        playWebAudioChime();
+                    });
+                }
+            } catch (e) {
+                playWebAudioChime();
+            }
+        };
+
+        // Pre-unlock audio on user interaction
+        (function() {
+            let unlocked = false;
+            const unlock = () => {
+                if (unlocked) return;
+                try {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) {
+                        if (!window._notifAudioCtx) {
+                            window._notifAudioCtx = new AudioCtx();
+                        }
+                        if (window._notifAudioCtx.state === 'suspended') {
+                            window._notifAudioCtx.resume();
+                        }
+                    }
+                    const a = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+                    a.volume = 0;
+                    const p = a.play();
+                    if (p !== undefined) {
+                        p.then(() => { unlocked = true; }).catch(() => {});
+                    }
+                } catch(e) {}
+            };
+            ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown', 'scroll'].forEach(evt => {
+                window.addEventListener(evt, unlock, { once: true, passive: true });
+            });
+        })();
+
         (function () {
             if (!window.showMitraNotification) {
                 window.showMitraNotification = function({ title = 'Notifikasi', message = '', url = '#' , timeout = 4000, type = 'success' }) {
                     try {
                         // Mainkan audio notifikasi jika aktif
                         if (typeof window.playNotificationSound === 'function') {
-                            window.playNotificationSound();
+                            window.playNotificationSound({ force: true });
                         }
 
                         const container = document.getElementById('mitra-global-notification-inner');

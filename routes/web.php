@@ -353,6 +353,7 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
     Route::get('/partners/greylist', \App\Livewire\Admin\Partners\Greylist::class)->name('partners.greylist');
     Route::get('/disputes', \App\Livewire\Admin\Disputes\Index::class)->name('disputes.index');
     Route::get('/cancellations', \App\Livewire\Admin\Disputes\Index::class)->name('cancellations.index');
+    Route::get('/cancellations/{cancelRequest}/chat', \App\Livewire\Admin\Disputes\Chat::class)->name('cancellations.chat');
 
     Route::get('/settings/appearance', \App\Livewire\SuperAdmin\Settings\Appearance::class)->name('settings.appearance');
     Route::get('/settings', function () {
@@ -383,6 +384,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/partners/greylist', \App\Livewire\Admin\Partners\Greylist::class)->name('partners.greylist');
     Route::get('/disputes', \App\Livewire\Admin\Disputes\Index::class)->name('disputes.index');
     Route::get('/cancellations', \App\Livewire\Admin\Disputes\Index::class)->name('cancellations.index');
+    Route::get('/cancellations/{cancelRequest}/chat', \App\Livewire\Admin\Disputes\Chat::class)->name('cancellations.chat');
     Route::get('/topup/approvals', \App\Livewire\Admin\Topup\Approval::class)->name('topup.approvals');
 });
 

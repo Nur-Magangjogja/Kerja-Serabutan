@@ -161,6 +161,20 @@ class HelpTrackingService
 
         $help->save();
 
+        try {
+            broadcast(new \App\Events\PartnerLocationUpdated(
+                helpId: (int) $help->id,
+                mitraId: (int) ($help->mitra_id ?? 0),
+                partnerLat: (float) $help->partner_current_lat,
+                partnerLng: (float) $help->partner_current_lng,
+                customerLat: $help->latitude ? (float) $help->latitude : null,
+                customerLng: $help->longitude ? (float) $help->longitude : null,
+                partnerName: $help->mitra?->name ?? 'Mitra'
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('[HelpTrackingService] PartnerLocationUpdated broadcast failed: ' . $e->getMessage());
+        }
+
         if ($statusChanged && $help->user) {
             $this->notifyCustomer($help, $help->status);
         }

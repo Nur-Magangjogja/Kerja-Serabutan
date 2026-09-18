@@ -57,6 +57,30 @@ class CitySeeder extends Seeder
         $now = now();
         $citiesBatch = [];
 
+        // Daftar kode kota prioritas yang aktif secara default saat deploy (D.I. Yogyakarta, Solo Raya, Semarang, DKI Jakarta, Bandung, Surabaya)
+        $activeCityCodes = [
+            // D.I. Yogyakarta
+            '3404', // Kabupaten Sleman
+            '3471', // Kota Yogyakarta
+            '3402', // Kabupaten Bantul
+            '3401', // Kabupaten Kulon Progo
+            '3403', // Kabupaten Gunungkidul
+            // Jawa Tengah
+            '3372', // Kota Surakarta
+            '3374', // Kota Semarang
+            '3310', // Kabupaten Klaten
+            '3311', // Kabupaten Sukoharjo
+            // DKI Jakarta
+            '3174', // Kota Jakarta Selatan
+            '3171', // Kota Jakarta Pusat
+            '3173', // Kota Jakarta Barat
+            '3175', // Kota Jakarta Timur
+            '3172', // Kota Jakarta Utara
+            // Jawa Barat & Jawa Timur
+            '3273', // Kota Bandung
+            '3578', // Kota Surabaya
+        ];
+
         foreach ($citiesJson as $c) {
             $code = (string)($c['code'] ?? $c['id']);
             $rawName = trim($c['name'] ?? '');
@@ -70,7 +94,7 @@ class CitySeeder extends Seeder
                 $formattedName = $type . ' ' . $rawName;
             }
 
-            // Koordinat khusus untuk Sleman dan Surakarta
+            // Koordinat default untuk wilayah operasional utama
             $latitude = $c['latitude'] ?? null;
             $longitude = $c['longitude'] ?? null;
 
@@ -78,32 +102,43 @@ class CitySeeder extends Seeder
                 $formattedName = 'Kabupaten Sleman';
                 $latitude = -7.7155600;
                 $longitude = 110.3555600;
-            } elseif ($code === '3372' || str_contains($rawName, 'Surakarta')) {
-                $formattedName = 'Kota Surakarta';
-                $latitude = -7.5666700;
-                $longitude = 110.8166700;
             } elseif ($code === '3471' || str_contains($rawName, 'Yogyakarta')) {
                 $formattedName = 'Kota Yogyakarta';
                 $latitude = -7.7956000;
                 $longitude = 110.3695000;
+            } elseif ($code === '3402' || str_contains($rawName, 'Bantul')) {
+                $formattedName = 'Kabupaten Bantul';
+                $latitude = -7.8938800;
+                $longitude = 110.3341700;
+            } elseif ($code === '3372' || str_contains($rawName, 'Surakarta')) {
+                $formattedName = 'Kota Surakarta';
+                $latitude = -7.5666700;
+                $longitude = 110.8166700;
             } elseif ($code === '3374' || str_contains($rawName, 'Semarang')) {
                 $formattedName = 'Kota Semarang';
                 $latitude = -6.9932000;
                 $longitude = 110.4203000;
+            } elseif ($code === '3174' || str_contains($rawName, 'Jakarta Selatan')) {
+                $formattedName = 'Kota Jakarta Selatan';
+                $latitude = -6.2615000;
+                $longitude = 106.8106000;
             }
 
+            $isActive = in_array($code, $activeCityCodes, true);
+
             $citiesBatch[] = [
-                'code'        => $code,
-                'name'        => $formattedName,
-                'type'        => $type,
-                'province'    => $provName,
-                'province_id' => $provId,
-                'postal_code' => $c['postal_code'] ?? null,
-                'latitude'    => $latitude,
-                'longitude'   => $longitude,
-                'is_active'   => isset($c['is_active']) ? (bool)$c['is_active'] : true,
-                'created_at'  => $now,
-                'updated_at'  => $now,
+                'code'                        => $code,
+                'name'                        => $formattedName,
+                'type'                        => $type,
+                'province'                    => $provName,
+                'province_id'                 => $provId,
+                'postal_code'                 => $c['postal_code'] ?? null,
+                'latitude'                    => $latitude,
+                'longitude'                   => $longitude,
+                'is_active'                   => $isActive,
+                'is_matching_seeking_enabled' => $isActive ? true : null,
+                'created_at'                  => $now,
+                'updated_at'                  => $now,
             ];
         }
 
@@ -113,7 +148,7 @@ class CitySeeder extends Seeder
                 City::upsert(
                     $chunk,
                     ['code'],
-                    ['name', 'type', 'province', 'province_id', 'postal_code', 'latitude', 'longitude', 'is_active', 'updated_at']
+                    ['name', 'type', 'province', 'province_id', 'postal_code', 'latitude', 'longitude', 'is_active', 'is_matching_seeking_enabled', 'updated_at']
                 );
             }
         });

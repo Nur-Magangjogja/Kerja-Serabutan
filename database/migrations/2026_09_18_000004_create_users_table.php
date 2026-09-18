@@ -24,13 +24,16 @@ return new class extends Migration
             $table->string('password');
             $table->rememberToken();
             $table->foreignId('city_id')->nullable()->constrained('cities')->nullOnDelete();
+            $table->foreignId('district_id')->nullable()->constrained('districts')->nullOnDelete();
             $table->string('ktp_path')->nullable();
             $table->string('ktp_photo')->nullable();
             $table->string('selfie_photo')->nullable();
+            $table->string('profile_photo')->nullable();
             $table->boolean('verified')->default(false);
             $table->enum('status', ['active', 'inactive', 'blocked'])->default('inactive');
             $table->string('phone')->nullable();
             $table->text('address')->nullable();
+            $table->json('saved_landmarks')->nullable();
             $table->unsignedInteger('rt')->nullable();
             $table->unsignedInteger('rw')->nullable();
             $table->string('kelurahan', 100)->nullable();
@@ -58,6 +61,9 @@ return new class extends Migration
             $table->index(['role', 'status']);
             $table->index(['is_greylisted', 'is_shadow_banned']);
             $table->index('city_id');
+            $table->index('district_id');
+            $table->index(['role', 'district_id']);
+            $table->index(['status', 'district_id']);
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

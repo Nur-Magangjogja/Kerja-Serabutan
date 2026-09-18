@@ -23,10 +23,12 @@ return new class extends Migration
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
             $table->boolean('is_active')->default(true);
+            $table->boolean('is_matching_seeking_enabled')->nullable()->default(null)->comment('NULL = Ikuti Global, 1 = Aktifkan Antrean, 0 = Langsung ke Daftar Bantuan');
             $table->timestamps();
 
             $table->index('province_id');
             $table->index('admin_id');
+            $table->index('is_matching_seeking_enabled', 'idx_cities_seeking_enabled');
         });
 
         Schema::create('districts', function (Blueprint $table) {

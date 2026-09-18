@@ -40,4 +40,15 @@ class Chat extends Model
     {
         return $this->belongsTo(User::class, 'customer_id');
     }
+
+    protected static function booted(): void
+    {
+        static::created(function (Chat $chat) {
+            try {
+                broadcast(new \App\Events\ChatMessageSent($chat));
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('[Chat] ChatMessageSent broadcast failed: ' . $e->getMessage());
+            }
+        });
+    }
 }

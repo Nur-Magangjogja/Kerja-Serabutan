@@ -27,6 +27,7 @@ return new class extends Migration
             $table->string('kecamatan')->nullable();
             $table->string('city')->nullable();
             $table->foreignId('city_id')->nullable()->constrained('cities')->nullOnDelete();
+            $table->foreignId('district_id')->nullable()->constrained('districts')->nullOnDelete();
             $table->string('province')->nullable();
             $table->string('ktp_photo_path')->nullable();
             $table->string('selfie_photo_path')->nullable();
@@ -36,6 +37,8 @@ return new class extends Migration
             $table->text('rejection_reason')->nullable();
             $table->enum('status', ['in_progress', 'pending_verification', 'approved', 'rejected', 'completed', 'cancelled'])->default('in_progress');
             $table->timestamps();
+
+            $table->index('district_id');
         });
     }
 

@@ -1,4 +1,8 @@
-<div wire:poll.20s.visible="refreshCount" class="inline-flex">
+<div wire:poll.5s.visible="refreshCount"
+     x-on:help-new-message.window="$wire.refreshCount()"
+     x-on:chat-messages-read.window="$wire.refreshCount()"
+     x-on:notifications-updated.window="$wire.refreshCount()"
+     class="inline-flex">
     <a
         href="{{ $route }}"
         wire:navigate

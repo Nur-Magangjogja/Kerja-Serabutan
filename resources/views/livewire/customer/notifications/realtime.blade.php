@@ -1,37 +1,53 @@
-<div wire:poll.8s.visible="poll"></div>
+<div wire:poll.3s="poll"></div>
 
 <script>
-    // Listen for Livewire dispatched events and re-dispatch as browser events
-    document.addEventListener('livewire:init', () => {
-        Livewire.on('help-taken', (event) => {
-            const data = Array.isArray(event) ? (event[0] || {}) : event;
-            window.dispatchEvent(new CustomEvent('help-taken', { detail: data }));
-        });
+    (function() {
+        function initRealtimeListeners() {
+            if (window.Livewire && typeof window.Livewire.on === 'function') {
+                if (!window._customerRealtimeLivewireListenersAttached) {
+                    window._customerRealtimeLivewireListenersAttached = true;
 
-        Livewire.on('help-new-message', (event) => {
-            const data = Array.isArray(event) ? (event[0] || {}) : event;
-            window.dispatchEvent(new CustomEvent('help-new-message', { detail: data }));
-        });
+                    Livewire.on('help-taken', (event) => {
+                        const data = Array.isArray(event) ? (event[0] || {}) : event;
+                        window.dispatchEvent(new CustomEvent('help-taken', { detail: data }));
+                    });
 
-        // Bridge status changes (from Mitra GPS tracker) to browser events
-        Livewire.on('status-changed', (event) => {
-            try {
-                console.log('Livewire status-changed received:', event);
+                    Livewire.on('help-new-message', (event) => {
+                        const data = Array.isArray(event) ? (event[0] || {}) : event;
+                        window.dispatchEvent(new CustomEvent('help-new-message', { detail: data }));
+                        if (typeof window.playNotificationSound === 'function') {
+                            window.playNotificationSound({ force: true });
+                        }
+                    });
 
-                // Normalize payload: Livewire may send named params as an object
-                const payload = (event && event.detail) ? event.detail : event;
+                    Livewire.on('play-notification-sound', () => {
+                        if (typeof window.playNotificationSound === 'function') {
+                            window.playNotificationSound({ force: true });
+                        }
+                    });
 
-                // Re-dispatch a generic status update event
-                window.dispatchEvent(new CustomEvent('help-status-update', { detail: payload }));
+                    // Bridge status changes (from Mitra GPS tracker) to browser events
+                    Livewire.on('status-changed', (event) => {
+                        try {
+                            const payload = (event && event.detail) ? event.detail : (Array.isArray(event) ? (event[0] || {}) : event);
+                            window.dispatchEvent(new CustomEvent('help-status-update', { detail: payload }));
 
-                // If the newStatus indicates partner is on the way, also dispatch specific event
-                const newStatus = payload && (payload.newStatus || payload.status || '');
-                if (newStatus && String(newStatus).includes('partner_on_the_way')) {
-                    console.log('Bridging to help-on-the-way event', payload);
-                    window.dispatchEvent(new CustomEvent('help-on-the-way', { detail: { helpId: payload.helpId ?? payload.help_id, mitraName: payload.mitraName ?? payload.mitra_name ?? 'Mitra' } }));
+                            const newStatus = payload && (payload.newStatus || payload.status || '');
+                            if (newStatus && String(newStatus).includes('partner_on_the_way')) {
+                                window.dispatchEvent(new CustomEvent('help-on-the-way', { detail: { helpId: payload.helpId ?? payload.help_id, mitraName: payload.mitraName ?? payload.mitra_name ?? 'Mitra' } }));
+                            }
+                        } catch (err) { console.error('Error handling status-changed bridge', err); }
+                    });
                 }
-            } catch (err) { console.error('Error handling status-changed bridge', err); }
-        });
-    });
+            }
+        }
+
+        if (window.Livewire) {
+            initRealtimeListeners();
+        } else {
+            document.addEventListener('livewire:init', initRealtimeListeners, { once: true });
+        }
+        document.addEventListener('livewire:navigated', initRealtimeListeners);
+    })();
 </script>
 

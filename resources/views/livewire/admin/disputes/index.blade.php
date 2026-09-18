@@ -1,3 +1,6 @@
+@php
+    $routePrefix = in_array(auth()->user()->role ?? '', ['super_admin', 'superadmin']) ? 'superadmin.' : 'admin.';
+@endphp
 <div class="p-6">
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -340,16 +343,26 @@
                                     </div>
                                 </td>
                                 <td class="p-4 text-center">
-                                    @if($req->status === 'pending')
-                                        <button wire:click="openCancelReviewModal({{ $req->id }})" 
-                                                class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
-                                            Audit Wilayah
-                                        </button>
-                                    @else
-                                        <button wire:click="openCancelReviewModal({{ $req->id }})"
-                                                class="px-3 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-bold transition cursor-pointer">
-                                            Detail Log
-                                        </button>
+                                    <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                                        @if($req->status === 'pending')
+                                            <button wire:click="openCancelReviewModal({{ $req->id }})" 
+                                                    class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
+                                                Audit Wilayah
+                                            </button>
+                                        @else
+                                            <button wire:click="openCancelReviewModal({{ $req->id }})"
+                                                    class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold transition cursor-pointer">
+                                                Detail Log
+                                            </button>
+                                        @endif
+                                        <a href="{{ route($routePrefix . 'cancellations.chat', $req->id) }}" 
+                                           wire:navigate
+                                           title="Buka Ruang Obrolan Investigasi & Klarifikasi"
+                                           class="p-1.5 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-xl transition cursor-pointer flex items-center justify-center">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                        </a>
+                                    </div>
+                                    @if($req->status !== 'pending')
                                         <div class="text-[10px] text-gray-400 mt-0.5">
                                             Oleh {{ $req->reviewedBy->name ?? 'Sistem' }}
                                         </div>
@@ -486,13 +499,30 @@
 
                 {{-- Order Summary --}}
                 <div class="bg-white dark:bg-black p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 mb-4 text-xs space-y-1.5">
-                    <div class="flex justify-between">
+                    @php
+                        $cancelReqForHelp = \App\Models\HelpCancelRequest::where('help_id', $selectedHelp->id)->latest()->first();
+                    @endphp
+                    <div class="flex justify-between items-center">
                         <span class="text-gray-500 dark:text-gray-400">Customer:</span>
-                        <span class="font-bold text-gray-800 dark:text-gray-200">{{ $selectedHelp->user->name ?? 'Customer' }}</span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-bold text-gray-800 dark:text-gray-200">{{ $selectedHelp->user->name ?? 'Customer' }}</span>
+                            @if($cancelReqForHelp)
+                                <a href="{{ route($routePrefix . 'cancellations.chat', ['cancelRequest' => $cancelReqForHelp->id, 'tab' => 'customer']) }}" wire:navigate title="Buka Ruang Obrolan Investigasi" class="px-2 py-0.5 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900 rounded text-[10px] font-bold border border-blue-200 dark:border-blue-800 flex items-center gap-1 cursor-pointer transition">
+                                    <span>💬 Chat</span>
+                                </a>
+                            @endif
+                        </div>
                     </div>
-                    <div class="flex justify-between">
+                    <div class="flex justify-between items-center">
                         <span class="text-gray-500 dark:text-gray-400">Mitra:</span>
-                        <span class="font-bold text-gray-800 dark:text-gray-200">{{ $selectedHelp->mitra->name ?? 'Mitra' }}</span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-bold text-gray-800 dark:text-gray-200">{{ $selectedHelp->mitra->name ?? 'Mitra' }}</span>
+                            @if($selectedHelp->mitra && $cancelReqForHelp)
+                                <a href="{{ route($routePrefix . 'cancellations.chat', ['cancelRequest' => $cancelReqForHelp->id, 'tab' => 'mitra']) }}" wire:navigate title="Buka Ruang Obrolan Investigasi" class="px-2 py-0.5 bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900 rounded text-[10px] font-bold border border-amber-200 dark:border-amber-800 flex items-center gap-1 cursor-pointer transition">
+                                    <span>💬 Chat</span>
+                                </a>
+                            @endif
+                        </div>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-500 dark:text-gray-400">Dana Terkunci:</span>
@@ -870,16 +900,18 @@
                                 <div class="flex items-center gap-1.5 pt-1">
                                     @if($customerWaUrl)
                                         <a href="{{ $customerWaUrl }}" target="_blank" class="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] inline-flex items-center justify-center gap-1 transition shadow-2xs">
+                                            <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
                                             <span>Chat WA</span>
                                         </a>
                                     @else
                                         <button type="button" disabled class="flex-1 py-1.5 px-2 bg-gray-100 dark:bg-gray-900 text-gray-400 rounded-lg text-[11px] font-bold">No WA</button>
                                     @endif
-                                    @if($customer?->phone)
-                                        <a href="tel:{{ $customer->phone }}" class="py-1.5 px-2.5 bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 rounded-lg font-bold text-[11px] inline-flex items-center justify-center transition">
-                                            <span>Telp</span>
-                                        </a>
-                                    @endif
+                                    <a href="{{ route($routePrefix . 'cancellations.chat', ['cancelRequest' => $selectedCancelRequest->id, 'tab' => 'customer']) }}" 
+                                       wire:navigate
+                                       class="flex-1 py-1.5 px-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-[11px] inline-flex items-center justify-center gap-1 transition shadow-2xs cursor-pointer">
+                                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                        <span>Chat Platform</span>
+                                    </a>
                                 </div>
                             </div>
 
@@ -897,16 +929,18 @@
                                 <div class="flex items-center gap-1.5 pt-1">
                                     @if($partnerWaUrl)
                                         <a href="{{ $partnerWaUrl }}" target="_blank" class="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] inline-flex items-center justify-center gap-1 transition shadow-2xs">
+                                            <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
                                             <span>Chat WA</span>
                                         </a>
                                     @else
                                         <button type="button" disabled class="flex-1 py-1.5 px-2 bg-gray-100 dark:bg-gray-900 text-gray-400 rounded-lg text-[11px] font-bold">No WA</button>
                                     @endif
-                                    @if($partner?->phone)
-                                        <a href="tel:{{ $partner->phone }}" class="py-1.5 px-2.5 bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 rounded-lg font-bold text-[11px] inline-flex items-center justify-center transition">
-                                            <span>Telp</span>
-                                        </a>
-                                    @endif
+                                    <a href="{{ route($routePrefix . 'cancellations.chat', ['cancelRequest' => $selectedCancelRequest->id, 'tab' => 'mitra']) }}" 
+                                       wire:navigate
+                                       class="flex-1 py-1.5 px-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-[11px] inline-flex items-center justify-center gap-1 transition shadow-2xs cursor-pointer">
+                                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                        <span>Chat Platform</span>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -922,7 +956,7 @@
                                     <span>Konsep 2: Pengajuan Pembatalan Saat Pengerjaan Telah Dimulai</span>
                                 </div>
                                 <p class="text-rose-800 dark:text-rose-300/90 leading-relaxed text-[11px]">
-                                    Mitra mengajukan pembatalan tugas setelah menekan 'Mulai Pekerjaan'. Sesuai SOP, Admin <strong>wajib menghubungi Customer terlebih dahulu</strong> via WhatsApp/Telepon untuk klarifikasi kondisi riil di lapangan dan menentukan pengembalian dana (refund) berdasarkan kesepakatan.
+                                    Mitra mengajukan pembatalan tugas setelah menekan 'Mulai Pekerjaan'. Sesuai SOP, Admin <strong>wajib menghubungi Customer terlebih dahulu</strong> via WhatsApp atau Chat Platform untuk klarifikasi kondisi riil di lapangan dan menentukan pengembalian dana (refund) berdasarkan kesepakatan.
                                 </p>
                                 <div class="p-2.5 bg-white dark:bg-black rounded-xl border border-rose-200 dark:border-rose-800/80 text-[11px] text-gray-700 dark:text-gray-300 flex items-center justify-between flex-wrap gap-2">
                                     <span>Dana Tahan Escrow: <strong>Rp {{ number_format($gross, 0, ',', '.') }}</strong></span>

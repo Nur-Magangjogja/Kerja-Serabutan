@@ -25,13 +25,14 @@ class OfferRadarWidget extends Component
      */
     public function validateAndRepairState(): void
     {
-        if (!$this->userId) return;
+        $user = auth()->user();
+        if (!$user) return;
 
-        $onlineState = app(PartnerOnlineService::class)->getOrCreateState($this->userId);
+        $onlineState = app(PartnerOnlineService::class)->getOrCreateState($user);
         if ($onlineState && $onlineState->matching_status === PartnerOnlineState::STATUS_OFFER_PENDING && $onlineState->current_help_id) {
-            $offer = app(DashboardQueryService::class)->getActiveOfferForRadar($this->userId, $onlineState);
+            $offer = app(DashboardQueryService::class)->getActiveOfferForRadar($user->id, $onlineState);
             if (!$offer) {
-                app(PartnerOnlineService::class)->releaseCancelledOffer($this->userId, $onlineState->current_help_id);
+                app(PartnerOnlineService::class)->releaseCancelledOffer($user->id, $onlineState->current_help_id);
             }
         }
     }
@@ -160,8 +161,8 @@ class OfferRadarWidget extends Component
 
     public function render()
     {
-        $userId = auth()->id();
-        if (!$userId) {
+        $user = auth()->user();
+        if (!$user) {
             return view('livewire.mitra.dashboard.offer-radar-widget', [
                 'onlineState'  => null,
                 'activeOffer'  => null,
@@ -169,11 +170,9 @@ class OfferRadarWidget extends Component
             ]);
         }
 
-        $onlineState = app(PartnerOnlineService::class)->getOrCreateState($userId);
-        $activeOffer = app(DashboardQueryService::class)->getActiveOfferForRadar($userId, $onlineState);
-
-        $user = auth()->user();
-        $isRestricted = $user && app(MitraMatchingActions::class)->isRestricted($user);
+        $onlineState  = app(PartnerOnlineService::class)->getOrCreateState($user);
+        $activeOffer  = app(DashboardQueryService::class)->getActiveOfferForRadar($user->id, $onlineState);
+        $isRestricted = app(MitraMatchingActions::class)->isRestricted($user);
 
         return view('livewire.mitra.dashboard.offer-radar-widget', [
             'onlineState'  => $onlineState,

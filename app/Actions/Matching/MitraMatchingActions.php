@@ -202,7 +202,7 @@ class MitraMatchingActions
     {
         try {
             $this->matchingService->rejectOffer($dispatchId, $user, $reason);
-            $state = $this->onlineService->getOrCreateState($user->id);
+            $state = $this->onlineService->getOrCreateState($user);
             $isStandby = $state->matching_status === PartnerOnlineState::STATUS_ONLINE;
 
             $message = $isStandby
@@ -235,7 +235,7 @@ class MitraMatchingActions
     {
         try {
             $this->matchingService->handleExpiry($dispatchId, true);
-            $state = $this->onlineService->getOrCreateState($user->id);
+            $state = $this->onlineService->getOrCreateState($user);
             $isStandby = $state->matching_status === PartnerOnlineState::STATUS_ONLINE;
 
             $message = $isStandby

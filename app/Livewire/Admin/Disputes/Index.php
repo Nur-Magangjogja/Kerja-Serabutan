@@ -73,6 +73,12 @@ class Index extends Component
     public $customerSpLevel  = 1;
     public $customerSpReason = '';
 
+    // In-Modal Chat / Klarifikasi Lapangan Khusus Pembatalan (Tugas Bantuan)
+    public $showChatPanel     = false;
+    public $chatTarget        = 'customer'; // 'customer', 'mitra', 'both'
+    public $adminChatMessage  = '';
+    public $chatMessages      = [];
+
     protected $queryString = [
         'activeTab'           => ['except' => 'cancellations'],
         'status'              => ['except' => ''],
@@ -233,6 +239,101 @@ class Index extends Component
         return 'https://wa.me/' . $clean . ($text ? '?text=' . urlencode($text) : '');
     }
 
+    public function openPlatformChat(string $target = 'customer', ?int $helpId = null)
+    {
+        $this->chatTarget = in_array($target, ['customer', 'mitra', 'both']) ? $target : 'customer';
+        $this->showChatPanel = true;
+        $this->loadChatHistory($helpId);
+    }
+
+    public function closeChatPanel()
+    {
+        $this->showChatPanel = false;
+        $this->adminChatMessage = '';
+    }
+
+    public function setChatTarget(string $target)
+    {
+        $this->chatTarget = in_array($target, ['customer', 'mitra', 'both']) ? $target : 'customer';
+    }
+
+    public function loadChatHistory(?int $helpId = null)
+    {
+        $targetHelpId = $helpId ?? $this->selectedCancelRequest?->help_id ?? $this->selectedHelpId ?? $this->selectedHelp?->id;
+        if (!$targetHelpId) {
+            $this->chatMessages = [];
+            return;
+        }
+
+        $this->chatMessages = \App\Models\Chat::where('help_id', $targetHelpId)
+            ->with(['mitra', 'customer'])
+            ->latest('created_at')
+            ->take(30)
+            ->get()
+            ->reverse()
+            ->values()
+            ->toArray();
+    }
+
+    public function sendAdminChatMessage()
+    {
+        $targetHelpId = $this->selectedCancelRequest?->help_id ?? $this->selectedHelpId ?? $this->selectedHelp?->id;
+        if (!$targetHelpId || empty(trim($this->adminChatMessage))) {
+            return;
+        }
+
+        $help = Help::with(['user', 'mitra'])->find($targetHelpId);
+        if (!$help) {
+            return;
+        }
+
+        $this->validate([
+            'adminChatMessage' => 'required|string|max:1500',
+        ]);
+
+        $customer = $help->user ?? $this->selectedCancelRequest?->customer;
+        $partner = $help->mitra ?? $this->selectedCancelRequest?->partner;
+
+        $targetLabel = $this->chatTarget === 'customer' ? 'Customer' : ($this->chatTarget === 'mitra' ? 'Mitra' : 'Kedua Pihak');
+        $prefix = "🛡️ [Pesan Resmi Admin - Ditujukan ke {$targetLabel}]:\n";
+        $formattedMessage = $prefix . trim($this->adminChatMessage);
+
+        \App\Models\Chat::create([
+            'help_id'     => $help->id,
+            'customer_id' => $customer?->id ?? $help->user_id,
+            'mitra_id'    => $partner?->id ?? $help->mitra_id,
+            'sender_type' => 'admin',
+            'message'     => $formattedMessage,
+            'is_read'     => false,
+        ]);
+
+        // Notifikasi ke pihak yang dituju
+        try {
+            if ($this->chatTarget === 'customer' || $this->chatTarget === 'both') {
+                $customer?->notify(new \App\Notifications\HelpStatusNotification(
+                    $help,
+                    $help->status,
+                    'admin_clarification',
+                    "Pesan dari Admin: \"" . \Illuminate\Support\Str::limit($this->adminChatMessage, 80) . "\""
+                ));
+            }
+            if ($this->chatTarget === 'mitra' || $this->chatTarget === 'both') {
+                $partner?->notify(new \App\Notifications\HelpStatusNotification(
+                    $help,
+                    $help->status,
+                    'admin_clarification',
+                    "Pesan dari Admin: \"" . \Illuminate\Support\Str::limit($this->adminChatMessage, 80) . "\""
+                ));
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[AdminDisputes] Gagal mengirim notifikasi chat klarifikasi: ' . $e->getMessage());
+        }
+
+        $this->adminChatMessage = '';
+        $this->loadChatHistory($targetHelpId);
+        session()->flash('chat_sent_success', "Pesan resmi klarifikasi berhasil dikirim ke {$targetLabel}.");
+    }
+
     public function updatedSettlementType($val)
     {
         if (!$this->selectedCancelRequest || !$this->selectedCancelRequest->help) {
@@ -377,6 +478,9 @@ class Index extends Component
             'partnerSpReason',
             'customerSpLevel',
             'customerSpReason',
+            'showChatPanel',
+            'adminChatMessage',
+            'chatMessages',
         ]);
     }
 
@@ -580,10 +684,13 @@ class Index extends Component
             $cancellations = $query->latest()->paginate(10);
             $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 
+            $routePrefix = $isSuperAdmin ? 'superadmin.' : 'admin.';
+
             return view('livewire.admin.disputes.index', [
                 'cancellations'             => $cancellations,
                 'disputes'                  => collect(),
                 'isSuperAdmin'              => $isSuperAdmin,
+                'routePrefix'               => $routePrefix,
                 'pendingCancelsCount'       => $pendingCancelsCount,
                 'activeFrozenDisputesCount' => $activeFrozenDisputesCount,
             ])->layout($layout);
@@ -654,11 +761,13 @@ class Index extends Component
 
         $disputes = $query->latest('disputed_at')->paginate(10);
         $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
+        $routePrefix = $isSuperAdmin ? 'superadmin.' : 'admin.';
 
         return view('livewire.admin.disputes.index', [
             'disputes'                  => $disputes,
             'cancellations'             => collect(),
             'isSuperAdmin'              => $isSuperAdmin,
+            'routePrefix'               => $routePrefix,
             'pendingCancelsCount'       => $pendingCancelsCount,
             'activeFrozenDisputesCount' => $activeFrozenDisputesCount,
         ])->layout($layout);

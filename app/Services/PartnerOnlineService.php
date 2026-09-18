@@ -12,10 +12,36 @@ class PartnerOnlineService
     public const DEFAULT_HEARTBEAT_TTL = 60; // 60 detik
 
     /**
-     * Dapatkan atau inisialisasi state online mitra.
+     * In-memory request memoization for partner online state.
+     * Prevents duplicate queries during the same lifecycle/request.
+     *
+     * @var array<int, PartnerOnlineState>
      */
-    public function getOrCreateState(int $userId): PartnerOnlineState
+    protected static array $memoizedStates = [];
+
+    /**
+     * Clear the memoized state cache for a specific partner or all partners.
+     */
+    public static function clearStateCache(?int $userId = null): void
     {
+        if ($userId !== null) {
+            unset(self::$memoizedStates[$userId]);
+        } else {
+            self::$memoizedStates = [];
+        }
+    }
+
+    /**
+     * Dapatkan atau inisialisasi state online mitra (dengan request-level memoization).
+     */
+    public function getOrCreateState(int|User $userOrId, bool $forceFresh = false): PartnerOnlineState
+    {
+        $userId = $userOrId instanceof User ? $userOrId->id : (int) $userOrId;
+
+        if (!$forceFresh && isset(self::$memoizedStates[$userId])) {
+            return self::$memoizedStates[$userId];
+        }
+
         $state = PartnerOnlineState::firstOrCreate(
             ['user_id' => $userId],
             [
@@ -26,7 +52,10 @@ class PartnerOnlineService
         );
 
         // Guard: Jika Mitra sedang dalam pembatasan (Shadow Ban / SP 3 / Blocked), paksa status ke OFFLINE
-        $user = User::find($userId);
+        $user = $userOrId instanceof User
+            ? $userOrId
+            : ((auth()->check() && auth()->id() === $userId) ? auth()->user() : User::find($userId));
+
         if ($user && ($user->isShadowBanned() || $user->warning_level >= 3 || $user->status === 'blocked')) {
             if ($state->matching_status !== PartnerOnlineState::STATUS_OFFLINE) {
                 $state->update([
@@ -35,6 +64,7 @@ class PartnerOnlineService
                 ]);
                 $state->refresh();
             }
+            self::$memoizedStates[$userId] = $state;
             return $state;
         }
 
@@ -57,6 +87,7 @@ class PartnerOnlineService
             }
         }
 
+        self::$memoizedStates[$userId] = $state;
         return $state;
     }
 
@@ -71,6 +102,7 @@ class PartnerOnlineService
     public function goOnline(User $mitra, ?float $lat = null, ?float $lng = null): bool
     {
         return DB::transaction(function () use ($mitra, $lat, $lng) {
+            self::clearStateCache($mitra->id);
             $state = PartnerOnlineState::where('user_id', $mitra->id)->lockForUpdate()->first();
 
             if (!$state) {
@@ -127,6 +159,7 @@ class PartnerOnlineService
     public function startSearching(User $mitra, ?float $lat = null, ?float $lng = null): bool
     {
         return DB::transaction(function () use ($mitra, $lat, $lng) {
+            self::clearStateCache($mitra->id);
             $state = PartnerOnlineState::where('user_id', $mitra->id)->lockForUpdate()->first();
 
             if (!$state) {
@@ -184,6 +217,7 @@ class PartnerOnlineService
     public function stopSearching(User $mitra): bool
     {
         return DB::transaction(function () use ($mitra) {
+            self::clearStateCache($mitra->id);
             $state = PartnerOnlineState::where('user_id', $mitra->id)->lockForUpdate()->first();
 
             if (!$state) {
@@ -214,6 +248,7 @@ class PartnerOnlineService
     public function goOffline(User $mitra): bool
     {
         return DB::transaction(function () use ($mitra) {
+            self::clearStateCache($mitra->id);
             $state = PartnerOnlineState::where('user_id', $mitra->id)->lockForUpdate()->first();
 
             if (!$state) {
@@ -241,6 +276,7 @@ class PartnerOnlineService
      */
     public function heartbeat(User $mitra, ?float $lat = null, ?float $lng = null): ?PartnerOnlineState
     {
+        self::clearStateCache($mitra->id);
         $state = PartnerOnlineState::where('user_id', $mitra->id)->first();
 
         if (!$state) {
@@ -300,6 +336,7 @@ class PartnerOnlineService
         $ttl = $heartbeatTtlSeconds ?? \App\Models\AppSetting::getHeartbeatTtlSeconds();
 
         return DB::transaction(function () use ($mitraId, $helpId, $ttl) {
+            self::clearStateCache($mitraId);
             $state = PartnerOnlineState::where('user_id', $mitraId)->lockForUpdate()->first();
 
             if (!$state) {
@@ -334,6 +371,7 @@ class PartnerOnlineService
         $ttl = $heartbeatTtlSeconds ?? \App\Models\AppSetting::getHeartbeatTtlSeconds();
 
         DB::transaction(function () use ($mitraId, $helpId, $ttl) {
+            self::clearStateCache($mitraId);
             $state = PartnerOnlineState::where('user_id', $mitraId)->lockForUpdate()->first();
 
             if (!$state || $state->matching_status !== PartnerOnlineState::STATUS_OFFER_PENDING || $state->current_help_id != $helpId) {
@@ -376,6 +414,7 @@ class PartnerOnlineService
         $ttl = $heartbeatTtlSeconds ?? \App\Models\AppSetting::getHeartbeatTtlSeconds();
 
         DB::transaction(function () use ($mitraId, $helpId, $ttl) {
+            self::clearStateCache($mitraId);
             $state = PartnerOnlineState::where('user_id', $mitraId)->lockForUpdate()->first();
 
             if (!$state || $state->matching_status !== PartnerOnlineState::STATUS_OFFER_PENDING || $state->current_help_id != $helpId) {
@@ -408,6 +447,7 @@ class PartnerOnlineService
     public function setBusy(int $mitraId, int $helpId): bool
     {
         return DB::transaction(function () use ($mitraId, $helpId) {
+            self::clearStateCache($mitraId);
             $state = PartnerOnlineState::where('user_id', $mitraId)->lockForUpdate()->first();
 
             if (!$state) {
@@ -457,6 +497,7 @@ class PartnerOnlineService
     public function releaseBusy(int $mitraId, int $helpId, int $heartbeatTtlSeconds = self::DEFAULT_HEARTBEAT_TTL): void
     {
         DB::transaction(function () use ($mitraId, $helpId) {
+            self::clearStateCache($mitraId);
             $state = PartnerOnlineState::where('user_id', $mitraId)->lockForUpdate()->first();
 
             if (!$state) {
@@ -499,6 +540,7 @@ class PartnerOnlineService
         $cutoff = now()->subSeconds($ttl);
 
         return DB::transaction(function () use ($cutoff) {
+            self::clearStateCache();
             $staleStates = PartnerOnlineState::where('matching_status', PartnerOnlineState::STATUS_SEARCHING)
                 ->where(function ($q) use ($cutoff) {
                     $q->whereNull('last_seen_at')

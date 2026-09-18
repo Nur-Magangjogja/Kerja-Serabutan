@@ -264,8 +264,12 @@ html.dark nav.bg-white {
 
 html.dark .bg-gray-50,
 html.dark .bg-gray-100,
+html.dark .bg-slate-50,
+html.dark .bg-slate-100,
 html.dark main .bg-gray-50,
-html.dark main .bg-gray-100 {
+html.dark main .bg-gray-100,
+html.dark main .bg-slate-50,
+html.dark main .bg-slate-100 {
     background-color: #111827; /* Flowbite gray-900 */
 }
 
@@ -572,6 +576,11 @@ html.dark .dropdown-menu {
 /* ==========================================================================
    Universal Dark Mode Card & Container Protection (Anti-White Flash)
    ========================================================================== */
+html.dark .dark\:bg-gray-850,
+html.dark [class*="dark:bg-gray-850"] {
+    background-color: #151e2e !important;
+}
+
 html.dark .dark\:bg-gray-800,
 html.dark [class*="dark:bg-gray-800"] {
     background-color: #1f2937 !important;
@@ -585,6 +594,11 @@ html.dark [class*="dark:bg-gray-900"] {
 html.dark .dark\:bg-gray-700,
 html.dark [class*="dark:bg-gray-700"] {
     background-color: #374151 !important;
+}
+
+html.dark .dark\:border-gray-750,
+html.dark [class*="dark:border-gray-750"] {
+    border-color: #1e293b !important;
 }
 
 html.dark .dark\:border-gray-700,

@@ -4,18 +4,41 @@ namespace App\Livewire\Customer\Notifications;
 
 use Livewire\Component;
 use App\Models\Chat as ChatModel;
+use App\Models\HelpCancelMessage;
+use App\Models\HelpCancelRequest;
+use App\Models\PartnerReport;
+use App\Models\PartnerReportMessage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 
 class Realtime extends Component
 {
     public $last_chat_id = 0;
+    public $last_cancel_msg_id = 0;
+    public $last_report_msg_id = 0;
     public $last_notification_check = null;
 
     public function mount()
     {
         if (auth()->check()) {
-            $this->last_chat_id = ChatModel::where('customer_id', auth()->id())->max('id') ?? 0;
+            $customerId = auth()->id();
+            $this->last_chat_id = ChatModel::where('customer_id', $customerId)->max('id') ?? 0;
+
+            $customerCancels = HelpCancelRequest::where('customer_id', $customerId)
+                ->orWhereHas('help', fn($q) => $q->where('user_id', $customerId))
+                ->pluck('id');
+            $this->last_cancel_msg_id = HelpCancelMessage::whereIn('help_cancel_request_id', $customerCancels)
+                ->where(fn($q) => $q->where('sender_id', $customerId)->orWhereIn('recipient_type', ['customer', 'all', 'both']))
+                ->max('id') ?? 0;
+
+            $customerReports = PartnerReport::where('reporter_id', $customerId)
+                ->orWhere('reported_user_id', $customerId)
+                ->orWhereHas('reportedHelp', fn($q) => $q->where('user_id', $customerId))
+                ->pluck('id');
+            $this->last_report_msg_id = PartnerReportMessage::whereIn('partner_report_id', $customerReports)
+                ->where(fn($q) => $q->where('sender_id', $customerId)->orWhereIn('recipient_type', ['customer', 'all', 'both']))
+                ->max('id') ?? 0;
+
             $this->last_notification_check = now();
         }
     }
@@ -26,24 +49,93 @@ class Realtime extends Component
             return;
         }
 
-        // Check for new incoming chat messages
-        $new = ChatModel::where('customer_id', auth()->id())
-            ->whereIn('sender_type', ['mitra', 'system'])
+        $customerId = auth()->id();
+
+        // 1. Check for new incoming regular chat messages
+        $newMessages = ChatModel::where('customer_id', $customerId)
+            ->where('sender_type', '!=', 'customer')
             ->where('id', '>', $this->last_chat_id)
             ->orderBy('id', 'asc')
-            ->first();
+            ->get();
 
-        if ($new) {
-            $this->last_chat_id = $new->id;
-            $senderName = $new->sender_type === 'system' ? 'Sistem SayaBantu' : (optional($new->mitra)->name ?? 'Mitra');
+        if ($newMessages->isNotEmpty()) {
+            $this->last_chat_id = $newMessages->max('id');
+            $latestMsg = $newMessages->last();
+            $senderName = $latestMsg->sender_type === 'system' ? 'Sistem SayaBantu' : (optional($latestMsg->mitra)->name ?? 'Rekan Jasa');
 
             $this->dispatch(
                 'help-new-message',
-                helpId: $new->help_id,
-                message: Str::limit($new->message, 150),
+                helpId: $latestMsg->help_id,
+                message: Str::limit($latestMsg->message, 150),
                 from: $senderName,
-                fromId: $new->mitra_id
+                fromId: $latestMsg->mitra_id,
+                url: route('customer.chat', ['help' => $latestMsg->help_id])
             );
+            $this->dispatch('play-notification-sound', force: true);
+            $this->js("if(typeof window.playNotificationSound==='function'){window.playNotificationSound({force:true});}");
+        }
+
+        // 2. Check for new incoming cancellation messages from Admin
+        $customerCancels = HelpCancelRequest::where('customer_id', $customerId)
+            ->orWhereHas('help', fn($q) => $q->where('user_id', $customerId))
+            ->pluck('id');
+
+        if ($customerCancels->isNotEmpty()) {
+            $newCancelMsgs = HelpCancelMessage::whereIn('help_cancel_request_id', $customerCancels)
+                ->where('sender_id', '!=', $customerId)
+                ->whereIn('recipient_type', ['customer', 'all', 'both'])
+                ->where('id', '>', $this->last_cancel_msg_id)
+                ->orderBy('id', 'asc')
+                ->get();
+
+            if ($newCancelMsgs->isNotEmpty()) {
+                $this->last_cancel_msg_id = $newCancelMsgs->max('id');
+                $latestCancelMsg = $newCancelMsgs->last();
+                $senderName = 'Tim Admin SayaBantu';
+                $this->dispatch(
+                    'help-new-message',
+                    helpId: $latestCancelMsg->cancelRequest?->help_id,
+                    cancelId: $latestCancelMsg->help_cancel_request_id,
+                    message: Str::limit($latestCancelMsg->message, 150),
+                    from: $senderName,
+                    fromId: 'admin',
+                    url: route('customer.chat', ['cancel_request' => $latestCancelMsg->help_cancel_request_id])
+                );
+                $this->dispatch('play-notification-sound', force: true);
+                $this->js("if(typeof window.playNotificationSound==='function'){window.playNotificationSound({force:true});}");
+            }
+        }
+
+        // 3. Check for new incoming report messages from Admin
+        $customerReports = PartnerReport::where('reporter_id', $customerId)
+            ->orWhere('reported_user_id', $customerId)
+            ->orWhereHas('reportedHelp', fn($q) => $q->where('user_id', $customerId))
+            ->pluck('id');
+
+        if ($customerReports->isNotEmpty()) {
+            $newReportMsgs = PartnerReportMessage::whereIn('partner_report_id', $customerReports)
+                ->where('sender_id', '!=', $customerId)
+                ->whereIn('recipient_type', ['customer', 'all', 'both'])
+                ->where('id', '>', $this->last_report_msg_id)
+                ->orderBy('id', 'asc')
+                ->get();
+
+            if ($newReportMsgs->isNotEmpty()) {
+                $this->last_report_msg_id = $newReportMsgs->max('id');
+                $latestReportMsg = $newReportMsgs->last();
+                $senderName = 'Tim Admin SayaBantu';
+                $this->dispatch(
+                    'help-new-message',
+                    helpId: $latestReportMsg->partnerReport?->reported_help_id,
+                    reportId: $latestReportMsg->partner_report_id,
+                    message: Str::limit($latestReportMsg->message, 150),
+                    from: $senderName,
+                    fromId: 'admin',
+                    url: route('customer.chat', ['report' => $latestReportMsg->partner_report_id])
+                );
+                $this->dispatch('play-notification-sound', force: true);
+                $this->js("if(typeof window.playNotificationSound==='function'){window.playNotificationSound({force:true});}");
+            }
         }
 
         // Check for new database notifications (help taken, status updates, etc)
@@ -52,7 +144,7 @@ class Realtime extends Component
             ->orderBy('created_at', 'asc')
             ->get();
 
-        Log::info('[Customer\\RealtimeNotifications] checking notifications, last_check=' . $this->last_notification_check . ', found=' . $newNotifications->count());
+        Log::info('[Customer\RealtimeNotifications] checking notifications, last_check=' . $this->last_notification_check . ', found=' . $newNotifications->count());
 
         if ($newNotifications->count() > 0) {
             $this->last_notification_check = $newNotifications->last()->created_at;
@@ -62,7 +154,7 @@ class Realtime extends Component
         foreach ($newNotifications as $notification) {
             $data = $notification->data;
 
-            Log::info('[Customer\\RealtimeNotifications] processing notification', [
+            Log::info('[Customer\RealtimeNotifications] processing notification', [
                 'id'   => $notification->id,
                 'type' => $notification->type,
                 'data' => $data
@@ -70,7 +162,7 @@ class Realtime extends Component
 
             // Handle help_taken notification
             if (isset($data['type']) && $data['type'] === 'help_taken') {
-                Log::info('[Customer\\RealtimeNotifications] MATCHED help_taken notification, dispatching events');
+                Log::info('[Customer\RealtimeNotifications] MATCHED help_taken notification, dispatching events');
 
                 $this->dispatch(
                     'help-taken',
@@ -84,17 +176,23 @@ class Realtime extends Component
                     addslashes($data['mitra_name'] ?? 'Mitra')
                 ));
 
-                Log::info('[Customer\\RealtimeNotifications] dispatched help-taken event', [
+                Log::info('[Customer\RealtimeNotifications] dispatched help-taken event', [
                     'help_id'    => $data['help_id'] ?? null,
                     'mitra_name' => $data['mitra_name'] ?? 'Mitra'
                 ]);
             }
             // Handle help status update notification
             if (isset($data['type']) && $data['type'] === 'help_status') {
-                Log::info('[Customer\\RealtimeNotifications] MATCHED help_status notification, dispatching events', ['data' => $data]);
-
                 $helpId    = $data['help_id'] ?? ($data['helpId'] ?? null);
                 $newStatus = $data['new_status'] ?? ($data['newStatus'] ?? ($data['status'] ?? null));
+
+                // Jangan tembak help-status-update toast jika ini adalah notifikasi pesan chat moderasi admin
+                $statusStr = strtolower((string)$newStatus);
+                if ($statusStr === 'admin_clarification' || $statusStr === 'cancellation_response' || str_contains($statusStr, 'clarification') || str_contains($statusStr, 'chat')) {
+                    continue;
+                }
+
+                Log::info('[Customer\RealtimeNotifications] MATCHED help_status notification, dispatching events', ['data' => $data]);
 
                 $this->dispatch(
                     'status-changed',
@@ -123,7 +221,7 @@ class Realtime extends Component
                     ));
                 }
 
-                Log::info('[Customer\\RealtimeNotifications] dispatched help_status events', ['help_id' => $helpId, 'new_status' => $newStatus]);
+                Log::info('[Customer\RealtimeNotifications] dispatched help_status events', ['help_id' => $helpId, 'new_status' => $newStatus]);
             }
         }
     }

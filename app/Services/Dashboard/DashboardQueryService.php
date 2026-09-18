@@ -63,7 +63,7 @@ class DashboardQueryService
     /**
      * Get paginated help items for the active tab.
      */
-    public function getHelpListByTab(User $user, string $activeTab, int $perPage = 6): LengthAwarePaginator
+    public function getHelpListByTab(User $user, string $activeTab, int $perPage = 6, ?int $knownTotal = null): LengthAwarePaginator
     {
         $userDistrictId = $user->district_id;
         $userCityId     = $user->city_id;
@@ -80,7 +80,7 @@ class DashboardQueryService
                 $helpsQuery->latest();
             }
 
-            return $helpsQuery->paginate($perPage);
+            return $helpsQuery->paginate($perPage, ['*'], 'page', null, $knownTotal);
         }
 
         if ($activeTab === 'diproses') {
@@ -94,7 +94,7 @@ class DashboardQueryService
                 ->whereIn('status', $inProgressStatuses)
                 ->with(['user', 'city', 'district'])
                 ->latest()
-                ->paginate($perPage);
+                ->paginate($perPage, ['*'], 'page', null, $knownTotal);
         }
 
         if ($activeTab === 'selesai') {
@@ -102,13 +102,13 @@ class DashboardQueryService
                 ->where('status', Help::STATUS_SELESAI)
                 ->with(['user', 'city', 'district'])
                 ->latest()
-                ->paginate($perPage);
+                ->paginate($perPage, ['*'], 'page', null, $knownTotal);
         }
 
         return Help::where('mitra_id', $user->id)
             ->with(['user', 'city', 'district'])
             ->latest()
-            ->paginate($perPage);
+            ->paginate($perPage, ['*'], 'page', null, $knownTotal);
     }
 
     /**

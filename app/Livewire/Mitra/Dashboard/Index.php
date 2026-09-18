@@ -32,7 +32,7 @@ class Index extends Component
         $user = auth()->user();
         if (!$user) return;
 
-        $state = app(PartnerOnlineService::class)->getOrCreateState($user->id);
+        $state = app(PartnerOnlineService::class)->getOrCreateState($user);
         $actions = app(MitraMatchingActions::class);
 
         if ($state->matching_status === PartnerOnlineState::STATUS_OFFLINE) {
@@ -243,17 +243,25 @@ class Index extends Component
         // 1. Summary Stats
         $stats = $queryService->getSummaryStats($user);
 
-        // 2. Paginated Helps by Tab
-        $helps = $queryService->getHelpListByTab($user, $this->activeTab, 6);
+        // 2. Known total for current tab to avoid redundant count(*) query in paginate()
+        $knownTotal = match ($this->activeTab) {
+            'tersedia', 'semua' => $stats['available'] ?? null,
+            'diproses'          => $stats['inProgress'] ?? null,
+            'selesai'           => $stats['completed'] ?? null,
+            default             => null,
+        };
 
-        // 3. Recommended, Latest, Nearby, Unread Chat
+        // 3. Paginated Helps by Tab
+        $helps = $queryService->getHelpListByTab($user, $this->activeTab, 6, $knownTotal);
+
+        // 4. Recommended, Latest, Nearby, Unread Chat
         $recommendedHelps = $statsService->getRecommendedHelps($user, 3);
         $latestHelps      = $statsService->getLatestHelps($user, 5);
         $nearbyHelps      = $statsService->getNearbyHelps($user, 3);
         $unreadChatCount  = $statsService->getUnreadChatCount($user);
 
-        // 4. Partner Online State & Tasks
-        $onlineState = app(PartnerOnlineService::class)->getOrCreateState($user->id);
+        // 5. Partner Online State & Tasks
+        $onlineState = app(PartnerOnlineService::class)->getOrCreateState($user);
         $taskData    = $queryService->getActiveAndPendingTasks($user);
 
         return view('livewire.mitra.dashboard.index', [

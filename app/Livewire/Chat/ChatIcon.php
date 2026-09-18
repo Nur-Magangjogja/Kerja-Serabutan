@@ -3,6 +3,8 @@
 namespace App\Livewire\Chat;
 
 use App\Models\Chat;
+use App\Models\HelpCancelMessage;
+use App\Models\HelpCancelRequest;
 use App\Models\PartnerReport;
 use App\Models\PartnerReportMessage;
 use Illuminate\Support\Facades\Auth;
@@ -36,7 +38,8 @@ class ChatIcon extends Component
     #[On('help-new-message')]
     #[On('chat-messages-read')]
     #[On('refresh-chat-icon')]
-    public function refreshCount()
+    #[On('notifications-updated')]
+    public function refreshCount(...$params)
     {
         $this->unreadCount = $this->getUnreadCount();
     }
@@ -62,17 +65,36 @@ class ChatIcon extends Component
 
                 // 2. Unread messages dari Admin Report
                 $mitraReports = PartnerReport::where('reported_user_id', $userId)
+                    ->orWhere('reporter_id', $userId)
                     ->orWhereHas('reportedHelp', function ($q) use ($userId) {
                         $q->where('mitra_id', $userId);
                     })
                     ->pluck('id');
 
-                $unreadAdmin = PartnerReportMessage::whereIn('partner_report_id', $mitraReports)
-                    ->where('recipient_type', 'mitra')
-                    ->where('is_read', false)
-                    ->count();
+                $unreadAdminReports = 0;
+                if ($mitraReports->isNotEmpty()) {
+                    $unreadAdminReports = PartnerReportMessage::whereIn('partner_report_id', $mitraReports)
+                        ->where('sender_id', '!=', $userId)
+                        ->where('is_read', false)
+                        ->whereIn('recipient_type', ['mitra', 'all', 'both'])
+                        ->count();
+                }
 
-                return $unreadChats + $unreadAdmin;
+                // 3. Unread messages dari Cancellation Review
+                $mitraCancels = HelpCancelRequest::where('partner_id', $userId)
+                    ->orWhereHas('help', fn($q) => $q->where('mitra_id', $userId))
+                    ->pluck('id');
+
+                $unreadAdminCancels = 0;
+                if ($mitraCancels->isNotEmpty()) {
+                    $unreadAdminCancels = HelpCancelMessage::whereIn('help_cancel_request_id', $mitraCancels)
+                        ->where('sender_id', '!=', $userId)
+                        ->where('is_read', false)
+                        ->whereIn('recipient_type', ['mitra', 'all', 'both'])
+                        ->count();
+                }
+
+                return $unreadChats + $unreadAdminReports + $unreadAdminCancels;
             } else {
                 // 1. Unread chat dari Mitra & System
                 $unreadChats = Chat::where('customer_id', $userId)
@@ -90,12 +112,30 @@ class ChatIcon extends Component
                     })
                     ->pluck('id');
 
-                $unreadAdmin = PartnerReportMessage::whereIn('partner_report_id', $customerReports)
-                    ->where('recipient_type', 'customer')
-                    ->where('is_read', false)
-                    ->count();
+                $unreadAdminReports = 0;
+                if ($customerReports->isNotEmpty()) {
+                    $unreadAdminReports = PartnerReportMessage::whereIn('partner_report_id', $customerReports)
+                        ->where('sender_id', '!=', $userId)
+                        ->where('is_read', false)
+                        ->whereIn('recipient_type', ['customer', 'all', 'both'])
+                        ->count();
+                }
 
-                return $unreadChats + $unreadAdmin;
+                // 3. Unread messages dari Cancellation Review
+                $customerCancels = HelpCancelRequest::where('customer_id', $userId)
+                    ->orWhereHas('help', fn($q) => $q->where('user_id', $userId))
+                    ->pluck('id');
+
+                $unreadAdminCancels = 0;
+                if ($customerCancels->isNotEmpty()) {
+                    $unreadAdminCancels = HelpCancelMessage::whereIn('help_cancel_request_id', $customerCancels)
+                        ->where('sender_id', '!=', $userId)
+                        ->where('is_read', false)
+                        ->whereIn('recipient_type', ['customer', 'all', 'both'])
+                        ->count();
+                }
+
+                return $unreadChats + $unreadAdminReports + $unreadAdminCancels;
             }
         } catch (\Throwable $e) {
             return 0;

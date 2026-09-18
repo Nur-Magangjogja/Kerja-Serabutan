@@ -1,4 +1,4 @@
-<div class="h-full flex-1 min-h-0 flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100" @if($selected_partner_id) wire:poll.2500ms.visible @else wire:poll.10s.visible @endif style="overscroll-behavior: none; overscroll-behavior-y: none;">
+<div class="h-full flex-1 min-h-0 flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100" @if($selected_partner_id || $is_admin_chat) wire:poll.4s.visible @else wire:poll.8s.visible @endif style="overscroll-behavior: none; overscroll-behavior-y: none;">
     {{-- CASE 1: Help belum memiliki mitra --}}
     @if($unassigned_help)
         <!-- Top Header Section -->
@@ -186,7 +186,274 @@
             </div>
         </div>
 
-    {{-- CASE 3: RUANG OBROLAN AKTIF (CHAT ROOM) --}}
+    {{-- CASE 3: ADMIN GROUPING HUB (DAFTAR PENGELOMPOKAN TOPIK ADMIN) --}}
+    @elseif($is_admin_chat && !$selected_cancel_request_id && !$selected_report_id)
+        <!-- Top Header Section for Admin Grouping Hub -->
+        <div class="shrink-0 px-4 pt-4 pb-4 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] shadow-sm text-white select-none rounded-b-2xl">
+            <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full -mr-12 -mt-12 blur-xl pointer-events-none"></div>
+
+            <div class="relative z-10 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button wire:click="closeChat" aria-label="Kembali ke Pesan Masuk" class="p-2 -ml-1 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <div class="w-9 h-9 rounded-xl bg-primary-500 text-white flex items-center justify-center font-bold text-base shadow-xs flex-shrink-0 border border-primary-400">
+                            🛡️
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <h1 class="text-base font-bold text-white leading-tight">Tim Admin SayaBantu</h1>
+                                <span class="text-[8px] px-1.5 py-0.2 rounded font-extrabold bg-primary-100 text-primary-900 uppercase">Resmi</span>
+                            </div>
+                            <p class="text-[11px] text-white/80">Pusat Layanan Bantuan & Moderasi Resmi</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Switcher Tabs -->
+        <div class="shrink-0 bg-white dark:bg-gray-850 border-b border-gray-200/80 dark:border-gray-750 px-4 pt-2.5 pb-0 flex items-center gap-2 shadow-2xs">
+            <button type="button" wire:click="switchAdminTab('cancellation')"
+                class="flex-1 pb-3 pt-1 text-center font-bold text-xs flex items-center justify-center gap-1.5 transition border-b-2 {{ $admin_tab === 'cancellation' ? 'border-[#0098e7] text-[#0098e7] dark:text-[#38bdf8]' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' }} cursor-pointer">
+                <span>🛵 Tinjauan Pembatalan</span>
+                @if($userCancelRequests->count() > 0)
+                    <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold {{ $admin_tab === 'cancellation' ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
+                        {{ $userCancelRequests->count() }}
+                    </span>
+                @endif
+            </button>
+
+            <button type="button" wire:click="switchAdminTab('report')"
+                class="flex-1 pb-3 pt-1 text-center font-bold text-xs flex items-center justify-center gap-1.5 transition border-b-2 {{ $admin_tab === 'report' ? 'border-[#0098e7] text-[#0098e7] dark:text-[#38bdf8]' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' }} cursor-pointer">
+                <span>📋 Laporan Aduan</span>
+                @if($userReports->count() > 0)
+                    <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold {{ $admin_tab === 'report' ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
+                        {{ $userReports->count() }}
+                    </span>
+                @endif
+            </button>
+        </div>
+
+        <!-- Grouping List Body with safe bottom padding for mobile bottom nav -->
+        <div class="flex-1 min-h-0 overflow-y-auto px-4 pt-4 pb-36 space-y-3 custom-scrollbar" style="overscroll-behavior: contain; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y;">
+            @if($admin_tab === 'cancellation')
+                @forelse($userCancelRequests as $cReq)
+                    <div wire:key="cancel-group-{{ $cReq->id }}"
+                         wire:click="selectAdminCancel({{ $cReq->id }})"
+                         class="bg-white dark:bg-gray-850 rounded-2xl p-3.5 sm:p-4 border border-gray-200/80 dark:border-gray-750 shadow-xs hover:border-[#0098e7] dark:hover:border-primary-500 hover:shadow-md transition-all cursor-pointer group">
+                        
+                        <div class="flex items-start justify-between gap-2.5 mb-2.5">
+                            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 border {{ $cReq->job_icon_box_class }}">
+                                    {{ $cReq->job_icon }}
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="text-[9.5px] font-extrabold px-1.5 py-0.5 rounded-md whitespace-nowrap {{ $cReq->job_category_badge_class }}">
+                                            {{ $cReq->job_label }}
+                                        </span>
+                                        <span class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                            • {{ $cReq->cancellation_type_label }}
+                                        </span>
+                                    </div>
+                                    <h3 class="font-bold text-sm text-gray-900 dark:text-gray-100 truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors mt-0.5" title="{{ $cReq->help->title ?? 'Permohonan Bantuan' }}">
+                                        {{ $cReq->help->title ?? 'Permohonan Bantuan' }}
+                                    </h3>
+                                    <p class="text-[11px] text-gray-400 dark:text-gray-400">
+                                        {{ $cReq->created_at->format('d M Y, H:i') }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            @php
+                                $st = strtolower($cReq->status);
+                                $badgeStyle = match($st) {
+                                    'approved' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60',
+                                    'rejected' => 'bg-rose-50 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border-rose-200/80 dark:border-rose-800/60',
+                                    default => 'bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/60',
+                                };
+                                $badgeLabel = match($st) {
+                                    'approved' => 'Disetujui',
+                                    'rejected' => 'Ditolak',
+                                    default => 'Menunggu Tinjauan',
+                                };
+                            @endphp
+                            <span class="text-[9.5px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0 border whitespace-nowrap {{ $badgeStyle }}">
+                                {{ $badgeLabel }}
+                            </span>
+                        </div>
+
+                        <div class="bg-gray-50/90 dark:bg-gray-900/60 rounded-xl p-3 space-y-1.5 text-xs mb-3 border border-gray-200/70 dark:border-gray-750">
+                            <div class="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 min-w-0">
+                                <span class="text-gray-500 dark:text-gray-400 font-medium shrink-0">Pemohon:</span>
+                                <span class="font-semibold text-gray-800 dark:text-gray-200 truncate">
+                                    {{ $cReq->requester_type === 'customer' ? 'Customer (Anda)' : 'Rekan Jasa Mitra (' . ($cReq->partner->name ?? 'Mitra') . ')' }}
+                                </span>
+                            </div>
+                            <div class="text-gray-600 dark:text-gray-300 min-w-0">
+                                <span class="text-gray-500 dark:text-gray-400 font-medium shrink-0">Alasan:</span>
+                                <span class="text-gray-700 dark:text-gray-300 font-medium italic break-words [overflow-wrap:anywhere]">"{{ $cReq->reason }}"</span>
+                            </div>
+                            @if($cReq->help && $cReq->help->isPickup() && ($cReq->help->pickup_address || $cReq->help->delivery_address))
+                                <div class="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 min-w-0">
+                                    <span class="text-gray-500 dark:text-gray-400 font-medium shrink-0">Rute:</span>
+                                    <span class="font-semibold text-gray-800 dark:text-gray-200 truncate">
+                                        {{ Str::limit($cReq->help->pickup_address ?: 'Titik Jemput', 25) }} ➔ {{ Str::limit($cReq->help->delivery_address ?: 'Tujuan', 25) }}
+                                    </span>
+                                </div>
+                            @endif
+                            @if($cReq->work_completed_percentage > 0)
+                                <div class="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+                                    <span class="text-gray-500 dark:text-gray-400 font-medium shrink-0">Porsi Selesai:</span>
+                                    <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ number_format($cReq->work_completed_percentage, 0) }}%</span>
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- Pesan Terakhir & Badge Belum Dibaca --}}
+                        <div class="flex items-center justify-between pt-1 text-xs border-t border-gray-100 dark:border-gray-750">
+                            <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 min-w-0 flex-1 mr-2">
+                                <svg class="w-3.5 h-3.5 text-primary-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                <p class="truncate text-[11px]">
+                                    @if($cReq->last_message)
+                                        {{ $cReq->last_message->message }}
+                                    @else
+                                        <span class="italic text-gray-400 dark:text-gray-500">Belum ada obrolan</span>
+                                    @endif
+                                </p>
+                            </div>
+
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                @if($cReq->unread_count > 0)
+                                    <span class="w-5 h-5 rounded-full bg-primary-600 text-white text-[10px] font-bold flex items-center justify-center animate-pulse shadow-xs">
+                                        {{ $cReq->unread_count }}
+                                    </span>
+                                @endif
+                                <span class="text-[11px] font-bold text-primary-600 dark:text-primary-400 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                                    Buka Ruang Obrolan
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="text-center py-12 px-4 bg-white dark:bg-gray-850 rounded-2xl border border-gray-100 dark:border-gray-750 shadow-xs">
+                        <div class="w-12 h-12 mx-auto bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500 mb-2">
+                            <span class="text-2xl">🛵</span>
+                        </div>
+                        <p class="text-sm font-bold text-gray-800 dark:text-gray-200">Tidak Ada Tinjauan Pembatalan</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Saat ini Anda tidak memiliki pengajuan pembatalan yang memerlukan tindak lanjut.</p>
+                    </div>
+                @endforelse
+            @elseif($admin_tab === 'report')
+                @forelse($userReports as $rep)
+                    <div wire:key="report-group-{{ $rep->id }}"
+                         wire:click="selectAdminReport({{ $rep->id }})"
+                         class="bg-white dark:bg-gray-850 rounded-2xl p-4 border border-gray-200/80 dark:border-gray-750 shadow-xs hover:border-[#0098e7] dark:hover:border-primary-500 hover:shadow-md transition-all cursor-pointer group">
+                        
+                        <div class="flex items-start justify-between gap-3 mb-2.5">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <div class="w-10 h-10 rounded-xl bg-rose-500/10 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg flex-shrink-0 border border-rose-500/20 dark:border-rose-500/30">
+                                    📋
+                                </div>
+                                <div class="min-w-0">
+                                    <h3 class="font-bold text-sm text-gray-900 dark:text-gray-100 truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                                        {{ $rep->title ?: $rep->report_type_label }}
+                                    </h3>
+                                    <p class="text-[11px] text-gray-400 dark:text-gray-400">
+                                        {{ $rep->created_at->format('d M Y, H:i') }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            @php
+                                $st = strtolower($rep->status);
+                                $badgeStyle = match($st) {
+                                    'resolved' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60',
+                                    'investigating', 'in_progress' => 'bg-sky-50 text-sky-700 dark:bg-sky-950/70 dark:text-sky-300 border-sky-200/80 dark:border-sky-800/60',
+                                    'dismissed' => 'bg-gray-100 text-gray-700 dark:bg-gray-800/80 dark:text-gray-300 border-gray-200/80 dark:border-gray-700',
+                                    default => 'bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/60',
+                                };
+                                $badgeLabel = match($st) {
+                                    'resolved' => 'Selesai',
+                                    'investigating', 'in_progress' => 'Investigasi Admin',
+                                    'dismissed' => 'Ditutup',
+                                    default => 'Menunggu Antrean',
+                                };
+                            @endphp
+                            <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase shrink-0 border {{ $badgeStyle }}">
+                                {{ $badgeLabel }}
+                            </span>
+                        </div>
+
+                        <div class="bg-gray-50/80 dark:bg-gray-900/60 rounded-xl p-3 space-y-1.5 text-xs mb-3 border border-gray-200/60 dark:border-gray-750">
+                            <div class="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+                                <span class="text-gray-500 dark:text-gray-400 font-medium">Terkait:</span>
+                                <span class="font-semibold text-gray-800 dark:text-gray-200 truncate">
+                                    {{ $rep->reportedHelp?->title ?? ($rep->reported_help_text ?? 'Layanan Platform') }}
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+                                <span class="text-gray-500 dark:text-gray-400 font-medium">Pihak:</span>
+                                <span class="font-semibold text-gray-800 dark:text-gray-200 truncate">
+                                    {{ $rep->reportedUser?->name ?? ($rep->reported_user_text ?? 'Pengguna') }}
+                                </span>
+                            </div>
+                            @if($rep->message)
+                                <div class="text-gray-600 dark:text-gray-300">
+                                    <span class="text-gray-500 dark:text-gray-400 font-medium">Kronologi:</span>
+                                    <span class="text-gray-700 dark:text-gray-300 font-medium italic">"{{ Str::limit($rep->message, 80) }}"</span>
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- Pesan Terakhir & Badge Belum Dibaca --}}
+                        <div class="flex items-center justify-between pt-1 text-xs border-t border-gray-100 dark:border-gray-750">
+                            <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 min-w-0 flex-1 mr-2">
+                                <svg class="w-3.5 h-3.5 text-primary-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                <p class="truncate text-[11px]">
+                                    @if($rep->last_message)
+                                        {{ $rep->last_message->message }}
+                                    @else
+                                        <span class="italic text-gray-400 dark:text-gray-500">Belum ada obrolan</span>
+                                    @endif
+                                </p>
+                            </div>
+
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                @if($rep->unread_count > 0)
+                                    <span class="w-5 h-5 rounded-full bg-primary-600 text-white text-[10px] font-bold flex items-center justify-center animate-pulse shadow-xs">
+                                        {{ $rep->unread_count }}
+                                    </span>
+                                @endif
+                                <span class="text-[11px] font-bold text-primary-600 dark:text-primary-400 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                                    Buka Ruang Obrolan
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="text-center py-12 px-4 bg-white dark:bg-gray-850 rounded-2xl border border-gray-100 dark:border-gray-750 shadow-xs">
+                        <div class="w-12 h-12 mx-auto bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500 mb-2">
+                            <span class="text-2xl">📋</span>
+                        </div>
+                        <p class="text-sm font-bold text-gray-800 dark:text-gray-200">Tidak Ada Laporan Aduan</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Saat ini Anda tidak memiliki laporan aduan yang sedang diproses.</p>
+                    </div>
+                @endforelse
+            @endif
+        </div>
+
+    {{-- CASE 4: RUANG OBROLAN AKTIF (CHAT ROOM) --}}
     @else
         <!-- Single Unified Top Chat Header -->
         <div class="shrink-0 px-3.5 py-3 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] shadow-sm text-white select-none z-20" style="touch-action: none;">
@@ -196,23 +463,32 @@
             <div class="relative z-10 flex items-center justify-between gap-2.5">
                 <!-- Left: Back Button + Avatar + Name -->
                 <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                    <button wire:click="closeChat" aria-label="Kembali ke Daftar Percakapan"
-                        class="p-1.5 -ml-1 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex-shrink-0 flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
+                    @if($is_admin_chat)
+                        <button wire:click="unselectAdminIssue" aria-label="Kembali ke Daftar Topik Moderasi"
+                            class="p-1.5 -ml-1 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex-shrink-0 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                    @else
+                        <button wire:click="closeChat" aria-label="Kembali ke Daftar Percakapan"
+                            class="p-1.5 -ml-1 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex-shrink-0 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                    @endif
 
                     @if($selected_partner->is_admin ?? false)
-                        <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-base shadow-xs flex-shrink-0 border border-amber-400">
+                        <div class="w-9 h-9 rounded-xl bg-primary-500 text-white flex items-center justify-center font-bold text-base shadow-xs flex-shrink-0 border border-primary-400">
                             🛡️
                         </div>
                         <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-1.5">
                                 <h2 class="font-bold text-sm text-white truncate leading-tight">Tim Admin SayaBantu</h2>
-                                <span class="text-[8px] px-1.5 py-0.2 rounded font-extrabold bg-amber-300 text-amber-950 uppercase">Resmi</span>
+                                <span class="text-[8px] px-1.5 py-0.2 rounded font-extrabold bg-primary-100 text-primary-900 uppercase">Resmi</span>
                             </div>
-                            <p class="text-[10px] text-white/80 truncate">Pusat Layanan Bantuan & Moderasi</p>
+                            <p class="text-[10px] text-white/80 truncate">Pusat Layanan Bantuan & Moderasi Resmi</p>
                         </div>
                     @else
                         <div class="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-white/20 flex items-center justify-center text-white font-bold text-xs border border-white/40 shadow-xs">
@@ -231,7 +507,12 @@
 
                 <!-- Right: Action Buttons -->
                 <div class="flex items-center gap-1.5 flex-shrink-0">
-                    @if($active_help)
+                    @if($is_admin_chat)
+                        <button wire:click="unselectAdminIssue" class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white text-[11px] font-bold rounded-lg transition border border-white/20 shadow-xs cursor-pointer" title="Daftar Topik Moderasi">
+                            Daftar Topik
+                        </button>
+                    @endif
+                    @if($active_help && !($selected_partner->is_admin ?? false))
                         <a href="{{ route('customer.helps.detail', $active_help->id) }}" wire:navigate class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white text-[11px] font-bold rounded-lg transition border border-white/20 shadow-xs" title="Rincian Pesanan">
                             Pesanan
                         </a>
@@ -245,10 +526,135 @@
             </div>
         </div>
 
+        @if($is_admin_chat)
+            {{-- Context Rincian Masalah yang Sedang Dibahas (Tanpa #) --}}
+            @if($admin_tab === 'cancellation' && $selected_cancel_request)
+                <div class="shrink-0 bg-slate-50 dark:bg-gray-850 px-3.5 sm:px-4 py-2.5 border-b border-gray-200/80 dark:border-gray-750 space-y-2 shadow-2xs">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <span class="text-sm shrink-0">{{ $selected_cancel_request->job_icon }}</span>
+                            <span class="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 truncate" title="{{ $selected_cancel_request->help->title ?? 'Permohonan Bantuan' }}">
+                                {{ $selected_cancel_request->help->title ?? 'Permohonan Bantuan' }}
+                            </span>
+                            <span class="text-[9.5px] font-extrabold px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0 {{ $selected_cancel_request->job_category_badge_class }}">
+                                {{ $selected_cancel_request->job_label }}
+                            </span>
+                        </div>
+                        @php
+                            $st = strtolower($selected_cancel_request->status);
+                            $badgeStyle = match($st) {
+                                'approved' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60',
+                                'rejected' => 'bg-rose-50 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border-rose-200/80 dark:border-rose-800/60',
+                                default => 'bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/60',
+                            };
+                            $badgeLabel = match($st) {
+                                'approved' => 'Disetujui',
+                                'rejected' => 'Ditolak',
+                                default => 'Menunggu Tinjauan',
+                            };
+                        @endphp
+                        <div class="flex items-center gap-1.5 flex-wrap shrink-0">
+                            <span class="text-[9.5px] px-2 py-0.5 rounded-full font-bold bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/60 whitespace-nowrap">
+                                {{ $selected_cancel_request->cancellation_type_label }}
+                            </span>
+                            <span class="text-[9.5px] sm:text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase shrink-0 border whitespace-nowrap {{ $badgeStyle }}">
+                                {{ $badgeLabel }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-[11px] text-gray-600 dark:text-gray-300">
+                        <div class="flex items-center gap-1 min-w-0">
+                            <span class="text-gray-500 dark:text-gray-400 shrink-0">Pemohon:</span>
+                            <span class="font-medium text-gray-800 dark:text-gray-200 capitalize truncate">{{ $selected_cancel_request->requester_type === 'customer' ? 'Customer (Anda)' : 'Rekan Jasa Mitra' }}</span>
+                        </div>
+                        <div class="min-w-0 max-w-full">
+                            <span class="text-gray-500 dark:text-gray-400 shrink-0">Alasan:</span>
+                            <span class="font-medium text-gray-700 dark:text-gray-300 break-words [overflow-wrap:anywhere] italic">"{{ $selected_cancel_request->reason }}"</span>
+                        </div>
+                        @if($selected_cancel_request->help && $selected_cancel_request->help->isPickup() && ($selected_cancel_request->help->pickup_address || $selected_cancel_request->help->delivery_address))
+                            <div class="flex items-center gap-1 min-w-0">
+                                <span class="text-gray-500 dark:text-gray-400 shrink-0">Rute:</span>
+                                <span class="font-medium text-gray-800 dark:text-gray-200 truncate">{{ Str::limit($selected_cancel_request->help->pickup_address ?: 'Jemput', 20) }} ➔ {{ Str::limit($selected_cancel_request->help->delivery_address ?: 'Tujuan', 20) }}</span>
+                            </div>
+                        @endif
+                        @if($selected_cancel_request->work_completed_percentage > 0)
+                            <div class="flex items-center gap-1">
+                                <span class="text-gray-500 dark:text-gray-400 shrink-0">Porsi Selesai:</span>
+                                <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ number_format($selected_cancel_request->work_completed_percentage, 0) }}%</span>
+                            </div>
+                        @endif
+                        @if($selected_cancel_request->partner_clarification)
+                            <div class="w-full text-[10.5px] text-sky-800 dark:text-sky-200 bg-sky-50/80 dark:bg-sky-950/50 px-2.5 py-1 rounded-lg border border-sky-200/70 dark:border-sky-850 break-words [overflow-wrap:anywhere]">
+                                <span class="font-bold">Klarifikasi Rekan Jasa:</span> {{ $selected_cancel_request->partner_clarification }}
+                            </div>
+                        @endif
+                        @if($selected_cancel_request->admin_notes)
+                            <div class="w-full text-[10.5px] text-purple-800 dark:text-purple-200 bg-purple-50/80 dark:bg-purple-950/50 px-2.5 py-1 rounded-lg border border-purple-200/70 dark:border-purple-850 break-words [overflow-wrap:anywhere]">
+                                <span class="font-bold">Catatan Putusan Admin:</span> {{ $selected_cancel_request->admin_notes }}
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @elseif($admin_tab === 'report' && $selected_report)
+                <div class="shrink-0 bg-slate-50 dark:bg-gray-850 px-3.5 sm:px-4 py-2.5 border-b border-gray-200/80 dark:border-gray-750 space-y-2 shadow-2xs">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <span class="text-sm shrink-0">📋</span>
+                            <span class="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 truncate" title="{{ $selected_report->title ?: $selected_report->report_type_label }}">
+                                {{ $selected_report->title ?: $selected_report->report_type_label }}
+                            </span>
+                        </div>
+                        @php
+                            $st = strtolower($selected_report->status);
+                            $badgeStyle = match($st) {
+                                'resolved' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60',
+                                'investigating', 'in_progress' => 'bg-sky-50 text-sky-700 dark:bg-sky-950/70 dark:text-sky-300 border-sky-200/80 dark:border-sky-800/60',
+                                'dismissed' => 'bg-gray-100 text-gray-700 dark:bg-gray-800/80 dark:text-gray-300 border-gray-200/80 dark:border-gray-700',
+                                default => 'bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/60',
+                            };
+                            $badgeLabel = match($st) {
+                                'resolved' => 'Selesai',
+                                'investigating', 'in_progress' => 'Investigasi Admin',
+                                'dismissed' => 'Ditutup',
+                                default => 'Menunggu Antrean',
+                            };
+                        @endphp
+                        <span class="text-[9.5px] sm:text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase shrink-0 border whitespace-nowrap self-start sm:self-auto {{ $badgeStyle }}">
+                            {{ $badgeLabel }}
+                        </span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-[11px] text-gray-600 dark:text-gray-300">
+                        <div class="flex items-center gap-1 min-w-0">
+                            <span class="text-gray-500 dark:text-gray-400 shrink-0">Terkait:</span>
+                            <span class="font-medium text-gray-800 dark:text-gray-200 truncate">{{ $selected_report->reportedHelp?->title ?? ($selected_report->reported_help_text ?? 'Layanan Platform') }}</span>
+                        </div>
+                        <div class="flex items-center gap-1 min-w-0">
+                            <span class="text-gray-500 dark:text-gray-400 shrink-0">Pihak:</span>
+                            <span class="font-medium text-gray-800 dark:text-gray-200 truncate">{{ $selected_report->reportedUser?->name ?? ($selected_report->reported_user_text ?? 'Pengguna') }}</span>
+                        </div>
+                        @if($selected_report->message)
+                            <div class="w-full text-[10.5px] text-gray-800 dark:text-gray-200 bg-gray-100/80 dark:bg-gray-900/60 px-2.5 py-1 rounded-lg border border-gray-200/70 dark:border-gray-750 break-words [overflow-wrap:anywhere]">
+                                <span class="font-bold text-gray-500 dark:text-gray-400">Kronologi:</span> "{{ $selected_report->message }}"
+                            </div>
+                        @endif
+                        @if($selected_report->admin_notes)
+                            <div class="w-full text-[10.5px] text-purple-800 dark:text-purple-200 bg-purple-50/80 dark:bg-purple-950/50 px-2.5 py-1 rounded-lg border border-purple-200/70 dark:border-purple-850 break-words [overflow-wrap:anywhere]">
+                                <span class="font-bold">Catatan Putusan Admin:</span> {{ $selected_report->admin_notes }}
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
+        @endif
+
         <!-- Messages Stream Feed -->
         <div id="messagesWrapper"
              data-active-partner-id="{{ $selected_partner_id }}"
              data-active-help-id="{{ $active_help_id }}"
+             data-active-cancel-id="{{ $selected_cancel_request_id }}"
+             data-active-report-id="{{ $selected_report_id }}"
              x-data="{
                  scrollToBottom(smooth = false) {
                      this.$nextTick(() => {
@@ -276,11 +682,12 @@
              x-on:message-sent.window="scrollToBottom(true)"
              class="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4 space-y-3 bg-slate-100/70 dark:bg-gray-900/90 custom-scrollbar"
              style="overscroll-behavior: contain; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y;">
+
             @if($messages && $messages->count() > 0)
                 @php $lastHelpContextId = null; @endphp
                 @foreach($messages as $msg)
-                    {{-- Context Separator jika berpindah bantuan --}}
-                    @if($msg->help_id && $msg->help_id !== $lastHelpContextId && $msg->help)
+                    {{-- Context Separator jika berpindah bantuan (untuk chat mitra reguler) --}}
+                    @if(!$is_admin_chat && $msg->help_id && $msg->help_id !== $lastHelpContextId && $msg->help)
                         @php $lastHelpContextId = $msg->help_id; @endphp
                         <div wire:key="ctx-sep-{{ $msg->help_id }}" class="flex items-center justify-center my-3">
                             <div class="bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/80 px-3 py-1 rounded-full text-[11px] text-blue-700 dark:text-blue-300 font-semibold shadow-xs flex items-center gap-1">
@@ -289,53 +696,42 @@
                         </div>
                     @endif
 
-                    @if($msg->sender_type === 'system' || str_starts_with($msg->message, 'Sistem SayaBantu:'))
-                        <div wire:key="msg-sys-{{ $msg->id }}" class="flex justify-center my-3">
-                            <div class="w-full max-w-lg bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/80 p-3.5 rounded-2xl shadow-xs text-center">
-                                <div class="flex items-center justify-center gap-1.5 mb-1 text-blue-800 dark:text-blue-300 font-bold text-xs uppercase tracking-wider">
-                                    <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                    <span>Pemberitahuan Sistem SayaBantu</span>
-                                </div>
-                                <p class="text-xs text-blue-950 dark:text-blue-100 whitespace-pre-line leading-relaxed font-medium">
-                                    {{ str_replace('Sistem SayaBantu: ', '', $msg->message) }}
-                                </p>
-                                <div class="text-[10px] text-blue-600/80 dark:text-blue-400 mt-1.5 text-center">
-                                    {{ $msg->created_at->format('d M Y, H:i') }} WIB
-                                </div>
-                            </div>
-                        </div>
-                    @elseif(str_contains($msg->message, '🛡️') || str_contains($msg->message, '[Pesan Resmi Admin') || str_contains($msg->message, '[Sistem Moderasi'))
-                        <div wire:key="msg-adm-{{ $msg->id }}" class="flex justify-center my-3">
-                            <div class="w-full max-w-lg bg-gradient-to-br from-amber-50 to-amber-100/70 dark:from-amber-950/60 dark:to-gray-800 p-4 rounded-2xl border-2 border-amber-300 dark:border-amber-700 shadow-xs">
-                                <div class="flex items-center gap-1.5 mb-1.5 text-amber-900 dark:text-amber-200">
-                                    <span class="text-base">🛡️</span>
-                                    <span class="text-xs font-bold uppercase tracking-wider">Pesan Resmi Admin Moderasi</span>
-                                </div>
-                                <p class="text-xs text-amber-950 dark:text-amber-100 whitespace-pre-line leading-relaxed font-medium">
-                                    {{ $msg->message }}
-                                </p>
-                                <div class="text-[10px] text-amber-700/80 dark:text-amber-400 mt-2 text-right">
-                                    {{ $msg->created_at->format('d M Y, H:i') }} WIB
-                                </div>
-                            </div>
-                        </div>
-                    @else
-                        <div wire:key="msg-item-{{ $msg->id }}" class="flex {{ $msg->sender_type === 'customer' ? 'justify-end' : 'justify-start' }}">
-                            <div class="rounded-2xl p-3.5 max-w-[85%] shadow-xs {{ $msg->sender_type === 'customer' ? 'bg-[#0098e7] text-white rounded-br-xs' : 'bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/80 text-gray-900 dark:text-gray-100 rounded-bl-xs' }}">
-                                @if($msg->photo)
-                                    <div class="mb-2 rounded-xl overflow-hidden border border-black/10 dark:border-white/10">
-                                        <a href="{{ asset('storage/' . $msg->photo) }}" target="_blank" rel="noopener">
-                                            <img src="{{ asset('storage/' . $msg->photo) }}" alt="Foto Bukti" class="w-full max-h-56 object-cover hover:opacity-95 transition cursor-pointer">
-                                        </a>
-                                        <div class="px-2 py-1 bg-black/60 text-[10px] text-white flex items-center gap-1">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                            Lampiran Foto
-                                        </div>
+                    @if($is_admin_chat)
+                        {{-- DI DALAM RUANG 🛡️ TIM ADMIN SAYABANTU --}}
+                        @if($msg->is_admin)
+                            <div wire:key="msg-adm-{{ $msg->id }}" class="flex justify-start my-1">
+                                <div class="rounded-2xl p-3.5 max-w-[85%] shadow-xs bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 text-gray-900 dark:text-gray-100 rounded-bl-xs">
+                                    <div class="flex items-center gap-1.5 mb-1 text-sky-600 dark:text-sky-400 font-bold text-[11px]">
+                                        <span>🛡️</span>
+                                        <span>Tim Admin SayaBantu</span>
+                                        <span class="text-[8px] px-1 py-0.2 rounded font-extrabold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 uppercase">Resmi</span>
                                     </div>
-                                @endif
-
-                                <p class="text-xs leading-relaxed break-words whitespace-pre-line">{{ $msg->message }}</p>
-                                @if($msg->sender_type === 'customer')
+                                    @if($msg->photo)
+                                        <div class="mb-2 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                                            <a href="{{ asset('storage/' . $msg->photo) }}" target="_blank" rel="noopener">
+                                                <img src="{{ asset('storage/' . $msg->photo) }}" alt="Foto Bukti" class="w-full max-h-56 object-cover hover:opacity-95 transition cursor-pointer">
+                                            </a>
+                                        </div>
+                                    @endif
+                                    <p class="text-xs leading-relaxed break-words whitespace-pre-line text-gray-900 dark:text-gray-100 font-normal">
+                                        {{ $msg->message }}
+                                    </p>
+                                    <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-1 text-right select-none">
+                                        {{ $msg->created_at->format('H:i') }}
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            <div wire:key="msg-cust-{{ $msg->id }}" class="flex justify-end my-1">
+                                <div class="rounded-2xl p-3.5 max-w-[85%] shadow-xs bg-[#0098e7] text-white rounded-br-xs">
+                                    @if($msg->photo)
+                                        <div class="mb-2 rounded-xl overflow-hidden border border-black/10 dark:border-white/10">
+                                            <a href="{{ asset('storage/' . $msg->photo) }}" target="_blank" rel="noopener">
+                                                <img src="{{ asset('storage/' . $msg->photo) }}" alt="Foto" class="w-full max-h-56 object-cover hover:opacity-95 transition cursor-pointer">
+                                            </a>
+                                        </div>
+                                    @endif
+                                    <p class="text-xs leading-relaxed break-words whitespace-pre-line">{{ $msg->message }}</p>
                                     <div class="text-[10px] mt-1 flex items-center justify-end gap-1 text-white/80 select-none">
                                         <span>{{ $msg->created_at->format('H:i') }}</span>
                                         @if(!empty($msg->is_read) || !empty($msg->read_at))
@@ -344,18 +740,79 @@
                                             <span class="text-white/60 font-medium" title="Terkirim">✓</span>
                                         @endif
                                     </div>
-                                @else
-                                    <div class="text-[10px] mt-1 text-right text-gray-400 dark:text-gray-500 select-none">
+                                </div>
+                            </div>
+                        @endif
+                    @else
+                        {{-- DI DALAM RUANG CHAT MITRA --}}
+                        @if($msg->sender_type === 'system' || str_starts_with($msg->message, 'Sistem SayaBantu:'))
+                            <div wire:key="msg-sys-{{ $msg->id }}" class="flex justify-center my-2">
+                                <div class="max-w-md bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3.5 py-2 rounded-xl text-center shadow-2xs">
+                                    <p class="text-[11px] text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+                                        {{ str_replace('Sistem SayaBantu: ', '', $msg->message) }}
+                                    </p>
+                                    <span class="text-[9px] text-gray-400 dark:text-gray-500 mt-0.5 block">
+                                        {{ $msg->created_at->format('H:i') }}
+                                    </span>
+                                </div>
+                            </div>
+                        @elseif(str_contains($msg->message, '🛡️') || str_contains($msg->message, '[Pesan Resmi Admin') || str_contains($msg->message, '[Sistem Moderasi'))
+                            <div wire:key="msg-adm-relay-{{ $msg->id }}" class="flex justify-start my-1">
+                                <div class="rounded-2xl p-3.5 max-w-[85%] shadow-xs bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 text-gray-900 dark:text-gray-100 rounded-bl-xs">
+                                    <div class="flex items-center gap-1.5 mb-1 text-sky-600 dark:text-sky-400 font-bold text-[11px]">
+                                        <span>🛡️</span>
+                                        <span>Pesan Resmi Admin Moderasi</span>
+                                    </div>
+                                    <p class="text-xs leading-relaxed break-words whitespace-pre-line text-gray-900 dark:text-gray-100 font-normal">
+                                        {{ $msg->message }}
+                                    </p>
+                                    <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-1 text-right select-none">
                                         {{ $msg->created_at->format('H:i') }}
                                     </div>
-                                @endif
+                                </div>
                             </div>
-                        </div>
+                        @else
+                            <div wire:key="msg-item-{{ $msg->id }}" class="flex {{ $msg->sender_type === 'customer' ? 'justify-end' : 'justify-start' }} my-1">
+                                <div class="rounded-2xl p-3.5 max-w-[85%] shadow-xs {{ $msg->sender_type === 'customer' ? 'bg-[#0098e7] text-white rounded-br-xs' : 'bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 text-gray-900 dark:text-gray-100 rounded-bl-xs' }}">
+                                    @if($msg->photo)
+                                        <div class="mb-2 rounded-xl overflow-hidden border border-black/10 dark:border-white/10">
+                                            <a href="{{ asset('storage/' . $msg->photo) }}" target="_blank" rel="noopener">
+                                                <img src="{{ asset('storage/' . $msg->photo) }}" alt="Foto Bukti" class="w-full max-h-56 object-cover hover:opacity-95 transition cursor-pointer">
+                                            </a>
+                                            <div class="px-2 py-1 bg-black/60 text-[10px] text-white flex items-center gap-1">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                Lampiran Foto
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    <p class="text-xs leading-relaxed break-words whitespace-pre-line">{{ $msg->message }}</p>
+                                    @if($msg->sender_type === 'customer')
+                                        <div class="text-[10px] mt-1 flex items-center justify-end gap-1 text-white/80 select-none">
+                                            <span>{{ $msg->created_at->format('H:i') }}</span>
+                                            @if(!empty($msg->is_read) || !empty($msg->read_at))
+                                                <span class="text-blue-200 font-bold" title="Dibaca">✓✓</span>
+                                            @else
+                                                <span class="text-white/60 font-medium" title="Terkirim">✓</span>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <div class="text-[10px] mt-1 text-right text-gray-400 dark:text-gray-500 select-none">
+                                            {{ $msg->created_at->format('H:i') }}
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
                     @endif
                 @endforeach
             @else
-                <div class="text-center text-gray-400 dark:text-gray-500 text-xs py-12">
-                    Belum ada pesan. Ketik pesan di bawah untuk memulai percakapan.
+                <div class="text-center text-gray-400 dark:text-gray-500 text-xs py-10">
+                    @if($is_admin_chat)
+                        Belum ada pesan percakapan pada topik ini. Ketik pesan di bawah untuk memberikan tanggapan kepada Tim Admin.
+                    @else
+                        Belum ada pesan. Ketik pesan di bawah untuk memulai percakapan.
+                    @endif
                 </div>
             @endif
         </div>
@@ -396,7 +853,18 @@
                     <input type="file" wire:model="photo" accept="image/png, image/jpeg, image/jpg" class="hidden">
                 </label>
 
-                <input type="text" wire:model="message" placeholder="Tulis pesan ke {{ $selected_partner->name }}..."
+                @php
+                    $placeholder = "Tulis pesan ke " . ($selected_partner->name ?? 'User') . "...";
+                    if ($is_admin_chat) {
+                        if ($admin_tab === 'cancellation') {
+                            $placeholder = "Tulis tanggapan / klarifikasi pembatalan ke Admin...";
+                        } else {
+                            $placeholder = "Tulis penjelasan / bukti aduan ke Tim Admin...";
+                        }
+                    }
+                @endphp
+
+                <input type="text" wire:model="message" placeholder="{{ $placeholder }}"
                     class="flex-1 px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-700 text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500/30 focus:bg-white dark:focus:bg-gray-700 transition"
                     autofocus>
 
