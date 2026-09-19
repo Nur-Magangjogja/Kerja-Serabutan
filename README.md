@@ -1,6 +1,6 @@
-# Mastulongmas
+# Sayabantu
 
-Project: Mastulongmas — platform bantuan sosial berbasis Laravel + Livewire.
+Project: Sayabantu — platform bantuan sosial untuk kerja serabutan berbasis Laravel + Livewire.
 
 This repository contains the application code used for managing help requests (customers) and volunteers/providers (mitra).
 
