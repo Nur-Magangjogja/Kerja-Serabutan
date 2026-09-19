@@ -967,7 +967,7 @@ class Create extends Component
         'full_address'       => 'nullable|string|max:1000',
         'latitude'           => 'required|numeric|between:-90,90',
         'longitude'          => 'required|numeric|between:-180,180',
-        'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        'photo'              => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         'scheduled_date'     => 'nullable|date',
         'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
         'publish_time'       => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
@@ -999,7 +999,8 @@ class Create extends Component
         'scheduled_time.regex' => 'Format waktu tidak valid. Gunakan format 24-jam HH:MM, contoh: 9:30 atau 09:30',
         'publish_time.regex'   => 'Format jam mulai siar tidak valid. Gunakan format 24-jam HH:MM, contoh: 07:00',
         'custom_expiry_time.regex' => 'Format jam batas waktu tidak valid. Gunakan format 24-jam HH:MM, contoh: 23:59',
-        'photo.image'          => 'File harus berupa gambar (JPG, PNG, JPEG)',
+        'photo.image'          => 'File harus berupa gambar (JPG, PNG, JPEG, WebP)',
+        'photo.mimes'          => 'Format foto harus berupa JPG, JPEG, PNG, atau WebP',
         'photo.max'            => 'Ukuran foto maksimal 2MB',
     ];
 
@@ -1308,7 +1309,7 @@ class Create extends Component
                 'delivery_address'   => 'required|string|max:500',
                 'delivery_latitude'  => 'required|numeric|between:-90,90',
                 'delivery_longitude' => 'required|numeric|between:-180,180',
-                'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+                'photo'              => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
                 'scheduled_date'     => 'nullable|date',
                 'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
             ];
@@ -1358,7 +1359,7 @@ class Create extends Component
                 'full_address'       => 'nullable|string|max:1000',
                 'latitude'           => 'required|numeric|between:-90,90',
                 'longitude'          => 'required|numeric|between:-180,180',
-                'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+                'photo'              => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
                 'scheduled_date'     => 'nullable|date',
                 'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
             ];
