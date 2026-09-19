@@ -32,6 +32,17 @@
     </div>
 
     {{-- Info --}}
+    <div class="mb-3 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-2.5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <span class="text-sm">🎯</span>
+            <div>
+                <p class="text-[10px] uppercase tracking-wider font-extrabold text-blue-600 dark:text-blue-400">Target Tujuan Aktif</p>
+                <p class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ $targetLabel }}</p>
+            </div>
+        </div>
+        <span class="text-[10px] font-mono text-gray-400">{{ number_format($targetLat, 4) }}, {{ number_format($targetLng, 4) }}</span>
+    </div>
+
     <div class="grid grid-cols-2 gap-2.5 mb-3">
         <div class="bg-white dark:bg-gray-800 rounded-xl p-2.5 border border-gray-100 dark:border-gray-700/60 shadow-xs">
             <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">Lokasi Saat Ini</p>
@@ -247,6 +258,14 @@ Alpine.data('gpsSimulator', (helpId, isSimulating, currentLat, currentLng, targe
         });
         this.$watch('currentLng', (value) => {
             this.currentLng = parseFloat(value) || 0;
+            this.calculateDistance();
+        });
+        this.$watch('targetLat', (value) => {
+            this.targetLat = parseFloat(value) || 0;
+            this.calculateDistance();
+        });
+        this.$watch('targetLng', (value) => {
+            this.targetLng = parseFloat(value) || 0;
             this.calculateDistance();
         });
     },

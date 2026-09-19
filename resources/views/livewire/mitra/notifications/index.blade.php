@@ -5,14 +5,22 @@
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
             <div class="relative z-10">
-                <div class="relative flex items-center justify-center min-h-[40px] text-white">
-                    <div class="text-center w-full min-w-0 px-12">
+                <div class="flex items-center justify-between min-h-[40px] text-white">
+                    <div class="w-10 flex items-center">
+                        <a href="{{ route('mitra.dashboard') }}" wire:navigate aria-label="Kembali ke Beranda" class="p-2 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </a>
+                    </div>
+
+                    <div class="text-center flex-1 min-w-0 px-2">
                         <h1 class="text-base font-bold truncate">Notifikasi Mitra</h1>
                         <p class="text-xs text-white/90 truncate mt-0.5">{{ $totalCount }} Pesan Masuk</p>
                     </div>
 
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
-                        <a href="{{ route('mitra.settings.notifications') }}" wire:navigate title="Pengaturan Notifikasi" aria-label="Pengaturan Notifikasi" class="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 hover:bg-white/25 active:scale-95 transition-all flex items-center justify-center text-white shadow-xs cursor-pointer">
+                    <div class="w-10 flex items-center justify-end">
+                        <a href="{{ route('mitra.settings.notifications') }}" wire:navigate title="Pengaturan Notifikasi" aria-label="Pengaturan Notifikasi" class="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 hover:bg-white/25 transition-colors duration-200 flex items-center justify-center text-white shadow-xs cursor-pointer">
                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -82,10 +90,7 @@
                             $data = $notification->data;
                             $type = $data['type'] ?? 'general';
 
-                            if($type === 'chat_message') {
-                                $titleText = 'Pesan Baru';
-                                $iconColor = 'text-blue-500 bg-blue-50';
-                            } elseif($type === 'help_request') {
+                            if($type === 'help_request') {
                                 $titleText = $data['title'] ?? 'Permintaan Bantuan Baru';
                                 $iconColor = 'text-emerald-500 bg-emerald-50';
                             } elseif($type === 'rating_received') {
@@ -155,14 +160,14 @@
 
                                         {{-- Action Links (Lihat Bantuan hanya untuk tugas yang sudah aktif/diambil, bukan bantuan baru tersedia) --}}
                                         @if($type === 'chat_message')
-                                            <a href="{{ route('mitra.chat', ['help' => $data['help_id'] ?? null]) }}" class="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                                            <a href="{{ route('mitra.chat', ['help' => $data['help_id'] ?? null]) }}" wire:navigate class="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">
                                                 <span>Buka Chat</span>
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                                 </svg>
                                             </a>
                                         @elseif(isset($data['help_id']) && !in_array($type, ['new_help_available', 'help_request']))
-                                            <a href="{{ route('mitra.helps.detail', $data['help_id']) }}" class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400">
+                                            <a href="{{ route('mitra.helps.detail', $data['help_id']) }}" wire:navigate class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400">
                                                 <span>Lihat Bantuan</span>
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>

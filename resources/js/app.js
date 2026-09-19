@@ -51,25 +51,6 @@ window.previewImageFile = function(inputElement, previewImgElementId) {
 };
 
 /**
- * Prevent redundant page morphing / twitching when clicking the currently active page link
- */
-document.addEventListener('click', function(e) {
-    const link = e.target.closest('a[wire\\:navigate], a[href]');
-    if (!link) return;
-    const href = link.getAttribute('href');
-    if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
-    
-    try {
-        const url = new URL(link.href, window.location.origin);
-        if (url.origin === window.location.origin && url.pathname === window.location.pathname && url.search === window.location.search && !url.hash) {
-            // Already on this exact route! Prevent redundant re-fetch & judder
-            e.preventDefault();
-            e.stopPropagation();
-        }
-    } catch (err) {}
-}, true);
-
-/**
  * Prevent mouse wheel scrolling from incrementing/decrementing number inputs
  */
 document.addEventListener('wheel', function(e) {
@@ -82,82 +63,14 @@ document.addEventListener('wheel', function(e) {
 }, { passive: false });
 
 /**
- * Global Navigation Progress & Loading Feedback
+ * Livewire 3 Navigation Event Integration
  */
 (function() {
-    let progressBar = null;
-    let progressTimer = null;
-    let currentActiveNav = null;
-
-    function getProgressBar() {
-        if (!progressBar) {
-            progressBar = document.getElementById('global-nav-progress');
-            if (!progressBar) {
-                progressBar = document.createElement('div');
-                progressBar.id = 'global-nav-progress';
-                document.body.appendChild(progressBar);
-            }
-        }
-        return progressBar;
-    }
-
-    function startProgress() {
-        const bar = getProgressBar();
-        if (progressTimer) clearInterval(progressTimer);
-        bar.style.transition = 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease';
-        bar.style.opacity = '1';
-        bar.style.width = '20%';
-
-        let currentWidth = 20;
-        progressTimer = setInterval(() => {
-            if (currentWidth < 85) {
-                currentWidth += (85 - currentWidth) * 0.18;
-                bar.style.width = currentWidth + '%';
-            }
-        }, 120);
-    }
-
-    function completeProgress() {
-        const bar = getProgressBar();
-        if (progressTimer) clearInterval(progressTimer);
-        bar.style.transition = 'width 0.15s ease, opacity 0.25s ease';
-        bar.style.width = '100%';
-        setTimeout(() => {
-            bar.style.opacity = '0';
-            setTimeout(() => {
-                bar.style.width = '0%';
-                if (currentActiveNav) {
-                    currentActiveNav.classList.remove('nav-loading');
-                    currentActiveNav = null;
-                }
-                document.querySelectorAll('.nav-loading').forEach(el => el.classList.remove('nav-loading'));
-            }, 250);
-        }, 120);
-    }
-
-    // Attach click listener for immediate button tactile feedback
-    document.addEventListener('click', function(e) {
-        const link = e.target.closest('a[wire\\:navigate], .nav-item, [data-nav-item]');
-        if (link && link.getAttribute('href') && !link.getAttribute('href').startsWith('#') && !link.getAttribute('href').startsWith('javascript:')) {
-            try {
-                const url = new URL(link.href, window.location.origin);
-                if (url.pathname !== window.location.pathname || url.search !== window.location.search) {
-                    document.querySelectorAll('.nav-loading').forEach(el => el.classList.remove('nav-loading'));
-                    link.classList.add('nav-loading');
-                    currentActiveNav = link;
-                    startProgress();
-                }
-            } catch (err) {}
-        }
-    }, true);
-
     document.addEventListener('livewire:navigating', () => {
         document.body.classList.add('navigating');
-        startProgress();
     });
 
     document.addEventListener('livewire:navigated', () => {
-        completeProgress();
         // Remove after two animation frames (same cadence as enableTransitions in theme.js)
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -166,5 +79,45 @@ document.addEventListener('wheel', function(e) {
         });
     });
 })();
+
+
+/**
+ * Global Utility: Play Notification Sound
+ * Plays notification sound from /sfx/ when notification events arrive
+ */
+window.playNotificationSound = function(options = {}) {
+    try {
+        const force = options && options.force === true;
+        const soundEnabled = (typeof window.getNotificationSoundEnabled === 'function')
+            ? window.getNotificationSoundEnabled()
+            : (window.USER_SOUND_ENABLED !== false);
+
+        if (!force && soundEnabled === false) {
+            return;
+        }
+
+        const defaultUrl = window.DEFAULT_NOTIFICATION_SOUND || '/sfx/mixkit-software-interface-start-2574.mp3';
+        const soundUrl = options.url || defaultUrl;
+        const audio = new Audio(soundUrl);
+        audio.volume = typeof options.volume === 'number' ? Math.max(0, Math.min(1, options.volume)) : 0.85;
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(err => {
+                // Autoplay restrictions or missing audio file handled silently
+                console.debug('Notification audio playback prevented:', err);
+            });
+        }
+    } catch (err) {
+        console.debug('playNotificationSound error:', err);
+    }
+};
+
+// Global event listener for Livewire or Alpine dispatches
+window.addEventListener('play-notification-sound', function(e) {
+    const detail = e && e.detail ? e.detail : {};
+    window.playNotificationSound(detail);
+});
+
 
 

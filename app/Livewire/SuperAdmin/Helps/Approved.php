@@ -15,6 +15,12 @@ class Approved extends Component
     public $search = '';
     public $perPage = 10;
 
+    protected $listeners = [
+        'superadmin-territory-changed' => '$refresh',
+        'admin-district-changed'       => '$refresh',
+        'admin-city-changed'           => '$refresh',
+    ];
+
     public function updatedSearch()
     {
         $this->resetPage();
@@ -28,31 +34,54 @@ class Approved extends Component
     public function approveHelp($id)
     {
         $help = Help::findOrFail($id);
-        $help->update(['status' => Help::STATUS_MENUNGGU_MITRA]);
-        session()->flash('message', 'Bantuan berhasil disetujui');
+        $help->update([
+            'status'        => Help::STATUS_MENUNGGU_MITRA,
+            'dispatch_mode' => Help::DISPATCH_MODE_POOL,
+        ]);
+        session()->flash('message', 'Bantuan berhasil disetujui dan dibuka ke pool mitra');
     }
 
     public function rejectHelp($id)
     {
         $help = Help::findOrFail($id);
-        if ($help->escrow_status === Help::ESCROW_STATUS_HELD) {
-            app(\App\Services\HelpTransactionService::class)->autoCancelExpiredHelp($help, 'Ditolak oleh SuperAdmin');
-        } else {
-            $help->update([
-                'status'         => Help::STATUS_DIBATALKAN,
-                'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
-                'escrow_status'  => Help::ESCROW_STATUS_REFUNDED,
-                'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
-            ]);
-        }
+        app(\App\Services\HelpCancellationService::class)->cancelByPartnerUnilaterally($help, auth()->user(), 'Ditolak oleh SuperAdmin');
         session()->flash('message', 'Bantuan ditolak dan dana escrow dikembalikan 100% ke pemohon.');
     }
 
     public function render()
     {
-        $helps = Help::query()
-            ->with(['customer', 'mitra', 'city'])
-            ->whereIn('status', ['active', 'menunggu_mitra', 'taken', 'memperoleh_mitra', 'sedang_diproses', 'in_progress', 'waiting_customer_confirmation', 'selesai', 'completed'])
+        $approvedStatuses = array_merge(Help::activeStatuses(), [
+            Help::STATUS_MENUNGGU_MITRA,
+            Help::STATUS_WAITING_CONFIRMATION,
+            Help::STATUS_SELESAI,
+        ]);
+
+        $query = Help::query()
+            ->with(['customer', 'mitra', 'city', 'district'])
+            ->whereIn('status', $approvedStatuses);
+
+        $currentUser = auth()->user();
+        $territory = $currentUser ? $currentUser->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+        if ($territory['type'] === 'district' && $territory['id']) {
+            $dId = (int) $territory['id'];
+            $query->where(function ($q) use ($dId) {
+                $q->where('district_id', $dId)
+                  ->orWhereHas('customer', fn($cq) => $cq->where('district_id', $dId));
+            });
+        } elseif ($territory['type'] === 'city' && $territory['id']) {
+            $cId = (int) $territory['id'];
+            $districtIds = $currentUser ? $currentUser->getEffectiveSuperadminDistrictIds() : [];
+            $query->where(function ($q) use ($cId, $districtIds) {
+                $q->where('city_id', $cId)
+                  ->orWhereHas('customer', fn($cq) => $cq->where('city_id', $cId));
+                if (!empty($districtIds)) {
+                    $q->orWhereIn('district_id', $districtIds)
+                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $districtIds));
+                }
+            });
+        }
+
+        $helps = $query
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('title', 'like', '%' . $this->search . '%')
@@ -65,4 +94,3 @@ class Approved extends Component
         return view('livewire.superadmin.helps.approved', compact('helps'));
     }
 }
-

@@ -41,7 +41,6 @@
                         <div>
                             <div class="flex items-center gap-2">
                                 <h2 class="text-lg font-bold text-gray-900 dark:text-white">{{ $user->name }}</h2>
-                                <span class="text-xs font-mono text-gray-400 dark:text-gray-500">#{{ $user->id }}</span>
                             </div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ $user->email }}</p>
                         </div>
@@ -71,11 +70,11 @@
                         <span class="font-semibold text-gray-800 dark:text-gray-200 block mt-0.5">{{ $user->gender ?: '—' }}</span>
                     </div>
                     <div class="p-3 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700/80">
-                        <span class="text-gray-400 block text-[10px]">Kota Operasional</span>
-                        <span class="font-semibold text-gray-800 dark:text-gray-200 block mt-0.5">{{ $user->city_name ?: '—' }}</span>
+                        <span class="text-gray-400 block text-[10px]">Wilayah Operasional</span>
+                        <span class="font-semibold text-gray-800 dark:text-gray-200 block mt-0.5">{{ $user->kecamatan ? 'Kec. ' . $user->kecamatan . ($user->city_name ? ', ' . $user->city_name : '') : ($user->city_name ?: '—') }}</span>
                     </div>
                     <div class="sm:col-span-2 p-3.5 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700/80 space-y-1">
-                        <span class="text-gray-400 block text-[10px]">Kota Wilayah</span>
+                        <span class="text-gray-400 block text-[10px]">Alamat Lengkap Domisili</span>
                         <p class="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200 leading-relaxed">{{ $user->full_address }}</p>
                     </div>
                     <div class="p-3 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700/80">
@@ -112,7 +111,7 @@
             <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-3.5">
                 <div class="flex items-center justify-between">
                     <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <span>🪪</span> Foto e-KTP
+                        <span></span> Foto e-KTP
                     </h3>
                     @if($user->verified)
                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
@@ -154,14 +153,19 @@
             @if($user->selfie_url)
             <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-3">
                 <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <span>🤳</span> Foto Selfie Verifikasi
+                    <span></span> Foto Selfie Verifikasi
                 </h3>
                 <div class="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-900/10 shadow-xs aspect-4/3">
                     <img src="{{ $user->selfie_url }}" alt="Selfie {{ $user->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                 </div>
-                <div class="text-right">
-                    <a href="{{ $user->selfie_url }}" target="_blank" class="text-xs text-primary-600 dark:text-primary-400 font-semibold hover:underline">
-                        Buka Foto Asli &rarr;
+                <div class="flex items-center justify-between text-xs pt-1">
+                    <a href="{{ $user->selfie_url }}" target="_blank" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        Buka Foto Asli
+                    </a>
+                    <a href="{{ $user->selfie_url }}" download class="text-gray-500 dark:text-gray-400 hover:underline flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Unduh
                     </a>
                 </div>
             </div>

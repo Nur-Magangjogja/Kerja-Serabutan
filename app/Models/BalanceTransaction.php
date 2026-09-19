@@ -247,17 +247,14 @@ class BalanceTransaction extends Model
                 $s = strtolower(trim((string) ($model->status ?? '')));
 
                 $map = [
-                    // common misspellings -> canonical
                     'panding' => 'pending',
                     'pendding' => 'pending',
                     'pendng' => 'pending',
                     'pending' => 'pending',
-
                     'complate' => 'completed',
                     'compleatd' => 'completed',
                     'complted' => 'completed',
                     'completed' => 'completed',
-
                     'failed' => 'failed',
                 ];
 
@@ -266,10 +263,69 @@ class BalanceTransaction extends Model
                 } elseif (isset($map[$s])) {
                     $model->status = $map[$s];
                 } else {
-                    // if unknown, keep original trimmed lowercased value
                     $model->status = $s;
                 }
             }
+        });
+
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('pending_topups_count_superadmin');
+            $ver = (int) \Illuminate\Support\Facades\Cache::get('pending_topups_count_version', 1);
+            \Illuminate\Support\Facades\Cache::put('pending_topups_count_version', $ver + 1, now()->addDays(7));
+        });
+
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('pending_topups_count_superadmin');
+            $ver = (int) \Illuminate\Support\Facades\Cache::get('pending_topups_count_version', 1);
+            \Illuminate\Support\Facades\Cache::put('pending_topups_count_version', $ver + 1, now()->addDays(7));
+        });
+    }
+
+    /**
+     * Menghitung total permintaan top-up yang menunggu approval
+     * untuk keperluan indikator badge di sidebar Admin & Superadmin.
+     */
+    public static function getPendingTopupsCountForUser(?User $user = null): int
+    {
+        $user = $user ?? auth()->user();
+        if (!$user) {
+            return 0;
+        }
+
+        $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
+        $version = \Illuminate\Support\Facades\Cache::get('pending_topups_count_version', 1);
+
+        $saTerritory = $isSuperAdmin ? $user->getActiveSuperadminTerritory() : null;
+        $saKeyPart = $isSuperAdmin ? ('sa_' . $saTerritory['type'] . '_' . ($saTerritory['id'] ?? 'all')) : ('admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
+        $cacheKey = 'pending_topups_count_v' . $version . '_' . $saKeyPart;
+
+        return (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin, $saTerritory) {
+            $query = static::where('type', 'topup')->where('status', 'waiting_approval');
+
+            if (!$isSuperAdmin) {
+                $districtIds = $user->getEffectiveAdminDistrictIds();
+                if (!empty($districtIds)) {
+                    $query->whereHas('user', fn($q) => $q->whereIn('district_id', $districtIds));
+                } elseif (!empty($user->city_id) && $user->role === 'admin') {
+                    $query->whereHas('user', fn($q) => $q->where('city_id', $user->city_id));
+                } else {
+                    return 0;
+                }
+            } else {
+                if ($saTerritory && $saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                    $dId = (int) $saTerritory['id'];
+                    $query->whereHas('user', fn($q) => $q->where('district_id', $dId));
+                } elseif ($saTerritory && $saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                    $cId = (int) $saTerritory['id'];
+                    $saDistrictIds = $user->getEffectiveSuperadminDistrictIds();
+                    $query->whereHas('user', function ($q) use ($cId, $saDistrictIds) {
+                        if (!empty($saDistrictIds)) $q->whereIn('district_id', $saDistrictIds);
+                        if ($cId) $q->orWhere('city_id', $cId);
+                    });
+                }
+            }
+
+            return (int) $query->count();
         });
     }
 }

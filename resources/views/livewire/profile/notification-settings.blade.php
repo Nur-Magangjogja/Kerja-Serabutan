@@ -1,4 +1,20 @@
-<div class="space-y-6">
+<div class="space-y-6"
+    x-data="{
+        soundEnabled: {{ ($sound_enabled ?? true) ? 'true' : 'false' }},
+        soundPlaying: false,
+        previewSound() {
+            this.soundPlaying = true;
+            window.playNotificationSound({ force: true });
+            setTimeout(() => { this.soundPlaying = false; }, 2000);
+        }
+    }"
+    x-init="
+        $wire.on('sound-setting-updated', (val) => {
+            soundEnabled = val;
+            window.USER_SOUND_ENABLED = val;
+        });
+    "
+>
     @if(session()->has('message'))
         <div class="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-2 animate-fade-in shadow-xs">
             <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -72,23 +88,54 @@
             </div>
 
             <!-- Suara Notifikasi -->
-            <div class="flex items-center justify-between p-3">
-                <div class="flex items-start gap-3 pr-3">
-                    <div class="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                        </svg>
+            <div class="p-3 space-y-2.5">
+                {{-- Baris toggle sound --}}
+                <div class="flex items-center justify-between"
+                    @sound-setting-updated.window="soundEnabled = $event.detail">
+                    <div class="flex items-start gap-3 pr-3">
+                        <div class="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-gray-900 dark:text-white text-xs block">Suara Notifikasi</span>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-snug mt-0.5">Mainkan nada notifikasi ketika ada pembaruan pesanan, tawaran radar, atau pesan masuk.</p>
+                        </div>
                     </div>
-                    <div>
-                        <span class="font-semibold text-gray-900 dark:text-white text-xs block">Suara Notifikasi</span>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-snug mt-0.5">Mainkan nada notifikasi ketika ada pembaruan baru masuk.</p>
-                    </div>
+                    <button wire:click="updateSetting('sound_enabled')" wire:loading.attr="disabled"
+                        class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer {{ $sound_enabled ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600' }}">
+                        <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 {{ $sound_enabled ? 'translate-x-6' : 'translate-x-1' }}"></span>
+                    </button>
                 </div>
-                <button wire:click="updateSetting('sound_enabled')" wire:loading.attr="disabled"
-                    class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer {{ $sound_enabled ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600' }}">
-                    <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 {{ $sound_enabled ? 'translate-x-6' : 'translate-x-1' }}"></span>
-                </button>
+
+                {{-- Tombol Preview Suara (muncul hanya jika sound_enabled aktif) --}}
+                <div x-show="soundEnabled" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+                    <button @click="previewSound()"
+                        :disabled="soundPlaying"
+                        class="w-full mt-1 py-2 px-3 rounded-xl border transition-all duration-200 cursor-pointer text-xs font-semibold flex items-center justify-center gap-2"
+                        :class="soundPlaying
+                            ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700/60 text-purple-500 dark:text-purple-400 cursor-wait'
+                            : 'bg-white dark:bg-gray-700/60 border-gray-200 dark:border-gray-600/60 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-300 dark:hover:border-purple-700 text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-300'"
+                    >
+                        <svg class="w-3.5 h-3.5 flex-shrink-0" :class="soundPlaying ? 'animate-bounce text-purple-500' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span x-text="soundPlaying ? 'Memainkan suara...' : 'Pratinjau Nada Notifikasi'"></span>
+                        <template x-if="soundPlaying">
+                            <span class="flex gap-0.5 items-end h-3">
+                                <span class="w-0.5 bg-purple-500 rounded-full animate-[soundbar_0.8s_ease-in-out_infinite]" style="height:6px"></span>
+                                <span class="w-0.5 bg-purple-400 rounded-full animate-[soundbar_0.8s_ease-in-out_0.15s_infinite]" style="height:10px"></span>
+                                <span class="w-0.5 bg-purple-500 rounded-full animate-[soundbar_0.8s_ease-in-out_0.3s_infinite]" style="height:7px"></span>
+                                <span class="w-0.5 bg-purple-400 rounded-full animate-[soundbar_0.8s_ease-in-out_0.1s_infinite]" style="height:12px"></span>
+                                <span class="w-0.5 bg-purple-500 rounded-full animate-[soundbar_0.8s_ease-in-out_0.25s_infinite]" style="height:8px"></span>
+                            </span>
+                        </template>
+                    </button>
+                </div>
             </div>
+
         </div>
     </div>
 

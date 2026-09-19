@@ -37,6 +37,7 @@ export default {
       colors: {
         gray: {
           750: "#1e293b",
+          850: "#151e2e",
         },
         brand: {
           50: "#f0f9ff",

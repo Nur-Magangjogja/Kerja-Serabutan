@@ -2,9 +2,11 @@
 
 namespace App\Livewire\Mitra\Helps;
 
+use App\Models\City;
+use App\Models\District;
 use App\Models\Help;
+use App\Models\PartnerOnlineState;
 use App\Services\HelpTransactionService;
-use App\Services\LocationTrackingService;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
@@ -16,30 +18,139 @@ class AllHelps extends Component
 
     protected $queryString = [
         'search'         => ['except' => ''],
-        'distanceRadius' => ['except' => 'all'],
+        'districtFilter' => ['except' => 'all'],
         'sortBy'         => ['except' => 'nearby'],
     ];
 
-    public $search         = '';
-    public $distanceRadius = 'all'; // all, 5, 15, 60, city
-    public $sortBy         = 'nearby'; // nearby, latest, oldest, price_high, price_low
-    public $mitraLat       = null;
-    public $mitraLng       = null;
+    public $search              = '';
+    public $districtFilter      = 'all'; // 'all' (radius 10 km), 'my_district', 'my_city', or district_id
+    public $sortBy              = 'nearby'; // nearby, latest, oldest, price_high, price_low
+    public $mitraLat            = null;
+    public $mitraLng            = null;
+    public ?int $currentCityId      = null;
+    public ?string $currentCityName = null;
+    public ?int $currentDistrictId  = null;
+    public ?string $currentDistrictName = null;
+
+    public function mount()
+    {
+        $user = auth()->user();
+        if ($user) {
+            // Ambil koordinat GPS terakhir yang tersimpan pada PartnerOnlineState atau User
+            $onlineState = PartnerOnlineState::where('user_id', $user->id)->first();
+            if ($onlineState && $onlineState->latitude && $onlineState->longitude) {
+                $this->mitraLat = (float) $onlineState->latitude;
+                $this->mitraLng = (float) $onlineState->longitude;
+            } elseif ($user->latitude && $user->longitude) {
+                $this->mitraLat = (float) $user->latitude;
+                $this->mitraLng = (float) $user->longitude;
+            }
+        }
+
+        $this->resolveCurrentTerritory();
+    }
 
     public function updatingSearch()
     {
         $this->resetPage();
     }
 
-    public function updatingDistanceRadius()
+    public function updatingDistrictFilter()
     {
         $this->resetPage();
     }
 
-    public function setMitraLocation($lat, $lng)
+    public function setMitraLocation($lat, $lng, $cityName = null, $districtName = null)
     {
         $this->mitraLat = (float) $lat;
         $this->mitraLng = (float) $lng;
+
+        $user = auth()->user();
+        if ($user) {
+            PartnerOnlineState::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'latitude'     => $this->mitraLat,
+                    'longitude'    => $this->mitraLng,
+                    'last_seen_at' => now(),
+                ]
+            );
+        }
+
+        $this->resolveCurrentTerritory($cityName, $districtName);
+        $this->resetPage();
+    }
+
+    /**
+     * Resolusikan Kecamatan & Kota/Kabupaten secara dinamis dari titik koordinat GPS posisi saat ini.
+     * Fallback ke data profil pengguna jika koordinat GPS belum tersedia.
+     */
+    public function resolveCurrentTerritory(?string $cityName = null, ?string $districtName = null): void
+    {
+        $user = auth()->user();
+
+        // 1. Jika ada koordinat GPS, temukan Kota terdekat berdasarkan koordinat
+        if ($this->mitraLat && $this->mitraLng) {
+            $lat = (float) $this->mitraLat;
+            $lng = (float) $this->mitraLng;
+
+            $matchedCity = null;
+
+            // Jika ada nama kota dari reverse geocoding frontend
+            if (!empty($cityName)) {
+                $cleanCity = trim(preg_replace('/^(Kota\s+|Kabupaten\s+|Kab\.\s+|City of\s+|Regency\s+)/i', '', $cityName));
+                $matchedCity = City::where('name', 'LIKE', '%' . $cleanCity . '%')
+                    ->orWhere('name', 'LIKE', '%' . trim($cityName) . '%')
+                    ->first();
+            }
+
+            // Temukan Kota terdekat dari koordinat
+            if (!$matchedCity) {
+                $matchedCity = City::select('*')
+                    ->selectRaw("(6371 * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) AS dist", [$lat, $lng, $lat])
+                    ->whereNotNull('latitude')
+                    ->whereNotNull('longitude')
+                    ->orderBy('dist')
+                    ->first();
+            }
+
+            if ($matchedCity) {
+                $this->currentCityId   = $matchedCity->id;
+                $this->currentCityName = $matchedCity->name;
+
+                // Cari Kecamatan pada Kota tersebut
+                $matchedDistrict = null;
+                if (!empty($districtName)) {
+                    $cleanDistrict = trim(preg_replace('/^(Kecamatan\s+|Kec\.\s+|Kapanewon\s+|Kemantren\s+|District of\s+)/i', '', $districtName));
+                    $matchedDistrict = District::where('city_id', $matchedCity->id)
+                        ->where(function ($q) use ($cleanDistrict, $districtName) {
+                            $q->where('name', 'LIKE', '%' . $cleanDistrict . '%')
+                              ->orWhere('name', 'LIKE', '%' . trim($districtName) . '%');
+                        })
+                        ->first();
+                }
+
+                if (!$matchedDistrict) {
+                    $matchedDistrict = District::where('city_id', $matchedCity->id)->first();
+                }
+
+                if ($matchedDistrict) {
+                    $this->currentDistrictId   = $matchedDistrict->id;
+                    $this->currentDistrictName = $matchedDistrict->name;
+                }
+            }
+        }
+
+        // 2. Fallback jika GPS belum ada / belum teresolusi: gunakan data profil pendaftaran
+        if (!$this->currentCityId && $user) {
+            $userCity = $user->city_id ? City::find($user->city_id) : null;
+            $this->currentCityId   = $userCity?->id ?? $user->city_id;
+            $this->currentCityName = $userCity?->name ?? $user->city_name ?? $user->city;
+
+            $userDistrict = $user->district_id ? District::find($user->district_id) : null;
+            $this->currentDistrictId   = $userDistrict?->id ?? $user->district_id;
+            $this->currentDistrictName = $userDistrict?->name ?? $user->district ?? $user->kecamatan;
+        }
     }
 
     /**
@@ -66,8 +177,8 @@ class AllHelps extends Component
             app(HelpTransactionService::class)->takeHelp(
                 $help,
                 auth()->user(),
-                $latitude ? (float) $latitude : null,
-                $longitude ? (float) $longitude : null
+                $latitude ? (float) $latitude : ($this->mitraLat ? (float) $this->mitraLat : null),
+                $longitude ? (float) $longitude : ($this->mitraLng ? (float) $this->mitraLng : null)
             );
 
             session()->flash('message', 'Bantuan berhasil diambil. Silakan hubungi pengguna.');
@@ -87,8 +198,8 @@ class AllHelps extends Component
 
     public function render()
     {
-        $user            = auth()->user();
-        $locationService = app(LocationTrackingService::class);
+        $user             = auth()->user();
+        $maxOperationalKm = \App\Models\AppSetting::MAX_OPERATIONAL_RADIUS_KM; // Baku 10.0 KM
 
         // Jika Mitra terkena shadow ban atau sanksi SP 3 / blocked, jangan tampilkan daftar pekerjaan
         if ($user && ($user->isShadowBanned() || $user->warning_level >= 3 || $user->status === 'blocked')) {
@@ -101,21 +212,30 @@ class AllHelps extends Component
             );
 
             return view('livewire.mitra.helps.all-helps', [
-                'helps'          => $emptyPaginator,
-                'needsCity'      => false,
-                'userCity'       => $user->city_id ? \App\Models\City::find($user->city_id) : null,
-                'distanceRadius' => $this->distanceRadius,
-                'sortBy'         => $this->sortBy,
-                'search'         => $this->search,
-                'mitraLat'       => $this->mitraLat,
-                'mitraLng'       => $this->mitraLng,
-                'activeTask'     => null,
-                'isShadowBanned' => true,
+                'helps'               => $emptyPaginator,
+                'needsCity'           => false,
+                'userDistrict'        => $this->currentDistrictName,
+                'userCity'            => $this->currentCityName,
+                'userDistrictId'      => $this->currentDistrictId,
+                'userCityId'          => $this->currentCityId,
+                'districtFilter'      => $this->districtFilter,
+                'sortBy'              => $this->sortBy,
+                'search'              => $this->search,
+                'mitraLat'            => $this->mitraLat,
+                'mitraLng'            => $this->mitraLng,
+                'activeTask'          => null,
+                'isShadowBanned'      => true,
+                'countRadius10km'     => 0,
+                'countDistrict'       => 0,
+                'countCity'           => 0,
             ]);
         }
 
-        // Pool Terbuka: hanya bantuan yang berstatus menunggu_mitra DAN dispatch_mode = 'pool'
-        $query = Help::where('status', Help::STATUS_MENUNGGU_MITRA)
+        // Sapu bantuan expired yang belum dibatalkan & pulihkan tugas seeking stranded
+        app(\App\Services\HelpCancellationService::class)->sweepAndAutoCancelExpiredHelps();
+
+        // Base Pool Query: Bantuan menunggu mitra yang terbuka untuk pool (belum kadaluwarsa)
+        $basePoolQuery = Help::where('status', Help::STATUS_MENUNGGU_MITRA)
             ->where(function ($q) {
                 $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
                   ->orWhereNull('dispatch_mode');
@@ -123,40 +243,26 @@ class AllHelps extends Component
             ->whereNull('mitra_id')
             ->availableForMitra($user?->id)
             ->where(function ($q) {
-                $q->whereNull('scheduled_at')
-                  ->orWhere('scheduled_at', '<=', now());
+                $q->whereNull('expires_at')
+                  ->orWhere('expires_at', '>', now());
             });
 
-        // Filter Kota Saya
-        if ($this->distanceRadius === 'city' && $user && !empty($user->city_id)) {
-            $query->where('city_id', $user->city_id);
-        }
-
-        // Search
-        if ($this->search) {
-            $query->where(function ($q) {
-                $q->where('title', 'like', '%' . $this->search . '%')
-                  ->orWhere('description', 'like', '%' . $this->search . '%')
-                  ->orWhereHas('user', fn($u) => $u->where('name', 'like', '%' . $this->search . '%'))
-                  ->orWhereHas('city', fn($c) => $c->where('name', 'like', '%' . $this->search . '%'));
-            });
-        }
-
+        // Setup GPS parameters & Haversine SQL formula jika ada koordinat mitra
         $hasGps = ($this->mitraLat && $this->mitraLng);
         $haversineSql = null;
+        $minLat = null;
+        $maxLat = null;
+        $minLng = null;
+        $maxLng = null;
+        $initialLatSql = "CAST(COALESCE(helps.pickup_latitude, helps.latitude) AS REAL)";
+        $initialLngSql = "CAST(COALESCE(helps.pickup_longitude, helps.longitude) AS REAL)";
 
         if ($hasGps) {
             $lat = (float) $this->mitraLat;
             $lng = (float) $this->mitraLng;
+            $filterRadius = $maxOperationalKm;
 
-            // 1. Tentukan batas radius filter (KM): Pilihan eksplisit pengguna (5/15/25/30/60) atau batas maksimal platform pool (60 KM)
-            $maxPoolRadiusKm = (float) \App\Models\AppSetting::getMaxPoolRadiusKm();
-            $filterRadius = in_array($this->distanceRadius, ['5', '15', '25', '30', '60'])
-                ? (float) $this->distanceRadius
-                : $maxPoolRadiusKm;
-
-            // 2. Bounding Box Pre-Filter (Menggunakan Index Database B-Tree untuk memotong 99% data di luar area)
-            // 1 deg Lat ~ 111.045 KM; 1 deg Lng ~ 111.045 * cos(Lat) KM
+            // Bounding Box Pre-Filter (Index B-Tree)
             $latDelta = $filterRadius / 111.045;
             $lngDelta = $filterRadius / (111.045 * max(0.01, cos(deg2rad($lat))));
 
@@ -165,29 +271,105 @@ class AllHelps extends Component
             $minLng = $lng - $lngDelta;
             $maxLng = $lng + $lngDelta;
 
-            // 3. Formula Haversine SQL Presisi (Hanya dievaluasi untuk data di dalam Bounding Box)
-            $haversineSql = "(6371 * acos(least(1.0, greatest(-1.0, cos(radians($lat)) * cos(radians(latitude)) * cos(radians(longitude) - radians($lng)) + sin(radians($lat)) * sin(radians(latitude))))))";
+            // Formula Haversine SQL Presisi dengan koordinat titik awal sesuai jenis layanan (Output: distance_km)
+            $haversineSql = "(6371 * acos(least(1.0, greatest(-1.0, cos(radians($lat)) * cos(radians($initialLatSql)) * cos(radians($initialLngSql) - radians($lng)) + sin(radians($lat)) * sin(radians($initialLatSql))))))";
+        }
 
+        // Hitung total order per tab untuk badge indikator
+        $countRadius10km = 0;
+        if ($hasGps) {
+            $countRadius10km = (clone $basePoolQuery)->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm, $user) {
+                $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm) {
+                    $sub->whereRaw("$initialLatSql BETWEEN $minLat AND $maxLat")
+                        ->whereRaw("$initialLngSql BETWEEN $minLng AND $maxLng")
+                        ->whereRaw("$haversineSql <= $maxOperationalKm");
+                })->orWhere(function ($sub) use ($user) {
+                    $sub->where(function($s) {
+                        $s->whereNull('latitude')->orWhereNull('longitude');
+                    });
+                    if ($this->currentDistrictId) {
+                        $sub->where('district_id', $this->currentDistrictId);
+                    } elseif ($user && $user->district_id) {
+                        $sub->where('district_id', $user->district_id);
+                    }
+                });
+            })->count();
+        } else {
+            $countRadius10km = (clone $basePoolQuery)
+                ->when($this->currentCityId, fn($q, $cId) => $q->where('city_id', $cId))
+                ->count();
+        }
+
+        $countDistrict = $this->currentDistrictId
+            ? (clone $basePoolQuery)->where('district_id', $this->currentDistrictId)->count()
+            : 0;
+
+        $countCity = $this->currentCityId
+            ? (clone $basePoolQuery)->where('city_id', $this->currentCityId)->count()
+            : 0;
+
+        // Clone query untuk data yang akan ditampilkan
+        $query = clone $basePoolQuery;
+
+        // Jika GPS aktif, hitung distance_km untuk seluruh baris hasil
+        if ($hasGps) {
             $query->select('helps.*')
                   ->selectRaw("$haversineSql AS distance_km");
+        }
 
-            // Filter: Bounding Box terindeks terlebih dahulu, lalu presisi Haversine
-            $query->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $filterRadius) {
-                $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $filterRadius) {
-                    $sub->whereBetween('latitude', [$minLat, $maxLat])
-                        ->whereBetween('longitude', [$minLng, $maxLng])
-                        ->whereRaw("$haversineSql <= ?", [$filterRadius]);
-                })->orWhere(function ($sub) {
-                    $sub->whereNull('latitude')->orWhereNull('longitude');
+        // 1. FILTER BERDASARKAN TAB AKTIF:
+        if ($this->districtFilter === 'all' || $this->districtFilter === 'radius_10km') {
+            // TAB 1: Radius 10 KM dari tempat Mitra berdiri
+            if ($hasGps) {
+                $query->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm, $user) {
+                    $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm) {
+                        $sub->whereRaw("$initialLatSql BETWEEN $minLat AND $maxLat")
+                            ->whereRaw("$initialLngSql BETWEEN $minLng AND $maxLng")
+                            ->whereRaw("$haversineSql <= $maxOperationalKm");
+                    })->orWhere(function ($sub) use ($user) {
+                        // Fallback untuk order legacy yang belum ada koordinat map
+                        $sub->where(function($s) {
+                            $s->whereNull('latitude')->orWhereNull('longitude');
+                        });
+                        if ($this->currentDistrictId) {
+                            $sub->where('district_id', $this->currentDistrictId);
+                        } elseif ($user && $user->district_id) {
+                            $sub->where('district_id', $user->district_id);
+                        }
+                    });
                 });
+            } else {
+                // Fallback jika GPS browser belum aktif: tampilkan order dalam kota saat ini
+                if (!empty($this->currentCityId)) {
+                    $query->where('city_id', $this->currentCityId);
+                }
+            }
+        } elseif ($this->districtFilter === 'my_district' && !empty($this->currentDistrictId)) {
+            // TAB 2: SEMUA order dari kecamatan mitra saat ini (tanpa terpotong batas radius 10 KM)
+            $query->where('district_id', $this->currentDistrictId);
+        } elseif ($this->districtFilter === 'my_city' && !empty($this->currentCityId)) {
+            // TAB 3: SEMUA order dari kabupaten/kota mitra saat ini (tanpa terpotong batas radius 10 KM)
+            $query->where('city_id', $this->currentCityId);
+        } elseif (is_numeric($this->districtFilter) && (int) $this->districtFilter > 0) {
+            $query->where('district_id', (int) $this->districtFilter);
+        }
+
+        // 2. SEARCH FILTER:
+        if ($this->search) {
+            $query->where(function ($q) {
+                $q->where('title', 'like', '%' . $this->search . '%')
+                  ->orWhere('description', 'like', '%' . $this->search . '%')
+                  ->orWhereHas('user', fn($u) => $u->where('name', 'like', '%' . $this->search . '%'))
+                  ->orWhereHas('district', fn($d) => $d->where('name', 'like', '%' . $this->search . '%'))
+                  ->orWhereHas('city', fn($c) => $c->where('name', 'like', '%' . $this->search . '%'));
             });
         }
 
-        // Database-Level Sorting
+        // 3. DATABASE-LEVEL SORTING:
         match ($this->sortBy) {
             'nearby' => $hasGps
                 ? $query->orderByRaw("CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN $haversineSql ELSE 99999 END ASC")
-                : ($user && $user->city_id ? $query->orderByRaw("(city_id = ?) DESC", [$user->city_id])->latest() : $query->latest()),
+                : ($this->currentDistrictId ? $query->orderByRaw("(district_id = ?) DESC", [$this->currentDistrictId])->latest() : $query->latest()),
             'latest'     => $query->latest(),
             'oldest'     => $query->oldest(),
             'price_high' => $query->orderByDesc('amount'),
@@ -197,8 +379,38 @@ class AllHelps extends Component
                 : $query->latest(),
         };
 
-        // Native Database Pagination (Hanya mengambil 15 record per halaman langsung dari SQL)
-        $helps = $query->with(['user', 'city'])->paginate(15);
+        // Native Database Pagination (Reuse pre-calculated active tab count to avoid duplicate count query)
+        $perPage = 15;
+        $page    = $this->getPage();
+
+        $totalCount = null;
+        if (empty($this->search)) {
+            $totalCount = match ($this->districtFilter) {
+                'my_district'        => $countDistrict,
+                'my_city'            => $countCity,
+                'all', 'radius_10km' => $countRadius10km,
+                default              => null,
+            };
+        }
+
+        if ($totalCount !== null) {
+            $items = $query->with(['user', 'city', 'district'])
+                ->forPage($page, $perPage)
+                ->get();
+
+            $helps = new \Illuminate\Pagination\LengthAwarePaginator(
+                $items,
+                $totalCount,
+                $perPage,
+                $page,
+                [
+                    'path'     => \Illuminate\Pagination\Paginator::resolveCurrentPath(),
+                    'pageName' => 'page',
+                ]
+            );
+        } else {
+            $helps = $query->with(['user', 'city', 'district'])->paginate($perPage);
+        }
 
         // Format angka distance_km jika dihitung dari SQL
         if ($hasGps) {
@@ -213,15 +425,22 @@ class AllHelps extends Component
         $activeTask = $user ? Help::where('mitra_id', $user->id)->active()->first() : null;
 
         return view('livewire.mitra.helps.all-helps', [
-            'helps'          => $helps,
-            'needsCity'      => false,
-            'userCity'       => $user && $user->city_id ? \App\Models\City::find($user->city_id) : null,
-            'distanceRadius' => $this->distanceRadius,
-            'sortBy'         => $this->sortBy,
-            'search'         => $this->search,
-            'mitraLat'       => $this->mitraLat,
-            'mitraLng'       => $this->mitraLng,
-            'activeTask'     => $activeTask,
+            'helps'               => $helps,
+            'needsCity'           => false,
+            'userDistrict'        => $this->currentDistrictName,
+            'userCity'            => $this->currentCityName,
+            'userDistrictId'      => $this->currentDistrictId,
+            'userCityId'          => $this->currentCityId,
+            'districtFilter'      => $this->districtFilter,
+            'sortBy'              => $this->sortBy,
+            'search'              => $this->search,
+            'mitraLat'            => $this->mitraLat,
+            'mitraLng'            => $this->mitraLng,
+            'activeTask'          => $activeTask,
+            'countRadius10km'     => $countRadius10km,
+            'countDistrict'       => $countDistrict,
+            'countCity'           => $countCity,
         ]);
     }
 }
+

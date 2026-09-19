@@ -11,14 +11,17 @@ class Chat extends Model
         'help_id',
         'mitra_id',
         'customer_id',
+        'sender_id',
         'message',
         'photo',
         'sender_type',
+        'is_read',
         'read_at',
     ];
 
     protected $casts = [
-        'read_at' => 'datetime',
+        'is_read'    => 'boolean',
+        'read_at'    => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -37,5 +40,22 @@ class Chat extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'customer_id');
+    }
+
+    public function sender(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sender_id');
+    }
+
+
+    protected static function booted(): void
+    {
+        static::created(function (Chat $chat) {
+            try {
+                broadcast(new \App\Events\ChatMessageSent($chat));
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('[Chat] ChatMessageSent broadcast failed: ' . $e->getMessage());
+            }
+        });
     }
 }

@@ -5,8 +5,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
-Route::middleware('guest')->group(function () {
-    // 1. Direct Quick Register with Email, Name, Password & Role
+// 1. Quick Register Pages (Blocked for logged-in admin, superadmin, & verified users)
+Route::middleware(['guest', 'block_admin_registration'])->group(function () {
     Volt::route('register', 'pages.auth.register')
         ->name('register');
 
@@ -14,7 +14,10 @@ Route::middleware('guest')->group(function () {
     Route::get('register/choose-role', function () {
         return redirect()->route('register');
     })->name('register.choose-role');
+});
 
+// 2. Authentication & Password Recovery Pages (Accessible by all guests)
+Route::middleware('guest')->group(function () {
     Volt::route('login', 'pages.auth.login')
         ->name('login');
 
@@ -30,21 +33,21 @@ Route::middleware('guest')->group(function () {
         ->name('password.reset');
 });
 
-// Registration Success Page (Accessible by guest and auth)
+// 3. Registration Success Page (Accessible by unapproved/pending users only)
 Volt::route('registration/success', 'pages.auth.registration-success')
+    ->middleware('block_admin_registration')
     ->name('registration.success');
 
-// Email Verification Link Handler (dapat dibuka langsung dari aplikasi email)
+// 4. Email Verification Link Handler (Direct email link)
 Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
     ->middleware(['throttle:6,1'])
     ->name('verification.verify');
 
-Route::middleware('auth')->group(function () {
-    // 2. Email Verification Notice (Halaman tunggu verifikasi)
+// 5. Registration Onboarding & Identity Verification (Step 1 - 4 & Email Notice)
+Route::middleware(['auth', 'block_admin_registration'])->group(function () {
     Volt::route('verify-email', 'pages.auth.verify-email')
         ->name('verification.notice');
 
-    // 3. Multi-Step Onboarding & Identity (KTP) Verification Routes (Step 1 - 4)
     Volt::route('register/step1', 'pages.auth.register-step1')
         ->name('register.step1');
 
@@ -57,15 +60,35 @@ Route::middleware('auth')->group(function () {
     Volt::route('register/step4', 'pages.auth.register-step4')
         ->name('register.step4');
 
+    Route::post('register/cancel', function (\App\Livewire\Actions\CancelRegistration $cancelRegistration) {
+        $cancelRegistration();
+        return redirect()->route('login');
+    })->name('register.cancel');
+});
+
+// 6. Authenticated Global Actions (Password confirmation & Logout)
+Route::middleware('auth')->group(function () {
     Volt::route('confirm-password', 'pages.auth.confirm-password')
         ->name('password.confirm');
+});
 
-    Route::post('logout', function () {
+// Logout Route (Mendukung POST & GET untuk mencegah stuck di URL /logout saat refresh/back/session timeout)
+Route::match(['GET', 'POST'], 'logout', function () {
+    if (Auth::check()) {
         Auth::logout();
+    }
+
+    if (request()->hasSession()) {
         request()->session()->invalidate();
         request()->session()->regenerateToken();
+    }
 
-        // Redirect all users cleanly to unified login
-        return redirect()->route('login');
-    })->name('logout');
-});
+    \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('registration_uuid'));
+    \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('registration_role'));
+    \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('registration_step1_draft'));
+    \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('sb_register_draft'));
+    \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('sb_register_leave_time'));
+
+    // Redirect all users cleanly to unified login
+    return redirect()->route('login');
+})->middleware('throttle:15,1')->name('logout');

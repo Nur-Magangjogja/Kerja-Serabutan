@@ -4,6 +4,7 @@ use App\Models\User;
 use App\Models\Registration;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
@@ -17,6 +18,89 @@ new #[Layout('layouts.guest')] class extends Component {
     public string $role = 'customer'; // customer / mitra
     public bool $agree_terms = false;
     public bool $isSubmitting = false;
+
+    public function mount(): void
+    {
+        if (Auth::check()) {
+            $user = Auth::user();
+            if (in_array($user->role ?? '', ['super_admin', 'superadmin'])) {
+                $this->redirect(route('superadmin.dashboard'), navigate: true);
+                return;
+            }
+            if ($user->role === 'admin') {
+                $this->redirect(route('admin.dashboard'), navigate: true);
+                return;
+            }
+            if ($user->role === 'mitra') {
+                $this->redirect(route('mitra.dashboard'), navigate: true);
+                return;
+            }
+            $this->redirect(route('customer.dashboard'), navigate: true);
+            return;
+        }
+
+        // Periksa apakah ada cookie draf registrasi sementara
+        if (request()->hasCookie('sb_register_draft')) {
+            try {
+                $raw = request()->cookie('sb_register_draft');
+                $draft = json_decode(urldecode($raw), true);
+                if (!is_array($draft)) {
+                    $draft = json_decode($raw, true);
+                }
+
+                $leaveTime = request()->cookie('sb_register_leave_time');
+                $isExpired = false;
+
+                if ($leaveTime && is_numeric($leaveTime)) {
+                    $leaveTimestamp = (int)($leaveTime > 10000000000 ? $leaveTime / 1000 : $leaveTime);
+                    // Hapus jika sudah ditinggalkan lebih dari 15 detik
+                    if ((time() - $leaveTimestamp) > 15) {
+                        $isExpired = true;
+                    }
+                }
+
+                if ($isExpired) {
+                    Cookie::queue(Cookie::forget('sb_register_draft'));
+                    Cookie::queue(Cookie::forget('sb_register_leave_time'));
+                } elseif (is_array($draft)) {
+                    $this->name = $draft['name'] ?? '';
+                    $this->email = $draft['email'] ?? '';
+                    $this->role = in_array($draft['role'] ?? '', ['customer', 'mitra']) ? $draft['role'] : 'customer';
+                    $this->agree_terms = (bool)($draft['agree_terms'] ?? false);
+                }
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+    }
+
+    public function updatedName(): void
+    {
+        $this->name = trim($this->name);
+        if (!empty($this->name)) {
+            $this->validateOnly('name', [
+                'name' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
+            ], [
+                'name.required' => 'Nama lengkap wajib diisi.',
+                'name.min'      => 'Nama lengkap minimal 3 karakter.',
+                'name.max'      => 'Nama lengkap maksimal 255 karakter.',
+                'name.regex'    => 'Nama lengkap hanya boleh berisi huruf alfabet, spasi, tanda hubung (-), titik (.), dan tanda petik (\'). Angka dan simbol khusus tidak diperbolehkan.',
+            ]);
+        }
+    }
+
+    public function updatedEmail(): void
+    {
+        $this->email = strtolower(trim($this->email));
+        $this->validateOnly('email', [
+            'email' => ['required', 'string', 'email', 'ends_with:@gmail.com', 'max:255', 'unique:' . User::class],
+        ], [
+            'email.required'  => 'Alamat email wajib diisi.',
+            'email.email'     => 'Format email tidak valid.',
+            'email.ends_with' => 'Format email pendaftaran wajib menggunakan @gmail.com.',
+            'email.unique'    => 'Alamat email ini sudah terdaftar dan terverifikasi di sistem.',
+        ]);
+    }
 
     public function register(): void
     {
@@ -53,16 +137,19 @@ new #[Layout('layouts.guest')] class extends Component {
         User::purgeExpiredInactive($normalizedEmail);
 
         $validated = $this->validate([
-            'name'        => ['required', 'string', 'max:255'],
+            'name'        => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
             'email'       => ['required', 'string', 'email', 'ends_with:@gmail.com', 'max:255', 'unique:' . User::class],
             'password'    => ['required', 'string', 'min:8', 'confirmed'],
             'role'        => ['required', 'in:customer,mitra'],
             'agree_terms' => ['accepted'],
         ], [
             'name.required'         => 'Nama lengkap wajib diisi.',
+            'name.min'              => 'Nama lengkap minimal 3 karakter.',
+            'name.max'              => 'Nama lengkap maksimal 255 karakter.',
+            'name.regex'            => 'Nama lengkap hanya boleh berisi huruf alfabet, spasi, tanda hubung (-), titik (.), dan tanda petik (\'). Angka dan simbol khusus tidak diperbolehkan.',
             'email.required'        => 'Alamat email wajib diisi.',
             'email.email'           => 'Format email tidak valid.',
-            'email.ends_with'       => 'Pendaftaran akun wajib menggunakan email Google (@gmail.com).',
+            'email.ends_with'       => 'Format email pendaftaran wajib menggunakan @gmail.com.',
             'email.unique'          => 'Alamat email ini sudah terdaftar dan terverifikasi di sistem.',
             'password.required'     => 'Kata sandi wajib diisi.',
             'password.min'          => 'Kata sandi minimal 8 karakter.',
@@ -80,6 +167,20 @@ new #[Layout('layouts.guest')] class extends Component {
             'role'     => $validated['role'],
             'status'   => 'inactive',
             'verified' => false,
+        ]);
+
+        // Hapus cookie draft registrasi & data step pendaftaran lama saat pembuatan akun baru
+        Cookie::queue(Cookie::forget('sb_register_draft'));
+        Cookie::queue(Cookie::forget('sb_register_leave_time'));
+        Cookie::queue(Cookie::forget('registration_uuid'));
+        Cookie::queue(Cookie::forget('registration_step1_draft'));
+        Cookie::queue(Cookie::forget('registration_step2_draft'));
+        Cookie::queue(Cookie::forget('registration_step3_draft'));
+        Cookie::queue(Cookie::forget('registration_step4_draft'));
+        Cookie::queue(Cookie::forget('registration_role'));
+        session()->forget([
+            'registration_uuid',
+            'registration_role',
         ]);
 
         try {
@@ -130,7 +231,7 @@ new #[Layout('layouts.guest')] class extends Component {
     @endif
 
     <!-- Registration Form -->
-    <form wire:submit="register" class="space-y-4" x-data="{ showPassword: false, showConfirm: false }">
+    <form wire:submit="register" class="space-y-4" x-data="registerDraftManager()" x-init="initDraft()">
         
         <!-- 1. Pilihan Peran (Role Selector) -->
         <div class="space-y-1.5">
@@ -158,7 +259,7 @@ new #[Layout('layouts.guest')] class extends Component {
                     </div>
                     <div>
                         <span class="text-xs font-bold block">Mitra Jasa</span>
-                        <span class="text-[10px] text-gray-500 dark:text-gray-400 block leading-tight">Penyedia Layanan</span>
+                        <span class="text-[10px] text-gray-500 dark:text-gray-400 block leading-tight">Pekerja</span>
                     </div>
                 </button>
             </div>
@@ -173,12 +274,14 @@ new #[Layout('layouts.guest')] class extends Component {
                 Nama Lengkap
             </label>
             <div class="relative">
-                <input wire:model="name" id="name" type="text" required placeholder="Contoh: Budi Santoso"
+                <input wire:model.blur="name" id="name" type="text" required placeholder="Nama Lengkap"
+                    oninput="this.value = this.value.replace(/[^a-zA-Z\s\.\'\-]/g, '')"
                     class="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition">
                 <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
             </div>
+            <p class="text-[11px] text-gray-400 dark:text-gray-500">Hanya huruf alfabet, spasi, tanda hubung (-), titik (.), dan tanda petik ('). Tanpa angka atau simbol khusus.</p>
             @error('name')
                 <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p>
             @enderror
@@ -187,15 +290,16 @@ new #[Layout('layouts.guest')] class extends Component {
         <!-- 3. Alamat Email Google (Gmail) -->
         <div class="space-y-1">
             <label for="email" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center justify-between">
-                <span>Alamat Email </span>
+                <span>Alamat Email</span>
             </label>
             <div class="relative">
-                <input wire:model="email" id="email" type="email" required placeholder="nama@gmail.com"
+                <input wire:model.blur="email" id="email" type="email" required placeholder="nama@gmail.com"
                     class="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition">
                 <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
             </div>
+            <p class="text-[11px] text-gray-400 dark:text-gray-500">Format email pendaftaran wajib menggunakan akun <strong>@gmail.com</strong>.</p>
             @error('email')
                 <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p>
             @enderror
@@ -246,7 +350,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 <input wire:model="agree_terms" type="checkbox"
                     class="mt-0.5 w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500">
                 <span class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Saya menyetujui <a href="#" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline">Syarat & Ketentuan</a> serta <a href="#" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline">Kebijakan Privasi</a> yang berlaku di SayaBantu.
+                    Saya menyetujui <a href="{{ route('terms') }}" target="_blank" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline">Syarat & Ketentuan</a> serta <a href="{{ route('privacy') }}" target="_blank" class="text-primary-600 dark:text-primary-400 font-semibold hover:underline">Kebijakan Privasi</a> yang berlaku di SayaBantu.
                 </span>
             </label>
             @error('agree_terms')
@@ -282,3 +386,128 @@ new #[Layout('layouts.guest')] class extends Component {
         </p>
     </div>
 </div>
+
+<script>
+    function registerDraftManager() {
+        return {
+            showPassword: false,
+            showConfirm: false,
+            timerId: null,
+
+            getCookie(name) {
+                const matches = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)'));
+                return matches ? decodeURIComponent(matches[1]) : null;
+            },
+
+            setCookie(name, value, maxAgeSecs = 86400) {
+                document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSecs}; SameSite=Lax`;
+            },
+
+            deleteCookie(name) {
+                document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+            },
+
+            saveDraft() {
+                try {
+                    const data = {
+                        name: this.$wire.name || '',
+                        email: this.$wire.email || '',
+                        role: this.$wire.role || 'customer',
+                        agree_terms: Boolean(this.$wire.agree_terms),
+                        updated_at: Date.now()
+                    };
+                    if (data.name || data.email || data.agree_terms || data.role !== 'customer') {
+                        this.setCookie('sb_register_draft', JSON.stringify(data));
+                    }
+                } catch (e) {}
+            },
+
+            clearDraft() {
+                this.deleteCookie('sb_register_draft');
+                this.deleteCookie('sb_register_leave_time');
+                if (this.$wire) {
+                    this.$wire.set('name', '');
+                    this.$wire.set('email', '');
+                    this.$wire.set('role', 'customer');
+                    this.$wire.set('agree_terms', false);
+                }
+            },
+
+            restoreDraft() {
+                try {
+                    const draftRaw = this.getCookie('sb_register_draft');
+                    if (!draftRaw) return;
+
+                    const leaveTimeRaw = this.getCookie('sb_register_leave_time');
+                    if (leaveTimeRaw) {
+                        const leaveTime = parseInt(leaveTimeRaw, 10);
+                        const now = Date.now();
+                        const diffSec = (now - leaveTime) / 1000;
+                        
+                        // Jika sudah ditinggalkan lebih dari 15 detik, hapus draf dan kosongkan formulir
+                        if (diffSec > 15) {
+                            this.clearDraft();
+                            return;
+                        }
+                    }
+
+                    // Jika kembali dalam kurun waktu <= 15 detik, pulihkan data
+                    const draft = JSON.parse(draftRaw);
+                    if (draft && typeof draft === 'object') {
+                        if (draft.name && !this.$wire.name) this.$wire.set('name', draft.name);
+                        if (draft.email && !this.$wire.email) this.$wire.set('email', draft.email);
+                        if (draft.role && this.$wire.role !== draft.role) this.$wire.set('role', draft.role);
+                        if (typeof draft.agree_terms !== 'undefined' && this.$wire.agree_terms !== draft.agree_terms) {
+                            this.$wire.set('agree_terms', draft.agree_terms);
+                        }
+                    }
+
+                    // Reset leave time saat user sudah kembali aktif
+                    this.deleteCookie('sb_register_leave_time');
+                } catch (e) {}
+            },
+
+            handleVisibilityChange() {
+                if (document.hidden) {
+                    // User berpindah tampilan / tab
+                    this.saveDraft();
+                    const now = Date.now();
+                    this.setCookie('sb_register_leave_time', now.toString());
+
+                    // Pasang timer 15 detik: jika lewat 15 detik masih di luar, hapus cookie draf
+                    clearTimeout(this.timerId);
+                    this.timerId = setTimeout(() => {
+                        this.deleteCookie('sb_register_draft');
+                        this.deleteCookie('sb_register_leave_time');
+                    }, 15100);
+                } else {
+                    // User kembali ke tampilan registrasi
+                    clearTimeout(this.timerId);
+                    this.restoreDraft();
+                }
+            },
+
+            handleBeforeUnload() {
+                // User menavigasi ke halaman lain (misalnya Syarat & Ketentuan / Kebijakan Privasi)
+                this.saveDraft();
+                this.setCookie('sb_register_leave_time', Date.now().toString());
+            },
+
+            initDraft() {
+                // Pulihkan data draf jika ada dan masih dalam batas 15 detik
+                this.restoreDraft();
+
+                // Pantau perubahan input agar otomatis tersimpan ke cookie
+                this.$watch('$wire.name', () => this.saveDraft());
+                this.$watch('$wire.email', () => this.saveDraft());
+                this.$watch('$wire.role', () => this.saveDraft());
+                this.$watch('$wire.agree_terms', () => this.saveDraft());
+
+                // Pasang event listener perpindahan tampilan dan navigasi
+                document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
+                window.addEventListener('beforeunload', () => this.handleBeforeUnload());
+                window.addEventListener('pagehide', () => this.handleBeforeUnload());
+            }
+        };
+    }
+</script>

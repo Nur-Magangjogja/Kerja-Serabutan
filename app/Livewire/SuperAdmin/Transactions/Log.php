@@ -55,6 +55,45 @@ class Log extends Component
         'refund' => [],
     ];
 
+    protected $listeners = [
+        'superadmin-territory-changed' => 'onTerritoryChanged',
+        'admin-district-changed'       => 'onTerritoryChanged',
+        'admin-city-changed'           => 'onTerritoryChanged',
+    ];
+
+    public function onTerritoryChanged()
+    {
+        $this->calculateChartData();
+        $this->resetPage();
+        $this->resetPage('usersPage');
+    }
+
+    protected function applyTerritoryScope($query)
+    {
+        $user = auth()->user();
+        $isSuperAdmin = in_array($user?->role ?? '', ['super_admin', 'superadmin']);
+        if (!$isSuperAdmin || !$user) {
+            return $query;
+        }
+
+        $territory = $user->getActiveSuperadminTerritory();
+        if ($territory['type'] === 'district' && $territory['id']) {
+            $dId = (int) $territory['id'];
+            $query->whereHas('user', fn($uq) => $uq->where('district_id', $dId));
+        } elseif ($territory['type'] === 'city' && $territory['id']) {
+            $cId = (int) $territory['id'];
+            $districtIds = $user->getEffectiveSuperadminDistrictIds();
+            $query->whereHas('user', function ($uq) use ($cId, $districtIds) {
+                $uq->where('city_id', $cId);
+                if (!empty($districtIds)) {
+                    $uq->orWhereIn('district_id', $districtIds);
+                }
+            });
+        }
+
+        return $query;
+    }
+
     protected $queryString = [
         'tab' => ['except' => 'overview'],
         'selectedMonth' => ['except' => 'all'],
@@ -187,6 +226,8 @@ class Log extends Component
             });
         }
 
+        $this->applyTerritoryScope($query);
+
         return $query;
     }
 
@@ -194,6 +235,21 @@ class Log extends Component
     {
         $query = User::whereIn('role', ['customer', 'mitra'])
             ->with('balance');
+
+        $user = auth()->user();
+        $territory = $user ? $user->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+        if ($territory['type'] === 'district' && $territory['id']) {
+            $query->where('district_id', (int) $territory['id']);
+        } elseif ($territory['type'] === 'city' && $territory['id']) {
+            $cId = (int) $territory['id'];
+            $districtIds = $user ? $user->getEffectiveSuperadminDistrictIds() : [];
+            $query->where(function ($q) use ($cId, $districtIds) {
+                $q->where('city_id', $cId);
+                if (!empty($districtIds)) {
+                    $q->orWhereIn('district_id', $districtIds);
+                }
+            });
+        }
 
         if ($this->userRole && $this->userRole !== 'all') {
             $query->where('role', $this->userRole);
@@ -247,7 +303,7 @@ class Log extends Component
             $startDate = Carbon::createFromDate($year, $month, 1)->startOfDay();
             $endDate = Carbon::createFromDate($year, $month, $daysInMonth)->endOfDay();
 
-            $stats = BalanceTransaction::selectRaw("
+            $statsQuery = BalanceTransaction::selectRaw("
                 DAY(created_at) as day_num,
                 SUM(CASE WHEN type = 'topup' AND status IN ({$statusList}) THEN amount ELSE 0 END) as topup,
                 SUM(CASE WHEN type = 'platform_fee' AND status IN ({$statusList}) THEN amount ELSE 0 END) as platform_fee,
@@ -256,10 +312,10 @@ class Log extends Component
                 SUM(CASE WHEN type = 'escrow_lock' AND status IN ({$statusList}) THEN amount ELSE 0 END) as escrow_lock,
                 SUM(CASE WHEN type = 'refund' AND status IN ({$statusList}) THEN amount ELSE 0 END) as refund
             ")
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->groupByRaw("DAY(created_at)")
-            ->get()
-            ->keyBy('day_num');
+            ->whereBetween('created_at', [$startDate, $endDate]);
+
+            $this->applyTerritoryScope($statsQuery);
+            $stats = $statsQuery->groupByRaw("DAY(created_at)")->get()->keyBy('day_num');
 
             $monthShortName = Carbon::createFromDate($year, $month, 1)->translatedFormat('M');
 
@@ -277,7 +333,7 @@ class Log extends Component
             // Mode 2: 12 Bulan dalam Tahun Terpilih
             $year = (int) $this->selectedYear;
 
-            $stats = BalanceTransaction::selectRaw("
+            $statsQuery = BalanceTransaction::selectRaw("
                 MONTH(created_at) as month_num,
                 SUM(CASE WHEN type = 'topup' AND status IN ({$statusList}) THEN amount ELSE 0 END) as topup,
                 SUM(CASE WHEN type = 'platform_fee' AND status IN ({$statusList}) THEN amount ELSE 0 END) as platform_fee,
@@ -286,10 +342,10 @@ class Log extends Component
                 SUM(CASE WHEN type = 'escrow_lock' AND status IN ({$statusList}) THEN amount ELSE 0 END) as escrow_lock,
                 SUM(CASE WHEN type = 'refund' AND status IN ({$statusList}) THEN amount ELSE 0 END) as refund
             ")
-            ->whereYear('created_at', $year)
-            ->groupByRaw("MONTH(created_at)")
-            ->get()
-            ->keyBy('month_num');
+            ->whereYear('created_at', $year);
+
+            $this->applyTerritoryScope($statsQuery);
+            $stats = $statsQuery->groupByRaw("MONTH(created_at)")->get()->keyBy('month_num');
 
             for ($m = 1; $m <= 12; $m++) {
                 $stat = $stats->get($m);
@@ -307,7 +363,7 @@ class Log extends Component
             $currentYear = (int) now()->year;
             $startYear = $currentYear - 4;
 
-            $stats = BalanceTransaction::selectRaw("
+            $statsQuery = BalanceTransaction::selectRaw("
                 YEAR(created_at) as year_num,
                 SUM(CASE WHEN type = 'topup' AND status IN ({$statusList}) THEN amount ELSE 0 END) as topup,
                 SUM(CASE WHEN type = 'platform_fee' AND status IN ({$statusList}) THEN amount ELSE 0 END) as platform_fee,
@@ -316,10 +372,10 @@ class Log extends Component
                 SUM(CASE WHEN type = 'escrow_lock' AND status IN ({$statusList}) THEN amount ELSE 0 END) as escrow_lock,
                 SUM(CASE WHEN type = 'refund' AND status IN ({$statusList}) THEN amount ELSE 0 END) as refund
             ")
-            ->whereYear('created_at', '>=', $startYear)
-            ->groupByRaw("YEAR(created_at)")
-            ->get()
-            ->keyBy('year_num');
+            ->whereYear('created_at', '>=', $startYear);
+
+            $this->applyTerritoryScope($statsQuery);
+            $stats = $statsQuery->groupByRaw("YEAR(created_at)")->get()->keyBy('year_num');
 
             for ($y = $startYear; $y <= $currentYear; $y++) {
                 $stat = $stats->get($y);
@@ -620,6 +676,8 @@ class Log extends Component
         if ($this->selectedUserId) {
             $allTimeQuery->where('user_id', $this->selectedUserId);
         }
+        $this->applyTerritoryScope($allTimeQuery);
+
         $allTimeTopup       = (float) $allTimeQuery->clone()->where('type', 'topup')->whereIn('status', self::SUCCESS_STATUSES)->sum('amount');
         $allTimePlatformFee = (float) $allTimeQuery->clone()->where('type', 'platform_fee')->whereIn('status', self::SUCCESS_STATUSES)->sum('amount');
         $allTimeEarning     = (float) $allTimeQuery->clone()->where('type', 'earning')->whereIn('status', self::SUCCESS_STATUSES)->sum('amount');
@@ -647,6 +705,8 @@ class Log extends Component
         if ($this->selectedYear !== 'all') {
             $monthlyBreakdownQuery->whereYear('created_at', (int) $this->selectedYear);
         }
+
+        $this->applyTerritoryScope($monthlyBreakdownQuery);
 
         $monthlyBreakdownRows = $monthlyBreakdownQuery
             ->groupByRaw("YEAR(created_at), MONTH(created_at)")

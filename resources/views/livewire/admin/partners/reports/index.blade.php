@@ -127,9 +127,16 @@
                             @endphp
                             <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition">
                                 <td class="px-4 py-3.5 whitespace-nowrap">
-                                    <span class="font-mono font-bold text-gray-900 dark:text-white text-xs">#{{ $report->id }}</span>
+                                    <span class="font-mono font-bold text-gray-900 dark:text-white text-xs">{{ $report->id }}</span>
                                     <div class="mt-1">
-                                        <p class="font-semibold text-gray-800 dark:text-gray-200">{{ $reporter?->name ?? 'User Tidak Diketahui' }}</p>
+                                        <p class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1">
+                                            <span>{{ $reporter?->name ?? 'User Tidak Diketahui' }}</span>
+                                            @if($reporter && $reporter->warning_level > 0)
+                                                <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300" title="Tingkat Disiplin: SP {{ $reporter->warning_level }}">
+                                                    SP {{ $reporter->warning_level }}
+                                                </span>
+                                            @endif
+                                        </p>
                                         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase {{ $reporter?->role === 'mitra' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800' }}">
                                             {{ $reporter?->role === 'mitra' ? 'Mitra' : 'Customer' }}
                                         </span>
@@ -138,7 +145,14 @@
 
                                 <td class="px-4 py-3.5 whitespace-nowrap">
                                     @if ($reported)
-                                        <p class="font-semibold text-gray-800 dark:text-gray-200">{{ $reported->name }}</p>
+                                        <p class="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1">
+                                            <span>{{ $reported->name }}</span>
+                                            @if($reported->warning_level > 0)
+                                                <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300" title="Tingkat Disiplin: SP {{ $reported->warning_level }}">
+                                                    SP {{ $reported->warning_level }}
+                                                </span>
+                                            @endif
+                                        </p>
                                         <span class="text-[10px] text-gray-400">{{ $reported->role === 'mitra' ? 'Mitra' : 'Customer' }}</span>
                                     @else
                                         <span class="text-gray-400 text-xs">—</span>

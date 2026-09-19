@@ -68,6 +68,16 @@ class VerifyEmailController extends Controller
             event(new Verified($user));
         }
 
+        if (in_array($user->role ?? '', ['admin', 'super_admin', 'superadmin'])) {
+            $route = in_array($user->role, ['super_admin', 'superadmin']) ? 'superadmin.dashboard' : 'admin.dashboard';
+            return redirect()->route($route)->with('verified', 1);
+        }
+
+        if ($user->verified && $user->status === 'active') {
+            $route = $user->role === 'mitra' ? 'mitra.dashboard' : 'customer.dashboard';
+            return redirect()->route($route)->with('verified', 1);
+        }
+
         // Setelah email terverifikasi, langsung arahkan ke Step 1 (Pengisian Data Diri & Verifikasi KTP)
         if (empty($user->nik) || (empty($user->ktp_photo) && empty($user->ktp_path))) {
             return redirect()->route('register.step1')->with('verified', 1);

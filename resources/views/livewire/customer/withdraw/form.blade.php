@@ -10,23 +10,27 @@
 
     <!-- Header Bar -->
     <div class="px-4 py-3.5 bg-gradient-to-r from-[#0098e7] via-[#0077cc] to-[#0060b0] text-white shadow-xs rounded-b-2xl">
-        <div class="relative flex items-center justify-center min-h-[40px]">
-            <a href="{{ route('customer.dashboard') }}" class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/15 rounded-xl transition cursor-pointer" aria-label="Kembali ke Dashboard">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
-            </a>
+        <div class="flex items-center justify-between min-h-[40px]">
+            <div class="w-10 flex items-center">
+                <a href="{{ route('customer.dashboard') }}" wire:navigate class="p-2 hover:bg-white/15 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white" aria-label="Kembali ke Dashboard">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </a>
+            </div>
 
-            <div class="text-center w-full min-w-0 px-12">
+            <div class="text-center flex-1 min-w-0 px-2">
                 <h1 class="text-sm font-bold tracking-tight truncate">Tarik Saldo Customer</h1>
                 <p class="text-[11px] text-white/80 truncate">Tarik sisa dana ke rekening / e-wallet Anda</p>
             </div>
 
-            <a href="{{ route('customer.withdraw.history') }}" class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/15 rounded-xl transition cursor-pointer" title="Riwayat Penarikan" aria-label="Riwayat">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-            </a>
+            <div class="w-10 flex items-center justify-end">
+                <a href="{{ route('customer.withdraw.history') }}" wire:navigate class="p-2 hover:bg-white/15 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white" title="Riwayat Penarikan" aria-label="Riwayat">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -82,7 +86,7 @@
                     </p>
                 </div>
                 <div class="pt-1.5">
-                    <a href="{{ route('customer.withdraw.history') }}" class="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-4 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl transition shadow-xs">
+                    <a href="{{ route('customer.withdraw.history') }}" wire:navigate class="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-4 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl transition shadow-xs">
                         <span>Lihat Riwayat & Status</span>
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -140,8 +144,8 @@
                         this.bankName = match.name;
                         this.bankCategory = match.category;
                         this.bankIcon = match.icon;
-                        this.selectedBankFee = Number(match.fee || 0);
                         this.isPlatformAccount = Boolean(match.is_platform_account);
+                        this.selectedBankFee = this.isPlatformAccount ? 0 : Number(match.fee || 0);
                     }
                     this.$watch('openBankModal', value => {
                         if (value) {
@@ -162,11 +166,12 @@
                     this.bankName = b.name;
                     this.bankCategory = b.category;
                     this.bankIcon = b.icon;
-                    this.selectedBankFee = Number(b.fee || 0);
                     this.isPlatformAccount = Boolean(b.is_platform_account);
+                    this.selectedBankFee = this.isPlatformAccount ? 0 : Number(b.fee || 0);
                     this.openBankModal = false;
                     this.searchBank = '';
                 },
+
                 setAmount(val) {
                     if (val > this.maxBalance) val = this.maxBalance;
                     this.amount = val;

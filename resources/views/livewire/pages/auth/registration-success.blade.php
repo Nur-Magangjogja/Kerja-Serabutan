@@ -4,7 +4,23 @@ use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
 new #[Layout('layouts.guest')] class extends Component {
-    //
+    public function mount(): void
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if ($user) {
+            if (in_array($user->role ?? '', ['admin', 'super_admin', 'superadmin'])) {
+                $route = in_array($user->role, ['super_admin', 'superadmin']) ? 'superadmin.dashboard' : 'admin.dashboard';
+                $this->redirect(route($route), navigate: true);
+                return;
+            }
+
+            if ($user->verified && $user->status === 'active') {
+                $route = $user->role === 'mitra' ? 'mitra.dashboard' : 'customer.dashboard';
+                $this->redirect(route($route), navigate: true);
+                return;
+            }
+        }
+    }
 }; ?>
 
 <div class="space-y-6 text-center py-2">

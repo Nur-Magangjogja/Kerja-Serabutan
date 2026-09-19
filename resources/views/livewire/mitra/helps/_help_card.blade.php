@@ -1,5 +1,5 @@
 @php
-    $avatar = $help->user->selfie_photo ?? $help->user->photo ?? null;
+    $avatar = $help->user->profile_photo ?? $help->user->photo ?? null;
     $name = $help->user->name ?? 'Pengguna';
     $cardImage = $help->photo ?? $avatar;
     $colors = ['bg-pink-100 text-pink-600','bg-green-100 text-green-600','bg-yellow-100 text-yellow-600','bg-blue-100 text-blue-600'];

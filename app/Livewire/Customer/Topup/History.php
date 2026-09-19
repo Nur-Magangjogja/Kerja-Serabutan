@@ -29,7 +29,17 @@ class History extends Component
 
     public function viewDetail($transactionId)
     {
-        $this->selectedTransaction = BalanceTransaction::with(['user', 'approvedBy'])->find($transactionId);
+        $this->selectedTransaction = BalanceTransaction::where('user_id', auth()->id())
+            ->where('type', 'topup')
+            ->with(['user', 'approvedBy'])
+            ->find($transactionId);
+
+        if (!$this->selectedTransaction) {
+            $this->showDetailModal = false;
+            session()->flash('error', 'Transaksi tidak ditemukan.');
+            return;
+        }
+
         $this->showDetailModal = true;
     }
 

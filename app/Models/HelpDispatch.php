@@ -9,10 +9,11 @@ class HelpDispatch extends Model
 {
     use HasFactory;
 
-    public const STATUS_OFFERED  = 'offered';
-    public const STATUS_ACCEPTED = 'accepted';
-    public const STATUS_REJECTED = 'rejected';
-    public const STATUS_EXPIRED  = 'expired';
+    public const STATUS_OFFERED   = 'offered';
+    public const STATUS_ACCEPTED  = 'accepted';
+    public const STATUS_REJECTED  = 'rejected';
+    public const STATUS_EXPIRED   = 'expired';
+    public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
         'help_id',
@@ -72,6 +73,11 @@ class HelpDispatch extends Model
     public function isExpired(): bool
     {
         return $this->status === self::STATUS_EXPIRED;
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === self::STATUS_CANCELLED;
     }
 
     public function isPending(): bool

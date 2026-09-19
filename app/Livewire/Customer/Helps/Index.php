@@ -18,21 +18,35 @@ class Index extends Component
     use WithPagination, WithFileUploads;
 
     protected $queryString = [
-        'statusFilter' => ['except' => 'menunggu_mitra'],
+        'statusFilter' => ['except' => Help::STATUS_MENUNGGU_MITRA],
     ];
 
-    public $statusFilter = 'menunggu_mitra';
+    protected $listeners = [
+        'refreshHelps'      => '$refresh',
+        'handleExpiredHelp' => 'handleExpiredHelp',
+    ];
+
+    public $statusFilter = Help::STATUS_MENUNGGU_MITRA;
+
+    /**
+     * Handler saat batas waktu pencarian berakhir (expired) secara live dari frontend
+     */
+    public function handleExpiredHelp()
+    {
+        $user = auth()->user();
+        if ($user) {
+            app(\App\Services\HelpCancellationService::class)->sweepAndAutoCancelExpiredHelps($user->id);
+        }
+    }
 
     /** Status yang masuk dalam tab "Diproses" */
-    protected $diprosesStatuses = [
-        'taken',
-        'memperoleh_mitra',
-        'partner_on_the_way',
-        'partner_arrived',
-        'in_progress',
-        'sedang_diproses',
-        'partner_cancel_requested',
-    ];
+    protected function getDiprosesStatuses(): array
+    {
+        return array_merge(Help::activeStatuses(), [
+            Help::STATUS_PARTNER_CANCEL_REQUESTED,
+            Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+        ]);
+    }
 
     public function mount()
     {
@@ -46,17 +60,17 @@ class Index extends Component
             // Urutan prioritas proses paling akhir (kecuali selesai):
             // 1. Menunggu konfirmasi penyelesaian dari customer (tahap terakhir sebelum selesai)
             $hasWaitingConfirmation = Help::where('user_id', $user->id)
-                ->where('status', 'waiting_customer_confirmation')
+                ->where('status', Help::STATUS_WAITING_CONFIRMATION)
                 ->exists();
 
             if ($hasWaitingConfirmation) {
-                $this->statusFilter = 'waiting_customer_confirmation';
+                $this->statusFilter = Help::STATUS_WAITING_CONFIRMATION;
                 return;
             }
 
             // 2. Sedang berlangsung / diproses / di perjalanan / pengerjaan / minta pembatalan
             $hasDiproses = Help::where('user_id', $user->id)
-                ->whereIn('status', $this->diprosesStatuses)
+                ->whereIn('status', $this->getDiprosesStatuses())
                 ->exists();
 
             if ($hasDiproses) {
@@ -66,17 +80,17 @@ class Index extends Component
 
             // 3. Menunggu / mencari rekan jasa (baru dibuat)
             $hasWaitingMitra = Help::where('user_id', $user->id)
-                ->whereIn('status', ['menunggu_mitra', 'mencari_mitra', 'menunggu_pembayaran', 'pending'])
+                ->where('status', Help::STATUS_MENUNGGU_MITRA)
                 ->exists();
 
             if ($hasWaitingMitra) {
-                $this->statusFilter = 'menunggu_mitra';
+                $this->statusFilter = Help::STATUS_MENUNGGU_MITRA;
                 return;
             }
 
             // 4. Jika tidak ada yang aktif, cek apakah ada riwayat selesai/batal
             $hasCompleted = Help::where('user_id', $user->id)
-                ->whereIn('status', ['selesai', 'completed', 'dibatalkan', 'cancelled'])
+                ->whereIn('status', Help::terminalStatuses())
                 ->exists();
 
             if ($hasCompleted) {
@@ -85,7 +99,7 @@ class Index extends Component
             }
         }
 
-        $this->statusFilter = 'menunggu_mitra';
+        $this->statusFilter = Help::STATUS_MENUNGGU_MITRA;
     }
 
     // ─── Edit modal ─────────────────────────────────────────────────────────
@@ -108,6 +122,7 @@ class Index extends Component
     // ─── Delete modal ────────────────────────────────────────────────────────
     public $showDeleteConfirm = false;
     public $deletingHelpId    = null;
+    public $deletingHelp      = null;
 
     // ─── Completion confirmation ──────────────────────────────────────────────
     public $confirmingHelpId = null;
@@ -132,12 +147,14 @@ class Index extends Component
             return;
         }
         $this->deletingHelpId    = $id;
+        $this->deletingHelp      = $help;
         $this->showDeleteConfirm = true;
     }
 
     public function cancelDelete()
     {
         $this->deletingHelpId    = null;
+        $this->deletingHelp      = null;
         $this->showDeleteConfirm = false;
     }
 
@@ -404,40 +421,10 @@ class Index extends Component
 
         // Auto-cancel bantuan yang kadaluwarsa secara on-the-fly jika batas waktu terlewati
         if ($user) {
-            $now = \Carbon\Carbon::now();
-            $hours = \App\Models\AppSetting::getHelpAutoCancelHours();
-            $cutoff = $now->copy()->subHours($hours);
-            $expiredWaiting = Help::where('user_id', $user->id)
-                ->whereNull('mitra_id')
-                ->whereIn('status', ['menunggu_mitra', 'mencari_mitra', 'menunggu_pembayaran', 'pending'])
-                ->where(function ($q) use ($now, $cutoff) {
-                    $q->where(function ($sub) use ($now) {
-                        $sub->whereNotNull('expires_at')
-                            ->where('expires_at', '<=', $now);
-                    })
-                    ->orWhere(function ($sub) use ($now) {
-                        $sub->whereNotNull('scheduled_at')
-                            ->where('scheduled_at', '<=', $now);
-                    })
-                    ->orWhere(function ($sub) use ($cutoff) {
-                        $sub->whereNull('expires_at')
-                            ->whereNull('scheduled_at')
-                            ->where('created_at', '<=', $cutoff);
-                    });
-                })
-                ->get();
-
-            foreach ($expiredWaiting as $expHelp) {
-                if ($expHelp->expires_at && \Carbon\Carbon::parse($expHelp->expires_at)->isPast()) {
-                    $reason = 'Batas waktu pencarian Rekan Jasa yang ditentukan telah berakhir';
-                } elseif ($expHelp->scheduled_at && \Carbon\Carbon::parse($expHelp->scheduled_at)->isPast()) {
-                    $reason = 'Waktu jadwal bantuan telah terlewat tanpa Rekan Jasa tersedia';
-                } else {
-                    $reason = "Tidak ada Rekan Jasa yang mengambil bantuan dalam batas waktu {$hours} jam";
-                }
-                app(\App\Services\HelpTransactionService::class)->autoCancelExpiredHelp($expHelp, $reason);
-            }
+            app(\App\Services\HelpCancellationService::class)->sweepAndAutoCancelExpiredHelps($user->id);
         }
+
+        $diprosesList = $this->getDiprosesStatuses();
 
         $query = Help::where('user_id', $user->id)
             ->with([
@@ -448,27 +435,41 @@ class Index extends Component
             ->withCount('chatMessages');
 
         if ($this->statusFilter === 'diproses') {
-            $query->whereIn('status', $this->diprosesStatuses);
+            $query->whereIn('status', $diprosesList);
         } elseif ($this->statusFilter === 'menunggu_mitra') {
-            $query->whereIn('status', ['menunggu_mitra', 'mencari_mitra', 'menunggu_pembayaran', 'pending']);
+            $query->where('status', Help::STATUS_MENUNGGU_MITRA);
         } elseif ($this->statusFilter === 'waiting_customer_confirmation') {
-            $query->where('status', 'waiting_customer_confirmation');
+            $query->where('status', Help::STATUS_WAITING_CONFIRMATION);
         } elseif ($this->statusFilter === 'selesai') {
-            $query->whereIn('status', ['selesai', 'completed', 'dibatalkan', 'cancelled']);
+            $query->whereIn('status', Help::terminalStatuses());
         } elseif (!empty($this->statusFilter)) {
-            $query->where('status', $this->statusFilter);
+            $query->where('status', Help::normalizeStatus($this->statusFilter));
         }
 
         $helps = $query->latest()->paginate(10);
 
+        // 1 query agregasi menggantikan 4 query COUNT terpisah untuk badge tab
+        $diprosesPlaceholders = implode(',', array_fill(0, count($diprosesList), '?'));
+        $terminalPlaceholders = implode(',', array_fill(0, count(Help::terminalStatuses()), '?'));
+
+        $agg = Help::where('user_id', $user->id)
+            ->selectRaw("SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as menunggu", [Help::STATUS_MENUNGGU_MITRA])
+            ->selectRaw("SUM(CASE WHEN status IN ($diprosesPlaceholders) THEN 1 ELSE 0 END) as diproses", $diprosesList)
+            ->selectRaw("SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as konfirmasi", [Help::STATUS_WAITING_CONFIRMATION])
+            ->selectRaw("SUM(CASE WHEN status IN ($terminalPlaceholders) THEN 1 ELSE 0 END) as selesai", Help::terminalStatuses())
+            ->first();
+
         $counts = [
-            'menunggu'   => Help::where('user_id', $user->id)->whereIn('status', ['menunggu_mitra', 'mencari_mitra', 'menunggu_pembayaran', 'pending'])->count(),
-            'diproses'   => Help::where('user_id', $user->id)->whereIn('status', $this->diprosesStatuses)->count(),
-            'konfirmasi' => Help::where('user_id', $user->id)->where('status', 'waiting_customer_confirmation')->count(),
-            'selesai'    => Help::where('user_id', $user->id)->whereIn('status', ['selesai', 'completed', 'dibatalkan', 'cancelled'])->count(),
+            'menunggu'   => (int) ($agg->menunggu ?? 0),
+            'diproses'   => (int) ($agg->diproses ?? 0),
+            'konfirmasi' => (int) ($agg->konfirmasi ?? 0),
+            'selesai'    => (int) ($agg->selesai ?? 0),
         ];
 
-        $this->cities = City::where('is_active', true)->orderBy('name')->get();
+        // Cache daftar kota aktif selama 10 menit agar tidak query ulang setiap interaksi
+        $this->cities = cache()->remember('active_cities_list', 600, function () {
+            return City::where('is_active', true)->orderBy('name')->get();
+        });
 
         return view('livewire.customer.helps.index', [
             'helps'  => $helps,

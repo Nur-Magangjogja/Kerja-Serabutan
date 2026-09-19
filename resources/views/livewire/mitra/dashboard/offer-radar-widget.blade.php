@@ -1,4 +1,7 @@
-<div @if(($onlineState?->matching_status ?? '') === 'searching') wire:poll.6s.visible @elseif(($onlineState?->matching_status ?? '') === 'offer_pending') wire:poll.3s.visible @endif
+<div>
+@if($isSeekingEnabled ?? true)
+<div @if(($onlineState?->matching_status ?? '') === 'searching') wire:poll.15s.visible @elseif(($onlineState?->matching_status ?? '') === 'offer_pending') wire:poll.3s.visible @endif
+     @visibilitychange.window="if (!document.hidden) scheduleHeartbeat()"
      x-data="{
          isGettingLocation: false,
          status: '{{ $onlineState?->matching_status ?? 'offline' }}',
@@ -82,11 +85,16 @@
 
          init() {
              this.scheduleHeartbeat();
-             document.addEventListener('visibilitychange', () => {
-                 if (!document.hidden) this.scheduleHeartbeat();
-             });
+         },
+
+         destroy() {
+             if (this.heartbeatTimer) {
+                 clearTimeout(this.heartbeatTimer);
+                 this.heartbeatTimer = null;
+             }
          }
      }">
+
 
     <!-- Card Status Mitra Online / Offline / Searching / Busy -->
     <div class="px-5 mt-3.5 sm:mt-4 relative z-10">
@@ -191,13 +199,21 @@
                                 @if(($onlineState?->matching_status ?? 'offline') === 'searching')
                                     Sedang aktif mencari order terdekat di lokasi Anda.
                                 @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
-                                    Siap menerima order. Klik "Cari Order" untuk mengaktifkan radar.
+                                    @if(!($isSeekingEnabled ?? true))
+                                        Mode Open Pool aktif. Order bantuan langsung tersedia di daftar bantuan tanpa perlu antrean pencarian.
+                                    @else
+                                        Siap menerima order. Klik "Cari Order" untuk mengaktifkan radar.
+                                    @endif
                                 @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
-                                    Ada tawaran order khusus untuk Anda! Silakan cek & respon tiket di bawah.
+                                    Ada tawaran order khusus untuk Anda! Silakan cek & respon penawaran di bawah.
                                 @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
                                     Anda sedang menjalankan tugas aktif. Selesaikan pesanan dengan baik.
                                 @else
-                                    Aktifkan status online untuk mulai menerima tawaran order bantuan.
+                                    @if(!($isSeekingEnabled ?? true))
+                                        Aktifkan status online untuk mulai bersiap menerima pekerjaan bantuan.
+                                    @else
+                                        Aktifkan status online untuk mulai menerima tawaran order bantuan.
+                                    @endif
                                 @endif
                             </p>
                         </div>
@@ -221,21 +237,38 @@
                                 </button>
                             </div>
                         @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
-                            <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700/60">
-                                <button @click="triggerAction('startSearching')"
-                                        :disabled="isGettingLocation"
-                                        class="w-full sm:w-auto px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                                    <span x-show="!isGettingLocation">Cari Order</span>
-                                    <span x-show="isGettingLocation" x-cloak>GPS...</span>
-                                </button>
-                                <button wire:click="goOffline"
-                                        wire:loading.attr="disabled"
-                                        class="w-full sm:w-auto px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-gray-600/60 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-98">
-                                    <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
-                                    <span>Offline</span>
-                                </button>
-                            </div>
+                            @if(!($isSeekingEnabled ?? true))
+                                <div class="flex items-center gap-2 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700/60">
+                                    <a href="{{ route('mitra.helps.all') }}"
+                                       wire:navigate
+                                       class="w-full sm:w-auto px-3.5 py-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                                        <span>Daftar Bantuan</span>
+                                    </a>
+                                    <button wire:click="goOffline"
+                                            wire:loading.attr="disabled"
+                                            class="w-full sm:w-auto px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-gray-600/60 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-98">
+                                        <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                        <span>Offline</span>
+                                    </button>
+                                </div>
+                            @else
+                                <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700/60">
+                                    <button @click="triggerAction('startSearching')"
+                                            :disabled="isGettingLocation"
+                                            class="w-full sm:w-auto px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                        <span x-show="!isGettingLocation">Cari Order</span>
+                                        <span x-show="isGettingLocation" x-cloak>GPS...</span>
+                                    </button>
+                                    <button wire:click="goOffline"
+                                            wire:loading.attr="disabled"
+                                            class="w-full sm:w-auto px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-gray-600/60 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-98">
+                                        <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                        <span>Offline</span>
+                                    </button>
+                                </div>
+                            @endif
                         @elseif(($onlineState?->matching_status ?? 'offline') === 'offline')
                             <div class="pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700/60">
                                 <button @click="triggerAction('goOnline')"
@@ -261,6 +294,22 @@
                         @endif
                     </div>
                 </div>
+
+                {{-- Banner Penjelasan Mode Open Pool saat fitur antrean dinonaktifkan --}}
+                @if(!($isSeekingEnabled ?? true) && ($onlineState?->matching_status ?? 'offline') === 'online')
+                    <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between text-xs text-primary-700 dark:text-primary-300">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary-50 dark:bg-primary-950/80 border border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-300 flex-shrink-0">
+                                📋 Open Pool
+                            </span>
+                            <span class="text-[11px] text-gray-500 dark:text-gray-400 truncate">Fitur antrean nonaktif • Order langsung masuk ke daftar bantuan</span>
+                        </div>
+                        <a href="{{ route('mitra.helps.all') }}" wire:navigate class="text-[11px] font-bold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-0.5 flex-shrink-0 ml-2">
+                            <span>Buka</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </a>
+                    </div>
+                @endif
 
                 {{-- Indikator Gamifikasi Status Antrean & Waktu Tunggu --}}
                 @if(($onlineState?->matching_status ?? 'offline') === 'searching')
@@ -329,7 +378,7 @@
             $estimatedMinutes  = null;
 
             if ($mitraLat && $mitraLng && $helpLat && $helpLng) {
-                $distanceMeters = app(\App\Services\LocationTrackingService::class)->calculateDistance(
+                $distanceMeters = app(\App\Services\HelpTrackingService::class)->calculateDistance(
                     (float) $mitraLat, (float) $mitraLng,
                     (float) $helpLat, (float) $helpLng
                 );
@@ -345,7 +394,7 @@
         <div class="px-5 mt-4 relative z-20"
              wire:key="active-offer-card-{{ $activeOffer->id }}"
              x-data="{
-                 expiresAt: {{ $activeOffer->expires_at ? $activeOffer->expires_at->getTimestamp() * 1000 : 'Date.now() + 45000' }},
+                 expiresAt: {{ $activeOffer->expires_at ? $activeOffer->expires_at->getTimestamp() * 1000 : 'Date.now() + ' . (((int) $initialTimeout) * 1000) }},
                  totalTime: Math.max(1, parseInt('{{ (int) $initialTimeout }}', 10)),
                  timeLeft: Math.max(0, parseInt('{{ (int) $secondsRemaining }}', 10)),
                  timer: null,
@@ -357,8 +406,20 @@
                          $wire.handleExpiry({{ $activeOffer->id }});
                      }
                  },
+                 formatDisplayTime(sec) {
+                     const s = Math.max(0, Math.floor(sec));
+                     const m = Math.floor(s / 60);
+                     const remainderSec = s % 60;
+                     if (m > 0) {
+                         return m + 'm ' + String(remainderSec).padStart(2, '0') + 'd';
+                     }
+                     return s + ' Detik';
+                 },
                  init() {
                      if (this.timer) clearInterval(this.timer);
+                     if (window.playNotificationSound) {
+                         window.playNotificationSound();
+                     }
                      this.syncCountdown();
                      this.timer = setInterval(() => this.syncCountdown(), 1000);
                  },
@@ -373,17 +434,45 @@
 
                 <!-- Header: Badge & Countdown -->
                 <div class="flex items-center justify-between gap-3 mb-2 relative z-10">
-                    <div class="flex items-center gap-2">
-                        <span class="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-black bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 px-2.5 py-1 rounded-full shadow-xs">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-extrabold bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 px-2 py-0.5 rounded-full shadow-xs">
                             Tawaran Khusus Anda
                         </span>
+
+                        {{-- Service Subcategory Badge --}}
+                        @if($activeOffer->help->service_type === 'pickup_delivery')
+                            @if($activeOffer->help->service_category === 'passenger')
+                                <span class="inline-flex items-center gap-1 text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600 px-2 py-0.5 rounded-lg">
+                                    👥 Antar Penumpang
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600 px-2 py-0.5 rounded-lg">
+                                    📦 Barang & Dokumen
+                                </span>
+                            @endif
+                        @else
+                            <span class="inline-flex items-center gap-1 text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600 px-2 py-0.5 rounded-lg">
+                                🛠️ Kerja Serabutan
+                            </span>
+                        @endif
+
+                        {{-- Order Mode / Schedule Badge --}}
+                        @if($activeOffer->help->isScheduled())
+                            <span class="inline-flex items-center gap-1 text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600 px-2 py-0.5 rounded-lg">
+                                📅 Terjadwal: {{ \Carbon\Carbon::parse($activeOffer->help->scheduled_at ?? $activeOffer->help->service_scheduled_at)->locale('id')->translatedFormat('d M Y, H:i') }} WIB
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1 text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600 px-2 py-0.5 rounded-lg">
+                                ⚡ Segera
+                            </span>
+                        @endif
                     </div>
 
                     <!-- Countdown Timer Pill -->
-                    <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl font-mono text-xs sm:text-sm font-black shadow-xs border transition-colors"
+                    <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl font-mono text-xs sm:text-sm font-black shadow-xs border transition-colors shrink-0"
                          :class="timeLeft <= 10 ? 'bg-rose-100 border-rose-400 text-rose-800 dark:bg-rose-950 dark:border-rose-700 dark:text-rose-200 animate-pulse' : 'bg-amber-50 border-amber-300 text-amber-800 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200'">
                         <svg class="w-3.5 h-3.5" :class="timeLeft <= 10 ? 'text-rose-600' : 'text-amber-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <span x-text="Math.floor(timeLeft) + ' Detik'"></span>
+                        <span x-text="formatDisplayTime(timeLeft)"></span>
                     </div>
                 </div>
 
@@ -408,21 +497,84 @@
                     </h3>
                 </div>
 
-                <!-- Detail Pekerjaan / Deskripsi -->
-                @if(!empty($activeOffer->help->description))
-                    <div class="mt-2.5 p-3 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/80 dark:border-white/[0.07] text-xs text-gray-700 dark:text-slate-300 relative z-10">
-                        <div class="flex items-center gap-1 text-[11px] font-bold text-gray-500 dark:text-slate-400 mb-1">
-                            <svg class="w-3.5 h-3.5 text-blue-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                            <span>Detail Pekerjaan:</span>
+                <!-- Rute Antar-Jemput (Jika Layanan Antar-Jemput: Penumpang atau Barang) -->
+                @if($activeOffer->help->service_type === 'pickup_delivery')
+                    <div class="mt-2.5 p-3 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/80 dark:border-white/[0.07] text-xs relative z-10 space-y-2.5">
+                        <div class="flex items-center justify-between text-[11px] font-bold text-gray-700 dark:text-slate-300">
+                            <span class="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
+                                🗺️ Rute Perjalanan ({{ $activeOffer->help->service_category === 'passenger' ? 'Antar Penumpang' : 'Pengantaran Barang' }})
+                            </span>
+                            @if($activeOffer->help->service_route_distance_km)
+                                <span class="bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
+                                    ±{{ $activeOffer->help->service_route_distance_km }} km
+                                </span>
+                            @endif
                         </div>
-                        <p class="line-clamp-2 leading-relaxed">{{ $activeOffer->help->description }}</p>
+
+                        <!-- Titik Jemput (1) -->
+                        <div class="flex items-start gap-2">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">1</div>
+                            <div class="min-w-0 flex-1">
+                                <span class="text-[10px] uppercase font-bold text-gray-400 block">{{ $activeOffer->help->service_category === 'passenger' ? 'Titik Penjemputan Penumpang' : 'Titik Ambil Barang / Dokumen' }}</span>
+                                <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-snug break-words">
+                                    {{ $activeOffer->help->pickup_address ?: ($activeOffer->help->location ?: 'Sesuai titik peta') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Garis Penghubung -->
+                        <div class="ml-2.5 border-l-2 border-dashed border-gray-300 dark:border-gray-600 pl-4 py-0.5">
+                            <span class="text-[10px] text-gray-400 font-medium">
+                                {{ $activeOffer->help->service_route_distance_km ? 'Jarak rute: ±' . $activeOffer->help->service_route_distance_km . ' km' : 'Menuju titik tujuan' }}
+                            </span>
+                        </div>
+
+                        <!-- Titik Antar (2) -->
+                        <div class="flex items-start gap-2">
+                            <div class="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">2</div>
+                            <div class="min-w-0 flex-1">
+                                <span class="text-[10px] uppercase font-bold text-gray-400 block">{{ $activeOffer->help->service_category === 'passenger' ? 'Titik Turun / Tujuan Penumpang' : 'Titik Tujuan Pengantaran' }}</span>
+                                <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-snug break-words">
+                                    {{ $activeOffer->help->delivery_address ?: ($activeOffer->help->full_address ?: 'Sesuai alamat tujuan') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Detail Pekerjaan / Deskripsi & Peralatan -->
+                @if(!empty($activeOffer->help->description) || !empty($activeOffer->help->equipment_provided))
+                    <div class="mt-2.5 p-3 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/80 dark:border-white/[0.07] text-xs text-gray-700 dark:text-slate-300 relative z-10 space-y-2.5">
+                        @if(!empty($activeOffer->help->description))
+                            <div>
+                                <div class="flex items-center gap-1 text-[11px] font-bold text-gray-500 dark:text-slate-400 mb-1">
+                                    <svg class="w-3.5 h-3.5 text-blue-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <span>Detail Kebutuhan:</span>
+                                </div>
+                                <p class="line-clamp-3 leading-relaxed break-words">{{ $activeOffer->help->description }}</p>
+                            </div>
+                        @endif
+
+                        @if(!empty($activeOffer->help->equipment_provided))
+                            <div class="@if(!empty($activeOffer->help->description)) pt-2.5 border-t border-gray-200/60 dark:border-white/[0.06] @endif">
+                                <div class="flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 mb-1">
+                                    <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+                                    </svg>
+                                    <span>Peralatan yang Disediakan Pemesan:</span>
+                                </div>
+                                <div class="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 rounded-lg p-2.5 text-[11px] sm:text-xs text-emerald-900 dark:text-emerald-200 font-medium leading-relaxed break-words">
+                                    ✓ {{ $activeOffer->help->equipment_provided }}
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 @endif
 
                 <!-- Meta Cards Grid: Lokasi, Jarak, & Customer -->
                 <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 relative z-10">
                     <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/60 dark:border-white/[0.06]">
-                        <div class="text-[10px] text-gray-500 dark:text-slate-400">Jarak Tempuh</div>
+                        <div class="text-[10px] text-gray-500 dark:text-slate-400">Jarak ke Titik Awal</div>
                         <div class="text-xs font-bold text-gray-900 dark:text-white mt-0.5 flex items-center gap-1">
                             <span>📍 {{ $formattedDistance ?? ($activeOffer->help->city?->name ?? 'Terjangkau') }}</span>
                             @if($estimatedMinutes)
@@ -439,9 +591,13 @@
                     </div>
 
                     <div class="col-span-2 sm:col-span-1 p-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/60 dark:border-white/[0.06]">
-                        <div class="text-[10px] text-gray-500 dark:text-slate-400">Waktu Permintaan</div>
+                        <div class="text-[10px] text-gray-500 dark:text-slate-400">Mode Order</div>
                         <div class="text-xs font-bold text-gray-900 dark:text-white mt-0.5">
-                            ⚡ Segera (Sekarang)
+                            @if($activeOffer->help->isScheduled())
+                                📅 Terjadwal
+                            @else
+                                ⚡ Segera
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -454,7 +610,7 @@
                     </div>
                     <span class="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1">
                         <svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                        Dana Escrow Dijamin
+                        Dana Dijamin
                     </span>
                 </div>
 
@@ -488,4 +644,6 @@
             </div>
         </div>
     @endif
+</div>
+@endif
 </div>

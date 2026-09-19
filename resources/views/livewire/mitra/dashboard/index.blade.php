@@ -49,7 +49,7 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     @php
-                        $__avatar = optional(auth()->user())->selfie_photo ?? optional(auth()->user())->photo ?? optional(auth()->user())->profile_photo_path ?? null;
+                        $__avatar = optional(auth()->user())->profile_photo ?? optional(auth()->user())->photo ?? optional(auth()->user())->profile_photo_path ?? null;
                     @endphp
                     <div class="w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden ring-2 ring-white/40 shadow-xs flex-shrink-0">
                         <img src="{{ $__avatar ? asset('storage/' . $__avatar) : asset('images/avatar-placeholder.svg') }}" alt="Avatar" class="w-full h-full object-cover">
@@ -123,6 +123,7 @@
                 <div class="flex items-center gap-1.5 flex-shrink-0">
                     <a
                         href="{{ route('mitra.withdraw.form') }}"
+                        wire:navigate
                         class="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold text-white transition-all duration-200 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 shadow-xs active:scale-95 whitespace-nowrap"
                     >
                         <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -136,7 +137,9 @@
     </div>
 
     <!-- Isolated Realtime Offer & Radar Widget (Fase 1 Dekomposisi) -->
-    <livewire:mitra.dashboard.offer-radar-widget />
+    @if(\App\Models\AppSetting::isMatchingSeekingEnabledForUser(auth()->user()))
+        <livewire:mitra.dashboard.offer-radar-widget />
+    @endif
 
     {{-- Official Warning / Shadow Ban Alert Banner for Mitra --}}
     @if(auth()->check() && (auth()->user()->warning_level > 0 || auth()->user()->is_shadow_banned))
@@ -194,31 +197,31 @@
 
         <!-- Active Task Banner if Mitra already has an active task -->
         @if(!empty($activeTask))
-            <div class="mb-5 bg-blue-50/70 dark:bg-gray-800 border border-blue-200/80 dark:border-gray-700 rounded-2xl p-4 shadow-sm">
+            <div class="mb-5 bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700 rounded-2xl p-4 shadow-sm">
                 <div class="flex items-start justify-between gap-3 mb-2.5">
                     <div class="flex items-start gap-2.5 min-w-0">
-                        <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-base flex-shrink-0 font-bold shadow-xs">
+                        <div class="w-9 h-9 rounded-xl bg-primary-50 dark:bg-gray-750 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-gray-700 flex items-center justify-center text-base flex-shrink-0 font-bold shadow-xs">
                             {{ $activeTask->progress_icon }}
                         </div>
                         <div class="min-w-0">
                             <div class="flex items-center gap-2">
-                                <h4 class="text-xs font-bold text-blue-900 dark:text-blue-200 truncate">Tugas Aktif Berjalan</h4>
-                                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-600 text-white shadow-xs">
+                                <h4 class="text-xs font-bold text-gray-900 dark:text-white truncate">Tugas Aktif Berjalan</h4>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 border border-gray-200 dark:border-gray-700 shadow-2xs">
                                     {{ $activeTask->progress_percentage }}%
                                 </span>
                             </div>
-                            <p class="text-xs text-blue-800 dark:text-blue-300 mt-0.5 font-medium truncate">
-                                "{{ $activeTask->title }}" • <span class="font-bold">{{ $activeTask->progress_summary }}</span>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5 font-medium truncate">
+                                "{{ $activeTask->title }}" • <span class="font-bold text-primary-600 dark:text-primary-400">{{ $activeTask->progress_summary }}</span>
                             </p>
                         </div>
                     </div>
-                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" class="flex-shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap">
+                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" wire:navigate class="flex-shrink-0 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap">
                         Buka Tugas
                     </a>
                 </div>
                 <!-- Mini Progress Track -->
-                <div class="w-full bg-blue-100/70 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
-                    <div class="h-full rounded-full bg-blue-600 dark:bg-blue-500 transition-all duration-500 {{ $activeTask->progress_percentage < 100 ? 'animate-pulse' : '' }}"
+                <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                    <div class="h-full rounded-full bg-primary-600 dark:bg-primary-500 transition-all duration-500 {{ $activeTask->progress_percentage < 100 ? 'animate-pulse' : '' }}"
                          style="width: {{ $activeTask->progress_percentage }}%;"></div>
                 </div>
             </div>
@@ -237,7 +240,7 @@
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <h4 class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">Pekerjaan Selesai — Menunggu Konfirmasi</h4>
                                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200">
-                                        Rp {{ number_format($wcHelp->amount, 0, ',', '.') }} di Escrow
+                                        Rp {{ number_format($wcHelp->amount, 0, ',', '.') }} di Dana Tahan
                                     </span>
                                 </div>
                                 <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5 truncate">
@@ -245,7 +248,7 @@
                                 </p>
                             </div>
                         </div>
-                        <a href="{{ route('mitra.helps.detail', $wcHelp->id) }}" class="flex-shrink-0 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-xs whitespace-nowrap">
+                        <a href="{{ route('mitra.helps.detail', $wcHelp->id) }}" wire:navigate class="flex-shrink-0 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-xs whitespace-nowrap">
                             Detail
                         </a>
                     </div>
@@ -264,7 +267,10 @@
 
         <!-- Banner Section (Spacious, Modern & Interactive) -->
         @php
-            $mitraBanners = json_decode((string) \App\Models\AppSetting::get('banner_mitra', '[]'), true) ?: [];
+            $rawMitraBanners = json_decode((string) \App\Models\AppSetting::get('banner_mitra', '[]'), true) ?: [];
+            $mitraBanners = array_map(function($b) {
+                return is_array($b) ? $b : ['image' => $b, 'link' => ''];
+            }, $rawMitraBanners);
         @endphp
         <div class="mt-2 mb-8" wire:ignore x-data="{
             active: 0,
@@ -291,22 +297,33 @@
             },
             init() {
                 this.startAuto();
-                document.addEventListener('visibilitychange', () => {
-                    if (document.hidden) {
-                        this.stopAuto();
-                    } else {
-                        this.startAuto();
-                    }
-                });
+            },
+            destroy() {
+                this.stopAuto();
             }
-        }" @mouseenter="stopAuto()" @mouseleave="startAuto()" @touchstart="stopAuto()" @touchend="startAuto()">
+        }" @visibilitychange.window="document.hidden ? stopAuto() : startAuto()" @mouseenter="stopAuto()" @mouseleave="startAuto()" @touchstart="stopAuto()" @touchend="startAuto()">
+
             <div class="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg shadow-sky-500/5 border border-gray-100/80 dark:border-gray-700/60 h-44 sm:h-48 bg-gray-900">
                 @if(!empty($mitraBanners) && count($mitraBanners))
                     <div class="flex h-full transition-transform duration-700 ease-out" :style="'transform: translateX(-' + (active * 100) + '%)'">
                         @foreach($mitraBanners as $b)
-                            <div class="flex-shrink-0 w-full h-full relative">
-                                <img src="{{ asset('storage/' . $b) }}" alt="Banner" class="w-full h-full object-cover" />
-                                <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                            @php
+                                $imgPath = is_array($b) ? ($b['image'] ?? '') : $b;
+                                $linkUrl = is_array($b) ? ($b['link'] ?? '') : '';
+                                $isExternal = str_starts_with($linkUrl, 'http://') || str_starts_with($linkUrl, 'https://');
+                            @endphp
+                            <div class="flex-shrink-0 w-full h-full relative group/slide">
+                                @if(!empty($linkUrl))
+                                    <a href="{{ $linkUrl }}"
+                                       @if($isExternal) target="_blank" rel="noopener noreferrer" @endif
+                                       class="block w-full h-full cursor-pointer relative overflow-hidden">
+                                        <img src="{{ asset('storage/' . $imgPath) }}" alt="Banner" class="w-full h-full object-cover transition-transform duration-500 group-hover/slide:scale-[1.02]" />
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                                    </a>
+                                @else
+                                    <img src="{{ asset('storage/' . $imgPath) }}" alt="Banner" class="w-full h-full object-cover" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                                @endif
                             </div>
                         @endforeach
                     </div>
@@ -314,14 +331,9 @@
                     <!-- Fallback High-Aesthetic Interactive Slides for Mitra -->
                     <div class="flex h-full transition-transform duration-700 ease-out" :style="'transform: translateX(-' + (active * 100) + '%)'">
                         <!-- Slide 1 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
-                             style="background: linear-gradient(135deg, #0284c7 0%, #1d4ed8 50%, #0f172a 100%);">
-                            <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-                            <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-blue-400/20 blur-xl pointer-events-none"></div>
-
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-rose-600 dark:bg-rose-800">
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
-                                    <span>💼</span>
                                     <span>Peluang Kerja</span>
                                 </div>
                                 <h3 class="text-base sm:text-lg font-black text-white leading-tight">
@@ -331,7 +343,7 @@
                                     Ambil pekerjaan di sekitarmu dan atur jadwal kerja secara fleksibel.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('mitra.helps.all') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-blue-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('mitra.helps.all') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-rose-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Cari Pekerjaan</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -346,14 +358,9 @@
                         </div>
 
                         <!-- Slide 2 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
-                             style="background: linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #1e1b4b 100%);">
-                            <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-                            <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-indigo-400/20 blur-xl pointer-events-none"></div>
-
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-emerald-600 dark:bg-emerald-800">
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
-                                    <span>⚡</span>
                                     <span>Penarikan Kilat</span>
                                 </div>
                                 <h3 class="text-base sm:text-lg font-black text-white leading-tight">
@@ -363,7 +370,7 @@
                                     Cairkan pendapatanmu langsung ke rekening bank terdaftar tanpa repot.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('mitra.withdraw.form') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-indigo-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('mitra.withdraw.form') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-emerald-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Tarik Saldo</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -378,14 +385,9 @@
                         </div>
 
                         <!-- Slide 3 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
-                             style="background: linear-gradient(135deg, #d97706 0%, #ea580c 50%, #451a03 100%);">
-                            <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-                            <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-amber-400/20 blur-xl pointer-events-none"></div>
-
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-yellow-600 dark:bg-yellow-800">
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
-                                    <span>⭐</span>
                                     <span>Mitra Unggulan</span>
                                 </div>
                                 <h3 class="text-base sm:text-lg font-black text-white leading-tight">
@@ -395,7 +397,7 @@
                                     Berikan pelayanan terbaik untuk meraih bintang 5 dan order prioritas.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('mitra.withdraw.history') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-amber-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('mitra.withdraw.history') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-yellow-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Riwayat Tugas</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -580,10 +582,13 @@
                 <!-- Judul & Badges -->
                 <div class="bg-gray-50 dark:bg-gray-750/60 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4">
                     <div class="flex items-center gap-1.5 flex-wrap mb-2">
-                        <span id="previewScheduledBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        <span id="previewServiceTypeBadge" class="hidden inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600">
+                            📦 Antar-Jemput
+                        </span>
+                        <span id="previewScheduledBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600">
                             ⚡ Butuh Cepat
                         </span>
-                        <span id="previewDistanceBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <span id="previewDistanceBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600">
                             📍 Terverifikasi
                         </span>
                     </div>
@@ -645,13 +650,46 @@
                     </div>
                 </div>
 
-                <!-- Wilayah / Patokan Lokasi -->
+                <!-- Wilayah / Rute Lokasi -->
                 <div class="space-y-1.5">
-                    <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800 dark:text-gray-200">
-                        <span class="text-rose-500">📍</span>
-                        <span>Area & Patokan Lokasi:</span>
+                    <div class="flex items-center justify-between text-xs font-bold text-gray-800 dark:text-gray-200">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-rose-500">📍</span>
+                            <span id="previewLocationHeaderTitle">Area & Patokan Lokasi:</span>
+                        </div>
+                        <span id="previewRouteDistanceBadge" class="hidden text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50"></span>
                     </div>
-                    <div class="bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-3.5 space-y-1.5">
+
+                    <!-- Multi-Leg Route Box (for pickup_delivery) -->
+                    <div id="previewMultiRouteBox" class="hidden bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-3.5 space-y-3">
+                        <div class="flex items-start gap-2.5">
+                            <div class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center justify-between gap-1">
+                                    <span id="previewLeg1Label" class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase">Titik Jemput</span>
+                                    <span id="previewLeg1Dist" class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400"></span>
+                                </div>
+                                <p id="previewLeg1Address" class="text-xs font-semibold text-gray-800 dark:text-gray-200 mt-0.5">-</p>
+                            </div>
+                        </div>
+
+                        <div class="ml-3 border-l-2 border-dashed border-gray-300 dark:border-gray-600 pl-4 py-0.5">
+                            <span id="previewRouteDistanceText" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Jarak Perjalanan</span>
+                        </div>
+
+                        <div class="flex items-start gap-2.5">
+                            <div class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center justify-between gap-1">
+                                    <span id="previewLeg2Label" class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase">Titik Antar / Tujuan</span>
+                                </div>
+                                <p id="previewLeg2Address" class="text-xs font-semibold text-gray-800 dark:text-gray-200 mt-0.5">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Single Location Box (for on_site / default) -->
+                    <div id="previewSingleLocationBox" class="bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-3.5 space-y-1.5">
                         <p id="previewLocation" class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">
                             -
                         </p>
@@ -665,7 +703,7 @@
                 <!-- Foto Objek / Tugas (Jika ada) -->
                 <div id="previewPhotoSection" class="hidden space-y-1.5">
                     <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800 dark:text-gray-200">
-                        <span class="text-sky-500">📷</span>
+                        <span class="text-sky-500"></span>
                         <span>Foto Objek / Tempat Pekerjaan:</span>
                     </div>
                     <div class="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-black/5 dark:bg-black/20 max-h-56">
@@ -681,7 +719,7 @@
                     Batal
                 </button>
                 @if(!empty($activeTask))
-                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" class="flex-[1.6] bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center text-center">
+                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" wire:navigate class="flex-[1.6] bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center text-center">
                         Selesaikan Tugas Aktif
                     </a>
                 @else
@@ -718,12 +756,12 @@
             // Jadwal
             const schedBadge = document.getElementById('previewScheduledBadge');
             if (schedBadge) {
-                if (data.scheduled_at) {
-                    schedBadge.textContent = '📅 ' + data.scheduled_at;
-                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800';
+                if (data.is_scheduled && data.scheduled_at) {
+                    schedBadge.textContent = '📅 Terjadwal: ' + data.scheduled_at + (data.departure_window_opens_at ? ' (Buka Pkl ' + data.departure_window_opens_at + ')' : '');
+                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600';
                 } else {
-                    schedBadge.textContent = '⚡ Butuh Cepat';
-                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800';
+                    schedBadge.textContent = '⚡ Segera';
+                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600';
                 }
             }
 
@@ -758,12 +796,61 @@
                 equipEl.className = 'text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-normal';
             }
 
-            // Lokasi
+            // Lokasi & Multi-Route Info
             let locStr = '';
             if (data.location) locStr += data.location;
             if (data.city_name) locStr += (locStr ? ' • ' : '') + data.city_name;
             if (data.province_name) locStr += ', ' + data.province_name;
             document.getElementById('previewLocation').textContent = locStr || 'Wilayah Belum Ditentukan';
+
+            // Service Type Badge & Multi-Route Handling
+            const serviceTypeBadge = document.getElementById('previewServiceTypeBadge');
+            const singleLocBox = document.getElementById('previewSingleLocationBox');
+            const multiRouteBox = document.getElementById('previewMultiRouteBox');
+            const routeDistBadge = document.getElementById('previewRouteDistanceBadge');
+            const locHeaderTitle = document.getElementById('previewLocationHeaderTitle');
+
+            if (data.service_type === 'pickup_delivery') {
+                const isPassenger = data.service_category === 'passenger';
+                if (serviceTypeBadge) {
+                    serviceTypeBadge.textContent = isPassenger ? '👥 Antar Penumpang' : '📦 Barang & Dokumen';
+                    serviceTypeBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600';
+                    serviceTypeBadge.classList.remove('hidden');
+                }
+                if (locHeaderTitle) locHeaderTitle.textContent = isPassenger ? 'Rute Antar Penumpang:' : 'Rute Pengantaran Barang:';
+                if (singleLocBox) singleLocBox.classList.add('hidden');
+                if (multiRouteBox) {
+                    multiRouteBox.classList.remove('hidden');
+                    document.getElementById('previewLeg1Label').textContent = isPassenger ? 'Titik 1 • Penjemputan Penumpang' : 'Titik 1 • Pengambilan Barang / Dokumen';
+                    document.getElementById('previewLeg1Address').textContent = data.pickup_address || data.location || '-';
+                    document.getElementById('previewLeg1Dist').textContent = (data.distance_km !== null && data.distance_km !== undefined) ? `${data.distance_km} km dari Anda` : '';
+
+                    document.getElementById('previewLeg2Label').textContent = isPassenger ? 'Titik 2 • Tujuan Turun Penumpang' : 'Titik 2 • Tujuan Pengantaran';
+                    document.getElementById('previewLeg2Address').textContent = data.delivery_address || data.full_address || data.location || '-';
+                    
+                    const routeKm = data.service_route_distance_km;
+                    const routeDistText = document.getElementById('previewRouteDistanceText');
+                    if (routeDistText) {
+                        routeDistText.textContent = routeKm ? `📏 Jarak Rute: ±${routeKm} km` : 'Rute Perjalanan';
+                    }
+                }
+                if (routeDistBadge && data.service_route_distance_km) {
+                    routeDistBadge.textContent = `±${data.service_route_distance_km} km`;
+                    routeDistBadge.classList.remove('hidden');
+                } else if (routeDistBadge) {
+                    routeDistBadge.classList.add('hidden');
+                }
+            } else {
+                if (serviceTypeBadge) {
+                    serviceTypeBadge.textContent = '🛠️ Kerja Serabutan';
+                    serviceTypeBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600';
+                    serviceTypeBadge.classList.remove('hidden');
+                }
+                if (locHeaderTitle) locHeaderTitle.textContent = 'Area & Patokan Lokasi:';
+                if (singleLocBox) singleLocBox.classList.remove('hidden');
+                if (multiRouteBox) multiRouteBox.classList.add('hidden');
+                if (routeDistBadge) routeDistBadge.classList.add('hidden');
+            }
 
             // Foto Pekerjaan
             const photoSection = document.getElementById('previewPhotoSection');
@@ -838,12 +925,6 @@
             if (e.target === this) {
                 window.closePreviewModal();
             }
-        });
-
-        // Listen for help-taken event from Livewire
-        window.addEventListener('help-taken', function(event) {
-            // Reload page to show updated list
-            window.location.reload();
         });
     })();
     </script>

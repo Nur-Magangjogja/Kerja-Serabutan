@@ -3,8 +3,6 @@
 namespace App\Livewire\Mitra\Helps;
 
 use App\Models\Help;
-use App\Models\BalanceTransaction;
-use App\Models\PartnerActivity;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
@@ -24,6 +22,7 @@ class CompletedHelps extends Component
 
     protected $listeners = [
         'balance-updated' => '$refresh',
+        'help-updated' => '$refresh',
     ];
 
     public function updatingSearch()
@@ -41,49 +40,101 @@ class CompletedHelps extends Component
     {
         $user = auth()->user();
 
-        // 1. Stats Calculation
-        $completedHelpsQuery = Help::where('mitra_id', $user->id)->whereIn('status', ['selesai', 'completed']);
-        $totalCompletedCount = (clone $completedHelpsQuery)->count();
-        $totalCompletedAmount = (clone $completedHelpsQuery)->sum('amount');
-        $uniqueCustomersCount = (clone $completedHelpsQuery)->distinct('user_id')->count('user_id');
+        // 1. Stats Queries
+        $completedStats = Help::where('mitra_id', $user->id)
+            ->whereIn('status', [Help::STATUS_SELESAI, 'completed'])
+            ->selectRaw("COUNT(*) as total_count")
+            ->selectRaw("COALESCE(SUM(amount), 0) as total_amount")
+            ->selectRaw("COUNT(DISTINCT user_id) as unique_customers")
+            ->first();
 
-        $cancellationQuery = PartnerActivity::where('user_id', $user->id)
-            ->whereIn('activity_type', [
-                'cancel_requested',
-                'cancel_accepted',
-                'partner_request_cancel',
-                'help_cancelled',
-                'partner_cancel'
-            ]);
-        $totalCancelledCount = (clone $cancellationQuery)->count();
+        $totalCompletedCount = (int) ($completedStats->total_count ?? 0);
+        $totalCompletedAmount = (int) ($completedStats->total_amount ?? 0);
+        $uniqueCustomersCount = (int) ($completedStats->unique_customers ?? 0);
+
+        $batalStatuses = [
+            Help::STATUS_DIBATALKAN,
+            'batal',
+            'cancelled',
+            'canceled',
+            Help::STATUS_PARTNER_CANCEL_REQUESTED,
+            Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+        ];
+
+        $baseCancellationQuery = Help::where(function ($q) use ($user, $batalStatuses) {
+            // 1. Current mitra_id on help matching user
+            $q->where(function ($sq) use ($user, $batalStatuses) {
+                $sq->where('mitra_id', $user->id)
+                   ->where(function ($ssq) use ($batalStatuses) {
+                       $ssq->whereIn('status', $batalStatuses)
+                           ->orWhereHas('cancelRequests')
+                           ->orWhereHas('partnerReports');
+                   });
+            });
+
+            // 2. Mitra was unlinked during cancellation (cancelled_mitra_ids JSON)
+            $q->orWhere(function ($sq) use ($user) {
+                $sq->whereJsonContains('cancelled_mitra_ids', $user->id);
+            });
+
+            // 3. Cancel request involving this partner
+            $q->orWhereHas('cancelRequests', function ($sq) use ($user) {
+                $sq->where('partner_id', $user->id);
+            });
+
+            // 4. Partner report involving this partner
+            $q->orWhereHas('partnerReports', function ($sq) use ($user) {
+                $sq->where('reported_user_id', $user->id)
+                   ->orWhere('reporter_id', $user->id);
+            });
+        });
+
+        $totalCancelledCount = (clone $baseCancellationQuery)->count();
 
         // 2. Tab Query
+        $perPage = 10;
+
         if ($this->activeTab === 'cancelled') {
-            $cancelledActivitiesQuery = PartnerActivity::with(['help.user', 'help.city'])
-                ->where('user_id', $user->id)
-                ->whereIn('activity_type', [
-                    'cancel_requested',
-                    'cancel_accepted',
-                    'partner_request_cancel',
-                    'help_cancelled',
-                    'partner_cancel'
-                ]);
+            $cancellationsQuery = (clone $baseCancellationQuery)->with([
+                'user',
+                'city',
+                'district',
+                'mitra',
+                'cancelRequests' => fn($cr) => $cr->with('reviewedBy')->latest(),
+                'partnerReports' => fn($pr) => $pr->with('resolvedBy')->latest(),
+            ]);
 
             if ($this->search) {
-                $cancelledActivitiesQuery->where(function ($q) {
-                    $q->where('description', 'like', '%' . $this->search . '%')
-                        ->orWhereHas('help', function ($h) {
-                            $h->where('title', 'like', '%' . $this->search . '%');
-                        });
+                $cancellationsQuery->where(function ($q) {
+                    $q->where('title', 'like', '%' . $this->search . '%')
+                      ->orWhere('description', 'like', '%' . $this->search . '%')
+                      ->orWhere('order_id', 'like', '%' . $this->search . '%')
+                      ->orWhereHas('user', fn($u) => $u->where('name', 'like', '%' . $this->search . '%'))
+                      ->orWhereHas('cancelRequests', function ($cr) {
+                          $cr->where('reason', 'like', '%' . $this->search . '%')
+                             ->orWhere('notes', 'like', '%' . $this->search . '%')
+                             ->orWhere('admin_notes', 'like', '%' . $this->search . '%');
+                      })
+                      ->orWhereHas('partnerReports', function ($pr) {
+                          $pr->where('title', 'like', '%' . $this->search . '%')
+                             ->orWhere('message', 'like', '%' . $this->search . '%')
+                             ->orWhere('admin_notes', 'like', '%' . $this->search . '%');
+                      });
                 });
             }
 
-            $cancelledActivities = $cancelledActivitiesQuery->latest()->paginate(10);
+            if ($this->sortBy === 'oldest') {
+                $cancellationsQuery->oldest();
+            } else {
+                $cancellationsQuery->latest();
+            }
+
+            $cancellations = $cancellationsQuery->paginate($perPage);
             $helps = null;
         } else {
             $helpsQuery = Help::with(['user', 'city', 'rating'])
                 ->where('mitra_id', $user->id)
-                ->whereIn('status', ['selesai', 'completed']);
+                ->whereIn('status', [Help::STATUS_SELESAI, 'completed']);
 
             if ($this->search) {
                 $helpsQuery->where(function ($q) {
@@ -101,13 +152,14 @@ class CompletedHelps extends Component
                 $helpsQuery->latest();
             }
 
-            $helps = $helpsQuery->paginate(10);
-            $cancelledActivities = null;
+            $helps = $helpsQuery->paginate($perPage);
+            $cancellations = null;
         }
 
         return view('livewire.mitra.helps.completed-helps', [
             'helps'                => $helps,
-            'cancelledActivities'  => $cancelledActivities,
+            'cancellations'        => $cancellations,
+            'cancelledActivities'  => $cancellations, // backward-compat alias
             'totalCompletedCount'  => $totalCompletedCount,
             'totalCompletedAmount' => $totalCompletedAmount,
             'uniqueCustomersCount' => $uniqueCustomersCount,

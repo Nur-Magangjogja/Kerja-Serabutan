@@ -86,11 +86,98 @@
                             Nominal pajak / biaya layanan flat yang dibebankan kepada <strong>Customer saat membuat permintaan bantuan</strong>. Mitra menerima 100% nominal bantuan penuh tanpa potongan.
                         </p>
                     </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Batas Waktu Otomatis Batal / Timeout Pencarian (Jam)</label>
+                        <div class="relative">
+                            <input type="number" wire:model="help_auto_cancel_hours" placeholder="24" min="1" max="168"
+                                class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" />
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-xs">Jam (Default 24 Jam)</span>
+                        </div>
+                        @error('help_auto_cancel_hours')
+                            <div class="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-xs">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                {{ $message }}
+                            </div>
+                        @enderror
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            Jika dalam kurun waktu ini pesanan belum diambil oleh mitra manapun, sistem akan <strong>otomatis membatalkan pesanan dan mengembalikan saldo 100%</strong> ke customer.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 2. Kalibrasi Algoritma Matching & Keadilan (Fairness Engine) -->
+        <!-- 2. Konfigurasi Layanan Antar & Jemput (Pickup & Delivery Motor) -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="border-b border-gray-200 dark:border-gray-700 px-4 sm:px-8 py-5 bg-gray-50/80 dark:bg-gray-900/60 flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Konfigurasi Tarif & Kebijakan Antar / Jemput (Motor)
+                    </h2>
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                        Atur tarif dasar, biaya per KM, batas jarak maksimal 40 KM, dan batas pembatalan pasca-jemput 5 KM.
+                    </p>
+                </div>
+            </div>
+
+            <div class="p-4 sm:p-8 space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Tarif Dasar / Base Fare (Rp)</label>
+                        <div class="relative">
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rp</span>
+                            <input type="number" wire:model="pickup_delivery_base_fare" min="1000" step="500"
+                                class="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-1">Tarif dasar pengantaran/penjemputan.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Tarif Per KM (Rp)</label>
+                        <div class="relative">
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rp</span>
+                            <input type="number" wire:model="pickup_delivery_price_per_km" min="500" step="250"
+                                class="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-1">Tarif untuk jarak &le; 20 KM.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Tarif Per KM Jarak Jauh (Rp)</label>
+                        <div class="relative">
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rp</span>
+                            <input type="number" wire:model="pickup_delivery_long_distance_price_per_km" min="500" step="250"
+                                class="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-1">Tarif per KM tier jarak jauh &gt; 20 KM (default: Rp 2.750/KM).</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Batas Jarak Maksimal Antar (KM)</label>
+                        <input type="number" step="1" wire:model="pickup_delivery_max_distance_km" min="5" max="100"
+                            class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        <p class="text-[11px] text-gray-400 mt-1">Order dengan jarak rute &gt; 40 KM otomatis ditolak demi batas aman motor.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Batas Maksimal Pembatalan Pasca-Jemput (KM Lock)</label>
+                        <input type="number" step="0.5" wire:model="pickup_delivery_max_cancellation_distance_after_pickup" min="1" max="20"
+                            class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                        <p class="text-[11px] text-gray-400 mt-1">Setelah barang/penumpang diambil, pembatalan terkunci otomatis jika jarak dari titik jemput &gt; 5 KM.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Kalibrasi Algoritma Matching & Keadilan (Fairness Engine) -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="border-b border-gray-200 dark:border-gray-700 px-4 sm:px-8 py-5 bg-gray-50/80 dark:bg-gray-900/60 flex items-center justify-between gap-4">
                 <div>
@@ -107,13 +194,229 @@
             </div>
 
             <div class="p-4 sm:p-8 space-y-6">
+                <!-- Toggle Fitur Cari Order / Antrean Mitra (Global Switch) -->
+                <div class="p-4 bg-indigo-50/60 dark:bg-indigo-950/30 rounded-xl border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between gap-4">
+                    <div>
+                        <h4 class="text-xs sm:text-sm font-bold text-indigo-950 dark:text-white">Saklar Global: Fitur Cari Order / Antrean Mitra</h4>
+                        <p class="text-[11px] sm:text-xs text-indigo-700/80 dark:text-gray-200 mt-0.5">
+                            Bila dinonaktifkan secara global, mitra di wilayah yang mengikuti pengaturan global tidak perlu mengaktifkan mode mencari antrean (order langsung masuk ke daftar bantuan).
+                        </p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                        <input type="checkbox" wire:model="matching_seeking_enabled" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                    </label>
+                </div>
+
+                <!-- Sub-Section: Kustomisasi Pengaturan per Wilayah / Kota -->
+                <div class="p-4 sm:p-5 bg-gray-50/70 dark:bg-gray-900/40 rounded-2xl border border-gray-200 dark:border-gray-700/80 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+                        <div>
+                            <h4 class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                Pengaturan Kebijakan Wilayah / Kota
+                            </h4>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-300 mt-0.5">
+                                Atur mode pencarian order untuk masing-masing kota secara fleksibel tanpa perlu berganti wilayah.
+                            </p>
+                        </div>
+                        <div class="w-full sm:w-64 relative">
+                            <input type="text" wire:model.live.debounce.300ms="city_search" placeholder="Cari nama kota / provinsi..."
+                                class="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
+                            <svg class="w-4 h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Container Daftar Wilayah (Responsif Mobile & Web Bebas Overflow) -->
+                    <div class="rounded-2xl border border-gray-200 dark:border-gray-700/80 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+                        
+                        <!-- 1. Tampilan Desktop & Tablet (Tabular Grid) -->
+                        <div class="hidden md:block overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-gray-50/90 dark:bg-gray-900/80 text-[11px] uppercase font-bold text-gray-500 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700">
+                                    <tr>
+                                        <th scope="col" class="px-5 py-3.5">Wilayah & Administrasi</th>
+                                        <th scope="col" class="px-5 py-3.5">Status Kebijakan Efektif</th>
+                                        <th scope="col" class="px-5 py-3.5 text-right">Pengaturan Mode</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
+                                    @forelse($regionalCities as $city)
+                                        @php
+                                            $currentChoice = $city_overrides[$city->id] ?? 'inherit';
+                                            $effectiveEnabled = match($currentChoice) {
+                                                'enabled'  => true,
+                                                'disabled' => false,
+                                                default    => (bool) $matching_seeking_enabled,
+                                            };
+                                        @endphp
+                                        <tr class="hover:bg-primary-50/20 dark:hover:bg-gray-700/30 transition-colors duration-150">
+                                            <td class="px-5 py-4">
+                                                <div class="flex items-center gap-3.5">
+                                                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-500/10 to-indigo-500/10 dark:from-primary-500/20 dark:to-indigo-500/20 border border-primary-100 dark:border-primary-800/40 flex items-center justify-center flex-shrink-0 text-primary-600 dark:text-primary-400 shadow-2xs">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <div class="font-bold text-gray-900 dark:text-white text-sm leading-tight">{{ $city->name }}</div>
+                                                        <div class="flex items-center gap-2 mt-1">
+                                                            <span class="text-xs text-gray-500 dark:text-gray-300 font-medium">{{ $city->province }}</span>
+                                                            <span class="text-gray-300 dark:text-gray-600">•</span>
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 dark:bg-gray-700/80 text-gray-600 dark:text-white">
+                                                                {{ $city->districts_count ?? 0 }} kecamatan
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-5 py-4 whitespace-nowrap">
+                                                @if($effectiveEnabled)
+                                                    <div class="inline-flex flex-col gap-0.5">
+                                                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-white border border-emerald-200 dark:border-emerald-800/80 shadow-2xs">
+                                                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                            Mode Antrean Aktif
+                                                        </span>
+                                                        <span class="text-[10px] text-gray-400 dark:text-gray-300 pl-1 font-medium">
+                                                             {{ $currentChoice === 'inherit' ? '↳ Mewarisi Saklar Global' : '↳ Kustom Khusus Wilayah' }}
+                                                        </span>
+                                                    </div>
+                                                @else
+                                                    <div class="inline-flex flex-col gap-0.5">
+                                                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800/70 text-slate-700 dark:text-white border border-slate-200 dark:border-slate-700 shadow-2xs">
+                                                            <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                                                            Langsung ke Daftar Bantuan
+                                                        </span>
+                                                        <span class="text-[10px] text-gray-400 dark:text-gray-300 pl-1 font-medium">
+                                                            {{ $currentChoice === 'inherit' ? '↳ Mewarisi Saklar Global' : '↳ Kustom Khusus Wilayah' }}
+                                                        </span>
+                                                    </div>
+                                                @endif
+                                            </td>
+                                            <td class="px-5 py-4 whitespace-nowrap text-right">
+                                                <div class="inline-block relative">
+                                                    <select wire:model.live="city_overrides.{{ $city->id }}"
+                                                        class="py-2 pl-3.5 pr-8 text-xs font-semibold border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50/80 dark:bg-gray-900 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-2xs transition-all cursor-pointer">
+                                                        <option value="inherit">🌐 Ikuti Pengaturan Global (Bawaan)</option>
+                                                        <option value="enabled">⚡ Aktifkan Antrean Mitra</option>
+                                                        <option value="disabled">📋 Langsung ke Daftar Bantuan</option>
+                                                    </select>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="3" class="px-5 py-10 text-center text-gray-400 text-xs">
+                                                <div class="flex flex-col items-center justify-center gap-2.5">
+                                                    <div class="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
+                                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                        </svg>
+                                                    </div>
+                                                    <span class="font-medium text-gray-500 dark:text-gray-300">Tidak ada wilayah yang sesuai dengan pencarian "{{ $city_search }}".</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 2. Tampilan Khusus Mobile (< 768px - Bebas Overflow) -->
+                        <div class="block md:hidden divide-y divide-gray-100 dark:divide-gray-700/60">
+                            @forelse($regionalCities as $city)
+                                @php
+                                    $currentChoice = $city_overrides[$city->id] ?? 'inherit';
+                                    $effectiveEnabled = match($currentChoice) {
+                                        'enabled'  => true,
+                                        'disabled' => false,
+                                        default    => (bool) $matching_seeking_enabled,
+                                    };
+                                @endphp
+                                <div class="p-4 space-y-3.5 bg-white dark:bg-gray-800">
+                                    <!-- Header Wilayah -->
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-500/10 to-indigo-500/10 dark:from-primary-500/20 dark:to-indigo-500/20 border border-primary-100 dark:border-primary-800/40 flex items-center justify-center flex-shrink-0 text-primary-600 dark:text-primary-400 shadow-2xs mt-0.5">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="font-bold text-gray-900 dark:text-white text-sm truncate">{{ $city->name }}</div>
+                                            <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                                <span class="text-xs text-gray-500 dark:text-gray-300 font-medium">{{ $city->province }}</span>
+                                                <span class="text-gray-300 dark:text-gray-600">•</span>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 dark:bg-gray-700/80 text-gray-600 dark:text-white">
+                                                    {{ $city->districts_count ?? 0 }} kec
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Status Efektif Badge -->
+                                    <div class="flex items-center justify-between gap-2 pt-1 border-t border-gray-50 dark:border-gray-700/40">
+                                        <span class="text-[11px] text-gray-500 dark:text-gray-300 font-medium">Status Efektif:</span>
+                                        @if($effectiveEnabled)
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-white border border-emerald-200 dark:border-emerald-800/80">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                Mode Antrean Aktif
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-800/70 text-slate-700 dark:text-white border border-slate-200 dark:border-slate-700">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                                Langsung Daftar Bantuan
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <!-- Pilihan Pengaturan Dropdown (Full Width Mobile) -->
+                                    <div class="space-y-1">
+                                        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-300">Pilihan Mode Kota</label>
+                                        <select wire:model.live="city_overrides.{{ $city->id }}"
+                                            class="w-full py-2 pl-3 pr-8 text-xs font-semibold border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50/80 dark:bg-gray-900 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-2xs">
+                                            <option value="inherit">🌐 Ikuti Pengaturan Global (Bawaan)</option>
+                                            <option value="enabled">⚡ Aktifkan Antrean Mitra</option>
+                                            <option value="disabled">📋 Langsung ke Daftar Bantuan</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="p-8 text-center text-gray-400 text-xs">
+                                    <div class="flex flex-col items-center justify-center gap-2">
+                                        <div class="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                            </svg>
+                                        </div>
+                                        <span>Tidak ada wilayah yang sesuai dengan pencarian "{{ $city_search }}".</span>
+                                    </div>
+                                </div>
+                            @endforelse
+                        </div>
+
+                        <!-- 3. Pagination Footer -->
+                        @if($regionalCities->hasPages())
+                            <div class="p-3.5 bg-gray-50/70 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700">
+                                {{ $regionalCities->links('vendor.pagination.superadmin') }}
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
                 <!-- Row 1: Parameter Teknis -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Timeout Penawaran (Detik)</label>
-                        <input type="number" wire:model="offer_timeout_seconds" min="15" max="120"
+                        <input type="number" wire:model="offer_timeout_seconds" min="15" max="300"
                                class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
-                        <p class="text-[11px] text-gray-400 mt-1">Batas waktu respon mitra (15 - 120 detik).</p>
+                        <p class="text-[11px] text-gray-400 mt-1">Batas waktu respon mitra (15 - 300 detik, default: 120 detik / 2 menit).</p>
                     </div>
 
                     <div>
@@ -137,6 +440,7 @@
                         <p class="text-[11px] text-gray-400 mt-1">Jangkauan radius pencocokan.</p>
                     </div>
                 </div>
+
 
                 <!-- Row 2: Prior Bayesian & Fairness Cap -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
@@ -173,7 +477,7 @@
                         </div>
 
                         <div class="bg-gray-50 dark:bg-gray-900/60 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
-                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">2. Boost Rating </span>
+                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">2. Boost Rating (prioritas tertinggi) </span>
                             <input type="number" step="0.05" min="0" max="1" wire:model="weight_rating"
                                    class="w-full mt-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-xs">
                         </div>
@@ -281,12 +585,21 @@
                         </div>
 
                         <!-- Upload Control -->
-                        <div>
+                        <div x-data="{ fileName: 'Belum ada file dipilih' }">
                             <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                                 Upload Gambar QRIS Baru (PNG, JPG, WebP)
                             </label>
-                            <input type="file" wire:model="qris_image" accept="image/png,image/jpeg,image/jpg,image/webp"
-                                class="w-full text-xs text-gray-500 dark:text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary-50 file:text-primary-700 dark:file:bg-primary-950/60 dark:file:text-primary-300 hover:file:bg-primary-100 cursor-pointer bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 p-1" />
+                            <div class="flex items-center gap-2 w-full bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 p-1 cursor-pointer"
+                                 @click="$refs.qrisInput.click()">
+                                <span class="shrink-0 py-2 px-4 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300 hover:bg-primary-100 transition-colors">
+                                    Pilih File
+                                </span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="fileName"></span>
+                            </div>
+                            <input type="file" x-ref="qrisInput" wire:model="qris_image"
+                                   accept="image/png,image/jpeg,image/jpg,image/webp"
+                                   class="hidden"
+                                   @change="fileName = $event.target.files[0] ? $event.target.files[0].name : 'Belum ada file dipilih'" />
                             @error('qris_image')
                                 <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span>
                             @enderror

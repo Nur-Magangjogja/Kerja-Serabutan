@@ -11,12 +11,12 @@
                                 @if(!empty($help->photo))
                                     <img src="{{ asset('storage/' . $help->photo) }}" alt="Foto bantuan"
                                         class="w-full h-full object-cover">
-                                @elseif(optional($help->user)->photo)
-                                    <img src="{{ asset('storage/' . optional($help->user)->photo) }}" alt="Avatar"
+                                @elseif(optional($help->user)->profile_photo ?? optional($help->user)->photo)
+                                    <img src="{{ asset('storage/' . (optional($help->user)->profile_photo ?? optional($help->user)->photo)) }}" alt="Avatar"
                                         class="w-full h-full object-cover">
                                 @else
                                     <div
-                                        class="w-full h-full flex items-center justify-center text-white text-lg font-bold bg-gradient-to-br from-orange-300 to-orange-400">
+                                        class="w-full h-full flex items-center justify-center text-white text-lg font-bold bg-orange-500">
                                         {{ strtoupper(substr($help->user->name ?? 'U', 0, 1)) }}
                                     </div>
                                 @endif

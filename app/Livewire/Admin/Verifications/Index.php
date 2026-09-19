@@ -7,6 +7,7 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Url;
 use App\Models\Registration;
 use App\Models\User;
+use App\Models\District;
 use App\Models\City;
 
 class Index extends Component
@@ -25,7 +26,8 @@ class Index extends Component
     #[Url(history: true)]
     public $roleFilter = '';
 
-    public $cityFilter = '';
+    public $districtFilter = '';
+    public $cityFilter = ''; // Backward compatibility alias
 
     public $showModal = false;
     public $selected = null;
@@ -34,14 +36,17 @@ class Index extends Component
     public $rejectingId = null;
 
     protected $listeners = [
-        'admin-city-changed' => 'onAdminCityChanged',
+        'admin-district-changed'         => 'onAdminDistrictChanged',
+        'admin-city-changed'             => 'onAdminDistrictChanged',
+        'superadmin-territory-changed'   => '$refresh',
     ];
 
     public function mount()
     {
         $authUser = auth()->user();
         if ($authUser && $authUser->role === 'admin') {
-            $this->cityFilter = $authUser->getActiveAdminCityFilter();
+            $this->districtFilter = $authUser->getActiveAdminDistrictFilter();
+            $this->cityFilter = $this->districtFilter;
         }
     }
 
@@ -60,28 +65,41 @@ class Index extends Component
         $this->resetPage();
     }
 
-    public function updatingCityFilter()
+    public function updatingDistrictFilter()
     {
+        $this->resetPage();
+    }
+
+    public function updatedDistrictFilter()
+    {
+        $authUser = auth()->user();
+        if ($authUser && $authUser->role === 'admin') {
+            $authUser->setActiveAdminDistrictFilter($this->districtFilter);
+            $this->cityFilter = $this->districtFilter;
+            $this->dispatch('admin-district-changed', districtId: $this->districtFilter);
+        }
         $this->resetPage();
     }
 
     public function updatedCityFilter()
     {
+        $this->districtFilter = $this->cityFilter;
+        $this->updatedDistrictFilter();
+    }
+
+    public function onAdminDistrictChanged($districtId = null)
+    {
         $authUser = auth()->user();
         if ($authUser && $authUser->role === 'admin') {
-            $authUser->setActiveAdminCityFilter($this->cityFilter);
-            $this->dispatch('admin-city-changed', cityId: $this->cityFilter);
+            $this->districtFilter = $authUser->getActiveAdminDistrictFilter();
+            $this->cityFilter = $this->districtFilter;
+            $this->resetPage();
         }
-        $this->resetPage();
     }
 
     public function onAdminCityChanged($cityId = null)
     {
-        $authUser = auth()->user();
-        if ($authUser && $authUser->role === 'admin') {
-            $this->cityFilter = $authUser->getActiveAdminCityFilter();
-            $this->resetPage();
-        }
+        $this->onAdminDistrictChanged($cityId);
     }
 
     public function updatingPerPage()
@@ -95,8 +113,8 @@ class Index extends Component
         if (!$user) return false;
         if (in_array($user->role, ['super_admin', 'superadmin'])) return true;
         if ($user->role === 'admin') {
-            $allowedCityIds = $user->getAdminCityIds();
-            return !empty($reg->city_id) && in_array((int) $reg->city_id, $allowedCityIds, true);
+            $allowedDistrictIds = $user->getAdminDistrictIds();
+            return !empty($reg->district_id) && in_array((int) $reg->district_id, $allowedDistrictIds, true);
         }
         return false;
     }
@@ -157,6 +175,8 @@ class Index extends Component
                     if (empty($user->ktp_photo) && !empty($reg->ktp_photo_path)) $user->ktp_photo = $reg->ktp_photo_path;
                     if (empty($user->ktp_path) && !empty($reg->ktp_photo_path)) $user->ktp_path = $reg->ktp_photo_path;
                     if (empty($user->selfie_photo) && !empty($reg->selfie_photo_path)) $user->selfie_photo = $reg->selfie_photo_path;
+                    if (empty($user->district_id) && !empty($reg->district_id)) $user->district_id = $reg->district_id;
+                    if (empty($user->district) && !empty($reg->district)) $user->district = $reg->district;
                     if (empty($user->city_id) && !empty($reg->city_id)) $user->city_id = $reg->city_id;
                     if (empty($user->city) && !empty($reg->city)) $user->city = $reg->city;
                     if (empty($user->rt) && !empty($reg->rt)) $user->rt = $reg->rt;
@@ -250,24 +270,43 @@ class Index extends Component
 
         // Only include completed registrations waiting for or with decision (exclude in-progress/drafts)
         $query = Registration::query()
+            ->with(['district', 'city'])
             ->whereIn('status', ['pending_verification', 'pending', 'approved', 'rejected']);
 
-        // Strict city isolation: Admin only sees registrations from their assigned city / cities
+        // Strict district isolation: Admin only sees registrations from their assigned districts/city
         if (!$isSuperAdmin && $authUser && $authUser->role === 'admin') {
-            $this->cityFilter = $authUser->getActiveAdminCityFilter();
-            $effectiveCityIds = $authUser->getEffectiveAdminCityIds();
-            if (!empty($effectiveCityIds)) {
-                $query->whereIn('city_id', $effectiveCityIds);
-            } else {
-                $query->whereRaw('1 = 0');
+            $this->districtFilter = $authUser->getActiveAdminDistrictFilter();
+            $this->cityFilter = $this->districtFilter;
+            $effectiveDistrictIds = $authUser->getEffectiveAdminDistrictIds();
+            $adminCityId = $authUser->city_id;
+            if (!empty($effectiveDistrictIds)) {
+                $query->whereIn('district_id', $effectiveDistrictIds);
+            } elseif (!empty($adminCityId)) {
+                $query->where('city_id', $adminCityId);
             }
-        } elseif ($isSuperAdmin) {
-            // Super Admin can filter by city or see all
-            if ($this->cityFilter !== '' && $this->cityFilter !== 'all') {
-                if ($this->cityFilter === 'unassigned') {
-                    $query->whereNull('city_id');
+        } elseif ($isSuperAdmin && $authUser) {
+            $saTerritory = $authUser->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $query->where('district_id', $saTerritory['id']);
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $saDistrictIds = $authUser->getEffectiveSuperadminDistrictIds();
+                $cityId = (int) $saTerritory['id'];
+                $query->where(function ($sub) use ($cityId, $saDistrictIds) {
+                    if (!empty($saDistrictIds)) {
+                        $sub->whereIn('district_id', $saDistrictIds);
+                    }
+                    if ($cityId) {
+                        $sub->orWhere('city_id', $cityId);
+                    }
+                });
+            }
+
+            // In-page dropdown filter override if specifically selected
+            if ($this->districtFilter !== '' && $this->districtFilter !== 'all') {
+                if ($this->districtFilter === 'unassigned') {
+                    $query->whereNull('district_id');
                 } else {
-                    $query->where('city_id', $this->cityFilter);
+                    $query->where('district_id', $this->districtFilter);
                 }
             }
         }
@@ -279,7 +318,9 @@ class Index extends Component
                 $q->where('full_name', 'like', "%{$s}%")
                   ->orWhere('email', 'like', "%{$s}%")
                   ->orWhere('nik', 'like', "%{$s}%")
-                  ->orWhere('city', 'like', "%{$s}%");
+                  ->orWhere('kecamatan', 'like', "%{$s}%")
+                  ->orWhere('city', 'like', "%{$s}%")
+                  ->orWhereHas('district', fn($dq) => $dq->where('name', 'like', "%{$s}%"));
             });
         }
 
@@ -298,13 +339,24 @@ class Index extends Component
         }
 
         $verifications = $query->latest()->paginate($this->perPage);
-        $cities = City::orderBy('name')->get();
+
+        // Cache master data distrik & kota selama 10 menit agar tidak query ulang saat paging/search
+        $districts = $isSuperAdmin
+            ? cache()->remember('admin_all_districts_with_city', 600, fn() => District::with('city')->orderBy('name')->get())
+            : ($authUser ? $authUser->getAdminDistricts() : collect());
+        $cities = cache()->remember('admin_all_cities', 600, fn() => City::orderBy('name')->get());
 
         $layout = ($authUser && in_array($authUser->role, ['super_admin', 'superadmin'])) 
             ? 'layouts.superadmin' 
             : 'layouts.admin';
 
-        return view('livewire.admin.verifications.index', compact('verifications', 'cities', 'authUser'))
-            ->layout($layout);
+        return view('livewire.admin.verifications.index', [
+            'verifications'  => $verifications,
+            'districts'      => $districts,
+            'cities'         => $districts, // Backward compatibility
+            'districtFilter' => $this->districtFilter,
+            'cityFilter'     => $this->districtFilter,
+            'authUser'       => $authUser,
+        ])->layout($layout);
     }
 }

@@ -18,13 +18,17 @@ class PartnerReportMessage extends Model
         'photo',
         'is_read',
         'read_at',
+        'customer_read_at',
+        'mitra_read_at',
     ];
 
     protected $casts = [
-        'is_read'    => 'boolean',
-        'read_at'    => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'is_read'          => 'boolean',
+        'read_at'          => 'datetime',
+        'customer_read_at' => 'datetime',
+        'mitra_read_at'    => 'datetime',
+        'created_at'       => 'datetime',
+        'updated_at'       => 'datetime',
     ];
 
     // Relationships
@@ -51,5 +55,52 @@ class PartnerReportMessage extends Model
     public function isFromMitra(): bool
     {
         return $this->sender?->role === 'mitra';
+    }
+
+    protected static function booted()
+    {
+        static::created(function (PartnerReportMessage $message) {
+            try {
+                // Jangan kirim notifikasi ke admin jika pesan dikirim oleh admin sendiri
+                if ($message->isFromAdmin()) {
+                    return;
+                }
+
+                $report = $message->report;
+                if (!$report) {
+                    return;
+                }
+
+                // KONDISI UTAMA: Hanya kirim notifikasi jika laporan masih AKTIF / PENDING
+                // Jika laporan sudah selesai (resolved) atau ditutup (dismissed), notifikasi ditekan / dihentikan.
+                if ($report->isActive()) {
+                    $help = $report->reportedHelp;
+                    $cityId = $help?->city_id ?? $report->reporter?->city_id ?? $report->reportedUser?->city_id;
+
+                    // Ambil Admin wilayah terkait
+                    $admins = User::where('role', 'admin')
+                        ->when($cityId, fn($q) => $q->where('city_id', $cityId))
+                        ->where('status', 'active')
+                        ->get();
+
+                    if ($admins->isEmpty()) {
+                        $admins = User::where('role', 'admin')->where('status', 'active')->get();
+                    }
+
+                    // Ambil Super Admin
+                    $superAdmins = User::whereIn('role', ['super_admin', 'superadmin'])
+                        ->where('status', 'active')
+                        ->get();
+
+                    $recipients = $admins->merge($superAdmins)->unique('id');
+
+                    foreach ($recipients as $recipient) {
+                        $recipient->notify(new \App\Notifications\NewReportMessageNotification($message));
+                    }
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('[PartnerReportMessage] Gagal mengirim notifikasi chat aduan: ' . $e->getMessage());
+            }
+        });
     }
 }

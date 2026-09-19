@@ -1,4 +1,4 @@
-<div wire:poll.30s.visible>
+<div wire:poll.60s.visible>
     {{-- ===== Page Header ===== --}}
     <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div>
@@ -38,31 +38,31 @@
                 <option value="mitra">Mitra</option>
             </select>
 
-            {{-- City Filter (Super Admin only) / City Badge (City Admin) --}}
+            {{-- District Filter (Super Admin only) / District Badge (Admin Kecamatan) --}}
             @if($authUser && in_array($authUser->role, ['super_admin', 'superadmin']))
-                <select wire:model.live="cityFilter"
+                <select wire:model.live="districtFilter"
                     class="py-2 pl-3 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50/50 dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 max-w-[180px]">
-                    <option value="all">Semua Kota</option>
-                    @foreach($cities as $city)
-                        <option value="{{ $city->id }}">{{ $city->name }}</option>
+                    <option value="all">Semua Kecamatan</option>
+                    @foreach($districts as $district)
+                        <option value="{{ $district->id }}">Kec. {{ $district->name }}</option>
                     @endforeach
-                    <option value="unassigned">Kota Belum Terdaftar</option>
+                    <option value="unassigned">Kecamatan Belum Terdaftar</option>
                 </select>
-            @elseif($authUser && $authUser->role === 'admin' && $authUser->getAdminCities()->count() > 1)
-                <select wire:model.live="cityFilter"
+            @elseif($authUser && $authUser->role === 'admin' && $authUser->getAdminDistricts()->count() > 1)
+                <select wire:model.live="districtFilter"
                     class="py-2 pl-3 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50/50 dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 max-w-[180px]">
                     <option value="all">Semua Wilayah Saya</option>
-                    @foreach($authUser->getAdminCities() as $c)
-                        <option value="{{ $c->id }}">{{ $c->name }}</option>
+                    @foreach($authUser->getAdminDistricts() as $d)
+                        <option value="{{ $d->id }}">Kec. {{ $d->name }}</option>
                     @endforeach
                 </select>
-            @elseif($authUser && ($authUser->city_id || $authUser->city_name))
+            @elseif($authUser && ($authUser->district_id || $authUser->district || $authUser->getAdminDistricts()->isNotEmpty()))
                 <div class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 rounded-lg border border-gray-200 dark:border-gray-600">
                     <svg class="w-3.5 h-3.5 text-primary-600 dark:text-sky-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
-                    <span>Wilayah: {{ $authUser->city_name ?? 'Kota Terdaftar' }}</span>
+                    <span>Wilayah: Kec. {{ optional($authUser->district)->name ?? $authUser->getAdminDistricts()->first()?->name ?? ($authUser->kecamatan ?? 'Terdaftar') }}</span>
                 </div>
             @endif
 
@@ -92,7 +92,6 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-12 hidden">#</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pengguna</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Peran</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">NIK</th>
@@ -116,7 +115,6 @@
                         : 'bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60';
                     @endphp
                     <tr class="hover:bg-gray-50/70 dark:hover:bg-gray-700/30 transition-colors duration-150">
-                        <td class="px-4 py-3.5 text-xs font-medium text-gray-400 dark:text-gray-500 hidden">#{{ $v->id }}</td>
                         <td class="px-4 py-3.5">
                             <div class="flex items-center gap-3">
                                 <div class="w-9 h-9 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-xs">
@@ -140,7 +138,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
-                                <span class="truncate">{{ $v->city ?? 'Belum terdata' }}</span>
+                                <span class="truncate">{{ !empty($v->kecamatan) ? 'Kec. ' . $v->kecamatan . (!empty($v->city) ? ' (' . $v->city . ')' : '') : ($v->city ?? 'Belum terdata') }}</span>
                             </div>
                         </td>
                         <td class="px-4 py-3.5 hidden sm:table-cell">
@@ -197,8 +195,8 @@
 
     {{-- ===== Detail Modal ===== --}}
     @if($showModal && $selected)
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto" role="dialog" aria-modal="true" wire:click="closeModal">
-        <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-4xl shadow-2xl my-auto max-h-[92vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700" @click.stop>
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto" role="dialog" aria-modal="true" wire:click.self="closeModal">
+        <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-4xl shadow-2xl my-auto max-h-[92vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700">
             {{-- Header --}}
             <div class="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
                 <div class="flex items-center gap-3 min-w-0 flex-1 pr-2">
@@ -212,7 +210,7 @@
                                 {{ ucfirst($selected->role ?? 'customer') }}
                             </span>
                         </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ $selected->email ?? '—' }} • ID Registrasi: #{{ $selected->id }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ $selected->email ?? '—' }}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
@@ -248,8 +246,6 @@
                             <h4 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5">Wilayah kota</h4>
                             <p class="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3 break-words">{{ $selected->full_address }}</p>
                             <div class="grid grid-cols-2 gap-2 text-xs">
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Kota / Kab</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->city ?? '-' }}</span></div>
-                                <div class="bg-white dark:bg-gray-700 p-2.5 rounded-xl border border-gray-100 dark:border-gray-600 min-w-0"><span class="text-gray-400 block text-[10px]">Provinsi</span> <span class="font-semibold text-gray-800 dark:text-gray-200 truncate block">{{ $selected->province ?? '-' }}</span></div>
                             </div>
                         </div>
                     </div>

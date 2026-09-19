@@ -25,20 +25,28 @@ class ChatMessageNotification extends Notification
 
     public function via($notifiable)
     {
-        return ['database'];
+        // Chat messages are handled directly in chats table and realtime polling, not in notifications table
+        return [];
     }
 
     public function toArray($notifiable)
     {
+        $role = $notifiable->role ?? null;
+        if ($role === 'mitra') {
+            $url = $this->helpId ? route('mitra.chat', ['help' => $this->helpId]) : route('mitra.chat');
+        } else {
+            $url = $this->helpId ? route('customer.chat', ['help' => $this->helpId]) : route('customer.chat');
+        }
+
         return [
             'type' => 'chat_message',
-            'title' => 'Pesan dari ' . ($this->fromName ?? 'Mitra'),
+            'title' => 'Pesan dari ' . ($this->fromName ?? 'Partner'),
             'help_id' => $this->helpId,
             'message' => $this->message,
             'body' => $this->message,
             'from_id' => $this->fromId,
             'from_name' => $this->fromName,
-            'url' => route('chat.show', ['help' => $this->helpId]),
+            'url' => $url,
         ];
     }
 

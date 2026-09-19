@@ -2,6 +2,7 @@
     @if(auth()->user()->role === 'mitra')
         <div x-data="{
             isInputFocused: false,
+            isChatRoomOpen: false,
             init() {
                 const handleFocusIn = (e) => {
                     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) && e.target.type !== 'checkbox' && e.target.type !== 'radio') {
@@ -18,9 +19,18 @@
                 };
                 window.addEventListener('focusin', handleFocusIn);
                 window.addEventListener('focusout', handleFocusOut);
+
+                const checkChatRoom = () => {
+                    this.isChatRoomOpen = !!document.getElementById('messagesWrapper');
+                };
+                checkChatRoom();
+                if (window.MutationObserver) {
+                    const observer = new MutationObserver(checkChatRoom);
+                    observer.observe(document.body, { childList: true, subtree: true });
+                }
             }
         }"
-        x-show="!isInputFocused"
+        x-show="!isInputFocused && !isChatRoomOpen"
         x-transition:enter="transition ease-out duration-200"
         x-transition:enter-start="opacity-0 translate-y-4"
         x-transition:enter-end="opacity-100 translate-y-0"

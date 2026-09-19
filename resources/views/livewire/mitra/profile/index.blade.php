@@ -11,36 +11,31 @@
             }
         }
 
-        @keyframes slideInUp {
+        @keyframes fadeIn {
             from {
-                transform: translateY(20px);
                 opacity: 0;
             }
             to {
-                transform: translateY(0);
                 opacity: 1;
             }
         }
 
         .stats-card {
-            animation: scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+            animation: fadeIn 0.4s ease-out backwards;
         }
 
         .avatar-container {
-            animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+            animation: fadeIn 0.4s ease-out backwards;
         }
 
         .logout-modal-content {
-            animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: fadeIn 0.25s ease-out;
         }
     </style>
 
     @php
-        // Mitra stats
-        $totalHelped = \App\Models\Help::where('mitra_id', $user->id)->count();
-        $completedHelps = \App\Models\Help::where('mitra_id', $user->id)->whereIn('status', ['selesai', 'completed'])->count();
-        $averageRating = round($user->mitra_average_rating ?? $user->average_rating ?? 0, 1);
-        $totalRatings = $user->mitra_rating_count ?? $user->rating_count ?? 0;
+        // Data sudah dikirim dari Livewire component — tidak perlu query ulang
+        // $totalHelped, $completedHelps, $averageRating, $totalRatings sudah tersedia
     @endphp
 
     <div class="max-w-md mx-auto">
@@ -50,12 +45,12 @@
             <div class="absolute bottom-0 left-0 w-36 h-36 bg-white/5 rounded-full blur-xl -ml-12 -mb-12 pointer-events-none"></div>
             
             <div class="relative z-10">
-                <div class="relative flex items-center justify-center text-white mb-4 min-h-[40px]">
-                    <div class="text-center w-full min-w-0 px-12">
+                <div class="flex items-center justify-between text-white mb-4 min-h-[40px]">
+                    <div class="w-10"></div>
+                    <div class="text-center flex-1 min-w-0 px-2">
                         <h1 class="text-base font-bold truncate">Profil Saya</h1>
                     </div>
-
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                    <div class="w-10 flex items-center justify-end">
                         <x-mitra.notification-icon />
                     </div>
                 </div>
@@ -63,16 +58,19 @@
                 <!-- Profile Avatar & Info -->
                 <div class="text-center avatar-container">
                     <div class="relative inline-block">
-                        @if($user->selfie_photo)
-                            <img src="{{ asset('storage/' . $user->selfie_photo) }}" alt="Avatar" class="w-20 h-20 rounded-full object-cover mx-auto ring-4 ring-white/30 shadow-xl">
+                        @if($user->profile_photo ?? $user->photo)
+                            <img src="{{ asset('storage/' . ($user->profile_photo ?? $user->photo)) }}" alt="Avatar" class="w-20 h-20 rounded-full object-cover mx-auto ring-4 ring-white/30 shadow-xl">
                         @else
                             <div class="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl font-bold mx-auto ring-4 ring-white/30 shadow-xl">
                                 {{ strtoupper(substr($user->name, 0, 1)) }}
                             </div>
                         @endif
 
-                        <button onclick="openMitraPhotoModal()" class="absolute bottom-0 right-0 bg-white p-1.5 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-transform duration-200 cursor-pointer">
-                            <svg class="w-3.5 h-3.5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button type="button" 
+                                onclick="if(window.Livewire){ Livewire.dispatch('openModal'); } else { openMitraPhotoModal(); }" 
+                                class="absolute bottom-0 right-0 bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-transform duration-200 cursor-pointer border-2 border-white dark:border-gray-700 text-primary-600 dark:text-primary-400"
+                                title="Ubah Foto Profil">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
@@ -124,15 +122,9 @@
                     </svg>
                 </x-profile-menu-item>
 
-                <x-profile-menu-item :href="route('mitra.transactions.index')" title="Riwayat Mutasi Saldo" subtitle="Catatan pendapatan & mutasi saldo" iconBg="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                <x-profile-menu-item :href="route('mitra.transactions.index')" title="Riwayat Transaksi & Mutasi" subtitle="Catatan pendapatan, pencairan dana, & mutasi saldo" iconBg="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                    </svg>
-                </x-profile-menu-item>
-
-                <x-profile-menu-item :href="route('mitra.withdraw.history')" title="Riwayat Penarikan Saldo" subtitle="Status transfer & penarikan dana ke rekening" iconBg="bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                 </x-profile-menu-item>
 
@@ -182,12 +174,16 @@
                     <p class="text-xs text-gray-500 dark:text-gray-400">Apakah Anda yakin ingin keluar dari aplikasi?</p>
                 </div>
 
-                <form action="{{ route('logout') }}" method="POST" class="space-y-2.5">
+                <form action="{{ route('logout') }}" method="POST" class="space-y-2.5" x-data="{ submitting: false }" @submit="if (submitting) { $event.preventDefault(); return false; } submitting = true;">
                     @csrf
-                    <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-red-600/30 cursor-pointer text-sm">
-                        Ya, Logout
+                    <button type="submit" :disabled="submitting" :class="submitting ? 'opacity-60 cursor-not-allowed pointer-events-none' : ''" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-red-600/30 cursor-pointer text-sm flex items-center justify-center gap-2">
+                        <svg x-show="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span x-text="submitting ? 'Mengeluarkan Akun...' : 'Ya, Logout'">Ya, Logout</span>
                     </button>
-                    <button type="button" onclick="document.getElementById('logout-modal').classList.add('hidden')" class="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-pointer text-sm">
+                    <button type="button" :disabled="submitting" onclick="document.getElementById('logout-modal').classList.add('hidden')" class="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-pointer text-sm">
                         Batal
                     </button>
                 </form>

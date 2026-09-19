@@ -4,7 +4,7 @@
 @endphp
 
 <div x-data="approvalModal()" @confirm-approve.window="openFromEvent($event)">
-    <div wire:poll.15s.visible>
+    <div wire:poll.30s.visible>
         {{-- ===== Page Header ===== --}}
         <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
             <div>
@@ -123,7 +123,6 @@
                 <table class="w-full text-sm text-left">
                     <thead>
                         <tr class="bg-gray-50/80 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
-                            <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden">#</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Customer</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Wilayah</th>
                             <th class="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">Kode Request</th>
@@ -137,7 +136,6 @@
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
                         @forelse($transactions as $transaction)
                             <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-700/30 transition-colors">
-                                <td class="px-4 py-3.5 text-xs font-medium text-gray-400 dark:text-gray-500 hidden">#{{ $transaction->id }}</td>
                                 <td class="px-4 py-3.5">
                                     <div class="flex items-center gap-2.5">
                                         <div class="h-9 w-9 flex-shrink-0">
@@ -254,12 +252,12 @@
 
     {{-- ===== Detail Modal ===== --}}
     @if ($showDetailModal && $selectedTransaction)
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4" wire:click="closeModal">
-            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative border border-gray-100 dark:border-gray-700" @click.stop>
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4" wire:click.self="closeModal">
+            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative border border-gray-100 dark:border-gray-700">
                 <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-6 py-4 rounded-t-3xl z-10 flex items-center justify-between">
                     <div>
                         <h2 class="text-base font-bold text-gray-900 dark:text-white">Detail Transaksi Top-Up</h2>
-                        <p class="text-xs text-gray-400 dark:text-gray-500">ID: #{{ $selectedTransaction->id }} • {{ $selectedTransaction->request_code ?? 'Manual' }}</p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500">{{ $selectedTransaction->request_code ?? 'Manual' }}</p>
                     </div>
                     <button wire:click="closeModal" class="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -367,8 +365,8 @@
 
     {{-- ===== Reject Modal ===== --}}
     @if ($showRejectModal && $selectedTransaction)
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[110] flex items-center justify-center p-4" wire:click="closeModal">
-            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-3xl shadow-2xl w-full max-w-md p-6 z-[120] border border-gray-100 dark:border-gray-700" @click.stop>
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[110] flex items-center justify-center p-4" wire:click.self="closeModal">
+            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-3xl shadow-2xl w-full max-w-md p-6 z-[120] border border-gray-100 dark:border-gray-700">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
@@ -404,8 +402,8 @@
 
     {{-- ===== Cancel Approval Modal (Fraud / Barcode Salah) ===== --}}
     @if ($showCancelApprovalModal && $selectedTransaction)
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[110] flex items-center justify-center p-4" wire:click="closeModal">
-            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-3xl shadow-2xl w-full max-w-lg p-6 z-[120] border border-rose-200 dark:border-rose-900/60" @click.stop>
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[110] flex items-center justify-center p-4" wire:click.self="closeModal">
+            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-3xl shadow-2xl w-full max-w-lg p-6 z-[120] border border-rose-200 dark:border-rose-900/60">
                 <div class="flex items-start gap-3.5 mb-4">
                     <div class="w-11 h-11 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>

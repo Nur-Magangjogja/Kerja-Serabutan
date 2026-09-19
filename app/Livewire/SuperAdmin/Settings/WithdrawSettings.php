@@ -63,6 +63,13 @@ class WithdrawSettings extends Component
         $this->dispatch('settings-saved');
     }
 
+    public function updatedIsPlatformAccount($value)
+    {
+        if ($value) {
+            $this->bank_fee = 0;
+        }
+    }
+
     public function openAddModal()
     {
         $this->resetValidation();
@@ -89,8 +96,8 @@ class WithdrawSettings extends Component
         $this->bank_name = $b['name'] ?? '';
         $this->bank_category = $b['category'] ?? 'Bank';
         $this->bank_icon = $b['icon'] ?? '🏦';
-        $this->bank_fee = (int) ($b['fee'] ?? 0);
         $this->is_platform_account = !empty($b['is_platform_account']);
+        $this->bank_fee = $this->is_platform_account ? 0 : (int) ($b['fee'] ?? 0);
         $this->is_active = isset($b['is_active']) ? (bool) $b['is_active'] : true;
 
         $this->modalOpen = true;
@@ -118,14 +125,16 @@ class WithdrawSettings extends Component
         ]);
 
         $codeUpper = strtoupper(trim($this->bank_code));
+        $isPlatform = (bool) $this->is_platform_account;
+        $fee = $isPlatform ? 0 : (int) $this->bank_fee;
 
         $item = [
             'code' => $codeUpper,
             'name' => trim($this->bank_name),
             'category' => $this->bank_category,
             'icon' => $this->bank_icon,
-            'fee' => (int) $this->bank_fee,
-            'is_platform_account' => (bool) $this->is_platform_account,
+            'fee' => $fee,
+            'is_platform_account' => $isPlatform,
             'is_active' => (bool) $this->is_active,
         ];
 
@@ -166,14 +175,15 @@ class WithdrawSettings extends Component
         if (isset($this->banks[$index])) {
             $current = !empty($this->banks[$index]['is_platform_account']);
             $this->banks[$index]['is_platform_account'] = !$current;
-            // If marked as platform account, automatically set fee to 0 by default
+            // If marked as platform account, automatically set fee to 0 (gratis admin)
             if (!$current) {
                 $this->banks[$index]['fee'] = 0;
             }
             $this->saveBanksToDatabase();
-            session()->flash('message', "Status Rekening Utama Platform untuk {$this->banks[$index]['name']} diperbarui.");
+            session()->flash('message', "Status Rekening Utama Platform untuk {$this->banks[$index]['name']} diperbarui (Otomatis Gratis Admin).");
         }
     }
+
 
     public function toggleBankStatus($index)
     {

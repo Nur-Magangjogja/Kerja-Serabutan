@@ -69,8 +69,11 @@ class ChatController
             return redirect()->route('chat.show', ['help' => $found->id]);
         }
 
-        // No existing help => redirect to help creation (customer) page with a flash message.
-        // If current user is mitra, redirect to customer's helps listing? Simpler: redirect to help creation.
+        // No existing help => redirect to help creation (customer) page or mitra dashboard with a flash message.
+        if ($user->role === 'mitra') {
+            return redirect()->route('mitra.dashboard')->with('status', 'Belum ada percakapan dengan pengguna tersebut.');
+        }
+
         return redirect()->route('customer.helps.create')->with('status', 'Belum ada percakapan. Silakan buat permintaan bantuan untuk memulai chat.');
     }
 }

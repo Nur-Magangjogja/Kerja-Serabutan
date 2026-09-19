@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Actions\CancelRegistration;
 use App\Models\Registration;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
@@ -16,35 +17,58 @@ new #[Layout('layouts.guest')] class extends Component {
 
     public function mount()
     {
-        if (\Illuminate\Support\Facades\Auth::check()) {
-            $user = \Illuminate\Support\Facades\Auth::user();
-            if ($user && !$user->hasVerifiedEmail()) {
-                $this->redirect(route('verification.notice'), navigate: true);
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        if ($user) {
+            if (in_array($user->role ?? '', ['admin', 'super_admin', 'superadmin'])) {
+                $route = in_array($user->role, ['super_admin', 'superadmin']) ? 'superadmin.dashboard' : 'admin.dashboard';
+                $this->redirect(route($route), navigate: true);
+                return;
+            }
+
+            if ($user->verified && $user->status === 'active') {
+                $route = $user->role === 'mitra' ? 'mitra.dashboard' : 'customer.dashboard';
+                $this->redirect(route($route), navigate: true);
                 return;
             }
         }
 
-        // Cek apakah step 1 dan 2 sudah selesai (via registration record)
+        if ($user && !$user->hasVerifiedEmail()) {
+            $this->redirect(route('verification.notice'), navigate: true);
+            return;
+        }
+
+        $userEmail = $user ? strtolower(trim($user->email)) : null;
+
+        // Cari record registrasi strictly milik user yang sedang aktif
+        $registration = null;
+        if ($userEmail) {
+            $registration = Registration::where('email', $userEmail)->latest()->first();
+        }
+
         $uuid = Session::get('registration_uuid') ?? request()->cookie('registration_uuid');
-        if (!$uuid && \Illuminate\Support\Facades\Auth::check()) {
-            $reg = Registration::where('email', \Illuminate\Support\Facades\Auth::user()->email)->latest()->first();
-            if ($reg) {
-                $uuid = $reg->uuid;
-                Session::put('registration_uuid', $uuid);
+        if (!$registration && $uuid) {
+            $found = Registration::where('uuid', $uuid)->first();
+            if ($found && $userEmail && strtolower(trim($found->email ?? '')) === $userEmail) {
+                $registration = $found;
             }
         }
-        if (!$uuid) {
-            $this->redirect(route('register.step1'), navigate: true);
-            return;
-        }
-        Session::put('registration_uuid', $uuid);
 
-        $registration = Registration::where('uuid', $uuid)->first();
-        if (!$registration || !$registration->ktp_photo_path) {
-            // KTP belum diupload, kembali ke step1
+        if (!$registration) {
+            Session::forget('registration_uuid');
+            \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('registration_uuid'));
             $this->redirect(route('register.step1'), navigate: true);
             return;
         }
+
+        // KTP belum diupload, kembali ke step2
+        if (empty($registration->ktp_photo_path)) {
+            $this->redirect(route('register.step2'), navigate: true);
+            return;
+        }
+
+        Session::put('registration_uuid', $registration->uuid);
+        \Illuminate\Support\Facades\Cookie::queue('registration_uuid', $registration->uuid, 60 * 24);
 
         if (!empty($registration->selfie_photo_path)) {
             $this->preview_url = asset('storage/' . $registration->selfie_photo_path);
@@ -62,45 +86,68 @@ new #[Layout('layouts.guest')] class extends Component {
             'selfie_photo.max' => 'Ukuran foto maksimal 2MB',
         ]);
 
-        try {
-            if ($this->selfie_photo && method_exists($this->selfie_photo, 'temporaryUrl')) {
-                $this->preview_url = $this->selfie_photo->temporaryUrl();
-            }
-        } catch (\Throwable $e) {
-            // ignore preview temporaryUrl failure
-        }
-    }
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $userEmail = $user ? strtolower(trim($user->email)) : null;
 
-    public function removePhoto(): void
-    {
-        $this->selfie_photo = null;
-        $this->preview_url = null;
-        $this->iteration++;
+        $registration = null;
+        if ($userEmail) {
+            $registration = Registration::where('email', $userEmail)->latest()->first();
+        }
 
         $uuid = Session::get('registration_uuid') ?? request()->cookie('registration_uuid');
-        if ($uuid) {
-            $registration = Registration::where('uuid', $uuid)->first();
-            if ($registration) {
-                if ($registration->selfie_photo_path) {
-                    Storage::disk('public')->delete($registration->selfie_photo_path);
-                }
-                $registration->update([
-                    'selfie_photo_path' => null,
-                ]);
+        if (!$registration && $uuid) {
+            $found = Registration::where('uuid', $uuid)->first();
+            if ($found && (!$userEmail || strtolower(trim($found->email ?? '')) === $userEmail)) {
+                $registration = $found;
             }
         }
 
-        if (\Illuminate\Support\Facades\Auth::check()) {
-            \Illuminate\Support\Facades\Auth::user()->update([
-                'selfie_photo' => null,
+        if ($registration && $this->selfie_photo) {
+            // Hapus foto lama jika ada
+            if ($registration->selfie_photo_path && Storage::disk('public')->exists($registration->selfie_photo_path)) {
+                Storage::disk('public')->delete($registration->selfie_photo_path);
+            }
+
+            // Simpan file ke storage secara instan agar tidak hilang saat refresh
+            $path = $this->selfie_photo->store('selfie-photos', 'public');
+
+            $registration->update([
+                'selfie_photo_path' => $path,
+                'status' => 'in_progress',
             ]);
+
+            if ($user) {
+                $user->update([
+                    'selfie_photo' => $path,
+                ]);
+            }
+
+            $this->preview_url = asset('storage/' . $path);
         }
     }
 
     public function nextStep(): void
     {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $userEmail = $user ? strtolower(trim($user->email)) : null;
+
+        $registration = null;
+        if ($userEmail) {
+            $registration = Registration::where('email', $userEmail)->latest()->first();
+        }
+
         $uuid = Session::get('registration_uuid') ?? request()->cookie('registration_uuid');
-        $registration = $uuid ? Registration::where('uuid', $uuid)->first() : null;
+        if (!$registration && $uuid) {
+            $found = Registration::where('uuid', $uuid)->first();
+            if ($found && (!$userEmail || strtolower(trim($found->email ?? '')) === $userEmail)) {
+                $registration = $found;
+            }
+        }
+
+        if (!$registration) {
+            $this->redirect(route('register.step1'), navigate: true);
+            return;
+        }
 
         if ($this->selfie_photo) {
             $this->validate([
@@ -111,27 +158,23 @@ new #[Layout('layouts.guest')] class extends Component {
                 'selfie_photo.max' => 'Ukuran foto maksimal 2MB',
             ]);
 
-            // Hapus foto lama jika ada
-            if ($registration && $registration->selfie_photo_path) {
+            if ($registration->selfie_photo_path && Storage::disk('public')->exists($registration->selfie_photo_path)) {
                 Storage::disk('public')->delete($registration->selfie_photo_path);
             }
 
-            // Simpan file ke storage
             $path = $this->selfie_photo->store('selfie-photos', 'public');
 
-            if ($registration) {
-                $registration->update([
-                    'selfie_photo_path' => $path,
-                    'status' => 'in_progress',
-                ]);
-            }
+            $registration->update([
+                'selfie_photo_path' => $path,
+                'status' => 'in_progress',
+            ]);
 
-            if (\Illuminate\Support\Facades\Auth::check()) {
-                \Illuminate\Support\Facades\Auth::user()->update([
+            if ($user) {
+                $user->update([
                     'selfie_photo' => $path,
                 ]);
             }
-        } elseif (!$registration || empty($registration->selfie_photo_path)) {
+        } elseif (empty($registration->selfie_photo_path)) {
             $this->validate([
                 'selfie_photo' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             ], [
@@ -147,9 +190,15 @@ new #[Layout('layouts.guest')] class extends Component {
     {
         $this->redirect(route('register.step2'), navigate: true);
     }
+
+    public function cancelRegistration(CancelRegistration $cancelRegistration): void
+    {
+        $cancelRegistration();
+        $this->redirect(route('login'), navigate: true);
+    }
 }; ?>
 
-<div class="space-y-5">
+<div class="space-y-5" x-data="{ confirmCancelModal: false }">
     <!-- Step Header -->
     <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
         <div>
@@ -193,37 +242,28 @@ new #[Layout('layouts.guest')] class extends Component {
                 </div>
 
                 @if ($preview_url)
-                    <!-- Preview Image -->
-                    <div class="relative bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-lg border-2 border-primary-500">
-                        <img src="{{ $preview_url }}" alt="Preview Selfie" class="w-full max-h-72 object-contain bg-gray-950/5 dark:bg-gray-950/40">
+                    <!-- Preview Image Card (Responsive, Aspect-aware, No Crop) -->
+                    <div class="relative bg-slate-900/5 dark:bg-black/40 rounded-2xl overflow-hidden shadow-md border-2 border-primary-500/80 transition-all">
+                        <div class="relative w-full min-h-[220px] sm:min-h-[280px] max-h-[400px] sm:max-h-[460px] flex items-center justify-center p-2.5 sm:p-4 overflow-hidden">
+                            <img src="{{ $preview_url }}" alt="Preview Selfie" class="max-w-full max-h-[380px] sm:max-h-[440px] w-auto h-auto object-contain rounded-xl shadow-xs transition-transform duration-200">
+                        </div>
                         
                         <!-- Overlay Action Toolbar -->
-                        <div class="p-3 bg-gray-50/95 dark:bg-gray-800/95 border-t border-gray-100 dark:border-gray-700/80 flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                                </svg>
+                        <div class="p-3 bg-white/95 dark:bg-gray-800/95 border-t border-gray-100 dark:border-gray-700/80 flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 font-bold">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                                 <span>Foto Selfie Terpasang</span>
                             </div>
 
                             <div class="flex items-center gap-2">
                                 <!-- Tombol Ganti Foto -->
                                 <label for="selfie_photo"
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-semibold shadow-xs transition cursor-pointer">
+                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                     </svg>
                                     <span>Ganti Foto</span>
                                 </label>
-
-                                <!-- Tombol Hapus Foto -->
-                                <button type="button" wire:click="removePhoto"
-                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-semibold transition cursor-pointer">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                    <span>Hapus</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -255,8 +295,8 @@ new #[Layout('layouts.guest')] class extends Component {
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                     </svg>
                     <div class="flex-1">
-                        <h4 class="text-xs sm:text-sm font-bold text-blue-900 dark:text-blue-200 mb-1.5">Tips Pengambilan:</h4>
-                        <ul class="text-xs text-blue-800 dark:text-blue-300 space-y-1">
+                        <h4 class="text-xs sm:text-sm font-bold text-white-900 dark:text-white-200 mb-1.5">Tips Pengambilan:</h4>
+                        <ul class="text-xs text-white-800 dark:text-white-300 space-y-1">
                             <li>• Gunakan kamera depan dengan pencahayaan langsung ke wajah.</li>
                             <li>• Hindari penggunaan filter kecantikan agar identitas tetap otentik.</li>
                             <li>• Format yang didukung: JPG, JPEG, PNG (Maksimal 2MB).</li>
@@ -270,21 +310,25 @@ new #[Layout('layouts.guest')] class extends Component {
                 <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3">Panduan Contoh Foto Selfie:</p>
                 <div class="grid grid-cols-2 gap-3">
                     <!-- Good Example -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl p-3 border-2 border-emerald-500/70 dark:border-emerald-600/70">
-                        <div class="aspect-square bg-emerald-50 dark:bg-emerald-950/40 rounded-lg overflow-hidden flex items-center justify-center mb-2">
-                            <img src="{{ asset('images/Sample-Ktp-Person-Valid.png') }}" alt="Contoh Selfie KTP Benar" class="w-full h-full object-cover">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-2.5 sm:p-3 border-2 border-emerald-500/70 dark:border-emerald-600/70 flex flex-col justify-between">
+                        <div class="w-full aspect-[4/5] sm:aspect-square bg-emerald-50 dark:bg-emerald-950/40 rounded-lg overflow-hidden flex items-center justify-center mb-2 p-1.5">
+                            <img src="{{ asset('images/Sample-Ktp-Person-Valid.png') }}" alt="Contoh Selfie KTP Benar" class="max-w-full max-h-full w-auto h-auto object-contain rounded">
                         </div>
-                        <p class="text-xs text-emerald-600 dark:text-emerald-400 font-bold text-center">✓ Benar</p>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-0.5">Wajah & KTP jelas</p>
+                        <div>
+                            <p class="text-xs text-emerald-600 dark:text-emerald-400 font-bold text-center">✓ Benar</p>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-0.5">Wajah & KTP jelas</p>
+                        </div>
                     </div>
 
                     <!-- Bad Example -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl p-3 border-2 border-red-500/70 dark:border-red-600/70">
-                        <div class="aspect-square bg-red-50 dark:bg-red-950/40 rounded-lg overflow-hidden flex items-center justify-center mb-2">
-                            <img src="{{ asset('images/Sample-Ktp-Person-Failed.png') }}" alt="Contoh Selfie KTP Salah" class="w-full h-full object-cover">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-2.5 sm:p-3 border-2 border-red-500/70 dark:border-red-600/70 flex flex-col justify-between">
+                        <div class="w-full aspect-[4/5] sm:aspect-square bg-red-50 dark:bg-red-950/40 rounded-lg overflow-hidden flex items-center justify-center mb-2 p-1.5">
+                            <img src="{{ asset('images/Sample-Ktp-Person-Failed.png') }}" alt="Contoh Selfie KTP Salah" class="max-w-full max-h-full w-auto h-auto object-contain rounded">
                         </div>
-                        <p class="text-xs text-red-600 dark:text-red-400 font-bold text-center">✗ Salah</p>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-0.5">Buram atau gelap</p>
+                        <div>
+                            <p class="text-xs text-red-600 dark:text-red-400 font-bold text-center">✗ Salah</p>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-0.5">Buram atau gelap</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -319,5 +363,83 @@ new #[Layout('layouts.guest')] class extends Component {
                 </svg>
             </button>
         </div>
+
+        <!-- Cancel Registration Link / Button -->
+        <div class="pt-2 text-center border-t border-gray-100 dark:border-gray-750 mt-4">
+            <button type="button" 
+                @click="confirmCancelModal = true"
+                class="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 transition-colors py-1.5 px-3 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span>Batalkan Pembuatan Akun & Masuk</span>
+            </button>
+        </div>
     </form>
+
+    <!-- Modal Konfirmasi Pembatalan Pendaftaran (Alpine.js) -->
+    <div x-show="confirmCancelModal" 
+         x-cloak 
+         class="fixed inset-0 z-50 overflow-y-auto"
+         aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <!-- Backdrop Blur Overlay -->
+        <div x-show="confirmCancelModal"
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-gray-900/60 backdrop-blur-xs transition-opacity"
+             @click="confirmCancelModal = false"></div>
+
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div x-show="confirmCancelModal"
+                 x-transition:enter="ease-out duration-200"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-150"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="relative transform overflow-hidden rounded-3xl bg-white dark:bg-gray-800 text-left shadow-2xl border border-gray-100 dark:border-gray-700 transition-all sm:my-8 sm:w-full sm:max-w-md p-6 sm:p-7">
+                
+                <div class="flex items-start gap-4">
+                    <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 sm:mx-0 shadow-xs">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                    <div class="text-left flex-1 min-w-0">
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white" id="modal-title">
+                            Batalkan Pembuatan Akun?
+                        </h3>
+                        <div class="mt-2">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                                Apakah Anda yakin ingin membatalkan pendaftaran ini? Seluruh data diri dan dokumen foto selfie yang diunggah akan dihapus dan Anda akan dialihkan kembali ke halaman <strong>Masuk (Login)</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
+                    <button type="button" 
+                        @click="confirmCancelModal = false"
+                        class="w-full sm:w-auto inline-flex justify-center items-center rounded-xl px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 transition cursor-pointer">
+                        Lanjutkan Pengisian
+                    </button>
+                    <button type="button" 
+                        wire:click="cancelRegistration"
+                        wire:loading.attr="disabled"
+                        class="w-full sm:w-auto inline-flex justify-center items-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 text-xs font-bold shadow-sm transition active:scale-[0.98] disabled:opacity-50 cursor-pointer">
+                        <svg wire:loading wire:target="cancelRegistration" class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span wire:loading.remove wire:target="cancelRegistration">Ya, Batalkan & Keluar</span>
+                        <span wire:loading wire:target="cancelRegistration">Membatalkan...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

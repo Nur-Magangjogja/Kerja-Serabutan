@@ -30,7 +30,8 @@ class Blocked extends Component
     ];
 
     protected $listeners = [
-        'admin-city-changed' => '$refresh',
+        'admin-city-changed'             => '$refresh',
+        'superadmin-territory-changed'   => '$refresh',
     ];
 
     public function updatingSearch()
@@ -79,11 +80,11 @@ class Blocked extends Component
 
         // Territory validation for regular admin
         if (!$isSuperAdmin) {
-            $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
-            if (!empty($managedCityIds) && !in_array($user->city_id, $managedCityIds)) {
-                $this->addError('selectedUserId', 'Anda tidak memiliki hak akses untuk memblokir pengguna di luar wilayah Anda.');
+            $managedDistrictIds = $admin ? $admin->getAdminDistrictIds() : [];
+            if (!empty($managedDistrictIds) && !in_array($user->district_id, $managedDistrictIds)) {
+                $this->addError('selectedUserId', 'Anda tidak memiliki hak akses untuk memblokir pengguna di luar wilayah kecamatan wewenang Anda.');
                 return;
-            } elseif (empty($managedCityIds)) {
+            } elseif (empty($managedDistrictIds)) {
                 $this->addError('selectedUserId', 'Anda belum memiliki wilayah wewenang.');
                 return;
             }
@@ -129,11 +130,11 @@ class Blocked extends Component
 
         // Territory validation for regular admin
         if (!$isSuperAdmin) {
-            $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
-            if (!empty($managedCityIds) && !in_array($user->city_id, $managedCityIds)) {
-                session()->flash('error', 'Anda tidak memiliki hak akses untuk mengubah status pengguna di luar wilayah Anda.');
+            $managedDistrictIds = $admin ? $admin->getAdminDistrictIds() : [];
+            if (!empty($managedDistrictIds) && !in_array($user->district_id, $managedDistrictIds)) {
+                session()->flash('error', 'Anda tidak memiliki hak akses untuk mengubah status pengguna di luar wilayah kecamatan wewenang Anda.');
                 return;
-            } elseif (empty($managedCityIds)) {
+            } elseif (empty($managedDistrictIds)) {
                 session()->flash('error', 'Anda belum memiliki wilayah wewenang.');
                 return;
             }
@@ -180,14 +181,30 @@ class Blocked extends Component
         $admin = auth()->user();
         $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
 
-        $query = User::where('status', 'blocked')->with('city')->latest();
+        $query = User::where('status', 'blocked')->with(['district', 'city'])->latest();
 
         if (! $isSuperAdmin) {
-            $managedCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
-            if (!empty($managedCityIds)) {
-                $query->whereIn('city_id', $managedCityIds);
+            $managedDistrictIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
+            if (!empty($managedDistrictIds)) {
+                $query->whereIn('district_id', $managedDistrictIds);
             } elseif ($admin && $admin->role === 'admin') {
                 $query->whereRaw('1 = 0');
+            }
+        } elseif ($isSuperAdmin && $admin) {
+            $saTerritory = $admin->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $query->where('district_id', (int) $saTerritory['id']);
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cityId = (int) $saTerritory['id'];
+                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                $query->where(function ($q) use ($cityId, $saDistrictIds) {
+                    if (!empty($saDistrictIds)) {
+                        $q->whereIn('district_id', $saDistrictIds);
+                    }
+                    if ($cityId) {
+                        $q->orWhere('city_id', $cityId);
+                    }
+                });
             }
         }
 
@@ -211,14 +228,30 @@ class Blocked extends Component
         if ($this->showBlockModal) {
             $userQuery = User::where('status', '!=', 'blocked')
                 ->whereIn('role', ['mitra', 'customer'])
-                ->with('city');
+                ->with(['district', 'city']);
 
             if (!$isSuperAdmin) {
-                $managedCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
-                if (!empty($managedCityIds)) {
-                    $userQuery->whereIn('city_id', $managedCityIds);
+                $managedDistrictIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
+                if (!empty($managedDistrictIds)) {
+                    $userQuery->whereIn('district_id', $managedDistrictIds);
                 } elseif ($admin && $admin->role === 'admin') {
                     $userQuery->whereRaw('1 = 0');
+                }
+            } elseif ($isSuperAdmin && $admin) {
+                $saTerritory = $admin->getActiveSuperadminTerritory();
+                if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                    $userQuery->where('district_id', (int) $saTerritory['id']);
+                } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                    $cityId = (int) $saTerritory['id'];
+                    $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                    $userQuery->where(function ($q) use ($cityId, $saDistrictIds) {
+                        if (!empty($saDistrictIds)) {
+                            $q->whereIn('district_id', $saDistrictIds);
+                        }
+                        if ($cityId) {
+                            $q->orWhere('city_id', $cityId);
+                        }
+                    });
                 }
             }
 

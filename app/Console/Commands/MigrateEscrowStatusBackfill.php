@@ -180,12 +180,11 @@ class MigrateEscrowStatusBackfill extends Command
                 }
             } elseif (in_array($status, [
                 Help::STATUS_TAKEN,
-                'memperoleh_mitra',
                 Help::STATUS_PARTNER_ON_THE_WAY,
                 Help::STATUS_PARTNER_ARRIVED,
                 Help::STATUS_IN_PROGRESS,
-                'sedang_diproses',
                 Help::STATUS_PARTNER_CANCEL_REQUESTED,
+                Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
             ], true)) {
                 $dispatchMode  = 'assigned';
                 $escrowStatus  = 'held';

@@ -21,27 +21,16 @@ class AutoCancelExpiredHelps extends Command
         $fallbackCutoff = $now->copy()->subHours($fallbackHours);
 
         $expiredHelps = Help::whereNull('mitra_id')
-            ->whereIn('status', [
-                Help::STATUS_MENUNGGU_MITRA,
-                'mencari_mitra',
-                'menunggu_pembayaran',
-                'pending',
-            ])
+            ->where('status', Help::STATUS_MENUNGGU_MITRA)
             ->where(function ($query) use ($now, $fallbackCutoff) {
-                // 1. Batas waktu yang ditentukan oleh customer sendiri (expires_at)
+                // 1. Batas waktu pencarian yang ditentukan oleh customer (expires_at)
                 $query->where(function ($q) use ($now) {
                     $q->whereNotNull('expires_at')
                       ->where('expires_at', '<=', $now);
                 })
-                // 2. Atau jika jadwal bantuan sudah lewat
-                ->orWhere(function ($q) use ($now) {
-                    $q->whereNotNull('scheduled_at')
-                      ->where('scheduled_at', '<=', $now);
-                })
-                // 3. Fallback jika expires_at kosong
+                // 2. Fallback jika expires_at kosong (menggunakan batas auto-cancel sistem)
                 ->orWhere(function ($q) use ($fallbackCutoff) {
                     $q->whereNull('expires_at')
-                      ->whereNull('scheduled_at')
                       ->where('created_at', '<=', $fallbackCutoff);
                 });
             })
@@ -54,8 +43,6 @@ class AutoCancelExpiredHelps extends Command
             try {
                 if ($help->expires_at && Carbon::parse($help->expires_at)->isPast()) {
                     $reason = 'Batas waktu pencarian Rekan Jasa yang ditentukan telah berakhir';
-                } elseif ($help->scheduled_at && Carbon::parse($help->scheduled_at)->isPast()) {
-                    $reason = 'Waktu jadwal bantuan telah terlewat tanpa Rekan Jasa tersedia';
                 } else {
                     $reason = "Tidak ada Rekan Jasa yang mengambil bantuan dalam batas waktu {$fallbackHours} jam";
                 }

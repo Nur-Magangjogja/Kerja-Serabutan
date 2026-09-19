@@ -17,6 +17,7 @@ class Create extends Component
     public $reported_user_id = null;
     public $reported_help_id = null;
     public $help_id = null; // For selecting help from dropdown
+    
     // free-text fields
     public $reported_help_text = null;
     public $reported_user_text = null;
@@ -35,11 +36,14 @@ class Create extends Component
     ];
 
     public $reportTypes = [
-        'pengguna_spam' => 'Pengguna Spam',
-        'pengguna_kasar' => 'Pengguna Kasar',
-        'data_tidak_valid' => 'Data Tidak Valid',
-        'penipuan' => 'Penipuan',
-        'pelanggaran_aturan' => 'Pelanggaran Aturan',
+        'customer_tidak_merespon' => 'Customer Tidak Merespon / Sulit Dihubungi',
+        'pengguna_kasar' => 'Pengguna Kasar / Tidak Sopan',
+        'data_tidak_valid' => 'Data / Lokasi Tugas Tidak Sesuai',
+        'penipuan' => 'Penipuan / Manipulasi',
+        'pelanggaran_aturan' => 'Pelanggaran Aturan Komunitas',
+        'pengguna_spam' => 'Pengguna Spam / Pesanan Palsu',
+        'pembatalan_sepihak' => 'Permintaan Pembatalan Sepihak',
+        'lainnya' => 'Lainnya',
     ];
 
     protected $rules = [
@@ -53,92 +57,132 @@ class Create extends Component
         'reported_user_text' => 'nullable|string|max:255',
         'selected_help_type' => 'nullable|string',
         'custom_help_type' => 'nullable|string|max:255',
-        // no separate custom report type; custom help type handled separately
     ];
 
     protected $messages = [
         'title.required' => 'Judul laporan harus diisi',
-        'message.required' => 'Pesan laporan harus diisi',
-        'message.min' => 'Pesan minimal 10 karakter',
+        'message.required' => 'Detail penjelasan laporan harus diisi',
+        'message.min' => 'Detail laporan minimal 10 karakter',
         'report_type.required' => 'Jenis laporan harus dipilih',
     ];
 
     public function mount($user_id = null, $help_id = null)
     {
-        // Handle route parameters
-        if (request()->route('user_id')) {
-            $this->reported_user_id = request()->route('user_id');
-        } elseif ($user_id) {
-            $this->reported_user_id = $user_id;
+        $this->reported_user_id = request()->route('user_id') ?? request()->query('user_id') ?? $user_id;
+        $this->reported_help_id = request()->route('help_id') ?? request()->query('help_id') ?? $help_id;
+        $this->help_id = $this->reported_help_id;
+
+        $this->loadDetails();
+    }
+
+    public function updatedHelpId($value)
+    {
+        $this->reported_help_id = $value ?: null;
+        $this->loadDetails();
+    }
+
+    public function loadDetails(): void
+    {
+        if ($this->reported_help_id) {
+            $help = Help::with('user')->find($this->reported_help_id);
+            if ($help) {
+                $this->reported_help_text = $help->title;
+                $this->selected_help_type = $help->category ?? ($help->service_type ?? '');
+                if (!$this->reported_user_id && $help->user_id) {
+                    $this->reported_user_id = $help->user_id;
+                }
+            }
         }
 
-        if (request()->route('help_id')) {
-            $this->reported_help_id = request()->route('help_id');
-            $this->help_id = request()->route('help_id');
-        } elseif ($help_id) {
-            $this->reported_help_id = $help_id;
-            $this->help_id = $help_id;
+        if ($this->reported_user_id) {
+            $user = User::find($this->reported_user_id);
+            if ($user) {
+                $this->reported_user_text = $user->name;
+                
+                // If help_id is not yet set, try finding active/recent help between this mitra and customer
+                if (!$this->reported_help_id) {
+                    $activeHelp = Help::where('mitra_id', auth()->id())
+                        ->where('user_id', $this->reported_user_id)
+                        ->latest()
+                        ->first();
+                    if ($activeHelp) {
+                        $this->reported_help_id = $activeHelp->id;
+                        $this->help_id = $activeHelp->id;
+                        $this->reported_help_text = $activeHelp->title;
+                        $this->selected_help_type = $activeHelp->category ?? ($activeHelp->service_type ?? '');
+                    }
+                }
+            }
         }
+    }
+
+    public function getActiveReportProperty(): ?PartnerReport
+    {
+        if (!$this->reported_help_id) return null;
+        return PartnerReport::getActiveReportForHelp((int) $this->reported_help_id);
+    }
+
+    public function getLatestResolvedReportProperty(): ?PartnerReport
+    {
+        if (!$this->reported_help_id) return null;
+        return PartnerReport::getLatestResolvedReportForHelp((int) $this->reported_help_id);
     }
 
     public function submit()
     {
         $this->validate();
 
-        // If help_id is selected, set reported_help_id
+        // Cegah laporan diri sendiri
+        if ($this->reported_user_id && (int) $this->reported_user_id === auth()->id()) {
+            $this->addError('reported_user_id', 'Anda tidak dapat melaporkan akun Anda sendiri.');
+            return;
+        }
+
+        // If help_id is selected, ensure reported_help_id is set
         if ($this->help_id) {
             $help = Help::find($this->help_id);
             if ($help) {
                 $this->reported_help_id = $help->id;
-                // If help has customer, set reported_user_id
                 if ($help->user_id && !$this->reported_user_id) {
                     $this->reported_user_id = $help->user_id;
                 }
-                // populate reported_help_text as fallback
                 if (!$this->reported_help_text) {
                     $this->reported_help_text = $help->title;
                 }
             }
         }
 
-        // If user provided a custom help type when report_type == 'lainnya', use it
-        if ($this->report_type === 'lainnya') {
-            // First handle custom report type (user-entered label for the report)
-            if (!empty(trim($this->custom_report_type))) {
-                $this->report_type = trim($this->custom_report_type);
-            }
-
-            // Then handle custom help type (if the report is about a help type)
-            if (!empty(trim($this->custom_help_type))) {
-                $this->reported_help_text = $this->custom_help_type;
-            } elseif (empty(trim($this->reported_help_text))) {
-                // If neither a help selection nor custom help type provided, require at least one
-                // Note: if the report is purely about a user and not a help, reported_help_text may stay empty
-                // so we only add error when appropriate (keep existing behavior)
-                $this->addError('custom_help_type', 'Silakan isi jenis bantuan yang tidak tersedia pada pilihan.');
+        // Validasi pembatasan laporan per ID tugas:
+        // Jika ada laporan yang masih berstatus pending/sedang diproses untuk tugas ini, tolak laporan baru
+        if ($this->reported_help_id) {
+            $activeReport = PartnerReport::getActiveReportForHelp((int) $this->reported_help_id);
+            if ($activeReport) {
+                $statusText = match($activeReport->status) {
+                    'pending' => 'Pending (Menunggu Ditinjau)',
+                    'in_progress', 'investigating', 'under_review', 'proses' => 'Sedang Diinvestigasi Admin',
+                    default => ucfirst($activeReport->status),
+                };
+                $this->addError('help_id', "Tugas #{$this->reported_help_id} saat ini masih memiliki Laporan Aduan #{$activeReport->id} yang sedang aktif ({$statusText}). Anda baru dapat mengajukan laporan baru setelah laporan sebelumnya selesai dikonfirmasi oleh Admin.");
                 return;
             }
         }
 
-        // Hidden anti-spam: Jika mitra sudah memiliki laporan aduan yang masih pending/diperiksa admin untuk bantuan ini
-        // atau baru saja mengirim aduan dalam 5 menit terakhir, serap pengiriman secara senyap tanpa membuat duplikat di database
-        $existingPendingReport = PartnerReport::where('reporter_id', auth()->id())
-            ->whereIn('status', ['pending', 'investigating', 'under_review', 'proses'])
-            ->where(function ($q) {
-                if ($this->reported_help_id) {
-                    $q->where('reported_help_id', $this->reported_help_id);
-                } else {
-                    $q->where('created_at', '>=', now()->subMinutes(5));
-                }
-            })
-            ->first();
-
-        if ($existingPendingReport) {
-            session()->flash('message', 'Laporan aduan berhasil dikirim. Admin akan meninjau laporan Anda.');
-            if ($this->reported_help_id) {
-                return redirect()->route('mitra.helps.detail', ['id' => $this->reported_help_id]);
+        if ($this->reported_user_id && !$this->reported_user_text) {
+            $u = User::find($this->reported_user_id);
+            if ($u) {
+                $this->reported_user_text = $u->name;
             }
-            return redirect()->route('mitra.dashboard');
+        }
+
+        // If user provided a custom report type when report_type == 'lainnya', use it
+        if ($this->report_type === 'lainnya') {
+            if (!empty(trim($this->custom_report_type))) {
+                $this->report_type = trim($this->custom_report_type);
+            }
+
+            if (!empty(trim($this->custom_help_type))) {
+                $this->reported_help_text = $this->custom_help_type;
+            }
         }
 
         $report = PartnerReport::create([
@@ -193,12 +237,31 @@ class Create extends Component
 
     public function render()
     {
-        $helps = auth()->user()->takenHelps()->whereIn('status', ['active', 'completed'])->select('id', 'title', 'status', 'user_id')->latest()->limit(50)->get();
-        $customers = User::where('role', 'customer')->select('id', 'name', 'email')->limit(100)->get();
+        $allowedStatuses = array_merge(Help::activeStatuses(), [
+            Help::STATUS_WAITING_CONFIRMATION,
+            Help::STATUS_SELESAI,
+            Help::STATUS_DIBATALKAN,
+        ]);
+
+        $helps = auth()->user()->takenHelps()
+            ->with('user')
+            ->whereIn('status', $allowedStatuses)
+            ->select('id', 'title', 'status', 'user_id', 'created_at')
+            ->latest()
+            ->limit(50)
+            ->get();
+
+        $selectedHelp = $this->reported_help_id ? Help::with('user')->find($this->reported_help_id) : null;
+        $selectedUser = $this->reported_user_id ? User::find($this->reported_user_id) : ($selectedHelp?->user);
+        $activeReport = $this->activeReport;
+        $latestResolvedReport = $this->latestResolvedReport;
 
         return view('livewire.mitra.reports.create', [
-            'helps' => $helps,
-            'customers' => $customers,
+            'helps'                => $helps,
+            'selectedHelp'         => $selectedHelp,
+            'selectedUser'         => $selectedUser,
+            'activeReport'         => $activeReport,
+            'latestResolvedReport' => $latestResolvedReport,
         ]);
     }
 }

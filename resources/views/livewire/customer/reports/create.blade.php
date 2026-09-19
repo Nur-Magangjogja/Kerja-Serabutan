@@ -4,6 +4,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <a href="{{ $help_id ? route('customer.helps.detail', ['id' => $help_id]) : route('customer.dashboard') }}"
+                    wire:navigate
                     class="inline-flex items-center text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline mb-2">
                     <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -24,8 +25,8 @@
 
         {{-- Detail Bantuan Terkait & Masa Garansi 1x24 Jam --}}
         @if ($selectedHelp)
-            <div class="bg-gradient-to-br from-white to-blue-50/40 dark:from-gray-800 dark:to-gray-800/80 rounded-2xl shadow-xs border border-blue-100 dark:border-gray-700 p-4 sm:p-5">
-                <div class="flex items-start justify-between gap-3 mb-3 pb-3 border-b border-gray-100 dark:border-gray-700/60">
+            <div class="bg-gradient-to-br from-white to-blue-50/40 dark:from-gray-800 dark:to-gray-800/80 rounded-2xl shadow-xs border border-blue-100 dark:border-gray-700 p-4 sm:p-5 space-y-3">
+                <div class="flex items-start justify-between gap-3 pb-3 border-b border-gray-100 dark:border-gray-700/60">
                     <div class="flex items-center gap-2.5">
                         <div class="w-9 h-9 rounded-xl bg-blue-500/10 dark:bg-blue-400/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm">
                             📋
@@ -69,9 +70,38 @@
                 </div>
 
                 @if ($isWithin24H)
-                    <div class="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/80 dark:border-amber-900/60 text-[11px] text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                    <div class="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/80 dark:border-amber-900/60 text-[11px] text-amber-900 dark:text-amber-200 flex items-start gap-2">
                         <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                         <span>Masa garansi pengembalian dana berlaku sampai <strong>{{ \Carbon\Carbon::parse($selectedHelp->completed_at)->addHours(24)->translatedFormat('d M Y, H:i') }} WIB</strong>. Jika mitra tidak bekerja atau berbohong, ajukan laporan untuk diperiksa admin.</span>
+                    </div>
+                @endif
+
+                {{-- Status Laporan Aduan Aktif vs Selesai --}}
+                @if ($activeReport)
+                    <div class="p-3.5 bg-amber-100/70 dark:bg-amber-950/50 rounded-xl border border-amber-300 dark:border-amber-800/80 text-xs space-y-2">
+                        <div class="flex items-start justify-between gap-3 flex-wrap">
+                            <div class="flex items-start gap-2">
+                                <span class="text-base">⚠️</span>
+                                <div>
+                                    <h4 class="font-bold text-amber-950 dark:text-amber-200">
+                                        Laporan Aduan Aktif Sedang Ditinjau (Laporan #{{ $activeReport->id }})
+                                    </h4>
+                                    <p class="text-[11px] text-amber-900/90 dark:text-amber-300 mt-0.5">
+                                        Tugas ini sedang dalam status <span class="font-bold uppercase tracking-wider px-1.5 py-0.5 bg-amber-200/90 dark:bg-amber-900 text-[10px] rounded">{{ $activeReport->status }}</span>. Anda tidak dapat membuat laporan baru sampai laporan sebelumnya selesai dikonfirmasi oleh Admin.
+                                    </p>
+                                </div>
+                            </div>
+                            <a href="{{ route('customer.chat', ['admin' => 1, 'report' => $activeReport->id]) }}" wire:navigate class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-[11px] transition shadow-2xs flex items-center gap-1.5">
+                                <span>💬 Ruang Diskusi Admin</span>
+                            </a>
+                        </div>
+                    </div>
+                @elseif ($latestResolvedReport)
+                    <div class="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-900 dark:text-emerald-200 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                            <span>Laporan sebelumnya (<strong>#{{ $latestResolvedReport->id }}</strong> - {{ ucfirst($latestResolvedReport->status) }}) telah selesai diproses oleh Admin. Anda dapat mengajukan laporan baru jika diperlukan.</span>
+                        </div>
                     </div>
                 @endif
             </div>
@@ -85,7 +115,7 @@
                     Pilih Bantuan Terkait <span class="text-gray-400 font-normal">(Opsional)</span>
                 </label>
                 <select id="help_id" wire:model.live="help_id"
-                    class="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    class="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 @error('help_id') border-red-500 @enderror">
                     <option value="">-- Pilih Permintaan Bantuan Anda --</option>
                     @foreach ($helps as $h)
                         <option value="{{ $h->id }}">
@@ -93,6 +123,12 @@
                         </option>
                     @endforeach
                 </select>
+                @error('help_id')
+                    <div class="mt-2 p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-300 flex items-start gap-2">
+                        <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>{{ $message }}</span>
+                    </div>
+                @enderror
             </div>
 
             <!-- Jenis Laporan -->
@@ -232,12 +268,19 @@
             <!-- Submit Button -->
             <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
                 <a href="{{ $help_id ? route('customer.helps.detail', ['id' => $help_id]) : route('customer.dashboard') }}"
+                    wire:navigate
                     class="px-5 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">
                     Batal
                 </a>
-                <button type="submit" wire:loading.attr="disabled"
-                    class="px-6 py-2.5 bg-primary-600 text-white text-xs font-bold rounded-xl shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
-                    <span wire:loading.remove wire:target="submit">Kirim Laporan & Aduan</span>
+                <button type="submit" wire:loading.attr="disabled" {{ $activeReport ? 'disabled' : '' }}
+                    class="px-6 py-2.5 bg-primary-600 text-white text-xs font-bold rounded-xl shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                    <span wire:loading.remove wire:target="submit">
+                        @if ($activeReport)
+                            Menunggu Penyelesaian Laporan #{{ $activeReport->id }}
+                        @else
+                            Kirim Laporan & Aduan
+                        @endif
+                    </span>
                     <span wire:loading wire:target="submit" class="inline-flex items-center gap-1">
                         <svg class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                         Mengirim...

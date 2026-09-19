@@ -58,44 +58,54 @@
 
     <div class="max-w-md mx-auto">
         <!-- Header Section -->
-        <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+        <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-[#0098e7] rounded-b-2xl shadow-sm text-white">
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
             
             <div class="relative z-10 space-y-3">
-                <div class="relative flex items-center justify-center min-h-[40px] text-white">
-                    <div class="text-center w-full min-w-0 px-12">
+                <div class="flex items-center justify-between min-h-[40px] text-white">
+                    <div class="w-10"></div>
+
+                    <div class="text-center flex-1 min-w-0 px-2">
                         <h1 class="text-base font-bold truncate">Semua Bantuan</h1>
-                        <p class="text-xs text-white/90 truncate mt-0.5">Cari bantuan yang tersedia</p>
+                        <p class="text-xs text-white font-medium truncate mt-0.5">Cari bantuan yang tersedia</p>
                     </div>
 
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                    <div class="w-10 flex items-center justify-end">
                         <x-mitra.notification-icon />
                     </div>
                 </div>
 
-                <!-- Distance Radius Filter Grid (No Overflow) -->
-                <div class="grid {{ $userCity ? 'grid-cols-5' : 'grid-cols-4' }} gap-1 bg-black/15 backdrop-blur-md p-1 rounded-xl border border-white/20 text-center">
-                    <button type="button" wire:click="$set('distanceRadius', 'all')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center {{ $distanceRadius === 'all' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
-                        <span>Semua</span>
+                <!-- Territory & 10 KM Unified Filter Grid -->
+                <div class="grid {{ ($userDistrict && $userCity) ? 'grid-cols-3' : (($userDistrict || $userCity) ? 'grid-cols-2' : 'grid-cols-1') }} gap-1.5 bg-black/20 backdrop-blur-md p-1.5 rounded-xl border border-white/20 text-center">
+                    <!-- Tab 1: Radius 10 KM -->
+                    <button type="button" wire:click="$set('districtFilter', 'all')" role="tab"
+                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center leading-tight {{ $districtFilter === 'all' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-md scale-[1.02]' : 'text-white/90 hover:bg-white/10' }}"
+                        title="Semua bantuan dalam radius 10 KM dari posisi berdiri">
+                        <span class="truncate">📍 ≤ 10 KM</span>
+                        <span class="text-[10px] font-medium {{ $districtFilter === 'all' ? 'text-primary-600 dark:!text-white/80' : 'text-white/75' }}">({{ $countRadius10km ?? 0 }})</span>
                     </button>
-                    <button type="button" wire:click="$set('distanceRadius', '5')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center {{ $distanceRadius === '5' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
-                        <span>≤ 5 km</span>
+                    <!-- Tab 2: Kecamatan -->
+                    @if($userDistrict)
+                    @php
+                        $userDistrictName = is_object($userDistrict) ? ($userDistrict->name ?? '') : (string) $userDistrict;
+                    @endphp
+                    <button type="button" wire:click="$set('districtFilter', 'my_district')" role="tab"
+                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center leading-tight truncate {{ $districtFilter === 'my_district' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-md scale-[1.02]' : 'text-white/90 hover:bg-white/10' }}"
+                        title="Semua bantuan di Kecamatan {{ $userDistrictName }}">
+                        <span class="truncate">Kec. {{ $userDistrictName }}</span>
+                        <span class="text-[10px] font-medium {{ $districtFilter === 'my_district' ? 'text-primary-600 dark:!text-white/80' : 'text-white/75' }}">({{ $countDistrict ?? 0 }})</span>
                     </button>
-                    <button type="button" wire:click="$set('distanceRadius', '15')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center {{ $distanceRadius === '15' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
-                        <span>≤ 15 km</span>
-                    </button>
-                    <button type="button" wire:click="$set('distanceRadius', '60')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center {{ $distanceRadius === '60' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
-                        <span>≤ 60 km</span>
-                    </button>
+                    @endif
+                    <!-- Tab 3: Kota / Kabupaten -->
                     @if($userCity)
-                    <button type="button" wire:click="$set('distanceRadius', 'city')" role="tab"
-                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center truncate {{ $distanceRadius === 'city' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}"
-                        title="Kota {{ $userCity->name }}">
-                        <span class="truncate">Kota</span>
+                    @php
+                        $userCityName = is_object($userCity) ? ($userCity->name ?? '') : (string) $userCity;
+                    @endphp
+                    <button type="button" wire:click="$set('districtFilter', 'my_city')" role="tab"
+                        class="py-1.5 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center leading-tight truncate {{ $districtFilter === 'my_city' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-md scale-[1.02]' : 'text-white/90 hover:bg-white/10' }}"
+                        title="Semua bantuan di {{ $userCityName }}">
+                        <span class="truncate">{{ $userCityName }}</span>
+                        <span class="text-[10px] font-medium {{ $districtFilter === 'my_city' ? 'text-primary-600 dark:!text-white/80' : 'text-white/75' }}">({{ $countCity ?? 0 }})</span>
                     </button>
                     @endif
                 </div>
@@ -119,31 +129,31 @@
             @endif
 
             @if (!empty($activeTask))
-                <div class="mb-4 bg-blue-50/70 dark:bg-gray-800 border border-blue-200/80 dark:border-gray-700 rounded-2xl p-4 shadow-sm">
+                <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700 rounded-2xl p-4 shadow-sm">
                     <div class="flex items-start justify-between gap-3 mb-2.5">
                         <div class="flex items-start gap-2.5 min-w-0">
-                            <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-base flex-shrink-0 font-bold shadow-xs">
+                            <div class="w-9 h-9 rounded-xl bg-primary-50 dark:bg-gray-750 text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-gray-700 flex items-center justify-center text-base flex-shrink-0 font-bold shadow-xs">
                                 {{ $activeTask->progress_icon }}
                             </div>
                             <div class="min-w-0">
                                 <div class="flex items-center gap-2">
-                                    <h4 class="text-xs font-bold text-blue-900 dark:text-blue-200 truncate">Tugas Aktif Berjalan</h4>
-                                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-600 text-white shadow-xs">
+                                    <h4 class="text-xs font-bold text-gray-900 dark:text-white truncate">Tugas Aktif Berjalan</h4>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 border border-gray-200 dark:border-gray-700 shadow-2xs">
                                         {{ $activeTask->progress_percentage }}%
                                     </span>
                                 </div>
-                                <p class="text-xs text-blue-800 dark:text-blue-300 mt-0.5 font-medium truncate">
-                                    "{{ $activeTask->title }}" • <span class="font-bold">{{ $activeTask->progress_summary }}</span>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5 font-medium truncate">
+                                    "{{ $activeTask->title }}" • <span class="font-bold text-primary-600 dark:text-primary-400">{{ $activeTask->progress_summary }}</span>
                                 </p>
                             </div>
                         </div>
-                        <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" class="flex-shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap">
+                        <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" wire:navigate class="flex-shrink-0 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl transition shadow-sm whitespace-nowrap">
                             Buka Tugas
                         </a>
                     </div>
                     <!-- Mini Progress Track -->
-                    <div class="w-full bg-blue-100/70 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
-                        <div class="h-full rounded-full bg-blue-600 dark:bg-blue-500 transition-all duration-500 {{ $activeTask->progress_percentage < 100 ? 'animate-pulse' : '' }}"
+                    <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                        <div class="h-full rounded-full bg-primary-600 dark:bg-primary-500 transition-all duration-500 {{ $activeTask->progress_percentage < 100 ? 'animate-pulse' : '' }}"
                              style="width: {{ $activeTask->progress_percentage }}%;"></div>
                     </div>
                 </div>
@@ -152,10 +162,16 @@
             <!-- GPS Status Bar -->
             <div class="flex items-center justify-between mb-4 bg-gray-50 border border-gray-100 rounded-xl p-2.5 text-xs text-gray-600 flex-wrap gap-2">
                 <div class="flex items-center gap-1.5">
-                    <span id="mitra-gps-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span id="mitra-gps-text" class="font-medium">Mendeteksi lokasi GPS...</span>
+                    <span id="mitra-gps-indicator" class="w-2.5 h-2.5 rounded-full {{ ($mitraLat && $mitraLng) ? 'bg-emerald-500' : 'bg-blue-500 animate-pulse' }}"></span>
+                    <span id="mitra-gps-text" class="font-medium">
+                        @if($mitraLat && $mitraLng)
+                            Lokasi GPS Siap ({{ round($mitraLat, 4) }}, {{ round($mitraLng, 4) }})
+                        @else
+                            Mendeteksi lokasi GPS...
+                        @endif
+                    </span>
                 </div>
-                <button type="button" onclick="refreshMitraGPS()" class="text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1 text-[11px]">
+                <button type="button" onclick="refreshMitraGPS()" class="text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1 text-[11px] cursor-pointer">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                     Perbarui GPS
                 </button>
@@ -173,8 +189,8 @@
                 </select>
             </div> 
 
-            <div class="space-y-4">
-                <div class="space-y-3.5 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="distanceRadius,sortBy,search">
+            <div class="space-y-4" wire:poll.10s.visible>
+                <div class="space-y-3.5 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="districtFilter,sortBy,search">
                     {{-- List based on filter --}}
                     @forelse($helps as $help)
                     <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all border border-gray-100">
@@ -190,48 +206,70 @@
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-start justify-between gap-2 mb-1">
                                     <h3 class="font-bold text-sm text-gray-900 dark:text-white line-clamp-1">{{ $help->title }}</h3>
-                                    <span class="text-xs font-extrabold whitespace-nowrap text-primary-600 dark:text-primary-400">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
+                                    <span class="text-1xl font-bold whitespace-nowrap text-primary-600 dark:text-primary-400">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
                                 </div>
 
-                                <!-- Tags & Badges: Distance + Status -->
+                                <!-- Tags & Badges: Service Subcategory + Distance + Status -->
                                 <div class="flex items-center gap-1.5 flex-wrap mb-2">
-                                    @if(isset($help->distance_km) && $help->distance_km !== null)
-                                        @if($help->distance_km <= 5)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                                🟢 {{ $help->distance_km }} km (Dekat)
-                                            </span>
-                                        @elseif($help->distance_km <= 25)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                                🟡 {{ $help->distance_km }} km
+                                    {{-- Subcategory Badge --}}
+                                    @if($help->service_type === 'pickup_delivery')
+                                        @if($help->service_category === 'passenger')
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600">
+                                                👥 Antar Penumpang
                                             </span>
                                         @else
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                                                🔴 {{ $help->distance_km }} km (Jauh)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600">
+                                                📦 Barang & Dokumen
                                             </span>
                                         @endif
                                     @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                                            📍 {{ $help->city->name ?? 'Indonesia' }}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600">
+                                            🛠️ Kerja Serabutan
                                         </span>
                                     @endif
 
-                                    @if($help->scheduled_at)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
+                                    @if(isset($help->distance_km) && $help->distance_km !== null)
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600">
+                                            📍 {{ $help->distance_km }} km
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600">
+                                            📍 {{ $help->district->name ?? $help->city->name ?? 'Indonesia' }}
+                                        </span>
+                                    @endif
+
+                                    @if($help->isScheduled())
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600">
                                             📅 Terjadwal
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-100 dark:border-purple-800">
-                                            ⚡ Butuh Cepat
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600">
+                                            ⚡ Segera
                                         </span>
                                     @endif
                                 </div>
 
                                 <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 mb-2 leading-relaxed">{{ $help->description }}</p>
 
-                                @if($help->scheduled_at)
-                                    <div class="flex items-center gap-1.5 text-[11px] text-blue-700 dark:text-blue-300 font-medium bg-blue-50/70 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/60 rounded-lg px-2.5 py-1 mb-2.5">
-                                        <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                        <span>Waktu: {{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('l, d M Y - H:i') }} WIB</span>
+                                @if($help->isScheduled() && ($help->scheduled_at || $help->service_scheduled_at))
+                                    <div class="flex items-center justify-between text-[11px] text-gray-700 dark:text-gray-300 font-medium bg-gray-50 dark:bg-gray-750/70 border border-gray-200/70 dark:border-gray-700/80 rounded-xl px-2.5 py-1.5 mb-2.5 flex-wrap gap-1.5">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-gray-500 dark:text-gray-400">📅</span>
+                                            <span>Terjadwal: {{ \Carbon\Carbon::parse($help->scheduled_at ?? $help->service_scheduled_at)->locale('id')->translatedFormat('l, d M Y - H:i') }} WIB</span>
+                                        </div>
+                                        @if($help->departure_window_opens_at)
+                                            <span class="text-[10px] font-semibold bg-gray-200/80 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-0.5 rounded-md">Mulai pukul {{ $help->departure_window_opens_at->format('H:i') }}</span>
+                                        @endif
+                                    </div>
+                                @endif
+
+                                @if($help->effective_expires_at)
+                                    <div class="flex items-center justify-between text-[10.5px] font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-750/70 border border-gray-200/70 dark:border-gray-700/80 rounded-xl px-2.5 py-1.5 mb-2">
+                                        <div class="flex items-center gap-1">
+                                            <span class="text-gray-500 dark:text-gray-400">⏳</span>
+                                            <span>Batas Waktu Pencarian:</span>
+                                        </div>
+                                        <span class="font-bold text-gray-900 dark:text-gray-100">{{ $help->effective_expires_at->translatedFormat('d M, H:i') }} WIB</span>
                                     </div>
                                 @endif
 
@@ -242,22 +280,44 @@
                                     </div>
 
                                     @php
+                                        $isScheduled = $help->isScheduled();
+                                        $scheduledAtFormatted = null;
+                                        if ($isScheduled && ($help->scheduled_at || $help->service_scheduled_at)) {
+                                            $scheduledAtFormatted = \Carbon\Carbon::parse($help->scheduled_at ?? $help->service_scheduled_at)->locale('id')->translatedFormat('l, d M Y • H:i') . ' WIB';
+                                        }
+
+                                        $effectiveExpiry = $help->effective_expires_at;
+                                        $expiryIso = $effectiveExpiry ? $effectiveExpiry->toIso8601String() : null;
+                                        $expiryFormatted = $effectiveExpiry ? $effectiveExpiry->translatedFormat('d M Y, H:i') . ' WIB' : null;
+
                                         $previewPayload = [
                                             'id' => $help->id,
                                             'title' => $help->title,
                                             'amount' => (int) $help->amount,
+                                            'service_type' => $help->service_type ?? 'on_site',
+                                            'service_category' => $help->service_category ?? 'general',
                                             'description' => $help->description ?? '',
                                             'equipment_provided' => $help->equipment_provided ?? '',
                                             'location' => $help->location ?? '',
                                             'full_address' => $help->full_address ?? '',
+                                            'pickup_address' => $help->pickup_address ?? '',
+                                            'delivery_address' => $help->delivery_address ?? '',
+                                            'service_route_distance_km' => $help->service_route_distance_km ? (float)$help->service_route_distance_km : null,
+                                            'district_name' => $help->district->name ?? '',
                                             'city_name' => $help->city->name ?? '',
                                             'province_name' => $help->city->province ?? '',
                                             'photo_url' => $help->photo ? asset('storage/' . $help->photo) : null,
-                                            'scheduled_at' => $help->scheduled_at ? \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('l, d M Y • H:i') . ' WIB' : null,
+                                            'scheduled_at' => $scheduledAtFormatted,
+                                            'is_scheduled' => $isScheduled,
+                                            'departure_window_opens_at' => $isScheduled && $help->departure_window_opens_at ? $help->departure_window_opens_at->format('H:i') : null,
+                                            'departure_lead_minutes' => $help->departure_lead_minutes,
                                             'created_at_human' => $help->created_at ? $help->created_at->diffForHumans() : '',
                                             'customer_name' => $help->user->name ?? 'Pemohon Bantuan',
-                                            'customer_avatar' => ($help->user->selfie_photo ?? $help->user->photo) ? asset('storage/' . ($help->user->selfie_photo ?? $help->user->photo)) : null,
+                                            'customer_avatar' => ($help->user->profile_photo ?? $help->user->photo) ? asset('storage/' . ($help->user->profile_photo ?? $help->user->photo)) : null,
                                             'distance_km' => $help->distance_km !== null ? (float)$help->distance_km : null,
+                                            'expires_at_iso' => $expiryIso,
+                                            'expires_at_formatted' => $expiryFormatted,
+                                            'is_expired' => $help->isExpired(),
                                         ];
                                     @endphp
 
@@ -277,13 +337,31 @@
                         <div class="w-14 h-14 rounded-full bg-blue-50 dark:bg-gray-700 text-blue-500 mx-auto flex items-center justify-center mb-3">
                             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         </div>
-                        <p class="text-sm font-bold text-gray-800 dark:text-gray-200">{{ $search ? 'Tidak ada bantuan ditemukan' : 'Tidak ada bantuan di radius ini' }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
-                            {{ $search ? 'Coba cari dengan kata kunci lain' : 'Pilih tab "Semua" atau perbesar radius jangkauan untuk melihat bantuan lain.' }}
+                        <p class="text-sm font-bold text-gray-800 dark:text-gray-200">
+                            @if($search)
+                                Tidak ada bantuan ditemukan
+                            @elseif($districtFilter === 'all')
+                                Tidak ada bantuan dalam radius 10 KM
+                            @elseif($districtFilter === 'my_district')
+                                Tidak ada bantuan di Kecamatan {{ is_object($userDistrict) ? ($userDistrict->name ?? '') : (string) $userDistrict }}
+                            @elseif($districtFilter === 'my_city')
+                                Tidak ada bantuan di {{ is_object($userCity) ? ($userCity->name ?? '') : (string) $userCity }}
+                            @else
+                                Tidak ada bantuan di wilayah ini
+                            @endif
                         </p>
-                        @if($distanceRadius !== 'all')
-                        <button type="button" wire:click="$set('distanceRadius', 'all')" class="mt-4 px-4 py-2 bg-primary-50 text-primary-600 rounded-xl text-xs font-bold border border-primary-200 cursor-pointer">
-                            Lihat Semua
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
+                            @if($search)
+                                Coba cari dengan kata kunci lain.
+                            @elseif($districtFilter === 'all')
+                                Belum ada order dalam jarak 10 km dari lokasi berdiri Anda. Coba cek tab Kecamatan atau Kabupaten/Kota di atas.
+                            @else
+                                Coba cek tab filter lainnya untuk melihat pesanan bantuan yang tersedia.
+                            @endif
+                        </p>
+                        @if($districtFilter !== 'all')
+                        <button type="button" wire:click="$set('districtFilter', 'all')" class="mt-4 px-4 py-2 bg-primary-50 text-primary-600 hover:bg-primary-100 rounded-xl text-xs font-bold border border-primary-200 cursor-pointer transition">
+                            Lihat Radius 10 KM
                         </button>
                         @endif
                     </div>
@@ -299,14 +377,15 @@
     </div>
 
 
+
     <!-- Modal Preview Bantuan (Centered Modern Dialog - No Bottom Nav Clash) -->
     <div id="helpPreviewModal" class="fixed inset-0 z-[60] flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs hidden" onclick="closePreviewModal()">
         <div class="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
             
             <!-- Modal Header -->
             <div class="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700/80 px-5 py-4 flex items-center justify-between flex-shrink-0">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-xl bg-primary-50 dark:bg-primary-950/60 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-sm">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 font-bold text-sm">
                         📋
                     </div>
                     <div>
@@ -322,7 +401,7 @@
             </div>
 
             <!-- Modal Content (Scrollable) -->
-            <div class="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1 min-h-0 text-gray-800 dark:text-gray-200">
+            <div class="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 min-h-0 text-gray-800 dark:text-gray-200">
                 
                 <!-- Distance Warning (if > 25km or > 60km) -->
                 <div id="previewDistanceWarning" class="hidden bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl p-3 text-xs text-rose-800 dark:text-rose-300">
@@ -336,34 +415,65 @@
                 </div>
 
                 <!-- Judul & Badges -->
-                <div class="bg-gray-50 dark:bg-gray-750/60 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4">
-                    <div class="flex items-center gap-1.5 flex-wrap mb-2" id="previewBadgesContainer">
-                        <span id="previewScheduledBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                <div class="bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 space-y-2">
+                    <div class="flex items-center gap-1.5 flex-wrap" id="previewBadgesContainer">
+                        <span id="previewServiceTypeBadge" class="hidden inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600">
+                            📦 Antar-Jemput
+                        </span>
+                        <span id="previewScheduledBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600">
                             ⚡ Butuh Cepat
                         </span>
-                        <span id="previewDistanceBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <span id="previewDistanceBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600">
                             📍 Menghitung...
                         </span>
                     </div>
-                    <h4 id="previewTitle" class="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white leading-snug">
+                    <h4 id="previewTitle" class="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-snug">
                         -
                     </h4>
                 </div>
 
                 <!-- Pendapatan Tugas (100% Penuh untuk Mitra) -->
-                <div class="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-2xl p-4 flex items-center justify-between shadow-2xs">
+                <div class="bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 flex items-center justify-between shadow-2xs">
                     <div>
-                        <span class="text-xs font-bold text-emerald-900 dark:text-emerald-200 block">Upah Bersih untuk Anda:</span>
-                        <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">100% Penuh (Tanpa Potongan Komisi)</span>
+                        <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 block">Upah Bersih untuk Anda:</span>
+                        <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">100% Penuh (Tanpa Potongan Komisi)</span>
                     </div>
-                    <div id="previewTaskValue" class="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300 tracking-tight">
+                    <div id="previewTaskValue" class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white font-mono tracking-tight">
                         Rp 0
+                    </div>
+                </div>
+
+                <!-- Batas Waktu Pencarian Rekan Jasa (Countdown Card) -->
+                <div id="previewExpiryCountdownBox" class="bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 shadow-2xs space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                            <span>⏳</span>
+                            <span>Batas Waktu Pencarian Rekan Jasa:</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-3 flex-wrap pt-0.5">
+                        <div id="previewExpiryCountdownText" class="min-h-[38px] flex items-center">
+                            <!-- Injected by JS Timer -->
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] text-gray-400 dark:text-gray-500 block font-medium">Batas Waktu:</span>
+                            <span id="previewExpiryDateText" class="text-xs font-bold text-gray-800 dark:text-gray-200">-</span>
+                        </div>
+                    </div>
+
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed border-t border-gray-200/60 dark:border-gray-700/60 pt-2">
+                        💡 Tugas ini otomatis dibatalkan dan ditarik dari pool jika tidak ada rekan jasa yang mengambil sebelum batas waktu berakhir.
+                    </p>
+
+                    <div id="previewExpiredWarning" class="hidden mt-2 p-2.5 bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800 rounded-xl text-xs font-semibold text-rose-800 dark:text-rose-300 text-center">
+                        ⚠️ Batas waktu pencarian telah berakhir. Pesanan tidak dapat diambil lagi.
                     </div>
                 </div>
 
                 <!-- Pemohon Bantuan (Customer Card) -->
                 <div class="flex items-center gap-3 p-3.5 bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl">
-                    <div id="previewCustomerAvatarContainer" class="w-10 h-10 rounded-full overflow-hidden bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 font-bold flex items-center justify-center flex-shrink-0 text-sm">
+                    <div id="previewCustomerAvatarContainer" class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold flex items-center justify-center flex-shrink-0 text-sm">
                         <span id="previewCustomerInitial">U</span>
                         <img id="previewCustomerAvatarImg" src="" alt="avatar" class="w-full h-full object-cover hidden">
                     </div>
@@ -379,8 +489,8 @@
 
                 <!-- Deskripsi Pekerjaan Lengkap -->
                 <div class="space-y-1.5">
-                    <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800 dark:text-gray-200">
-                        <span class="text-primary-500">📝</span>
+                    <div class="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        <span>📝</span>
                         <span>Rincian & Deskripsi Pekerjaan:</span>
                     </div>
                     <div class="bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-3.5">
@@ -392,29 +502,62 @@
 
                 <!-- Peralatan Kerja (Equipment) -->
                 <div class="space-y-1.5">
-                    <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800 dark:text-gray-200">
-                        <span class="text-amber-500">🧰</span>
+                    <div class="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        <span>🧰</span>
                         <span>Peralatan Kerja:</span>
                     </div>
-                    <div id="previewEquipmentBox" class="bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 rounded-2xl p-3.5">
-                        <p id="previewEquipment" class="text-xs text-amber-900 dark:text-amber-200 leading-relaxed font-medium">
+                    <div id="previewEquipmentBox" class="bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-3.5">
+                        <p id="previewEquipment" class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-normal">
                             -
                         </p>
                     </div>
                 </div>
 
-                <!-- Wilayah / Patokan Lokasi -->
+                <!-- Wilayah / Rute Lokasi -->
                 <div class="space-y-1.5">
-                    <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800 dark:text-gray-200">
-                        <span class="text-rose-500">📍</span>
-                        <span>Area & Patokan Lokasi:</span>
+                    <div class="flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        <div class="flex items-center gap-1.5">
+                            <span>📍</span>
+                            <span id="previewLocationHeaderTitle">Area & Patokan Lokasi:</span>
+                        </div>
+                        <span id="previewRouteDistanceBadge" class="hidden text-[11px] font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-lg border border-gray-200 dark:border-gray-600"></span>
                     </div>
-                    <div class="bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-3.5 space-y-1.5">
+
+                    <!-- Multi-Leg Route Box (for pickup_delivery) -->
+                    <div id="previewMultiRouteBox" class="hidden bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-3.5 space-y-3">
+                        <div class="flex items-start gap-2.5">
+                            <div class="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center justify-between gap-1">
+                                    <span id="previewLeg1Label" class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase">Titik Jemput</span>
+                                    <span id="previewLeg1Dist" class="text-[10px] font-medium text-gray-600 dark:text-gray-300"></span>
+                                </div>
+                                <p id="previewLeg1Address" class="text-xs font-semibold text-gray-800 dark:text-gray-200 mt-0.5">-</p>
+                            </div>
+                        </div>
+
+                        <div class="ml-3 border-l-2 border-dashed border-gray-300 dark:border-gray-600 pl-4 py-0.5">
+                            <span id="previewRouteDistanceText" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Jarak Perjalanan</span>
+                        </div>
+
+                        <div class="flex items-start gap-2.5">
+                            <div class="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center justify-between gap-1">
+                                    <span id="previewLeg2Label" class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase">Titik Antar / Tujuan</span>
+                                </div>
+                                <p id="previewLeg2Address" class="text-xs font-semibold text-gray-800 dark:text-gray-200 mt-0.5">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Single Location Box (for on_site / default) -->
+                    <div id="previewSingleLocationBox" class="bg-gray-50 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-3.5 space-y-1.5">
                         <p id="previewLocation" class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">
                             -
                         </p>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                            <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
                             <span>Rute navigasi GPS & live tracking akan aktif otomatis begitu Anda mengambil tugas ini.</span>
                         </p>
                     </div>
@@ -422,8 +565,8 @@
 
                 <!-- Foto Objek / Tugas (Jika ada) -->
                 <div id="previewPhotoSection" class="hidden space-y-1.5">
-                    <div class="flex items-center gap-1.5 text-xs font-bold text-gray-800 dark:text-gray-200">
-                        <span class="text-sky-500">📷</span>
+                    <div class="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        <span>📷</span>
                         <span>Foto Objek / Tempat Pekerjaan:</span>
                     </div>
                     <div class="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-black/5 dark:bg-black/20 max-h-56">
@@ -439,11 +582,11 @@
                     Kembali
                 </button>
                 @if(!empty($activeTask))
-                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" class="flex-[1.6] bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center text-center">
+                    <a href="{{ route('mitra.helps.detail', $activeTask->id) }}" wire:navigate class="flex-[1.6] bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center text-center">
                         Selesaikan Tugas Aktif
                     </a>
                 @else
-                    <button type="button" id="previewTakeBtn" onclick="takeHelpFromModal()" class="flex-[1.6] bg-gradient-to-r from-primary-600 to-blue-700 text-white py-3 rounded-xl font-bold text-xs hover:brightness-105 shadow-md transition active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5">
+                    <button type="button" id="previewTakeBtn" onclick="takeHelpFromModal()" class="flex-[1.6] bg-primary-600 hover:bg-primary-700 text-white py-3 rounded-xl font-bold text-xs shadow-md transition active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                         </svg>
@@ -475,12 +618,12 @@
             // Jadwal
             const schedBadge = document.getElementById('previewScheduledBadge');
             if (schedBadge) {
-                if (data.scheduled_at) {
-                    schedBadge.textContent = '📅 ' + data.scheduled_at;
-                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800';
+                if (data.is_scheduled && data.scheduled_at) {
+                    schedBadge.textContent = '📅 Terjadwal: ' + data.scheduled_at + (data.departure_window_opens_at ? ' (Buka Pkl ' + data.departure_window_opens_at + ')' : '');
+                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600';
                 } else {
-                    schedBadge.textContent = '⚡ Butuh Cepat';
-                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800';
+                    schedBadge.textContent = '⚡ Segera';
+                    schedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600';
                 }
             }
 
@@ -515,12 +658,61 @@
                 equipEl.className = 'text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-normal';
             }
 
-            // Lokasi
+            // Lokasi & Multi-Route Info
             let locStr = '';
             if (data.location) locStr += data.location;
             if (data.city_name) locStr += (locStr ? ' • ' : '') + data.city_name;
             if (data.province_name) locStr += ', ' + data.province_name;
             document.getElementById('previewLocation').textContent = locStr || 'Wilayah Belum Ditentukan';
+
+            // Service Type Badge & Multi-Route Handling
+            const serviceTypeBadge = document.getElementById('previewServiceTypeBadge');
+            const singleLocBox = document.getElementById('previewSingleLocationBox');
+            const multiRouteBox = document.getElementById('previewMultiRouteBox');
+            const routeDistBadge = document.getElementById('previewRouteDistanceBadge');
+            const locHeaderTitle = document.getElementById('previewLocationHeaderTitle');
+
+            if (data.service_type === 'pickup_delivery') {
+                const isPassenger = data.service_category === 'passenger';
+                if (serviceTypeBadge) {
+                    serviceTypeBadge.textContent = isPassenger ? '👥 Antar Penumpang' : '📦 Barang & Dokumen';
+                    serviceTypeBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600';
+                    serviceTypeBadge.classList.remove('hidden');
+                }
+                if (locHeaderTitle) locHeaderTitle.textContent = isPassenger ? 'Rute Antar Penumpang:' : 'Rute Pengantaran Barang:';
+                if (singleLocBox) singleLocBox.classList.add('hidden');
+                if (multiRouteBox) {
+                    multiRouteBox.classList.remove('hidden');
+                    document.getElementById('previewLeg1Label').textContent = isPassenger ? 'Titik 1 • Penjemputan Penumpang' : 'Titik 1 • Pengambilan Barang / Dokumen';
+                    document.getElementById('previewLeg1Address').textContent = data.pickup_address || data.location || '-';
+                    document.getElementById('previewLeg1Dist').textContent = (data.distance_km !== null && data.distance_km !== undefined) ? `${data.distance_km} km dari Anda` : '';
+
+                    document.getElementById('previewLeg2Label').textContent = isPassenger ? 'Titik 2 • Tujuan Turun Penumpang' : 'Titik 2 • Tujuan Pengantaran';
+                    document.getElementById('previewLeg2Address').textContent = data.delivery_address || data.full_address || data.location || '-';
+                    
+                    const routeKm = data.service_route_distance_km;
+                    const routeDistText = document.getElementById('previewRouteDistanceText');
+                    if (routeDistText) {
+                        routeDistText.textContent = routeKm ? `📏 Jarak Rute: ±${routeKm} km` : 'Rute Perjalanan';
+                    }
+                }
+                if (routeDistBadge && data.service_route_distance_km) {
+                    routeDistBadge.textContent = `±${data.service_route_distance_km} km`;
+                    routeDistBadge.classList.remove('hidden');
+                } else if (routeDistBadge) {
+                    routeDistBadge.classList.add('hidden');
+                }
+            } else {
+                if (serviceTypeBadge) {
+                    serviceTypeBadge.textContent = '🛠️ Kerja Serabutan';
+                    serviceTypeBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600';
+                    serviceTypeBadge.classList.remove('hidden');
+                }
+                if (locHeaderTitle) locHeaderTitle.textContent = 'Area & Patokan Lokasi:';
+                if (singleLocBox) singleLocBox.classList.remove('hidden');
+                if (multiRouteBox) multiRouteBox.classList.add('hidden');
+                if (routeDistBadge) routeDistBadge.classList.add('hidden');
+            }
 
             // Foto Pekerjaan
             const photoSection = document.getElementById('previewPhotoSection');
@@ -541,6 +733,7 @@
 
             if (distanceKm !== null && distanceKm !== undefined && !isNaN(distanceKm)) {
                 distBadge.textContent = '📍 ' + distanceKm + ' km';
+                distBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600';
                 if (distanceKm > 60) {
                     warnBox.classList.remove('hidden');
                     warnBox.className = 'bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 rounded-xl p-3 text-xs text-rose-800 dark:text-rose-300';
@@ -566,6 +759,7 @@
                 }
             } else {
                 distBadge.textContent = data.city_name ? '📍 ' + data.city_name : '📍 Indonesia';
+                distBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600';
                 warnBox.classList.add('hidden');
                 if (takeBtn) {
                     takeBtn.disabled = false;
@@ -573,36 +767,150 @@
                 }
             }
 
+            // Batas Waktu Pencarian Rekan Jasa
+            updateExpiryCountdownDisplay(data.expires_at_iso, data.expires_at_formatted);
+
             document.getElementById('helpPreviewModal').classList.remove('hidden');
         };
 
+        let expiryTimerInterval = null;
+
+        function updateExpiryCountdownDisplay(isoString, formattedText) {
+            const container = document.getElementById('previewExpiryCountdownBox');
+            const countdownEl = document.getElementById('previewExpiryCountdownText');
+            const dateEl = document.getElementById('previewExpiryDateText');
+            const expiredWarn = document.getElementById('previewExpiredWarning');
+            const takeBtn = document.getElementById('previewTakeBtn');
+            const expiryBadge = document.getElementById('previewExpiryBadge');
+
+            if (dateEl) dateEl.textContent = formattedText || '-';
+
+            if (!isoString) {
+                if (container) container.classList.add('hidden');
+                return;
+            }
+
+            if (container) container.classList.remove('hidden');
+
+            const calculate = () => {
+                const targetTime = new Date(isoString).getTime();
+                const now = new Date().getTime();
+                const diff = targetTime - now;
+
+                if (diff <= 0) {
+                    if (countdownEl) countdownEl.innerHTML = '<span class="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-800">Waktu Habis (00:00:00)</span>';
+                    if (expiredWarn) expiredWarn.classList.remove('hidden');
+                    if (expiryBadge) {
+                        expiryBadge.textContent = 'Kadaluwarsa';
+                        expiryBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border border-rose-300';
+                    }
+                    if (takeBtn) {
+                        takeBtn.disabled = true;
+                        takeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        const span = takeBtn.querySelector('span');
+                        if (span) span.textContent = 'Waktu Pencarian Berakhir';
+                    }
+                    if (expiryTimerInterval) {
+                        clearInterval(expiryTimerInterval);
+                        expiryTimerInterval = null;
+                    }
+                    return;
+                }
+
+                if (expiredWarn) expiredWarn.classList.add('hidden');
+                if (expiryBadge) {
+                    expiryBadge.textContent = 'Hitung Mundur';
+                    expiryBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700';
+                }
+
+                const totalSeconds = Math.max(0, Math.floor(diff / 1000));
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+
+                const pad = (n) => String(n).padStart(2, '0');
+
+                if (countdownEl) {
+                    countdownEl.innerHTML = `
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-2xs font-mono">
+                            <span class="text-sm sm:text-base font-bold text-gray-900 dark:text-white tabular-nums">${pad(hours)}</span>
+                            <span class="text-xs font-bold text-gray-400 dark:text-gray-500">:</span>
+                            <span class="text-sm sm:text-base font-bold text-gray-900 dark:text-white tabular-nums">${pad(minutes)}</span>
+                            <span class="text-xs font-bold text-gray-400 dark:text-gray-500">:</span>
+                            <span class="text-sm sm:text-base font-bold text-rose-600 dark:text-rose-400 tabular-nums">${pad(seconds)}</span>
+                        </div>
+                    `;
+                }
+            };
+
+            if (expiryTimerInterval) {
+                clearInterval(expiryTimerInterval);
+            }
+
+            calculate();
+            expiryTimerInterval = setInterval(calculate, 1000);
+        }
+
         window.closePreviewModal = function() {
+            if (expiryTimerInterval) {
+                clearInterval(expiryTimerInterval);
+                expiryTimerInterval = null;
+            }
             document.getElementById('helpPreviewModal').classList.add('hidden');
             currentHelpId = null;
         };
 
         window.refreshMitraGPS = function() {
-            if (!navigator.geolocation) return;
-
             const indicator = document.getElementById('mitra-gps-indicator');
             const textEl = document.getElementById('mitra-gps-text');
+
+            if (!navigator.geolocation) {
+                if (textEl) textEl.textContent = 'Browser tidak mendukung GPS';
+                if (indicator) indicator.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+                return;
+            }
+
             if (textEl) textEl.textContent = 'Memperbarui koordinat GPS...';
             if (indicator) indicator.className = 'w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping';
 
             navigator.geolocation.getCurrentPosition(
-                (pos) => {
+                async (pos) => {
                     userMitraLat = pos.coords.latitude;
                     userMitraLng = pos.coords.longitude;
 
                     if (textEl) textEl.textContent = `GPS Aktif (±${Math.round(pos.coords.accuracy)}m)`;
                     if (indicator) indicator.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
 
-                    $wire.setMitraLocation(userMitraLat, userMitraLng);
+                    let cityName = null;
+                    let districtName = null;
+
+                    try {
+                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userMitraLat}&lon=${userMitraLng}&zoom=18&addressdetails=1`, {
+                            headers: { 'Accept-Language': 'id' }
+                        });
+                        if (geoRes.ok) {
+                            const geoData = await geoRes.json();
+                            const addr = geoData.address || {};
+                            cityName = addr.city || addr.town || addr.regency || addr.municipality || addr.city_district || null;
+                            districtName = addr.suburb || addr.district || addr.city_district || addr.quarter || addr.village || null;
+                        }
+                    } catch (e) {
+                        // ignore network error, backend will fallback to spatial math
+                    }
+
+                    $wire.setMitraLocation(userMitraLat, userMitraLng, cityName, districtName);
                 },
                 (err) => {
                     console.warn('GPS error:', err.message);
-                    if (textEl) textEl.textContent = 'GPS tidak aktif / izin ditolak';
-                    if (indicator) indicator.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+                    if (textEl) {
+                        if (userMitraLat && userMitraLng) {
+                            textEl.textContent = `Lokasi Tersimpan (${Number(userMitraLat).toFixed(4)}, ${Number(userMitraLng).toFixed(4)})`;
+                            if (indicator) indicator.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+                        } else {
+                            textEl.textContent = 'GPS tidak aktif / izin ditolak';
+                            if (indicator) indicator.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+                        }
+                    }
                 },
                 { enableHighAccuracy: true, timeout: 8000 }
             );
@@ -662,11 +970,15 @@
         window.addEventListener('help-taken', function(event) {
             var helpId = event?.detail?.helpId ?? event?.detail ?? null;
             if (!helpId) {
-                window.location.reload();
                 return;
             }
             var detailUrlTemplate = @json(route('mitra.helps.detail', ['id' => 'REPLACE_ID']));
-            window.location.href = detailUrlTemplate.replace('REPLACE_ID', helpId);
+            var targetUrl = detailUrlTemplate.replace('REPLACE_ID', helpId);
+            if (typeof Livewire !== 'undefined' && typeof Livewire.navigate === 'function') {
+                Livewire.navigate(targetUrl);
+            } else {
+                window.location.href = targetUrl;
+            }
         });
     </script>
     @endscript

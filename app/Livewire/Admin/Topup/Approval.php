@@ -28,7 +28,8 @@ class Approval extends Component
     public $cancellationReason = '';
     public $filterStatus = 'waiting_approval';
     public $search = '';
-    public $cityFilter = 'all';
+    public $districtFilter = 'all';
+    public $cityFilter = 'all'; // Backward compatibility alias
 
     protected $queryString = [
         'filterStatus' => ['except' => 'waiting_approval'],
@@ -36,16 +37,19 @@ class Approval extends Component
     ];
 
     protected $listeners = [
-        'topupRequestCreated' => '$refresh',
-        'confirmApprove' => 'approve',
-        'admin-city-changed' => 'onAdminCityChanged',
+        'topupRequestCreated'            => '$refresh',
+        'confirmApprove'                 => 'approve',
+        'admin-district-changed'         => 'onAdminDistrictChanged',
+        'admin-city-changed'             => 'onAdminDistrictChanged',
+        'superadmin-territory-changed'   => '$refresh',
     ];
 
     public function mount()
     {
         $admin = auth()->user();
         if ($admin && $admin->role === 'admin') {
-            $this->cityFilter = $admin->getActiveAdminCityFilter();
+            $this->districtFilter = $admin->getActiveAdminDistrictFilter();
+            $this->cityFilter = $this->districtFilter;
         }
     }
 
@@ -54,28 +58,41 @@ class Approval extends Component
         $this->resetPage();
     }
 
-    public function updatingCityFilter()
+    public function updatingDistrictFilter()
     {
+        $this->resetPage();
+    }
+
+    public function updatedDistrictFilter()
+    {
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $admin->setActiveAdminDistrictFilter($this->districtFilter);
+            $this->cityFilter = $this->districtFilter;
+            $this->dispatch('admin-district-changed', districtId: $this->districtFilter);
+        }
         $this->resetPage();
     }
 
     public function updatedCityFilter()
     {
+        $this->districtFilter = $this->cityFilter;
+        $this->updatedDistrictFilter();
+    }
+
+    public function onAdminDistrictChanged($districtId = null)
+    {
         $admin = auth()->user();
         if ($admin && $admin->role === 'admin') {
-            $admin->setActiveAdminCityFilter($this->cityFilter);
-            $this->dispatch('admin-city-changed', cityId: $this->cityFilter);
+            $this->districtFilter = $admin->getActiveAdminDistrictFilter();
+            $this->cityFilter = $this->districtFilter;
+            $this->resetPage();
         }
-        $this->resetPage();
     }
 
     public function onAdminCityChanged($cityId = null)
     {
-        $admin = auth()->user();
-        if ($admin && $admin->role === 'admin') {
-            $this->cityFilter = $admin->getActiveAdminCityFilter();
-            $this->resetPage();
-        }
+        $this->onAdminDistrictChanged($cityId);
     }
 
     public function filterByStatus($status)
@@ -90,16 +107,26 @@ class Approval extends Component
         if (!$admin) return false;
         if (in_array($admin->role, ['super_admin', 'superadmin'])) return true;
         if ($admin->role === 'admin') {
-            $allowedCityIds = $admin->getAdminCityIds();
-            $userCityId = $tx->user?->city_id;
-            return !empty($userCityId) && in_array((int) $userCityId, $allowedCityIds, true);
+            $allowedDistrictIds = $admin->getAdminDistrictIds();
+            if (!empty($allowedDistrictIds)) {
+                $userDistrictId = $tx->user?->district_id;
+                if (!empty($userDistrictId)) {
+                    return in_array((int) $userDistrictId, $allowedDistrictIds, true);
+                }
+            }
+            if ($admin->city_id && $tx->user?->city_id) {
+                return (int) $admin->city_id === (int) $tx->user->city_id;
+            }
+            if (empty($allowedDistrictIds) && empty($admin->city_id)) {
+                return true;
+            }
         }
         return false;
     }
 
     public function viewDetail($transactionId)
     {
-        $tx = BalanceTransaction::with(['user', 'user.city', 'approvedBy'])->find($transactionId);
+        $tx = BalanceTransaction::with(['user', 'user.district', 'user.city', 'approvedBy'])->find($transactionId);
         
         if (!$tx || !$this->isAuthorizedForTransaction($tx)) {
             session()->flash('error', 'Transaksi tidak ditemukan atau berada di luar wilayah wewenang Anda.');
@@ -122,7 +149,7 @@ class Approval extends Component
 
     public function openRejectModal($transactionId)
     {
-        $tx = BalanceTransaction::with(['user', 'user.city'])->find($transactionId);
+        $tx = BalanceTransaction::with(['user', 'user.district', 'user.city'])->find($transactionId);
 
         if (!$tx || !$this->isAuthorizedForTransaction($tx)) {
             session()->flash('error', 'Transaksi tidak ditemukan atau berada di luar wilayah wewenang Anda.');
@@ -136,7 +163,7 @@ class Approval extends Component
 
     public function openCancelApprovalModal($transactionId)
     {
-        $tx = BalanceTransaction::with(['user', 'user.city', 'approvedBy'])->find($transactionId);
+        $tx = BalanceTransaction::with(['user', 'user.district', 'user.city', 'approvedBy'])->find($transactionId);
 
         if (!$tx || !$this->isAuthorizedForTransaction($tx)) {
             session()->flash('error', 'Transaksi tidak ditemukan atau berada di luar wilayah wewenang Anda.');
@@ -150,15 +177,16 @@ class Approval extends Component
 
     public function approve($transactionId)
     {
-        $transaction = BalanceTransaction::with('user')->find($transactionId);
-
-        if (!$transaction || $transaction->status !== 'waiting_approval' || !$this->isAuthorizedForTransaction($transaction)) {
-            session()->flash('error', 'Request top-up tidak valid, sudah diproses, atau berada di luar wilayah wewenang Anda.');
-            return;
-        }
-
         try {
             DB::beginTransaction();
+
+            $transaction = BalanceTransaction::with('user')->where('id', $transactionId)->lockForUpdate()->first();
+
+            if (!$transaction || $transaction->status !== 'waiting_approval' || !$this->isAuthorizedForTransaction($transaction)) {
+                DB::rollBack();
+                session()->flash('error', 'Request top-up tidak valid, sudah diproses, atau berada di luar wilayah wewenang Anda.');
+                return;
+            }
 
             // Update status transaction to 'completed'
             $transaction->update([
@@ -169,7 +197,7 @@ class Approval extends Component
             ]);
 
             // Update user balance
-            $userBalance = UserBalance::firstOrCreate(
+            $userBalance = UserBalance::where('user_id', $transaction->user_id)->lockForUpdate()->firstOrCreate(
                 ['user_id' => $transaction->user_id],
                 ['balance' => 0]
             );
@@ -177,17 +205,18 @@ class Approval extends Component
             $userBalance->increment('balance', $transaction->amount);
 
             try {
+                $districtLabel = auth()->user()->kecamatan ?? (auth()->user()->district?->name ?? 'Wilayah Kecamatan');
                 ActivityLog::create([
                     'user_id' => auth()->id(),
                     'action' => 'topup_approved',
-                    'description' => 'Admin (' . (auth()->user()->city->name ?? 'Wilayah') . ') menyetujui top-up #' . ($transaction->request_code ?? $transaction->id) . ' milik ' . ($transaction->user->name ?? 'Customer') . ' sebesar Rp ' . number_format($transaction->amount, 0, ',', '.'),
+                    'description' => 'Admin (Kec. ' . $districtLabel . ') menyetujui top-up #' . ($transaction->request_code ?? $transaction->id) . ' milik ' . ($transaction->user->name ?? 'Customer') . ' sebesar Rp ' . number_format($transaction->amount, 0, ',', '.'),
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                     'properties' => [
                         'transaction_id' => $transaction->id,
                         'customer_id' => $transaction->user_id,
                         'amount' => $transaction->amount,
-                        'admin_city' => auth()->user()->city->name ?? null,
+                        'admin_district' => $districtLabel,
                     ],
                 ]);
             } catch (\Throwable $e) {
@@ -221,19 +250,24 @@ class Approval extends Component
             'rejectionReason.min' => 'Alasan penolakan minimal 3 karakter',
         ]);
 
-        if (!$this->selectedTransaction || $this->selectedTransaction->status !== 'waiting_approval') {
+        if (!$this->selectedTransaction) {
             session()->flash('error', 'Request tidak valid atau sudah diproses.');
             return;
         }
 
-        if (!$this->isAuthorizedForTransaction($this->selectedTransaction)) {
-            session()->flash('error', 'Anda tidak memiliki wewenang untuk menolak transaksi di luar wilayah Anda.');
-            $this->closeModal();
-            return;
-        }
-
         try {
-            $this->selectedTransaction->update([
+            DB::beginTransaction();
+
+            $transaction = BalanceTransaction::where('id', $this->selectedTransaction->id)->lockForUpdate()->first();
+
+            if (!$transaction || $transaction->status !== 'waiting_approval' || !$this->isAuthorizedForTransaction($transaction)) {
+                DB::rollBack();
+                session()->flash('error', 'Request top-up tidak valid, sudah diproses, atau berada di luar wilayah wewenang Anda.');
+                $this->closeModal();
+                return;
+            }
+
+            $transaction->update([
                 'status' => 'rejected',
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
@@ -241,10 +275,11 @@ class Approval extends Component
             ]);
 
             try {
+                $districtLabel = auth()->user()->kecamatan ?? (auth()->user()->district?->name ?? 'Wilayah Kecamatan');
                 ActivityLog::create([
                     'user_id' => auth()->id(),
                     'action' => 'topup_rejected',
-                    'description' => 'Admin (' . (auth()->user()->city->name ?? 'Wilayah') . ') menolak top-up #' . ($this->selectedTransaction->request_code ?? $this->selectedTransaction->id) . ' milik ' . ($this->selectedTransaction->user->name ?? 'Customer') . '. Alasan: ' . $this->rejectionReason,
+                    'description' => 'Admin (Kec. ' . $districtLabel . ') menolak top-up #' . ($transaction->request_code ?? $transaction->id) . ' milik ' . ($transaction->user->name ?? 'Customer') . '. Alasan: ' . $this->rejectionReason,
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                 ]);
@@ -252,9 +287,11 @@ class Approval extends Component
                 Log::warning('ActivityLog failed on topup reject: ' . $e->getMessage());
             }
 
+            DB::commit();
+
             // Send notification to customer
-            if ($this->selectedTransaction->user) {
-                $this->selectedTransaction->user->notify(new TopupRejected($this->selectedTransaction));
+            if ($transaction->user) {
+                $transaction->user->notify(new TopupRejected($transaction));
             }
 
             session()->flash('success', 'Request top-up telah ditolak.');
@@ -262,6 +299,7 @@ class Approval extends Component
             $this->closeModal();
 
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Error rejecting topup by admin: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
@@ -276,26 +314,29 @@ class Approval extends Component
             'cancellationReason.min' => 'Alasan pembatalan minimal 5 karakter',
         ]);
 
-        if (!$this->selectedTransaction || !in_array($this->selectedTransaction->status, ['completed', 'approved'])) {
+        if (!$this->selectedTransaction) {
             session()->flash('error', 'Transaksi tidak valid atau belum disetujui.');
-            return;
-        }
-
-        if (!$this->isAuthorizedForTransaction($this->selectedTransaction)) {
-            session()->flash('error', 'Anda tidak memiliki wewenang untuk membatalkan transaksi di luar wilayah Anda.');
-            $this->closeModal();
             return;
         }
 
         try {
             DB::beginTransaction();
 
-            $amount = (float) $this->selectedTransaction->amount;
-            $customer = $this->selectedTransaction->user;
+            $transaction = BalanceTransaction::where('id', $this->selectedTransaction->id)->lockForUpdate()->first();
+
+            if (!$transaction || !in_array($transaction->status, ['completed', 'approved']) || !$this->isAuthorizedForTransaction($transaction)) {
+                DB::rollBack();
+                session()->flash('error', 'Transaksi tidak valid, belum disetujui, atau di luar wilayah wewenang Anda.');
+                $this->closeModal();
+                return;
+            }
+
+            $amount = (float) $transaction->amount;
+            $customer = $transaction->user;
 
             // 1. Tarik/kurangi kembali saldo customer
-            $userBalance = UserBalance::firstOrCreate(
-                ['user_id' => $this->selectedTransaction->user_id],
+            $userBalance = UserBalance::where('user_id', $transaction->user_id)->lockForUpdate()->firstOrCreate(
+                ['user_id' => $transaction->user_id],
                 ['balance' => 0]
             );
 
@@ -303,27 +344,28 @@ class Approval extends Component
 
             // 2. Buat mutasi koreksi deduction
             BalanceTransaction::create([
-                'user_id' => $this->selectedTransaction->user_id,
+                'user_id' => $transaction->user_id,
                 'amount' => $amount,
                 'type' => 'deduction',
-                'description' => 'Penarikan/Koreksi Saldo: Top-Up #' . ($this->selectedTransaction->request_code ?? $this->selectedTransaction->id) . ' Dibatalkan oleh Admin (Alasan: ' . $this->cancellationReason . ')',
-                'reference_id' => $this->selectedTransaction->id,
+                'description' => 'Penarikan/Koreksi Saldo: Top-Up #' . ($transaction->request_code ?? $transaction->id) . ' Dibatalkan oleh Admin (Alasan: ' . $this->cancellationReason . ')',
+                'reference_id' => $transaction->id,
                 'status' => 'completed',
                 'processed_at' => now(),
             ]);
 
             // 3. Update status top-up menjadi 'cancelled'
-            $this->selectedTransaction->update([
+            $transaction->update([
                 'status' => 'cancelled',
                 'rejection_reason' => '[DIBATALKAN ADMIN: ' . auth()->user()->name . '] ' . $this->cancellationReason,
             ]);
 
             // 4. Activity Log
             try {
+                $districtLabel = auth()->user()->kecamatan ?? (auth()->user()->district?->name ?? 'Wilayah Kecamatan');
                 ActivityLog::create([
                     'user_id' => auth()->id(),
                     'action' => 'topup_approval_cancelled',
-                    'description' => 'Admin (' . (auth()->user()->city->name ?? 'Wilayah') . ') membatalkan approval top-up #' . ($this->selectedTransaction->request_code ?? $this->selectedTransaction->id) . ' milik ' . ($customer->name ?? 'Customer') . ' (Rp ' . number_format($amount, 0, ',', '.') . '). Alasan: ' . $this->cancellationReason,
+                    'description' => 'Admin (Kec. ' . $districtLabel . ') membatalkan approval top-up #' . ($transaction->request_code ?? $transaction->id) . ' milik ' . ($customer->name ?? 'Customer') . ' (Rp ' . number_format($amount, 0, ',', '.') . '). Alasan: ' . $this->cancellationReason,
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                 ]);
@@ -335,7 +377,7 @@ class Approval extends Component
 
             // 5. Send notification
             if ($customer) {
-                $customer->notify(new TopupCancelled($this->selectedTransaction, $this->cancellationReason));
+                $customer->notify(new TopupCancelled($transaction, $this->cancellationReason));
             }
 
             session()->flash('success', 'Top-up berhasil dibatalkan! Saldo sebesar Rp ' . number_format($amount, 0, ',', '.') . ' telah dikurangi kembali dari akun customer.');
@@ -352,18 +394,37 @@ class Approval extends Component
     public function render()
     {
         $admin = auth()->user();
-        if ($admin && $admin->role === 'admin') {
-            $this->cityFilter = $admin->getActiveAdminCityFilter();
+        $isSuperAdmin = $admin && in_array($admin->role, ['super_admin', 'superadmin']);
+
+        if (!$isSuperAdmin && $admin && $admin->role === 'admin') {
+            $this->districtFilter = $admin->getActiveAdminDistrictFilter();
+            $this->cityFilter = $this->districtFilter;
         }
-        $adminCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
-        $adminCityName = $admin ? $admin->admin_city_names : null;
+        $adminDistrictIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
+        $adminDistrictName = $admin ? $admin->admin_district_names : null;
 
         // Base scoped query for counts
+        $adminCityId = $admin?->city_id;
         $baseQuery = BalanceTransaction::where('type', 'topup');
-        if (!empty($adminCityIds)) {
-            $baseQuery->whereHas('user', fn($q) => $q->whereIn('city_id', $adminCityIds));
-        } elseif ($admin && $admin->role === 'admin') {
-            $baseQuery->whereRaw('1 = 0');
+        if (!$isSuperAdmin) {
+            if (!empty($adminDistrictIds)) {
+                $baseQuery->whereHas('user', fn($q) => $q->whereIn('district_id', $adminDistrictIds));
+            } elseif (!empty($adminCityId) && $admin && $admin->role === 'admin') {
+                $baseQuery->whereHas('user', fn($q) => $q->where('city_id', $adminCityId));
+            }
+        } elseif ($isSuperAdmin && $admin) {
+            $saTerritory = $admin->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $dId = (int) $saTerritory['id'];
+                $baseQuery->whereHas('user', fn($q) => $q->where('district_id', $dId));
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cityId = (int) $saTerritory['id'];
+                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                $baseQuery->whereHas('user', function ($q) use ($cityId, $saDistrictIds) {
+                    if (!empty($saDistrictIds)) $q->whereIn('district_id', $saDistrictIds);
+                    if ($cityId) $q->orWhere('city_id', $cityId);
+                });
+            }
         }
 
         $totalPending = (clone $baseQuery)->where('status', 'waiting_approval')->count();
@@ -373,12 +434,27 @@ class Approval extends Component
         $totalAll = (clone $baseQuery)->count();
 
         $query = BalanceTransaction::where('type', 'topup')
-            ->with(['user', 'user.city', 'approvedBy']);
+            ->with(['user', 'user.district', 'user.city', 'approvedBy']);
 
-        if (!empty($adminCityIds)) {
-            $query->whereHas('user', fn($q) => $q->whereIn('city_id', $adminCityIds));
-        } elseif ($admin && $admin->role === 'admin') {
-            $query->whereRaw('1 = 0');
+        if (!$isSuperAdmin) {
+            if (!empty($adminDistrictIds)) {
+                $query->whereHas('user', fn($q) => $q->whereIn('district_id', $adminDistrictIds));
+            } elseif (!empty($adminCityId) && $admin && $admin->role === 'admin') {
+                $query->whereHas('user', fn($q) => $q->where('city_id', $adminCityId));
+            }
+        } elseif ($isSuperAdmin && $admin) {
+            $saTerritory = $admin->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $dId = (int) $saTerritory['id'];
+                $query->whereHas('user', fn($q) => $q->where('district_id', $dId));
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cityId = (int) $saTerritory['id'];
+                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                $query->whereHas('user', function ($q) use ($cityId, $saDistrictIds) {
+                    if (!empty($saDistrictIds)) $q->whereIn('district_id', $saDistrictIds);
+                    if ($cityId) $q->orWhere('city_id', $cityId);
+                });
+            }
         }
 
         if ($this->filterStatus === 'waiting_approval') {
@@ -408,18 +484,20 @@ class Approval extends Component
             });
         }
 
-        $cities = $admin ? $admin->getAdminCities() : collect();
+        $districts = $admin ? $admin->getAdminDistricts() : collect();
         $transactions = $query->orderBy('created_at', 'desc')->paginate(15);
 
         return view('livewire.admin.topup.approval', [
-            'transactions' => $transactions,
-            'cities' => $cities,
-            'adminCityName' => $adminCityName,
-            'totalPending' => $totalPending,
-            'totalCompleted' => $totalCompleted,
-            'totalCancelled' => $totalCancelled,
-            'totalRejected' => $totalRejected,
-            'totalAll' => $totalAll,
+            'transactions'      => $transactions,
+            'districts'         => $districts,
+            'cities'            => $districts, // Backward compatibility
+            'adminDistrictName' => $adminDistrictName,
+            'adminCityName'     => $adminDistrictName,
+            'totalPending'      => $totalPending,
+            'totalCompleted'    => $totalCompleted,
+            'totalCancelled'    => $totalCancelled,
+            'totalRejected'     => $totalRejected,
+            'totalAll'          => $totalAll,
         ]);
     }
 }

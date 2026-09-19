@@ -272,28 +272,22 @@ class MidtransRecheck extends Command
                                 Log::info('MidtransRecheck: marked completed (eloquent)', ['order_id' => $txn->order_id, 'transaction_id' => $txn->id]);
                             } catch (\Throwable $e) {
                                 Log::warning('MidtransRecheck: failed to mark completed via eloquent for txn', ['id' => $txn->id, 'error' => $e->getMessage()]);
-                                // Fallback: try direct DB update + recompute to avoid leaving the txn pending
+                                // Fallback: try direct DB update + atomic increment to avoid leaving the txn pending
                                 try {
                                     $now = now();
-                                    DB::table((new BalanceTransaction())->getTable())
-                                        ->where('id', $txn->id)
-                                        ->update([
-                                            'status' => 'completed',
-                                            'payment_type' => $paymentType,
-                                            'updated_at' => $now,
-                                        ]);
+                                    DB::transaction(function () use ($txn, $paymentType, $now) {
+                                        DB::table((new BalanceTransaction())->getTable())
+                                            ->where('id', $txn->id)
+                                            ->update([
+                                                'status' => 'completed',
+                                                'payment_type' => $paymentType,
+                                                'processed_at' => $now,
+                                                'updated_at' => $now,
+                                            ]);
 
-                                    $sum = (float) DB::table((new BalanceTransaction())->getTable())
-                                        ->where('user_id', $txn->user_id)
-                                        ->where('type', 'topup')
-                                        ->whereRaw("LOWER(TRIM(status)) = 'completed'")
-                                        ->sum('amount');
-
-                                    DB::table((new UserBalance())->getTable())
-                                        ->updateOrInsert(
-                                            ['user_id' => $txn->user_id],
-                                            ['balance' => $sum, 'updated_at' => $now, 'created_at' => $now]
-                                        );
+                                        $ub = UserBalance::firstOrCreate(['user_id' => $txn->user_id], ['balance' => 0]);
+                                        $ub->increment('balance', (float) $txn->amount);
+                                    });
                                 } catch (\Throwable $e2) {
                                     Log::error('MidtransRecheck: fallback DB update also failed', ['id' => $txn->id, 'error' => $e2->getMessage()]);
                                 }

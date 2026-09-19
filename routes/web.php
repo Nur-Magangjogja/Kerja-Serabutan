@@ -2,6 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 
+// ========================================
+// LEGAL PAGES (Public - No Auth Required)
+// ========================================
+Route::get('/syarat-ketentuan', fn() => view('legal.terms'))->name('terms');
+Route::get('/kebijakan-privasi', fn() => view('legal.privacy'))->name('privacy');
+
 // Landing / Login route - Unified entrance
 Route::get('/', function () {
     if (auth()->check()) {
@@ -128,6 +134,11 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
                 return response()->json(['error' => 'Not found'], 404);
             }
 
+            // Authorization: Pastikan hanya customer pemilik atau mitra yang bertugas yang dapat melihat koordinat
+            if ($help->user_id !== auth()->id() && $help->mitra_id !== auth()->id()) {
+                return response()->json(['error' => 'Unauthorized access'], 403);
+            }
+
             return response()->json([
                 'partnerLat' => $help->partner_current_lat,
                 'partnerLng' => $help->partner_current_lng,
@@ -142,6 +153,11 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::get('/helps/{id}/json', function ($id) {
             $help = \App\Models\Help::with(['city','mitra','user'])->find($id);
             if (! $help) return response()->json(['error' => 'Not found'], 404);
+
+            // Authorization: Pastikan hanya pemilik atau mitra yang bertugas yang dapat melihat data JSON
+            if ($help->user_id !== auth()->id() && $help->mitra_id !== auth()->id()) {
+                return response()->json(['error' => 'Unauthorized access'], 403);
+            }
 
             return response()->json([
                 'id' => $help->id,
@@ -336,6 +352,8 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
     Route::get('/partners/blocked', \App\Livewire\Admin\Partners\Blocked::class)->name('partners.blocked');
     Route::get('/partners/greylist', \App\Livewire\Admin\Partners\Greylist::class)->name('partners.greylist');
     Route::get('/disputes', \App\Livewire\Admin\Disputes\Index::class)->name('disputes.index');
+    Route::get('/cancellations', \App\Livewire\Admin\Disputes\Index::class)->name('cancellations.index');
+    Route::get('/cancellations/{cancelRequest}/chat', \App\Livewire\Admin\Disputes\Chat::class)->name('cancellations.chat');
 
     Route::get('/settings/appearance', \App\Livewire\SuperAdmin\Settings\Appearance::class)->name('settings.appearance');
     Route::get('/settings', function () {
@@ -365,6 +383,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/partners/blocked', \App\Livewire\Admin\Partners\Blocked::class)->name('partners.blocked');
     Route::get('/partners/greylist', \App\Livewire\Admin\Partners\Greylist::class)->name('partners.greylist');
     Route::get('/disputes', \App\Livewire\Admin\Disputes\Index::class)->name('disputes.index');
+    Route::get('/cancellations', \App\Livewire\Admin\Disputes\Index::class)->name('cancellations.index');
+    Route::get('/cancellations/{cancelRequest}/chat', \App\Livewire\Admin\Disputes\Chat::class)->name('cancellations.chat');
     Route::get('/topup/approvals', \App\Livewire\Admin\Topup\Approval::class)->name('topup.approvals');
 });
 

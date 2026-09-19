@@ -54,7 +54,8 @@ class Activity extends Component
     ];
 
     protected $listeners = [
-        'admin-city-changed' => '$refresh',
+        'admin-city-changed'             => '$refresh',
+        'superadmin-territory-changed'   => '$refresh',
     ];
 
     public function mount()
@@ -158,6 +159,31 @@ class Activity extends Component
         $this->selectedHelp = null;
     }
 
+    /**
+     * Pemetaan kategori filter ke nilai acuan activity_type di database
+     * agar kompatibel dengan seluruh varian penamaan riwayat aktivitas di sistem.
+     */
+    public static function getActivityTypeAliases(string $filter): array
+    {
+        $map = [
+            'help_created'            => ['help_created'],
+            'take_help'               => ['take_help', 'help_accepted'],
+            'partner_on_the_way'      => ['partner_on_the_way', 'partner_departed', 'partner_started_moving'],
+            'partner_arrived'         => ['partner_arrived'],
+            'help_started'            => ['help_started', 'service_started'],
+            'help_completed'          => ['help_completed', 'service_completed', 'help_completed_waiting_confirmation'],
+            'help_confirmed'          => ['help_confirmed', 'confirm_completion', 'help_auto_confirmed', 'auto_complete'],
+            'cancel_help'             => ['cancel_help', 'help_cancelled', 'help_auto_cancelled', 'partner_cancel_executed', 'request_partner_cancel'],
+            'partner_cancel_executed' => ['partner_cancel_executed', 'request_partner_cancel'],
+            'dispute_raised'          => ['dispute_raised', 'dispute_resolved', 'warranty_claim_escrow_clawback'],
+            'help_reviewed'           => ['help_reviewed'],
+            'account_updated'         => ['profile_updated', 'password_changed'],
+            'balance_topup'           => ['balance_topup'],
+        ];
+
+        return $map[$filter] ?? [$filter];
+    }
+
     public function render()
     {
         $admin = auth()->user();
@@ -171,12 +197,28 @@ class Activity extends Component
             ->withCount('partnerActivities as total_activities')
             ->withMax('partnerActivities as last_activity_at', 'created_at');
 
-        $effectiveCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
+        $effectiveDistrictIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
 
-        if (!$isSuperAdmin && !empty($effectiveCityIds)) {
-            $userQuery->whereIn('city_id', $effectiveCityIds);
+        if (!$isSuperAdmin && !empty($effectiveDistrictIds)) {
+            $userQuery->whereIn('district_id', $effectiveDistrictIds);
         } elseif (!$isSuperAdmin && $admin && $admin->role === 'admin') {
             $userQuery->whereRaw('1 = 0');
+        } elseif ($isSuperAdmin && $admin) {
+            $saTerritory = $admin->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $userQuery->where('district_id', (int) $saTerritory['id']);
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cityId = (int) $saTerritory['id'];
+                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                $userQuery->where(function ($q) use ($cityId, $saDistrictIds) {
+                    if (!empty($saDistrictIds)) {
+                        $q->whereIn('district_id', $saDistrictIds);
+                    }
+                    if ($cityId) {
+                        $q->orWhere('city_id', $cityId);
+                    }
+                });
+            }
         }
 
         if ($this->userRoleFilter !== 'all') {
@@ -184,7 +226,10 @@ class Activity extends Component
         }
 
         if ($this->userCityId !== 'all') {
-            $userQuery->where('city_id', $this->userCityId);
+            $userQuery->where(function($q) {
+                $q->where('district_id', $this->userCityId)
+                  ->orWhere('city_id', $this->userCityId);
+            });
         }
 
         if (!empty($this->userSearch)) {
@@ -205,9 +250,11 @@ class Activity extends Component
         // 2. QUERY DAFTAR LOG ALIRAN AKTIVITAS REAL-TIME
         // ─────────────────────────────────────────────────────────────────────
         $activityQuery = PartnerActivity::with([
+            'user.district',
             'user.city',
             'help.customer',
             'help.mitra',
+            'help.district',
             'help.city'
         ])
         ->whereHas('user', function ($q) {
@@ -215,13 +262,34 @@ class Activity extends Component
         })
         ->latest();
 
-        if (!$isSuperAdmin && !empty($effectiveCityIds)) {
-            $activityQuery->where(function ($q) use ($effectiveCityIds) {
-                $q->whereHas('user', fn($uq) => $uq->whereIn('city_id', $effectiveCityIds))
-                  ->orWhereHas('help', fn($hq) => $hq->whereIn('city_id', $effectiveCityIds));
+        if (!$isSuperAdmin && !empty($effectiveDistrictIds)) {
+            $activityQuery->where(function ($q) use ($effectiveDistrictIds) {
+                $q->whereHas('user', fn($uq) => $uq->whereIn('district_id', $effectiveDistrictIds))
+                  ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $effectiveDistrictIds));
             });
         } elseif (!$isSuperAdmin && $admin && $admin->role === 'admin') {
             $activityQuery->whereRaw('1 = 0');
+        } elseif ($isSuperAdmin && $admin) {
+            $saTerritory = $admin->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $dId = (int) $saTerritory['id'];
+                $activityQuery->where(function ($q) use ($dId) {
+                    $q->whereHas('user', fn($uq) => $uq->where('district_id', $dId))
+                      ->orWhereHas('help', fn($hq) => $hq->where('district_id', $dId));
+                });
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cityId = (int) $saTerritory['id'];
+                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                $activityQuery->where(function ($q) use ($cityId, $saDistrictIds) {
+                    $q->whereHas('user', function ($uq) use ($cityId, $saDistrictIds) {
+                        if (!empty($saDistrictIds)) $uq->whereIn('district_id', $saDistrictIds);
+                        if ($cityId) $uq->orWhere('city_id', $cityId);
+                    })->orWhereHas('help', function ($hq) use ($cityId, $saDistrictIds) {
+                        if (!empty($saDistrictIds)) $hq->whereIn('district_id', $saDistrictIds);
+                        if ($cityId) $hq->orWhere('city_id', $cityId);
+                    });
+                });
+            }
         }
 
         if ($this->selectedUserId) {
@@ -233,14 +301,15 @@ class Activity extends Component
         }
 
         if ($this->activityTypeFilter !== 'all') {
-            $activityQuery->where('activity_type', $this->activityTypeFilter);
+            $aliases = self::getActivityTypeAliases($this->activityTypeFilter);
+            $activityQuery->whereIn('activity_type', $aliases);
         }
 
         if ($this->cityId !== 'all') {
             $cId = $this->cityId;
             $activityQuery->where(function ($q) use ($cId) {
-                $q->whereHas('user', fn($uq) => $uq->where('city_id', $cId))
-                  ->orWhereHas('help', fn($hq) => $hq->where('city_id', $cId));
+                $q->whereHas('user', fn($uq) => $uq->where('district_id', $cId)->orWhere('city_id', $cId))
+                  ->orWhereHas('help', fn($hq) => $hq->where('district_id', $cId)->orWhere('city_id', $cId));
             });
         }
 
@@ -274,17 +343,48 @@ class Activity extends Component
         $activities = $activityQuery->paginate($this->perPage);
 
         // ─────────────────────────────────────────────────────────────────────
-        // 3. DAFTAR KOTA & STATISTIK
+        // 3. DAFTAR WILAYAH & STATISTIK
         // ─────────────────────────────────────────────────────────────────────
         if ($isSuperAdmin) {
             $cities = City::orderBy('name')->get();
         } else {
-            $cities = City::where('id', $admin->city_id)->get();
+            $cities = $admin ? $admin->getAdminDistricts() : collect();
         }
 
         $baseStats = PartnerActivity::whereHas('user', fn($q) => $q->whereIn('role', ['customer', 'mitra']));
-        if (!$isSuperAdmin && $admin->city_id) {
-            $baseStats->whereHas('user', fn($q) => $q->where('city_id', $admin->city_id));
+        if (!$isSuperAdmin && !empty($effectiveDistrictIds)) {
+            $baseStats->where(function ($q) use ($effectiveDistrictIds) {
+                $q->whereHas('user', fn($uq) => $uq->whereIn('district_id', $effectiveDistrictIds))
+                  ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $effectiveDistrictIds));
+            });
+        } elseif (!$isSuperAdmin && $admin && $admin->role === 'admin') {
+            $baseStats->whereRaw('1 = 0');
+        } elseif ($isSuperAdmin && $admin) {
+            $saTerritory = $admin->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $dId = (int) $saTerritory['id'];
+                $baseStats->where(function ($q) use ($dId) {
+                    $q->whereHas('user', fn($uq) => $uq->where('district_id', $dId))
+                      ->orWhereHas('help', fn($hq) => $hq->where('district_id', $dId));
+                });
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cityId = (int) $saTerritory['id'];
+                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                $baseStats->where(function ($q) use ($cityId, $saDistrictIds) {
+                    $q->whereHas('user', function ($uq) use ($cityId, $saDistrictIds) {
+                        if (!empty($saDistrictIds)) $uq->whereIn('district_id', $saDistrictIds);
+                        if ($cityId) $uq->orWhere('city_id', $cityId);
+                    })->orWhereHas('help', function ($hq) use ($cityId, $saDistrictIds) {
+                        if (!empty($saDistrictIds)) $hq->whereIn('district_id', $saDistrictIds);
+                        if ($cityId) $hq->orWhere('city_id', $cityId);
+                    });
+                });
+            }
+        }
+
+        // Terapkan filter khusus pengguna pelaku jika sedang aktif
+        if ($this->selectedUserId) {
+            $baseStats->where('user_id', $this->selectedUserId);
         }
 
         $stats = [
@@ -294,6 +394,7 @@ class Activity extends Component
             'mitra_acts'     => (clone $baseStats)->whereHas('user', fn($q) => $q->where('role', 'mitra'))->count(),
             'completed_jobs' => (clone $baseStats)->whereIn('activity_type', ['help_completed', 'service_completed', 'confirm_completion', 'help_confirmed'])->count(),
         ];
+
 
         $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 

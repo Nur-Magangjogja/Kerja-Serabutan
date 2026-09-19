@@ -52,7 +52,7 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     @php
-                        $__avatar = optional(auth()->user())->selfie_photo ?? optional(auth()->user())->photo ?? optional(auth()->user())->profile_photo_path ?? null;
+                        $__avatar = optional(auth()->user())->profile_photo ?? optional(auth()->user())->photo ?? optional(auth()->user())->profile_photo_path ?? null;
                     @endphp
                     <div class="w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden ring-2 ring-white/40 shadow-xs flex-shrink-0">
                         <img src="{{ $__avatar ? asset('storage/' . $__avatar) : asset('images/avatar-placeholder.svg') }}" 
@@ -246,7 +246,10 @@
     <div class="px-5 pt-6 sm:pt-8 pb-6">
         <!-- Banner Section (Spacious, Modern & Interactive) -->
         @php
-            $customerBanners = json_decode((string) \App\Models\AppSetting::get('banner_customer', '[]'), true) ?: [];
+            $rawCustomerBanners = json_decode((string) \App\Models\AppSetting::get('banner_customer', '[]'), true) ?: [];
+            $customerBanners = array_map(function($b) {
+                return is_array($b) ? $b : ['image' => $b, 'link' => ''];
+            }, $rawCustomerBanners);
         @endphp
         <div class="mt-2 mb-8" wire:ignore x-data="{
             active: 0,
@@ -273,22 +276,33 @@
             },
             init() {
                 this.startAuto();
-                document.addEventListener('visibilitychange', () => {
-                    if (document.hidden) {
-                        this.stopAuto();
-                    } else {
-                        this.startAuto();
-                    }
-                });
+            },
+            destroy() {
+                this.stopAuto();
             }
-        }" @mouseenter="stopAuto()" @mouseleave="startAuto()" @touchstart="stopAuto()" @touchend="startAuto()">
+        }" @visibilitychange.window="document.hidden ? stopAuto() : startAuto()" @mouseenter="stopAuto()" @mouseleave="startAuto()" @touchstart="stopAuto()" @touchend="startAuto()">
+
             <div class="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg shadow-sky-500/5 border border-gray-100/80 dark:border-gray-700/60 h-44 sm:h-48 bg-gray-900">
                 @if(!empty($customerBanners) && count($customerBanners))
                     <div class="flex h-full transition-transform duration-700 ease-out" :style="'transform: translateX(-' + (active * 100) + '%)'">
                         @foreach($customerBanners as $b)
-                            <div class="flex-shrink-0 w-full h-full relative">
-                                <img src="{{ asset('storage/' . $b) }}" alt="Banner" class="w-full h-full object-cover" />
-                                <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                            @php
+                                $imgPath = is_array($b) ? ($b['image'] ?? '') : $b;
+                                $linkUrl = is_array($b) ? ($b['link'] ?? '') : '';
+                                $isExternal = str_starts_with($linkUrl, 'http://') || str_starts_with($linkUrl, 'https://');
+                            @endphp
+                            <div class="flex-shrink-0 w-full h-full relative group/slide">
+                                @if(!empty($linkUrl))
+                                    <a href="{{ $linkUrl }}"
+                                       @if($isExternal) target="_blank" rel="noopener noreferrer" @endif
+                                       class="block w-full h-full cursor-pointer relative overflow-hidden">
+                                        <img src="{{ asset('storage/' . $imgPath) }}" alt="Banner" class="w-full h-full object-cover transition-transform duration-500 group-hover/slide:scale-[1.02]" />
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                                    </a>
+                                @else
+                                    <img src="{{ asset('storage/' . $imgPath) }}" alt="Banner" class="w-full h-full object-cover" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                                @endif
                             </div>
                         @endforeach
                     </div>
@@ -296,14 +310,12 @@
                     <!-- Fallback High-Aesthetic Interactive Slides -->
                     <div class="flex h-full transition-transform duration-700 ease-out" :style="'transform: translateX(-' + (active * 100) + '%)'">
                         <!-- Slide 1 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
-                             style="background: linear-gradient(135deg, #0284c7 0%, #0060b0 50%, #0f172a 100%);">
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-sky-600 dark:bg-sky-800">
                             <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
                             <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-sky-400/20 blur-xl pointer-events-none"></div>
 
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
-                                    <span>⚡</span>
                                     <span>Solusi Cepat</span>
                                 </div>
                                 <h3 class="text-base sm:text-lg font-black text-white leading-tight">
@@ -313,7 +325,7 @@
                                     Posting tugas Anda & temukan mitra terdekat siap membantu dalam hitungan menit.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('customer.helps.create') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-sky-700 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('customer.helps.create') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-sky-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Buat Permintaan</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -328,14 +340,12 @@
                         </div>
 
                         <!-- Slide 2 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
-                             style="background: linear-gradient(135deg, #059669 0%, #0d9488 50%, #064e3b 100%);">
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-emerald-600 dark:bg-emerald-800">
                             <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
                             <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-emerald-400/20 blur-xl pointer-events-none"></div>
 
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
-                                    <span>💳</span>
                                     <span>Isi Saldo</span>
                                 </div>
                                 <h3 class="text-base sm:text-lg font-black text-white leading-tight">
@@ -345,7 +355,7 @@
                                     Pembayaran via QRIS & Transfer Bank dengan konfirmasi instan dan aman.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('customer.topup.request') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-emerald-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('customer.topup.request') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-emerald-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Top Up Sekarang</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -354,20 +364,18 @@
 
                             <div class="relative z-10 flex-shrink-0 mr-1 sm:mr-3">
                                 <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/15 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-lg shadow-black/10 transform -rotate-3 hover:rotate-0 transition-transform">
-                                    <span class="text-3xl sm:text-4xl">💰</span>
+                                    <span class="text-3xl sm:text-4xl">💸</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Slide 3 -->
-                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden"
-                             style="background: linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #431407 100%);">
+                        <div class="flex-shrink-0 w-full h-full relative p-5 sm:p-6 flex items-center justify-between text-white overflow-hidden bg-yellow-600 dark:bg-yellow-800">
                             <div class="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
                             <div class="absolute right-16 -top-8 w-28 h-28 rounded-full bg-amber-400/20 blur-xl pointer-events-none"></div>
 
                             <div class="relative z-10 max-w-[65%] sm:max-w-[70%] space-y-1.5">
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/25">
-                                    <span>⭐</span>
                                     <span>Mitra Terpercaya</span>
                                 </div>
                                 <h3 class="text-base sm:text-lg font-black text-white leading-tight">
@@ -377,7 +385,7 @@
                                     Mitra terverifikasi siap menyelesaikan pekerjaan dengan hasil terbaik.
                                 </p>
                                 <div class="pt-1">
-                                    <a href="{{ route('customer.helps.history') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-orange-800 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
+                                    <a href="{{ route('customer.helps.history') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-yellow-500 hover:bg-white/90 text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95">
                                         <span>Lihat Riwayat</span>
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -408,26 +416,27 @@
         <div class="mb-5">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="text-base font-bold text-gray-900 dark:text-white">Bantuan Saya</h2>
-                <a href="{{ route('customer.helps.index') }}" class="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline">Lihat Semua →</a>
+                <a href="{{ route('customer.helps.index') }}" wire:navigate class="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline">Lihat Semua →</a>
             </div>
 
             <div class="space-y-3">
                 @if($activeTab !== 'history')
                     @php
-                        // Only show helps that are waiting for a mitra (include legacy status names)
+                        // Only show helps that are waiting for a mitra
                         $waitingHelps = collect($availableHelps)->filter(function($h) {
-                            return in_array($h->status, ['mencari_mitra', 'menunggu_mitra', 'memperoleh_mitra', 'taken']);
+                            return in_array($h->status, [\App\Models\Help::STATUS_MENUNGGU_MITRA, \App\Models\Help::STATUS_TAKEN]);
                         });
                     @endphp
                     @forelse($waitingHelps as $help)
                         <a href="{{ route('customer.helps.detail', $help->id) }}"
+                            wire:navigate
                             class="block w-full text-left bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-xs hover:shadow-md border border-gray-100 dark:border-gray-700/70 transition-all group">
                             <div class="flex items-start gap-3.5">
-                                <div class="w-13 h-13 rounded-2xl overflow-hidden bg-gradient-to-br from-sky-100 to-blue-50 dark:from-sky-950/60 dark:to-blue-900/40 border border-sky-200/60 dark:border-sky-800/60 flex-shrink-0 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform duration-300">
+                                <div class="w-16 h-16 rounded-2xl overflow-hidden bg-gradient-to-br from-sky-100 to-blue-50 dark:from-sky-950/60 dark:to-blue-900/40 border border-sky-200/60 dark:border-sky-800/60 flex-shrink-0 flex items-center justify-center shadow-2xs">
                                     @if($help->photo)
                                         <img src="{{ asset('storage/' . $help->photo) }}" alt="{{ $help->title }}" class="w-full h-full object-cover">
                                     @else
-                                        <svg class="w-6 h-6 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-7 h-7 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                         </svg>
                                     @endif
@@ -463,7 +472,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                 </svg>
                             </div>
-                            <p class="text-sm font-bold text-gray-900 dark:text-white">Tidak ada permintaan yang menunggu mitra</p>
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">Tidak ada perkerjaan yang dibuat</p>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Buat permintaan bantuan baru untuk segera dibantu mitra terdekat</p>
                         </div>
                     @endforelse
@@ -485,8 +494,8 @@
 
         <!-- Help Detail Modal (bottom-sheet style like helps index) -->
         @if($selectedHelpData)
-            <div class="fixed inset-0 z-50 flex items-end justify-center" style="background: rgba(0,0,0,0.5);" wire:click="closeHelp">
-                <div class="bg-white dark:bg-gray-800 rounded-t-3xl w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto hide-scrollbar" @click.stop>
+            <div class="fixed inset-0 z-50 flex items-end justify-center" style="background: rgba(0,0,0,0.5);" wire:click.self="closeHelp">
+                <div class="bg-white dark:bg-gray-800 rounded-t-3xl w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto hide-scrollbar">
                     <!-- Modal Header -->
                     <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 rounded-t-3xl z-10">
                         <div class="flex items-center justify-between">

@@ -5,21 +5,25 @@
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
             <div class="relative z-10">
-                <div class="relative flex items-center justify-center min-h-[40px] text-white">
-                    <a href="{{ route('customer.withdraw.form') }}" aria-label="Kembali" class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 hover:bg-white/20 rounded-xl transition cursor-pointer">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </a>
+                <div class="flex items-center justify-between min-h-[40px] text-white">
+                    <div class="w-16 flex items-center">
+                        <a href="{{ route('customer.withdraw.form') }}" wire:navigate aria-label="Kembali" class="p-2 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </a>
+                    </div>
 
-                    <div class="text-center w-full min-w-0 px-20">
+                    <div class="text-center flex-1 min-w-0 px-2">
                         <h1 class="text-base font-bold truncate">Riwayat Penarikan Dana</h1>
                         <p class="text-xs text-white/90 truncate mt-0.5">Daftar penarikan saldo ke rekening</p>
                     </div>
 
-                    <a href="{{ route('customer.withdraw.form') }}" class="absolute right-0 top-1/2 -translate-y-1/2 z-20 px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-xs font-bold transition">
-                        + Tarik
-                    </a>
+                    <div class="w-16 flex items-center justify-end">
+                        <a href="{{ route('customer.withdraw.form') }}" wire:navigate class="px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-xs font-bold transition-colors duration-200">
+                            + Tarik
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

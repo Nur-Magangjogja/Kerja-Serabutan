@@ -26,7 +26,9 @@ class Index extends Component
     ];
 
     protected $listeners = [
-        'admin-city-changed' => '$refresh',
+        'superadmin-territory-changed' => '$refresh',
+        'admin-district-changed'       => '$refresh',
+        'admin-city-changed'           => '$refresh',
     ];
 
     public function updatingSearch()
@@ -57,18 +59,45 @@ class Index extends Component
         $statsQuery = PartnerReport::query();
 
         if (! $isSuperAdmin) {
-            $cityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
+            $districtIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
 
-            if (!empty($cityIds)) {
-                $statsQuery->where(function ($q) use ($cityIds) {
-                    $q->whereHas('reporter', function ($sq) use ($cityIds) {
-                        $sq->whereIn('city_id', $cityIds);
-                    })->orWhereHas('reportedUser', function ($sq) use ($cityIds) {
-                        $sq->whereIn('city_id', $cityIds);
+            if (!empty($districtIds)) {
+                $statsQuery->where(function ($q) use ($districtIds) {
+                    $q->whereHas('reporter', function ($sq) use ($districtIds) {
+                        $sq->whereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedUser', function ($sq) use ($districtIds) {
+                        $sq->whereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedHelp', function ($sq) use ($districtIds) {
+                        $sq->whereIn('district_id', $districtIds);
                     });
                 });
             } else {
                 $statsQuery->whereRaw('1 = 0');
+            }
+        } else {
+            $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+            if ($territory['type'] === 'district' && $territory['id']) {
+                $dId = (int) $territory['id'];
+                $statsQuery->where(function ($q) use ($dId) {
+                    $q->whereHas('reporter', fn($sq) => $sq->where('district_id', $dId))
+                      ->orWhereHas('reportedUser', fn($sq) => $sq->where('district_id', $dId))
+                      ->orWhereHas('reportedHelp', fn($sq) => $sq->where('district_id', $dId));
+                });
+            } elseif ($territory['type'] === 'city' && $territory['id']) {
+                $cId = (int) $territory['id'];
+                $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
+                $statsQuery->where(function ($q) use ($cId, $districtIds) {
+                    $q->whereHas('reporter', function ($sq) use ($cId, $districtIds) {
+                        $sq->where('city_id', $cId);
+                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedUser', function ($sq) use ($cId, $districtIds) {
+                        $sq->where('city_id', $cId);
+                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedHelp', function ($sq) use ($cId, $districtIds) {
+                        $sq->where('city_id', $cId);
+                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
+                    });
+                });
             }
         }
 
@@ -87,19 +116,46 @@ class Index extends Component
         })->count();
 
         // Main Query
-        $query = PartnerReport::with(['reporter', 'reportedUser', 'reportedHelp.city', 'resolvedBy'])->withCount('messages');
+        $query = PartnerReport::with(['reporter.district', 'reportedUser.district', 'reportedHelp.district', 'reportedHelp.city', 'resolvedBy'])->withCount('messages');
 
         if (! $isSuperAdmin) {
-            if (!empty($cityIds)) {
-                $query->where(function ($q) use ($cityIds) {
-                    $q->whereHas('reporter', function ($sq) use ($cityIds) {
-                        $sq->whereIn('city_id', $cityIds);
-                    })->orWhereHas('reportedUser', function ($sq) use ($cityIds) {
-                        $sq->whereIn('city_id', $cityIds);
+            if (!empty($districtIds)) {
+                $query->where(function ($q) use ($districtIds) {
+                    $q->whereHas('reporter', function ($sq) use ($districtIds) {
+                        $sq->whereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedUser', function ($sq) use ($districtIds) {
+                        $sq->whereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedHelp', function ($sq) use ($districtIds) {
+                        $sq->whereIn('district_id', $districtIds);
                     });
                 });
             } else {
                 $query->whereRaw('1 = 0');
+            }
+        } else {
+            $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
+            if ($territory['type'] === 'district' && $territory['id']) {
+                $dId = (int) $territory['id'];
+                $query->where(function ($q) use ($dId) {
+                    $q->whereHas('reporter', fn($sq) => $sq->where('district_id', $dId))
+                      ->orWhereHas('reportedUser', fn($sq) => $sq->where('district_id', $dId))
+                      ->orWhereHas('reportedHelp', fn($sq) => $sq->where('district_id', $dId));
+                });
+            } elseif ($territory['type'] === 'city' && $territory['id']) {
+                $cId = (int) $territory['id'];
+                $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
+                $query->where(function ($q) use ($cId, $districtIds) {
+                    $q->whereHas('reporter', function ($sq) use ($cId, $districtIds) {
+                        $sq->where('city_id', $cId);
+                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedUser', function ($sq) use ($cId, $districtIds) {
+                        $sq->where('city_id', $cId);
+                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
+                    })->orWhereHas('reportedHelp', function ($sq) use ($cId, $districtIds) {
+                        $sq->where('city_id', $cId);
+                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
+                    });
+                });
             }
         }
 

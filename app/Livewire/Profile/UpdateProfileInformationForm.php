@@ -16,23 +16,39 @@ class UpdateProfileInformationForm extends Component
     public string $cityQuery = '';
     public array $searchResults = [];
 
+    public $district_id;
+    public $kecamatan;
+    public array $districtsList = [];
+
+    // Saved Landmarks / Patokan Tempat
+    public array $savedLandmarks = [];
+    public string $newLandmarkLabel = '';
+    public string $newLandmarkPatokan = '';
+    public ?string $editingLandmarkId = null;
+    public bool $showLandmarkForm = false;
+
     protected $rules = [
-        'name' => ['required', 'string', 'max:255'],
+        'name' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
         'email' => ['required', 'email', 'max:255'],
-        'phone' => ['required', 'string', 'min:9', 'max:20', 'regex:/^[0-9+\s\-]+$/'],
+        'phone' => ['required', 'string', 'min:9', 'max:18', 'regex:/^(0[1-9][0-9]{8,12}|\+[1-9][0-9]{6,14})$/'],
         'city_id' => ['nullable', 'exists:cities,id'],
+        'district_id' => ['nullable', 'exists:districts,id'],
         'city' => ['required', 'string', 'max:100'],
         'province' => ['required', 'string', 'max:100'],
+        'kecamatan' => ['nullable', 'string', 'max:100'],
     ];
 
     protected $messages = [
         'name.required' => 'Nama lengkap wajib diisi.',
+        'name.min' => 'Nama lengkap minimal 3 karakter.',
+        'name.max' => 'Nama lengkap maksimal 255 karakter.',
+        'name.regex' => 'Nama lengkap hanya boleh berisi huruf alfabet, spasi, tanda hubung (-), titik (.), dan tanda petik (\'). Angka dan simbol khusus tidak diperbolehkan.',
         'email.required' => 'Alamat email wajib diisi.',
         'email.email' => 'Format email tidak valid.',
         'phone.required' => 'Nomor HP/WhatsApp wajib diisi.',
         'phone.min' => 'Nomor HP minimal 9 digit.',
-        'phone.max' => 'Nomor HP maksimal 20 digit.',
-        'phone.regex' => 'Format nomor HP tidak valid.',
+        'phone.max' => 'Nomor HP maksimal 18 karakter.',
+        'phone.regex' => 'Format nomor HP tidak valid. Gunakan format Indonesia (contoh: 08123456789 atau +62812...) atau format internasional (+<kode_negara><nomor>).',
         'city.required' => 'Kota / Kabupaten wajib diisi.',
         'province.required' => 'Provinsi wajib diisi.',
     ];
@@ -44,8 +60,11 @@ class UpdateProfileInformationForm extends Component
         $this->email = $user->email;
         $this->phone = $user->phone;
         $this->city_id = $user->city_id;
+        $this->district_id = $user->district_id;
         $this->city = $user->city;
         $this->province = $user->province;
+        $this->kecamatan = $user->kecamatan ?? $user->district?->name;
+        $this->savedLandmarks = $user->getSavedLandmarksList();
 
         if ($this->city_id) {
             $cityRec = \App\Models\City::find($this->city_id);
@@ -54,9 +73,15 @@ class UpdateProfileInformationForm extends Component
                 $this->city = $cityRec->name;
                 $this->province = $cityRec->province ?? $this->province;
             }
+            $this->districtsList = app(\App\Services\CitySearchService::class)->getDistrictsByCity((int) $this->city_id);
         } elseif (!empty($user->city)) {
             $this->cityQuery = $user->city;
         }
+    }
+
+    public function updatedPhone($value): void
+    {
+        $this->phone = \App\Models\User::normalizePhone($value) ?? '';
     }
 
     public function updatedCityQuery($value): void
@@ -88,6 +113,16 @@ class UpdateProfileInformationForm extends Component
             $this->cityQuery = $city->name . ($city->province ? " — {$city->province}" : '');
             $this->city = $city->name;
             $this->province = $city->province;
+            $this->districtsList = app(\App\Services\CitySearchService::class)->getDistrictsByCity((int) $id);
+            
+            // Reset district_id jika tidak termasuk dalam kota baru
+            if ($this->district_id) {
+                $exists = collect($this->districtsList)->contains('id', (int) $this->district_id);
+                if (!$exists) {
+                    $this->district_id = null;
+                    $this->kecamatan = null;
+                }
+            }
         }
         $this->searchResults = [];
         $this->resetErrorBag('city');
@@ -95,11 +130,26 @@ class UpdateProfileInformationForm extends Component
         $this->resetErrorBag('city_id');
     }
 
+    public function updatedDistrictId($value): void
+    {
+        if ($value) {
+            $dist = \App\Models\District::find($value);
+            if ($dist) {
+                $this->kecamatan = $dist->name;
+            }
+        } else {
+            $this->kecamatan = null;
+        }
+    }
+
     public function clearCity(): void
     {
         $this->city_id = null;
+        $this->district_id = null;
         $this->cityQuery = '';
         $this->city = '';
+        $this->kecamatan = '';
+        $this->districtsList = [];
         $this->searchResults = [];
     }
 
@@ -109,6 +159,8 @@ class UpdateProfileInformationForm extends Component
         if (empty($this->city) && !empty($this->cityQuery)) {
             $this->city = $this->cityQuery;
         }
+
+        $this->phone = \App\Models\User::normalizePhone($this->phone) ?? '';
 
         $this->validate();
 
@@ -133,16 +185,93 @@ class UpdateProfileInformationForm extends Component
             }
         }
 
+        $kecamatanName = $this->kecamatan;
+        if ($this->district_id) {
+            $distRec = \App\Models\District::find($this->district_id);
+            if ($distRec) {
+                $kecamatanName = $distRec->name;
+            }
+        }
+
         $user->update([
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
             'city_id' => $this->city_id,
+            'district_id' => $this->district_id,
             'city' => $cityName,
             'province' => $provinceName,
+            'kecamatan' => $kecamatanName,
         ]);
 
         session()->flash('message', 'Profil Anda berhasil diperbarui!');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SAVED LANDMARKS (Patokan Tempat / Ciri Rumah)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function openNewLandmarkForm()
+    {
+        $this->editingLandmarkId = null;
+        $this->newLandmarkLabel = '';
+        $this->newLandmarkPatokan = '';
+        $this->showLandmarkForm = true;
+    }
+
+    public function editLandmark($id)
+    {
+        $this->editingLandmarkId = $id;
+        foreach ($this->savedLandmarks as $lm) {
+            if (($lm['id'] ?? '') === $id) {
+                $this->newLandmarkLabel = $lm['label'] ?? '';
+                $this->newLandmarkPatokan = $lm['patokan'] ?? '';
+                break;
+            }
+        }
+        $this->showLandmarkForm = true;
+    }
+
+    public function cancelLandmarkForm()
+    {
+        $this->editingLandmarkId = null;
+        $this->newLandmarkLabel = '';
+        $this->newLandmarkPatokan = '';
+        $this->showLandmarkForm = false;
+    }
+
+    public function saveLandmark()
+    {
+        $this->validate([
+            'newLandmarkLabel' => ['required', 'string', 'max:50'],
+            'newLandmarkPatokan' => ['required', 'string', 'max:500'],
+        ], [
+            'newLandmarkLabel.required' => 'Nama/Label patokan wajib diisi (contoh: Rumah / Kost).',
+            'newLandmarkPatokan.required' => 'Detail patokan / ciri rumah wajib diisi.',
+        ]);
+
+        $user = Auth::user();
+        if ($this->editingLandmarkId) {
+            $user->updateSavedLandmark($this->editingLandmarkId, $this->newLandmarkLabel, $this->newLandmarkPatokan);
+            session()->flash('landmark_message', 'Patokan tempat berhasil diperbarui!');
+        } else {
+            $user->addSavedLandmark($this->newLandmarkLabel, $this->newLandmarkPatokan);
+            session()->flash('landmark_message', 'Patokan tempat baru berhasil disimpan!');
+        }
+
+        $this->savedLandmarks = $user->getSavedLandmarksList();
+        $this->cancelLandmarkForm();
+    }
+
+    public function deleteLandmark($id)
+    {
+        $user = Auth::user();
+        $user->deleteSavedLandmark($id);
+        $this->savedLandmarks = $user->getSavedLandmarksList();
+        if ($this->editingLandmarkId === $id) {
+            $this->cancelLandmarkForm();
+        }
+        session()->flash('landmark_message', 'Patokan tempat berhasil dihapus.');
     }
 
     public function render()

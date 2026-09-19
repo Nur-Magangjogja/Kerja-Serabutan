@@ -10,8 +10,8 @@
                         <div class="flex items-center gap-3">
                             <div
                                 class="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                                @if(auth()->user()?->selfie_photo)
-                                    <img src="{{ asset('storage/' . auth()->user()->selfie_photo) }}" alt="avatar"
+                                @if(auth()->user()?->profile_photo ?? auth()->user()?->photo)
+                                    <img src="{{ asset('storage/' . (auth()->user()->profile_photo ?? auth()->user()->photo)) }}" alt="avatar"
                                         class="w-full h-full object-cover">
                                 @else
                                     <span
@@ -29,8 +29,8 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="md:col-span-1 flex flex-col items-center gap-3 p-3 bg-gray-50 rounded-lg">
                             <div class="w-28 h-28 rounded-full overflow-hidden bg-white shadow-sm">
-                                @if(auth()->user()?->selfie_photo)
-                                    <img src="{{ asset('storage/' . auth()->user()->selfie_photo) }}" alt="avatar"
+                                @if(auth()->user()?->profile_photo ?? auth()->user()?->photo)
+                                    <img src="{{ asset('storage/' . (auth()->user()->profile_photo ?? auth()->user()->photo)) }}" alt="avatar"
                                         class="w-full h-full object-cover">
                                 @else
                                     <div class="w-full h-full flex items-center justify-center text-2xl text-gray-400">
@@ -50,6 +50,7 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Nama</label>
                                     <input type="text" wire:model.defer="name"
+                                        oninput="this.value = this.value.replace(/[^a-zA-Z\s\.\'\-]/g, '')"
                                         class="mt-1 block w-full border rounded px-3 py-2" />
                                     @error('name') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                 </div>
@@ -62,21 +63,34 @@
                             </div>
 
                             <div class="mt-3">
-                                <label class="block text-sm font-medium text-gray-700">Kota</label>
-                                <select wire:model.defer="city_id" class="mt-1 block w-full border rounded px-3 py-2">
-                                    <option value="">-- Pilih Kota --</option>
-                                    @foreach($cities as $city)
-                                        <option value="{{ $city->id }}">{{ $city->name }}</option>
+                                 <label class="block text-sm font-medium text-gray-700">Kota / Kabupaten</label>
+                                 <select wire:model.live="city_id" class="mt-1 block w-full border rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-600 focus:ring-primary-500 focus:outline-none">
+                                     <option value="">-- Pilih Kota --</option>
+                                     @foreach($cities as $city)
+                                         <option value="{{ $city->id }}">{{ $city->name }} ({{ $city->province }})</option>
+                                     @endforeach
+                                 </select>
+                                 @error('city_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
+                            </div>
+
+                            @if(!empty($city_id) && !empty($districtsList))
+                            <div class="mt-3">
+                                <label class="block text-sm font-medium text-gray-700">Kecamatan Operasional</label>
+                                <select wire:model.live="district_id" class="mt-1 block w-full border rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-600 focus:ring-primary-500 focus:outline-none">
+                                    <option value="">-- Pilih Kecamatan --</option>
+                                    @foreach($districtsList as $d)
+                                        <option value="{{ $d['id'] }}">Kec. {{ $d['name'] }}</option>
                                     @endforeach
                                 </select>
-                                @error('city_id') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                                @error('district_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                             </div>
+                            @endif
 
                             <div class="mt-3">
                                 <label class="block text-sm font-medium text-gray-700">Bio / Deskripsi singkat</label>
-                                <textarea wire:model.defer="bio" class="mt-1 block w-full border rounded px-3 py-2"
-                                    rows="4"></textarea>
-                                @error('bio') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                                <textarea wire:model.defer="bio" class="mt-1 block w-full border rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-600 focus:ring-primary-500 focus:outline-none"
+                                    rows="3"></textarea>
+                                @error('bio') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
                             </div>
 
                             <div class="mt-4 flex justify-end gap-3">

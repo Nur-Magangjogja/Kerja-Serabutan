@@ -41,14 +41,20 @@ class HelpObserver
                 'user_agent'    => request()?->header('User-Agent'),
             ]);
 
-            // Notifikasi ke mitra aktif (prioritas kota yang sama)
+            // Notifikasi ke mitra aktif (prioritas kecamatan yang sama lalu kota)
             $mitraQuery = \App\Models\User::where('role', 'mitra')->where('status', 'active');
-            if ($help->city_id) {
-                $mitras = (clone $mitraQuery)->where('city_id', $help->city_id)->take(20)->get();
-                if ($mitras->isEmpty()) {
-                    $mitras = $mitraQuery->take(20)->get();
+            if ($help->district_id) {
+                $mitras = (clone $mitraQuery)->where('district_id', $help->district_id)->take(20)->get();
+                if ($mitras->isEmpty() && $help->city_id) {
+                    $mitras = (clone $mitraQuery)->where('city_id', $help->city_id)->take(20)->get();
                 }
+            } elseif ($help->city_id) {
+                $mitras = (clone $mitraQuery)->where('city_id', $help->city_id)->take(20)->get();
             } else {
+                $mitras = $mitraQuery->take(20)->get();
+            }
+
+            if ($mitras->isEmpty()) {
                 $mitras = $mitraQuery->take(20)->get();
             }
 
@@ -85,9 +91,7 @@ class HelpObserver
             $newStatus  = $help->status;
             $prevStatus = $help->getOriginal('status');
 
-            $completedStates = [Help::STATUS_SELESAI, 'completed'];
-
-            if (in_array($newStatus, $completedStates) && !in_array($prevStatus, $completedStates)) {
+            if ($newStatus === Help::STATUS_SELESAI && $prevStatus !== Help::STATUS_SELESAI) {
                 $this->creditMitraIfNeeded($help);
             }
         }

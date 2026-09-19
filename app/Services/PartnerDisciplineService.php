@@ -52,32 +52,129 @@ class PartnerDisciplineService
     }
 
     /**
-     * Catat penolakan tawaran bantuan (Reject Offer / Expired Offer).
-     * Evaluasi eskalasi SP jika akumulasi penolakan mencapai kelipatan 3x (3x -> SP1, 6x -> SP2, 9x -> SP3).
+     * Penolakan/pengabaian tawaran order saat matching radar TIDAK memicu SP.
+     * Mitra bebas memilih tawaran yang sesuai. Penolakan hanya mempengaruhi
+     * transisi status radar (demote ke standby jika menolak 2x berturut-turut).
      */
     public function recordPartnerDecline(User $mitra, ?Help $help = null, ?string $reason = null): void
     {
-        if ($mitra->role !== 'mitra') {
-            return;
-        }
-
-        $this->evaluateWarningEscalation($mitra, 'decline', "Penolakan tawaran bantuan" . ($help ? " #{$help->id}" : ""));
+        // No-op: Menolak saat mencari order tidak dihitung untuk SP.
     }
 
     /**
-     * Evaluasi eskalasi Surat Peringatan (SP 1, SP 2, SP 3).
-     * Setiap 3x penolakan/pembatalan:
-     * - 3x  => SP 1
-     * - 6x  => SP 2
-     * - 9x  => SP 3
+     * Compatibility bridge untuk issueManualWarningToUser.
+     */
+    public function issueWarning(
+        int|User $user,
+        int $targetLevel,
+        string $reason,
+        int|User|null $admin = null,
+        int|Help|null $help = null
+    ): void {
+        $userObj  = is_numeric($user) ? User::find($user) : $user;
+        $adminObj = is_numeric($admin) ? User::find($admin) : $admin;
+        $helpObj  = is_numeric($help) ? Help::find($help) : $help;
+
+        if ($userObj) {
+            $this->issueManualWarningToUser($userObj, $targetLevel, $reason, $adminObj, $helpObj);
+        }
+    }
+
+    /**
+     * Penerbitan Surat Peringatan (SP 1, SP 2, SP 3) secara manual oleh Admin Wilayah
+     * kepada Pengguna (Mitra maupun Customer) jika ditemukan kejanggalan/pelanggaran.
+     */
+    public function issueManualWarningToUser(
+        User $user,
+        int $targetLevel,
+        string $reason,
+        ?User $admin = null,
+        ?Help $help = null
+    ): void {
+        $targetLevel = max(1, min(3, $targetLevel));
+        $adminName   = $admin ? $admin->name : 'Admin Wilayah';
+        $helpInfo    = $help ? " pada pesanan #{$help->id} ('{$help->title}')" : "";
+
+        $roleTitle = ($user->role === 'mitra') ? 'Mitra' : 'Customer';
+
+        $warningMsg = match ($targetLevel) {
+            1 => "Surat Peringatan Pertama (SP 1): Anda mendapatkan SP 1 dari {$adminName}{$helpInfo}. Alasan: {$reason}. Harap patuhi ketentuan layanan SayaBantu.",
+            2 => "Surat Peringatan Kedua (SP 2): Anda mendapatkan SP 2 dari {$adminName}{$helpInfo}. Alasan: {$reason}. Akun Anda berada dalam pengawasan ketat.",
+            3 => "Surat Peringatan Terakhir (SP 3): Anda mendapatkan SP 3 dari {$adminName}{$helpInfo}. Alasan: {$reason}. Akun Anda dikenakan pembatasan penuh / sanksi keras.",
+            default => "Peringatan kedisiplinan dari {$adminName}: {$reason}",
+        };
+
+        $updateData = [
+            'is_greylisted'          => true,
+            'greylisted_at'          => $user->greylisted_at ?? now(),
+            'warning_level'          => $targetLevel,
+            'greylist_reason'        => "Keputusan {$adminName}: SP {$targetLevel}{$helpInfo}. Alasan: {$reason}",
+            'latest_warning_message' => $warningMsg,
+            'latest_warning_at'      => now(),
+        ];
+
+        // Pada SP 3 untuk mitra, aktifkan Shadow Ban otomatis
+        if ($targetLevel === 3 && $user->role === 'mitra') {
+            $updateData['is_shadow_banned'] = true;
+            $updateData['shadow_banned_at'] = now();
+            \App\Models\PartnerOnlineState::where('user_id', $user->id)->update([
+                'matching_status' => \App\Models\PartnerOnlineState::STATUS_OFFLINE,
+                'searching_since' => null,
+            ]);
+        }
+
+        $user->update($updateData);
+
+        UserGreylistLog::create([
+            'user_id'       => $user->id,
+            'admin_id'      => $admin?->id,
+            'action'        => 'warning_issued',
+            'warning_level' => $targetLevel,
+            'reason'        => "SP {$targetLevel} diterbitkan {$adminName}{$helpInfo}. Alasan: {$reason}",
+            'message'       => $warningMsg,
+        ]);
+
+        if ($targetLevel === 3 && $user->role === 'mitra') {
+            UserGreylistLog::create([
+                'user_id'       => $user->id,
+                'admin_id'      => $admin?->id,
+                'action'        => 'shadow_ban_enabled',
+                'warning_level' => 3,
+                'reason'        => "Shadow Ban diaktifkan karena telah mencapai SP 3.",
+                'message'       => "Akun dikenakan Shadow Ban oleh {$adminName}.",
+            ]);
+        }
+
+        ActivityLog::record(
+            $admin?->id,
+            'admin_manual_warning_issued',
+            "{$adminName} menerbitkan SP {$targetLevel} kepada {$roleTitle} {$user->name} (#{$user->id}){$helpInfo}. Alasan: {$reason}",
+            [
+                'target_user_id' => $user->id,
+                'role'           => $user->role,
+                'warning_level'  => $targetLevel,
+                'help_id'        => $help?->id,
+                'reason'         => $reason,
+            ]
+        );
+
+        // Kirim notifikasi sistem ke user terkait
+        try {
+            if ($help) {
+                $user->notify(new \App\Notifications\HelpStatusNotification($help, $warningMsg));
+            }
+        } catch (\Throwable $e) {
+            Log::warning("[PartnerDisciplineService] Failed notifying user #{$user->id} for manual SP: " . $e->getMessage());
+        }
+
+        Log::info("[PartnerDisciplineService] {$roleTitle} #{$user->id} issued manual SP {$targetLevel} by Admin #{$admin?->id}");
+    }
+
+    /**
+     * Evaluasi eskalasi Surat Peringatan (SP 1, SP 2, SP 3) akumulatif (legacy helper).
      */
     public function evaluateWarningEscalation(User $mitra, string $triggerType, string $detail): void
     {
-        // Hitung total akumulasi penolakan tawaran dispatch oleh mitra
-        $totalDeclines = HelpDispatch::where('mitra_id', $mitra->id)
-            ->whereIn('status', [HelpDispatch::STATUS_REJECTED, HelpDispatch::STATUS_EXPIRED])
-            ->count();
-
         // Hitung total pembatalan bantuan yang pernah diambil oleh mitra via relasi terindeks
         $totalCancels = 0;
         try {
@@ -95,81 +192,29 @@ class PartnerDisciplineService
             })->count();
         }
 
-        $totalViolations = $totalDeclines + $totalCancels;
         $currentLevel = (int) ($mitra->warning_level ?? 0);
 
-        // Perhitungan ambang batas:
+        // Ambang batas sanksi pembatalan tugas yang sudah diambil:
         // Pembatalan ke-1: Masuk Daftar Abu-Abu (pengawasan, warning_level 0)
-        // Setiap 3x pembatalan lagi:
-        // - 1 + 3 = 4x pembatalan  => SP 1
-        // - 4 + 3 = 7x pembatalan  => SP 2
-        // - 7 + 3 = 10x pembatalan => SP 3 (+ Otomatis Shadow Ban)
+        // - 3x pembatalan => SP 1
+        // - 6x pembatalan => SP 2
+        // - 9x pembatalan => SP 3 (+ Otomatis Shadow Ban)
         $targetLevel = 0;
-        if ($totalCancels >= 10 || $totalViolations >= 10) {
+        if ($totalCancels >= 9) {
             $targetLevel = 3;
-        } elseif ($totalCancels >= 7 || $totalViolations >= 7) {
+        } elseif ($totalCancels >= 6) {
             $targetLevel = 2;
-        } elseif ($totalCancels >= 4 || $totalViolations >= 4) {
+        } elseif ($totalCancels >= 3) {
             $targetLevel = 1;
         }
 
         if ($targetLevel > $currentLevel) {
-            $warningMsg = match ($targetLevel) {
-                1 => "Surat Peringatan Pertama (SP 1): Anda telah melakukan pembatalan/penolakan tugas sebanyak {$totalViolations} kali. Harap menjaga komitmen dalam menerima dan menyelesaikan permintaan bantuan.",
-                2 => "Surat Peringatan Kedua (SP 2): Anda telah melakukan pembatalan/penolakan tugas sebanyak {$totalViolations} kali. Kinerja Anda dalam pengawasan ketat sistem.",
-                3 => "Surat Peringatan Terakhir (SP 3): Batas pelanggaran pembatalan tugas telah tercapai ({$totalViolations} kali). Akun Anda dikenakan Shadow Ban (pembatasan akses tugas) dan menunggu peninjauan pemblokiran permanen oleh Admin.",
-                default => "Peringatan kedisiplinan mitra.",
-            };
-
-            $updateData = [
-                'is_greylisted'          => true,
-                'greylisted_at'          => $mitra->greylisted_at ?? now(),
-                'warning_level'          => $targetLevel,
-                'greylist_reason'        => "Akumulasi penolakan/pembatalan tugas mencapai {$totalViolations} kali ({$detail}).",
-                'latest_warning_message' => $warningMsg,
-                'latest_warning_at'      => now(),
-            ];
-
-            // Pada SP 3, langsung kenakan Shadow Ban otomatis
-            if ($targetLevel === 3) {
-                $updateData['is_shadow_banned'] = true;
-                $updateData['shadow_banned_at'] = now();
-                \App\Models\PartnerOnlineState::where('user_id', $mitra->id)->update([
-                    'matching_status' => \App\Models\PartnerOnlineState::STATUS_OFFLINE,
-                    'searching_since' => null,
-                ]);
-            }
-
-            $mitra->update($updateData);
-
-            UserGreylistLog::create([
-                'user_id'       => $mitra->id,
-                'admin_id'      => null,
-                'action'        => 'warning_issued',
-                'warning_level' => $targetLevel,
-                'reason'        => "Akumulasi penolakan/pembatalan tugas mencapai {$totalViolations} kali ({$detail}).",
-                'message'       => $warningMsg,
-            ]);
-
-            if ($targetLevel === 3) {
-                UserGreylistLog::create([
-                    'user_id'       => $mitra->id,
-                    'admin_id'      => null,
-                    'action'        => 'shadow_ban_enabled',
-                    'warning_level' => 3,
-                    'reason'        => "Otomatis Shadow Ban karena telah mencapai SP 3 (Batas maksimal pembatalan tugas).",
-                    'message'       => "Akun otomatis dikenakan Shadow Ban. Fitur pencarian bantuan ditangguhkan sementara.",
-                ]);
-            }
-
-            ActivityLog::record(
-                null,
-                'warning_issued_auto',
-                "Sistem otomatis menerbitkan SP {$targetLevel} kepada mitra {$mitra->name} (#{$mitra->id}) karena akumulasi pelanggaran mencapai {$totalViolations} kali." . ($targetLevel === 3 ? " [Shadow Ban Diterapkan]" : ""),
-                ['mitra_id' => $mitra->id, 'warning_level' => $targetLevel, 'total_violations' => $totalViolations]
+            $this->issueManualWarningToUser(
+                $mitra,
+                $targetLevel,
+                "Akumulasi pembatalan tugas bantuan yang telah diambil mencapai {$totalCancels} kali ({$detail}).",
+                null
             );
-
-            Log::info("[PartnerDisciplineService] Mitra #{$mitra->id} issued SP {$targetLevel} (Total violations: {$totalViolations})");
         }
     }
 }

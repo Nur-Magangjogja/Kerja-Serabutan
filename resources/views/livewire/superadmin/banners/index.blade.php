@@ -91,38 +91,75 @@
             <!-- 2-Column Banner Management Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- 1. Customer Banner Section -->
-@php $customerMax = 5; $customerUsed = count($customerBanners); $customerRemain = max(0, $customerMax - $customerUsed); @endphp
+                @php $customerMax = 5; $customerUsed = count($customerBanners); $customerRemain = max(0, $customerMax - $customerUsed); @endphp
                 <div class="bg-gray-50/80 dark:bg-gray-900/60 rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-700 flex flex-col justify-between min-w-0">
                     <div>
-                        <div class="flex items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center justify-between gap-2 mb-4">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="w-3 h-3 rounded-full bg-blue-500 flex-shrink-0"></span>
-                                <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">Banner Customer</h3>
+                                <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">Banner Customer</h3>
                             </div>
-                            <span class="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold {{ $customerRemain === 0 ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' }} border {{ $customerRemain === 0 ? 'border-red-200 dark:border-red-800' : 'border-blue-200 dark:border-blue-800' }}">
+                            <span class="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold {{ $customerRemain === 0 ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800' }} border">
                                 <span class="w-1.5 h-1.5 rounded-full {{ $customerRemain === 0 ? 'bg-red-500' : 'bg-blue-500' }}"></span>
                                 {{ $customerUsed }}/{{ $customerMax }}
                                 @if($customerRemain > 0) · Sisa {{ $customerRemain }} slot @else · Penuh @endif
                             </span>
                         </div>
 
-                        <div class="mb-4">
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                                @forelse($customerBanners as $i => $b)
-                                    <div class="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm aspect-[16/9] bg-gray-100 dark:bg-gray-700">
-                                        <img src="{{ asset('storage/' . $b) }}" alt="banner-{{ $i }}" class="w-full h-full object-cover">
-                                        <button wire:click="removeCustomer({{ $i }})" type="button"
-                                            class="absolute top-1.5 right-1.5 bg-white/90 dark:bg-gray-800/90 rounded-full p-1 hover:bg-red-50 dark:hover:bg-red-950/50 shadow"
-                                            title="Hapus">
-                                            <svg class="w-3.5 h-3.5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                @empty
-                                    <div class="col-span-full text-xs text-gray-500 dark:text-gray-400 py-3 text-center bg-white dark:bg-gray-800 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">Belum ada banner customer.</div>
-                                @endforelse
+                        <!-- Active Banner List with Individual Link Settings -->
+                        <div class="mb-5 space-y-3">
+                            <div class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <span>Daftar Banner Aktif ({{ $customerUsed }})</span>
                             </div>
+
+                            @forelse($customerBanners as $i => $b)
+                                @php
+                                    $imgPath = is_array($b) ? ($b['image'] ?? '') : $b;
+                                    $linkUrl = is_array($b) ? ($b['link'] ?? '') : '';
+                                @endphp
+                                <div class="p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xs flex flex-col sm:flex-row items-start sm:items-center gap-3 transition-all hover:border-blue-300 dark:hover:border-blue-700">
+                                    <!-- Thumbnail 16:9 -->
+                                    <div class="relative w-full sm:w-32 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 shadow-2xs">
+                                        <img src="{{ asset('storage/' . $imgPath) }}" alt="banner-customer-{{ $i }}" class="w-full h-full object-cover">
+                                        <span class="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-blue-600/90 text-white text-[9px] font-black tracking-wider uppercase">{{ $i + 1 }}</span>
+                                    </div>
+
+                                    <!-- Link Href Input -->
+                                    <div class="flex-1 min-w-0 w-full space-y-1">
+                                        <div class="flex items-center justify-between gap-1">
+                                            <label class="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                                                <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                                <span>Link Tujuan Href (Opsional):</span>
+                                            </label>
+                                            @if(!empty($linkUrl))
+                                                <a href="{{ $linkUrl }}" target="_blank" rel="noopener noreferrer" class="text-[10px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5 font-semibold">
+                                                    <span>Uji Link</span>
+                                                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                                </a>
+                                            @endif
+                                        </div>
+                                        <input type="text"
+                                               wire:model.defer="customerBanners.{{ $i }}.link"
+                                               placeholder="Contoh: https://sayabantu.com/promo atau /customer/helps/create"
+                                               class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition" />
+                                        <p class="text-[10px] text-gray-400 dark:text-gray-500">Kosongkan bila banner hanya berupa gambar info tanpa link.</p>
+                                    </div>
+
+                                    <!-- Action Delete -->
+                                    <button wire:click="removeCustomer({{ $i }})" type="button"
+                                            wire:confirm="Yakin ingin menghapus banner customer ini?"
+                                            class="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/60 rounded-xl transition cursor-pointer self-end sm:self-center flex-shrink-0"
+                                            title="Hapus Banner">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            @empty
+                                <div class="text-xs text-gray-500 dark:text-gray-400 py-6 text-center bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                                    Belum ada banner customer yang aktif.
+                                </div>
+                            @endforelse
                         </div>
                     </div>
 
@@ -164,19 +201,27 @@
                         @error('customerUploads') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
                         @error('customerUploads.*') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
 
-                        <!-- Reactive Livewire Preview -->
+                        <!-- Reactive Livewire Preview for New Uploads -->
                         @if(!empty($customerUploads))
-                            <div class="space-y-2.5 mt-3">
+                            <div class="space-y-3 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                                 <div class="flex items-center justify-between text-xs font-semibold text-blue-700 dark:text-blue-300">
-                                    <span>{{ count($customerUploads) }} banner baru dipilih:</span>
-                                    <button type="button" wire:click="$set('customerUploads', [])" class="text-red-500 hover:text-red-700 text-xs font-medium cursor-pointer">✕ Batal Pilihan</button>
+                                    <span>{{ count($customerUploads) }} banner baru dipilih (Atur link sebelum disimpan):</span>
+                                    <button type="button" wire:click="$set('customerUploads', []); $set('customerNewLinks', []);" class="text-red-500 hover:text-red-700 text-xs font-medium cursor-pointer">✕ Batal Pilihan</button>
                                 </div>
-                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                                    @foreach($customerUploads as $upload)
+                                <div class="space-y-2.5">
+                                    @foreach($customerUploads as $idx => $upload)
                                         @if($upload)
-                                            <div class="relative rounded-xl overflow-hidden border-2 border-blue-500 aspect-[16/9] bg-gray-900 shadow-sm">
-                                                <img src="{{ $upload->temporaryUrl() }}" class="w-full h-full object-cover">
-                                                <span class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-blue-600/90 text-white text-[9px] font-bold">Siap Simpan</span>
+                                            <div class="p-2.5 bg-blue-50/60 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-900/60 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                                <div class="relative w-full sm:w-28 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-blue-300 bg-gray-900 shadow-2xs">
+                                                    <img src="{{ $upload->temporaryUrl() }}" class="w-full h-full object-cover">
+                                                    <span class="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-blue-600 text-white text-[8px] font-bold">Baru</span>
+                                                </div>
+                                                <div class="flex-1 min-w-0 w-full">
+                                                    <label class="block text-[10px] font-bold text-gray-600 dark:text-gray-300 mb-0.5">Link Tujuan Href (Opsional):</label>
+                                                    <input type="text" wire:model.defer="customerNewLinks.{{ $idx }}"
+                                                           placeholder="Contoh: https://... atau /customer/helps/create"
+                                                           class="w-full px-2.5 py-1 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-1 focus:ring-blue-500" />
+                                                </div>
                                             </div>
                                         @endif
                                     @endforeach
@@ -186,39 +231,76 @@
                     </div>
                 </div>
 
-@php $mitraMax = 5; $mitraUsed = count($mitraBanners); $mitraRemain = max(0, $mitraMax - $mitraUsed); @endphp
                 <!-- 2. Mitra Banner Section -->
+                @php $mitraMax = 5; $mitraUsed = count($mitraBanners); $mitraRemain = max(0, $mitraMax - $mitraUsed); @endphp
                 <div class="bg-gray-50/80 dark:bg-gray-900/60 rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-700 flex flex-col justify-between min-w-0">
                     <div>
-                        <div class="flex items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center justify-between gap-2 mb-4">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="w-3 h-3 rounded-full bg-emerald-500 flex-shrink-0"></span>
-                                <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">Banner Mitra</h3>
+                                <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">Banner Mitra</h3>
                             </div>
-                            <span class="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold {{ $mitraRemain === 0 ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' }} border">
+                            <span class="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold {{ $mitraRemain === 0 ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' }} border">
                                 <span class="w-1.5 h-1.5 rounded-full {{ $mitraRemain === 0 ? 'bg-red-500' : 'bg-emerald-500' }}"></span>
                                 {{ $mitraUsed }}/{{ $mitraMax }}
                                 @if($mitraRemain > 0) · Sisa {{ $mitraRemain }} slot @else · Penuh @endif
                             </span>
                         </div>
 
-                        <div class="mb-4">
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                                @forelse($mitraBanners as $i => $b)
-                                    <div class="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm aspect-[16/9] bg-gray-100 dark:bg-gray-700">
-                                        <img src="{{ asset('storage/' . $b) }}" alt="banner-mitra-{{ $i }}" class="w-full h-full object-cover">
-                                        <button wire:click="removeMitra({{ $i }})" type="button"
-                                            class="absolute top-1.5 right-1.5 bg-white/90 dark:bg-gray-800/90 rounded-full p-1 hover:bg-red-50 dark:hover:bg-red-950/50 shadow"
-                                            title="Hapus">
-                                            <svg class="w-3.5 h-3.5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                @empty
-                                    <div class="col-span-full text-xs text-gray-500 dark:text-gray-400 py-3 text-center bg-white dark:bg-gray-800 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">Belum ada banner mitra.</div>
-                                @endforelse
+                        <!-- Active Mitra Banner List with Individual Link Settings -->
+                        <div class="mb-5 space-y-3">
+                            <div class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <span>Daftar Banner Aktif ({{ $mitraUsed }})</span>
                             </div>
+
+                            @forelse($mitraBanners as $i => $b)
+                                @php
+                                    $imgPath = is_array($b) ? ($b['image'] ?? '') : $b;
+                                    $linkUrl = is_array($b) ? ($b['link'] ?? '') : '';
+                                @endphp
+                                <div class="p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xs flex flex-col sm:flex-row items-start sm:items-center gap-3 transition-all hover:border-emerald-300 dark:hover:border-emerald-700">
+                                    <!-- Thumbnail 16:9 -->
+                                    <div class="relative w-full sm:w-32 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 shadow-2xs">
+                                        <img src="{{ asset('storage/' . $imgPath) }}" alt="banner-mitra-{{ $i }}" class="w-full h-full object-cover">
+                                        <span class="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-emerald-600/90 text-white text-[9px] font-black tracking-wider uppercase">{{ $i + 1 }}</span>
+                                    </div>
+
+                                    <!-- Link Href Input -->
+                                    <div class="flex-1 min-w-0 w-full space-y-1">
+                                        <div class="flex items-center justify-between gap-1">
+                                            <label class="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                                                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                                <span>Link Tujuan Href (Opsional):</span>
+                                            </label>
+                                            @if(!empty($linkUrl))
+                                                <a href="{{ $linkUrl }}" target="_blank" rel="noopener noreferrer" class="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5 font-semibold">
+                                                    <span>Uji Link</span>
+                                                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                                </a>
+                                            @endif
+                                        </div>
+                                        <input type="text"
+                                               wire:model.defer="mitraBanners.{{ $i }}.link"
+                                               placeholder="Contoh: https://sayabantu.com/mitra-promo atau /mitra/helps/all"
+                                               class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition" />
+                                        <p class="text-[10px] text-gray-400 dark:text-gray-500">Kosongkan bila banner hanya berupa gambar info tanpa link.</p>
+                                    </div>
+
+                                    <!-- Action Delete -->
+                                    <button wire:click="removeMitra({{ $i }})" type="button"
+                                            wire:confirm="Yakin ingin menghapus banner mitra ini?"
+                                            class="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/60 rounded-xl transition cursor-pointer self-end sm:self-center flex-shrink-0"
+                                            title="Hapus Banner">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            @empty
+                                <div class="text-xs text-gray-500 dark:text-gray-400 py-6 text-center bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                                    Belum ada banner mitra yang aktif.
+                                </div>
+                            @endforelse
                         </div>
                     </div>
 
@@ -260,19 +342,27 @@
                         @error('mitraUploads') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
                         @error('mitraUploads.*') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
 
-                        <!-- Reactive Livewire Preview -->
+                        <!-- Reactive Livewire Preview for New Uploads -->
                         @if(!empty($mitraUploads))
-                            <div class="space-y-2.5 mt-3">
+                            <div class="space-y-3 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                                 <div class="flex items-center justify-between text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                                    <span>{{ count($mitraUploads) }} banner baru dipilih:</span>
-                                    <button type="button" wire:click="$set('mitraUploads', [])" class="text-red-500 hover:text-red-700 text-xs font-medium cursor-pointer">✕ Batal Pilihan</button>
+                                    <span>{{ count($mitraUploads) }} banner baru dipilih (Atur link sebelum disimpan):</span>
+                                    <button type="button" wire:click="$set('mitraUploads', []); $set('mitraNewLinks', []);" class="text-red-500 hover:text-red-700 text-xs font-medium cursor-pointer">✕ Batal Pilihan</button>
                                 </div>
-                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                                    @foreach($mitraUploads as $upload)
+                                <div class="space-y-2.5">
+                                    @foreach($mitraUploads as $idx => $upload)
                                         @if($upload)
-                                            <div class="relative rounded-xl overflow-hidden border-2 border-emerald-500 aspect-[16/9] bg-gray-900 shadow-sm">
-                                                <img src="{{ $upload->temporaryUrl() }}" class="w-full h-full object-cover">
-                                                <span class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-emerald-600/90 text-white text-[9px] font-bold">Siap Simpan</span>
+                                            <div class="p-2.5 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-900/60 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                                <div class="relative w-full sm:w-28 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-emerald-300 bg-gray-900 shadow-2xs">
+                                                    <img src="{{ $upload->temporaryUrl() }}" class="w-full h-full object-cover">
+                                                    <span class="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-emerald-600 text-white text-[8px] font-bold">Baru</span>
+                                                </div>
+                                                <div class="flex-1 min-w-0 w-full">
+                                                    <label class="block text-[10px] font-bold text-gray-600 dark:text-gray-300 mb-0.5">Link Tujuan Href (Opsional):</label>
+                                                    <input type="text" wire:model.defer="mitraNewLinks.{{ $idx }}"
+                                                           placeholder="Contoh: https://... atau /mitra/helps/all"
+                                                           class="w-full px-2.5 py-1 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-1 focus:ring-emerald-500" />
+                                                </div>
                                             </div>
                                         @endif
                                     @endforeach
@@ -292,8 +382,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Simpan Perubahan Banner</h4>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Klik simpan untuk menerapkan seluruh gambar yang dipilih ke banner terkait.</p>
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Simpan Perubahan Banner & Link</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Klik simpan untuk menerapkan seluruh gambar dan link URL tujuan yang telah diatur.</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3 self-end sm:self-auto w-full sm:w-auto">
@@ -306,7 +396,7 @@
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span>Simpan Banner</span>
+                        <span>Simpan Banner & Link</span>
                     </button>
                 </div>
             </div>
@@ -323,7 +413,7 @@
                             Preview Tampilan Real-Time
                         </h3>
                         <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                            Lihat simulasi bagaimana banner akan tampil di Dashboard Customer dan Dashboard Mitra.
+                            Lihat simulasi bagaimana banner dan link akan tampil di Dashboard Customer dan Dashboard Mitra.
                         </p>
                     </div>
                 </div>
@@ -345,8 +435,19 @@
                                     <div id="customerSlider" class="w-full h-full overflow-hidden">
                                         <div class="customer-slides flex h-full will-change-transform" style="transition: transform 700ms cubic-bezier(.2,.9,.2,1);">
                                             @foreach($customerBanners as $b)
-                                                <div class="flex-shrink-0 w-full h-full">
-                                                    <img src="{{ asset('storage/' . $b) }}" alt="preview-customer" class="w-full h-full object-cover" />
+                                                @php
+                                                    $previewImg  = is_array($b) ? ($b['image'] ?? '') : $b;
+                                                    $previewLink = is_array($b) ? ($b['link'] ?? '') : '';
+                                                @endphp
+                                                <div class="flex-shrink-0 w-full h-full relative">
+                                                    <img src="{{ asset('storage/' . $previewImg) }}" alt="preview-customer" class="w-full h-full object-cover" />
+                                                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+                                                    @if(!empty($previewLink))
+                                                        <div class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-blue-600/90 text-white text-[10px] font-bold flex items-center gap-1 shadow-xs">
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                                            <span class="max-w-[120px] truncate">{{ $previewLink }}</span>
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             @endforeach
                                         </div>
@@ -402,8 +503,19 @@
                                     <div id="mitraSlider" class="w-full h-full overflow-hidden">
                                         <div class="mitra-slides flex h-full will-change-transform" style="transition: transform 700ms cubic-bezier(.2,.9,.2,1);">
                                             @foreach($mitraBanners as $b)
-                                                <div class="flex-shrink-0 w-full h-full">
-                                                    <img src="{{ asset('storage/' . $b) }}" alt="preview-mitra" class="w-full h-full object-cover" />
+                                                @php
+                                                    $previewImg  = is_array($b) ? ($b['image'] ?? '') : $b;
+                                                    $previewLink = is_array($b) ? ($b['link'] ?? '') : '';
+                                                @endphp
+                                                <div class="flex-shrink-0 w-full h-full relative">
+                                                    <img src="{{ asset('storage/' . $previewImg) }}" alt="preview-mitra" class="w-full h-full object-cover" />
+                                                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+                                                    @if(!empty($previewLink))
+                                                        <div class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-emerald-600/90 text-white text-[10px] font-bold flex items-center gap-1 shadow-xs">
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                                            <span class="max-w-[120px] truncate">{{ $previewLink }}</span>
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             @endforeach
                                         </div>

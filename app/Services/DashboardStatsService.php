@@ -17,6 +17,25 @@ class DashboardStatsService
     public const CHAT_TTL  = 15; // 15 seconds
 
     /**
+     * Base query for available pool jobs for a specific partner.
+     * Single source of truth for matching availability criteria.
+     */
+    public function availablePoolQuery(User $user): \Illuminate\Database\Eloquent\Builder
+    {
+        return Help::where('status', Help::STATUS_MENUNGGU_MITRA)
+            ->where(function ($q) {
+                $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
+                  ->orWhereNull('dispatch_mode');
+            })
+            ->whereNull('mitra_id')
+            ->availableForMitra($user->id)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                  ->orWhere('expires_at', '>', now());
+            });
+    }
+
+    /**
      * Aggregated summary metrics for partner dashboard.
      *
      * @return array{balance: float, available: int, inProgress: int, completed: int}
@@ -33,35 +52,24 @@ class DashboardStatsService
             $balanceRecord = UserBalance::where('user_id', $user->id)->first();
             $balance = $balanceRecord ? (float) $balanceRecord->balance : 0.0;
 
-            $available = Help::where('status', Help::STATUS_MENUNGGU_MITRA)
-                ->where(function ($q) {
-                    $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
-                      ->orWhereNull('dispatch_mode');
-                })
-                ->whereNull('mitra_id')
-                ->availableForMitra($user->id)
-                ->where(function ($q) {
-                    $q->whereNull('scheduled_at')
-                      ->orWhere('scheduled_at', '<=', now());
-                })
-                ->count();
+            $available = $this->availablePoolQuery($user)->count();
 
-            $inProgress = Help::where('mitra_id', $user->id)
-                ->whereIn('status', [
-                    'memperoleh_mitra',
-                    Help::STATUS_TAKEN,
-                    'sedang_diproses',
-                    Help::STATUS_IN_PROGRESS,
-                    Help::STATUS_PARTNER_ON_THE_WAY,
-                    Help::STATUS_PARTNER_ARRIVED,
-                    Help::STATUS_WAITING_CONFIRMATION,
-                    Help::STATUS_PARTNER_CANCEL_REQUESTED,
-                ])
-                ->count();
+            $inProgressStatuses = array_merge(Help::activeStatuses(), [
+                Help::STATUS_WAITING_CONFIRMATION,
+                Help::STATUS_PARTNER_CANCEL_REQUESTED,
+                Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+            ]);
+            $inProgressSql = implode("','", $inProgressStatuses);
 
-            $completed = Help::where('mitra_id', $user->id)
-                ->whereIn('status', [Help::STATUS_SELESAI, 'completed'])
-                ->count();
+            $helpStats = Help::where('mitra_id', $user->id)
+                ->selectRaw("
+                    COUNT(CASE WHEN status IN ('" . $inProgressSql . "') THEN 1 END) as in_progress_count,
+                    COUNT(CASE WHEN status = '" . Help::STATUS_SELESAI . "' THEN 1 END) as completed_count
+                ")
+                ->first();
+
+            $inProgress = (int) ($helpStats->in_progress_count ?? 0);
+            $completed  = (int) ($helpStats->completed_count ?? 0);
 
             return [
                 'balance'    => $balance,
@@ -85,21 +93,13 @@ class DashboardStatsService
         }
 
         return Cache::remember($cacheKey, self::JOBS_TTL, function () use ($user, $cityId, $limit) {
-            return Help::where('status', Help::STATUS_MENUNGGU_MITRA)
-                ->where(function ($q) {
-                    $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
-                      ->orWhereNull('dispatch_mode');
+            return $this->availablePoolQuery($user)
+                ->when($user->district_id, function ($query, $dId) {
+                    return $query->where('district_id', $dId);
+                }, function ($query) use ($cityId) {
+                    return $query->when($cityId, fn($q, $cId) => $q->where('city_id', $cId));
                 })
-                ->whereNull('mitra_id')
-                ->availableForMitra($user->id)
-                ->where(function ($q) {
-                    $q->whereNull('scheduled_at')
-                      ->orWhere('scheduled_at', '<=', now());
-                })
-                ->when($cityId, function ($query, $cId) {
-                    return $query->where('city_id', $cId);
-                })
-                ->with(['user', 'city'])
+                ->with(['user', 'city', 'district'])
                 ->latest()
                 ->take($limit)
                 ->get();
@@ -118,18 +118,8 @@ class DashboardStatsService
         }
 
         return Cache::remember($cacheKey, self::JOBS_TTL, function () use ($user, $limit) {
-            return Help::where('status', Help::STATUS_MENUNGGU_MITRA)
-                ->where(function ($q) {
-                    $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
-                      ->orWhereNull('dispatch_mode');
-                })
-                ->whereNull('mitra_id')
-                ->availableForMitra($user->id)
-                ->where(function ($q) {
-                    $q->whereNull('scheduled_at')
-                      ->orWhere('scheduled_at', '<=', now());
-                })
-                ->with(['user', 'city'])
+            return $this->availablePoolQuery($user)
+                ->with(['user', 'city', 'district'])
                 ->latest()
                 ->take($limit)
                 ->get();
@@ -137,7 +127,7 @@ class DashboardStatsService
     }
 
     /**
-     * Nearby open pool jobs within the partner's city.
+     * Nearby open pool jobs within the partner's city or district.
      */
     public function getNearbyHelps(User $user, int $limit = 3, bool $forceFresh = false): Collection
     {
@@ -149,21 +139,13 @@ class DashboardStatsService
         }
 
         return Cache::remember($cacheKey, self::JOBS_TTL, function () use ($user, $cityId, $limit) {
-            return Help::where('status', Help::STATUS_MENUNGGU_MITRA)
-                ->where(function ($q) {
-                    $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
-                      ->orWhereNull('dispatch_mode');
+            return $this->availablePoolQuery($user)
+                ->when($user->district_id, function ($query, $dId) {
+                    return $query->where('district_id', $dId);
+                }, function ($query) use ($cityId) {
+                    return $query->when($cityId, fn($q, $cId) => $q->where('city_id', $cId));
                 })
-                ->whereNull('mitra_id')
-                ->availableForMitra($user->id)
-                ->where(function ($q) {
-                    $q->whereNull('scheduled_at')
-                      ->orWhere('scheduled_at', '<=', now());
-                })
-                ->when($cityId, function ($query, $cId) {
-                    return $query->where('city_id', $cId);
-                })
-                ->with(['user', 'city'])
+                ->with(['user', 'city', 'district'])
                 ->take($limit)
                 ->get();
         });
@@ -184,15 +166,11 @@ class DashboardStatsService
             try {
                 if (Schema::hasTable('chats')) {
                     $myHelpIds = Help::where('mitra_id', $user->id)
-                        ->whereIn('status', [
-                            'memperoleh_mitra',
-                            Help::STATUS_TAKEN,
-                            'sedang_diproses',
-                            Help::STATUS_IN_PROGRESS,
-                            Help::STATUS_PARTNER_ON_THE_WAY,
-                            Help::STATUS_PARTNER_ARRIVED,
+                        ->whereIn('status', array_merge(Help::activeStatuses(), [
                             Help::STATUS_WAITING_CONFIRMATION,
-                        ])
+                            Help::STATUS_PARTNER_CANCEL_REQUESTED,
+                            Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+                        ]))
                         ->pluck('id');
 
                     return Chat::whereIn('help_id', $myHelpIds)

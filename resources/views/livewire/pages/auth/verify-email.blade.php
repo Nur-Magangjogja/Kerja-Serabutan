@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Actions\CancelRegistration;
 use App\Livewire\Actions\Logout;
 use App\Models\Registration;
 use App\Models\User;
@@ -18,6 +19,18 @@ new #[Layout('layouts.guest')] class extends Component
         $user = Auth::user();
         if (!$user) {
             $this->redirect(route('register'), navigate: true);
+            return;
+        }
+
+        if (in_array($user->role ?? '', ['admin', 'super_admin', 'superadmin'])) {
+            $route = in_array($user->role, ['super_admin', 'superadmin']) ? 'superadmin.dashboard' : 'admin.dashboard';
+            $this->redirect(route($route), navigate: true);
+            return;
+        }
+
+        if ($user->verified && $user->status === 'active') {
+            $route = $user->role === 'mitra' ? 'mitra.dashboard' : 'customer.dashboard';
+            $this->redirect(route($route), navigate: true);
             return;
         }
 
@@ -122,10 +135,17 @@ new #[Layout('layouts.guest')] class extends Component
 
         $this->redirect('/', navigate: true);
     }
+
+    public function cancelRegistration(CancelRegistration $cancelRegistration): void
+    {
+        $cancelRegistration();
+        $this->redirect(route('login'), navigate: true);
+    }
 }; ?>
 
 <div class="space-y-6"
     x-data="{
+        confirmCancelModal: false,
         seconds: {{ $remainingSeconds }},
         resendSeconds: {{ $resendCooldown }},
         timer: null,
@@ -191,7 +211,7 @@ new #[Layout('layouts.guest')] class extends Component
             10:00
         </div>
         <p class="text-[11px] text-amber-700/80 dark:text-amber-400/80 leading-relaxed">
-            Jika melewati batas <strong>10 menit</strong>, akun akan otomatis dibatalkan & dihapus dari sistem.
+            Jika melewati batas <strong>10 menit</strong>, akun akan otomatis dibatalkan.
         </p>
     </div>
 
@@ -257,10 +277,79 @@ new #[Layout('layouts.guest')] class extends Component
         </button>
 
         <div class="text-center pt-2">
-            <button wire:click="logout" type="button"
-                class="text-xs sm:text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 underline cursor-pointer">
-                Batal & Keluar dari Sesi
+            <button @click="confirmCancelModal = true" type="button"
+                class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 transition-colors py-1.5 px-3 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span>Batalkan Pembuatan Akun & Masuk</span>
             </button>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Pembatalan Pendaftaran (Alpine.js) -->
+    <div x-show="confirmCancelModal" 
+         x-cloak 
+         class="fixed inset-0 z-50 overflow-y-auto"
+         aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <!-- Backdrop Blur Overlay -->
+        <div x-show="confirmCancelModal"
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-gray-900/60 backdrop-blur-xs transition-opacity"
+             @click="confirmCancelModal = false"></div>
+
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div x-show="confirmCancelModal"
+                 x-transition:enter="ease-out duration-200"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-150"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="relative transform overflow-hidden rounded-3xl bg-white dark:bg-gray-800 text-left shadow-2xl border border-gray-100 dark:border-gray-700 transition-all sm:my-8 sm:w-full sm:max-w-md p-6 sm:p-7">
+                
+                <div class="flex items-start gap-4">
+                    <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 sm:mx-0 shadow-xs">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                    <div class="text-left flex-1 min-w-0">
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white" id="modal-title">
+                            Batalkan Pembuatan Akun?
+                        </h3>
+                        <div class="mt-2">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                                Apakah Anda yakin ingin membatalkan pendaftaran ini? Akun belum terverifikasi Anda akan dihapus dan Anda akan dialihkan kembali ke halaman <strong>Masuk (Login)</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
+                    <button type="button" 
+                        @click="confirmCancelModal = false"
+                        class="w-full sm:w-auto inline-flex justify-center items-center rounded-xl px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 transition cursor-pointer">
+                        Lanjutkan Verifikasi
+                    </button>
+                    <button type="button" 
+                        wire:click="cancelRegistration"
+                        wire:loading.attr="disabled"
+                        class="w-full sm:w-auto inline-flex justify-center items-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 text-xs font-bold shadow-sm transition active:scale-[0.98] disabled:opacity-50 cursor-pointer">
+                        <svg wire:loading wire:target="cancelRegistration" class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span wire:loading.remove wire:target="cancelRegistration">Ya, Batalkan & Keluar</span>
+                        <span wire:loading wire:target="cancelRegistration">Membatalkan...</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>

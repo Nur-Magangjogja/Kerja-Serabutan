@@ -4,7 +4,6 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureAccountApproved
@@ -24,11 +23,16 @@ class EnsureAccountApproved
         $user = $request->user();
 
         if (!$user) {
-            return redirect()->route('login');
+            return redirect()->guest(route('login'));
         }
 
         // Superadmin and Admin bypass verification and onboarding checks
-        if (in_array($user->role, ['admin', 'super_admin'])) {
+        if (in_array($user->role, ['admin', 'super_admin', 'superadmin'], true)) {
+            return $next($request);
+        }
+
+        // Fast-path: Akun aktif dan terverifikasi penuh langsung lolos
+        if ($user->status === 'active' && $user->verified && $user->hasVerifiedEmail()) {
             return $next($request);
         }
 
@@ -42,35 +46,26 @@ class EnsureAccountApproved
             return redirect()->route('register.step1');
         }
 
-        // 3. Cek Status Akun yang Diblokir
+        // 3. Cek Status Akun yang Diblokir (Non-destructive: jangan logout paksa)
         if ($user->status === 'blocked') {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-            return redirect()->route('login')->withErrors([
-                'email' => 'Akun Anda telah diblokir. Silakan hubungi administrator.',
-            ]);
+            abort(403, 'Akun Anda telah diblokir. Silakan hubungi administrator untuk informasi lebih lanjut.');
         }
 
         // 4. Cek Status Pendaftaran yang Ditolak Admin
-        $reg = \App\Models\Registration::where('email', $user->email)->latest()->first();
-        if ($reg && $reg->status === 'rejected') {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-            return redirect()->route('auth.rejected', ['registration' => $reg->id]);
+        try {
+            $reg = \App\Models\Registration::where('email', $user->email)->latest()->first();
+            if ($reg && $reg->status === 'rejected') {
+                return redirect()->route('auth.rejected', ['registration' => $reg->id]);
+            }
+        } catch (\Throwable $e) {
+            report($e);
         }
 
         // 5. Cek Validasi dan Persetujuan Admin (status aktif & verified = true)
         if ($user->status !== 'active' || !$user->verified) {
-            // Jika rute saat ini adalah halaman info pendaftaran berhasil, izinkan tampil
             if ($request->routeIs('registration.success')) {
                 return $next($request);
             }
-
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
 
             return redirect()->route('registration.success');
         }
@@ -78,3 +73,4 @@ class EnsureAccountApproved
         return $next($request);
     }
 }
+

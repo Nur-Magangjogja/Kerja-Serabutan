@@ -169,23 +169,16 @@ class ProcessMidtransOrder implements ShouldQueue
             Log::warning('ProcessMidtransOrder: failed to mark completed via eloquent, falling back to DB update', ['id' => $transaction->id, 'error' => $e->getMessage()]);
 
             try {
-                // Fallback to DB update and recompute (less ideal but safer for batch contexts)
+                // Fallback to atomic DB update and balance increment
                 $now = now();
-                DB::table((new BalanceTransaction())->getTable())
-                    ->where('id', $transaction->id)
-                    ->update(['status' => 'completed', 'payment_type' => $paymentType, 'midtrans_response' => $raw, 'updated_at' => $now]);
+                DB::transaction(function () use ($transaction, $paymentType, $raw, $now) {
+                    DB::table((new BalanceTransaction())->getTable())
+                        ->where('id', $transaction->id)
+                        ->update(['status' => 'completed', 'payment_type' => $paymentType, 'midtrans_response' => $raw, 'processed_at' => $now, 'updated_at' => $now]);
 
-                $sum = (float) DB::table((new BalanceTransaction())->getTable())
-                    ->where('user_id', $transaction->user_id)
-                    ->where('type', 'topup')
-                    ->whereRaw("LOWER(TRIM(status)) = 'completed'")
-                    ->sum('amount');
-
-                DB::table((new UserBalance())->getTable())
-                    ->updateOrInsert(
-                        ['user_id' => $transaction->user_id],
-                        ['balance' => $sum, 'updated_at' => $now, 'created_at' => $now]
-                    );
+                    $userBalance = UserBalance::firstOrCreate(['user_id' => $transaction->user_id], ['balance' => 0]);
+                    $userBalance->increment('balance', (float) $transaction->amount);
+                });
 
             } catch (\Throwable $e2) {
                 Log::error('ProcessMidtransOrder: fallback DB update also failed', ['id' => $transaction->id, 'error' => $e2->getMessage()]);

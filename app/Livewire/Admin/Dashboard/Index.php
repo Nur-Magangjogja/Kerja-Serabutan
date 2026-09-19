@@ -5,6 +5,7 @@ namespace App\Livewire\Admin\Dashboard;
 use App\Models\Help;
 use App\Models\Registration;
 use App\Models\User;
+use App\Models\District;
 use App\Models\City;
 use App\Models\BalanceTransaction;
 use Livewire\Component;
@@ -17,16 +18,20 @@ use Carbon\Carbon;
 class Index extends Component
 {
     public $selectedMonth = '';
-    public $selectedCity = 'all';
+    public $selectedDistrict = 'all';
+    public $selectedCity = 'all'; // Backward compatibility alias
+
     protected $listeners = [
-        'admin-city-changed' => 'onAdminCityChanged',
+        'admin-district-changed' => 'onAdminDistrictChanged',
+        'admin-city-changed'     => 'onAdminDistrictChanged',
     ];
 
     public function mount()
     {
         // Default to current month (e.g. 2026-09)
         $this->selectedMonth = Carbon::today()->format('Y-m');
-        $this->selectedCity = auth()->user()?->getActiveAdminCityFilter() ?? 'all';
+        $this->selectedDistrict = auth()->user()?->getActiveAdminDistrictFilter() ?? 'all';
+        $this->selectedCity = $this->selectedDistrict;
     }
 
     public function updatedSelectedMonth()
@@ -40,23 +45,41 @@ class Index extends Component
         $this->dispatch('chart-refresh');
     }
 
+    public function setDistrictFilter(string $district)
+    {
+        $this->selectedDistrict = $district;
+        $this->selectedCity = $district;
+        $admin = auth()->user();
+        if ($admin && $admin->role === 'admin') {
+            $admin->setActiveAdminDistrictFilter($district);
+            $admin->setActiveAdminCityFilter($district);
+        }
+        $this->dispatch('chart-refresh');
+        $this->dispatch('admin-district-changed', districtId: $district);
+    }
+
+    // Alias for backward compatibility
     public function setCityFilter(string $city)
     {
-        $this->selectedCity = $city;
-        auth()->user()?->setActiveAdminCityFilter($city);
+        $this->setDistrictFilter($city);
+    }
+
+    public function onAdminDistrictChanged($districtId = null)
+    {
+        $admin = auth()->user();
+        $target = (string) ($districtId ?? ($admin ? ($admin->getActiveAdminDistrictFilter() !== 'all' ? $admin->getActiveAdminDistrictFilter() : $admin->getActiveAdminCityFilter()) : 'all'));
+        if ($admin && $admin->role === 'admin') {
+            $admin->setActiveAdminDistrictFilter($target);
+            $admin->setActiveAdminCityFilter($target);
+        }
+        $this->selectedDistrict = $target;
+        $this->selectedCity = $target;
         $this->dispatch('chart-refresh');
-        $this->dispatch('admin-city-changed', cityId: $city);
     }
 
     public function onAdminCityChanged($cityId = null)
     {
-        $admin = auth()->user();
-        $targetCity = (string) ($cityId ?? ($admin ? $admin->getActiveAdminCityFilter() : 'all'));
-        if ($admin && $admin->role === 'admin') {
-            $admin->setActiveAdminCityFilter($targetCity);
-        }
-        $this->selectedCity = $targetCity;
-        $this->dispatch('chart-refresh');
+        $this->onAdminDistrictChanged($cityId);
     }
 
     public function prevMonth()
@@ -95,23 +118,44 @@ class Index extends Component
     {
         $user = auth()->user();
         
-        // Multi-City Resolution
+        // District and City Resolution for Admin
+        $allowedDistrictIds = ($user && $user->role === 'admin') ? $user->getAdminDistrictIds() : [];
+        $managedDistricts = ($user && $user->role === 'admin') ? $user->getAdminDistricts() : collect();
         $allowedCityIds = ($user && $user->role === 'admin') ? $user->getAdminCityIds() : [];
         $managedCities = ($user && $user->role === 'admin') ? $user->getAdminCities() : collect();
 
-        // Determine active city scope
+        // Determine active district / city scope
+        $activeDistrictIds = [];
+        $activeCityIds = [];
+
         if ($user && $user->role === 'admin') {
-            if ($this->selectedCity !== 'all' && in_array((int) $this->selectedCity, $allowedCityIds, true)) {
-                $activeCityIds = [(int) $this->selectedCity];
-                $activeCityLabel = $managedCities->firstWhere('id', (int) $this->selectedCity)?->name ?? 'Wilayah Terpilih';
+            $filterValue = $this->selectedDistrict !== 'all' ? $this->selectedDistrict : ($this->selectedCity !== 'all' ? $this->selectedCity : 'all');
+
+            if ($filterValue !== 'all') {
+                $valInt = (int) $filterValue;
+                if (in_array($valInt, $allowedDistrictIds, true)) {
+                    $activeDistrictIds = [$valInt];
+                    $districtObj = $managedDistricts->firstWhere('id', $valInt);
+                    $activeDistrictLabel = $districtObj ? 'Kec. ' . $districtObj->name : 'Wilayah Terpilih';
+                } elseif (in_array($valInt, $allowedCityIds, true)) {
+                    $activeCityIds = [$valInt];
+                    $activeDistrictIds = District::where('city_id', $valInt)->pluck('id')->map('intval')->all();
+                    $cityObj = $managedCities->firstWhere('id', $valInt) ?? City::find($valInt);
+                    $activeDistrictLabel = $cityObj ? 'Kota/Kab. ' . $cityObj->name : 'Wilayah Terpilih';
+                } else {
+                    $activeDistrictIds = $allowedDistrictIds;
+                    $activeCityIds = $allowedCityIds;
+                    $activeDistrictLabel = $user->active_admin_district_label ?: $user->active_admin_city_label;
+                }
             } else {
-                $this->selectedCity = $user->getActiveAdminCityFilter();
-                $activeCityIds = $user->getEffectiveAdminCityIds();
-                $activeCityLabel = $user->active_admin_city_label;
+                $activeDistrictIds = $allowedDistrictIds;
+                $activeCityIds = $allowedCityIds;
+                $activeDistrictLabel = $user->admin_city_names ?: ($user->admin_district_names ?: 'Semua Wilayah');
             }
         } else {
+            $activeDistrictIds = $allowedDistrictIds;
             $activeCityIds = $allowedCityIds;
-            $activeCityLabel = 'Semua Wilayah';
+            $activeDistrictLabel = 'Semua Wilayah';
         }
 
         // 1. Build Available Months list (Current month + past 11 months)
@@ -153,17 +197,35 @@ class Index extends Component
             $endOfMonth = null;
         }
 
-        // 2. Base Help Query (Multi-City Scoped)
+        // 2. Base Help Query (District & City Scoped)
         $baseHelpQuery = Help::query();
-        if (!empty($activeCityIds)) {
-            $baseHelpQuery->where(function ($q) use ($activeCityIds) {
-                $q->whereIn('city_id', $activeCityIds)
-                  ->orWhereHas('customer', function ($cq) use ($activeCityIds) {
-                      $cq->whereIn('city_id', $activeCityIds);
-                  });
-            });
-        } elseif ($user && $user->role === 'admin') {
-            $baseHelpQuery->whereRaw('1 = 0');
+        if ($user && $user->role === 'admin') {
+            if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
+                $baseHelpQuery->where(function ($q) use ($activeDistrictIds, $activeCityIds) {
+                    $q->whereIn('district_id', $activeDistrictIds)
+                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $activeDistrictIds))
+                      ->orWhere(function ($sq) use ($activeCityIds) {
+                          $sq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      })
+                      ->orWhereHas('customer', function ($cq) use ($activeCityIds) {
+                          $cq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      });
+                });
+            } elseif (!empty($activeDistrictIds)) {
+                $baseHelpQuery->where(function ($q) use ($activeDistrictIds) {
+                    $q->whereIn('district_id', $activeDistrictIds)
+                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $activeDistrictIds));
+                });
+            } elseif (!empty($activeCityIds)) {
+                $baseHelpQuery->where(function ($q) use ($activeCityIds) {
+                    $q->whereIn('city_id', $activeCityIds)
+                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('city_id', $activeCityIds));
+                });
+            } else {
+                $baseHelpQuery->whereRaw('1 = 0');
+            }
         }
 
         $helpQuery = clone $baseHelpQuery;
@@ -171,19 +233,42 @@ class Index extends Component
             $helpQuery->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
         }
 
-        // Calculate Synchronized Operational Metrics
-        $totalHelps = (clone $helpQuery)->count();
-        $pendingHelps = (clone $helpQuery)->whereIn('status', ['pending', 'menunggu_mitra'])->count();
-        $activeHelps = (clone $helpQuery)->whereIn('status', ['active', 'taken', 'memperoleh_mitra', 'sedang_diproses', 'in_progress', 'partner_on_the_way', 'partner_arrived', 'waiting_customer_confirmation'])->count();
-        $completedHelps = (clone $helpQuery)->whereIn('status', ['completed', 'selesai'])->count();
-        $cancelledHelps = (clone $helpQuery)->whereIn('status', ['cancelled', 'dibatalkan', 'rejected'])->count();
+        // 1 query agregasi menggantikan 5 query COUNT terpisah
+        $activeStatusList = array_merge(Help::activeStatuses(), [Help::STATUS_WAITING_CONFIRMATION]);
+        $activePlaceholders = implode(',', array_fill(0, count($activeStatusList), '?'));
+
+        $statsAgg = (clone $helpQuery)
+            ->selectRaw("COUNT(*) as total_helps")
+            ->selectRaw("SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending_helps", [Help::STATUS_MENUNGGU_MITRA])
+            ->selectRaw("SUM(CASE WHEN status IN ($activePlaceholders) THEN 1 ELSE 0 END) as active_helps", $activeStatusList)
+            ->selectRaw("SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as completed_helps", [Help::STATUS_SELESAI])
+            ->selectRaw("SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as cancelled_helps", [Help::STATUS_DIBATALKAN])
+            ->first();
+
+        $totalHelps = (int) ($statsAgg->total_helps ?? 0);
+        $pendingHelps = (int) ($statsAgg->pending_helps ?? 0);
+        $activeHelps = (int) ($statsAgg->active_helps ?? 0);
+        $completedHelps = (int) ($statsAgg->completed_helps ?? 0);
+        $cancelledHelps = (int) ($statsAgg->cancelled_helps ?? 0);
 
         // 3. KTP / Registration Verifications
         $baseRegQuery = Registration::query();
-        if (!empty($activeCityIds)) {
-            $baseRegQuery->whereIn('city_id', $activeCityIds);
-        } elseif ($user && $user->role === 'admin') {
-            $baseRegQuery->whereRaw('1 = 0');
+        if ($user && $user->role === 'admin') {
+            if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
+                $baseRegQuery->where(function ($q) use ($activeDistrictIds, $activeCityIds) {
+                    $q->whereIn('district_id', $activeDistrictIds)
+                      ->orWhere(function ($sq) use ($activeCityIds) {
+                          $sq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      });
+                });
+            } elseif (!empty($activeDistrictIds)) {
+                $baseRegQuery->whereIn('district_id', $activeDistrictIds);
+            } elseif (!empty($activeCityIds)) {
+                $baseRegQuery->whereIn('city_id', $activeCityIds);
+            } else {
+                $baseRegQuery->whereRaw('1 = 0');
+            }
         }
 
         $regQuery = clone $baseRegQuery;
@@ -194,10 +279,22 @@ class Index extends Component
 
         // Total Verified Mitras
         $mitraQuery = User::where('role', 'mitra');
-        if (!empty($activeCityIds)) {
-            $mitraQuery->whereIn('city_id', $activeCityIds);
-        } elseif ($user && $user->role === 'admin') {
-            $mitraQuery->whereRaw('1 = 0');
+        if ($user && $user->role === 'admin') {
+            if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
+                $mitraQuery->where(function ($q) use ($activeDistrictIds, $activeCityIds) {
+                    $q->whereIn('district_id', $activeDistrictIds)
+                      ->orWhere(function ($sq) use ($activeCityIds) {
+                          $sq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      });
+                });
+            } elseif (!empty($activeDistrictIds)) {
+                $mitraQuery->whereIn('district_id', $activeDistrictIds);
+            } elseif (!empty($activeCityIds)) {
+                $mitraQuery->whereIn('city_id', $activeCityIds);
+            } else {
+                $mitraQuery->whereRaw('1 = 0');
+            }
         }
         $totalAllMitras = (clone $mitraQuery)->count();
         if (!$isAllPeriod) {
@@ -208,29 +305,49 @@ class Index extends Component
         // 4. Pending Top-Up Approvals
         $topupQuery = BalanceTransaction::where('type', 'topup')
             ->where('status', 'waiting_approval');
-        if (!empty($activeCityIds)) {
-            $topupQuery->whereHas('user', function ($q) use ($activeCityIds) {
-                $q->whereIn('city_id', $activeCityIds);
-            });
-        } elseif ($user && $user->role === 'admin') {
-            $topupQuery->whereRaw('1 = 0');
+        if ($user && $user->role === 'admin') {
+            if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
+                $topupQuery->whereHas('user', function ($q) use ($activeDistrictIds, $activeCityIds) {
+                    $q->whereIn('district_id', $activeDistrictIds)
+                      ->orWhere(function ($sq) use ($activeCityIds) {
+                          $sq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      });
+                });
+            } elseif (!empty($activeDistrictIds)) {
+                $topupQuery->whereHas('user', fn($q) => $q->whereIn('district_id', $activeDistrictIds));
+            } elseif (!empty($activeCityIds)) {
+                $topupQuery->whereHas('user', fn($q) => $q->whereIn('city_id', $activeCityIds));
+            } else {
+                $topupQuery->whereRaw('1 = 0');
+            }
         }
         $pendingTopups = $topupQuery->count();
 
         // 5. Pending Withdraw Requests
         $withdrawQuery = \App\Models\WithdrawRequest::where('status', \App\Models\WithdrawRequest::STATUS_PENDING);
-        if (!empty($activeCityIds)) {
-            $withdrawQuery->whereHas('user', function ($q) use ($activeCityIds) {
-                $q->whereIn('city_id', $activeCityIds);
-            });
-        } elseif ($user && $user->role === 'admin') {
-            $withdrawQuery->whereRaw('1 = 0');
+        if ($user && $user->role === 'admin') {
+            if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
+                $withdrawQuery->whereHas('user', function ($q) use ($activeDistrictIds, $activeCityIds) {
+                    $q->whereIn('district_id', $activeDistrictIds)
+                      ->orWhere(function ($sq) use ($activeCityIds) {
+                          $sq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      });
+                });
+            } elseif (!empty($activeDistrictIds)) {
+                $withdrawQuery->whereHas('user', fn($q) => $q->whereIn('district_id', $activeDistrictIds));
+            } elseif (!empty($activeCityIds)) {
+                $withdrawQuery->whereHas('user', fn($q) => $q->whereIn('city_id', $activeCityIds));
+            } else {
+                $withdrawQuery->whereRaw('1 = 0');
+            }
         }
         $pendingWithdraws = $withdrawQuery->count();
 
         // 6. Latest 6 Helps in Selected Period
         $latestHelps = (clone $helpQuery)
-            ->with(['customer', 'user', 'city'])
+            ->with(['customer', 'user', 'district', 'city'])
             ->latest()
             ->take(6)
             ->get();
@@ -245,31 +362,16 @@ class Index extends Component
         if (!$isAllPeriod) {
             $daysInMonth = $selectedMonthCarbon->daysInMonth;
 
-            // Total Helps per Day
-            $dailyTotalHelps = (clone $baseHelpQuery)
+            // 1 query GROUP BY menggantikan 3 query terpisah (total, completed, cancelled)
+            $dailyHelpMetrics = (clone $baseHelpQuery)
                 ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->selectRaw('DATE(created_at) as date, count(*) as total')
+                ->selectRaw('DATE(created_at) as date')
+                ->selectRaw('COUNT(*) as total')
+                ->selectRaw("SUM(CASE WHEN status IN (?, 'completed') THEN 1 ELSE 0 END) as completed", [Help::STATUS_SELESAI])
+                ->selectRaw("SUM(CASE WHEN status IN (?, 'cancelled', 'rejected') THEN 1 ELSE 0 END) as cancelled", [Help::STATUS_DIBATALKAN])
                 ->groupBy('date')
-                ->pluck('total', 'date')
-                ->all();
-
-            // Completed Helps per Day
-            $dailyCompletedHelps = (clone $baseHelpQuery)
-                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->whereIn('status', ['completed', 'selesai'])
-                ->selectRaw('DATE(created_at) as date, count(*) as total')
-                ->groupBy('date')
-                ->pluck('total', 'date')
-                ->all();
-
-            // Cancelled Helps per Day
-            $dailyCancelledHelps = (clone $baseHelpQuery)
-                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->whereIn('status', ['cancelled', 'dibatalkan', 'rejected'])
-                ->selectRaw('DATE(created_at) as date, count(*) as total')
-                ->groupBy('date')
-                ->pluck('total', 'date')
-                ->all();
+                ->get()
+                ->keyBy('date');
 
             // Registration / KTP per Day
             $dailyRegistrations = (clone $baseRegQuery)
@@ -284,9 +386,10 @@ class Index extends Component
                 $chartLabels[] = $date->format('j M');
                 $dateKey = $date->toDateString();
 
-                $chartHelpsData[] = (int) ($dailyTotalHelps[$dateKey] ?? 0);
-                $chartCompletedData[] = (int) ($dailyCompletedHelps[$dateKey] ?? 0);
-                $chartCancelledData[] = (int) ($dailyCancelledHelps[$dateKey] ?? 0);
+                $row = $dailyHelpMetrics[$dateKey] ?? null;
+                $chartHelpsData[] = (int) ($row->total ?? 0);
+                $chartCompletedData[] = (int) ($row->completed ?? 0);
+                $chartCancelledData[] = (int) ($row->cancelled ?? 0);
                 $chartVerificationsData[] = (int) ($dailyRegistrations[$dateKey] ?? 0);
             }
         } else {
@@ -294,28 +397,16 @@ class Index extends Component
             $startDate = Carbon::today()->subDays(13)->startOfDay();
             $endDate = Carbon::today()->endOfDay();
 
-            $dailyTotalHelps = (clone $baseHelpQuery)
+            // 1 query GROUP BY menggantikan 3 query terpisah (total, completed, cancelled)
+            $dailyHelpMetrics = (clone $baseHelpQuery)
                 ->whereBetween('created_at', [$startDate, $endDate])
-                ->selectRaw('DATE(created_at) as date, count(*) as total')
+                ->selectRaw('DATE(created_at) as date')
+                ->selectRaw('COUNT(*) as total')
+                ->selectRaw("SUM(CASE WHEN status IN (?, 'completed') THEN 1 ELSE 0 END) as completed", [Help::STATUS_SELESAI])
+                ->selectRaw("SUM(CASE WHEN status IN (?, 'cancelled', 'rejected') THEN 1 ELSE 0 END) as cancelled", [Help::STATUS_DIBATALKAN])
                 ->groupBy('date')
-                ->pluck('total', 'date')
-                ->all();
-
-            $dailyCompletedHelps = (clone $baseHelpQuery)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->whereIn('status', ['completed', 'selesai'])
-                ->selectRaw('DATE(created_at) as date, count(*) as total')
-                ->groupBy('date')
-                ->pluck('total', 'date')
-                ->all();
-
-            $dailyCancelledHelps = (clone $baseHelpQuery)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->whereIn('status', ['cancelled', 'dibatalkan', 'rejected'])
-                ->selectRaw('DATE(created_at) as date, count(*) as total')
-                ->groupBy('date')
-                ->pluck('total', 'date')
-                ->all();
+                ->get()
+                ->keyBy('date');
 
             $dailyRegistrations = (clone $baseRegQuery)
                 ->whereBetween('created_at', [$startDate, $endDate])
@@ -329,17 +420,21 @@ class Index extends Component
                 $chartLabels[] = $day->format('j M');
                 $dateKey = $day->toDateString();
 
-                $chartHelpsData[] = (int) ($dailyTotalHelps[$dateKey] ?? 0);
-                $chartCompletedData[] = (int) ($dailyCompletedHelps[$dateKey] ?? 0);
-                $chartCancelledData[] = (int) ($dailyCancelledHelps[$dateKey] ?? 0);
+                $row = $dailyHelpMetrics[$dateKey] ?? null;
+                $chartHelpsData[] = (int) ($row->total ?? 0);
+                $chartCompletedData[] = (int) ($row->completed ?? 0);
+                $chartCancelledData[] = (int) ($row->cancelled ?? 0);
                 $chartVerificationsData[] = (int) ($dailyRegistrations[$dateKey] ?? 0);
             }
         }
 
         return view('livewire.admin.dashboard.index', [
-            'managedCities'          => $managedCities,
-            'selectedCity'           => $this->selectedCity,
-            'activeCityLabel'        => $activeCityLabel,
+            'managedDistricts'       => $managedDistricts,
+            'managedCities'          => $managedDistricts, // For backward view compatibility
+            'selectedDistrict'       => $this->selectedDistrict,
+            'selectedCity'           => $this->selectedDistrict,
+            'activeDistrictLabel'    => $activeDistrictLabel,
+            'activeCityLabel'        => $activeDistrictLabel,
             'selectedMonth'          => $this->selectedMonth,
             'availableMonths'        => $availableMonths,
             'periodLabel'            => $periodLabel,

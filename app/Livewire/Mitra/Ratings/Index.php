@@ -27,10 +27,10 @@ class Index extends Component
                   ->orWhereNull('type');
             });
 
-        $ratings = (clone $baseQuery)->latest()->paginate($this->perPage);
-        $totalRatings = (clone $baseQuery)->count();
-        $averageRating = (clone $baseQuery)->avg('rating') ?: 0;
-        $averageRating = round($averageRating, 1);
+        $ratings = $baseQuery->latest()->paginate($this->perPage);
+        $user = auth()->user();
+        $totalRatings = $user ? $user->mitra_rating_count : $ratings->total();
+        $averageRating = $user ? $user->mitra_average_rating : 0.0;
 
         return view('livewire.mitra.ratings.index', compact('ratings', 'totalRatings', 'averageRating'));
     }

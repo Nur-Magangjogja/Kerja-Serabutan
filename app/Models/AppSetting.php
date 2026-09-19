@@ -185,18 +185,20 @@ class AppSetting extends Model
         return (string) static::get('withdraw_fee_mode', 'deduct_from_received');
     }
 
-    public static function calculateWithdrawFee(string $bankCode, int $amount = 0): array
+    public static function calculateWithdrawFee(string $bankCode, int|float $amount = 0): array
     {
         $banks = static::getWithdrawBanks();
         $codeUpper = strtoupper(trim($bankCode));
+        $amount = max(0, (float) $amount);
 
         $matched = collect($banks)->first(function ($b) use ($codeUpper) {
             return strtoupper($b['code'] ?? '') === $codeUpper;
         });
 
         if ($matched) {
-            $fee = (int) ($matched['fee'] ?? 0);
             $isPlatform = !empty($matched['is_platform_account']);
+            // Jika rekening adalah Rekening Platform, biaya admin otomatis Rp 0 (gratis admin) sesuai settingan saat ini
+            $fee = $isPlatform ? 0 : (int) ($matched['fee'] ?? 0);
             $bankName = $matched['name'] ?? $bankCode;
             $bankIcon = $matched['icon'] ?? '🏦';
         } else {
@@ -220,6 +222,7 @@ class AppSetting extends Model
             'fee_mode' => 'deduct_from_balance',
         ];
     }
+
 
     // ─────────────────────────────────────────────────────────────────────────
     // TAHAP 4: TYPED MATCHING & FAIRNESS CONFIGURATION
@@ -249,16 +252,24 @@ class AppSetting extends Model
         return max(30, min(300, $val));
     }
 
+    public const MAX_OPERATIONAL_RADIUS_KM = 10.0;
+
+    /**
+     * Batas radius matching baku (15.0 KM default, max 100.0 KM).
+     */
     public static function getMaxMatchingRadiusKm(): float
     {
         $val = (float) static::get('max_matching_radius_km', 15.0);
         return max(1.0, min(100.0, $val));
     }
 
+    /**
+     * Batas radius pool baku (15.0 KM default, max 100.0 KM).
+     */
     public static function getMaxPoolRadiusKm(): float
     {
-        $val = (float) static::get('max_pool_radius_km', 60.0);
-        return max(1.0, min(150.0, $val));
+        $val = (float) static::get('max_pool_radius_km', 15.0);
+        return max(1.0, min(100.0, $val));
     }
 
     public static function getNeutralRatingPrior(): float
@@ -342,4 +353,164 @@ class AppSetting extends Model
     {
         return (float) static::get('capacity_oversupply_util', 30.0);
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TAHAP 5: REVISI 3 SYSTEM CONFIGURATIONS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public static function getTravelFreeRadiusKm(): float
+    {
+        return (float) static::get('travel_free_radius_km', 2.0);
+    }
+
+    public static function getTravelBaseFee(): float
+    {
+        return (float) static::get('travel_base_fee', 5000.0);
+    }
+
+    public static function getTravelPricePerKm(): float
+    {
+        return (float) static::get('travel_price_per_km', 2500.0);
+    }
+
+    public static function getArrivalRadiusMeters(): float
+    {
+        return (float) static::get('arrival_radius_meters', 50.0);
+    }
+
+    public static function getAcceptableGpsAccuracy(): float
+    {
+        return (float) static::get('arrival_acceptable_gps_accuracy', 50.0);
+    }
+
+    public static function getMovementMinMeters(): float
+    {
+        return (float) static::get('movement_min_meters', 30.0);
+    }
+
+    public static function getAdvanceLimitDefault(): float
+    {
+        return (float) static::get('advance_limit_default', 100000.0);
+    }
+
+    public static function isAdjacentDistrictMatchingEnabled(): bool
+    {
+        return (bool) static::get('adjacent_district_matching_enabled', true);
+    }
+
+    public static function isMatchingSeekingEnabled(?int $cityId = null): bool
+    {
+        if ($cityId) {
+            $cityOverride = City::where('id', $cityId)->value('is_matching_seeking_enabled');
+            if ($cityOverride !== null) {
+                return (bool) $cityOverride;
+            }
+        }
+
+        return (bool) static::get('matching_seeking_enabled', true);
+    }
+
+    public static function isMatchingSeekingEnabledForUser(?User $user): bool
+    {
+        if (!$user) {
+            return (bool) static::get('matching_seeking_enabled', true);
+        }
+
+        $cityId = $user->city_id;
+
+        if (!$cityId) {
+            $onlineState = \App\Models\PartnerOnlineState::where('user_id', $user->id)->first();
+            if ($onlineState && $onlineState->latitude && $onlineState->longitude) {
+                $closestCity = City::where('is_active', true)
+                    ->whereNotNull('latitude')
+                    ->whereNotNull('longitude')
+                    ->orderByRaw("(6371 * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) ASC", [$onlineState->latitude, $onlineState->longitude, $onlineState->latitude])
+                    ->first();
+                $cityId = $closestCity?->id;
+            }
+        }
+
+        return static::isMatchingSeekingEnabled($cityId);
+    }
+
+    public static function getPickupDeliveryBaseFare(): float
+    {
+        return (float) static::get('pickup_delivery.base_fare', 10000.0);
+    }
+
+    public static function getPickupDeliveryMaxDistanceKm(): float
+    {
+        return (float) static::get('pickup_delivery.max_distance_km', 40.0);
+    }
+
+    public static function getPickupDeliveryMaxCancellationDistanceAfterPickup(): float
+    {
+        return (float) static::get('pickup_delivery.cancellation.max_after_pickup_distance_km', 5.0);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TAHAP 6: PICKUP & DELIVERY PRICING & CANCELLATION CONFIGURATION
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public static function getPickupDeliveryMinimumFare(): float
+    {
+        return (float) static::get('pickup_delivery.base_fare', static::get('pickup_delivery.minimum_fare', 10000.0));
+    }
+
+    public static function getPickupDeliveryPricePerKm(): float
+    {
+        return (float) static::get('pickup_delivery.price_per_km', 2500.0);
+    }
+
+    public static function getPickupDeliveryLongDistanceThresholdKm(): float
+    {
+        return (float) static::get('pickup_delivery.long_distance_threshold', 20.0);
+    }
+
+    public static function getPickupDeliveryLongDistancePricePerKm(): float
+    {
+        return (float) static::get('pickup_delivery.long_distance_price_per_km', 2750.0);
+    }
+
+    public static function getPickupDeliveryCancellationBaseFare(): float
+    {
+        return (float) static::get('pickup_delivery.cancellation.base_fare', 10000.0);
+    }
+
+    public static function getPickupDeliveryCancellationRatePerKm(): float
+    {
+        return (float) static::get('pickup_delivery.cancellation.rate_per_km', 2500.0);
+    }
+
+    public static function getPickupDeliveryCancellationMinimumAtPickup(): float
+    {
+        return (float) static::get('pickup_delivery.cancellation.minimum_at_pickup', 15000.0);
+    }
+
+    public static function getPickupDeliveryNoShowWaitMinutes(): int
+    {
+        return (int) static::get('pickup_delivery.cancellation.no_show_wait_minutes', 10);
+    }
+
+    public static function getPickupDeliveryFinalApproachProgress(): float
+    {
+        return (float) static::get('pickup_delivery.cancellation.final_approach_progress', 80.0);
+    }
+
+    public static function getPickupDeliveryFinalApproachEtaMinutes(): int
+    {
+        return (int) static::get('pickup_delivery.cancellation.final_approach_eta_minutes', 10);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TAHAP 7: SCHEDULED ORDERS DEPARTURE WINDOW & REMINDER CONFIGURATION
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public static function getScheduledEarlyDepartureWindowMinutes(): int
+    {
+        $val = (int) static::get('scheduled_early_departure_window_minutes', 60);
+        return max(5, min(180, $val));
+    }
 }
+
+

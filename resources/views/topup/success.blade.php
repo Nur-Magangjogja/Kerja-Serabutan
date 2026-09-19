@@ -40,8 +40,10 @@
 
                 <div class="space-y-2 mt-4">
                     <a href="{{ route('dashboard') }}"
+                        wire:navigate
                         class="block w-full py-2.5 px-4 bg-primary-600 hover:bg-primary-700 text-white font-medium text-center rounded-xl shadow-xs">Kembali ke Dashboard</a>
                     <a href="{{ route('customer.transactions.index') }}"
+                        wire:navigate
                         class="block w-full py-2.5 px-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 text-center font-medium rounded-xl">Lihat Transaksi</a>
                 </div>
             </div>

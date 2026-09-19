@@ -69,7 +69,7 @@ new #[Layout('layouts.guest')] class extends Component {
             </div>
             <h3 class="text-base font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Mitra</h3>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                Menjadi penyedia layanan, memberi bantuan & mendapatkan penghasilan.
+                Menjadi perkerja, mengerjakan serabutan & mendapatkan penghasilan.
             </p>
             <div class="mt-4 flex items-center text-xs font-bold text-emerald-600 dark:text-emerald-400 gap-1">
                 <span>Daftar sebagai Mitra</span>

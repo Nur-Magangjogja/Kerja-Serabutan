@@ -5,14 +5,8 @@
 
 @php
     $isMitra = auth()->check() && auth()->user()->role === 'mitra';
-    
-    if (!$route) {
-        $route = $isMitra ? route('mitra.chat') : route('customer.chat');
-    }
+    $role = $isMitra ? 'mitra' : 'customer';
+    $targetRoute = $route ?: ($isMitra ? route('mitra.chat') : route('customer.chat'));
 @endphp
 
-@if($isMitra)
-    <x-mitra.chat-icon :route="$route" :class="$class" {{ $attributes }} />
-@else
-    <x-customer.chat-icon :route="$route" :class="$class" {{ $attributes }} />
-@endif
+<livewire:chat.chat-icon :route="$targetRoute" :class="$class" :role="$role" :wire:key="'chat-icon-'.(auth()->id() ?? 'guest')" />

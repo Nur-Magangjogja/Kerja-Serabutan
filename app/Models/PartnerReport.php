@@ -10,6 +10,33 @@ class PartnerReport extends Model
 {
     use HasFactory;
 
+    // Status Constants
+    public const STATUS_PENDING        = 'pending';
+    public const STATUS_IN_PROGRESS    = 'in_progress';
+    public const STATUS_INVESTIGATING  = 'investigating';
+    public const STATUS_UNDER_REVIEW   = 'under_review';
+    public const STATUS_PROSES         = 'proses';
+    public const STATUS_RESOLVED       = 'resolved';
+    public const STATUS_DISMISSED      = 'dismissed';
+    public const STATUS_CLOSED         = 'closed';
+
+    public const ACTIVE_STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_IN_PROGRESS,
+        self::STATUS_INVESTIGATING,
+        self::STATUS_UNDER_REVIEW,
+        self::STATUS_PROSES,
+    ];
+
+    public const TERMINAL_STATUSES = [
+        self::STATUS_RESOLVED,
+        self::STATUS_DISMISSED,
+        self::STATUS_CLOSED,
+        'rejected',
+        'ditolak',
+        'selesai',
+    ];
+
     protected $fillable = [
         'reporter_id',
         'reported_user_id',
@@ -63,21 +90,49 @@ class PartnerReport extends Model
 
         $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
         $version = \Illuminate\Support\Facades\Cache::get('active_reports_count_version', 1);
-        $cacheKey = 'active_reports_count_v' . $version . '_' . ($isSuperAdmin ? 'sa' : 'admin_' . $user->id . '_' . ($user->city_id ?? 'all'));
 
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin) {
+        $saTerritory = $isSuperAdmin ? $user->getActiveSuperadminTerritory() : null;
+        $saKeyPart = $isSuperAdmin ? ('sa_' . $saTerritory['type'] . '_' . ($saTerritory['id'] ?? 'all')) : ('admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
+        $cacheKey = 'active_reports_count_v' . $version . '_' . $saKeyPart;
+
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin, $saTerritory) {
             $query = static::whereIn('status', ['pending', 'in_progress', 'investigating']);
 
             if (!$isSuperAdmin) {
-                $cityIds = $user->getAdminCityIds();
+                $districtIds = $user->getEffectiveAdminDistrictIds();
 
-                if (!empty($cityIds)) {
-                    $query->where(function ($q) use ($cityIds) {
-                        $q->whereHas('reporter', fn($sq) => $sq->whereIn('city_id', $cityIds))
-                          ->orWhereHas('reportedUser', fn($sq) => $sq->whereIn('city_id', $cityIds));
+                if (!empty($districtIds)) {
+                    $query->where(function ($q) use ($districtIds) {
+                        $q->whereHas('reporter', fn($sq) => $sq->whereIn('district_id', $districtIds))
+                          ->orWhereHas('reportedUser', fn($sq) => $sq->whereIn('district_id', $districtIds))
+                          ->orWhereHas('reportedHelp', fn($sq) => $sq->whereIn('district_id', $districtIds));
                     });
                 } else {
                     $query->whereRaw('1 = 0');
+                }
+            } else {
+                if ($saTerritory && $saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                    $dId = (int) $saTerritory['id'];
+                    $query->where(function ($q) use ($dId) {
+                        $q->whereHas('reporter', fn($sq) => $sq->where('district_id', $dId))
+                          ->orWhereHas('reportedUser', fn($sq) => $sq->where('district_id', $dId))
+                          ->orWhereHas('reportedHelp', fn($sq) => $sq->where('district_id', $dId));
+                    });
+                } elseif ($saTerritory && $saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                    $cId = (int) $saTerritory['id'];
+                    $saDistrictIds = $user->getEffectiveSuperadminDistrictIds();
+                    $query->where(function ($q) use ($cId, $saDistrictIds) {
+                        $q->whereHas('reporter', function ($sq) use ($cId, $saDistrictIds) {
+                            if (!empty($saDistrictIds)) $sq->whereIn('district_id', $saDistrictIds);
+                            if ($cId) $sq->orWhere('city_id', $cId);
+                        })->orWhereHas('reportedUser', function ($sq) use ($cId, $saDistrictIds) {
+                            if (!empty($saDistrictIds)) $sq->whereIn('district_id', $saDistrictIds);
+                            if ($cId) $sq->orWhere('city_id', $cId);
+                        })->orWhereHas('reportedHelp', function ($sq) use ($cId, $saDistrictIds) {
+                            if (!empty($saDistrictIds)) $sq->whereIn('district_id', $saDistrictIds);
+                            if ($cId) $sq->orWhere('city_id', $cId);
+                        });
+                    });
                 }
             }
 
@@ -157,22 +212,78 @@ class PartnerReport extends Model
     }
 
     // Helper methods
-    public function isPending()
+    public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return $this->status === self::STATUS_PENDING;
     }
 
-    public function isResolved()
+    public function isActive(): bool
     {
-        return $this->status === 'resolved';
+        return in_array($this->status, self::ACTIVE_STATUSES, true);
     }
 
-    public function isDismissed()
+    public function isResolved(): bool
     {
-        return $this->status === 'dismissed';
+        return $this->status === self::STATUS_RESOLVED;
     }
 
-    public function isFromCustomer()
+    public function isDismissed(): bool
+    {
+        return $this->status === self::STATUS_DISMISSED;
+    }
+
+    public function isResolvedOrClosed(): bool
+    {
+        return in_array($this->status, self::TERMINAL_STATUSES, true);
+    }
+
+    /**
+     * Cek apakah ada laporan aduan aktif (pending/in progress) untuk tugas tertentu.
+     */
+    public static function hasActiveReportForHelp(int $helpId, ?int $reporterId = null): bool
+    {
+        return static::where('reported_help_id', $helpId)
+            ->when($reporterId, fn($q) => $q->where('reporter_id', $reporterId))
+            ->whereIn('status', self::ACTIVE_STATUSES)
+            ->exists();
+    }
+
+    /**
+     * Ambil laporan aduan aktif terakhir untuk tugas tertentu.
+     */
+    public static function getActiveReportForHelp(int $helpId, ?int $reporterId = null): ?self
+    {
+        return static::where('reported_help_id', $helpId)
+            ->when($reporterId, fn($q) => $q->where('reporter_id', $reporterId))
+            ->whereIn('status', self::ACTIVE_STATUSES)
+            ->latest()
+            ->first();
+    }
+
+    /**
+     * Ambil laporan terakhir (termasuk yang sudah resolved/closed) untuk tugas tertentu.
+     */
+    public static function getLatestReportForHelp(int $helpId, ?int $reporterId = null): ?self
+    {
+        return static::where('reported_help_id', $helpId)
+            ->when($reporterId, fn($q) => $q->where('reporter_id', $reporterId))
+            ->latest()
+            ->first();
+    }
+
+    /**
+     * Ambil laporan terakhir yang sudah diselesaikan (resolved/closed) untuk tugas tertentu.
+     */
+    public static function getLatestResolvedReportForHelp(int $helpId, ?int $reporterId = null): ?self
+    {
+        return static::where('reported_help_id', $helpId)
+            ->when($reporterId, fn($q) => $q->where('reporter_id', $reporterId))
+            ->whereIn('status', self::TERMINAL_STATUSES)
+            ->latest()
+            ->first();
+    }
+
+    public function isFromCustomer(): bool
     {
         return $this->category === 'dari_customer';
     }
@@ -233,4 +344,108 @@ class PartnerReport extends Model
     {
         return $this->category === 'dari_customer' ? 'Dari Customer' : 'Dari Mitra';
     }
+
+    /**
+     * Membersihkan string judul dari prefix sistem seperti "Klarifikasi Tugas #168:",
+     * "Sengketa Bantuan #168:", "Klaim Garansi: Bantuan #168 -", "Klarifikasi /", atau "#168:".
+     */
+    public function cleanTitleString(?string $str): string
+    {
+        if (!$str) return '';
+
+        // Hapus prefix pola "Klarifikasi Tugas #168:", "Sengketa Bantuan #168:", "Tugas #168:", "Bantuan #168 -"
+        $cleaned = preg_replace('/^(?:Klarifikasi\s+(?:Tugas|Bantuan)?|Sengketa\s+Bantuan|Tugas|Bantuan)\s*#\d+\s*[:\-–—]?\s*/iu', '', $str);
+
+        // Hapus "Klaim Garansi ...: Bantuan #168 - "
+        $cleaned = preg_replace('/^Klaim\s+Garansi[^:]*:\s*Bantuan\s*#\d+\s*[:\-–—]?\s*/iu', 'Klaim Garansi: ', $cleaned);
+
+        // Hapus leading "Klarifikasi / " atau "Klarifikasi "
+        $cleaned = preg_replace('/^Klarifikasi\s*(?:\/|\-)?\s*/iu', '', $cleaned);
+
+        // Hapus prefix ID seperti "#123: " atau "#123 - "
+        $cleaned = preg_replace('/^#\d+\s*[:\-–—]?\s*/iu', '', $cleaned);
+
+        return trim($cleaned);
+    }
+
+    /**
+     * Judul tampilan yang informatif dan bersih untuk ruang obrolan / daftar laporan
+     * tanpa kata 'Klarifikasi Tugas #' atau ID '#' yang mengganggu.
+     */
+    public function getDisplayTitleAttribute(): string
+    {
+        $rawTitle = $this->title ?? '';
+        $cleanedRaw = $this->cleanTitleString($rawTitle);
+
+        // Jika judul asli bertipe auto-generated ("Klarifikasi Tugas #...", kosong, atau angka saja),
+        // cek apakah di kronologi / pesan terdapat nama tugas spesifik
+        if ($cleanedRaw === '' || is_numeric($cleanedRaw) || str_starts_with(strtolower($rawTitle), 'klarifikasi tugas #')) {
+            if (!empty($this->message) && preg_match('/(?:untuk tugas|pada tugas|tugas)\s*[:\-–—]\s*["\']?([^"\'\n\r]+)["\']?/iu', $this->message, $matches)) {
+                $extracted = trim($matches[1]);
+                if (!empty($extracted) && !is_numeric($extracted)) {
+                    return $this->cleanTitleString($extracted);
+                }
+            }
+        }
+
+        // Jika judul setelah dibersihkan merupakan teks deskriptif valid (bukan angka murni)
+        if ($cleanedRaw !== '' && !is_numeric($cleanedRaw)) {
+            return $cleanedRaw;
+        }
+
+        // Coba dari judul relasi reportedHelp atau reported_help_text
+        $helpTitle = $this->reportedHelp?->title ?? $this->reported_help_text;
+        if ($helpTitle) {
+            $cleanedHelp = $this->cleanTitleString($helpTitle);
+            if ($cleanedHelp !== '' && !is_numeric($cleanedHelp)) {
+                return $cleanedHelp;
+            }
+        }
+
+        // Jika hanya ada judul numerik
+        if ($cleanedRaw !== '') {
+            return $cleanedRaw;
+        }
+        if ($helpTitle) {
+            $cleanedHelp = $this->cleanTitleString($helpTitle);
+            if ($cleanedHelp !== '') return $cleanedHelp;
+        }
+
+        return $this->report_type_label ?? 'Laporan Aduan';
+    }
+
+    /**
+     * Topik / Tugas terkait yang bersih untuk tampilan sub-header (Terkait: ...)
+     */
+    public function getDisplayTopicAttribute(): string
+    {
+        $helpTitle = $this->reportedHelp?->title ?? $this->reported_help_text;
+        if ($helpTitle) {
+            $cleanedHelp = $this->cleanTitleString($helpTitle);
+            if ($cleanedHelp !== '' && !is_numeric($cleanedHelp)) {
+                return $cleanedHelp;
+            }
+        }
+
+        // Coba ekstrak dari kronologi / pesan jika ada
+        if (!empty($this->message) && preg_match('/(?:untuk tugas|pada tugas|tugas)\s*[:\-–—]\s*["\']?([^"\'\n\r]+)["\']?/iu', $this->message, $matches)) {
+            $extracted = trim($matches[1]);
+            if (!empty($extracted) && !is_numeric($extracted)) {
+                return $this->cleanTitleString($extracted);
+            }
+        }
+
+        if ($helpTitle) {
+            $cleanedHelp = $this->cleanTitleString($helpTitle);
+            if ($cleanedHelp !== '') return $cleanedHelp;
+        }
+
+        if (!empty($this->title)) {
+            $cleanedTitle = $this->cleanTitleString($this->title);
+            if ($cleanedTitle !== '') return $cleanedTitle;
+        }
+
+        return 'Layanan Platform';
+    }
 }
+

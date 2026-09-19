@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -25,6 +26,7 @@ class Registration extends Model
         'rw',
         'kelurahan',
         'kecamatan',
+        'district_id',
         'city',
         'city_id',
         'province',
@@ -44,7 +46,28 @@ class Registration extends Model
         'rt' => 'integer',
         'rw' => 'integer',
         'city_id' => 'integer',
+        'district_id' => 'integer',
     ];
+
+    /**
+     * Mutator to ensure phone is always normalized when saved.
+     */
+    protected function phone(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => User::normalizePhone($value),
+        );
+    }
+
+    public function city()
+    {
+        return $this->belongsTo(City::class, 'city_id');
+    }
+
+    public function district()
+    {
+        return $this->belongsTo(District::class, 'district_id');
+    }
 
     /**
      * Get the URL for the selfie photo.
@@ -74,6 +97,11 @@ class Registration extends Model
     public function getFullAddressAttribute(): string
     {
         $parts = [];
+        if (!empty($this->kecamatan)) {
+            $parts[] = 'Kec. ' . $this->kecamatan;
+        } elseif ($this->district) {
+            $parts[] = 'Kec. ' . $this->district->name;
+        }
         if (!empty($this->city)) {
             $parts[] = $this->city;
         }

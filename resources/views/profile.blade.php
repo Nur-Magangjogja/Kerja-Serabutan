@@ -2,31 +2,18 @@
     <x-slot name="title">Profile</x-slot>
 
     <style>
-        @keyframes ripple {
-            0% {
-                transform: scale(0);
-                opacity: 0.6;
-            }
-            100% {
-                transform: scale(4);
-                opacity: 0;
-            }
-        }
-
-        @keyframes slideInUp {
+        @keyframes fadeIn {
             from {
-                transform: translateY(20px);
                 opacity: 0;
             }
             to {
-                transform: translateY(0);
                 opacity: 1;
             }
         }
 
         @keyframes scaleIn {
             from {
-                transform: scale(0.9);
+                transform: scale(0.96);
                 opacity: 0;
             }
             to {
@@ -35,123 +22,56 @@
             }
         }
 
-        @keyframes bounce-gentle {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-5px);
-            }
-        }
-
         .menu-card {
             position: relative;
             overflow: hidden;
-            animation: slideInUp 0.5s ease-out backwards;
+            animation: fadeIn 0.4s ease-out backwards;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
         }
 
-        .menu-card:nth-child(1) { animation-delay: 0.1s; }
-        .menu-card:nth-child(2) { animation-delay: 0.15s; }
-        .menu-card:nth-child(3) { animation-delay: 0.2s; }
-        .menu-card:nth-child(4) { animation-delay: 0.25s; }
-        .menu-card:nth-child(5) { animation-delay: 0.3s; }
-        .menu-card:nth-child(6) { animation-delay: 0.35s; }
-
-        .menu-card::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(0, 152, 231, 0.2);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .menu-card:active::before {
-            width: 300px;
-            height: 300px;
-        }
+        .menu-card:nth-child(1) { animation-delay: 0.05s; }
+        .menu-card:nth-child(2) { animation-delay: 0.1s; }
+        .menu-card:nth-child(3) { animation-delay: 0.15s; }
+        .menu-card:nth-child(4) { animation-delay: 0.2s; }
+        .menu-card:nth-child(5) { animation-delay: 0.25s; }
+        .menu-card:nth-child(6) { animation-delay: 0.3s; }
 
         .menu-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px -10px rgba(0, 152, 231, 0.3);
+            box-shadow: 0 8px 20px -8px rgba(0, 152, 231, 0.25);
         }
 
         .menu-card:active {
-            transform: translateY(-2px) scale(0.98);
+            opacity: 0.92;
         }
 
         .icon-gradient {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .menu-card:hover .icon-gradient {
-            transform: rotate(5deg) scale(1.1);
-        }
-
-        .menu-card:active .icon-gradient {
-            transform: rotate(0deg) scale(0.95);
+            transition: opacity 0.2s ease, filter 0.2s ease;
         }
 
         .stats-card {
-            animation: scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+            animation: scaleIn 0.4s ease-out backwards;
         }
 
         .avatar-container {
-            animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+            animation: fadeIn 0.4s ease-out backwards;
         }
 
         .logout-modal-content {
-            animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
-        }
-
-        .float-animation {
-            animation: float 3s ease-in-out infinite;
+            animation: scaleIn 0.25s ease-out;
         }
 
         .btn-primary {
             position: relative;
             overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .btn-primary::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .btn-primary:active::after {
-            width: 300px;
-            height: 300px;
+            transition: background-color 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px -6px rgba(220, 38, 38, 0.4);
+            box-shadow: 0 6px 16px -4px rgba(220, 38, 38, 0.35);
         }
 
         .btn-primary:active {
-            transform: translateY(0) scale(0.98);
+            opacity: 0.9;
         }
     </style>
 
@@ -159,15 +79,19 @@
         @php
             $user = auth()->user();
             
-            // Riwayat Bantuan (bantuan yang telah selesai dan tampil di riwayat)
-            $completedHelps = \App\Models\Help::where('user_id', $user->id)
-                ->whereIn('status', ['selesai', 'completed'])
-                ->count();
+            // Bantuan stats dikonsolidasi dalam 1 query
+            $activeStatuses = array_merge([\App\Models\Help::STATUS_MENUNGGU_MITRA, \App\Models\Help::STATUS_WAITING_CONFIRMATION], \App\Models\Help::activeStatuses());
+            $activeStatusesSql = implode("','", $activeStatuses);
 
-            // Bantuan yang sedang aktif (menunggu mitra, sedang dikerjakan mitra, menunggu konfirmasi customer)
-            $activeHelps = \App\Models\Help::where('user_id', $user->id)
-                ->whereIn('status', ['menunggu_mitra', 'memperoleh_mitra', 'waiting_customer_confirmation'])
-                ->count();
+            $helpStats = \App\Models\Help::where('user_id', $user->id)
+                ->selectRaw("
+                    COUNT(CASE WHEN status = '" . \App\Models\Help::STATUS_SELESAI . "' THEN 1 END) as completed_count,
+                    COUNT(CASE WHEN status IN ('" . $activeStatusesSql . "') THEN 1 END) as active_count
+                ")
+                ->first();
+
+            $completedHelps = (int) ($helpStats->completed_count ?? 0);
+            $activeHelps = (int) ($helpStats->active_count ?? 0);
 
             // Total ulasan yang diberikan customer kepada mitra
             $reviewsGivenCount = \App\Models\Rating::where('rater_id', $user->id)->count();
@@ -180,12 +104,13 @@
                 <div class="absolute bottom-0 left-0 w-36 h-36 bg-white/5 rounded-full blur-xl -ml-12 -mb-12 pointer-events-none"></div>
                 
                 <div class="relative z-10">
-                    <div class="relative flex items-center justify-center text-white mb-4 min-h-[40px]">
-                        <div class="text-center w-full min-w-0 px-12">
+                    <div class="flex items-center justify-between text-white mb-4 min-h-[40px]">
+                        <div class="w-10"></div>
+                        <div class="text-center flex-1 min-w-0 px-2">
                             <h1 class="text-base font-bold truncate">Profil Saya</h1>
                         </div>
 
-                        <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                        <div class="w-10 flex items-center justify-end">
                             <x-customer.notification-icon />
                         </div>
                     </div>
@@ -194,7 +119,7 @@
                     <div class="text-center avatar-container">
                         <div class="relative inline-block">
                             @php
-                                $__avatar = optional($user)->selfie_photo ?? optional($user)->photo ?? null;
+                                $__avatar = optional($user)->profile_photo ?? optional($user)->photo ?? null;
                             @endphp
                             @if($__avatar)
                                 <img src="{{ asset('storage/' . $__avatar) }}" alt="Avatar" class="w-20 h-20 rounded-full object-cover mx-auto ring-4 ring-white/30 shadow-xl">
@@ -204,8 +129,11 @@
                                 </div>
                             @endif
 
-                            <button onclick="Livewire.dispatch('openModal')" class="absolute bottom-0 right-0 bg-white p-1.5 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-transform duration-200 cursor-pointer">
-                                <svg class="w-3.5 h-3.5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button type="button" 
+                                    onclick="if(window.Livewire){ Livewire.dispatch('openModal'); }" 
+                                    class="absolute bottom-0 right-0 bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-transform duration-200 cursor-pointer border-2 border-white dark:border-gray-700 text-primary-600 dark:text-primary-400"
+                                    title="Ubah Foto Profil">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
@@ -309,12 +237,16 @@
                         <p class="text-xs text-gray-500 dark:text-gray-400">Apakah Anda yakin ingin keluar dari aplikasi?</p>
                     </div>
 
-                    <form action="{{ route('logout') }}" method="POST" class="space-y-2.5">
+                    <form action="{{ route('logout') }}" method="POST" class="space-y-2.5" x-data="{ submitting: false }" @submit="if (submitting) { $event.preventDefault(); return false; } submitting = true;">
                         @csrf
-                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-red-600/30 cursor-pointer text-sm">
-                            Ya, Logout
+                        <button type="submit" :disabled="submitting" :class="submitting ? 'opacity-60 cursor-not-allowed pointer-events-none' : ''" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-red-600/30 cursor-pointer text-sm flex items-center justify-center gap-2">
+                            <svg x-show="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span x-text="submitting ? 'Mengeluarkan Akun...' : 'Ya, Logout'">Ya, Logout</span>
                         </button>
-                        <button type="button" onclick="document.getElementById('logout-modal').classList.add('hidden')" class="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-pointer text-sm">
+                        <button type="button" :disabled="submitting" onclick="document.getElementById('logout-modal').classList.add('hidden')" class="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-pointer text-sm">
                             Batal
                         </button>
                     </form>

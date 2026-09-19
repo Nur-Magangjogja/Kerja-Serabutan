@@ -45,7 +45,8 @@ class Greylist extends Component
     ];
 
     protected $listeners = [
-        'admin-city-changed' => '$refresh',
+        'admin-city-changed'             => '$refresh',
+        'superadmin-territory-changed'   => '$refresh',
     ];
 
     public function updatingSearch()
@@ -323,11 +324,11 @@ class Greylist extends Component
 
         // Validasi wilayah jika admin biasa
         if (!$isSuperAdmin) {
-            $managedCityIds = $admin ? $admin->getAdminCityIds() : [];
-            if (!empty($managedCityIds) && !in_array($user->city_id, $managedCityIds)) {
-                session()->flash('error', 'Anda tidak memiliki hak akses untuk memblokir pengguna di luar wilayah Anda.');
+            $managedDistrictIds = $admin ? $admin->getAdminDistrictIds() : [];
+            if (!empty($managedDistrictIds) && !in_array($user->district_id, $managedDistrictIds)) {
+                session()->flash('error', 'Anda tidak memiliki hak akses untuk memblokir pengguna di luar wilayah kecamatan wewenang Anda.');
                 return;
-            } elseif (empty($managedCityIds)) {
+            } elseif (empty($managedDistrictIds)) {
                 session()->flash('error', 'Anda belum memiliki wilayah wewenang.');
                 return;
             }
@@ -422,13 +423,29 @@ class Greylist extends Component
                   ->orWhere('warning_level', '>', 0);
             });
 
-        // Filter kota jika admin wilayah
+        // Filter kecamatan jika admin wilayah / super admin territory
         if (! $isSuperAdmin) {
-            $managedCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
-            if (!empty($managedCityIds)) {
-                $baseQuery->whereIn('city_id', $managedCityIds);
+            $managedDistrictIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
+            if (!empty($managedDistrictIds)) {
+                $baseQuery->whereIn('district_id', $managedDistrictIds);
             } elseif ($admin && $admin->role === 'admin') {
                 $baseQuery->whereRaw('1 = 0');
+            }
+        } elseif ($isSuperAdmin && $admin) {
+            $saTerritory = $admin->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $baseQuery->where('district_id', (int) $saTerritory['id']);
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cityId = (int) $saTerritory['id'];
+                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                $baseQuery->where(function ($q) use ($cityId, $saDistrictIds) {
+                    if (!empty($saDistrictIds)) {
+                        $q->whereIn('district_id', $saDistrictIds);
+                    }
+                    if ($cityId) {
+                        $q->orWhere('city_id', $cityId);
+                    }
+                });
             }
         }
 
@@ -440,7 +457,7 @@ class Greylist extends Component
         $totalCustomer = (clone $baseQuery)->where('role', 'customer')->count();
 
         // Query with filters
-        $query = (clone $baseQuery)->with(['city', 'greylistLogs.admin']);
+        $query = (clone $baseQuery)->with(['district', 'city', 'greylistLogs.admin']);
 
         if (!empty($this->search)) {
             $query->where(function ($q) {
@@ -478,11 +495,27 @@ class Greylist extends Component
                 });
 
             if (! $isSuperAdmin) {
-                $managedCityIds = $admin ? $admin->getEffectiveAdminCityIds() : [];
-                if (!empty($managedCityIds)) {
-                    $candQuery->whereIn('city_id', $managedCityIds);
+                $managedDistrictIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
+                if (!empty($managedDistrictIds)) {
+                    $candQuery->whereIn('district_id', $managedDistrictIds);
                 } elseif ($admin && $admin->role === 'admin') {
                     $candQuery->whereRaw('1 = 0');
+                }
+            } elseif ($isSuperAdmin && $admin) {
+                $saTerritory = $admin->getActiveSuperadminTerritory();
+                if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                    $candQuery->where('district_id', (int) $saTerritory['id']);
+                } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                    $cityId = (int) $saTerritory['id'];
+                    $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                    $candQuery->where(function ($q) use ($cityId, $saDistrictIds) {
+                        if (!empty($saDistrictIds)) {
+                            $q->whereIn('district_id', $saDistrictIds);
+                        }
+                        if ($cityId) {
+                            $q->orWhere('city_id', $cityId);
+                        }
+                    });
                 }
             }
 

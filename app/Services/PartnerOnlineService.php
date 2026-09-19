@@ -12,10 +12,36 @@ class PartnerOnlineService
     public const DEFAULT_HEARTBEAT_TTL = 60; // 60 detik
 
     /**
-     * Dapatkan atau inisialisasi state online mitra.
+     * In-memory request memoization for partner online state.
+     * Prevents duplicate queries during the same lifecycle/request.
+     *
+     * @var array<int, PartnerOnlineState>
      */
-    public function getOrCreateState(int $userId): PartnerOnlineState
+    protected static array $memoizedStates = [];
+
+    /**
+     * Clear the memoized state cache for a specific partner or all partners.
+     */
+    public static function clearStateCache(?int $userId = null): void
     {
+        if ($userId !== null) {
+            unset(self::$memoizedStates[$userId]);
+        } else {
+            self::$memoizedStates = [];
+        }
+    }
+
+    /**
+     * Dapatkan atau inisialisasi state online mitra (dengan request-level memoization).
+     */
+    public function getOrCreateState(int|User $userOrId, bool $forceFresh = false): PartnerOnlineState
+    {
+        $userId = $userOrId instanceof User ? $userOrId->id : (int) $userOrId;
+
+        if (!$forceFresh && isset(self::$memoizedStates[$userId])) {
+            return self::$memoizedStates[$userId];
+        }
+
         $state = PartnerOnlineState::firstOrCreate(
             ['user_id' => $userId],
             [
@@ -26,7 +52,10 @@ class PartnerOnlineService
         );
 
         // Guard: Jika Mitra sedang dalam pembatasan (Shadow Ban / SP 3 / Blocked), paksa status ke OFFLINE
-        $user = User::find($userId);
+        $user = $userOrId instanceof User
+            ? $userOrId
+            : ((auth()->check() && auth()->id() === $userId) ? auth()->user() : User::find($userId));
+
         if ($user && ($user->isShadowBanned() || $user->warning_level >= 3 || $user->status === 'blocked')) {
             if ($state->matching_status !== PartnerOnlineState::STATUS_OFFLINE) {
                 $state->update([
@@ -35,6 +64,7 @@ class PartnerOnlineService
                 ]);
                 $state->refresh();
             }
+            self::$memoizedStates[$userId] = $state;
             return $state;
         }
 
@@ -57,6 +87,18 @@ class PartnerOnlineService
             }
         }
 
+        // Self-Healing: Jika fitur matching/seeking dinonaktifkan di wilayah mitra, cegah mode SEARCHING
+        if ($user && !\App\Models\AppSetting::isMatchingSeekingEnabledForUser($user)) {
+            if ($state->matching_status === PartnerOnlineState::STATUS_SEARCHING) {
+                $state->update([
+                    'matching_status' => PartnerOnlineState::STATUS_ONLINE,
+                    'searching_since' => null,
+                ]);
+                $state->refresh();
+            }
+        }
+
+        self::$memoizedStates[$userId] = $state;
         return $state;
     }
 
@@ -71,6 +113,7 @@ class PartnerOnlineService
     public function goOnline(User $mitra, ?float $lat = null, ?float $lng = null): bool
     {
         return DB::transaction(function () use ($mitra, $lat, $lng) {
+            self::clearStateCache($mitra->id);
             $state = PartnerOnlineState::where('user_id', $mitra->id)->lockForUpdate()->first();
 
             if (!$state) {
@@ -127,6 +170,7 @@ class PartnerOnlineService
     public function startSearching(User $mitra, ?float $lat = null, ?float $lng = null): bool
     {
         return DB::transaction(function () use ($mitra, $lat, $lng) {
+            self::clearStateCache($mitra->id);
             $state = PartnerOnlineState::where('user_id', $mitra->id)->lockForUpdate()->first();
 
             if (!$state) {
@@ -134,6 +178,11 @@ class PartnerOnlineService
                     'user_id'         => $mitra->id,
                     'matching_status' => PartnerOnlineState::STATUS_OFFLINE,
                 ]);
+            }
+
+            // Guard: Validasi ketersediaan fitur pencarian antrean (matching seeking switch)
+            if (!\App\Models\AppSetting::isMatchingSeekingEnabledForUser($mitra)) {
+                throw new \RuntimeException('Fitur pencarian antrean / matching dinonaktifkan di wilayah Anda. Semua order bantuan langsung masuk ke daftar bantuan.');
             }
 
             // Guard: Validasi sanksi moderasi
@@ -184,6 +233,7 @@ class PartnerOnlineService
     public function stopSearching(User $mitra): bool
     {
         return DB::transaction(function () use ($mitra) {
+            self::clearStateCache($mitra->id);
             $state = PartnerOnlineState::where('user_id', $mitra->id)->lockForUpdate()->first();
 
             if (!$state) {
@@ -214,6 +264,7 @@ class PartnerOnlineService
     public function goOffline(User $mitra): bool
     {
         return DB::transaction(function () use ($mitra) {
+            self::clearStateCache($mitra->id);
             $state = PartnerOnlineState::where('user_id', $mitra->id)->lockForUpdate()->first();
 
             if (!$state) {
@@ -241,6 +292,7 @@ class PartnerOnlineService
      */
     public function heartbeat(User $mitra, ?float $lat = null, ?float $lng = null): ?PartnerOnlineState
     {
+        self::clearStateCache($mitra->id);
         $state = PartnerOnlineState::where('user_id', $mitra->id)->first();
 
         if (!$state) {
@@ -300,6 +352,7 @@ class PartnerOnlineService
         $ttl = $heartbeatTtlSeconds ?? \App\Models\AppSetting::getHeartbeatTtlSeconds();
 
         return DB::transaction(function () use ($mitraId, $helpId, $ttl) {
+            self::clearStateCache($mitraId);
             $state = PartnerOnlineState::where('user_id', $mitraId)->lockForUpdate()->first();
 
             if (!$state) {
@@ -334,6 +387,7 @@ class PartnerOnlineService
         $ttl = $heartbeatTtlSeconds ?? \App\Models\AppSetting::getHeartbeatTtlSeconds();
 
         DB::transaction(function () use ($mitraId, $helpId, $ttl) {
+            self::clearStateCache($mitraId);
             $state = PartnerOnlineState::where('user_id', $mitraId)->lockForUpdate()->first();
 
             if (!$state || $state->matching_status !== PartnerOnlineState::STATUS_OFFER_PENDING || $state->current_help_id != $helpId) {
@@ -368,6 +422,37 @@ class PartnerOnlineService
     }
 
     /**
+     * Membebaskan status mitra jika penawaran dibatalkan oleh customer (Instant Release, Zero Penalty).
+     * Tidak menambah consecutive_declines dan mempertahankan waktu antrean pencarian (searching_since).
+     */
+    public function releaseCancelledOffer(int $mitraId, int $helpId, ?int $heartbeatTtlSeconds = null): void
+    {
+        $ttl = $heartbeatTtlSeconds ?? \App\Models\AppSetting::getHeartbeatTtlSeconds();
+
+        DB::transaction(function () use ($mitraId, $helpId, $ttl) {
+            self::clearStateCache($mitraId);
+            $state = PartnerOnlineState::where('user_id', $mitraId)->lockForUpdate()->first();
+
+            if (!$state || $state->matching_status !== PartnerOnlineState::STATUS_OFFER_PENDING || $state->current_help_id != $helpId) {
+                return;
+            }
+
+            $state->current_help_id = null;
+
+            // Zero penalty: Tidak menambah consecutive_declines karena pembatalan dilakukan oleh customer
+            if ($state->isHeartbeatFresh($ttl)) {
+                $state->matching_status = PartnerOnlineState::STATUS_SEARCHING;
+            } else {
+                $state->matching_status = PartnerOnlineState::STATUS_ONLINE;
+                $state->searching_since = null;
+            }
+
+            $state->save();
+            Log::info("[PartnerOnlineService] Mitra #{$mitraId} released from cancelled Help #{$helpId} -> '{$state->matching_status}' (Zero penalty, queue preserved).");
+        });
+    }
+
+    /**
      * Menetapkan mitra ke status BUSY saat penawaran diterima atau bantuan diambil (Atomic Lock).
      * Transisi yang Diizinkan: SEARCHING / ONLINE / OFFER_PENDING -> BUSY.
      * Invariant Guards:
@@ -378,6 +463,7 @@ class PartnerOnlineService
     public function setBusy(int $mitraId, int $helpId): bool
     {
         return DB::transaction(function () use ($mitraId, $helpId) {
+            self::clearStateCache($mitraId);
             $state = PartnerOnlineState::where('user_id', $mitraId)->lockForUpdate()->first();
 
             if (!$state) {
@@ -420,6 +506,14 @@ class PartnerOnlineService
     }
 
     /**
+     * Alias method untuk setBusy (kompatibilitas antar service).
+     */
+    public function markBusy(int $mitraId, int $helpId): bool
+    {
+        return $this->setBusy($mitraId, $helpId);
+    }
+
+    /**
      * Melepaskan status BUSY setelah bantuan selesai / dibatalkan (Atomic Lock).
      * Transisi Eksplisit: BUSY -> ONLINE (Standby).
      * Memberikan kontrol penuh kepada Mitra untuk menekan tombol "Cari Order" secara sadar saat siap menerima tugas baru.
@@ -427,6 +521,7 @@ class PartnerOnlineService
     public function releaseBusy(int $mitraId, int $helpId, int $heartbeatTtlSeconds = self::DEFAULT_HEARTBEAT_TTL): void
     {
         DB::transaction(function () use ($mitraId, $helpId) {
+            self::clearStateCache($mitraId);
             $state = PartnerOnlineState::where('user_id', $mitraId)->lockForUpdate()->first();
 
             if (!$state) {
@@ -447,6 +542,14 @@ class PartnerOnlineService
         });
     }
 
+    /**
+     * Alias untuk melepaskan mitra saat bantuan dibatalkan.
+     */
+    public function releaseFromCancelledHelp(int $mitraId, int $helpId): void
+    {
+        $this->releaseBusy($mitraId, $helpId);
+    }
+
     // ═════════════════════════════════════════════════════════════════════════
     // HOUSEKEEPING & CRON
     // ═════════════════════════════════════════════════════════════════════════
@@ -461,6 +564,7 @@ class PartnerOnlineService
         $cutoff = now()->subSeconds($ttl);
 
         return DB::transaction(function () use ($cutoff) {
+            self::clearStateCache();
             $staleStates = PartnerOnlineState::where('matching_status', PartnerOnlineState::STATUS_SEARCHING)
                 ->where(function ($q) use ($cutoff) {
                     $q->whereNull('last_seen_at')

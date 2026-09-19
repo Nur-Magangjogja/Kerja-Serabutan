@@ -97,7 +97,7 @@ new #[Layout('layouts.guest')] class extends Component
                 </div>
                 <input type="email" id="email" wire:model="email" required autofocus autocomplete="username"
                     class="w-full pl-10 pr-4 py-3 text-xs sm:text-sm rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition shadow-xs"
-                    placeholder="nama@email.com">
+                    placeholder="@gmail.com">
             </div>
             <x-input-error :messages="$errors->get('email')" class="mt-1.5" />
         </div>

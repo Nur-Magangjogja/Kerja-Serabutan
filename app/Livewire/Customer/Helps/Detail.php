@@ -4,17 +4,29 @@ namespace App\Livewire\Customer\Helps;
 
 use App\Models\Help;
 use App\Models\Rating;
+use App\Services\HelpCancellationService;
 use App\Services\HelpTransactionService;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Log;
 
 class Detail extends Component
 {
+    use WithFileUploads;
+
     public $help;
     public $helpId;
 
     // Modal state
     public $showCancelConfirm          = false;
+    public $showCustomerCancelModal    = false;
+    public $cancelOption               = 'switch'; // 'switch' (Ganti Mitra) | 'withdraw' (Tarik Pekerjaan)
+    public $switchReason               = 'Mitra tidak bergerak / tidak merespons chat';
+    public $switchNotes                = '';
+    public $customerCancelReason       = '';
+    public $customerCancelNotes        = '';
+    public $customerCancelPhoto        = null;
+
     public $showMapModal               = false;
     public $showRatingForm             = false;
     public $showDisputeModal           = false;
@@ -41,11 +53,17 @@ class Detail extends Component
     public function loadHelp(): void
     {
         $this->help = Help::with([
-            'user', 'mitra', 'city', 'ratings',
+            'user', 'mitra', 'city', 'district', 'ratings',
         ])->findOrFail($this->helpId);
 
         if ($this->help->user_id !== auth()->id()) {
             abort(403, 'Unauthorized access');
+        }
+
+        // Auto-cancel jika batas waktu pencarian rekan jasa (expires_at) telah berakhir
+        if ($this->help->status === Help::STATUS_MENUNGGU_MITRA && $this->help->isExpired()) {
+            app(HelpCancellationService::class)->autoCancelExpiredHelp($this->help, 'Batas waktu pencarian Rekan Jasa telah berakhir');
+            $this->help->refresh();
         }
 
         // Auto-confirm jika batas waktu 24 jam telah terlewati tanpa komplain/sengketa
@@ -61,7 +79,7 @@ class Detail extends Component
         }
 
         // Kirim data tracking ke frontend bila map terbuka
-        if ($this->showMapModal && in_array($this->help->status, ['taken', 'partner_on_the_way', 'partner_arrived'])) {
+        if ($this->showMapModal && in_array($this->help->status, [Help::STATUS_TAKEN, Help::STATUS_PARTNER_ON_THE_WAY, Help::STATUS_PARTNER_ARRIVED])) {
             $this->dispatch('tracking-data-updated', [
                 'partnerLat'  => $this->help->partner_current_lat ?? ($this->help->mitra?->latitude ?? -6.2088),
                 'partnerLng'  => $this->help->partner_current_lng ?? ($this->help->mitra?->longitude ?? 106.8456),
@@ -90,7 +108,7 @@ class Detail extends Component
         }
 
         // Deteksi keputusan pembatalan mitra yang baru diterima
-        if ($oldStatus === 'partner_cancel_requested' && $newStatus !== 'partner_cancel_requested') {
+        if ($oldStatus === Help::STATUS_PARTNER_CANCEL_REQUESTED && $newStatus !== Help::STATUS_PARTNER_CANCEL_REQUESTED) {
             $this->dispatch('show-status-notification', message: 'Status pesanan diperbarui!');
         }
     }
@@ -101,16 +119,211 @@ class Detail extends Component
 
     public function cancelHelp()
     {
-        try {
-            app(HelpTransactionService::class)->customerCancelHelp($this->help, auth()->user());
-            session()->flash('success', 'Permintaan bantuan berhasil dibatalkan.');
+        // Khusus pickup_delivery: Cek aturan Anti-Bypass Lock & Staged Cancellation
+        if ($this->help->isPickup()) {
+            if ($this->help->status === Help::STATUS_MENUNGGU_MITRA || empty($this->help->mitra_id)) {
+                try {
+                    app(HelpCancellationService::class)->cancelOrderBeforePartnerTaken($this->help, auth()->user(), 'Dibatalkan oleh customer sebelum ada mitra');
+                    session()->flash('success', 'Permintaan bantuan antar/jemput berhasil dibatalkan dan saldo telah dikembalikan 100%.');
+                    $this->showCancelConfirm = false;
+                    return redirect()->route('customer.helps.index');
+                } catch (\RuntimeException $e) {
+                    session()->flash('error', $e->getMessage());
+                    return;
+                } catch (\Throwable $e) {
+                    Log::error('[CustomerHelpDetail] cancelHelp pickup error: ' . $e->getMessage());
+                    session()->flash('error', 'Terjadi kesalahan saat membatalkan bantuan: ' . $e->getMessage());
+                    return;
+                }
+            }
+
+            if ($this->help->canCustomerCancel()) {
+                try {
+                    app(HelpCancellationService::class)->cancelPickupDeliveryByCustomer($this->help, auth()->user(), 'Dibatalkan oleh customer pada tahap penjemputan.');
+                    session()->flash('success', 'Pesanan antar/jemput berhasil dibatalkan. Kompensasi mitra dan pengembalian saldo telah diproses sesuai tahap perjalanan.');
+                    $this->showCancelConfirm = false;
+                    $this->loadHelp();
+                    return;
+                } catch (\RuntimeException $e) {
+                    session()->flash('error', $e->getMessage());
+                    return;
+                } catch (\Throwable $e) {
+                    Log::error('[CustomerHelpDetail] cancelPickupDelivery error: ' . $e->getMessage());
+                    session()->flash('error', 'Terjadi kesalahan saat membatalkan pesanan antar/jemput: ' . $e->getMessage());
+                    return;
+                }
+            } else {
+                session()->flash('error', 'Pembatalan otomatis terkunci karena pengantaran fisik barang telah dimulai. Silakan hubungi Bantuan CS / Admin Wilayah.');
+                $this->showCancelConfirm = false;
+                return;
+            }
+        }
+
+        // Layanan Reguler (On-Site Service / Buy for Customer)
+        if ($this->help->status === Help::STATUS_MENUNGGU_MITRA || empty($this->help->mitra_id)) {
+            try {
+                app(HelpCancellationService::class)->cancelOrderBeforePartnerTaken($this->help, auth()->user(), 'Dibatalkan oleh customer sebelum ada mitra');
+                session()->flash('success', 'Permintaan bantuan berhasil dibatalkan dan saldo telah dikembalikan 100%.');
+                $this->showCancelConfirm = false;
+                return redirect()->route('customer.helps.index');
+            } catch (\RuntimeException $e) {
+                session()->flash('error', $e->getMessage());
+            } catch (\Throwable $e) {
+                Log::error('[CustomerHelpDetail] cancelHelp error: ' . $e->getMessage());
+                session()->flash('error', 'Terjadi kesalahan saat membatalkan bantuan: ' . $e->getMessage());
+            }
+        } else {
+            // Jika sudah diambil mitra, arahkan ke modal pengajuan pembatalan customer
             $this->showCancelConfirm = false;
-            return redirect()->route('customer.helps.index');
+            $this->openCustomerCancelModal();
+        }
+    }
+
+    public function openCustomerCancelModal()
+    {
+        $this->cancelOption         = 'switch';
+        $this->switchReason         = 'Mitra tidak bergerak / tidak kunjung datang';
+        $this->switchNotes          = '';
+        $this->customerCancelReason = '';
+        $this->customerCancelNotes  = '';
+        $this->customerCancelPhoto  = null;
+        $this->showCustomerCancelModal = true;
+    }
+
+    public function closeCustomerCancelModal()
+    {
+        $this->showCustomerCancelModal = false;
+        $this->cancelOption         = 'switch';
+        $this->switchReason         = 'Mitra tidak bergerak / tidak kunjung datang';
+        $this->switchNotes          = '';
+        $this->customerCancelReason = '';
+        $this->customerCancelNotes  = '';
+        $this->customerCancelPhoto  = null;
+    }
+
+    /**
+     * Customer memilih Ganti Mitra (Tetap Lanjut Cari Mitra Baru).
+     */
+    public function switchPartner()
+    {
+        $this->validate([
+            'switchReason' => 'required|string|min:3|max:255',
+            'switchNotes'  => 'nullable|string|max:1000',
+        ], [
+            'switchReason.required' => 'Pilih atau isi alasan penggantian mitra.',
+            'switchReason.min'      => 'Alasan minimal 3 karakter.',
+        ]);
+
+        try {
+            app(HelpCancellationService::class)->switchPartnerByCustomer(
+                $this->help,
+                auth()->user(),
+                $this->switchReason,
+                $this->switchNotes ?: null
+            );
+
+            $this->showCustomerCancelModal = false;
+            $this->loadHelp();
+            session()->flash('success', 'Permintaan ganti mitra berhasil diajukan. Tim Admin dan mitra akan berkoordinasi dan pesanan dialihkan untuk mencari mitra baru.');
         } catch (\RuntimeException $e) {
             session()->flash('error', $e->getMessage());
         } catch (\Throwable $e) {
-            Log::error('[CustomerHelpDetail] cancelHelp error: ' . $e->getMessage());
-            session()->flash('error', 'Terjadi kesalahan saat membatalkan bantuan.');
+            Log::error('[CustomerHelpDetail] switchPartner error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat mengajukan ganti mitra: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Customer memilih Tarik Pekerjaan (Batal Total & Refund 100%).
+     */
+    public function submitCustomerCancel()
+    {
+        // Guard: Pastikan mitra belum mulai bekerja (hanya saat dalam perjalanan)
+        $isPartnerWorking = in_array($this->help->status, [
+            Help::STATUS_PARTNER_ARRIVED,
+            Help::STATUS_IN_PROGRESS,
+            Help::STATUS_WAITING_CONFIRMATION,
+            Help::STATUS_SELESAI,
+        ]) || ($this->help->isPickup() && in_array($this->help->service_stage, [
+            Help::STAGE_AT_PICKUP,
+            Help::STAGE_ITEM_COLLECTED,
+            Help::STAGE_GOING_TO_DELIVERY,
+            Help::STAGE_FINAL_APPROACH,
+            Help::STAGE_AT_DESTINATION,
+        ]));
+
+        if ($isPartnerWorking) {
+            session()->flash('error', 'Opsi penarikan pekerjaan tidak tersedia karena mitra telah tiba di lokasi atau sedang bekerja. Silakan gunakan opsi Ganti Mitra atau hubungi Bantuan CS.');
+            $this->showCustomerCancelModal = false;
+            return;
+        }
+
+        $this->validate([
+            'customerCancelReason' => 'required|string|min:5|max:255',
+            'customerCancelNotes'  => 'required|string|min:5|max:1000',
+            'customerCancelPhoto'  => 'required|image|mimes:jpg,jpeg,png|max:5120',
+        ], [
+            'customerCancelReason.required' => 'Pilih atau isi alasan penarikan pekerjaan.',
+            'customerCancelReason.min'      => 'Alasan penarikan minimal 5 karakter.',
+            'customerCancelPhoto.required'  => 'Foto bukti kendala wajib diunggah.',
+            'customerCancelPhoto.image'     => 'Foto bukti harus berupa gambar (JPG/PNG).',
+            'customerCancelPhoto.mimes'     => 'Format foto bukti harus JPG, JPEG, atau PNG.',
+            'customerCancelPhoto.max'       => 'Ukuran foto bukti maksimal 5MB.',
+            'customerCancelNotes.required'  => 'Catatan tambahan wajib diisi.',
+            'customerCancelNotes.min'       => 'Catatan tambahan minimal 5 karakter.',
+            'customerCancelNotes.max'       => 'Catatan tambahan maksimal 1000 karakter.',
+        ]);
+
+        try {
+            $photoPath = null;
+            if ($this->customerCancelPhoto) {
+                $photoPath = $this->customerCancelPhoto->store('customer_cancels', 'public');
+            }
+
+            app(HelpCancellationService::class)->submitCustomerCancelRequest(
+                $this->help,
+                auth()->user(),
+                $this->customerCancelReason,
+                $this->customerCancelNotes ?: null,
+                $photoPath
+            );
+
+            $this->showCustomerCancelModal = false;
+            $this->loadHelp();
+            session()->flash('warning', 'Permintaan penarikan pekerjaan telah dikirimkan. Mitra akan mengonfirmasi dan kasus ini dipantau oleh Admin Wilayah.');
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[CustomerHelpDetail] submitCustomerCancel error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    public function acceptPartnerCancel()
+    {
+        try {
+            app(HelpCancellationService::class)->customerAcceptPartnerCancellation($this->help, auth()->user());
+            $this->loadHelp();
+            session()->flash('success', 'Pembatalan mitra telah disetujui. Dana 100% telah dikembalikan ke saldo Anda.');
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[CustomerHelpDetail] acceptPartnerCancel error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat menyetujui pembatalan mitra.');
+        }
+    }
+
+    public function relistPartnerCancel()
+    {
+        try {
+            app(HelpCancellationService::class)->customerRelistPartnerCancellation($this->help, auth()->user());
+            $this->loadHelp();
+            session()->flash('success', 'Tugas berhasil dikembalikan ke pool pencarian. Sistem sedang mencari rekan jasa pengganti untuk Anda.');
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[CustomerHelpDetail] relistPartnerCancel error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat mengembalikan tugas ke pool: ' . $e->getMessage());
         }
     }
 
@@ -242,7 +455,7 @@ class Detail extends Component
 
     public function showTrackingMap()
     {
-        if (!in_array($this->help->status, ['taken', 'partner_on_the_way', 'partner_arrived'])) {
+        if (!in_array($this->help->status, [Help::STATUS_TAKEN, Help::STATUS_PARTNER_ON_THE_WAY, Help::STATUS_PARTNER_ARRIVED])) {
             session()->flash('error', 'Tracking hanya tersedia saat mitra sedang menuju lokasi.');
             return;
         }
@@ -304,6 +517,18 @@ class Detail extends Component
     // COMPUTED PROPERTIES (delegasi ke model)
     // ─────────────────────────────────────────────────────────────────────────
 
+    public function getActiveReportProperty(): ?\App\Models\PartnerReport
+    {
+        if (!$this->helpId) return null;
+        return \App\Models\PartnerReport::getActiveReportForHelp((int) $this->helpId);
+    }
+
+    public function getLatestResolvedReportProperty(): ?\App\Models\PartnerReport
+    {
+        if (!$this->helpId) return null;
+        return \App\Models\PartnerReport::getLatestResolvedReportForHelp((int) $this->helpId);
+    }
+
     public function getStatusColorProperty(): string
     {
         return $this->help->status_color;
@@ -321,14 +546,16 @@ class Detail extends Component
     private function getStatusNotificationMessage(string $status): string
     {
         return match($status) {
-            'taken', 'memperoleh_mitra'    => '✅ Rekan Jasa telah mengambil pesanan Anda',
-            'partner_on_the_way'            => '🚗 Rekan Jasa sedang menuju lokasi Anda',
-            'partner_arrived'               => '📍 Rekan Jasa telah tiba di lokasi',
-            'in_progress', 'sedang_diproses'=> '⚙️ Pekerjaan sedang dikerjakan',
-            'waiting_customer_confirmation' => '✋ Menunggu konfirmasi Anda untuk menyelesaikan pesanan',
-            'selesai', 'completed'          => '✅ Pesanan telah selesai',
-            'partner_cancel_requested'      => '⚠️ Mitra mengajukan pembatalan',
-            default                         => 'Status pesanan diperbarui',
+            Help::STATUS_TAKEN                     => '✅ Rekan Jasa telah mengambil pesanan Anda',
+            Help::STATUS_PARTNER_ON_THE_WAY        => '🚗 Rekan Jasa sedang menuju lokasi Anda',
+            Help::STATUS_PARTNER_ARRIVED           => '📍 Rekan Jasa telah tiba di lokasi',
+            Help::STATUS_IN_PROGRESS               => '⚙️ Pekerjaan sedang dikerjakan',
+            Help::STATUS_WAITING_CONFIRMATION      => '✋ Menunggu konfirmasi Anda untuk menyelesaikan pesanan',
+            Help::STATUS_SELESAI                   => '✅ Pesanan telah selesai',
+            Help::STATUS_DIBATALKAN                => '❌ Pesanan dibatalkan',
+            Help::STATUS_PARTNER_CANCEL_REQUESTED  => '⚠️ Mitra mengajukan kendala/pembatalan',
+            Help::STATUS_CUSTOMER_CANCEL_REQUESTED => '⚠️ Pengajuan pembatalan sedang ditinjau admin',
+            default                                => 'Status pesanan diperbarui',
         };
     }
 

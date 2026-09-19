@@ -17,17 +17,31 @@ class HelpDetail extends Component
 
     protected $listeners = [
         'closePartnerCancelStatusModal' => 'closePartnerCancelStatusModal',
+        'status-changed'                => 'loadHelp',
+        'partner-location-updated'      => 'loadHelp',
     ];
 
     public $helpId;
     public $help;
     public $currentStatus;
 
-    // ─── Cancel modal ─────────────────────────────────────────────────────────
-    public $showPartnerCancelModal      = false;
-    public $partnerCancelReason         = '';
+    // ─── Cancel modal & Clarification ─────────────────────────────────────────
+    public $showPartnerCancelModal       = false;
+    public $partnerCancelReason          = '';
+    public $partnerCancelNotes           = '';
+    public $cancel_evidence_photo        = null;
+    public $work_completed_percentage    = 0;
     public $showPartnerCancelStatusModal = false;
-    public $partnerCancelStatus         = null; // 'pending' | 'accepted' | 'rejected'
+    public $partnerCancelStatus          = null; // 'pending' | 'accepted' | 'rejected'
+
+    // Clarification & Objection on customer-requested withdraw
+    public $showClarificationModal       = false;
+    public $partnerClarificationText     = '';
+    public $partnerClarificationPhoto    = null;
+
+    public $showRejectWithdrawModal      = false;
+    public $rejectWithdrawNotes          = '';
+    public $rejectWithdrawPhoto          = null;
 
     // ─── Completion modal ────────────────────────────────────────────────────
     public $proof_photo;
@@ -44,25 +58,36 @@ class HelpDetail extends Component
         $this->help   = Help::with(['user', 'city', 'rating'])->findOrFail($id);
 
         if ($this->help->mitra_id !== auth()->id()) {
-            // Akses diizinkan jika pernah terlibat (audit activity atau notifikasi)
+            // Akses diizinkan jika pernah terlibat (audit activity, cancel request, atau notifikasi)
             if (!$this->wasInvolvedInHelp($id)) {
                 session()->flash('error', 'Bantuan ini tidak ditugaskan kepada Anda.');
-                return redirect()->route('mitra.dashboard');
+                $this->redirectRoute('mitra.dashboard');
+                return;
             }
 
-            // Tampilkan modal info pembatalan diterima
-            $this->showPartnerCancelStatusModal = true;
-            $this->partnerCancelStatus          = 'accepted';
+            // Tampilkan modal info pembatalan diterima jika ada flag
+            if ($this->help->partner_cancel_prev_status === 'cancel_accepted') {
+                $this->showPartnerCancelStatusModal = true;
+                $this->partnerCancelStatus          = 'accepted';
+            }
         }
 
         $this->currentStatus = $this->help->status;
     }
 
     /**
-     * Cek apakah mitra pernah terlibat pada help ini (via activity log atau notifikasi).
+     * Cek apakah mitra pernah terlibat pada help ini (via activity log, cancel request, atau notifikasi).
      */
     private function wasInvolvedInHelp(int $helpId): bool
     {
+        if ($this->help && $this->help->mitra_id === auth()->id()) {
+            return true;
+        }
+
+        if (\App\Models\HelpCancelRequest::where('help_id', $helpId)->where('partner_id', auth()->id())->exists()) {
+            return true;
+        }
+
         if (\App\Models\PartnerActivity::where('help_id', $helpId)->where('user_id', auth()->id())->exists()) {
             return true;
         }
@@ -95,6 +120,36 @@ class HelpDetail extends Component
         ) {
             app(\App\Services\HelpTransactionService::class)->autoConfirmExpiredConfirmation($this->help);
             $this->help->refresh();
+        }
+
+        // Kirim notifikasi & trigger pengingat keberangkatan jika jeda waktu keberangkatan telah terbuka
+        if (
+            $this->help->status === Help::STATUS_TAKEN &&
+            $this->help->isScheduled() &&
+            $this->help->canPartnerStartDeparture() &&
+            !$this->help->departure_reminder_sent_at
+        ) {
+            $this->help->update(['departure_reminder_sent_at' => now()]);
+            $mitra = auth()->user();
+            if ($mitra && $mitra->id === $this->help->mitra_id) {
+                try {
+                    $mitra->notify(new \App\Notifications\HelpStatusNotification(
+                        $this->help,
+                        Help::STATUS_TAKEN,
+                        'scheduled_departure_due',
+                        $this->help->user
+                    ));
+                    app(\App\Services\HelpNotificationService::class)->logActivity(
+                        $mitra->id,
+                        $this->help->id,
+                        'scheduled_departure_reminder',
+                        "Pengingat keberangkatan tugas terjadwal #{$this->help->id} terkirim ke Mitra {$mitra->name}"
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning("[HelpDetail] Gagal kirim departure reminder: " . $e->getMessage());
+                }
+            }
+            $this->dispatch('show-status-notification', message: '⏰ Waktunya berangkat! Jendela keberangkatan untuk tugas terjadwal ini telah dibuka.');
         }
 
         $newStatus = $this->help->status;
@@ -143,6 +198,12 @@ class HelpDetail extends Component
     public function markPartnerArrived()
     {
         try {
+            $progress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($this->help);
+            if (!$progress['is_arrived'] && ($progress['target_lat'] != 0 && $progress['target_lng'] != 0 && $progress['partner_lat'] != 0 && $progress['partner_lng'] != 0)) {
+                session()->flash('error', 'Anda belum berada di lokasi penugasan (Jarak tersisa: ' . $progress['formatted_distance'] . '). Tombol konfirmasi hanya dapat ditekan saat GPS Anda berada dalam radius 50 meter.');
+                return;
+            }
+
             app(HelpTransactionService::class)->markArrived($this->help, auth()->user());
             $this->loadHelp();
             $this->dispatch('show-status-notification', message: 'Anda sudah tiba di lokasi!');
@@ -167,6 +228,47 @@ class HelpDetail extends Component
         } catch (\Throwable $e) {
             Log::error('[MitraHelpDetail] startService error: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan.');
+        }
+    }
+
+    // ─── Revision 3: Multi-Stage Tracking & Advance ──────────────────────────
+
+    public function advanceStage(string $stage): void
+    {
+        try {
+            if (in_array($stage, ['at_pickup', 'at_destination'], true)) {
+                $progress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($this->help);
+                if (!$progress['is_arrived'] && ($progress['target_lat'] != 0 && $progress['target_lng'] != 0 && $progress['partner_lat'] != 0 && $progress['partner_lng'] != 0)) {
+                    session()->flash('error', 'Anda belum berada di lokasi tujuan (Jarak tersisa: ' . $progress['formatted_distance'] . '). Tombol hanya dapat ditekan saat GPS Anda berada dalam radius 50 meter.');
+                    return;
+                }
+            }
+
+            app(\App\Services\HelpTrackingService::class)->advanceStage($this->help, auth()->user(), $stage);
+            $this->loadHelp();
+            $this->dispatch('show-status-notification', message: 'Tahapan berhasil diperbarui!');
+            session()->flash('message', 'Tahapan berhasil diperbarui: ' . str_replace('_', ' ', ucfirst($stage)));
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[MitraHelpDetail] advanceStage error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat memperbarui tahapan.');
+        }
+    }
+
+    public function updatePartnerGps($lat, $lng, $accuracy = null): void
+    {
+        try {
+            app(\App\Services\HelpTrackingService::class)->updatePartnerLocation(
+                $this->help,
+                auth()->user(),
+                (float) $lat,
+                (float) $lng,
+                $accuracy ? (float) $accuracy : null
+            );
+            $this->loadHelp();
+        } catch (\Throwable $e) {
+            Log::warning('[MitraHelpDetail] updatePartnerGps warning: ' . $e->getMessage());
         }
     }
 
@@ -224,36 +326,219 @@ class HelpDetail extends Component
         $this->openCompletionModal();
     }
 
-    // ─── Partner Cancel ──────────────────────────────────────────────────────
-
+    // ─── Partner Cancel (State-Aware Cancel Request with Photo & Audit) ──────
     public function openPartnerCancelModal()
     {
-        $this->partnerCancelReason    = '';
+        $this->reset(['partnerCancelReason', 'partnerCancelNotes', 'cancel_evidence_photo']);
         $this->showPartnerCancelModal = true;
+    }
+
+    public function closePartnerCancelModal()
+    {
+        $this->showPartnerCancelModal = false;
+        $this->reset(['partnerCancelReason', 'partnerCancelNotes', 'cancel_evidence_photo']);
     }
 
     public function requestPartnerCancel()
     {
+        $this->validate([
+            'partnerCancelReason'   => 'required|string|min:3|max:255',
+            'partnerCancelNotes'    => 'required|string|min:5|max:1000',
+            'cancel_evidence_photo' => 'required|image|mimes:jpg,jpeg,png|max:5120',
+        ], [
+            'partnerCancelReason.required'   => 'Pilih atau isi alasan pembatalan.',
+            'partnerCancelReason.min'        => 'Alasan pembatalan minimal 3 karakter.',
+            'cancel_evidence_photo.required' => 'Foto bukti kendala wajib diunggah.',
+            'cancel_evidence_photo.image'    => 'Foto bukti harus berupa file gambar (JPG/PNG).',
+            'cancel_evidence_photo.mimes'    => 'Format foto bukti harus JPG, JPEG, atau PNG.',
+            'cancel_evidence_photo.max'      => 'Ukuran foto bukti maksimal 5MB.',
+            'partnerCancelNotes.required'    => 'Catatan tambahan kendala wajib diisi.',
+            'partnerCancelNotes.min'         => 'Catatan tambahan minimal 5 karakter.',
+            'partnerCancelNotes.max'         => 'Catatan tambahan maksimal 1000 karakter.',
+        ]);
+
         try {
-            app(HelpTransactionService::class)->requestPartnerCancel(
+            $evidencePath = null;
+            if ($this->cancel_evidence_photo) {
+                $evidencePath = $this->cancel_evidence_photo->store('cancel_evidence', 'public');
+            }
+
+            $wasInProgress = ($this->help->status === 'in_progress');
+
+            app(\App\Services\HelpCancellationService::class)->submitPartnerCancelRequest(
                 $this->help,
                 auth()->user(),
-                $this->partnerCancelReason ?: null
+                $this->partnerCancelReason,
+                $this->partnerCancelNotes ?: null,
+                $evidencePath,
+                false,
+                0.0,
+                0.0
             );
 
-            $this->showPartnerCancelModal       = false;
-            $this->showPartnerCancelStatusModal = false;
-            $this->partnerCancelStatus          = null;
+            $this->showPartnerCancelModal = false;
 
-            session()->flash('message', 'Pembatalan berhasil. Tugas telah dilepaskan dan dikembalikan ke sistem pencarian untuk Rekan Jasa lain.');
-            return redirect()->route('mitra.helps.all');
+            if ($wasInProgress) {
+                $this->loadHelp();
+                session()->flash('message', 'Pengajuan kendala pengerjaan (Konsep 2) berhasil dikirim. Menunggu peninjauan Admin Wilayah dan klarifikasi dengan Customer.');
+            } else {
+                session()->flash('message', 'Tugas berhasil dibatalkan dan dialihkan ke pencarian mitra lain. Akun Anda telah aktif kembali.');
+                return $this->redirectRoute('mitra.dashboard');
+            }
         } catch (\RuntimeException $e) {
             $this->showPartnerCancelModal = false;
             session()->flash('error', $e->getMessage());
         } catch (\Throwable $e) {
             $this->showPartnerCancelModal = false;
             Log::error('[MitraHelpDetail] requestPartnerCancel error: ' . $e->getMessage());
-            session()->flash('error', 'Terjadi kesalahan saat membatalkan tugas.');
+            session()->flash('error', 'Terjadi kesalahan saat membatalkan tugas: ' . $e->getMessage());
+        }
+    }
+
+    // ─── Customer Withdrawal Response (Setujui vs Tolak/Pembelaan) ─────────
+    public function confirmWithdrawal()
+    {
+        try {
+            $pendingRequest = \App\Models\HelpCancelRequest::where('help_id', $this->help->id)
+                ->where('status', \App\Models\HelpCancelRequest::STATUS_PENDING)
+                ->where('requester_type', \App\Models\HelpCancelRequest::REQUESTER_CUSTOMER)
+                ->latest()
+                ->first();
+
+            if (!$pendingRequest) {
+                session()->flash('error', 'Tidak ditemukan tiket permohonan penarikan yang aktif.');
+                return;
+            }
+
+            app(\App\Services\HelpCancellationService::class)->respondWithdrawByPartner(
+                $pendingRequest,
+                auth()->user(),
+                true
+            );
+
+            $this->loadHelp();
+            session()->flash('message', 'Anda telah menyetujui penarikan pesanan oleh customer. Pesanan resmi dibatalkan.');
+        } catch (\Throwable $e) {
+            Log::error('[MitraHelpDetail] confirmWithdrawal error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat menyetujui penarikan: ' . $e->getMessage());
+        }
+    }
+
+    public function openRejectWithdrawModal()
+    {
+        $this->reset(['rejectWithdrawNotes', 'rejectWithdrawPhoto']);
+        $this->showRejectWithdrawModal = true;
+    }
+
+    public function closeRejectWithdrawModal()
+    {
+        $this->showRejectWithdrawModal = false;
+        $this->reset(['rejectWithdrawNotes', 'rejectWithdrawPhoto']);
+    }
+
+    public function rejectWithdrawal()
+    {
+        $this->validate([
+            'rejectWithdrawNotes' => 'required|string|min:5|max:1000',
+            'rejectWithdrawPhoto' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+        ], [
+            'rejectWithdrawNotes.required' => 'Tuliskan alasan penolakan/pembelaan Anda.',
+            'rejectWithdrawNotes.min'      => 'Penjelasan minimal 5 karakter.',
+            'rejectWithdrawPhoto.image'    => 'Foto bukti harus berupa gambar (JPG/PNG).',
+        ]);
+
+        try {
+            $pendingRequest = \App\Models\HelpCancelRequest::where('help_id', $this->help->id)
+                ->where('status', \App\Models\HelpCancelRequest::STATUS_PENDING)
+                ->where('requester_type', \App\Models\HelpCancelRequest::REQUESTER_CUSTOMER)
+                ->latest()
+                ->first();
+
+            if (!$pendingRequest) {
+                session()->flash('error', 'Tidak ditemukan tiket permohonan penarikan yang aktif.');
+                $this->showRejectWithdrawModal = false;
+                return;
+            }
+
+            $photoPath = null;
+            if ($this->rejectWithdrawPhoto) {
+                $photoPath = $this->rejectWithdrawPhoto->store('cancel_objections', 'public');
+            }
+
+            app(\App\Services\HelpCancellationService::class)->respondWithdrawByPartner(
+                $pendingRequest,
+                auth()->user(),
+                false,
+                $this->rejectWithdrawNotes,
+                $photoPath
+            );
+
+            $this->showRejectWithdrawModal = false;
+            $this->loadHelp();
+            session()->flash('message', 'Penolakan Anda telah dicatat. Kasus ini diteruskan ke Admin Wilayah untuk diaudit secara adil.');
+        } catch (\Throwable $e) {
+            Log::error('[MitraHelpDetail] rejectWithdrawal error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat mengirim penolakan: ' . $e->getMessage());
+        }
+    }
+
+    // ─── Clarification for Customer-Requested Cancel ─────────────────────────
+    public function openClarificationModal()
+    {
+        $this->partnerClarificationText  = '';
+        $this->partnerClarificationPhoto = null;
+        $this->showClarificationModal    = true;
+    }
+
+    public function closeClarificationModal()
+    {
+        $this->showClarificationModal    = false;
+        $this->partnerClarificationText  = '';
+        $this->partnerClarificationPhoto = null;
+    }
+
+    public function submitClarification()
+    {
+        $this->validate([
+            'partnerClarificationText'  => 'required|string|min:5|max:1000',
+            'partnerClarificationPhoto' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+        ], [
+            'partnerClarificationText.required' => 'Isi penjelasan klarifikasi/pengakuan Anda.',
+            'partnerClarificationText.min'      => 'Penjelasan minimal 5 karakter.',
+            'partnerClarificationPhoto.image'   => 'Foto bukti harus berupa gambar (JPG/PNG).',
+        ]);
+
+        try {
+            $pendingRequest = \App\Models\HelpCancelRequest::where('help_id', $this->help->id)
+                ->where('status', \App\Models\HelpCancelRequest::STATUS_PENDING)
+                ->where('requester_type', \App\Models\HelpCancelRequest::REQUESTER_CUSTOMER)
+                ->latest()
+                ->first();
+
+            if (!$pendingRequest) {
+                session()->flash('error', 'Tidak ditemukan tiket pengajuan pembatalan customer yang aktif.');
+                $this->showClarificationModal = false;
+                return;
+            }
+
+            $clarificationPhotoPath = null;
+            if ($this->partnerClarificationPhoto) {
+                $clarificationPhotoPath = $this->partnerClarificationPhoto->store('cancel_clarifications', 'public');
+            }
+
+            app(\App\Services\HelpCancellationService::class)->submitPartnerClarification(
+                $pendingRequest,
+                auth()->user(),
+                $this->partnerClarificationText,
+                $clarificationPhotoPath
+            );
+
+            $this->showClarificationModal = false;
+            $this->loadHelp();
+            session()->flash('message', 'Tanggapan / klarifikasi Anda telah berhasil dicatat untuk ditinjau oleh Admin Wilayah.');
+        } catch (\Throwable $e) {
+            Log::error('[MitraHelpDetail] submitClarification error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat mengirim klarifikasi: ' . $e->getMessage());
         }
     }
 
@@ -296,6 +581,27 @@ class HelpDetail extends Component
 
     public function render()
     {
-        return view('livewire.mitra.helps.help-detail');
+        $cancelRequest = \App\Models\HelpCancelRequest::with('reviewedBy')
+            ->where('help_id', $this->help->id)
+            ->where(function ($q) {
+                $q->where('partner_id', auth()->id())
+                  ->orWhereNull('partner_id');
+            })
+            ->latest()
+            ->first();
+
+        if (!$cancelRequest) {
+            $cancelRequest = \App\Models\HelpCancelRequest::with('reviewedBy')
+                ->where('help_id', $this->help->id)
+                ->latest()
+                ->first();
+        }
+
+        $travelProgress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($this->help);
+
+        return view('livewire.mitra.helps.help-detail', [
+            'cancelRequest'  => $cancelRequest,
+            'travelProgress' => $travelProgress,
+        ]);
     }
 }

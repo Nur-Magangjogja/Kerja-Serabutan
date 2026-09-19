@@ -18,9 +18,14 @@
         html.dark main { background-color: #111827 !important; }
         html:not(.dark) { background-color: #f3f4f6 !important; color-scheme: light; }
         html:not(.dark) body { background-color: #f3f4f6 !important; }
-        .no-transition, .no-transition * { -webkit-transition: none !important; transition: none !important; }
-        html, body, *, *::before, *::after { -ms-overflow-style: none !important; scrollbar-width: none !important; }
-        *::-webkit-scrollbar, html::-webkit-scrollbar, body::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+        html, body, .hide-scrollbar, .scrollbar-none, .no-scrollbar, .scrollbar-hide { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar, .hide-scrollbar::-webkit-scrollbar, .scrollbar-none::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar, .scrollbar-hide::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+        .dropdown-scrollbar, .custom-scrollbar, .scrollbar-thin { scrollbar-width: thin !important; scrollbar-color: rgba(156, 163, 175, 0.5) transparent !important; -ms-overflow-style: auto !important; }
+        .dropdown-scrollbar::-webkit-scrollbar, .custom-scrollbar::-webkit-scrollbar, .scrollbar-thin::-webkit-scrollbar { display: block !important; width: 6px !important; height: 6px !important; }
+        .dropdown-scrollbar::-webkit-scrollbar-track, .custom-scrollbar::-webkit-scrollbar-track, .scrollbar-thin::-webkit-scrollbar-track { background: transparent !important; }
+        .dropdown-scrollbar::-webkit-scrollbar-thumb, .custom-scrollbar::-webkit-scrollbar-thumb, .scrollbar-thin::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.5) !important; border-radius: 9999px !important; }
+        .dark .dropdown-scrollbar, .dark .custom-scrollbar, .dark .scrollbar-thin { scrollbar-color: rgba(107, 114, 128, 0.6) transparent !important; }
+        .dark .dropdown-scrollbar::-webkit-scrollbar-thumb, .dark .custom-scrollbar::-webkit-scrollbar-thumb, .dark .scrollbar-thin::-webkit-scrollbar-thumb { background-color: rgba(107, 114, 128, 0.5) !important; }
     </style>
     <script>
         (function() {
@@ -145,6 +150,8 @@
               }
           }
       }" 
+      :class="{ 'overflow-hidden': sidebarOpenMobile }"
+      x-init="$watch('sidebarOpenMobile', val => { if(val) { $nextTick(() => { $refs.adminSidebarNav?.focus(); }); } })"
       @keydown.escape.window="sidebarOpenMobile = false"
       x-on:livewire:navigated.window="if (window.innerWidth < 1024) sidebarOpenMobile = false"
       @open-logout-modal.window="showLogoutModal = true">
@@ -154,12 +161,14 @@
         <!-- Mobile Drawer Backdrop -->
         <div x-show="sidebarOpenMobile" 
              @click="sidebarOpenMobile = false" 
+             @touchmove.prevent
+             @wheel.prevent
              x-cloak 
-             class="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-40 lg:hidden">
+             class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-40 lg:hidden">
         </div>
 
         <!-- Sidebar / Drawer Menu -->
-        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-2xl lg:shadow-md fixed inset-y-0 left-0 flex flex-col z-50 -translate-x-full lg:translate-x-0"
+        <aside class="w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-2xl lg:shadow-md fixed inset-y-0 left-0 flex flex-col z-50 -translate-x-full lg:translate-x-0 h-screen max-h-screen overscroll-contain"
                :class="{
                    'translate-x-0': sidebarOpenMobile,
                    'lg:translate-x-0': sidebarOpenDesktop,
@@ -204,50 +213,53 @@
             </div>
 
             <!-- Scrollable Navigation -->
-            <nav class="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-1.5 custom-scrollbar min-h-0">
+            <nav x-ref="adminSidebarNav"
+                 tabindex="-1"
+                 class="flex-1 min-h-0 h-0 overflow-y-auto overflow-x-hidden p-3.5 space-y-1 custom-scrollbar overscroll-contain touch-pan-y outline-none focus:outline-none"
+                 style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
                 <a href="{{ route('admin.dashboard') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.dashboard') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('admin.dashboard') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
-                    Dashboard
+                    <span class="whitespace-nowrap">Dashboard</span>
                 </a>
 
-                <div class="pt-4 pb-1">
-                    <p class="px-4 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Moderasi</p>
+                <div class="pt-3.5 pb-1">
+                    <p class="px-3.5 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Moderasi</p>
                 </div>
 
                 <a href="{{ route('admin.verifications') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.verifications*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('admin.verifications*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
                     </svg>
-                    Verifikasi KTP
+                    <span class="whitespace-nowrap">Verifikasi KTP</span>
                 </a>
 
                 <a href="{{ route('admin.users.index') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.users.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('admin.users.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
-                    Manajemen User
+                    <span class="whitespace-nowrap">Manajemen User</span>
                 </a>
 
                 <a href="{{ route('admin.partners.activity') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.partners.activity') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('admin.partners.activity') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    Aktivitas Mitra & Customer
+                    <span class="whitespace-nowrap">Aktivitas Mitra & Customer</span>
                 </a>
 
                 <a href="{{ route('admin.partners.report') }}" wire:navigate
-                    class="flex items-center justify-between px-4 py-2.5 {{ request()->routeIs('admin.partners.report') || request()->routeIs('admin.partners.reports.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    class="flex items-center justify-between px-3.5 py-2.5 {{ request()->routeIs('admin.partners.report') || request()->routeIs('admin.partners.reports.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <div class="flex items-center min-w-0">
                         <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        <span class="truncate">Manajemen Laporan Aduan</span>
+                        <span class="whitespace-nowrap">Laporan Aduan</span>
                     </div>
                     @php
                         $pendingReportsCount = \App\Models\PartnerReport::getActiveReportsCountForUser();
@@ -259,40 +271,78 @@
                     @endif
                 </a>
 
+                <a href="{{ route('admin.cancellations.index') }}" wire:navigate
+                    class="flex items-center justify-between px-3.5 py-2.5 {{ request()->routeIs('admin.disputes*') || request()->routeIs('admin.cancellations*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <div class="flex items-center min-w-0">
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <span class="whitespace-nowrap">Tinjauan Pembatalan</span>
+                    </div>
+                    @php
+                        $pendingCancelsCount = \App\Models\HelpCancelRequest::getPendingReviewsCountForUser();
+                    @endphp
+                    @if($pendingCancelsCount > 0)
+                        <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold {{ request()->routeIs('admin.disputes*') || request()->routeIs('admin.cancellations*') ? 'bg-white text-rose-600 shadow-2xs' : 'bg-rose-500 text-white shadow-xs' }} ml-2 shrink-0 animate-pulse" title="{{ $pendingCancelsCount }} Pembatalan / Sengketa Menunggu Audit">
+                            {{ $pendingCancelsCount > 99 ? '99+' : $pendingCancelsCount }}
+                        </span>
+                    @endif
+                </a>
+
                 <a href="{{ route('admin.partners.greylist') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.partners.greylist*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('admin.partners.greylist*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
-                    <span>Daftar Abu-Abu & SP</span>
+                    <span class="whitespace-nowrap">Daftar Abu-Abu & SP</span>
                 </a>
 
                 <a href="{{ route('admin.partners.blocked') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.partners.blocked') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    class="flex items-center px-3.5 py-2.5 {{ request()->routeIs('admin.partners.blocked') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                     </svg>
-                    Blokir Mitra
+                    <span class="whitespace-nowrap">Blokir Mitra</span>
                 </a>
 
-                <div class="pt-4 pb-1">
-                    <p class="px-4 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Keuangan</p>
+                <div class="pt-3.5 pb-1">
+                    <p class="px-3.5 text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">Keuangan</p>
                 </div>
 
                 <a href="{{ route('admin.withdraws.index') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.withdraws.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
-                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Manajemen Withdraw
+                    class="flex items-center justify-between px-3.5 py-2.5 {{ request()->routeIs('admin.withdraws.*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <div class="flex items-center min-w-0">
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span class="whitespace-nowrap">Manajemen Withdraw</span>
+                    </div>
+                    @php
+                        $pendingWithdrawsCount = \App\Models\WithdrawRequest::getPendingWithdrawsCountForUser();
+                    @endphp
+                    @if($pendingWithdrawsCount > 0)
+                        <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold {{ request()->routeIs('admin.withdraws.*') ? 'bg-white text-rose-600 shadow-2xs' : 'bg-rose-500 text-white shadow-xs' }} ml-2 shrink-0 animate-pulse" title="{{ $pendingWithdrawsCount }} Permintaan Withdraw Menunggu Proses">
+                            {{ $pendingWithdrawsCount > 99 ? '99+' : $pendingWithdrawsCount }}
+                        </span>
+                    @endif
                 </a>
 
                 <a href="{{ route('admin.topup.approvals') }}" wire:navigate
-                    class="flex items-center px-4 py-2.5 {{ request()->routeIs('admin.topup.approvals*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
-                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Manajemen Top-Up
+                    class="flex items-center justify-between px-3.5 py-2.5 {{ request()->routeIs('admin.topup.approvals*') ? 'text-white bg-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }} rounded-xl transition text-sm font-medium">
+                    <div class="flex items-center min-w-0">
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="whitespace-nowrap">Manajemen Top-Up</span>
+                    </div>
+                    @php
+                        $pendingTopupsCount = \App\Models\BalanceTransaction::getPendingTopupsCountForUser();
+                    @endphp
+                    @if($pendingTopupsCount > 0)
+                        <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold {{ request()->routeIs('admin.topup.approvals*') ? 'bg-white text-amber-600 shadow-2xs' : 'bg-amber-500 text-white shadow-xs' }} ml-2 shrink-0 animate-pulse" title="{{ $pendingTopupsCount }} Permintaan Top-Up Menunggu Approval">
+                            {{ $pendingTopupsCount > 99 ? '99+' : $pendingTopupsCount }}
+                        </span>
+                    @endif
                 </a>
 
             </nav>
@@ -305,24 +355,24 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    Pengaturan
+                    <span>Pengaturan</span>
                 </a>
 
                 <button 
                     @click="$dispatch('open-logout-modal')" 
                     type="button" 
-                    class="w-full flex items-center px-4 py-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition text-left text-sm font-medium">
+                    class="w-full flex items-center px-4 py-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition text-left text-sm font-medium cursor-pointer">
                     <svg class="w-5 h-5 mr-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    Logout
+                    <span>Logout</span>
                 </button>
             </div>
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 min-h-screen min-w-0 flex flex-col w-full lg:ml-64"
-              :class="{ 'lg:ml-64': sidebarOpenDesktop, 'lg:!ml-0': !sidebarOpenDesktop }">
+        <main class="flex-1 min-h-screen min-w-0 flex flex-col w-full lg:ml-72"
+              :class="{ 'lg:ml-72': sidebarOpenDesktop, 'lg:!ml-0': !sidebarOpenDesktop }">
             <!-- Topbar -->
             @php
                 $currentMenuName = match(true) {
@@ -330,6 +380,7 @@
                     request()->routeIs('admin.verifications.*') || request()->routeIs('admin.verifications') => 'Verifikasi Akun Mitra',
                     request()->routeIs('admin.ktp-ocr.*') || request()->routeIs('admin.ktp-ocr') => 'OCR KTP & Verifikasi',
                     request()->routeIs('admin.partners.reports*') || request()->routeIs('admin.reports.*') => 'Laporan Aduan',
+                    request()->routeIs('admin.disputes*') || request()->routeIs('admin.cancellations*') => 'Tinjauan Pembatalan & Sengketa',
                     request()->routeIs('admin.withdraws.*') => 'Manajemen Withdraw',
                     request()->routeIs('admin.topup.approvals*') => 'Manajemen Top-Up',
                     request()->routeIs('admin.settings.*') => 'Pengaturan',
@@ -338,12 +389,12 @@
                 };
             @endphp
             <header class="sticky top-0 z-30 border-b w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-gray-200/80 dark:border-gray-700/80 shadow-xs">
-                <div class="px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
+                <div class="px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3">
+                    <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
                         <!-- Menu Toggle Button (Always visible on all screens: Desktop, Tablet & Mobile) -->
                         <button @click="toggleSidebar()" 
                                 type="button" 
-                                class="inline-flex items-center justify-center p-2 rounded-xl bg-gray-500/10 dark:bg-gray-400/10 border border-gray-500/15 dark:border-gray-400/15 text-gray-700 dark:text-gray-200 hover:bg-gray-500/15 dark:hover:bg-gray-400/20 focus:outline-none focus:ring-2 focus:ring-primary-500 flex-shrink-0 cursor-pointer shadow-2xs active:scale-95 transition-transform" 
+                                class="inline-flex items-center justify-center p-2 rounded-xl bg-gray-500/10 dark:bg-gray-400/10 border border-gray-500/15 dark:border-gray-400/15 text-gray-700 dark:text-gray-200 hover:bg-gray-500/15 dark:hover:bg-gray-400/20 focus:outline-none focus:ring-2 focus:ring-primary-500 shrink-0 cursor-pointer shadow-2xs active:scale-95 transition-transform" 
                                 title="Toggle Menu Sidebar"
                                 aria-label="Toggle Menu Sidebar">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -351,24 +402,17 @@
                             </svg>
                         </button>
 
-                        <!-- Single Breadcrumb Line Format -->
-                        <div class="flex items-center gap-2 min-w-0 text-sm font-bold truncate">
-                            <span class="text-gray-400 dark:text-gray-400 flex-shrink-0 font-medium">Admin</span>
-                            <svg class="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <!-- Single Breadcrumb Line Format (Responsive on mobile) -->
+                        <div class="flex items-center gap-1.5 sm:gap-2 min-w-0 text-xs sm:text-sm font-bold truncate">
+                            <span class="text-gray-400 dark:text-gray-400 shrink-0 font-medium hidden sm:inline">Admin</span>
+                            <svg class="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 shrink-0 hidden sm:inline" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
-                            <span class="text-gray-900 dark:text-white truncate font-bold">{{ $currentMenuName }}</span>
+                            <span class="text-gray-900 dark:text-white truncate font-bold max-w-[100px] xs:max-w-[150px] sm:max-w-none">{{ $currentMenuName }}</span>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                        <!-- Quick actions (Refresh) -->
-                        <div class="hidden sm:flex items-center">
-                            <button onclick="location.reload()" class="inline-flex items-center gap-2 px-3 py-2 bg-gray-500/10 dark:bg-gray-400/10 border border-gray-500/15 dark:border-gray-400/15 text-xs font-semibold text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-500/15 dark:hover:bg-gray-400/20 shadow-2xs cursor-pointer active:scale-95 transition-transform" title="Muat ulang halaman">
-                                <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6"/></svg>
-                                <span class="hidden md:inline">Refresh</span>
-                            </button>
-                        </div>
+                    <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">  
 
                         <!-- Multi-Territory Switcher for Admin -->
                         <livewire:admin.territory-switcher />
@@ -377,13 +421,13 @@
                         <livewire:admin.notifications.dropdown />
 
                         <!-- User Profile -->
-                        <div class="flex items-center gap-2.5 pl-1.5 sm:pl-2 border-l border-gray-200/80 dark:border-gray-700/80">
-                            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-600 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-xs flex-shrink-0">
+                        <div class="flex items-center gap-2 pl-1.5 sm:pl-2 border-l border-gray-200/80 dark:border-gray-700/80">
+                            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-primary-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-xs shrink-0">
                                 {{ strtoupper(substr(auth()->user()->name ?? 'A', 0, 1)) }}
                             </div>
-                            <div class="hidden sm:flex flex-col text-left min-w-0">
-                                <span class="text-xs font-bold text-gray-800 dark:text-gray-100 max-w-[130px] truncate leading-tight">{{ auth()->user()->name ?? 'Admin' }}</span>
-                                <span class="text-[10px] font-semibold text-primary-600 dark:text-primary-400 max-w-[140px] truncate leading-tight mt-0.5" title="{{ auth()->user()->admin_city_names ?? 'Admin' }}">
+                            <div class="hidden md:flex flex-col text-left min-w-0">
+                                <span class="text-xs font-bold text-gray-800 dark:text-gray-100 max-w-[120px] truncate leading-tight">{{ auth()->user()->name ?? 'Admin' }}</span>
+                                <span class="text-[10px] font-semibold text-primary-600 dark:text-primary-400 max-w-[130px] truncate leading-tight mt-0.5" title="{{ auth()->user()->admin_city_names ?? 'Admin' }}">
                                     Admin ({{ auth()->user()->admin_city_names ?? 'Wilayah' }})
                                 </span>
                             </div>
@@ -490,6 +534,15 @@
         </div>
     </div>
     <script>
+        window.USER_SOUND_ENABLED = {{ (auth()->check() && (auth()->user()->notification_settings['sound_enabled'] ?? true)) ? 'true' : 'false' }};
+        window.DEFAULT_NOTIFICATION_SOUND = "{{ asset('sfx/mixkit-software-interface-start-2574.mp3') }}";
+        window.getNotificationSoundEnabled = function() {
+            if (typeof window.USER_SOUND_ENABLED !== 'undefined') {
+                return window.USER_SOUND_ENABLED;
+            }
+            return true;
+        };
+
         // Safe fallback for Laravel Echo when WebSocket is not active
         if (typeof window !== 'undefined' && typeof window.Echo === 'undefined') {
             window.Echo = {

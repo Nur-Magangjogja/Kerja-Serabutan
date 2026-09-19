@@ -39,6 +39,9 @@
     @show-status-notification.window="
         notificationMessage = $event.detail.message;
         showNotification = true;
+        if (window.playNotificationSound) {
+            window.playNotificationSound();
+        }
         setTimeout(() => showNotification = false, 5000);
     "
 >
@@ -85,18 +88,26 @@
     </div>
 
     {{-- Header Section --}}
-    <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
+    <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-[#0098e7] rounded-b-2xl shadow-sm text-white">
         <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
 
         <div class="relative z-10 max-w-md mx-auto">
-            <div class="relative flex items-center justify-center min-h-[40px] text-white">
-                <div class="text-center w-full min-w-0 px-12">
-                    <h1 class="text-base font-bold truncate">Detail Pesanan</h1>
-                    <p class="text-xs text-white/90 truncate mt-0.5">Detail permintaan bantuan Anda</p>
+            <div class="flex items-center justify-between min-h-[40px] text-white">
+                <div class="w-10 flex items-center">
+                    <a href="{{ route('customer.helps.index') }}" wire:navigate class="p-2 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white" title="Kembali" aria-label="Kembali">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </a>
                 </div>
 
-                <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center justify-end">
-                    <button wire:click="loadHelp" wire:loading.attr="disabled" title="Segarkan Status" class="p-2 hover:bg-white/20 rounded-xl transition cursor-pointer flex items-center justify-center">
+                <div class="text-center flex-1 min-w-0 px-2">
+                    <h1 class="text-base font-bold truncate">Detail Pesanan</h1>
+                    <p class="text-xs text-white font-medium truncate mt-0.5">Detail permintaan bantuan Anda</p>
+                </div>
+
+                <div class="w-10 flex items-center justify-end">
+                    <button wire:click="loadHelp" wire:loading.attr="disabled" title="Segarkan Status" aria-label="Segarkan Status" class="p-2 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white">
                         <svg wire:loading.remove wire:target="loadHelp" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
@@ -112,42 +123,156 @@
 
     <!-- Content -->
     <div class="px-5 pt-5 pb-8 max-w-md mx-auto">
-        {{-- Order ID --}}
-        <div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700/70">
-            <span class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                <svg class="w-4 h-4 text-sky-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                ID Pesanan: <span class="font-bold text-gray-900 dark:text-white font-mono ml-0.5">{{ $help->order_id }}</span>
-            </span>
-            <button wire:click="copyOrderId" class="text-sky-600 hover:text-sky-700 dark:text-sky-400 text-xs sm:text-sm font-bold flex items-center gap-1 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 px-2.5 py-1 rounded-xl transition cursor-pointer">
-                <span>Salin</span>
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                </svg>
-            </button>
-        </div>
+        {{-- Hero Card Batas Waktu Pencarian Rekan Jasa (Khusus Status Menunggu Mitra) --}}
+        @if($help->status === 'menunggu_mitra')
+            @php
+                $effectiveExpiry = $help->effective_expires_at;
+                $expiryIso = $effectiveExpiry ? $effectiveExpiry->toIso8601String() : null;
+            @endphp
+            <div x-data="customerDetailCountdownTimer('{{ $expiryIso }}')" class="bg-gradient-to-br from-primary-800 via-primary-900 to-primary-900 rounded-2xl p-4 sm:p-5 text-white shadow-lg space-y-3.5 mb-3.5 animate-in fade-in duration-200 relative overflow-hidden">
+                <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+
+                <div class="flex items-center justify-between gap-2 relative z-10">
+                    <div class="flex items-center gap-2">
+                        <div>
+                            <h3 class="font-bold text-sm sm:text-base leading-tight">Sedang Mencari Rekan Jasa</h3>
+                            <p class="text-[11px] text-white/90">Sistem sedang menunggu mitra terdekat</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-black/20 text-white border border-white/30 backdrop-blur-xs">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        <span x-text="isExpired ? 'Waktu Habis' : 'Aktif'">Aktif</span>
+                    </span>
+                </div>
+
+                <!-- Digital Countdown Timer Display -->
+                <div class="bg-sky-900/10 backdrop-blur-md rounded-xl p-3.5 border border-white/10 relative z-10">
+                    <div class="flex items-center justify-between text-xs font-semibold text-white mb-2.5">
+                        <span>⏳ Batas Waktu Pencarian Rekan Jasa:</span>
+                        <span class="text-[11px] text-white font-bold">{{ $effectiveExpiry ? $effectiveExpiry->translatedFormat('d M Y, H:i') . ' WIB' : '-' }}</span>
+                    </div>
+
+                    <div class="flex items-center justify-center gap-2 font-mono">
+                        <div class="flex flex-col items-center bg-white/95 text-gray-900 rounded-xl px-3 py-1.5 shadow-sm min-w-[56px]">
+                            <span x-text="hours" class="text-lg sm:text-xl font-black text-amber-950">00</span>
+                            <span class="text-[9px] font-sans font-semibold text-gray-500 uppercase tracking-wider">Jam</span>
+                        </div>
+                        <span class="text-xl font-bold text-white pb-2">:</span>
+                        <div class="flex flex-col items-center bg-white/95 text-gray-900 rounded-xl px-3 py-1.5 shadow-sm min-w-[56px]">
+                            <span x-text="minutes" class="text-lg sm:text-xl font-black text-amber-950">00</span>
+                            <span class="text-[9px] font-sans font-semibold text-gray-500 uppercase tracking-wider">Menit</span>
+                        </div>
+                        <span class="text-xl font-bold text-white pb-2">:</span>
+                        <div class="flex flex-col items-center bg-white/95 text-gray-900 rounded-xl px-3 py-1.5 shadow-sm min-w-[56px]">
+                            <span x-text="seconds" class="text-lg sm:text-xl font-black text-rose-600 animate-pulse">00</span>
+                            <span class="text-[9px] font-sans font-semibold text-rose-600 uppercase tracking-wider">Detik</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Jaminan Pengembalian Dana Tahan 100% -->
+                <div class="bg-gray-800/20 backdrop-blur-xs rounded-xl p-3 text-xs leading-relaxed text-white border border-white/10 relative z-10 flex items-start gap-2.5">
+                    <span class="text-base shrink-0"></span>
+                    <div>
+                        <span class="font-bold block text-white text-[11.5px] mb-0.5">Jaminan 100% Saldo Kembali (Dana Tahan)</span>
+                        <p class="text-[11px] text-white">
+                            Pembayaran Anda sebesar <strong>Rp {{ number_format($help->total_amount > 0 ? $help->total_amount : $help->amount, 0, ',', '.') }}</strong> saat ini aman ditahan oleh sistem. Jika hingga batas waktu di atas tidak ada mitra yang mengambil, tugas akan otomatis berakhir dan dana langsung 100% dikembalikan ke saldo dompet Anda.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- Review Banner (Khusus Status Pengajuan Batal / Kendala Lapangan oleh Mitra - Konsep 2) --}}
+        @if($help->status === 'partner_cancel_requested')
+            @php
+                $effectiveExpiry = $help->effective_expires_at;
+                $isSearchExpired = $effectiveExpiry ? now()->gte($effectiveExpiry) : false;
+                $reasonText = $help->partner_cancel_reason ?: ($help->cancel_reason ?: 'Kendala lapangan saat proses pengerjaan');
+            @endphp
+            <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 rounded-2xl p-4 mb-3.5 shadow-xs space-y-2.5 animate-in fade-in duration-200">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                            ⚠️
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xs sm:text-sm text-rose-950 dark:text-rose-100 leading-tight">
+                                Mitra Melaporkan Kendala Lapangan
+                            </h3>
+                            <p class="text-[11px] text-rose-700 dark:text-rose-300">Pengajuan pembatalan / kendala pengerjaan mitra</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-200 border border-rose-300 dark:border-rose-700">
+                        Menunggu Keputusan Anda
+                    </span>
+                </div>
+
+                <p class="text-xs text-rose-900/90 dark:text-rose-200/90 leading-relaxed">
+                    Mitra <strong>{{ $help->mitra?->name ?? 'Mitra' }}</strong> melaporkan kendala dan mengajukan pembatalan. Anda dapat memilih untuk <strong>mencari rekan jasa pengganti</strong> (mengembalikan pesanan ke pool daftar mitra) atau <strong>menyetujui pembatalan (refund saldo 100%)</strong> pada panel di bagian bawah.
+                </p>
+
+                <div class="p-2.5 bg-white/80 dark:bg-gray-800/80 rounded-xl border border-rose-200/70 dark:border-rose-800/60 text-xs">
+                    <span class="font-bold text-gray-700 dark:text-gray-300 block mb-0.5 text-[11px]">Alasan Dilaporkan Mitra:</span>
+                    <span class="text-rose-700 dark:text-rose-400 font-semibold italic">"{{ $reasonText }}"</span>
+                </div>
+            </div>
+        @endif
 
         {{-- Service Info --}}
-        <div class="bg-white dark:bg-gray-800 mt-2.5 p-4 sm:p-5 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700/70 space-y-4">
-            <div class="flex items-start gap-3.5">
-                <div class="w-13 h-13 rounded-2xl bg-gradient-to-br from-sky-100 to-blue-50 dark:from-sky-950/60 dark:to-blue-900/40 border border-sky-200/70 dark:border-sky-800/60 flex items-center justify-center flex-shrink-0 shadow-2xs overflow-hidden">
-                    @if($help->photo)
-                        <img src="{{ asset('storage/' . $help->photo) }}" alt="{{ $help->title }}" class="w-full h-full object-cover">
+        <div class="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700/70 space-y-3.5">
+            {{-- Title --}}
+            <div>
+                <h2 class="font-bold text-base sm:text-lg text-gray-900 dark:text-white leading-snug break-words">
+                    {{ $help->title }}
+                </h2>
+            </div>
+
+            {{-- Category & Schedule Tags --}}
+            <div class="flex items-center gap-1.5 flex-wrap">
+                @if($help->isPickup())
+                    @if($help->service_category === 'passenger')
+                        <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-600">
+                            <span>👥</span>
+                            <span>Antar Penumpang</span>
+                        </span>
                     @else
-                        <svg class="w-6 h-6 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
+                        <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-600">
+                            <span>📦</span>
+                            <span>Barang & Dokumen</span>
+                        </span>
                     @endif
+                @else
+                    <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-600">
+                        <span>🛠️</span>
+                        <span>Kerja Serabutan</span>
+                    </span>
+                @endif
+
+                @if($help->isScheduled())
+                    <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-600">
+                        <span>📅</span>
+                        <span>Terjadwal</span>
+                    </span>
+                @else
+                    <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-600">
+                        <span>⚡</span>
+                        <span>Segera</span>
+                    </span>
+                @endif
+            </div>
+
+            {{-- Clean Neutral Payment Bar --}}
+            <div class="bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/80 rounded-xl p-3 sm:p-3.5 flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 block">Total Terbayar (Dana Tahan)</span>
+                    <span class="text-[11px] text-gray-400 dark:text-gray-500 block truncate">Pembayaran aman tersimpan</span>
                 </div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center justify-between gap-2 mb-1 flex-wrap">
-                        <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200/60 dark:border-sky-800/60">
-                            {{ $help->category->name ?? 'Jasa / Bantuan' }}
-                        </span>
-                        <span class="text-sm font-black text-sky-600 dark:text-sky-400">
-                            Rp {{ number_format($help->amount, 0, ',', '.') }}
-                        </span>
-                    </div>
-                    <h2 class="font-bold text-base text-gray-900 dark:text-white leading-snug">{{ $help->title }}</h2>
+
+                <div class="text-right shrink-0">
+                    <span class="text-base sm:text-lg font-bold text-gray-900 dark:text-white font-mono tracking-tight block">
+                        Rp {{ number_format($help->total_amount > 0 ? $help->total_amount : $help->amount, 0, ',', '.') }}
+                    </span>
                 </div>
             </div>
 
@@ -155,10 +280,10 @@
             @if($help->mitra)
                 <div class="p-3.5 bg-gray-50/80 dark:bg-gray-750/70 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-gray-700/60 shadow-2xs">
                     <div class="flex items-center gap-3 min-w-0">
-                        @if($help->mitra->selfie_photo)
-                            <img src="{{ asset('storage/' . $help->mitra->selfie_photo) }}" alt="{{ $help->mitra->name }}" class="w-11 h-11 rounded-full object-cover border-2 border-sky-200 dark:border-sky-800 shrink-0">
+                        @if($help->mitra->profile_photo ?? $help->mitra->photo)
+                            <img src="{{ asset('storage/' . ($help->mitra->profile_photo ?? $help->mitra->photo)) }}" alt="{{ $help->mitra->name }}" class="w-11 h-11 rounded-full object-cover border-2 border-sky-200 dark:border-sky-800 shrink-0">
                         @else
-                            <div class="w-11 h-11 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold shrink-0 shadow-2xs">
+                            <div class="w-11 h-11 rounded-full bg-sky-600 flex items-center justify-center text-white font-bold shrink-0 shadow-2xs">
                                 {{ strtoupper(substr($help->mitra->name ?? 'M', 0, 1)) }}
                             </div>
                         @endif
@@ -186,7 +311,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <a href="{{ route('customer.chat', $help->id) }}" class="w-10 h-10 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-sky-50 dark:hover:bg-gray-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-2xs text-gray-700 dark:text-gray-200 cursor-pointer">
+                        <a href="{{ route('customer.chat', $help->id) }}" wire:navigate class="w-10 h-10 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-sky-50 dark:hover:bg-gray-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-2xs text-gray-700 dark:text-gray-200 cursor-pointer">
                             <svg class="w-5 h-5 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                             </svg>
@@ -232,10 +357,15 @@
                         </div>
                     @endif
 
-                    @if(!empty($help->scheduled_at))
+                    @if($help->isScheduled() && !empty($help->scheduled_at))
                         <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
-                            <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-400 block mb-0.5">Jadwal Tugas:</span>
-                            <span class="font-bold text-gray-800 dark:text-gray-200 block">{{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') }} WIB</span>
+                            <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-400 block mb-0.5">Jadwal Pelaksanaan:</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200 block">📅 {{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') }} WIB</span>
+                        </div>
+                    @else
+                        <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
+                            <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-400 block mb-0.5">Waktu Pelaksanaan:</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400 block">⚡ Langsung Dikerjakan (Segera)</span>
                         </div>
                     @endif
                 </div>
@@ -265,60 +395,64 @@
             </div>
         </div>
 
-        {{-- Progress Stepper Card --}}
+        {{-- Progress Stepper Card (Revisi 3 Dynamic Multi-Stage Stepper) --}}
         <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60">
             <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100 dark:border-gray-700/50">
                 <div>
-                    <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Progres Pesanan</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Progres & Tahapan Layanan</span>
                     <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5 mt-0.5">
-                        <span>{{ $help->progress_icon }}</span>
-                        <span>{{ $help->progress_summary }}</span>
+                        <span class="text-base">{{ $help->progress_icon }}</span>
+                        <span class="text-primary-600 dark:text-primary-400 font-bold">{{ $help->progress_summary }}</span>
                     </h3>
                 </div>
                 <div class="text-right">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-extrabold bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800">
-                        {{ $help->progress_percentage }}%
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 border border-gray-200 dark:border-gray-700 shadow-2xs">
+                        {{ $help->multi_stage_progress_percentage }}%
                     </span>
                 </div>
             </div>
 
-            <!-- Stepper 5-Steps Horizontal -->
+            <!-- Dynamic Stepper -->
+            @php
+                $multiSteps = $help->multi_stage_steps ?? [];
+                $stepCount = is_countable($multiSteps) ? count($multiSteps) : 0;
+                $isDone = in_array($help->status, ['selesai', 'completed']);
+                
+                $activeIndex = 0;
+                foreach ($multiSteps as $idx => $st) {
+                    if (!empty($st['active'])) {
+                        $activeIndex = $idx;
+                        break;
+                    }
+                }
+                if ($isDone && $stepCount > 0) $activeIndex = $stepCount - 1;
+            @endphp
+
             <div class="relative pt-2 pb-1">
                 <!-- Connecting Line -->
                 <div class="absolute top-6 left-6 right-6 h-1 bg-gray-100 dark:bg-gray-700 -z-0">
-                    <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-700 rounded-full"
-                         style="width: {{ max(0, min(100, ($help->progress_step - 1) * 25)) }}%;"></div>
+                    <div class="h-full bg-primary-600 dark:bg-primary-500 transition-all duration-700 rounded-full"
+                         style="width: {{ $stepCount > 1 ? max(0, min(100, ($activeIndex / ($stepCount - 1)) * 100)) : 0 }}%;"></div>
                 </div>
 
                 <!-- Step Nodes -->
                 <div class="flex items-start justify-between relative z-10">
-                    @php
-                        $steps = [
-                            ['step' => 1, 'icon' => '🔍', 'title' => 'Mencari'],
-                            ['step' => 2, 'icon' => '🤝', 'title' => 'Diambil'],
-                            ['step' => 3, 'icon' => '🛵', 'title' => 'Menuju Lokasi'],
-                            ['step' => 4, 'icon' => '⚡', 'title' => 'Pengerjaan'],
-                            ['step' => 5, 'icon' => '✅', 'title' => 'Selesai'],
-                        ];
-                        $currentStep = $help->progress_step;
-                        $isDone = in_array($help->status, ['selesai', 'completed']);
-                    @endphp
-
-                    @foreach($steps as $s)
+                    @foreach($multiSteps as $idx => $s)
                         @php
-                            $isPassed = $s['step'] < $currentStep || ($s['step'] === 5 && $isDone);
-                            $isCurrent = $s['step'] === $currentStep && !$isDone;
+                            $isPassed = $idx < $activeIndex || ($idx === $stepCount - 1 && $isDone);
+                            $isCurrent = $idx === $activeIndex && !$isDone;
+                            $colWidth = $stepCount > 0 ? (100 / $stepCount) : 20;
                         @endphp
-                        <div class="flex flex-col items-center text-center" style="width: 18%;">
+                        <div class="flex flex-col items-center text-center" style="width: {{ $colWidth }}%;">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 shadow-xs
-                                {{ $isPassed ? 'bg-blue-600 text-white shadow-blue-500/30' : ($isCurrent ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 dark:ring-indigo-900/50 animate-pulse' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500') }}">
+                                {{ $isPassed ? 'bg-primary-600 text-white shadow-primary-500/20' : ($isCurrent ? 'bg-primary-600 text-white ring-4 ring-primary-100 dark:ring-primary-950/60 animate-pulse' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500') }}">
                                 @if($isPassed)
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                                 @else
                                     <span>{{ $s['icon'] }}</span>
                                 @endif
                             </div>
-                            <span class="text-[10px] font-semibold mt-1.5 leading-tight {{ $isCurrent ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ($isPassed ? 'text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500') }}">
+                            <span class="text-[10px] mt-1.5 leading-tight {{ $isCurrent ? 'text-primary-600 dark:text-primary-400 font-bold' : ($isPassed ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-400 dark:text-gray-500 font-normal') }}">
                                 {{ $s['title'] }}
                             </span>
                         </div>
@@ -338,51 +472,246 @@
             @endif
         </div>
 
-        {{-- Location --}}
-        <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
-            <div class="flex items-start gap-3">
-                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                <div class="flex-1">
-                    <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Lokasi</h3>
-                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ $help->location ?? $help->full_address ?? 'Rumah warna coklat' }}</p>
-                    @if($help->full_address)
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><span class="font-semibold">Detail :</span> {{ $help->full_address }}</p>
+        {{-- Live Dynamic Travel ETA & Progress Card (Konsep 2) --}}
+        @if($help->mitra_id && in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']))
+            @php
+                $travelProgress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($help);
+            @endphp
+            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4 rounded-2xl shadow-xs border border-gray-200 dark:border-gray-700 mt-2 space-y-3 transition-colors" wire:poll.5s.visible>
+                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700/80 pb-2.5">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0 {{ $help->isPickup() ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shadow-2xs' : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/60 shadow-2xs' }}">
+                            @if($help->isPassenger())
+                                <span>🛵</span>
+                            @elseif($help->isPickup())
+                                <span>📦</span>
+                            @else
+                                <span>🛠️</span>
+                            @endif
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="text-xs font-bold text-gray-900 dark:text-white truncate">
+                                {{ $travelProgress['is_arrived'] ? 'Rekan Jasa Telah Tiba' : 'Pemantauan Perjalanan Rekan Jasa' }}
+                            </h4>
+                            <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate mt-0.5">Menuju: {{ $travelProgress['target_label'] }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                        @if(!empty($travelProgress['is_near_arrival']) && !$travelProgress['is_arrived'])
+                            <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 animate-pulse">
+                                📍 Hampir Sampai
+                            </span>
+                        @endif
+                        <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60' : 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300 dark:border-blue-700/60 animate-pulse' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $travelProgress['is_arrived'] ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-blue-600 dark:bg-blue-400' }}"></span>
+                            {{ $travelProgress['is_arrived'] ? 'Tiba di Lokasi' : 'Live GPS Sync' }}
+                        </span>
+                    </div>
+                </div>
+
+                @if($travelProgress['is_arrived'])
+                    <div class="bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/80 rounded-xl p-3 text-center">
+                        <p class="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            <span>Rekan Jasa sudah sampai di lokasi tujuan</span>
+                        </p>
+                        <p class="text-[11px] text-emerald-700 dark:text-emerald-300/80 mt-0.5">Silakan temui rekan jasa untuk koordinasi dan memulai bantuan.</p>
+                    </div>
+                @elseif($help->status === 'taken' && $help->isScheduled() && !$help->canPartnerStartDeparture())
+                    {{-- Status Terjadwal Menunggu Waktu Buka Keberangkatan --}}
+                    <div class="bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 rounded-xl p-3 text-center space-y-1">
+                        <div class="flex items-center justify-center gap-1.5 text-xs font-bold text-indigo-900 dark:text-indigo-200">
+                            <span>📅 Tugas Terjadwal (Pukul {{ $help->getScheduledTargetTime()?->format('H:i') }})</span>
+                        </div>
+                        <p class="text-[11px] text-indigo-800 dark:text-indigo-300/90 leading-relaxed">
+                            Mitra <strong>{{ $help->mitra?->name }}</strong> telah ditugaskan dan bersiap. Mitra akan mulai berangkat menuju lokasi Anda pada pukul <strong>{{ $help->departure_window_opens_at?->format('H:i') }}</strong> ({{ $help->departure_lead_minutes }} menit sebelum jadwal).
+                        </p>
+                        <div class="pt-1">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 border border-indigo-300 dark:border-indigo-700">
+                                ⏳ Berangkat dalam {{ $help->departure_countdown_formatted }}
+                            </span>
+                        </div>
+                    </div>
+                @else
+                    <div class="grid grid-cols-2 gap-2 text-center">
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-2.5 border border-gray-200/70 dark:border-gray-700/60">
+                            <span class="text-[10px] text-gray-500 dark:text-gray-400 block font-medium">Jarak Tersisa</span>
+                            <span class="text-sm font-extrabold text-gray-900 dark:text-white font-mono block mt-0.5">
+                                {{ $travelProgress['formatted_distance'] }}
+                            </span>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-2.5 border border-gray-200/70 dark:border-gray-700/60">
+                            <span class="text-[10px] text-gray-500 dark:text-gray-400 block font-medium">Estimasi Waktu Tiba (Live ETA)</span>
+                            <span class="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 font-mono block mt-0.5">
+                                {{ $travelProgress['formatted_eta'] }}
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Traffic Condition Bar (Deteksi Evaluasi 10 Menit) --}}
+                    @if($help->status === 'partner_on_the_way')
+                        <div class="bg-gray-50 dark:bg-gray-700/40 border border-gray-200/70 dark:border-gray-700 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-1.5">
+                                <span>🚦</span>
+                                <span class="text-[11px] text-gray-600 dark:text-gray-300 font-medium">Kondisi Lalu Lintas:</span>
+                            </div>
+                            <div>
+                                @if(($travelProgress['traffic_status'] ?? '') === 'macet' || ($travelProgress['is_delayed'] ?? false))
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-800 text-[10px] font-bold">
+                                        🔴 Macet / Padat
+                                    </span>
+                                @elseif(($travelProgress['traffic_status'] ?? '') === 'padat_merayap')
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[10px] font-bold">
+                                        🟡 Ramai Padat
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[10px] font-bold">
+                                        🟢 Lancar
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+
+                    <div class="flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400 pt-1 border-t border-gray-100 dark:border-gray-700/60">
+                        <span>💡 Waktu tiba disesuaikan otomatis mengikuti posisi GPS Rekan Jasa</span>
+                        @if($travelProgress['partner_last_seen'])
+                            <span class="font-mono text-gray-700 dark:text-gray-300 font-semibold">{{ $travelProgress['partner_last_seen'] }}</span>
+                        @endif
+                    </div>
+                @endif
+            </div>
+        @endif
+
+        {{-- Location / Route Section --}}
+        <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 space-y-3">
+            @if($help->isPickup())
+                {{-- 2-Point Route: Pickup & Delivery --}}
+                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700/60 pb-2">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400">Rute Layanan Antar Jemput</span>
+                    @if($help->service_route_distance_km)
+                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 px-2 py-0.5 rounded-md border border-sky-200/60 dark:border-sky-800">
+                            ± {{ number_format($help->service_route_distance_km, 1) }} KM
+                        </span>
                     @endif
                 </div>
-            </div>
+
+                {{-- Titik Penjemputan --}}
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-emerald-100 dark:border-emerald-900/50 shadow-2xs">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-0.5">
+                            Titik Penjemputan (Titik Awal)
+                        </div>
+                        <p class="font-bold text-sm text-gray-900 dark:text-white leading-snug break-words">
+                            {{ $help->pickup_address ?: ($help->location ?: 'Alamat sesuai titik jemput') }}
+                        </p>
+                    </div>
+                </div>
+
+                {{-- Titik Pengantaran --}}
+                <div class="flex items-start gap-3 pt-2 border-t border-gray-100 dark:border-gray-700/40">
+                    <div class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-rose-100 dark:border-rose-900/50 shadow-2xs">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-0.5">
+                            Titik Pengantaran / Tujuan (Titik Akhir)
+                        </div>
+                        <p class="font-bold text-sm text-gray-900 dark:text-white leading-snug break-words">
+                            {{ $help->delivery_address ?: ($help->full_address ?: 'Alamat sesuai titik antar') }}
+                        </p>
+                    </div>
+                </div>
+            @else
+                {{-- Single Location for On-Site Service --}}
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-red-100 dark:border-red-900/50 shadow-2xs">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2 flex-wrap mb-0.5">
+                            <h3 class="text-[11px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400">Titik Alamat Lokasi</h3>
+                            <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/60 px-2 py-0.5 rounded-md border border-gray-200/60 dark:border-gray-700">
+                                <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                {{ $help->city->name ?? 'Kota Lokasi' }}
+                            </span>
+                        </div>
+                        <p class="font-bold text-sm text-gray-900 dark:text-white leading-snug break-words">
+                            {{ $help->location ?? 'Alamat sesuai titik peta' }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Detail Patokan Tempat / Ciri Rumah (Opsional) -->
+                <div class="rounded-xl border p-3 transition-colors {{ !empty($help->full_address) ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-800/60' : 'bg-gray-50 dark:bg-gray-700/20 border-gray-200/70 dark:border-gray-700/60' }}">
+                    <div class="flex items-center gap-1.5 mb-1.5">
+                        <svg class="w-3.5 h-3.5 {{ !empty($help->full_address) ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500' }}" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+                        </svg>
+                        <h4 class="text-xs font-bold {{ !empty($help->full_address) ? 'text-amber-900 dark:text-amber-200' : 'text-gray-600 dark:text-gray-400' }}">
+                            Detail Ciri" Tempat
+                        </h4>
+                        <span class="text-[11px] font-normal text-gray-400 dark:text-gray-500">(Opsional)</span>
+                    </div>
+
+                    @if(!empty($help->full_address))
+                        <p class="text-xs text-white dark:text-white font-medium leading-relaxed whitespace-pre-line break-words pl-5">
+                            {{ $help->full_address }}
+                        </p>
+                    @else
+                        <p class="text-xs text-gray-400 dark:text-gray-500 italic pl-5">
+                            Anda tidak menyertakan patokan/ ciri khusus rumah. Rekan jasa akan mengikuti navigasi GPS.
+                        </p>
+                    @endif
+                </div>
+            @endif
         </div>
 
         {{-- Schedule --}}
-        <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
+        <div class="bg-white dark:bg-gray-800 mt-2.5 p-4 rounded-2xl shadow-xs border border-gray-100 dark:border-gray-700/70">
             <div class="flex items-start gap-3">
                 <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
                 <div class="flex-1">
-                    <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Jadwal Pesanan</h3>
-                    <p class="text-sm text-gray-700 dark:text-gray-300">
-                        {{ \Carbon\Carbon::parse($help->scheduled_at ?? $help->created_at)->translatedFormat('l, d F Y') }} 
-                        (Jam {{ \Carbon\Carbon::parse($help->scheduled_at ?? $help->created_at)->format('H:i') }} WIB)
-                    </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">*Jadwal tertera dalam WIB</p>
+                    <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Waktu Pelaksanaan</h3>
+                    @if($help->isScheduled())
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                {{ \Carbon\Carbon::parse($help->scheduled_at ?? $help->service_scheduled_at)->locale('id')->translatedFormat('l, d F Y • H:i') }} WIB
+                            </span>
+                        </div>
+                    @else
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                                Dikerjakan langsung setelah pesanan diambil oleh Rekan Jasa
+                            </span>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
 
         {{-- Card Penjelasan Selesai Otomatis saat Sedang Berjalan --}}
-        @if(in_array($help->status, ['taken', 'memperoleh_mitra', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'sedang_diproses']))
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 mt-2 px-4 py-3.5 rounded-xl border border-blue-200/80 dark:border-blue-800/60 flex items-start gap-3 shadow-xs">
+        @if(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress']))
+            <div class="bg-blue-50 dark:bg-blue-950/40 mt-2 px-4 py-3.5 rounded-xl border border-blue-200 dark:border-blue-800/60 flex items-start gap-3 shadow-xs">
                 <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
                 <div class="flex-1 text-xs text-blue-950 dark:text-blue-200 leading-relaxed">
-                    <span class="font-bold block text-blue-950 dark:text-blue-100 text-xs mb-0.5">Selesai Otomatis oleh Rekan Jasa</span>
-                    Pesanan ini akan otomatis selesai begitu Rekan Jasa menyelesaikan tugas dan mengunggah foto bukti pengerjaan. Tidak perlu konfirmasi manual dari 2 pihak, sehingga Rekan Jasa dapat segera melanjutkan pekerjaan berikutnya dan Anda dapat langsung memberikan rating & ulasan.
+                    <span class="font-bold block text-blue-950 dark:text-blue-100 text-xs mb-0.5">Sedang di selesaikan oleh Rekan Jasa</span>
+                    Tugas ini akan otomatis selesai begitu Rekan Jasa menyelesaikan tugas dan mengunggah foto bukti pengerjaan.
                 </div>
             </div>
         @endif
@@ -393,13 +722,12 @@
 
             @php
                 $statuses = [
-                    [ 'key' => 'payment', 'title' => 'Pembayaran', 'time' => $help->created_at, 'active' => in_array($help->status, ['menunggu_pembayaran','mencari_mitra','menunggu_mitra','memperoleh_mitra','taken','partner_on_the_way','partner_arrived','in_progress','sedang_diproses','waiting_customer_confirmation','selesai','completed']), 'current' => $help->status === 'menunggu_pembayaran' ],
-                    [ 'key' => 'searching', 'title' => 'Mencari Rekan Jasa', 'time' => $help->mitra_assigned_at ?? $help->taken_at, 'active' => in_array($help->status, ['mencari_mitra','menunggu_mitra','memperoleh_mitra','taken','partner_on_the_way','partner_arrived','in_progress','sedang_diproses','waiting_customer_confirmation','selesai','completed']), 'current' => in_array($help->status, ['mencari_mitra','menunggu_mitra','memperoleh_mitra']) ],
-                    [ 'key' => 'accepted', 'title' => 'Menunggu Rekan Jasa berangkat', 'time' => $help->taken_at, 'active' => in_array($help->status, ['taken','partner_on_the_way','partner_arrived','in_progress','sedang_diproses','waiting_customer_confirmation','selesai','completed']), 'current' => $help->status === 'taken' ],
-                    [ 'key' => 'on_the_way', 'title' => 'Rekan Jasa menuju ke lokasi', 'time' => $help->partner_started_moving_at, 'active' => in_array($help->status, ['partner_on_the_way','partner_arrived','in_progress','sedang_diproses','waiting_customer_confirmation','selesai','completed']), 'current' => $help->status === 'partner_on_the_way' ],
-                    [ 'key' => 'arrived', 'title' => 'Rekan Jasa tiba di lokasi', 'time' => $help->partner_arrived_at, 'active' => in_array($help->status, ['partner_arrived','in_progress','sedang_diproses','waiting_customer_confirmation','selesai','completed']), 'current' => $help->status === 'partner_arrived' ],
-                    [ 'key' => 'in_progress', 'title' => 'Pelayanan dalam proses', 'time' => $help->service_started_at, 'active' => in_array($help->status, ['in_progress','sedang_diproses','waiting_customer_confirmation','selesai','completed']), 'current' => in_array($help->status, ['in_progress','sedang_diproses']) ],
-                    [ 'key' => 'completed', 'title' => 'Pesanan selesai', 'time' => $help->completed_at ?? $help->service_completed_at, 'active' => in_array($help->status, ['selesai','completed']), 'current' => in_array($help->status, ['selesai','completed']) ]
+                    [ 'key' => 'searching', 'title' => 'Mencari Rekan Jasa', 'time' => $help->mitra_assigned_at ?? $help->taken_at, 'active' => in_array($help->status, ['menunggu_mitra', 'taken', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'waiting_customer_confirmation', 'selesai']), 'current' => $help->status === 'menunggu_mitra' ],
+                    [ 'key' => 'accepted', 'title' => 'Menunggu Rekan Jasa berangkat', 'time' => $help->taken_at, 'active' => in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress', 'waiting_customer_confirmation', 'selesai']), 'current' => $help->status === 'taken' ],
+                    [ 'key' => 'on_the_way', 'title' => 'Rekan Jasa menuju ke lokasi', 'time' => $help->partner_started_moving_at, 'active' => in_array($help->status, ['partner_on_the_way', 'partner_arrived', 'in_progress', 'waiting_customer_confirmation', 'selesai']), 'current' => $help->status === 'partner_on_the_way' ],
+                    [ 'key' => 'arrived', 'title' => 'Rekan Jasa tiba di lokasi', 'time' => $help->partner_arrived_at, 'active' => in_array($help->status, ['partner_arrived', 'in_progress', 'waiting_customer_confirmation', 'selesai']), 'current' => $help->status === 'partner_arrived' ],
+                    [ 'key' => 'in_progress', 'title' => 'Pelayanan dalam proses', 'time' => $help->service_started_at, 'active' => in_array($help->status, ['in_progress', 'waiting_customer_confirmation', 'selesai']), 'current' => $help->status === 'in_progress' ],
+                    [ 'key' => 'completed', 'title' => 'Pesanan selesai', 'time' => $help->completed_at ?? $help->service_completed_at, 'active' => $help->status === 'selesai', 'current' => $help->status === 'selesai' ]
                 ];
             @endphp
 
@@ -511,7 +839,7 @@
             @endphp
 
             @if($existingReport)
-                <div class="bg-gradient-to-br from-purple-50 to-indigo-50/50 dark:from-purple-950/50 dark:to-indigo-950/30 mt-2.5 p-4 rounded-2xl border border-purple-200 dark:border-purple-800/70 shadow-xs space-y-3">
+                <div class="bg-purple-50 dark:bg-purple-950/40 mt-2.5 p-4 rounded-2xl border border-purple-200 dark:border-purple-800/70 shadow-xs space-y-3">
                     <div class="flex items-start gap-3">
                         <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-purple-500/20">
                             <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -536,14 +864,15 @@
                             <span>{{ $msgCount > 0 ? $msgCount . ' pesan klarifikasi tersedia' : 'Ruang obrolan dengan tim Admin aktif' }}</span>
                         </div>
                         <a href="{{ route('customer.chat', ['admin' => 1, 'report' => $existingReport->id]) }}"
-                            class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                            wire:navigate
+                            class="w-full sm:w-auto px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                             <span>Buka Ruang Chat Admin</span>
                         </a>
                     </div>
                 </div>
             @elseif($isWithin24H)
-                <div class="bg-gradient-to-br from-sky-50/90 via-blue-50/50 to-indigo-50/40 dark:from-sky-950/40 dark:via-blue-950/30 dark:to-gray-800/60 mt-2.5 p-4 sm:p-5 rounded-2xl border border-sky-200/80 dark:border-sky-800/60 shadow-xs space-y-3.5">
+                <div class="bg-sky-50 dark:bg-sky-950/40 mt-2.5 p-4 sm:p-5 rounded-2xl border border-sky-200 dark:border-sky-800/60 shadow-xs space-y-3.5">
                     <div class="flex items-start gap-3">
                         <div class="w-9 h-9 rounded-xl bg-sky-500/15 dark:bg-sky-500/25 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-sky-500/20 shadow-2xs">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -565,20 +894,36 @@
                         </div>
                     </div>
 
-                    <a href="{{ route('customer.reports.create', ['help_id' => $help->id, 'user_id' => $help->mitra_id, 'type' => 'klaim_refund_pekerjaan_fiktif']) }}" 
-                       class="w-full py-2.5 px-4 bg-gradient-to-r from-sky-600 to-[#0077cc] hover:from-sky-700 hover:to-[#0060b0] text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
-                        <span>Laporkan / Ajukan Refund</span>
-                    </a>
+                    @if ($this->activeReport)
+                        <div class="p-3 bg-amber-100/80 dark:bg-amber-950/50 rounded-xl border border-amber-300 dark:border-amber-800 text-xs flex items-center justify-between gap-3 flex-wrap">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">⚠️</span>
+                                <div>
+                                    <span class="font-bold text-amber-950 dark:text-amber-200 block">Laporan Aduan Sedang Ditinjau Admin (Laporan #{{ $this->activeReport->id }})</span>
+                                    <span class="text-[11px] text-amber-800 dark:text-amber-300">Status: {{ ucfirst($this->activeReport->status) }}</span>
+                                </div>
+                            </div>
+                            <a href="{{ route('customer.chat', ['admin' => 1, 'report' => $this->activeReport->id]) }}" wire:navigate class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-[11px] transition shadow-2xs">
+                                💬 Buka Diskusi Admin
+                            </a>
+                        </div>
+                    @else
+                        <a href="{{ route('customer.reports.create', ['help_id' => $help->id, 'user_id' => $help->mitra_id, 'type' => 'klaim_refund_pekerjaan_fiktif']) }}" 
+                           wire:navigate
+                           class="w-full py-2.5 px-4 bg-[#0098e7] hover:bg-[#0086cc] text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <span>Laporkan / Ajukan Refund</span>
+                        </a>
+                    @endif
                 </div>
             @endif
         @endif
 
         {{-- Status Pembekuan Sengketa (Disputed Freeze) --}}
         @if($help->isDisputed())
-            <div class="bg-gradient-to-br from-rose-50 to-red-100/60 dark:from-rose-950/60 dark:to-red-950/40 mt-2 px-5 py-5 border border-rose-300 dark:border-rose-800 rounded-2xl shadow-xs space-y-3">
+            <div class="bg-rose-50 dark:bg-rose-950/40 mt-2 px-5 py-5 border border-rose-200 dark:border-rose-800 rounded-2xl shadow-xs space-y-3">
                 <div class="flex items-start gap-3">
                     <div class="w-11 h-11 rounded-xl bg-rose-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -589,7 +934,7 @@
                         <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
                             <h3 class="font-bold text-sm text-rose-950 dark:text-rose-100">Pesanan Dalam Proses Sengketa / Mediasi</h3>
                             <span class="text-[10px] font-extrabold bg-rose-200 text-rose-800 dark:bg-rose-900/80 dark:text-rose-200 px-2.5 py-0.5 rounded-full">
-                                Escrow Dibekukan
+                                Dana Tahan Dibekukan
                             </span>
                         </div>
                         <p class="text-xs text-rose-900/85 dark:text-rose-300 leading-relaxed">
@@ -612,7 +957,7 @@
             @endphp
             <div class="bg-white dark:bg-gray-800 mt-2.5 p-5 border border-sky-200/80 dark:border-sky-500/30 rounded-2xl shadow-xs">
                 <div class="flex items-start gap-3 mb-3">
-                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center flex-shrink-0 text-white shadow-2xs">
+                    <div class="w-11 h-11 rounded-2xl bg-sky-600 flex items-center justify-center flex-shrink-0 text-white shadow-2xs">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
@@ -649,14 +994,22 @@
                 <div class="space-y-2">
                     <button wire:click="confirmCompletion" 
                             wire:loading.attr="disabled"
-                            class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            wire:target="confirmCompletion"
+                            class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none">
+                        <svg wire:loading.remove wire:target="confirmCompletion" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
-                        Konfirmasi Selesai & Teruskan Dana
+                        <svg wire:loading wire:target="confirmCompletion" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        <span wire:loading.remove wire:target="confirmCompletion">Konfirmasi Selesai & Teruskan Dana</span>
+                        <span wire:loading wire:target="confirmCompletion">Memproses Konfirmasi...</span>
                     </button>
 
                     <button wire:click="openDisputeModal" 
+                            wire:loading.attr="disabled"
+                            wire:target="confirmCompletion"
                             type="button"
                             class="w-full bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer text-xs">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -711,7 +1064,7 @@
                 {{-- Rating Form --}}
                 <div class="bg-white dark:bg-gray-800 mt-2.5 px-5 py-5 border border-gray-100 dark:border-gray-700/80 rounded-2xl shadow-xs">
                     <div class="flex items-start gap-3.5 mb-4">
-                        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        <div class="w-11 h-11 rounded-2xl bg-sky-600 text-white flex items-center justify-center flex-shrink-0 shadow-2xs">
                             <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                             </svg>
@@ -768,7 +1121,7 @@
                     <button 
                         wire:click="submitRating"
                         wire:loading.attr="disabled"
-                        class="w-full bg-gradient-to-r from-[#0098e7] to-[#0077cc] hover:from-sky-600 hover:to-blue-700 text-white font-bold py-3 px-4 rounded-xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="w-full bg-[#0098e7] hover:bg-[#0086cc] text-white font-bold py-3 px-4 rounded-xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                         <span wire:loading.remove wire:target="submitRating">Kirim Rating</span>
                         <span wire:loading wire:target="submitRating" class="inline-flex items-center gap-1.5">
                             <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -783,12 +1136,6 @@
         <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="font-bold text-sm text-gray-900 dark:text-white">Rincian Pembayaran</h3>
-                @if($help->isV2Model() && !in_array($help->status, ['selesai', 'completed', 'dibatalkan', 'cancelled']))
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
-                        <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                        Dana Ditahan (Escrow)
-                    </span>
-                @endif
             </div>
 
             <div class="space-y-3">
@@ -826,7 +1173,7 @@
             <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 rounded-lg">
                 <p class="text-xs text-gray-700 dark:text-blue-200 leading-relaxed">
                     @if($help->isV2Model())
-                        🛡️ <strong>Proteksi Escrow:</strong> Pembayaran Anda ditahan aman oleh sistem SayaBantu selama pengerjaan. Dana baru akan diteruskan ke Rekan Jasa setelah Anda mengonfirmasi pekerjaan selesai dengan baik.
+                        🛡️ <strong>Proteksi Dana Tahan:</strong> Pembayaran Anda ditahan aman oleh sistem SayaBantu selama pengerjaan. Dana baru akan diteruskan ke Rekan Jasa setelah Anda mengonfirmasi pekerjaan selesai dengan baik.
                     @else
                         Kamu dapat meminta tindakan tambahan selama sesi layanan berlangsung. Pastikan semua pembayaran dilakukan melalui aplikasi agar pesananmu tercatat dan terlindungi.
                     @endif
@@ -834,34 +1181,175 @@
             </div>
         </div>
 
-        {{-- Cancel Button --}}
-        @if(in_array($help->status, ['menunggu_pembayaran', 'mencari_mitra', 'menunggu_mitra']))
+        {{-- Cancel Actions & Statuses --}}
+        @if($help->status === 'menunggu_mitra')
             <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
-                <button wire:click="confirmCancel" class="w-full py-3 border-2 border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg font-semibold text-sm transition">
-                    Batalkan Pesanan
+                <button wire:click="confirmCancel" class="w-full py-3 border-2 border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg font-semibold text-sm transition cursor-pointer">
+                    Batalkan Pesanan (Refund 100%)
                 </button>
             </div>
-        @endif
-
-        {{-- Partner requested cancellation - DIGANTI DENGAN MODAL --}}
-
-        {{-- Floating Help Card (mobile) - fixed above bottom nav --}}
-        {{-- <div id="floating-help-card" class="md:hidden fixed left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-50" style="bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);">
-            <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 flex items-center justify-between gap-3">
-                <div class="flex-1 text-sm text-gray-700">Butuh bantuan atau ada keluhan atas Rekan Jasa?</div>
-                <a href="{{ route('customer.help-support') }}" class="inline-flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg font-semibold hover:bg-blue-100 transition">
-                    <span class="text-sm">Hubungi Kami</span>
-                </a>
+        @elseif($help->isPickup() && in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress']))
+            @if($help->canCustomerCancel())
+                <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 space-y-2">
+                    <button wire:click="confirmCancel" class="w-full py-3 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5">
+                        <span>🛑 Batalkan Pesanan (Kompensasi Sesuai Tahap)</span>
+                    </button>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center">
+                        Pembatalan pada tahap ini memberikan kompensasi biaya perjalanan ke Rekan Jasa dan mengembalikan sisa saldo ke akun Anda.
+                    </p>
+                </div>
+            @else
+                <div class="bg-gray-100 dark:bg-gray-800/80 mt-2 px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3 text-xs text-gray-600 dark:text-gray-300">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">🔒</span>
+                        <div>
+                            <p class="font-bold text-gray-800 dark:text-gray-200">Pembatalan Otomatis Terkunci</p>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400">Pengantaran fisik telah dimulai / mendekati tujuan. Hubungi CS bila ada kendala darurat.</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('customer.chat', ['admin' => 1]) }}" wire:navigate class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold text-[11px] shrink-0 hover:bg-blue-700 transition">
+                        Bantuan CS
+                    </a>
+                </div>
+            @endif
+        @elseif(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress']))
+            <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60">
+                <button wire:click="openCustomerCancelModal" class="w-full py-3 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5">
+                    <span>🛑 Ajukan Pembatalan Pesanan (Review Admin)</span>
+                </button>
             </div>
-        </div> --}}
+        @elseif($help->status === 'partner_cancel_requested')
+            @php
+                $effectiveExpiry = $help->effective_expires_at;
+                $isSearchExpired = $effectiveExpiry ? now()->gte($effectiveExpiry) : false;
+                $cancelReasonText = $help->partner_cancel_reason ?: ($help->cancel_reason ?: 'Kendala lapangan saat proses bantuan');
+            @endphp
+            <div class="bg-white dark:bg-gray-800 border-2 border-amber-300/80 dark:border-amber-600/70 rounded-2xl p-4 sm:p-5 mt-3 shadow-md space-y-4 animate-in fade-in duration-200">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800 shadow-2xs font-bold text-lg">
+                        ⚠️
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2 flex-wrap mb-0.5">
+                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Konfirmasi Pembatalan dari Mitra</h4>
+                            <span class="text-[10px] font-extrabold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-700">
+                                Butuh Respon Anda
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                            Mitra <strong class="text-gray-900 dark:text-white">{{ $help->mitra?->name ?? 'Mitra' }}</strong> melaporkan kendala dan tidak dapat melanjutkan tugas ini.
+                        </p>
+                    </div>
+                </div>
+
+                {{-- Box Alasan & Catatan Mitra --}}
+                <div class="p-3 bg-amber-50/80 dark:bg-amber-950/40 rounded-xl border border-amber-200/80 dark:border-amber-800/60 text-xs space-y-1.5">
+                    <div class="flex items-start gap-1.5">
+                        <span class="font-bold text-amber-950 dark:text-amber-200 shrink-0 text-[11px]">Alasan Mitra:</span>
+                        <span class="text-amber-900 dark:text-amber-300 font-semibold italic">"{{ $cancelReasonText }}"</span>
+                    </div>
+                    @if($help->cancel_deadline_at)
+                        <p class="text-[10.5px] text-amber-700 dark:text-amber-400 pt-1 border-t border-amber-200/60 dark:border-amber-800/40">
+                            ⏳ Batas respon otomatis: <strong>{{ $help->cancel_deadline_at->diffForHumans() }}</strong>. Jika belum direspon, sistem otomatis membatalkan & refund 100%.
+                        </p>
+                    @endif
+                </div>
+
+                {{-- Opsi Aksi Customer --}}
+                <div class="space-y-2.5 pt-1">
+                    {{-- Opsi 1: Relist ke Pool (Cari Pengganti) --}}
+                    @if(!$isSearchExpired)
+                        <button wire:click="relistPartnerCancel" 
+                                wire:loading.attr="disabled"
+                                class="w-full py-3 px-4 bg-gradient-to-r from-primary-600 to-sky-600 hover:from-primary-700 hover:to-sky-700 active:scale-[0.99] text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-primary-500/20 flex items-center justify-center gap-2 cursor-pointer">
+                            <span wire:loading.remove wire:target="relistPartnerCancel" class="flex items-center gap-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                <span>Cari Rekan Jasa Lain (Kembalikan ke Pool)</span>
+                            </span>
+                            <span wire:loading wire:target="relistPartnerCancel" class="inline-flex items-center gap-1.5">
+                                <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span>Mengembalikan ke Pool...</span>
+                            </span>
+                        </button>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center px-1">
+                            Tugas Anda akan langsung ditayangkan kembali untuk dicari oleh mitra lain. Saldo Anda tetap aman tersimpan.
+                        </p>
+                    @else
+                        <div class="p-2.5 bg-gray-100 dark:bg-gray-750 rounded-xl text-center text-xs text-gray-600 dark:text-gray-300">
+                            ⏱️ <em>Batas waktu pencarian awal pesanan ini telah berakhir. Opsi pencarian pengganti dinonaktifkan.</em>
+                        </div>
+                    @endif
+
+                    {{-- Opsi 2: Terima Pembatalan & Full Refund --}}
+                    <button wire:click="acceptPartnerCancel" 
+                            wire:loading.attr="disabled"
+                            class="w-full py-2.5 px-4 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span wire:loading.remove wire:target="acceptPartnerCancel" class="flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            <span>Batalkan & Tarik Saldo (Refund 100%)</span>
+                        </span>
+                        <span wire:loading wire:target="acceptPartnerCancel" class="inline-flex items-center gap-1.5">
+                            <svg class="animate-spin h-3.5 w-3.5 text-rose-600 dark:text-rose-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <span>Memproses Refund...</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        @elseif($help->status === 'customer_cancel_requested')
+            @php
+                $latestCancelReq = $help->latestCancelRequest;
+                $isSwitchPartner = $latestCancelReq && $latestCancelReq->action_type === 'switch_partner';
+            @endphp
+            @if($isSwitchPartner)
+                <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mt-3 flex items-start gap-2.5">
+                    <span class="text-xl leading-none">🔄</span>
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h4 class="font-bold text-sm text-blue-900 dark:text-blue-200">Pengajuan Ganti Mitra Sedang Diproses</h4>
+                            <span class="text-[10px] font-extrabold bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-700">2x Konfirmasi</span>
+                        </div>
+                        <p class="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+                            Sistem telah meminta konfirmasi kepada mitra dan meminta mitra menghubungi Anda terlebih dahulu. Jika mitra menyetujui, atau bila tidak ada respon/konfirmasi dari mitra, Admin dapat langsung memutuskan untuk mengembalikan pesanan ke pool pencarian rekan jasa baru. Saldo Anda tetap aman tersimpan.
+                        </p>
+                        @if($help->cancel_deadline_at)
+                            <p class="text-[10.5px] text-blue-600 dark:text-blue-400 font-medium">
+                                ⏳ Batas waktu konfirmasi: <strong>{{ $help->cancel_deadline_at->diffForHumans() }}</strong>
+                            </p>
+                        @endif
+                    </div>
+                </div>
+            @else
+                <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl p-4 mt-3 flex items-start gap-2.5">
+                    <span class="text-xl leading-none">⏳</span>
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h4 class="font-bold text-sm text-rose-900 dark:text-rose-200">Pengajuan Penarikan Pekerjaan Sedang Ditinjau</h4>
+                            <span class="text-[10px] font-extrabold bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300 px-2 py-0.5 rounded-full border border-rose-200 dark:border-rose-700">Full Refund 100%</span>
+                        </div>
+                        <p class="text-xs text-rose-800 dark:text-rose-300 leading-relaxed">
+                            Pengajuan penarikan pekerjaan dan pengembalian dana 100% Anda sedang dalam proses konfirmasi mitra dan tinjauan Admin Wilayah.
+                        </p>
+                        @if($help->cancel_deadline_at)
+                            <p class="text-[10.5px] text-rose-600 dark:text-rose-400 font-medium">
+                                ⏳ Batas waktu konfirmasi: <strong>{{ $help->cancel_deadline_at->diffForHumans() }}</strong>
+                            </p>
+                        @endif
+                    </div>
+                </div>
+            @endif
+        @endif
     </div>
 
     {{-- Real-time Tracking Map Modal --}}
     @if($showMapModal)
-        <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" wire:click="closeMapModal" data-tracking-modal>
-            <div class="bg-white rounded-2xl w-full max-w-md mx-auto flex flex-col shadow-2xl" style="max-height: 85vh;" @click.stop>
+        <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" wire:click.self="closeMapModal" data-tracking-modal>
+            <div class="bg-white rounded-2xl w-full max-w-md mx-auto flex flex-col shadow-2xl" style="max-height: 85vh;">
                 {{-- Header --}}
-                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl shrink-0">
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-[#0098e7] rounded-t-2xl shrink-0">
                     <div class="flex items-center gap-2.5">
                         <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
                             <svg class="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -874,7 +1362,7 @@
                             <p class="text-white/80 text-xs" x-text="'Lokasi ' + trackingData.partnerName"></p>
                         </div>
                     </div>
-                    <button wire:click="closeMapModal" class="text-white hover:bg-white/20 p-1.5 rounded-lg transition">
+                    <button type="button" wire:click="closeMapModal" class="text-white hover:bg-white/20 p-1.5 rounded-lg transition cursor-pointer">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -930,8 +1418,8 @@
 
     {{-- Cancel Confirmation Modal --}}
     @if($showCancelConfirm)
-        <div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4" wire:click="closeModal" data-confirm-modal>
-            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700" @click.stop style="transform: translateY(-120px);">
+        <div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4" wire:click.self="closeModal" data-confirm-modal>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700 animate-scale-in" style="transform: translateY(-40px);">
                 <div class="text-center">
                     <div class="w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg class="w-8 h-8 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -942,11 +1430,12 @@
                     <p class="text-sm text-gray-600 dark:text-gray-300 mb-6">Apakah Anda yakin ingin membatalkan pesanan ini? Tindakan ini tidak dapat dibatalkan.</p>
                     
                     <div class="flex gap-3">
-                        <button wire:click="closeModal" class="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        <button type="button" wire:click="closeModal" class="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
                             Tidak
                         </button>
-                        <button wire:click="cancelHelp" class="flex-1 py-2.5 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition">
-                            Ya, Batalkan
+                        <button type="button" wire:click="cancelHelp" wire:loading.attr="disabled" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1 shadow-sm">
+                            <span wire:loading.remove wire:target="cancelHelp">Ya, Batalkan</span>
+                            <span wire:loading wire:target="cancelHelp">Memproses...</span>
                         </button>
                     </div>
                 </div>
@@ -968,7 +1457,7 @@
                         </div>
                         <div>
                             <h3 class="font-bold text-base text-gray-900 dark:text-white">Ajukan Komplain / Sengketa</h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Pembekuan dana escrow & mediasi admin</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Pembekuan dana tahan & mediasi admin</p>
                         </div>
                     </div>
                     <button wire:click="closeDisputeModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">
@@ -977,7 +1466,7 @@
                 </div>
 
                 <div class="mb-4 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-                    Pengajuan komplain akan <strong>membekukan dana pembayaran (escrow freeze)</strong> secara seketika dan meneruskan bukti pengerjaan ke Admin Wilayah untuk mediasi.
+                    Pengajuan komplain akan <strong>membekukan dana pembayaran (dana tahan dibekukan)</strong> secara seketika dan meneruskan bukti pengerjaan ke Admin Wilayah untuk mediasi.
                 </div>
 
                 <div class="mb-4">
@@ -1005,6 +1494,172 @@
                         <span wire:loading wire:target="submitDispute">Mengirim...</span>
                     </button>
                 </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal Pilihan Pembatalan Customer (Ganti Mitra vs Tarik Pekerjaan) --}}
+    @if($showCustomerCancelModal)
+        @php
+            $isPartnerWorking = in_array($help->status, ['partner_arrived', 'in_progress', 'waiting_customer_confirmation', 'waiting_confirmation', 'konfirmasi_selesai', 'selesai', 'completed']) 
+                || ($help->isPickup() && in_array($help->service_stage, [\App\Models\Help::STAGE_AT_PICKUP, \App\Models\Help::STAGE_ITEM_COLLECTED, \App\Models\Help::STAGE_GOING_TO_DELIVERY, \App\Models\Help::STAGE_FINAL_APPROACH, \App\Models\Help::STAGE_AT_DESTINATION, \App\Models\Help::STAGE_SERVICE_EXECUTED]));
+            $canWithdraw = !$isPartnerWorking && in_array($help->status, ['taken', 'partner_on_the_way']);
+        @endphp
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
+             wire:click.self="closeCustomerCancelModal">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-gray-100 dark:border-gray-700 max-h-[90vh] overflow-y-auto space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-base text-gray-900 dark:text-white">Kendala / Pembatalan Pesanan</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Pilih opsi penanganan yang Anda butuhkan</p>
+                        </div>
+                    </div>
+                    <button wire:click="closeCustomerCancelModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                {{-- Tab Selection Cards: Ganti Mitra vs Tarik Pekerjaan --}}
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">Pilih Jenis Tindakan:</label>
+                    <div class="grid {{ $canWithdraw ? 'grid-cols-2' : 'grid-cols-1' }} gap-2 text-xs">
+                        <label wire:click="$set('cancelOption', 'switch')"
+                               class="p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between {{ $cancelOption === 'switch' ? 'border-primary-500 bg-primary-50/60 dark:bg-primary-950/40 ring-2 ring-primary-500/20' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750' }}">
+                            <div>
+                                <div class="flex items-center gap-1.5 mb-1">
+                                    <input type="radio" name="cancel_opt" {{ $cancelOption === 'switch' ? 'checked' : '' }} class="text-primary-600">
+                                    <strong class="text-gray-900 dark:text-white font-bold text-xs">Ganti Mitra</strong>
+                                </div>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">Lepaskan mitra yang lambat & cari mitra baru via konfirmasi Admin.</p>
+                            </div>
+                            <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-2">✓ Saldo Tetap Aman • 2x Konfirmasi</span>
+                        </label>
+
+                        @if($canWithdraw)
+                            <label wire:click="$set('cancelOption', 'withdraw')"
+                                   class="p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between {{ $cancelOption === 'withdraw' ? 'border-rose-500 bg-rose-50/60 dark:bg-rose-950/40 ring-2 ring-rose-500/20' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750' }}">
+                                <div>
+                                    <div class="flex items-center gap-1.5 mb-1">
+                                        <input type="radio" name="cancel_opt" {{ $cancelOption === 'withdraw' ? 'checked' : '' }} class="text-rose-600">
+                                        <strong class="text-gray-900 dark:text-white font-bold text-xs">Tarik Pekerjaan</strong>
+                                    </div>
+                                    <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">Batalkan total pesanan & minta 100% refund saldo.</p>
+                                </div>
+                                <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 mt-2">100% Full Refund • 2x Konfirmasi</span>
+                            </label>
+                        @endif
+                    </div>
+
+                    @if(!$canWithdraw)
+                        <div class="p-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl text-[11px] text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                            <span class="text-xs mt-0.5">ℹ️</span>
+                            <span>Opsi <strong>Tarik Pekerjaan / Refund Total</strong> disembunyikan karena mitra telah tiba atau sedang memulai pengerjaan. Untuk kendala pengerjaan, Anda dapat mengajukan <strong>Ganti Mitra</strong> atau menghubungi Bantuan CS.</span>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- FORM CASE 1: GANTI MITRA --}}
+                @if($cancelOption === 'switch')
+                    <div class="p-3.5 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/70 rounded-xl text-xs space-y-3">
+                        <div class="text-blue-900 dark:text-blue-200 leading-relaxed text-[11px]">
+                            <strong>Konfirmasi 2 Arah:</strong> Pengajuan ganti mitra memerlukan konfirmasi mitra & Admin. Sistem akan meminta mitra untuk segera mengonfirmasi dan menghubungi Anda di awal atas kendala yang dialami. Jika mitra menyetujui, atau <strong>bila tidak ada respon dan tidak dikonfirmasi</strong> dalam batas waktu, Admin dapat langsung memutuskan untuk mengembalikannya ke pool pencarian rekan jasa baru tanpa memotong saldo Anda.
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan Ganti Mitra <span class="text-red-500">*</span></label>
+                            <select wire:model="switchReason" class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white">
+                                <option value="Mitra tidak bergerak / tidak kunjung datang">Mitra tidak kunjung bergerak / terlalu lama</option>
+                                <option value="Mitra tidak merespons chat / telepon">Mitra tidak merespons chat / telepon</option>
+                                <option value="Mitra meminta ganti mitra lain">Mitra meminta ganti mitra lain</option>
+                                <option value="Lainnya">Lainnya (Tuliskan di catatan)</option>
+                            </select>
+                            @error('switchReason') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Catatan Tambahan (Opsional)</label>
+                            <textarea wire:model="switchNotes" rows="2" placeholder="Tuliskan keterangan tambahan..." class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white"></textarea>
+                        </div>
+
+                        <div class="flex items-center gap-2 pt-1">
+                            <button wire:click="closeCustomerCancelModal" type="button" class="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl transition cursor-pointer">
+                                Batal
+                            </button>
+                            <button wire:click="switchPartner" wire:loading.attr="disabled" type="button" class="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
+                                <span wire:loading.remove wire:target="switchPartner">🔄 Ajukan Ganti Mitra</span>
+                                <span wire:loading wire:target="switchPartner">Memproses...</span>
+                            </button>
+                        </div>
+                    </div>
+
+                {{-- FORM CASE 2: TARIK PEKERJAAN (BATAL TOTAL & REFUND) --}}
+                @elseif($canWithdraw && $cancelOption === 'withdraw')
+                    <div class="p-3.5 bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 rounded-xl text-xs space-y-3">
+                        <div class="text-rose-900 dark:text-rose-200 leading-relaxed text-[11px]">
+                            <strong>Konfirmasi 2 Arah (Khusus Saat Perjalanan):</strong> Opsi ini hanya berlaku saat mitra masih dalam perjalanan menuju lokasi Anda. Pengajuan penarikan pekerjaan membutuhkan 2 konfirmasi (Mitra & Admin). Permintaan mendesak akan dikirimkan ke mitra dan diverifikasi oleh Admin Wilayah sebelum saldo 100% full refund dikembalikan ke akun Anda.
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan Penarikan <span class="text-red-500">*</span></label>
+                            <select wire:model="customerCancelReason" class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white">
+                                <option value="">-- Pilih Alasan --</option>
+                                <option value="Perubahan Rencana Mendesak">Perubahan Rencana Mendesak</option>
+                                <option value="Mitra Tidak Kunjung Datang / Mangkir">Mitra Tidak Kunjung Datang / Mangkir</option>
+                                <option value="Sudah Selesai Sendiri / Tidak Butuh Lagi">Sudah Selesai Sendiri / Tidak Butuh Lagi</option>
+                                <option value="Kesalahan Input Data Bantuan">Kesalahan Input Data Bantuan</option>
+                                <option value="Lainnya">Lainnya (Tuliskan di catatan)</option>
+                            </select>
+                            @error('customerCancelReason') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                                Foto Bukti Kendala <span class="text-rose-500 font-bold">* Wajib</span>
+                            </label>
+                            @if ($customerCancelPhoto)
+                                <div class="relative rounded-xl overflow-hidden border border-rose-300 dark:border-rose-700 bg-white dark:bg-gray-800 p-2 mb-2 flex items-center justify-between">
+                                    <span class="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[240px]">
+                                        📸 {{ method_exists($customerCancelPhoto, 'getClientOriginalName') ? $customerCancelPhoto->getClientOriginalName() : 'Foto bukti terpilih' }}
+                                    </span>
+                                    <button type="button" wire:click="$set('customerCancelPhoto', null)" class="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer">
+                                        Hapus
+                                    </button>
+                                </div>
+                            @else
+                                <input type="file" wire:model="customerCancelPhoto" accept="image/*" class="w-full p-2 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl cursor-pointer text-gray-700 dark:text-gray-200 file:mr-2.5 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 dark:file:bg-rose-950 dark:file:text-rose-300">
+                            @endif
+                            <div wire:loading wire:target="customerCancelPhoto" class="text-[11px] text-blue-600 font-medium mt-1 flex items-center gap-1.5">
+                                <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                Mengunggah foto bukti...
+                            </div>
+                            @error('customerCancelPhoto') <p class="text-xs text-red-500 font-semibold mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                                Catatan Tambahan <span class="text-rose-500 font-bold">* Wajib</span>
+                            </label>
+                            <textarea wire:model="customerCancelNotes" rows="2" placeholder="Jelaskan alasan penarikan kepada mitra & admin..." class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition"></textarea>
+                            @error('customerCancelNotes') <p class="text-xs text-red-500 font-semibold mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div class="flex items-center gap-2 pt-1">
+                            <button wire:click="closeCustomerCancelModal" type="button" class="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl transition cursor-pointer">
+                                Batal
+                            </button>
+                            <button wire:click="submitCustomerCancel" wire:loading.attr="disabled" wire:target="submitCustomerCancel, customerCancelPhoto" type="button" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
+                                <span wire:loading.remove wire:target="submitCustomerCancel">🛑 Ajukan Tarik Pekerjaan</span>
+                                <span wire:loading wire:target="submitCustomerCancel">Mengirim...</span>
+                            </button>
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
     @endif
@@ -1571,19 +2226,116 @@
     </script>
 
     <script>
-        // Expose current help id so polling can start immediately
+        // Expose current help id so polling and WebSocket subscription can start immediately
         window.currentHelpId = '{{ $help->id }}';
 
-        // Client-side polling runs continuously and updates Alpine + map
         (function() {
             let pollingInterval = null;
-            const POLL_MS = 4000; // poll every 4 seconds
+            let echoChannel = null;
+            const POLL_MS = 25000; // Relaxed 25s fallback poll (WebSockets provide real-time updates)
+
+            function applyTrackingData(data) {
+                if (!data) return;
+
+                // Update Alpine's trackingData so UI and any bindings reflect latest coords
+                try {
+                    if (window.Alpine) {
+                        const alpineEl = document.querySelector('[x-data]');
+                        if (alpineEl) {
+                            const alpine = Alpine.$data(alpineEl);
+                            if (alpine && alpine.trackingData) {
+                                if (data.partnerLat != null) alpine.trackingData.partnerLat = data.partnerLat;
+                                if (data.partnerLng != null) alpine.trackingData.partnerLng = data.partnerLng;
+                                if (data.customerLat != null) alpine.trackingData.customerLat = data.customerLat;
+                                if (data.customerLng != null) alpine.trackingData.customerLng = data.customerLng;
+                                if (data.partnerName != null) alpine.trackingData.partnerName = data.partnerName;
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Failed updating Alpine data', err);
+                }
+
+                // Call existing global function used by map code to update markers & route
+                if (window.updateMapFromTracking) {
+                    window.updateMapFromTracking({
+                        partnerLat: data.partnerLat,
+                        partnerLng: data.partnerLng,
+                        customerLat: data.customerLat,
+                        customerLng: data.customerLng
+                    });
+                }
+
+                // Calculate simple straight-line distance + ETA fallback and update summary + modal placeholders
+                try {
+                    const pLat = parseFloat(data.partnerLat);
+                    const pLng = parseFloat(data.partnerLng);
+                    const cLat = parseFloat(data.customerLat);
+                    const cLng = parseFloat(data.customerLng);
+
+                    if (!isNaN(pLat) && !isNaN(pLng) && !isNaN(cLat) && !isNaN(cLng)) {
+                        function haversine(lat1, lon1, lat2, lon2) {
+                            const R = 6371; // km
+                            const dLat = (lat2 - lat1) * Math.PI / 180;
+                            const dLon = (lon2 - lon1) * Math.PI / 180;
+                            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+                            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                            return R * c;
+                        }
+
+                        const distKm = haversine(pLat, pLng, cLat, cLng);
+                        const distText = distKm >= 1 ? distKm.toFixed(1) + ' km' : Math.round(distKm * 1000) + ' m';
+
+                        const estMinutes = Math.max(1, Math.ceil((distKm / 30) * 60));
+                        const hours = Math.floor(estMinutes / 60);
+                        const minutes = estMinutes % 60;
+                        const etaText = hours > 0 ? `${hours} jam ${minutes} menit` : `${minutes} menit`;
+
+                        const summaryD = document.getElementById('summary-distance');
+                        const summaryE = document.getElementById('summary-eta');
+                        if (summaryD) summaryD.textContent = distText;
+                        if (summaryE) summaryE.textContent = etaText;
+
+                        const modalD = document.getElementById('distance-text');
+                        const modalE = document.getElementById('eta-time');
+                        if (modalD) modalD.textContent = distText;
+                        if (modalE) modalE.textContent = etaText;
+                    }
+                } catch (err) {
+                    console.warn('Failed calculating distance/ETA fallback', err);
+                }
+            }
+
+            function subscribeToEcho(helpId) {
+                if (!helpId || typeof window.Echo === 'undefined' || typeof window.Echo.private !== 'function') return;
+                try {
+                    if (echoChannel) {
+                        window.Echo.leave('chat.help.' + helpId);
+                    }
+                    echoChannel = window.Echo.private('chat.help.' + helpId)
+                        .listen('PartnerLocationUpdated', (data) => {
+                            applyTrackingData(data);
+                        })
+                        .listen('.PartnerLocationUpdated', (data) => {
+                            applyTrackingData(data);
+                        });
+                } catch (e) {
+                    console.warn('Echo tracking subscription error:', e);
+                }
+            }
+
+            function unsubscribeEcho(helpId) {
+                if (!helpId || typeof window.Echo === 'undefined' || typeof window.Echo.leave !== 'function') return;
+                try {
+                    window.Echo.leave('chat.help.' + helpId);
+                    echoChannel = null;
+                } catch (e) {}
+            }
 
             function startPolling(helpId) {
                 if (!helpId) return;
+                subscribeToEcho(helpId);
                 if (pollingInterval) return; // already running
-                console.log('🔁 Starting tracking polling for help', helpId);
-                // immediate fetch
                 fetchAndUpdate(helpId);
                 pollingInterval = setInterval(() => fetchAndUpdate(helpId), POLL_MS);
             }
@@ -1592,7 +2344,6 @@
                 if (pollingInterval) {
                     clearInterval(pollingInterval);
                     pollingInterval = null;
-                    console.log('⏹️ Stopped tracking polling');
                 }
             }
 
@@ -1603,106 +2354,28 @@
                         headers: { 'Accept': 'application/json' }
                     });
                     if (!resp.ok) {
-                        console.warn('Tracking endpoint returned', resp.status);
                         return;
                     }
                     const data = await resp.json();
-
-                    // Update Alpine's trackingData so UI and any bindings reflect latest coords
-                    try {
-                        if (window.Alpine) {
-                            const alpineEl = document.querySelector('[x-data]');
-                            if (alpineEl) {
-                                const alpine = Alpine.$data(alpineEl);
-                                if (alpine && alpine.trackingData) {
-                                    alpine.trackingData.partnerLat = data.partnerLat ?? alpine.trackingData.partnerLat;
-                                    alpine.trackingData.partnerLng = data.partnerLng ?? alpine.trackingData.partnerLng;
-                                    alpine.trackingData.customerLat = data.customerLat ?? alpine.trackingData.customerLat;
-                                    alpine.trackingData.customerLng = data.customerLng ?? alpine.trackingData.customerLng;
-                                    alpine.trackingData.partnerName = data.partnerName ?? alpine.trackingData.partnerName;
-                                }
-                            }
-                        }
-                    } catch (err) {
-                        console.warn('Failed updating Alpine data', err);
-                    }
-
-                    // Call existing global function used by map code to update markers & route
-                    if (window.updateMapFromTracking && data) {
-                        window.updateMapFromTracking({
-                            partnerLat: data.partnerLat,
-                            partnerLng: data.partnerLng,
-                            customerLat: data.customerLat,
-                            customerLng: data.customerLng
-                        });
-                    }
-
-                    // Calculate simple straight-line distance + ETA fallback and update summary + modal placeholders
-                    try {
-                        const pLat = parseFloat(data.partnerLat);
-                        const pLng = parseFloat(data.partnerLng);
-                        const cLat = parseFloat(data.customerLat);
-                        const cLng = parseFloat(data.customerLng);
-
-                        if (!isNaN(pLat) && !isNaN(pLng) && !isNaN(cLat) && !isNaN(cLng)) {
-                            // Haversine formula (km)
-                            function haversine(lat1, lon1, lat2, lon2) {
-                                const R = 6371; // km
-                                const dLat = (lat2 - lat1) * Math.PI / 180;
-                                const dLon = (lon2 - lon1) * Math.PI / 180;
-                                const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-                                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                                return R * c;
-                            }
-
-                            const distKm = haversine(pLat, pLng, cLat, cLng);
-                            const distText = distKm >= 1 ? distKm.toFixed(1) + ' km' : Math.round(distKm * 1000) + ' m';
-
-                            // Estimate time assuming avg speed 30 km/h in city
-                            const estMinutes = Math.max(1, Math.ceil((distKm / 30) * 60));
-                            const hours = Math.floor(estMinutes / 60);
-                            const minutes = estMinutes % 60;
-                            const etaText = hours > 0 ? `${hours} jam ${minutes} menit` : `${minutes} menit`;
-
-                            // Update always-visible summary
-                            const summaryD = document.getElementById('summary-distance');
-                            const summaryE = document.getElementById('summary-eta');
-                            if (summaryD) summaryD.textContent = distText;
-                            if (summaryE) summaryE.textContent = etaText;
-
-                            // Also update modal placeholders if present
-                            const modalD = document.getElementById('distance-text');
-                            const modalE = document.getElementById('eta-time');
-                            if (modalD) modalD.textContent = distText;
-                            if (modalE) modalE.textContent = etaText;
-                        }
-                    } catch (err) {
-                        console.warn('Failed calculating distance/ETA fallback', err);
-                    }
-
+                    applyTrackingData(data);
                 } catch (err) {
-                    console.error('Error fetching tracking data:', err);
+                    // silent fallback
                 }
             }
 
-            // Start polling immediately for the current help id (so modal doesn't need open/close)
+            // Start polling & websocket immediately for the current help id
             try {
                 const initialId = window.currentHelpId || null;
                 if (initialId) startPolling(initialId);
             } catch (e) {
-                console.error('Error starting initial polling:', e);
+                console.error('Error starting initial tracking:', e);
             }
 
-            // Hook into Livewire modal events to ensure polling persists or can be stopped if desired
+            // Hook into Livewire modal events
             document.addEventListener('livewire:init', () => {
                 Livewire.on('mapModalOpened', (helpId) => {
                     const idToUse = helpId || window.currentHelpId;
                     startPolling(idToUse);
-                });
-
-                // stop polling when modal closed (optional) - we will keep polling in background, so don't stop here
-                Livewire.on('mapModalClosed', () => {
-                    // intentionally left blank to allow continuous background polling
                 });
             });
 
@@ -1712,6 +2385,7 @@
                     clearTimeout(mapResizeTimer);
                     mapResizeTimer = null;
                 }
+                unsubscribeEcho(window.currentHelpId);
                 stopPolling();
                 if (map) {
                     try { map.remove(); } catch(e){}
@@ -1722,12 +2396,73 @@
                     mapEl._leaflet_id = null;
                 }
             });
-            window.addEventListener('beforeunload', stopPolling);
+            window.addEventListener('beforeunload', () => {
+                unsubscribeEcho(window.currentHelpId);
+                stopPolling();
+            });
         })();
     </script>
 
-    {{-- Toast notification for copy --}}
+    {{-- Toast notification for copy & Search Countdown Timer --}}
     <script>
+        function customerDetailCountdownTimer(isoExpiry) {
+            return {
+                isoExpiry: isoExpiry,
+                timeString: '--:--:--',
+                isExpired: false,
+                hours: '00',
+                minutes: '00',
+                seconds: '00',
+                timer: null,
+                hasTriggeredExpire: false,
+                init() {
+                    if (!this.isoExpiry) {
+                        this.timeString = 'Batas sistem';
+                        return;
+                    }
+                    this.update();
+                    this.timer = setInterval(() => this.update(), 1000);
+                },
+                update() {
+                    const target = new Date(this.isoExpiry).getTime();
+                    const now = new Date().getTime();
+                    const diff = target - now;
+
+                    if (diff <= 0) {
+                        this.isExpired = true;
+                        this.timeString = '00:00:00 (Waktu Habis)';
+                        this.hours = '00';
+                        this.minutes = '00';
+                        this.seconds = '00';
+                        if (this.timer) {
+                            clearInterval(this.timer);
+                            this.timer = null;
+                        }
+                        if (!this.hasTriggeredExpire) {
+                            this.hasTriggeredExpire = true;
+                            if (typeof this.$wire !== 'undefined' && typeof this.$wire.loadHelp === 'function') {
+                                this.$wire.loadHelp();
+                            } else if (typeof Livewire !== 'undefined') {
+                                Livewire.dispatch('refreshHelp');
+                            }
+                        }
+                        return;
+                    }
+
+                    const totalSeconds = Math.max(0, Math.floor(diff / 1000));
+                    const h = Math.floor(totalSeconds / 3600);
+                    const m = Math.floor((totalSeconds % 3600) / 60);
+                    const s = totalSeconds % 60;
+
+                    const pad = (n) => String(n).padStart(2, '0');
+                    this.hours = pad(h);
+                    this.minutes = pad(m);
+                    this.seconds = pad(s);
+                    this.timeString = `${this.hours}:${this.minutes}:${this.seconds}`;
+                }
+            };
+        }
+
         document.addEventListener('livewire:init', () => {
             Livewire.on('copied', (event) => {
                 // Show toast notification

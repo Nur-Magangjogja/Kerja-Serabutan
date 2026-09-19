@@ -16,8 +16,8 @@
     tabindex="0"
     data-target="{{ $encoded }}"
     @if($title) title="{{ $title }}" @endif
-    onclick="const u = atob(this.getAttribute('data-target')); if(u && u !== '#') { window.location.href = u; }"
-    onkeydown="if(event.key==='Enter'||event.key===' '){ event.preventDefault(); const u = atob(this.getAttribute('data-target')); if(u && u !== '#') { window.location.href = u; } }"
+    onclick="const u = atob(this.getAttribute('data-target')); if(u && u !== '#') { if(!{{ $isExternal ? 'true' : 'false' }} && window.Livewire && typeof window.Livewire.navigate === 'function') { window.Livewire.navigate(u); } else { window.location.href = u; } }"
+    onkeydown="if(event.key==='Enter'||event.key===' '){ event.preventDefault(); const u = atob(this.getAttribute('data-target')); if(u && u !== '#') { if(!{{ $isExternal ? 'true' : 'false' }} && window.Livewire && typeof window.Livewire.navigate === 'function') { window.Livewire.navigate(u); } else { window.location.href = u; } } }"
     {{ $attributes->merge(['class' => 'cursor-pointer select-none ' . $class]) }}
 >
     {{ $slot }}

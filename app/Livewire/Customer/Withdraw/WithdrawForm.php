@@ -36,8 +36,14 @@ class WithdrawForm extends Component
                 'required',
                 'numeric',
                 'min:' . $minAmount,
+                'max:100000000000',
                 function ($attribute, $value, $fail) {
-                    if ((int) $value % 100 !== 0) {
+                    $numericVal = (float) $value;
+                    if ($numericVal > 100000000000) {
+                        $fail('Nominal penarikan melebihi batas maksimal.');
+                        return;
+                    }
+                    if (fmod($numericVal, 100) != 0) {
                         $fail('Nominal penarikan harus berupa kelipatan 100 atau 1.000 rupiah (contoh: 10.000, 25.000, 50.000).');
                     }
                 },
@@ -49,6 +55,7 @@ class WithdrawForm extends Component
             'amount.required' => 'Nominal penarikan wajib diisi.',
             'amount.numeric' => 'Nominal harus berupa angka.',
             'amount.min' => 'Jumlah penarikan minimal Rp ' . number_format($minAmount, 0, ',', '.'),
+            'amount.max' => 'Nominal penarikan melebihi batas maksimal.',
             'bankCode.required' => 'Silakan pilih bank atau e-wallet tujuan.',
             'accountNumber.required' => 'Nomor rekening atau nomor HP e-wallet wajib diisi.',
             'accountName.required' => 'Nama pemilik rekening wajib diisi.',
@@ -59,8 +66,8 @@ class WithdrawForm extends Component
             return;
         }
 
-        $amountVal = (float) $this->amount;
-        $feeCalc = AppSetting::calculateWithdrawFee($this->bankCode, (int) $amountVal);
+        $amountVal = min(100_000_000_000, max(0, (float) $this->amount));
+        $feeCalc = AppSetting::calculateWithdrawFee($this->bankCode, $amountVal);
         $adminFee = (float) $feeCalc['fee'];
         $netAmount = (float) $feeCalc['net_amount'];
         $totalDeduction = $amountVal + $adminFee;
@@ -70,55 +77,72 @@ class WithdrawForm extends Component
             return;
         }
 
-        DB::transaction(function () use ($user, $amountVal, $adminFee, $netAmount, $totalDeduction) {
-            // Deduct balance from UserBalance record (amount + admin fee)
-            $userBalance = UserBalance::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
-            $userBalance->decrement('balance', $totalDeduction);
-
-            $withdraw = WithdrawRequest::create([
-                'user_id' => $user->id,
-                'amount' => $amountVal,
-                'admin_fee' => $adminFee,
-                'net_amount' => $netAmount,
-                'bank_code' => strtoupper($this->bankCode),
-                'account_number' => $this->accountNumber,
-                'account_name' => $this->accountName,
-                'status' => 'pending',
-                'description' => $this->notes ?: ('A/N: ' . $this->accountName),
-            ]);
-
-            BalanceTransaction::create([
-                'user_id' => $user->id,
-                'order_id' => 'WD-' . $withdraw->id,
-                'reference_id' => $withdraw->id,
-                'type' => 'withdraw',
-                'amount' => $amountVal,
-                'admin_fee' => $adminFee,
-                'total_payment' => $totalDeduction,
-                'status' => 'pending',
-                'description' => "Penarikan saldo ke {$this->bankCode} ({$this->accountNumber} a.n {$this->accountName})",
-            ]);
-
-            // Kirim notifikasi ke Admin regional & SuperAdmin
-            try {
-                $cityId = $user->city_id;
-                $admins = \App\Models\User::where('role', 'admin')
-                    ->when($cityId, fn($q) => $q->where('city_id', $cityId))
-                    ->where('status', 'active')
-                    ->get();
-                if ($admins->isEmpty()) {
-                    $admins = \App\Models\User::where('role', 'admin')->where('status', 'active')->get();
+        try {
+            DB::transaction(function () use ($user, $amountVal, $adminFee, $netAmount, $totalDeduction) {
+                // Lock UserBalance record for update
+                $userBalance = UserBalance::where('user_id', $user->id)->lockForUpdate()->first();
+                if (!$userBalance || (float) $userBalance->balance < $totalDeduction) {
+                    throw new \RuntimeException('Saldo dompet Anda tidak mencukupi untuk melakukan penarikan ini.');
                 }
-                $superAdmins = \App\Models\User::whereIn('role', ['superadmin', 'super_admin'])->where('status', 'active')->get();
-                $recipients = $admins->merge($superAdmins)->unique('id');
 
-                foreach ($recipients as $recipient) {
-                    $recipient->notify(new \App\Notifications\NewWithdrawNotification($withdraw));
+                $hasActive = WithdrawRequest::where('user_id', $user->id)
+                    ->whereIn('status', [WithdrawRequest::STATUS_PENDING, WithdrawRequest::STATUS_PROCESSING])
+                    ->exists();
+                if ($hasActive) {
+                    throw new \RuntimeException('Anda masih memiliki permintaan penarikan yang sedang diproses.');
                 }
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('[Withdraw] Gagal kirim notifikasi withdraw: ' . $e->getMessage());
-            }
-        });
+
+                // Deduct balance from UserBalance record (amount + admin fee)
+                $userBalance->decrement('balance', $totalDeduction);
+
+                $withdraw = WithdrawRequest::create([
+                    'user_id' => $user->id,
+                    'amount' => $amountVal,
+                    'admin_fee' => $adminFee,
+                    'net_amount' => $netAmount,
+                    'bank_code' => strtoupper($this->bankCode),
+                    'account_number' => $this->accountNumber,
+                    'account_name' => $this->accountName,
+                    'status' => 'pending',
+                    'description' => $this->notes ?: ('A/N: ' . $this->accountName),
+                ]);
+
+                BalanceTransaction::create([
+                    'user_id' => $user->id,
+                    'order_id' => 'WD-' . $withdraw->id,
+                    'reference_id' => $withdraw->id,
+                    'type' => 'withdraw',
+                    'amount' => $amountVal,
+                    'admin_fee' => $adminFee,
+                    'total_payment' => $totalDeduction,
+                    'status' => 'pending',
+                    'description' => "Penarikan saldo ke {$this->bankCode} ({$this->accountNumber} a.n {$this->accountName})",
+                ]);
+
+                // Kirim notifikasi ke Admin regional & SuperAdmin
+                try {
+                    $cityId = $user->city_id;
+                    $admins = \App\Models\User::where('role', 'admin')
+                        ->when($cityId, fn($q) => $q->where('city_id', $cityId))
+                        ->where('status', 'active')
+                        ->get();
+                    if ($admins->isEmpty()) {
+                        $admins = \App\Models\User::where('role', 'admin')->where('status', 'active')->get();
+                    }
+                    $superAdmins = \App\Models\User::whereIn('role', ['superadmin', 'super_admin'])->where('status', 'active')->get();
+                    $recipients = $admins->merge($superAdmins)->unique('id');
+
+                    foreach ($recipients as $recipient) {
+                        $recipient->notify(new \App\Notifications\NewWithdrawNotification($withdraw));
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('[CustomerWithdraw] Gagal kirim notifikasi withdraw: ' . $e->getMessage());
+                }
+            });
+        } catch (\Throwable $e) {
+            $this->addError('amount', $e->getMessage());
+            return;
+        }
 
         session()->flash('success', 'Permintaan penarikan dana berhasil diajukan dan sedang diverifikasi oleh admin.');
         return redirect()->route('customer.withdraw.history');
@@ -130,8 +154,8 @@ class WithdrawForm extends Component
         $balance = (float) ($user->balance ?? 0);
         $banks = collect(AppSetting::getWithdrawBanks())->filter(fn($b) => ($b['is_active'] ?? true) !== false)->values();
         $minAmount = (float) AppSetting::getWithdrawMinAmount();
-        $amountVal = (float) ($this->amount ?: 0);
-        $feeCalc = AppSetting::calculateWithdrawFee($this->bankCode ?: 'BCA', (int) $amountVal);
+        $amountVal = min(100_000_000_000, max(0, (float) ($this->amount ?: 0)));
+        $feeCalc = AppSetting::calculateWithdrawFee($this->bankCode ?: 'BCA', $amountVal);
         $adminFee = (float) $feeCalc['fee'];
         $netAmount = (float) $feeCalc['net_amount'];
         $totalDeduction = (float) ($amountVal > 0 ? ($amountVal + $adminFee) : 0);

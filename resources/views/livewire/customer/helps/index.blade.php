@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors" wire:poll.15s.visible>
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
     <style>
         :root{
             --brand-500: #0ea5a4;
@@ -20,13 +20,15 @@
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
             
             <div class="relative z-10 space-y-3">
-                <div class="relative flex items-center justify-center min-h-[40px] text-white">
-                    <div class="text-center w-full min-w-0 px-12">
+                <div class="flex items-center justify-between min-h-[40px] text-white">
+                    <div class="w-10"></div>
+
+                    <div class="text-center flex-1 min-w-0 px-2">
                         <h1 class="text-base font-bold truncate">Permintaan Saya</h1>
                         <p class="text-xs text-white/90 truncate mt-0.5">Kelola permintaan bantuan Anda</p>
                     </div>
 
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                    <div class="w-10 flex items-center justify-end">
                         <x-customer.notification-icon />
                     </div>
                 </div>
@@ -34,31 +36,31 @@
                 <!-- Filter Tabs - Segmented Grid (No Overflow) -->
                 <div class="grid grid-cols-4 gap-1 bg-black/15 backdrop-blur-md p-1 rounded-xl border border-white/20 text-center">
                     <button type="button" wire:click="$set('statusFilter', 'menunggu_mitra')" role="tab"
-                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'menunggu_mitra' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
+                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'menunggu_mitra' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
                         <span>Menunggu</span>
                         @if(!empty($counts['menunggu']) && $counts['menunggu'] > 0)
-                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'menunggu_mitra' ? 'bg-primary-100 text-primary-700' : 'bg-white/20 text-white' }}">{{ $counts['menunggu'] }}</span>
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'menunggu_mitra' ? 'bg-primary-100 text-primary-700 dark:bg-white/20 dark:text-white' : 'bg-white/20 text-white' }}">{{ $counts['menunggu'] }}</span>
                         @endif
                     </button>
                     <button type="button" wire:click="$set('statusFilter', 'diproses')" role="tab"
-                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'diproses' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
+                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'diproses' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
                         <span>Diproses</span>
                         @if(!empty($counts['diproses']) && $counts['diproses'] > 0)
-                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'diproses' ? 'bg-primary-100 text-primary-700' : 'bg-white/20 text-white' }}">{{ $counts['diproses'] }}</span>
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'diproses' ? 'bg-primary-100 text-primary-700 dark:bg-white/20 dark:text-white' : 'bg-white/20 text-white' }}">{{ $counts['diproses'] }}</span>
                         @endif
                     </button>
                     <button type="button" wire:click="$set('statusFilter', 'waiting_customer_confirmation')" role="tab"
-                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'waiting_customer_confirmation' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
+                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'waiting_customer_confirmation' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
                         <span>Konfirmasi</span>
                         @if(!empty($counts['konfirmasi']) && $counts['konfirmasi'] > 0)
-                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'waiting_customer_confirmation' ? 'bg-amber-100 text-amber-800' : 'bg-amber-400/80 text-gray-900 font-extrabold' }} animate-pulse">{{ $counts['konfirmasi'] }}</span>
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'waiting_customer_confirmation' ? 'bg-amber-100 text-amber-800 dark:bg-amber-400 dark:text-amber-950 font-extrabold' : 'bg-amber-400/80 text-gray-900 font-extrabold' }} animate-pulse">{{ $counts['konfirmasi'] }}</span>
                         @endif
                     </button>
                     <button type="button" wire:click="$set('statusFilter', 'selesai')" role="tab"
-                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'selesai' ? 'bg-white text-primary-700 shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
+                        class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'selesai' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
                         <span>Selesai</span>
                         @if(!empty($counts['selesai']) && $counts['selesai'] > 0)
-                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'selesai' ? 'bg-gray-100 text-gray-700' : 'bg-white/20 text-white' }}">{{ $counts['selesai'] }}</span>
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'selesai' ? 'bg-gray-100 text-gray-700 dark:bg-white/20 dark:text-white' : 'bg-white/20 text-white' }}">{{ $counts['selesai'] }}</span>
                         @endif
                     </button>
                 </div>
@@ -67,13 +69,45 @@
 
         <!-- Content List with Extra Bottom Padding for Float Nav -->
         <div class="px-5 pt-4 pb-36 min-h-[60vh]"> 
-            <div class="space-y-3.5 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="statusFilter">
+            {{-- Flash Messages --}}
+            @if (session()->has('message'))
+                <div x-data="{ show: true }" x-show="show" class="mb-3.5 p-3.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-start justify-between gap-2 text-xs text-emerald-800 dark:text-emerald-200 shadow-2xs animate-in fade-in">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">✅</span>
+                        <span class="font-medium">{{ session('message') }}</span>
+                    </div>
+                    <button @click="show = false" class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-900 cursor-pointer text-base leading-none">&times;</button>
+                </div>
+            @endif
+
+            @if (session()->has('info'))
+                <div x-data="{ show: true }" x-show="show" class="mb-3.5 p-3.5 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-xl flex items-start justify-between gap-2 text-xs text-blue-800 dark:text-blue-200 shadow-2xs animate-in fade-in">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">ℹ️</span>
+                        <span class="font-medium">{{ session('info') }}</span>
+                    </div>
+                    <button @click="show = false" class="text-blue-600 dark:text-blue-400 hover:text-blue-900 cursor-pointer text-base leading-none">&times;</button>
+                </div>
+            @endif
+
+            @if (session()->has('error'))
+                <div x-data="{ show: true }" x-show="show" class="mb-3.5 p-3.5 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl flex items-start justify-between gap-2 text-xs text-rose-800 dark:text-rose-200 shadow-2xs animate-in fade-in">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">⚠️</span>
+                        <span class="font-medium">{{ session('error') }}</span>
+                    </div>
+                    <button @click="show = false" class="text-rose-600 dark:text-rose-400 hover:text-rose-900 cursor-pointer text-base leading-none">&times;</button>
+                </div>
+            @endif
+
+            <div class="space-y-3.5 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="statusFilter" @if(in_array($statusFilter, ['menunggu_mitra', 'diproses', 'waiting_customer_confirmation'])) wire:poll.10s.visible="handleExpiredHelp" @endif>
                 @forelse($helps as $help)
                     @if($statusFilter === 'selesai')
                         {{-- COMPLETED / CANCELLED CARD (with expandable accordion & rating info) --}}
                         @php
                             $rating = $help->rating;
                             $isCancelled = in_array($help->status, ['dibatalkan', 'cancelled']);
+                            $fullCustomerPrice = $help->total_amount > 0 ? (float)$help->total_amount : (float)(($help->amount ?? 0) + $help->getPlatformFee());
                         @endphp
                         <div x-data="{ isExpanded: false }" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs hover:shadow-md transition">
                             <div class="p-4">
@@ -99,7 +133,7 @@
                                     </div>
 
                                     <div class="text-right flex-shrink-0">
-                                        <div class="text-sm font-bold text-primary-600 dark:text-sky-400">Rp {{ number_format($help->amount ?? 0, 0, ',', '.') }}</div>
+                                        <div class="text-1xl font-bold text-primary-600 dark:text-sky-400">Rp {{ number_format($fullCustomerPrice, 0, ',', '.') }}</div>
                                         <div class="flex flex-col items-end gap-1 mt-1">
                                             @if($isCancelled)
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-[10px] font-bold border border-rose-200 dark:border-rose-800/50">
@@ -203,7 +237,7 @@
                                         </div>
                                     @elseif($help->mitra)
                                         <div class="pt-2">
-                                            <a href="{{ route('customer.helps.detail', $help->id) }}" class="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition shadow-xs">
+                                            <a href="{{ route('customer.helps.detail', $help->id) }}" wire:navigate class="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition shadow-xs">
                                                 <span>⭐ Beri Penilaian untuk Mitra</span>
                                             </a>
                                         </div>
@@ -211,7 +245,7 @@
                                 @endif
 
                                 <div class="pt-1 flex items-center justify-end">
-                                    <a href="{{ route('customer.helps.detail', $help->id) }}" class="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-semibold transition">
+                                    <a href="{{ route('customer.helps.detail', $help->id) }}" wire:navigate class="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-semibold transition">
                                         Halaman Detail Lengkap
                                     </a>
                                 </div>
@@ -238,27 +272,27 @@
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-start justify-between gap-2">
                                         <h3 class="font-bold text-sm text-gray-900 dark:text-gray-100 truncate leading-snug">{{ $help->title }}</h3>
-                                        <span class="text-xs font-bold text-primary-600 dark:text-sky-400 whitespace-nowrap shrink-0">Rp {{ number_format($help->amount, 0, ',', '.') }}</span>
+                                        <span class="text-1xl font-bold text-primary-600 dark:text-sky-400 whitespace-nowrap shrink-0">Rp {{ number_format($help->total_amount > 0 ? $help->total_amount : ($help->amount + $help->getPlatformFee()), 0, ',', '.') }}</span>
                                     </div>
 
                                     <div class="flex items-center gap-2 mt-1 flex-wrap">
                                         @if($help->status === 'partner_cancel_requested')
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800/60">
                                                 <span>⚠️</span>
                                                 <span>Menunggu Konfirmasi Pembatalan</span>
                                             </span>
                                         @elseif($statusFilter === 'waiting_customer_confirmation' || $help->status === 'waiting_customer_confirmation')
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 dark:bg-orange-950/70 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800/60">
                                                 <span>📸</span>
                                                 <span>Menunggu Konfirmasi Anda</span>
                                             </span>
                                         @elseif($statusFilter === 'menunggu_mitra' || $help->status === 'menunggu_mitra')
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800/60">
                                                 <span>🔍</span>
                                                 <span>Mencari Rekan Jasa</span>
                                             </span>
                                         @else
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold {{ $help->status_color }} dark:bg-opacity-20 border border-current border-opacity-20">
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $help->status_color }}">
                                                 <span>{{ $help->progress_icon }}</span>
                                                 <span>{{ $help->progress_summary }}</span>
                                             </span>
@@ -289,10 +323,57 @@
                                 <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 leading-relaxed">{{ Str::limit($help->description, 120) }}</p>
                             @endif
 
-                            @if($help->scheduled_at)
-                                <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            {{-- Countdown Batas Waktu Pencarian Rekan Jasa (Khusus Status Menunggu Mitra) --}}
+                            @if($help->status === 'menunggu_mitra')
+                                @php
+                                    $effectiveExpiry = $help->effective_expires_at;
+                                    $expiryIso = $effectiveExpiry ? $effectiveExpiry->toIso8601String() : null;
+                                @endphp
+                                <div x-data="customerCountdownTimer('{{ $expiryIso }}')" class="bg-gray-50 dark:bg-gray-750/70 border border-gray-200/70 dark:border-gray-700/80 rounded-xl p-3 space-y-2 shadow-2xs">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                            <span>⏳</span>
+                                            <span>Batas Waktu Pencarian Rekan Jasa:</span>
+                                        </div>
+                                        <span class="text-[10px] font-medium px-2 py-0.5 rounded-lg" 
+                                              :class="isExpired ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border border-rose-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'" 
+                                              x-text="isExpired ? 'Waktu Habis' : 'Mencari mitra'">
+                                            Mencari mitra
+                                        </span>
+                                    </div>
+
+                                    <div class="flex items-center justify-between gap-2 flex-wrap pt-0.5">
+                                        <div class="flex items-center gap-1.5 font-mono text-xs font-bold text-gray-900 dark:text-gray-100">
+                                            <span class="text-[11px] font-sans font-medium text-gray-600 dark:text-gray-400">Sisa:</span>
+                                            <div class="inline-flex items-center gap-1 bg-white dark:bg-gray-800 px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 shadow-2xs tabular-nums">
+                                                <span x-text="hours" class="font-bold text-gray-900 dark:text-white">00</span>
+                                                <span class="text-gray-400 dark:text-gray-500 font-bold">:</span>
+                                                <span x-text="minutes" class="font-bold text-gray-900 dark:text-white">00</span>
+                                                <span class="text-gray-400 dark:text-gray-500 font-bold">:</span>
+                                                <span x-text="seconds" class="font-bold text-rose-600 dark:text-rose-400">00</span>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="text-[10px] text-gray-400 dark:text-gray-500 block font-medium">Batas Waktu:</span>
+                                            <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ $effectiveExpiry ? $effectiveExpiry->translatedFormat('d M, H:i') . ' WIB' : '-' }}</span>
+                                        </div>
+                                    </div>
+
+                                    <p class="text-[10.5px] text-gray-500 dark:text-gray-400 leading-tight border-t border-gray-200/60 dark:border-gray-700/60 pt-1.5">
+                                        💡 Jika waktu habis tanpa ada rekan jasa yang mengambil, pesanan otomatis batal & dana tahan 100% dikembalikan ke saldo dompet Anda.
+                                    </p>
+                                </div>
+                            @endif
+
+                            @if($help->isScheduled() && $help->scheduled_at)
+                                <div class="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1 font-medium">
                                     <span>📅</span>
-                                    <span>{{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') }}</span>
+                                    <span>Terjadwal: {{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') }} WIB</span>
+                                </div>
+                            @else
+                                <div class="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
+                                    <span>⚡</span>
+                                    <span>Pelaksanaan Segera</span>
                                 </div>
                             @endif
 
@@ -312,7 +393,7 @@
                                             <span class="text-xs font-semibold text-gray-800 dark:text-gray-200 max-w-[90px] truncate">{{ $help->mitra->name }}</span>
                                         </div>
 
-                                        <a href="{{ route('customer.chat', $help->id) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition shadow-xs cursor-pointer relative" aria-label="Buka chat">
+                                        <a href="{{ route('customer.chat', $help->id) }}" wire:navigate class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition shadow-xs cursor-pointer relative" aria-label="Buka chat">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4-.8L3 20l1.2-4A7.963 7.963 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                             </svg>
@@ -332,16 +413,13 @@
                                     <button type="button" wire:click.stop="confirmDelete({{ $help->id }})" class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 rounded-xl text-xs font-bold transition cursor-pointer">
                                         Batalkan
                                     </button>
-                                    <button type="button" wire:click.stop="editHelp({{ $help->id }})" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40 rounded-xl text-xs font-bold transition cursor-pointer">
-                                        Edit
-                                    </button>
                                 @elseif($statusFilter === 'waiting_customer_confirmation' || $help->status === 'waiting_customer_confirmation')
                                     <button type="button" wire:click.stop="confirmCompletion({{ $help->id }})" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
                                         Konfirmasi Selesai
                                     </button>
                                 @endif
 
-                                <a href="{{ route('customer.helps.detail', $help->id) }}" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-600/60 rounded-xl text-xs font-bold transition text-center cursor-pointer">
+                                <a href="{{ route('customer.helps.detail', $help->id) }}" wire:navigate class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-600/60 rounded-xl text-xs font-bold transition text-center cursor-pointer">
                                     Detail
                                 </a>
                             </div>
@@ -366,110 +444,51 @@
         </div>
     </div>
 
-    <!-- Edit Modal (z-[70] to clear floating bottom nav) -->
-    @if(isset($editingHelp) && $editingHelp)
-        <div class="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4" wire:click="closeEdit">
-            <div class="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto hide-scrollbar text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700" @click.stop>
-                <!-- Modal Header -->
-                <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 rounded-t-3xl sm:rounded-t-2xl z-10">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Edit Permintaan</h3>
-                        <button type="button" wire:click="closeEdit" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition cursor-pointer">
-                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Modal Content -->
-                <form wire:submit.prevent="saveEdit" class="p-5 pb-24 space-y-4">
-                    <!-- Title -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Judul Permintaan *</label>
-                        <input type="text" wire:model.defer="editTitle" placeholder="Contoh: Bantu bersihkan halaman rumah"
-                            class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white">
-                        @error('editTitle') <span class="text-rose-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- Amount -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Nominal Bantuan (Rp) *</label>
-                        <input type="number" wire:model="editAmount" placeholder="10000"
-                            class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white">
-                        @error('editAmount') <span class="text-rose-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- Description -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Deskripsi Kebutuhan *</label>
-                        <textarea wire:model.defer="editDescription" rows="3" placeholder="Jelaskan kebutuhan Anda..."
-                            class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white"></textarea>
-                        @error('editDescription') <span class="text-rose-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- City select -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Kota *</label>
-                        <select wire:model.defer="editCityId" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white">
-                            <option value="">Pilih kota / kabupaten</option>
-                            @foreach($cities as $city)
-                                <option value="{{ $city->id }}">{{ $city->name }}@if($city->province), {{ $city->province }}@endif</option>
-                            @endforeach
-                        </select>
-                        @error('editCityId') <span class="text-rose-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- Full Address -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Alamat Lengkap</label>
-                        <textarea wire:model.defer="editFullAddress" rows="2" placeholder="Alamat lengkap dengan patokan..."
-                            class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white"></textarea>
-                    </div>
-
-                    <!-- Action Buttons (Sticky Footer) -->
-                    <div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 pt-3 -mx-5 px-5 -mb-5 pb-5 mt-4">
-                        <div class="flex gap-2">
-                            <button type="button" wire:click="closeEdit" 
-                                class="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-bold text-xs hover:bg-gray-200 transition cursor-pointer">
-                                Batal
-                            </button>
-                            <button type="submit" wire:loading.attr="disabled"
-                                class="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-xs transition shadow-md cursor-pointer disabled:opacity-50">
-                                <span wire:loading.remove wire:target="saveEdit">Simpan Perubahan</span>
-                                <span wire:loading wire:target="saveEdit">Menyimpan...</span>
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    @endif
-
     <!-- Delete Confirmation Modal (Centered Modal with z-[70] for Zero Interference) -->
     @if($showDeleteConfirm)
-        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" wire:click="cancelDelete">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in duration-150" @click.stop>
-                <div class="p-6 text-center space-y-4">
-                    <div class="w-14 h-14 rounded-2xl bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-xs">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" wire:click.self="cancelDelete">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in duration-150">
+                <div class="p-5 text-center space-y-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-xs">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                     </div>
 
                     <div>
-                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Batalkan Permintaan?</h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                            Anda yakin ingin membatalkan permintaan bantuan ini? Dana yang ditahan di sistem akan otomatis dikembalikan 100% ke saldo Anda.
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Batalkan Permintaan Bantuan?</h3>
+                        @if($deletingHelp)
+                            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1 truncate">
+                                "{{ $deletingHelp->title }}"
+                            </p>
+                        @endif
+                    </div>
+
+                    <div class="bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/50 rounded-xl p-3 text-left space-y-1.5 text-xs text-amber-900 dark:text-amber-200">
+                        <div class="flex items-center justify-between font-medium text-[11px]">
+                            <span>Batas Waktu Pencarian:</span>
+                            <span class="font-bold text-amber-950 dark:text-amber-100">
+                                {{ $deletingHelp?->effective_expires_at?->translatedFormat('d M, H:i') ?? '-' }} WIB
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between font-medium text-[11px] pt-1 border-t border-amber-200/50 dark:border-amber-800/50">
+                            <span>Jaminan Refund Saldo:</span>
+                            <span class="font-bold text-emerald-700 dark:text-emerald-300">
+                                100% (Rp {{ number_format($deletingHelp ? ($deletingHelp->total_amount ?: $deletingHelp->amount) : 0, 0, ',', '.') }})
+                            </span>
+                        </div>
+                        <p class="text-[10.5px] text-amber-800/90 dark:text-amber-300/90 pt-1 leading-relaxed">
+                            💡 Seluruh dana yang ditahan di sistem akan langsung dikembalikan ke saldo dompet Anda seketika.
                         </p>
                     </div>
 
-                    <div class="flex gap-2.5 pt-2">
+                    <div class="flex gap-2.5 pt-1">
                         <button type="button" wire:click="cancelDelete" class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 rounded-xl font-bold text-xs transition cursor-pointer">
                             Kembali
                         </button>
-                        <button type="button" wire:click="deleteConfirmed" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs transition shadow-md cursor-pointer">
-                            Ya, Batalkan
+                        <button type="button" wire:click="deleteConfirmed" wire:loading.attr="disabled" wire:target="deleteConfirmed" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs transition shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1">
+                            <span wire:loading.remove wire:target="deleteConfirmed">Ya, Batalkan</span>
+                            <span wire:loading wire:target="deleteConfirmed">Memproses...</span>
                         </button>
                     </div>
                 </div>
@@ -479,8 +498,8 @@
 
     {{-- Confirmation Modal for Completing Help (Centered Modal with z-[70]) --}}
     @if($confirmingHelpId)
-        <div data-confirm-modal class="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" wire:click="$set('confirmingHelpId', null)">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-sm w-full p-6 text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in duration-150 text-center space-y-4" @click.stop>
+        <div data-confirm-modal class="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" wire:click.self="$set('confirmingHelpId', null)">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-sm w-full p-6 text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in duration-150 text-center space-y-4">
                 <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-xs">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -499,12 +518,74 @@
                             class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-200 rounded-xl font-bold text-xs transition cursor-pointer">
                         Batal
                     </button>
-                    <button wire:click="completeConfirmed" 
-                            class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition shadow-md cursor-pointer">
-                        Ya, Selesaikan
+                    <button wire:click="completeConfirmed" wire:loading.attr="disabled" wire:target="completeConfirmed"
+                            class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1">
+                        <span wire:loading.remove wire:target="completeConfirmed">Ya, Selesaikan</span>
+                        <span wire:loading wire:target="completeConfirmed">Memproses...</span>
                     </button>
                 </div>
             </div>
         </div>
     @endif
+
+    <script>
+        function customerCountdownTimer(isoExpiry) {
+            return {
+                isoExpiry: isoExpiry,
+                timeString: '--:--:--',
+                isExpired: false,
+                hours: '00',
+                minutes: '00',
+                seconds: '00',
+                timer: null,
+                hasTriggeredExpire: false,
+                init() {
+                    if (!this.isoExpiry) {
+                        this.timeString = 'Batas sistem';
+                        return;
+                    }
+                    this.update();
+                    this.timer = setInterval(() => this.update(), 1000);
+                },
+                update() {
+                    const target = new Date(this.isoExpiry).getTime();
+                    const now = new Date().getTime();
+                    const diff = target - now;
+
+                    if (diff <= 0) {
+                        this.isExpired = true;
+                        this.timeString = '00:00:00 (Waktu Habis)';
+                        this.hours = '00';
+                        this.minutes = '00';
+                        this.seconds = '00';
+                        if (this.timer) {
+                            clearInterval(this.timer);
+                            this.timer = null;
+                        }
+                        if (!this.hasTriggeredExpire) {
+                            this.hasTriggeredExpire = true;
+                            // Panggil server Livewire untuk sweep & auto-cancel pesanan kadaluwarsa secara realtime
+                            if (typeof this.$wire !== 'undefined' && typeof this.$wire.handleExpiredHelp === 'function') {
+                                this.$wire.handleExpiredHelp();
+                            } else if (typeof Livewire !== 'undefined') {
+                                Livewire.dispatch('refreshHelps');
+                            }
+                        }
+                        return;
+                    }
+
+                    const totalSeconds = Math.max(0, Math.floor(diff / 1000));
+                    const h = Math.floor(totalSeconds / 3600);
+                    const m = Math.floor((totalSeconds % 3600) / 60);
+                    const s = totalSeconds % 60;
+
+                    const pad = (n) => String(n).padStart(2, '0');
+                    this.hours = pad(h);
+                    this.minutes = pad(m);
+                    this.seconds = pad(s);
+                    this.timeString = `${this.hours}:${this.minutes}:${this.seconds}`;
+                }
+            };
+        }
+    </script>
 </div>

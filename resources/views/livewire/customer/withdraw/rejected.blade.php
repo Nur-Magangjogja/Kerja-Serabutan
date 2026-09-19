@@ -32,10 +32,10 @@
         </div>
 
         <div class="space-y-2 pt-2">
-            <a href="{{ route('customer.withdraw.form', ['force' => 1]) }}" class="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl transition shadow-sm block text-center">
+            <a href="{{ route('customer.withdraw.form', ['force' => 1]) }}" wire:navigate class="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl transition shadow-sm block text-center">
                 Ajukan Penarikan Baru
             </a>
-            <a href="{{ route('customer.dashboard') }}" class="w-full py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-xl transition block text-center">
+            <a href="{{ route('customer.dashboard') }}" wire:navigate class="w-full py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-xl transition block text-center">
                 Kembali ke Dashboard
             </a>
         </div>

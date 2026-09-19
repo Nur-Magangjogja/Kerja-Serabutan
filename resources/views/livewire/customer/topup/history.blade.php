@@ -4,9 +4,23 @@
         <div class="px-5 pt-4 pb-5 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] rounded-b-2xl shadow-sm text-white">
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-xl -mr-12 -mt-12 pointer-events-none"></div>
             
-            <div class="relative z-10 text-white text-center">
-                <h1 class="text-base font-bold truncate">Riwayat Top-Up</h1>
-                <p class="text-xs text-white/90 truncate mt-0.5">Semua request top-up Anda</p>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between min-h-[40px] text-white">
+                    <div class="w-10 flex items-center">
+                        <a href="{{ route('customer.transactions.index') }}" wire:navigate aria-label="Kembali ke Transaksi" class="p-2 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex items-center justify-center text-white">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </a>
+                    </div>
+
+                    <div class="text-center flex-1 min-w-0 px-2">
+                        <h1 class="text-base font-bold truncate">Riwayat Top-Up</h1>
+                        <p class="text-xs text-white/90 truncate mt-0.5">Semua request top-up Anda</p>
+                    </div>
+
+                    <div class="w-10 flex items-center justify-end"></div>
+                </div>
             </div>
         </div>
 
@@ -138,6 +152,7 @@
                         <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">Belum Ada Riwayat</h3>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Mulai top-up saldo Anda sekarang</p>
                         <a href="{{ route('customer.topup.request') }}"
+                            wire:navigate
                             class="inline-block px-6 py-3 text-white rounded-xl font-semibold hover:shadow-lg transition cursor-pointer"
                             style="background: linear-gradient(to bottom right, #0098e7, #0060b0);">
                             Top-Up Saldo
@@ -155,8 +170,8 @@
 
     <!-- Detail Modal -->
     @if($showDetailModal && $selectedTransaction)
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-4" wire:click="closeModal">
-            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto" @click.stop>
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-4" wire:click.self="closeModal">
+            <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto">
                 <!-- Modal Header -->
                 <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-6 py-4 rounded-t-3xl z-10">
                     <div class="flex items-center justify-between">

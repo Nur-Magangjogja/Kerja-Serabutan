@@ -38,7 +38,7 @@ class NewTopupRequest extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('🔔 Request Top-Up Saldo Baru')
+            ->subject(' Request Top-Up Saldo Baru')
             ->greeting('Halo Admin,')
             ->line('Ada request top-up saldo baru yang menunggu persetujuan Anda.')
             ->line('Customer: ' . $this->transaction->user->name)

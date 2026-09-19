@@ -63,7 +63,21 @@ class NotificationSettings extends Component
             $user->save();
         }
 
+        if ($setting === 'sound_enabled') {
+            $newVal = $this->sound_enabled ? 'true' : 'false';
+            $this->js("window.USER_SOUND_ENABLED = {$newVal};");
+            $this->dispatch('sound-setting-updated', $this->sound_enabled);
+            if ($this->sound_enabled) {
+                $this->dispatch('play-notification-sound', force: true);
+            }
+        }
+
         session()->flash('message', 'Pengaturan notifikasi berhasil diperbarui');
+    }
+
+    public function testSound()
+    {
+        $this->dispatch('play-notification-sound', force: true);
     }
 
     public function markAllAsRead()

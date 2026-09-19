@@ -17,7 +17,6 @@
         <table class="w-full table-auto text-sm">
             <thead>
                 <tr class="text-left text-gray-600 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
-                    <th class="px-3 py-2 hidden">#</th>
                     <th class="px-3 py-2">Judul</th>
                     <th class="px-3 py-2">Customer</th>
                     <th class="px-3 py-2">Kota</th>
@@ -29,7 +28,6 @@
             <tbody>
                 @forelse($helps as $help)
                     <tr class="border-t border-gray-100 dark:border-gray-700">
-                        <td class="px-3 py-2 hidden">{{ $help->id }}</td>
                         <td class="px-3 py-2 font-medium text-gray-900 dark:text-white">{{ $help->title }}</td>
                         <td class="px-3 py-2">{{ $help->customer->name ?? '-' }}</td>
                         <td class="px-3 py-2">{{ $help->city->name ?? '-' }}</td>
@@ -41,7 +39,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-3 py-6 text-center text-gray-500">Tidak ada bantuan disetujui.</td>
+                        <td colspan="6" class="px-3 py-6 text-center text-gray-500">Tidak ada bantuan disetujui.</td>
                     </tr>
                 @endforelse
             </tbody>

@@ -7,12 +7,27 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Models\City;
 
 #[Layout('layouts.superadmin')]
 class Index extends Component
 {
     use WithPagination;
 
+    // Navigation Tabs: 'directory' (Daftar Pengguna / Direktori Pelaku Aksi - Default) | 'streams' (Log Aliran Aktivitas)
+    public $tab = 'directory';
+
+    // Filter Direktori Pengguna
+    public $userSearch = '';
+    public $userRoleFilter = 'all'; // all, super_admin, admin, customer, mitra
+    public $userCityId = 'all';
+    public $userPerPage = 12;
+
+    // Filter Khusus Pengguna Terpilih (saat klik dari direktori)
+    public $selectedUserId = null;
+    public $selectedUserName = null;
+
+    // Filter Aliran Log Aktivitas (Streams)
     public $search = '';
     public $roleFilter = 'all'; // all, super_admin, admin, customer, mitra
     public $actionFilter = 'all';
@@ -30,12 +45,72 @@ class Index extends Component
     public $showPropertiesModal = false;
 
     protected $queryString = [
-        'search'       => ['except' => ''],
-        'roleFilter'   => ['except' => 'all'],
-        'actionFilter' => ['except' => 'all'],
-        'dateFrom'     => ['except' => ''],
-        'dateTo'       => ['except' => ''],
+        'tab'                => ['except' => 'directory'],
+        'selectedUserId'     => ['except' => null],
+        'userSearch'         => ['except' => ''],
+        'userRoleFilter'     => ['except' => 'all'],
+        'userCityId'         => ['except' => 'all'],
+        'search'             => ['except' => ''],
+        'roleFilter'         => ['except' => 'all'],
+        'actionFilter'       => ['except' => 'all'],
+        'dateFrom'           => ['except' => ''],
+        'dateTo'             => ['except' => ''],
     ];
+
+    protected $listeners = [
+        'superadmin-territory-changed' => '$refresh',
+    ];
+
+    public function mount()
+    {
+        if ($this->selectedUserId) {
+            $u = User::find($this->selectedUserId);
+            $this->selectedUserName = $u ? $u->name : null;
+        }
+    }
+
+    public function setTab(string $tabName)
+    {
+        $this->tab = $tabName;
+        $this->resetPage();
+        $this->resetPage('usersPage');
+    }
+
+    public function filterByUser($userId, $userName)
+    {
+        $this->selectedUserId = $userId;
+        $this->selectedUserName = $userName;
+        $this->tab = 'streams';
+        $this->resetPage();
+    }
+
+    public function clearUserFilter()
+    {
+        $this->selectedUserId = null;
+        $this->selectedUserName = null;
+        $this->resetPage();
+    }
+
+    public function updatingUserSearch()
+    {
+        $this->resetPage('usersPage');
+    }
+
+    public function updatingUserRoleFilter()
+    {
+        $this->resetPage('usersPage');
+    }
+
+    public function updatingUserCityId()
+    {
+        $this->resetPage('usersPage');
+    }
+
+    public function clearUserFilters()
+    {
+        $this->reset(['userSearch', 'userRoleFilter', 'userCityId']);
+        $this->resetPage('usersPage');
+    }
 
     public function updatingSearch()
     {
@@ -116,7 +191,7 @@ class Index extends Component
             return [
                 'browser' => 'Tidak Diketahui',
                 'os'      => 'Tidak Diketahui',
-                'icon'    => '🌐',
+                'device'  => '🌐 Tidak Diketahui',
             ];
         }
 
@@ -147,64 +222,142 @@ class Index extends Component
 
     public function render()
     {
-        $query = ActivityLog::with('user')
+        $admin = auth()->user();
+
+        // ─────────────────────────────────────────────────────────────────────
+        // 1. QUERY DIREKTORI PENGGUNA (PELAKU AKSI) - DIURUTKAN TERAKHIR AKTIF
+        // ─────────────────────────────────────────────────────────────────────
+        $userQuery = User::with(['city', 'latestActivityLog'])
+            ->withCount('activityLogs as total_activities')
+            ->withMax('activityLogs as last_activity_at', 'created_at');
+
+        // Superadmin territory filtering
+        if ($admin && in_array($admin->role, ['super_admin', 'superadmin'])) {
+            $saTerritory = $admin->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $userQuery->where('district_id', (int) $saTerritory['id']);
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cityId = (int) $saTerritory['id'];
+                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                $userQuery->where(function ($q) use ($cityId, $saDistrictIds) {
+                    if (!empty($saDistrictIds)) $q->whereIn('district_id', $saDistrictIds);
+                    if ($cityId) $q->orWhere('city_id', $cityId);
+                });
+            }
+        }
+
+        if ($this->userRoleFilter !== 'all') {
+            if ($this->userRoleFilter === 'admin_superadmin') {
+                $userQuery->whereIn('role', ['admin', 'super_admin', 'superadmin']);
+            } else {
+                $userQuery->where('role', $this->userRoleFilter);
+            }
+        }
+
+        if ($this->userCityId !== 'all') {
+            $userQuery->where(function($q) {
+                $q->where('district_id', $this->userCityId)
+                  ->orWhere('city_id', $this->userCityId);
+            });
+        }
+
+        if (!empty($this->userSearch)) {
+            $us = trim($this->userSearch);
+            $userQuery->where(function ($q) use ($us) {
+                $q->where('name', 'like', "%{$us}%")
+                  ->orWhere('email', 'like', "%{$us}%")
+                  ->orWhere('phone', 'like', "%{$us}%")
+                  ->orWhere('phone_number', 'like', "%{$us}%");
+            });
+        }
+
+        // Penempatan berdasarkan terakhir kali aktivitas pengguna
+        $users = $userQuery
+            ->orderByRaw('last_activity_at IS NULL, last_activity_at DESC, created_at DESC')
+            ->paginate($this->userPerPage, ['*'], 'usersPage');
+
+        // ─────────────────────────────────────────────────────────────────────
+        // 2. QUERY DAFTAR LOG ALIRAN AKTIVITAS REAL-TIME (STREAMS)
+        // ─────────────────────────────────────────────────────────────────────
+        $logQuery = ActivityLog::with(['user.city', 'user.district'])
             ->orderBy('created_at', 'desc');
 
-        // Search filter
+        // Superadmin territory filtering on logs
+        if ($admin && in_array($admin->role, ['super_admin', 'superadmin'])) {
+            $saTerritory = $admin->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $dId = (int) $saTerritory['id'];
+                $logQuery->whereHas('user', fn($uq) => $uq->where('district_id', $dId));
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $cityId = (int) $saTerritory['id'];
+                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                $logQuery->whereHas('user', function ($uq) use ($cityId, $saDistrictIds) {
+                    if (!empty($saDistrictIds)) $uq->whereIn('district_id', $saDistrictIds);
+                    if ($cityId) $uq->orWhere('city_id', $cityId);
+                });
+            }
+        }
+
+        if ($this->selectedUserId) {
+            $logQuery->where('user_id', $this->selectedUserId);
+        }
+
         if ($this->search) {
             $s = trim($this->search);
-            $query->where(function ($q) use ($s) {
+            $logQuery->where(function ($q) use ($s) {
                 $q->where('description', 'like', "%{$s}%")
                   ->orWhere('action', 'like', "%{$s}%")
                   ->orWhere('ip_address', 'like', "%{$s}%")
                   ->orWhereHas('user', function ($userQuery) use ($s) {
                       $userQuery->where('name', 'like', "%{$s}%")
                                 ->orWhere('email', 'like', "%{$s}%")
-                                ->orWhere('phone', 'like', "%{$s}%");
+                                ->orWhere('phone', 'like', "%{$s}%")
+                                ->orWhere('phone_number', 'like', "%{$s}%");
                   });
             });
         }
 
-        // Role filter
         if ($this->roleFilter !== 'all') {
-            $query->byRole($this->roleFilter);
+            $logQuery->byRole($this->roleFilter);
         }
 
-        // Action filter
         if ($this->actionFilter !== 'all') {
-            $query->where('action', $this->actionFilter);
+            $logQuery->where('action', $this->actionFilter);
         }
 
-        // Date range filter
         if ($this->dateFrom) {
-            $query->whereDate('created_at', '>=', $this->dateFrom);
+            $logQuery->whereDate('created_at', '>=', $this->dateFrom);
         }
         if ($this->dateTo) {
-            $query->whereDate('created_at', '<=', $this->dateTo);
+            $logQuery->whereDate('created_at', '<=', $this->dateTo);
         }
 
-        $logs = $query->paginate($this->perPage);
+        $logs = $logQuery->paginate($this->perPage);
 
-        // Get unique actions for filter dropdown
+        // ─────────────────────────────────────────────────────────────────────
+        // 3. STATISTIK, OPSI FILTER, & WILAYAH
+        // ─────────────────────────────────────────────────────────────────────
         $actions = ActivityLog::select('action')
             ->distinct()
             ->orderBy('action')
             ->pluck('action');
 
-        // Comprehensive system-wide statistics (Superadmin, Admin, Customer, Mitra)
         $stats = [
             'total_logs'    => ActivityLog::count(),
             'today_logs'    => ActivityLog::whereDate('created_at', today())->count(),
-            'admin_logs'    => ActivityLog::whereHas('user', fn($q) => $q->whereIn('role', ['admin', 'super_admin']))->count(),
+            'admin_logs'    => ActivityLog::whereHas('user', fn($q) => $q->whereIn('role', ['admin', 'super_admin', 'superadmin']))->count(),
             'customer_logs' => ActivityLog::whereHas('user', fn($q) => $q->where('role', 'customer'))->count(),
             'mitra_logs'    => ActivityLog::whereHas('user', fn($q) => $q->where('role', 'mitra'))->count(),
         ];
 
+        $cities = City::where('is_active', true)->orderBy('name')->get();
+
         return view('livewire.superadmin.activity-logs.index', [
+            'users'   => $users,
             'logs'    => $logs,
             'actions' => $actions,
             'stats'   => $stats,
+            'cities'  => $cities,
         ]);
     }
 }
-

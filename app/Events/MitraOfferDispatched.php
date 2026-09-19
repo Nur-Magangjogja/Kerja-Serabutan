@@ -7,12 +7,15 @@ use App\Models\HelpDispatch;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class MitraOfferDispatched implements ShouldBroadcast
+class MitraOfferDispatched implements ShouldBroadcast, ShouldDispatchAfterCommit
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    public $queue = 'broadcast';
 
     public int $mitraId;
     public int $dispatchId;

@@ -23,22 +23,11 @@ class Kernel extends ConsoleKernel
 
     /**
      * Define the application's command schedule.
+     * Note: All scheduled commands are defined in routes/console.php.
      */
     protected function schedule(Schedule $schedule)
     {
-        // Recheck pending Midtrans topups (Nonaktif / Disabled)
-        // $schedule->command('midtrans:recheck --all')->everyFiveMinutes();
-
-        // Periodic balance synchronization check (auto-fix small deltas)
-        $schedule->command('balances:sync-check --threshold=1000000')->everyFiveMinutes();
-
-        // $schedule->command('userbalances:recalculate')->daily();
-
-        // Auto-confirm helps waiting for customer confirmation after 24 hours
-        $schedule->command('helps:auto-confirm')->hourly();
-
-        // Auto-cancel helps that have not been taken within the deadline and refund customer escrow
-        $schedule->command('helps:auto-cancel')->everyFiveMinutes();
+        // Scheduled commands are registered in routes/console.php to prevent duplication.
     }
 
     /**

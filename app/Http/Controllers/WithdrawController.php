@@ -136,26 +136,62 @@ class WithdrawController extends Controller
         try {
             $bankCode = strtoupper($request->input('bank_code'));
             $feeCalc = AppSetting::calculateWithdrawFee($bankCode, $amount);
-            $adminFee = $feeCalc['fee'];
-            $netAmount = $feeCalc['net_amount'];
+            $adminFee = (int) $feeCalc['fee'];
+            $netAmount = (int) $feeCalc['net_amount'];
+            $totalDeduction = $amount + $adminFee;
+
+            if ($totalDeduction > $userBalance) {
+                return back()->withErrors(['amount' => 'Saldo Anda tidak mencukupi untuk penarikan Rp ' . number_format($amount, 0, ',', '.') . ' + biaya admin Rp ' . number_format($adminFee, 0, ',', '.') . ' (Total: Rp ' . number_format($totalDeduction, 0, ',', '.') . '). Saldo tersedia: Rp ' . number_format($userBalance, 0, ',', '.')])->withInput();
+            }
 
             $accountName = trim($request->input('account_name'));
             $desc = 'A/N: ' . $accountName;
 
-            $withdraw = WithdrawRequest::create([
-                'user_id' => $user->id,
-                'amount' => $amount,
-                'admin_fee' => $adminFee,
-                'net_amount' => $netAmount,
-                'bank_code' => $bankCode,
-                'account_number' => $request->input('account_number'),
-                'description' => $desc,
-                'status' => WithdrawRequest::STATUS_PENDING,
-            ]);
+            $withdraw = DB::transaction(function () use ($user, $amount, $adminFee, $netAmount, $totalDeduction, $bankCode, $request, $desc) {
+                $userBalanceModel = \App\Models\UserBalance::where('user_id', $user->id)->lockForUpdate()->first();
+                if (!$userBalanceModel || (float) $userBalanceModel->balance < $totalDeduction) {
+                    throw new \RuntimeException('Saldo dompet tidak mencukupi untuk melakukan penarikan.');
+                }
+
+                $hasActive = WithdrawRequest::where('user_id', $user->id)
+                    ->whereIn('status', [WithdrawRequest::STATUS_PENDING, WithdrawRequest::STATUS_PROCESSING])
+                    ->exists();
+                if ($hasActive) {
+                    throw new \RuntimeException('Anda masih memiliki permintaan penarikan yang sedang diproses.');
+                }
+
+                $userBalanceModel->decrement('balance', $totalDeduction);
+
+                $w = WithdrawRequest::create([
+                    'user_id' => $user->id,
+                    'amount' => $amount,
+                    'admin_fee' => $adminFee,
+                    'net_amount' => $netAmount,
+                    'bank_code' => $bankCode,
+                    'account_number' => $request->input('account_number'),
+                    'account_name' => $request->input('account_name'),
+                    'description' => $desc,
+                    'status' => WithdrawRequest::STATUS_PENDING,
+                ]);
+
+                \App\Models\BalanceTransaction::create([
+                    'user_id' => $user->id,
+                    'order_id' => 'WD-' . $w->id,
+                    'reference_id' => $w->id,
+                    'type' => 'withdraw',
+                    'amount' => $amount,
+                    'admin_fee' => $adminFee,
+                    'total_payment' => $totalDeduction,
+                    'status' => 'pending',
+                    'description' => "Penarikan dana ke {$bankCode} ({$request->input('account_number')} a.n {$request->input('account_name')})",
+                ]);
+
+                return $w;
+            });
 
             $feeMsg = $adminFee === 0 
                 ? ' (Bebas Biaya Admin - Rekening Platform)' 
-                : ' (Biaya Admin Bank: Rp ' . number_format($adminFee, 0, ',', '.') . ', Dana Cair: Rp ' . number_format($netAmount, 0, ',', '.') . ')';
+                : ' (Biaya Admin: Rp ' . number_format($adminFee, 0, ',', '.') . ', Dana Cair: Rp ' . number_format($netAmount, 0, ',', '.') . ')';
 
             return redirect()->route($ctx['prefix'] . 'withdraw.form')->with('status', 'Pengajuan penarikan dana sebesar Rp ' . number_format($amount, 0, ',', '.') . $feeMsg . ' berhasil dikirim dan sedang menunggu proses transfer dari admin.');
         } catch (\Throwable $e) {
@@ -232,7 +268,8 @@ class WithdrawController extends Controller
             // refund
             $user = $withdraw->user;
             if ($user) {
-                $user->adjustBalance($withdraw->amount);
+                $refundTotal = (int) ($withdraw->amount + ($withdraw->admin_fee ?? 0));
+                $user->adjustBalance($refundTotal);
             }
         }
 

@@ -99,17 +99,73 @@
     /* Scrollbar Hidden Utilities */
     .no-scrollbar,
     .hide-scrollbar,
-    .scrollbar-none {
+    .scrollbar-none,
+    .scrollbar-hide {
         -ms-overflow-style: none !important;
         scrollbar-width: none !important;
     }
 
     .no-scrollbar::-webkit-scrollbar,
     .hide-scrollbar::-webkit-scrollbar,
-    .scrollbar-none::-webkit-scrollbar {
+    .scrollbar-none::-webkit-scrollbar,
+    .scrollbar-hide::-webkit-scrollbar {
         display: none !important;
         width: 0 !important;
         height: 0 !important;
+    }
+
+    /* Modern Visible Dropdown Scrollbar */
+    .dropdown-scrollbar,
+    .custom-scrollbar,
+    .scrollbar-thin {
+        scrollbar-width: thin !important;
+        scrollbar-color: rgba(156, 163, 175, 0.5) transparent !important;
+        -ms-overflow-style: auto !important;
+    }
+
+    .dropdown-scrollbar::-webkit-scrollbar,
+    .custom-scrollbar::-webkit-scrollbar,
+    .scrollbar-thin::-webkit-scrollbar {
+        display: block !important;
+        width: 6px !important;
+        height: 6px !important;
+    }
+
+    .dropdown-scrollbar::-webkit-scrollbar-track,
+    .custom-scrollbar::-webkit-scrollbar-track,
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent !important;
+    }
+
+    .dropdown-scrollbar::-webkit-scrollbar-thumb,
+    .custom-scrollbar::-webkit-scrollbar-thumb,
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.5) !important;
+        border-radius: 9999px !important;
+    }
+
+    .dropdown-scrollbar::-webkit-scrollbar-thumb:hover,
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(107, 114, 128, 0.8) !important;
+    }
+
+    .dark .dropdown-scrollbar,
+    .dark .custom-scrollbar,
+    .dark .scrollbar-thin {
+        scrollbar-color: rgba(107, 114, 128, 0.6) transparent !important;
+    }
+
+    .dark .dropdown-scrollbar::-webkit-scrollbar-thumb,
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb,
+    .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: rgba(107, 114, 128, 0.5) !important;
+    }
+
+    .dark .dropdown-scrollbar::-webkit-scrollbar-thumb:hover,
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+    .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(156, 163, 175, 0.8) !important;
     }
 }
 
@@ -138,18 +194,6 @@
     .animate-progress-indeterminate {
         animation: progressIndeterminate 1.2s infinite linear;
         transform-origin: 0% 50%;
-    }
-
-    /* Custom scrollbar hidden (Zero scrollbar UI, maintains scroll functionality) */
-    .custom-scrollbar {
-        -ms-overflow-style: none !important;
-        scrollbar-width: none !important;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar {
-        display: none !important;
-        width: 0 !important;
-        height: 0 !important;
     }
 
     /* Bottom Navigation Styles */
@@ -220,8 +264,12 @@ html.dark nav.bg-white {
 
 html.dark .bg-gray-50,
 html.dark .bg-gray-100,
+html.dark .bg-slate-50,
+html.dark .bg-slate-100,
 html.dark main .bg-gray-50,
-html.dark main .bg-gray-100 {
+html.dark main .bg-gray-100,
+html.dark main .bg-slate-50,
+html.dark main .bg-slate-100 {
     background-color: #111827; /* Flowbite gray-900 */
 }
 
@@ -528,6 +576,11 @@ html.dark .dropdown-menu {
 /* ==========================================================================
    Universal Dark Mode Card & Container Protection (Anti-White Flash)
    ========================================================================== */
+html.dark .dark\:bg-gray-850,
+html.dark [class*="dark:bg-gray-850"] {
+    background-color: #151e2e !important;
+}
+
 html.dark .dark\:bg-gray-800,
 html.dark [class*="dark:bg-gray-800"] {
     background-color: #1f2937 !important;
@@ -541,6 +594,11 @@ html.dark [class*="dark:bg-gray-900"] {
 html.dark .dark\:bg-gray-700,
 html.dark [class*="dark:bg-gray-700"] {
     background-color: #374151 !important;
+}
+
+html.dark .dark\:border-gray-750,
+html.dark [class*="dark:border-gray-750"] {
+    border-color: #1e293b !important;
 }
 
 html.dark .dark\:border-gray-700,
@@ -561,6 +619,28 @@ html.dark [class*="dark:text-gray-400"] {
 html.dark .dark\:text-gray-300,
 html.dark [class*="dark:text-gray-300"] {
     color: #d1d5db !important;
+}
+
+/* Dark Mode Primary Background Overrides (Prevents .bg-white dark override from conflicting) */
+html.dark .dark\:bg-primary-600,
+html.dark [class*="dark:bg-primary-600"],
+html.dark .dark\:\!bg-primary-600,
+html.dark [class*="dark:!bg-primary-600"] {
+    background-color: #0284c7 !important;
+}
+
+html.dark .dark\:bg-primary-500,
+html.dark [class*="dark:bg-primary-500"],
+html.dark .dark\:\!bg-primary-500,
+html.dark [class*="dark:!bg-primary-500"] {
+    background-color: #0ea5e9 !important;
+}
+
+html.dark .dark\:bg-primary-700,
+html.dark [class*="dark:bg-primary-700"],
+html.dark .dark\:\!bg-primary-700,
+html.dark [class*="dark:!bg-primary-700"] {
+    background-color: #0369a1 !important;
 }
 
 /* Comprehensive Dark Mode Fallback for Form Controls & Modals */
@@ -671,3 +751,8 @@ a[wire\:navigate].nav-loading svg {
     100% { transform: scale(0.85); opacity: 0.55; }
 }
 
+/* Soundbar animation for notification sound preview */
+@keyframes soundbar {
+    0%, 100% { transform: scaleY(0.4); }
+    50%       { transform: scaleY(1.0); }
+}
