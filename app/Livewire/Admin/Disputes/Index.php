@@ -56,6 +56,12 @@ class Index extends Component
 
     // Modal state (Cancellation Requests)
     public $showCancelReviewModal     = false;
+    public $showUnlinkConfirmModal    = false;
+    public $showForceSwitchModal      = false;
+    public $forceSwitchIssueSp        = true;
+    public $forceSwitchSpLevel        = 1;
+    public $forceSwitchSpReason       = 'Mitra tidak merespons chat / telepon dan tidak ada konfirmasi saat penugasan.';
+    public $forceSwitchNotes          = 'Dikonfirmasi paksa oleh Admin karena mitra tidak merespons / menghilang.';
     public $selectedCancelRequestId   = null;
     public $selectedCancelRequest     = null;
     public $cancelLogs                = [];
@@ -465,9 +471,11 @@ class Index extends Component
 
     public function closeCancelReviewModal()
     {
-        $this->showCancelReviewModal = false;
+        $this->showCancelReviewModal  = false;
+        $this->showUnlinkConfirmModal = false;
         $this->cancelLogs = [];
         $this->reset([
+            'showUnlinkConfirmModal',
             'selectedCancelRequestId',
             'selectedCancelRequest',
             'cancelDecision',
@@ -504,6 +512,9 @@ class Index extends Component
 
         try {
             $isApproved = ($this->cancelDecision === 'approved');
+            $isPartnerSp  = in_array($this->spTarget, ['partner', 'both'], true);
+            $isCustomerSp = in_array($this->spTarget, ['customer', 'both'], true);
+
             app(HelpCancellationService::class)->reviewByAdmin(
                 $this->selectedCancelRequest,
                 auth()->user(),
@@ -514,10 +525,10 @@ class Index extends Component
                     'partner_amount'     => (float) $this->cancelPartnerAmount,
                     'admin_notes'        => $this->cancelAdminNotes,
                     'sp_target'          => $this->spTarget,
-                    'partner_sp_level'   => (int) $this->partnerSpLevel,
-                    'partner_sp_reason'  => $this->partnerSpReason,
-                    'customer_sp_level'  => (int) $this->customerSpLevel,
-                    'customer_sp_reason' => $this->customerSpReason,
+                    'partner_sp_level'   => $isPartnerSp ? (int) $this->partnerSpLevel : null,
+                    'partner_sp_reason'  => $isPartnerSp ? $this->partnerSpReason : null,
+                    'customer_sp_level'  => $isCustomerSp ? (int) $this->customerSpLevel : null,
+                    'customer_sp_reason' => $isCustomerSp ? $this->customerSpReason : null,
                 ]
             );
 
@@ -529,6 +540,16 @@ class Index extends Component
             Log::error('[AdminDisputes] executeCancelReview error: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat memproses permintaan pembatalan: ' . $e->getMessage());
         }
+    }
+
+    public function openUnlinkConfirmModal()
+    {
+        $this->showUnlinkConfirmModal = true;
+    }
+
+    public function closeUnlinkConfirmModal()
+    {
+        $this->showUnlinkConfirmModal = false;
     }
 
     public function unlinkPartnerAndHoldTask()
@@ -545,12 +566,75 @@ class Index extends Component
             );
 
             session()->flash('message', "Mitra berhasil dipisahkan dan dibebaskan dari tugas #{$this->selectedCancelRequest->help_id}. Tugas ditahan (tidak tampil di pool) sampai Customer mengonfirmasi.");
+            $this->showUnlinkConfirmModal = false;
             $this->closeCancelReviewModal();
         } catch (\RuntimeException $e) {
+            $this->showUnlinkConfirmModal = false;
             session()->flash('error', $e->getMessage());
         } catch (\Throwable $e) {
+            $this->showUnlinkConfirmModal = false;
             Log::error('[AdminDisputes] unlinkPartnerAndHoldTask error: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat memisahkan mitra dari tugas: ' . $e->getMessage());
+        }
+    }
+
+    public function openForceSwitchModal(?int $cancelRequestId = null)
+    {
+        if ($cancelRequestId) {
+            $this->openCancelReviewModal($cancelRequestId);
+        }
+
+        if (!$this->selectedCancelRequest) {
+            return;
+        }
+
+        $this->forceSwitchIssueSp  = true;
+        $this->forceSwitchSpLevel  = 1;
+        $this->forceSwitchSpReason = 'Mitra tidak merespons chat / telepon dan tidak ada konfirmasi saat penugasan.';
+        $this->forceSwitchNotes    = 'Dikonfirmasi paksa oleh Admin karena mitra tidak merespons / menghilang.';
+        $this->showForceSwitchModal = true;
+    }
+
+    public function closeForceSwitchModal()
+    {
+        $this->showForceSwitchModal = false;
+    }
+
+    public function executeForceSwitchPartner()
+    {
+        if (!$this->selectedCancelRequest) {
+            return;
+        }
+
+        try {
+            $admin = auth()->user();
+            $req = $this->selectedCancelRequest;
+
+            app(HelpCancellationService::class)->reviewByAdmin(
+                $req,
+                $admin,
+                true,
+                'relist_pool',
+                [
+                    'refund_amount'     => 0,
+                    'partner_amount'    => 0,
+                    'admin_notes'       => $this->forceSwitchNotes ?: 'Dikonfirmasi paksa oleh Admin karena mitra tidak merespons / menghilang.',
+                    'sp_target'         => $this->forceSwitchIssueSp ? 'partner' : 'none',
+                    'partner_sp_level'  => $this->forceSwitchIssueSp ? (int) $this->forceSwitchSpLevel : null,
+                    'partner_sp_reason' => $this->forceSwitchIssueSp ? $this->forceSwitchSpReason : null,
+                ]
+            );
+
+            session()->flash('message', "Konfirmasi paksa ganti mitra untuk bantuan #{$req->help_id} berhasil diproses. Tugas telah dikembalikan ke pool pencarian mitra baru dan mitra lama telah dilepaskan.");
+            $this->showForceSwitchModal = false;
+            $this->closeCancelReviewModal();
+        } catch (\RuntimeException $e) {
+            $this->showForceSwitchModal = false;
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->showForceSwitchModal = false;
+            Log::error('[AdminDisputes] executeForceSwitchPartner error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat memproses konfirmasi paksa ganti mitra: ' . $e->getMessage());
         }
     }
 

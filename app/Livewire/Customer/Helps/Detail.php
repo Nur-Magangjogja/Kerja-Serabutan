@@ -517,6 +517,18 @@ class Detail extends Component
     // COMPUTED PROPERTIES (delegasi ke model)
     // ─────────────────────────────────────────────────────────────────────────
 
+    public function getActiveReportProperty(): ?\App\Models\PartnerReport
+    {
+        if (!$this->helpId) return null;
+        return \App\Models\PartnerReport::getActiveReportForHelp((int) $this->helpId);
+    }
+
+    public function getLatestResolvedReportProperty(): ?\App\Models\PartnerReport
+    {
+        if (!$this->helpId) return null;
+        return \App\Models\PartnerReport::getLatestResolvedReportForHelp((int) $this->helpId);
+    }
+
     public function getStatusColorProperty(): string
     {
         return $this->help->status_color;

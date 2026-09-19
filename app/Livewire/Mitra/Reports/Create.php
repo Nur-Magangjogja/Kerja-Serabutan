@@ -116,6 +116,18 @@ class Create extends Component
         }
     }
 
+    public function getActiveReportProperty(): ?PartnerReport
+    {
+        if (!$this->reported_help_id) return null;
+        return PartnerReport::getActiveReportForHelp((int) $this->reported_help_id);
+    }
+
+    public function getLatestResolvedReportProperty(): ?PartnerReport
+    {
+        if (!$this->reported_help_id) return null;
+        return PartnerReport::getLatestResolvedReportForHelp((int) $this->reported_help_id);
+    }
+
     public function submit()
     {
         $this->validate();
@@ -140,6 +152,21 @@ class Create extends Component
             }
         }
 
+        // Validasi pembatasan laporan per ID tugas:
+        // Jika ada laporan yang masih berstatus pending/sedang diproses untuk tugas ini, tolak laporan baru
+        if ($this->reported_help_id) {
+            $activeReport = PartnerReport::getActiveReportForHelp((int) $this->reported_help_id);
+            if ($activeReport) {
+                $statusText = match($activeReport->status) {
+                    'pending' => 'Pending (Menunggu Ditinjau)',
+                    'in_progress', 'investigating', 'under_review', 'proses' => 'Sedang Diinvestigasi Admin',
+                    default => ucfirst($activeReport->status),
+                };
+                $this->addError('help_id', "Tugas #{$this->reported_help_id} saat ini masih memiliki Laporan Aduan #{$activeReport->id} yang sedang aktif ({$statusText}). Anda baru dapat mengajukan laporan baru setelah laporan sebelumnya selesai dikonfirmasi oleh Admin.");
+                return;
+            }
+        }
+
         if ($this->reported_user_id && !$this->reported_user_text) {
             $u = User::find($this->reported_user_id);
             if ($u) {
@@ -156,27 +183,6 @@ class Create extends Component
             if (!empty(trim($this->custom_help_type))) {
                 $this->reported_help_text = $this->custom_help_type;
             }
-        }
-
-        // Hidden anti-spam: Jika mitra sudah memiliki laporan aduan yang masih pending/diperiksa admin untuk bantuan ini
-        // atau baru saja mengirim aduan dalam 5 menit terakhir, serap pengiriman secara senyap tanpa membuat duplikat di database
-        $existingPendingReport = PartnerReport::where('reporter_id', auth()->id())
-            ->whereIn('status', ['pending', 'investigating', 'under_review', 'proses'])
-            ->where(function ($q) {
-                if ($this->reported_help_id) {
-                    $q->where('reported_help_id', $this->reported_help_id);
-                } else {
-                    $q->where('created_at', '>=', now()->subMinutes(5));
-                }
-            })
-            ->first();
-
-        if ($existingPendingReport) {
-            session()->flash('message', 'Laporan aduan berhasil dikirim. Admin akan meninjau laporan Anda.');
-            if ($this->reported_help_id) {
-                return redirect()->route('mitra.helps.detail', ['id' => $this->reported_help_id]);
-            }
-            return redirect()->route('mitra.dashboard');
         }
 
         $report = PartnerReport::create([
@@ -247,11 +253,15 @@ class Create extends Component
 
         $selectedHelp = $this->reported_help_id ? Help::with('user')->find($this->reported_help_id) : null;
         $selectedUser = $this->reported_user_id ? User::find($this->reported_user_id) : ($selectedHelp?->user);
+        $activeReport = $this->activeReport;
+        $latestResolvedReport = $this->latestResolvedReport;
 
         return view('livewire.mitra.reports.create', [
-            'helps' => $helps,
-            'selectedHelp' => $selectedHelp,
-            'selectedUser' => $selectedUser,
+            'helps'                => $helps,
+            'selectedHelp'         => $selectedHelp,
+            'selectedUser'         => $selectedUser,
+            'activeReport'         => $activeReport,
+            'latestResolvedReport' => $latestResolvedReport,
         ]);
     }
 }

@@ -127,13 +127,13 @@ class Index extends Component
 
         $unreadReportCount = PartnerReportMessage::whereIn('partner_report_id', $customerReports)
             ->where('sender_id', '!=', $userId)
-            ->where('is_read', false)
+            ->whereNull('customer_read_at')
             ->whereIn('recipient_type', ['customer', 'all', 'both'])
             ->count();
 
         $unreadCancelCount = HelpCancelMessage::whereIn('help_cancel_request_id', $customerCancels)
             ->where('sender_id', '!=', $userId)
-            ->where('is_read', false)
+            ->whereNull('customer_read_at')
             ->whereIn('recipient_type', ['customer', 'all', 'both'])
             ->count();
 
@@ -217,7 +217,7 @@ class Index extends Component
             $latestHelpIds = Help::where('user_id', $userId)
                 ->whereIn('mitra_id', $filteredMitraIds)
                 ->selectRaw('MAX(id) as id')
-                ->groupBy('user_id')
+                ->groupBy('mitra_id')
                 ->pluck('id');
 
             $latestHelps = Help::whereIn('id', $latestHelpIds)
@@ -266,22 +266,40 @@ class Index extends Component
         ];
         $this->unassigned_help     = null;
 
+        $userId = Auth::id();
         if ($cancelRequestId) {
-            $this->admin_tab                  = 'cancellation';
-            $this->selected_cancel_request_id = (int) $cancelRequestId;
-            $this->selected_cancel_request    = HelpCancelRequest::with(['help', 'partner', 'customer'])->find($cancelRequestId);
+            $this->admin_tab = 'cancellation';
+            $cancelReq = HelpCancelRequest::where('id', $cancelRequestId)
+                ->where(function ($q) use ($userId) {
+                    $q->where('customer_id', $userId)
+                      ->orWhereHas('help', fn($h) => $h->where('user_id', $userId));
+                })
+                ->with(['help', 'partner', 'customer'])
+                ->first();
+
+            $this->selected_cancel_request_id = $cancelReq?->id;
+            $this->selected_cancel_request    = $cancelReq;
             $this->selected_report_id         = null;
             $this->selected_report            = null;
-            $this->active_help_id             = $this->selected_cancel_request?->help_id;
-            $this->active_help                = $this->selected_cancel_request?->help;
+            $this->active_help_id             = $cancelReq?->help_id;
+            $this->active_help                = $cancelReq?->help;
         } elseif ($reportId) {
-            $this->admin_tab                  = 'report';
-            $this->selected_report_id         = (int) $reportId;
-            $this->selected_report            = PartnerReport::with(['reportedHelp', 'reportedUser', 'reporter'])->find($reportId);
+            $this->admin_tab = 'report';
+            $rep = PartnerReport::where('id', $reportId)
+                ->where(function ($q) use ($userId) {
+                    $q->where('reporter_id', $userId)
+                      ->orWhere('reported_user_id', $userId)
+                      ->orWhereHas('reportedHelp', fn($h) => $h->where('user_id', $userId));
+                })
+                ->with(['reportedHelp', 'reportedUser', 'reporter'])
+                ->first();
+
+            $this->selected_report_id         = $rep?->id;
+            $this->selected_report            = $rep;
             $this->selected_cancel_request_id = null;
             $this->selected_cancel_request    = null;
-            $this->active_help_id             = $this->selected_report?->reported_help_id;
-            $this->active_help                = $this->selected_report?->reportedHelp;
+            $this->active_help_id             = $rep?->reported_help_id;
+            $this->active_help                = $rep?->reportedHelp;
         } elseif ($tab) {
             $this->admin_tab                  = $tab;
             $this->selected_cancel_request_id = null;
@@ -333,37 +351,66 @@ class Index extends Component
     public function markAdminMessagesAsRead()
     {
         $userId = Auth::id();
+        $updated = false;
+
         if ($this->admin_tab === 'cancellation' && $this->selected_cancel_request_id) {
-            HelpCancelMessage::where('help_cancel_request_id', $this->selected_cancel_request_id)
+            $updated = HelpCancelMessage::where('help_cancel_request_id', $this->selected_cancel_request_id)
                 ->where('sender_id', '!=', $userId)
                 ->whereIn('recipient_type', ['customer', 'all', 'both'])
+                ->whereNull('customer_read_at')
+                ->update(['customer_read_at' => now()]) > 0;
+
+            HelpCancelMessage::where('help_cancel_request_id', $this->selected_cancel_request_id)
                 ->where('is_read', false)
+                ->where(function ($q) {
+                    $q->where(fn($sub) => $sub->where('recipient_type', 'customer')->whereNotNull('customer_read_at'))
+                      ->orWhere(fn($sub) => $sub->whereIn('recipient_type', ['all', 'both'])->whereNotNull('customer_read_at')->whereNotNull('mitra_read_at'));
+                })
                 ->update(['is_read' => true, 'read_at' => now()]);
         } elseif ($this->admin_tab === 'report' && $this->selected_report_id) {
-            PartnerReportMessage::where('partner_report_id', $this->selected_report_id)
+            $updated = PartnerReportMessage::where('partner_report_id', $this->selected_report_id)
                 ->where('sender_id', '!=', $userId)
                 ->whereIn('recipient_type', ['customer', 'all', 'both'])
+                ->whereNull('customer_read_at')
+                ->update(['customer_read_at' => now()]) > 0;
+
+            PartnerReportMessage::where('partner_report_id', $this->selected_report_id)
                 ->where('is_read', false)
+                ->where(function ($q) {
+                    $q->where(fn($sub) => $sub->where('recipient_type', 'customer')->whereNotNull('customer_read_at'))
+                      ->orWhere(fn($sub) => $sub->whereIn('recipient_type', ['all', 'both'])->whereNotNull('customer_read_at')->whereNotNull('mitra_read_at'));
+                })
                 ->update(['is_read' => true, 'read_at' => now()]);
+        }
+
+        if ($updated) {
+            $this->dispatch('chat-messages-read');
+            $this->dispatch('refresh-chat-icon');
         }
     }
 
     public function selectPartner($mitraId, $helpId = null)
     {
+        $userId = Auth::id();
         $this->selected_partner_id        = (int) $mitraId;
         $this->is_admin_chat              = false;
         $this->selected_cancel_request_id = null;
         $this->selected_cancel_request    = null;
         $this->selected_report_id         = null;
         $this->selected_report            = null;
-        $this->selected_partner           = User::find($mitraId);
+        $this->selected_partner           = User::where('id', $mitraId)->first();
         $this->unassigned_help            = null;
 
         if ($helpId) {
-            $this->active_help_id = (int) $helpId;
-            $this->active_help    = Help::find($helpId);
+            $helpModel = Help::where('id', $helpId)
+                ->where('user_id', $userId)
+                ->where('mitra_id', $mitraId)
+                ->first();
+
+            $this->active_help_id = $helpModel?->id;
+            $this->active_help    = $helpModel;
         } else {
-            $latestHelp = Help::where('user_id', Auth::id())
+            $latestHelp = Help::where('user_id', $userId)
                 ->where('mitra_id', $mitraId)
                 ->latest('updated_at')
                 ->first();
@@ -372,7 +419,7 @@ class Index extends Component
             $this->active_help    = $latestHelp;
         }
 
-        ChatModel::where('customer_id', Auth::id())
+        ChatModel::where('customer_id', $userId)
             ->where('mitra_id', $mitraId)
             ->whereIn('sender_type', ['mitra', 'system'])
             ->whereNull('read_at')
@@ -574,6 +621,7 @@ class Index extends Component
                         'message'                => $msgText,
                         'photo'                  => $photoPath,
                         'is_read'                => false,
+                        'customer_read_at'       => now(),
                     ]);
 
                     $this->selected_cancel_request_id = $cancelReq->id;
@@ -612,6 +660,7 @@ class Index extends Component
                     'message'           => $msgText,
                     'photo'             => $photoPath,
                     'is_read'           => false,
+                    'customer_read_at'  => now(),
                 ]);
 
                 if ($report->status === 'pending') {
@@ -698,9 +747,9 @@ class Index extends Component
                         ->first();
 
                     $unread = HelpCancelMessage::where('help_cancel_request_id', $cReq->id)
-                        ->whereIn('recipient_type', ['customer', 'all'])
+                        ->whereIn('recipient_type', ['customer', 'all', 'both'])
                         ->where('sender_id', '!=', $userId)
-                        ->where('is_read', false)
+                        ->whereNull('customer_read_at')
                         ->count();
 
                     $cReq->last_message = $lastMsg;
@@ -718,7 +767,8 @@ class Index extends Component
                         ->where(function($q) use ($userId) {
                             $q->where('sender_id', $userId)
                               ->orWhere('recipient_type', 'customer')
-                              ->orWhere('recipient_type', 'all');
+                              ->orWhere('recipient_type', 'all')
+                              ->orWhere('recipient_type', 'both');
                         })
                         ->latest('created_at')
                         ->first();
@@ -726,7 +776,7 @@ class Index extends Component
                     $unread = PartnerReportMessage::where('partner_report_id', $rep->id)
                         ->whereIn('recipient_type', ['customer', 'all', 'both'])
                         ->where('sender_id', '!=', $userId)
-                        ->where('is_read', false)
+                        ->whereNull('customer_read_at')
                         ->count();
 
                     $rep->last_message = $lastMsg;

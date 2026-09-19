@@ -517,6 +517,26 @@ class Help extends Model
         return $this->hasOne(HelpCancelRequest::class)->where('status', HelpCancelRequest::STATUS_PENDING)->latestOfMany();
     }
 
+    public function partnerReports()
+    {
+        return $this->hasMany(PartnerReport::class, 'reported_help_id');
+    }
+
+    public function reports()
+    {
+        return $this->hasMany(PartnerReport::class, 'reported_help_id');
+    }
+
+    public function latestPartnerReport()
+    {
+        return $this->hasOne(PartnerReport::class, 'reported_help_id')->latestOfMany();
+    }
+
+    public function activePartnerReport()
+    {
+        return $this->hasOne(PartnerReport::class, 'reported_help_id')->whereIn('status', PartnerReport::ACTIVE_STATUSES)->latestOfMany();
+    }
+
     public function ratings()
     {
         return $this->hasMany(Rating::class);
@@ -718,6 +738,42 @@ class Help extends Model
         }
 
         return true;
+    }
+
+    /**
+     * Catat mitra yang dibatalkan / dilepaskan agar tidak dapat mengambil kembali tugas yang sama.
+     * Dicatat ke tabel terindeks help_partner_exclusions dan kolom JSON cancelled_mitra_ids.
+     */
+    public function addExcludedPartner(?int $mitraId, string $reason = ''): void
+    {
+        if (!$mitraId) {
+            return;
+        }
+
+        // 1. Relasi tabel help_partner_exclusions
+        if (\Illuminate\Support\Facades\Schema::hasTable('help_partner_exclusions')) {
+            HelpPartnerExclusion::firstOrCreate(
+                [
+                    'help_id'  => $this->id,
+                    'mitra_id' => (int) $mitraId,
+                ],
+                [
+                    'reason' => $reason ?: 'Partner excluded from task.',
+                ]
+            );
+        }
+
+        // 2. Kolom JSON cancelled_mitra_ids
+        $currentIds = $this->cancelled_mitra_ids ?? [];
+        if (!is_array($currentIds)) {
+            $currentIds = json_decode((string) $currentIds, true) ?? [];
+        }
+        $currentIds = array_map('intval', $currentIds);
+        if (!in_array((int) $mitraId, $currentIds, true)) {
+            $currentIds[] = (int) $mitraId;
+            $this->cancelled_mitra_ids = array_values(array_unique($currentIds));
+            $this->saveQuietly();
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -983,7 +1039,7 @@ class Help extends Model
             self::STATUS_PARTNER_ON_THE_WAY        => $this->isPickup() ? 'Menuju Titik Jemput' : 'Rekan Jasa Menuju Lokasi',
             self::STATUS_PARTNER_ARRIVED           => $this->isPickup() ? 'Tiba di Titik Jemput' : 'Rekan Jasa Tiba di Lokasi',
             self::STATUS_IN_PROGRESS               => $this->isPickup() ? 'Mengantar ke Tujuan' : 'Pelayanan Dalam Proses',
-            self::STATUS_WAITING_CONFIRMATION     => 'Menunggu Konfirmasi Anda',
+            self::STATUS_WAITING_CONFIRMATION     => 'Menunggu Konfirmasi ',
             self::STATUS_SELESAI                   => 'Selesai',
             self::STATUS_DIBATALKAN                => 'Dibatalkan',
             self::STATUS_PARTNER_CANCEL_REQUESTED  => 'Mitra Mengajukan Kendala/Pembatalan',

@@ -5,11 +5,13 @@
         $activityMeta = [
             'help_created'           => ['label' => 'Bantuan Dibuat', 'badge' => 'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-800', 'icon' => '📝'],
             'take_help'              => ['label' => 'Tugas Diambil Mitra', 'badge' => 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-800', 'icon' => '🤝'],
+            'help_accepted'          => ['label' => 'Tugas Diambil Mitra', 'badge' => 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-800', 'icon' => '🤝'],
             'partner_started_moving' => ['label' => 'Mitra Menuju Lokasi', 'badge' => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800', 'icon' => '🛵'],
             'partner_on_the_way'     => ['label' => 'Mitra Menuju Lokasi', 'badge' => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800', 'icon' => '🛵'],
+            'partner_departed'       => ['label' => 'Mitra Menuju Lokasi', 'badge' => 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800', 'icon' => '🛵'],
             'partner_arrived'        => ['label' => 'Mitra Tiba di Lokasi', 'badge' => 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800', 'icon' => '📍'],
-            'service_started'        => ['label' => 'Pelayanan Dalam Proses', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', 'icon' => '⚡'],
-            'help_started'           => ['label' => 'Pelayanan Dalam Proses', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', 'icon' => '⚡'],
+            'service_started'        => ['label' => 'Pelayanan Dimulai', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', 'icon' => '⚡'],
+            'help_started'           => ['label' => 'Pelayanan Dimulai', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', 'icon' => '⚡'],
             'service_completed'      => ['label' => 'Pekerjaan Selesai & Kirim Bukti', 'badge' => 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700', 'icon' => '📸'],
             'help_completed'         => ['label' => 'Pekerjaan Selesai & Kirim Bukti', 'badge' => 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700', 'icon' => '📸'],
             'help_completed_waiting_confirmation' => ['label' => 'Menunggu Konfirmasi Customer', 'badge' => 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700', 'icon' => '⏳'],
@@ -17,13 +19,18 @@
             'help_confirmed'         => ['label' => 'Customer Konfirmasi Selesai', 'badge' => 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700', 'icon' => '✅'],
             'cancel_help'            => ['label' => 'Bantuan Dibatalkan', 'badge' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800', 'icon' => '❌'],
             'help_cancelled'         => ['label' => 'Bantuan Dibatalkan', 'badge' => 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800', 'icon' => '❌'],
-            'partner_cancel_executed' => ['label' => 'Batal oleh Mitra (Rematch)', 'badge' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800', 'icon' => '⚠️'],
+            'help_auto_cancelled'    => ['label' => 'Bantuan Batal Otomatis (Timeout)', 'badge' => 'bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-700', 'icon' => '⌛'],
+            'partner_cancel_executed'=> ['label' => 'Batal oleh Mitra (Rematch)', 'badge' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800', 'icon' => '⚠️'],
             'request_partner_cancel' => ['label' => 'Batal oleh Mitra', 'badge' => 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800', 'icon' => '⚠️'],
             'dispute_raised'         => ['label' => 'Pengajuan Sengketa / Komplain', 'badge' => 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700', 'icon' => '🚨'],
+            'dispute_resolved'       => ['label' => 'Sengketa Diselesaikan', 'badge' => 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800', 'icon' => '⚖️'],
             'warranty_claim_escrow_clawback' => ['label' => 'Klaim Garansi 1x24 Jam', 'badge' => 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700', 'icon' => '🛡️'],
             'auto_complete'          => ['label' => 'Auto-Konfirmasi Selesai', 'badge' => 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800', 'icon' => '🤖'],
             'help_auto_confirmed'    => ['label' => 'Auto-Konfirmasi Selesai', 'badge' => 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800', 'icon' => '🤖'],
             'help_reviewed'          => ['label' => 'Ulasan & Rating Diberikan', 'badge' => 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800', 'icon' => '⭐'],
+            'profile_updated'        => ['label' => 'Profil Diperbarui', 'badge' => 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700', 'icon' => '👤'],
+            'password_changed'       => ['label' => 'Password Diubah', 'badge' => 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700', 'icon' => '🔑'],
+            'balance_topup'          => ['label' => 'Top Up Saldo', 'badge' => 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', 'icon' => '💳'],
         ];
 
         $formatActivity = function ($type) use ($activityMeta) {
@@ -73,10 +80,17 @@
 
         {{-- Quick Stat Pill --}}
         <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-xs font-semibold text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-2xs">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Total: <strong>{{ number_format($stats['total']) }}</strong> Log Terdata</span>
-            </span>
+            @if($selectedUserId)
+                <span class="text-xs font-semibold text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-2xs">
+                    <span class="w-2.5 h-2.5 rounded-full bg-primary-600 animate-pulse"></span>
+                    <span>Pelaku: <strong>{{ $selectedUserName ?? 'User #' . $selectedUserId }}</strong> ({{ number_format($stats['total']) }} Log)</span>
+                </span>
+            @else
+                <span class="text-xs font-semibold text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-2xs">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Total: <strong>{{ number_format($stats['total']) }}</strong> Log Terdata</span>
+                </span>
+            @endif
         </div>
     </div>
 
@@ -87,10 +101,13 @@
                 📋
             </div>
             <div class="min-w-0">
-                <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Log</p>
+                <p class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    {{ $selectedUserId ? 'Log Pelaku' : 'Total Log' }}
+                </p>
                 <p class="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white">{{ number_format($stats['total']) }}</p>
             </div>
         </div>
+
 
         <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-700 p-4 shadow-xs flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
@@ -384,10 +401,12 @@
                             <option value="partner_arrived">Mitra Tiba di Lokasi</option>
                             <option value="help_started">Pelayanan Dimulai</option>
                             <option value="help_completed">Pekerjaan Selesai</option>
-                            <option value="help_confirmed">Customer Konfirmasi</option>
+                            <option value="help_confirmed">Customer / Auto Konfirmasi</option>
+                            <option value="help_reviewed">Ulasan & Rating Diberikan</option>
                             <option value="cancel_help">Bantuan Dibatalkan</option>
                             <option value="partner_cancel_executed">Batal oleh Mitra</option>
                             <option value="dispute_raised">Sengketa / Komplain</option>
+                            <option value="account_updated">Pembaruan Profil / Sandi</option>
                         </select>
                     </div>
 

@@ -189,7 +189,7 @@
                 </select>
             </div> 
 
-            <div class="space-y-4">
+            <div class="space-y-4" wire:poll.10s.visible>
                 <div class="space-y-3.5 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="districtFilter,sortBy,search">
                     {{-- List based on filter --}}
                     @forelse($helps as $help)
@@ -874,14 +874,31 @@
             if (indicator) indicator.className = 'w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping';
 
             navigator.geolocation.getCurrentPosition(
-                (pos) => {
+                async (pos) => {
                     userMitraLat = pos.coords.latitude;
                     userMitraLng = pos.coords.longitude;
 
                     if (textEl) textEl.textContent = `GPS Aktif (±${Math.round(pos.coords.accuracy)}m)`;
                     if (indicator) indicator.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
 
-                    $wire.setMitraLocation(userMitraLat, userMitraLng);
+                    let cityName = null;
+                    let districtName = null;
+
+                    try {
+                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userMitraLat}&lon=${userMitraLng}&zoom=18&addressdetails=1`, {
+                            headers: { 'Accept-Language': 'id' }
+                        });
+                        if (geoRes.ok) {
+                            const geoData = await geoRes.json();
+                            const addr = geoData.address || {};
+                            cityName = addr.city || addr.town || addr.regency || addr.municipality || addr.city_district || null;
+                            districtName = addr.suburb || addr.district || addr.city_district || addr.quarter || addr.village || null;
+                        }
+                    } catch (e) {
+                        // ignore network error, backend will fallback to spatial math
+                    }
+
+                    $wire.setMitraLocation(userMitraLat, userMitraLng, cityName, districtName);
                 },
                 (err) => {
                     console.warn('GPS error:', err.message);

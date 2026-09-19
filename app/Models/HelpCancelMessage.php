@@ -19,13 +19,17 @@ class HelpCancelMessage extends Model
         'photo',
         'is_read',
         'read_at',
+        'customer_read_at',
+        'mitra_read_at',
     ];
 
     protected $casts = [
-        'is_read'    => 'boolean',
-        'read_at'    => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'is_read'          => 'boolean',
+        'read_at'          => 'datetime',
+        'customer_read_at' => 'datetime',
+        'mitra_read_at'    => 'datetime',
+        'created_at'       => 'datetime',
+        'updated_at'       => 'datetime',
     ];
 
     // Relationships

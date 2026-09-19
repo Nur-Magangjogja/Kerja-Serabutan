@@ -131,6 +131,36 @@ class HelpCancellationService
             }
         }
 
+        // Auto-recover/heal stranded 'seeking' tasks without active dispatch offers to Open Pool
+        Help::where('status', Help::STATUS_MENUNGGU_MITRA)
+            ->whereNull('mitra_id')
+            ->where('dispatch_mode', Help::DISPATCH_MODE_SEEKING)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                  ->orWhere('expires_at', '>', now());
+            })
+            ->update([
+                'dispatch_mode'  => Help::DISPATCH_MODE_POOL,
+                'pool_opened_at' => now(),
+            ]);
+
+        // Auto-recover expired/finished offers that never opened to pool
+        $staleOfferedHelps = Help::where('status', Help::STATUS_MENUNGGU_MITRA)
+            ->whereNull('mitra_id')
+            ->where('dispatch_mode', Help::DISPATCH_MODE_OFFERED)
+            ->whereDoesntHave('dispatches', function ($d) {
+                $d->where('status', \App\Models\HelpDispatch::STATUS_OFFERED)
+                  ->where('expires_at', '>', now());
+            })
+            ->get();
+
+        foreach ($staleOfferedHelps as $stale) {
+            $stale->update([
+                'dispatch_mode'  => Help::DISPATCH_MODE_POOL,
+                'pool_opened_at' => now(),
+            ]);
+        }
+
         return $count;
     }
 
@@ -506,15 +536,7 @@ class HelpCancellationService
 
             // 1. Rekam eksklusi agar mitra yang membatalkan tidak mengambil order yang sama kembali
             if ($oldPartnerId) {
-                HelpPartnerExclusion::firstOrCreate(
-                    [
-                        'help_id'  => $lockedHelp->id,
-                        'mitra_id' => $oldPartnerId,
-                    ],
-                    [
-                        'reason' => "Customer memilih mencari mitra pengganti atas pembatalan mitra #{$oldPartnerId}.",
-                    ]
-                );
+                $lockedHelp->addExcludedPartner($oldPartnerId, "Customer memilih mencari mitra pengganti atas pembatalan mitra #{$oldPartnerId}.");
 
                 // 2. Lepaskan status busy mitra lama
                 $this->onlineService->releaseBusy($oldPartnerId, $lockedHelp->id);
@@ -585,32 +607,65 @@ class HelpCancellationService
                     }
 
                     if (in_array($lockedHelp->status, [Help::STATUS_PARTNER_CANCEL_REQUESTED, Help::STATUS_CUSTOMER_CANCEL_REQUESTED])) {
-                        $totalPaid = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
+                        $isSwitchPartner = ($lockedReq->action_type === HelpCancelRequest::ACTION_SWITCH_PARTNER) 
+                            || ($lockedReq->settlement_type === HelpCancelRequest::SETTLEMENT_RELIST_POOL);
 
-                        if ($totalPaid > 0 && $lockedHelp->user) {
-                            $this->escrowService->refundFromEscrowDirect($lockedHelp, $lockedHelp->user, $totalPaid, 'Otomatis Batal: Batas Waktu Konfirmasi Berakhir');
+                        if ($isSwitchPartner) {
+                            // Lepaskan mitra lama, catat eksklusi, dan kembalikan pesanan ke pool
+                            $oldPartnerId = $lockedHelp->mitra_id ?: $lockedReq->partner_id;
+                            if ($oldPartnerId) {
+                                $this->onlineService->releaseBusy($oldPartnerId, $lockedHelp->id);
+                                $lockedHelp->addExcludedPartner($oldPartnerId, "Batas waktu konfirmasi mitra kadaluwarsa atas permintaan ganti mitra.");
+                            }
+
+                            $lockedHelp->update([
+                                'status'              => Help::STATUS_MENUNGGU_MITRA,
+                                'mitra_id'            => null,
+                                'service_stage'       => null,
+                                'cancel_requested_by' => null,
+                                'cancel_deadline_at'  => null,
+                                'dispatch_mode'       => Help::DISPATCH_MODE_POOL,
+                                'pool_opened_at'      => now(),
+                                'admin_notes'         => "Otomatis dialihkan ke pool baru oleh sistem karena batas waktu konfirmasi mitra berakhir.",
+                            ]);
+
+                            $lockedReq->update([
+                                'status'                 => HelpCancelRequest::STATUS_APPROVED,
+                                'settlement_type'        => HelpCancelRequest::SETTLEMENT_RELIST_POOL,
+                                'partner_response_type'  => HelpCancelRequest::PARTNER_RESPONSE_EXPIRED,
+                                'refund_amount_customer' => 0,
+                                'payout_amount_mitra'    => 0,
+                                'reviewed_at'            => now(),
+                                'admin_notes'            => 'Otomatis dialihkan ke pool baru (Batas waktu konfirmasi mitra berakhir).',
+                            ]);
+                        } else {
+                            $totalPaid = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
+
+                            if ($totalPaid > 0 && $lockedHelp->user) {
+                                $this->escrowService->refundFromEscrowDirect($lockedHelp, $lockedHelp->user, $totalPaid, 'Otomatis Batal: Batas Waktu Konfirmasi Berakhir');
+                            }
+
+                            $lockedHelp->update([
+                                'status'         => Help::STATUS_DIBATALKAN,
+                                'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
+                                'escrow_status'  => Help::ESCROW_STATUS_REFUNDED,
+                                'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
+                                'admin_notes'    => "Otomatis dibatalkan sistem karena batas waktu konfirmasi telah terlewati.",
+                            ]);
+
+                            if ($lockedHelp->mitra_id) {
+                                $this->onlineService->releaseBusy($lockedHelp->mitra_id, $lockedHelp->id);
+                            }
+
+                            $lockedReq->update([
+                                'status'                 => HelpCancelRequest::STATUS_APPROVED,
+                                'settlement_type'        => HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+                                'refund_amount_customer' => $totalPaid,
+                                'payout_amount_mitra'    => 0,
+                                'reviewed_at'            => now(),
+                                'admin_notes'            => 'Otomatis disetujui sistem (Batas waktu expired).',
+                            ]);
                         }
-
-                        $lockedHelp->update([
-                            'status'         => Help::STATUS_DIBATALKAN,
-                            'dispatch_mode'  => Help::DISPATCH_MODE_CLOSED,
-                            'escrow_status'  => Help::ESCROW_STATUS_REFUNDED,
-                            'payment_status' => Help::PAYMENT_STATUS_REFUNDED,
-                            'admin_notes'    => "Otomatis dibatalkan sistem karena batas waktu konfirmasi telah terlewati.",
-                        ]);
-
-                        if ($lockedHelp->mitra_id) {
-                            $this->onlineService->releaseBusy($lockedHelp->mitra_id, $lockedHelp->id);
-                        }
-
-                        $lockedReq->update([
-                            'status'                 => HelpCancelRequest::STATUS_APPROVED,
-                            'settlement_type'        => HelpCancelRequest::SETTLEMENT_FULL_REFUND,
-                            'refund_amount_customer' => $totalPaid,
-                            'payout_amount_mitra'    => 0,
-                            'reviewed_at'            => now(),
-                            'admin_notes'            => 'Otomatis disetujui sistem (Batas waktu expired).',
-                        ]);
                     }
                 });
 
@@ -635,15 +690,18 @@ class HelpCancellationService
         array $extraData = []
     ): void {
         $spTarget         = $extraData['sp_target'] ?? HelpCancelRequest::SP_TARGET_NONE;
-        $partnerSpLevel   = isset($extraData['partner_sp_level']) ? (int) $extraData['partner_sp_level'] : null;
-        $partnerSpReason  = $extraData['partner_sp_reason'] ?? 'Pelanggaran pembatalan tugas bantuan';
-        $customerSpLevel  = isset($extraData['customer_sp_level']) ? (int) $extraData['customer_sp_level'] : null;
-        $customerSpReason = $extraData['customer_sp_reason'] ?? 'Pelanggaran / kejanggalan dalam pesanan';
+        $isPartnerSp      = in_array($spTarget, [HelpCancelRequest::SP_TARGET_PARTNER, HelpCancelRequest::SP_TARGET_BOTH], true);
+        $isCustomerSp     = in_array($spTarget, [HelpCancelRequest::SP_TARGET_CUSTOMER, HelpCancelRequest::SP_TARGET_BOTH], true);
+
+        $partnerSpLevel   = ($isPartnerSp && isset($extraData['partner_sp_level'])) ? (int) $extraData['partner_sp_level'] : null;
+        $partnerSpReason  = $isPartnerSp ? ($extraData['partner_sp_reason'] ?? 'Pelanggaran pembatalan tugas bantuan') : null;
+        $customerSpLevel  = ($isCustomerSp && isset($extraData['customer_sp_level'])) ? (int) $extraData['customer_sp_level'] : null;
+        $customerSpReason = $isCustomerSp ? ($extraData['customer_sp_reason'] ?? 'Pelanggaran / kejanggalan dalam pesanan') : null;
         $adminNotes       = $extraData['admin_notes'] ?? null;
         $refundAmount     = isset($extraData['refund_amount']) ? (float) $extraData['refund_amount'] : null;
         $partnerAmount    = isset($extraData['partner_amount']) ? (float) $extraData['partner_amount'] : null;
 
-        $decision = $isApproved ? ($spTarget !== HelpCancelRequest::SP_TARGET_NONE ? 'penalty_issued' : 'valid_no_sp') : 'rejected';
+        $decision = $isApproved ? (($isPartnerSp || $isCustomerSp) ? 'penalty_issued' : 'valid_no_sp') : 'rejected';
 
         $this->auditService->reviewCancelRequest(
             $request,
@@ -722,15 +780,7 @@ class HelpCancellationService
 
             if ($partnerId) {
                 // 1. Rekam eksklusi agar mitra yang bersangkutan tidak otomatis mengambil tugas ini lagi
-                HelpPartnerExclusion::firstOrCreate(
-                    [
-                        'help_id'  => $help->id,
-                        'mitra_id' => $partnerId,
-                    ],
-                    [
-                        'reason' => "Admin memisahkan mitra dari tugas karena customer belum merespons kendala pembatalan.",
-                    ]
-                );
+                $help->addExcludedPartner($partnerId, "Admin memisahkan mitra dari tugas karena customer belum merespons kendala pembatalan.");
 
                 // 2. Bebaskan status BUSY mitra agar dapat menerima tugas lain
                 $this->onlineService->releaseBusy($partnerId, $help->id);

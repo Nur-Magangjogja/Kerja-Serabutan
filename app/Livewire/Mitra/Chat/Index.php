@@ -130,13 +130,13 @@ class Index extends Component
 
         $unreadReportCount = PartnerReportMessage::whereIn('partner_report_id', $mitraReports)
             ->where('sender_id', '!=', $mitraId)
-            ->where('is_read', false)
+            ->whereNull('mitra_read_at')
             ->whereIn('recipient_type', ['mitra', 'all', 'both'])
             ->count();
 
         $unreadCancelCount = HelpCancelMessage::whereIn('help_cancel_request_id', $mitraCancels)
             ->where('sender_id', '!=', $mitraId)
-            ->where('is_read', false)
+            ->whereNull('mitra_read_at')
             ->whereIn('recipient_type', ['mitra', 'all', 'both'])
             ->count();
 
@@ -281,22 +281,40 @@ class Index extends Component
             ->orWhereHas('help', fn($q) => $q->where('mitra_id', $mitraId))
             ->pluck('id');
 
+        $mitraId = Auth::id();
         if ($cancelRequestId) {
-            $this->admin_tab                  = 'cancellation';
-            $this->selected_cancel_request_id = (int) $cancelRequestId;
-            $this->selected_cancel_request    = HelpCancelRequest::with(['help', 'partner', 'customer'])->find($cancelRequestId);
+            $this->admin_tab = 'cancellation';
+            $cancelReq = HelpCancelRequest::where('id', $cancelRequestId)
+                ->where(function ($q) use ($mitraId) {
+                    $q->where('partner_id', $mitraId)
+                      ->orWhereHas('help', fn($h) => $h->where('mitra_id', $mitraId));
+                })
+                ->with(['help', 'partner', 'customer'])
+                ->first();
+
+            $this->selected_cancel_request_id = $cancelReq?->id;
+            $this->selected_cancel_request    = $cancelReq;
             $this->selected_report_id         = null;
             $this->selected_report            = null;
-            $this->active_help_id             = $this->selected_cancel_request?->help_id;
-            $this->active_help                = $this->selected_cancel_request?->help;
+            $this->active_help_id             = $cancelReq?->help_id;
+            $this->active_help                = $cancelReq?->help;
         } elseif ($reportId) {
-            $this->admin_tab                  = 'report';
-            $this->selected_report_id         = (int) $reportId;
-            $this->selected_report            = PartnerReport::with(['reportedHelp', 'reportedUser', 'reporter'])->find($reportId);
+            $this->admin_tab = 'report';
+            $rep = PartnerReport::where('id', $reportId)
+                ->where(function ($q) use ($mitraId) {
+                    $q->where('reported_user_id', $mitraId)
+                      ->orWhere('reporter_id', $mitraId)
+                      ->orWhereHas('reportedHelp', fn($h) => $h->where('mitra_id', $mitraId));
+                })
+                ->with(['reportedHelp', 'reportedUser', 'reporter'])
+                ->first();
+
+            $this->selected_report_id         = $rep?->id;
+            $this->selected_report            = $rep;
             $this->selected_cancel_request_id = null;
             $this->selected_cancel_request    = null;
-            $this->active_help_id             = $this->selected_report?->reported_help_id;
-            $this->active_help                = $this->selected_report?->reportedHelp;
+            $this->active_help_id             = $rep?->reported_help_id;
+            $this->active_help                = $rep?->reportedHelp;
         } elseif ($tab) {
             $this->admin_tab                  = $tab;
             $this->selected_cancel_request_id = null;
@@ -348,37 +366,66 @@ class Index extends Component
     public function markAdminMessagesAsRead()
     {
         $mitraId = Auth::id();
+        $updated = false;
+
         if ($this->admin_tab === 'cancellation' && $this->selected_cancel_request_id) {
-            HelpCancelMessage::where('help_cancel_request_id', $this->selected_cancel_request_id)
+            $updated = HelpCancelMessage::where('help_cancel_request_id', $this->selected_cancel_request_id)
                 ->where('sender_id', '!=', $mitraId)
                 ->whereIn('recipient_type', ['mitra', 'all', 'both'])
+                ->whereNull('mitra_read_at')
+                ->update(['mitra_read_at' => now()]) > 0;
+
+            HelpCancelMessage::where('help_cancel_request_id', $this->selected_cancel_request_id)
                 ->where('is_read', false)
+                ->where(function ($q) {
+                    $q->where(fn($sub) => $sub->where('recipient_type', 'mitra')->whereNotNull('mitra_read_at'))
+                      ->orWhere(fn($sub) => $sub->whereIn('recipient_type', ['all', 'both'])->whereNotNull('customer_read_at')->whereNotNull('mitra_read_at'));
+                })
                 ->update(['is_read' => true, 'read_at' => now()]);
         } elseif ($this->admin_tab === 'report' && $this->selected_report_id) {
-            PartnerReportMessage::where('partner_report_id', $this->selected_report_id)
+            $updated = PartnerReportMessage::where('partner_report_id', $this->selected_report_id)
                 ->where('sender_id', '!=', $mitraId)
                 ->whereIn('recipient_type', ['mitra', 'all', 'both'])
+                ->whereNull('mitra_read_at')
+                ->update(['mitra_read_at' => now()]) > 0;
+
+            PartnerReportMessage::where('partner_report_id', $this->selected_report_id)
                 ->where('is_read', false)
+                ->where(function ($q) {
+                    $q->where(fn($sub) => $sub->where('recipient_type', 'mitra')->whereNotNull('mitra_read_at'))
+                      ->orWhere(fn($sub) => $sub->whereIn('recipient_type', ['all', 'both'])->whereNotNull('customer_read_at')->whereNotNull('mitra_read_at'));
+                })
                 ->update(['is_read' => true, 'read_at' => now()]);
+        }
+
+        if ($updated) {
+            $this->dispatch('chat-messages-read');
+            $this->dispatch('refresh-chat-icon');
         }
     }
 
     public function selectPartner($customerId, $helpId = null)
     {
+        $mitraId = Auth::id();
         $this->selected_partner_id        = (int) $customerId;
         $this->is_admin_chat              = false;
         $this->selected_cancel_request_id = null;
         $this->selected_cancel_request    = null;
         $this->selected_report_id         = null;
         $this->selected_report            = null;
-        $this->selected_partner           = User::find($customerId);
+        $this->selected_partner           = User::where('id', $customerId)->first();
 
         if ($helpId) {
-            $this->active_help_id = (int) $helpId;
-            $this->active_help    = Help::find($helpId);
+            $helpModel = Help::where('id', $helpId)
+                ->where('mitra_id', $mitraId)
+                ->where('user_id', $customerId)
+                ->first();
+
+            $this->active_help_id = $helpModel?->id;
+            $this->active_help    = $helpModel;
         } else {
             $latestHelp = Help::where('user_id', $customerId)
-                ->where('mitra_id', Auth::id())
+                ->where('mitra_id', $mitraId)
                 ->latest('updated_at')
                 ->first();
 
@@ -386,7 +433,7 @@ class Index extends Component
             $this->active_help    = $latestHelp;
         }
 
-        ChatModel::where('mitra_id', Auth::id())
+        ChatModel::where('mitra_id', $mitraId)
             ->where('customer_id', $customerId)
             ->whereIn('sender_type', ['customer', 'system'])
             ->whereNull('read_at')
@@ -587,6 +634,7 @@ class Index extends Component
                         'message'                => $msgText,
                         'photo'                  => $photoPath,
                         'is_read'                => false,
+                        'mitra_read_at'          => now(),
                     ]);
 
                     $this->selected_cancel_request_id = $cancelReq->id;
@@ -625,6 +673,7 @@ class Index extends Component
                     'message'           => $msgText,
                     'photo'             => $photoPath,
                     'is_read'           => false,
+                    'mitra_read_at'     => now(),
                 ]);
 
                 if ($report->status === 'pending') {
@@ -711,9 +760,9 @@ class Index extends Component
                         ->first();
 
                     $unread = HelpCancelMessage::where('help_cancel_request_id', $cReq->id)
-                        ->whereIn('recipient_type', ['mitra', 'all'])
+                        ->whereIn('recipient_type', ['mitra', 'all', 'both'])
                         ->where('sender_id', '!=', $mitraId)
-                        ->where('is_read', false)
+                        ->whereNull('mitra_read_at')
                         ->count();
 
                     $cReq->last_message = $lastMsg;
@@ -732,7 +781,8 @@ class Index extends Component
                         ->where(function($q) use ($mitraId) {
                             $q->where('sender_id', $mitraId)
                               ->orWhere('recipient_type', 'mitra')
-                              ->orWhere('recipient_type', 'all');
+                              ->orWhere('recipient_type', 'all')
+                              ->orWhere('recipient_type', 'both');
                         })
                         ->latest('created_at')
                         ->first();
@@ -740,7 +790,7 @@ class Index extends Component
                     $unread = PartnerReportMessage::where('partner_report_id', $rep->id)
                         ->whereIn('recipient_type', ['mitra', 'all', 'both'])
                         ->where('sender_id', '!=', $mitraId)
-                        ->where('is_read', false)
+                        ->whereNull('mitra_read_at')
                         ->count();
 
                     $rep->last_message = $lastMsg;

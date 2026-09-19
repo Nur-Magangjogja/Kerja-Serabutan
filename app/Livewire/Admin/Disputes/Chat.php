@@ -96,6 +96,9 @@ class Chat extends Component
             $photoPath = $this->photo->store('chat/cancellations', 'public');
         }
 
+        $customerReadAt = $this->activeTab === 'mitra' ? now() : null;
+        $mitraReadAt    = $this->activeTab === 'customer' ? now() : null;
+
         HelpCancelMessage::create([
             'help_cancel_request_id' => $this->cancelRequest->id,
             'sender_id'              => auth()->id(),
@@ -103,6 +106,8 @@ class Chat extends Component
             'message'                => trim($this->message ?? ''),
             'photo'                  => $photoPath,
             'is_read'                => false,
+            'customer_read_at'       => $customerReadAt,
+            'mitra_read_at'          => $mitraReadAt,
         ]);
 
         $this->reset(['message', 'photo']);

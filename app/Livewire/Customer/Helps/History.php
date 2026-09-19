@@ -12,13 +12,39 @@ class History extends Component
 
     public $title = 'Riwayat Bantuan';
     
+    public $statusFilter = 'all'; // all, selesai, dibatalkan
+    public $search = '';
+
     public $selectedHelp = null;
     public $selectedHelpData = null;
     public $showModal = false;
 
+    protected $queryString = [
+        'statusFilter' => ['except' => 'all'],
+        'search'       => ['except' => ''],
+    ];
+
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingStatusFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function setStatusFilter($status)
+    {
+        $this->statusFilter = in_array($status, ['all', 'selesai', 'dibatalkan'], true) ? $status : 'all';
+        $this->resetPage();
+    }
+
     public function showHelpDetail($helpId)
     {
-        $help = Help::with(['user', 'city', 'mitra'])->find($helpId);
+        $help = Help::where('user_id', auth()->id())
+            ->with(['user', 'city', 'district', 'mitra', 'ratings', 'cancelRequests', 'latestCancelRequest'])
+            ->find($helpId);
         
         if (!$help) {
             $this->selectedHelp = null;
@@ -45,6 +71,7 @@ class History extends Component
             'user_name' => $help->user?->name,
             'user_phone' => $help->user?->phone,
             'city_name' => $help->city?->name,
+            'district_name' => $help->district?->name,
             'mitra_name' => $help->mitra?->name,
             'mitra_phone' => $help->mitra?->phone,
             'created_at' => $help->created_at?->format('d M Y, H:i'),
@@ -64,20 +91,62 @@ class History extends Component
 
     public function render()
     {
-        $completedHelps = Help::where('user_id', auth()->id())
-            ->whereIn('status', [Help::STATUS_SELESAI, 'completed'])
+        $userId = auth()->id();
+
+        // Status terminal yang masuk ke riwayat: Selesai & Dibatalkan
+        $selesaiStatuses = [Help::STATUS_SELESAI, 'completed'];
+        $batalStatuses   = [Help::STATUS_DIBATALKAN, 'batal', 'cancelled', 'canceled'];
+        $historyStatuses = array_merge($selesaiStatuses, $batalStatuses);
+
+        // Hitung statistik khusus untuk customer yang sedang login (terisolasi per individu)
+        $baseStatsQuery = Help::where('user_id', $userId);
+        $totalSelesai   = (clone $baseStatsQuery)->whereIn('status', $selesaiStatuses)->count();
+        $totalBatal     = (clone $baseStatsQuery)->whereIn('status', $batalStatuses)->count();
+        $totalSpent     = (clone $baseStatsQuery)->whereIn('status', $selesaiStatuses)->sum('amount');
+        $totalHistory   = $totalSelesai + $totalBatal;
+
+        // Query riwayat tugas customer
+        $query = Help::where('user_id', $userId)
             ->with([
                 'user',
                 'city',
+                'district',
                 'mitra',
                 'rating',
-                'ratings'
-            ])
-            ->latest()
-            ->paginate(10);
+                'ratings',
+                'latestCancelRequest',
+                'cancelRequests' => fn($q) => $q->latest(),
+                'latestPartnerReport',
+                'reports' => fn($q) => $q->latest(),
+            ]);
+
+        if ($this->statusFilter === 'selesai') {
+            $query->whereIn('status', $selesaiStatuses);
+        } elseif ($this->statusFilter === 'dibatalkan') {
+            $query->whereIn('status', $batalStatuses);
+        } else {
+            $query->whereIn('status', $historyStatuses);
+        }
+
+        if (!empty($this->search)) {
+            $s = trim($this->search);
+            $query->where(function ($q) use ($s) {
+                $q->where('title', 'like', "%{$s}%")
+                  ->orWhere('description', 'like', "%{$s}%")
+                  ->orWhere('location', 'like', "%{$s}%")
+                  ->orWhereHas('mitra', fn($mq) => $mq->where('name', 'like', "%{$s}%"));
+            });
+        }
+
+        $helps = $query->latest('updated_at')->paginate(10);
 
         return view('livewire.customer.helps.history', [
-            'completedHelps' => $completedHelps
+            'helps'        => $helps,
+            'totalHistory' => $totalHistory,
+            'totalSelesai' => $totalSelesai,
+            'totalBatal'   => $totalBatal,
+            'totalSpent'   => $totalSpent,
         ])->layout('layouts.app');
     }
 }
+

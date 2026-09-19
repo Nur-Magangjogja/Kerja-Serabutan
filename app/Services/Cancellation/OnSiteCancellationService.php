@@ -140,7 +140,7 @@ class OnSiteCancellationService
                 ]);
 
                 // Pastikan status online mitra tetap terkunci ke BUSY agar tidak dapat mengambil tugas lain sementara waktu
-                $this->onlineService->markBusy($mitra->id, $lockedHelp->id);
+                $this->onlineService->setBusy($mitra->id, $lockedHelp->id);
 
                 Log::info("[OnSiteCancellationService] Mitra on-site cancel (Konsep 2). Locked in partner_cancel_requested & BUSY state, waiting admin & customer clarification.", [
                     'help_id'           => $lockedHelp->id,
@@ -181,8 +181,9 @@ class OnSiteCancellationService
                 'pool_opened_at'              => now(),
             ]);
 
-            // Bebaskan status BUSY mitra
+            // Bebaskan status BUSY mitra & catat eksklusi agar mitra tidak dapat mengambil kembali order ini
             $this->onlineService->releaseBusy($mitra->id, $lockedHelp->id);
+            $lockedHelp->addExcludedPartner($mitra->id, "Mitra membatalkan di perjalanan (insiden/kendala): {$reason}");
 
             // Buat tiket audit untuk Admin Wilayah
             $cancelRequest = HelpCancelRequest::create([
@@ -282,44 +283,20 @@ class OnSiteCancellationService
             $chatCount   = Chat::where('help_id', $lockedHelp->id)->count();
             $lastChat    = Chat::where('help_id', $lockedHelp->id)->where('sender_type', 'mitra')->latest()->value('created_at');
 
-            // 2. Eksklusi mitra lama
-            HelpPartnerExclusion::firstOrCreate(
-                [
-                    'help_id'  => $lockedHelp->id,
-                    'mitra_id' => $oldPartnerId,
-                ],
-                [
-                    'reason' => "Customer meminta ganti mitra: {$reason}",
-                ]
-            );
-
-            // 3. Bebaskan mitra lama
-            $this->onlineService->releaseBusy($oldPartnerId, $lockedHelp->id);
-
-            // 4. Relist ke pool pencarian mitra baru
+            // 2. Set status Help ke CUSTOMER_CANCEL_REQUESTED (menunggu konfirmasi / respon mitra & admin)
             $lockedHelp->update([
-                'status'                      => Help::STATUS_MENUNGGU_MITRA,
-                'mitra_id'                    => null,
-                'service_stage'               => null,
-                'partner_initial_lat'         => null,
-                'partner_initial_lng'         => null,
-                'partner_current_lat'         => null,
-                'partner_current_lng'         => null,
-                'partner_started_at'          => null,
-                'partner_started_moving_at'   => null,
-                'partner_arrived_at'          => null,
-                'arrived_at'                  => null,
-                'partner_location_updated_at' => null,
-                'dispatch_mode'               => Help::DISPATCH_MODE_POOL,
-                'pool_opened_at'              => now(),
-                'admin_notes'                 => "Mitra #{$oldPartnerId} dilepas oleh Customer (Ganti Mitra). Order dialihkan ke pool baru.",
+                'status'              => Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+                'cancel_requested_by' => 'customer',
+                'cancel_deadline_at'  => now()->addHours(2),
+                'admin_notes'         => "Customer mengajukan ganti mitra: {$reason}. Menunggu konfirmasi mitra / tinjauan admin.",
             ]);
 
-            // 5. Buat tiket audit SP untuk mitra yang lalai
+            // 3. Buat tiket pembatalan/ganti mitra (status pending)
             $cancelRequest = HelpCancelRequest::create([
                 'help_id'               => $lockedHelp->id,
                 'requester_type'        => HelpCancelRequest::REQUESTER_CUSTOMER,
                 'action_type'           => HelpCancelRequest::ACTION_SWITCH_PARTNER,
+                'partner_response_type' => HelpCancelRequest::PARTNER_RESPONSE_PENDING,
                 'partner_id'            => $oldPartnerId,
                 'customer_id'           => $customer->id,
                 'district_id'           => $lockedHelp->district_id,
@@ -338,14 +315,12 @@ class OnSiteCancellationService
                 'partner_last_chat_at'  => $lastChat,
                 'status'                => HelpCancelRequest::STATUS_PENDING,
                 'settlement_type'       => HelpCancelRequest::SETTLEMENT_RELIST_POOL,
-                'sp_target'             => HelpCancelRequest::SP_TARGET_PARTNER,
-                'partner_sp_level'      => 1,
-                'partner_sp_reason'     => 'Mitra tidak kunjung bergerak / tidak merespons pesanan customer.',
+                'sp_target'             => HelpCancelRequest::SP_TARGET_NONE,
                 'requested_at'          => now(),
-                'expires_at'            => now()->addHours(24),
+                'expires_at'            => now()->addHours(2),
             ]);
 
-            Log::info("[OnSiteCancellationService] Customer switched partner. Order relisted, audit ticket created.", [
+            Log::info("[OnSiteCancellationService] Customer submitted switch partner request. Waiting partner confirmation / admin review.", [
                 'help_id'           => $lockedHelp->id,
                 'old_partner_id'    => $oldPartnerId,
                 'cancel_request_id' => $cancelRequest->id,
@@ -353,9 +328,9 @@ class OnSiteCancellationService
 
             return [
                 'success'           => true,
-                'relisted'          => true,
+                'relisted'          => false,
                 'cancel_request_id' => $cancelRequest->id,
-                'message'           => 'Mitra sebelumnya telah dilepaskan. Sistem sedang mencari mitra baru untuk Anda.',
+                'message'           => 'Permintaan ganti mitra berhasil diajukan. Sistem meminta konfirmasi dari mitra dan berkoordinasi dengan Admin.',
             ];
         });
     }
@@ -494,6 +469,59 @@ class OnSiteCancellationService
             $lockedHelp = Help::where('id', $lockedReq->help_id)->lockForUpdate()->firstOrFail();
 
             if ($isConfirmed) {
+                $isSwitchPartner = ($lockedReq->action_type === HelpCancelRequest::ACTION_SWITCH_PARTNER) 
+                    || ($lockedReq->settlement_type === HelpCancelRequest::SETTLEMENT_RELIST_POOL);
+
+                if ($isSwitchPartner) {
+                    // Mitra menyetujui ganti mitra -> Lepaskan mitra, catat eksklusi, dan kembalikan pesanan ke pool
+                    $this->onlineService->releaseBusy($partner->id, $lockedHelp->id);
+                    $lockedHelp->addExcludedPartner($partner->id, "Mitra menyetujui permintaan ganti mitra: {$lockedReq->reason}");
+
+                    $lockedHelp->update([
+                        'status'                      => Help::STATUS_MENUNGGU_MITRA,
+                        'mitra_id'                    => null,
+                        'service_stage'               => null,
+                        'partner_initial_lat'         => null,
+                        'partner_initial_lng'         => null,
+                        'partner_current_lat'         => null,
+                        'partner_current_lng'         => null,
+                        'partner_started_at'          => null,
+                        'partner_started_moving_at'   => null,
+                        'partner_arrived_at'          => null,
+                        'arrived_at'                  => null,
+                        'partner_location_updated_at' => null,
+                        'cancel_requested_by'         => null,
+                        'cancel_deadline_at'          => null,
+                        'dispatch_mode'               => Help::DISPATCH_MODE_POOL,
+                        'pool_opened_at'              => now(),
+                        'admin_notes'                 => "Mitra #{$partner->id} menyetujui permintaan ganti mitra. Tugas dialihkan kembali ke pool.",
+                    ]);
+
+                    $lockedReq->update([
+                        'status'                 => HelpCancelRequest::STATUS_APPROVED,
+                        'partner_response_type'  => HelpCancelRequest::PARTNER_RESPONSE_CONFIRMED,
+                        'partner_response_notes' => $notes,
+                        'partner_response_photo' => $photoPath,
+                        'partner_responded_at'   => now(),
+                        'settlement_type'        => HelpCancelRequest::SETTLEMENT_RELIST_POOL,
+                        'refund_amount_customer' => 0,
+                        'payout_amount_mitra'    => 0,
+                        'reviewed_at'            => now(),
+                        'admin_notes'            => 'Disetujui oleh Mitra untuk mengalihkan tugas ke rekan jasa lain.',
+                    ]);
+
+                    Log::info("[OnSiteCancellationService] Partner confirmed switch partner. Relisted to pool.", [
+                        'help_id'    => $lockedHelp->id,
+                        'partner_id' => $partner->id,
+                    ]);
+
+                    return [
+                        'success'   => true,
+                        'confirmed' => true,
+                        'message'   => 'Anda telah menyetujui pergantian mitra. Tugas dialihkan ke pool rekan jasa lain dan status Anda telah aktif kembali.',
+                    ];
+                }
+
                 // Mitra menyetujui penarikan -> Eksekusi 100% full refund ke Customer
                 $gross = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
                 if ($gross > 0 && $lockedHelp->user) {

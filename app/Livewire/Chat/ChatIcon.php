@@ -75,7 +75,7 @@ class ChatIcon extends Component
                 if ($mitraReports->isNotEmpty()) {
                     $unreadAdminReports = PartnerReportMessage::whereIn('partner_report_id', $mitraReports)
                         ->where('sender_id', '!=', $userId)
-                        ->where('is_read', false)
+                        ->whereNull('mitra_read_at')
                         ->whereIn('recipient_type', ['mitra', 'all', 'both'])
                         ->count();
                 }
@@ -89,7 +89,7 @@ class ChatIcon extends Component
                 if ($mitraCancels->isNotEmpty()) {
                     $unreadAdminCancels = HelpCancelMessage::whereIn('help_cancel_request_id', $mitraCancels)
                         ->where('sender_id', '!=', $userId)
-                        ->where('is_read', false)
+                        ->whereNull('mitra_read_at')
                         ->whereIn('recipient_type', ['mitra', 'all', 'both'])
                         ->count();
                 }
@@ -116,7 +116,7 @@ class ChatIcon extends Component
                 if ($customerReports->isNotEmpty()) {
                     $unreadAdminReports = PartnerReportMessage::whereIn('partner_report_id', $customerReports)
                         ->where('sender_id', '!=', $userId)
-                        ->where('is_read', false)
+                        ->whereNull('customer_read_at')
                         ->whereIn('recipient_type', ['customer', 'all', 'both'])
                         ->count();
                 }
@@ -130,7 +130,7 @@ class ChatIcon extends Component
                 if ($customerCancels->isNotEmpty()) {
                     $unreadAdminCancels = HelpCancelMessage::whereIn('help_cancel_request_id', $customerCancels)
                         ->where('sender_id', '!=', $userId)
-                        ->where('is_read', false)
+                        ->whereNull('customer_read_at')
                         ->whereIn('recipient_type', ['customer', 'all', 'both'])
                         ->count();
                 }

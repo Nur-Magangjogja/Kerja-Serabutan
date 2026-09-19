@@ -355,40 +355,73 @@
                     </div>
                 @elseif(isset($cancellations))
                     <div class="space-y-3" x-data="{ previewPhotoUrl: null }">
-                        @foreach($cancellations as $item)
+                        @foreach($cancellations as $help)
                             @php
-                                $help = $item->help;
-                                $customer = $help?->user ?? $item->customer;
-                                $evidencePhoto = $item->evidence_photo ?: $help?->cancel_evidence_photo;
+                                $customer = $help->user;
+                                $cancelRequest = $help->cancelRequests->first();
+                                $report = $help->partnerReports->first();
 
-                                $statusBadge = match($item->status) {
-                                    'pending'   => ['class' => 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700', 'label' => '⏳ Menunggu Audit'],
-                                    'approved'  => ['class' => 'bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700', 'label' => '❌ Dibatalkan'],
-                                    'rejected'  => ['class' => 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700', 'label' => '✅ Ditolak (Lanjut)'],
-                                    default     => ['class' => 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300', 'label' => ucfirst($item->status)]
-                                };
+                                $isCancelPending = $cancelRequest && $cancelRequest->status === 'pending';
+                                $isHelpCancelRequested = in_array($help->status, ['partner_cancel_requested', 'customer_cancel_requested'], true);
+                                $isReportActive = $report && $report->isActive();
+                                $isUnderReview = $isCancelPending || $isHelpCancelRequested || $isReportActive;
 
-                                $settlementLabel = match($item->settlement_type) {
+                                if ($isUnderReview) {
+                                    $statusBadge = ['class' => 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700', 'label' => '⏳ Dalam Tinjauan Admin'];
+                                } elseif ($cancelRequest && $cancelRequest->status === 'rejected') {
+                                    $statusBadge = ['class' => 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700', 'label' => '✅ Ditolak (Lanjut)'];
+                                } else {
+                                    $statusBadge = ['class' => 'bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700', 'label' => '❌ Dibatalkan'];
+                                }
+
+                                if ($report) {
+                                    if ($report->category === 'dari_customer') {
+                                        $sourceBadge = ['class' => 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/50', 'label' => '⚖️ Aduan Customer & Sengketa'];
+                                    } else {
+                                        $sourceBadge = ['class' => 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50', 'label' => '⚖️ Laporan Aduan Mitra'];
+                                    }
+                                } elseif ($cancelRequest?->requester_type === 'customer' || $help->status === 'customer_cancel_requested') {
+                                    $sourceBadge = ['class' => 'bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800/50', 'label' => '👤 Dibatalkan oleh Customer'];
+                                } elseif ($cancelRequest?->requester_type === 'partner' || $help->status === 'partner_cancel_requested') {
+                                    $sourceBadge = ['class' => 'bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800/50', 'label' => '🛠️ Diajukan oleh Mitra'];
+                                } else {
+                                    $sourceBadge = ['class' => 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/50', 'label' => '❌ Pembatalan Tugas'];
+                                }
+
+                                $displayReason = $cancelRequest?->reason ?? ($report ? ($report->report_type_label . ($report->title ? ': ' . $report->display_title : '')) : ($help->partner_cancel_reason ?? $help->dispute_reason ?? 'Pembatalan tugas oleh customer / sistem'));
+                                $displayNotes = $cancelRequest?->notes ?? ($report ? $report->message : $help->partner_cancel_notes);
+                                $displayAdminNotes = $cancelRequest?->admin_notes ?? ($report ? $report->admin_notes : $help->admin_notes);
+                                $evidencePhoto = $cancelRequest?->evidence_photo ?? $report?->evidence_photo ?? $help->cancel_evidence_photo;
+
+                                $hasPartnerSp = in_array($cancelRequest?->sp_target, ['partner', 'both'], true) && ((int)($cancelRequest?->partner_sp_level ?? 0) > 0);
+                                $spLevel = $hasPartnerSp ? (int) $cancelRequest->partner_sp_level : 0;
+                                $spReason = $hasPartnerSp ? $cancelRequest?->partner_sp_reason : null;
+                                $auditDecision = $cancelRequest?->audit_decision;
+
+                                $settlementLabel = match($cancelRequest?->settlement_type) {
                                     'full_refund'        => 'Pengembalian Dana Penuh 100% ke Customer',
                                     'partial_settlement' => 'Penyelesaian Kompensasi Sebagian (Proporsional)',
-                                    'item_settled'       => 'Penyelesaian Biaya Tambahan/Operasional Mitra',
+                                    'item_settled'       => 'Penyelesaian Biaya Operasional / Pembelian Mitra',
                                     'no_refund'          => 'Dana Diteruskan Penuh ke Mitra (Tanpa Refund)',
                                     'relist_pool'        => 'Tugas Dilempar Kembali ke Pool Mitra Lain',
-                                    default              => null
+                                    default              => ($report?->refund_status === 'approved' ? 'Pengembalian Dana Refund 100% ke Customer' : null)
                                 };
+
+                                $payoutMitra = $cancelRequest?->payout_amount_mitra ?? 0;
+                                $refundCustomer = $cancelRequest?->refund_amount_customer ?? ($report?->refund_amount ?? 0);
                             @endphp
                             <div x-data="{ isExpanded: false }" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-xs hover:shadow-md transition">
                                 <div class="p-4">
                                     {{-- Header Card --}}
                                     <div class="flex items-start gap-3 mb-3">
-                                        {{-- Thumbnail Image Box (Properly closed div) --}}
+                                        {{-- Thumbnail Image Box --}}
                                         <div class="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
-                                            @if($help?->photo)
+                                            @if($help->photo)
                                                 <img src="{{ asset('storage/' . $help->photo) }}" alt="{{ $help->title }}" class="w-full h-full object-cover">
                                             @else
                                                 <div class="w-full h-full flex items-center justify-center text-rose-400 bg-rose-50 dark:bg-rose-950/40">
-                                                    @if($help?->service_type === 'pickup_delivery')
-                                                        @if($help?->service_category === 'passenger')
+                                                    @if($help->service_type === 'pickup_delivery')
+                                                        @if($help->service_category === 'passenger')
                                                             <span class="text-lg">👥</span>
                                                         @else
                                                             <span class="text-lg">📦</span>
@@ -403,8 +436,8 @@
                                         {{-- Middle Info --}}
                                         <div class="flex-1 min-w-0">
                                             <div class="flex items-center gap-1.5 flex-wrap mb-1">
-                                                @if($help?->service_type === 'pickup_delivery')
-                                                    @if($help?->service_category === 'passenger')
+                                                @if($help->service_type === 'pickup_delivery')
+                                                    @if($help->service_category === 'passenger')
                                                         <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-medium bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200/70 dark:border-gray-600">
                                                              Antar Penumpang
                                                         </span>
@@ -418,34 +451,36 @@
                                                          Kerja Serabutan
                                                     </span>
                                                 @endif
+
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-semibold border {{ $sourceBadge['class'] }}">
+                                                    {{ $sourceBadge['label'] }}
+                                                </span>
                                             </div>
                                             
                                             <h3 class="font-bold text-gray-900 dark:text-gray-100 text-sm truncate leading-snug">
-                                                {{ $help?->title ?? 'Pembatalan Tugas Bantuan' }}
+                                                {{ $help->title ?? 'Pembatalan Tugas Bantuan' }}
                                             </h3>
                                             
                                             <p class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                                {{ optional($help?->city)->name ?? 'Kota' }} • {{ ($item->requested_at ?? $item->created_at)->translatedFormat('d M Y') }}
+                                                {{ optional($help->city)->name ?? 'Kota' }} • {{ ($help->updated_at ?? $help->created_at)->translatedFormat('d M Y') }}
                                             </p>
                                         </div>
 
                                         {{-- Right Side Info --}}
                                         <div class="text-right flex-shrink-0">
-                                            @if($help)
-                                                <div class="text-1xl font-bold text-red-700 dark:text-red-400">
-                                                    Rp {{ number_format($help->getNetEarning(), 0, ',', '.') }}
-                                                </div>
-                                            @endif
+                                            <div class="text-1xl font-bold text-red-700 dark:text-red-400">
+                                                Rp {{ number_format($help->getNetEarning(), 0, ',', '.') }}
+                                            </div>
                                             <div class="flex flex-col items-end mt-1 gap-1">
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border {{ $statusBadge['class'] }}">
                                                     {{ $statusBadge['label'] }}
                                                 </span>
 
-                                                @if($item->partner_sp_level > 0)
+                                                @if($spLevel > 0)
                                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-[10px] font-bold border border-rose-300 dark:border-rose-700">
-                                                        ⚠️ SP {{ $item->partner_sp_level }}
+                                                        ⚠️ SP {{ $spLevel }}
                                                     </span>
-                                                @elseif($item->audit_decision === 'valid_no_sp' || ($item->status === 'approved' && $item->sp_target === 'none'))
+                                                @elseif($auditDecision === 'valid_no_sp' || ($cancelRequest?->status === 'approved' && $cancelRequest?->sp_target === 'none'))
                                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800/40">
                                                         🛡️ Bebas Sanksi
                                                     </span>
@@ -457,24 +492,32 @@
                                     {{-- Alasan Ringkas Bar --}}
                                     <div class="bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60 rounded-xl p-2.5 mb-3 text-xs space-y-1.5 text-left">
                                         <div class="flex items-start gap-1.5 text-left">
-                                            <span class="text-gray-400 dark:text-gray-500 font-medium shrink-0 w-16 text-[11px]">Pemohon:</span>
-                                            <span class="font-bold text-left text-[11px] {{ $item->requester_type === 'partner' ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400' }}">
-                                                {{ $item->requester_type === 'partner' ? 'Diajukan oleh Anda (Mitra)' : 'Diajukan oleh Customer' }}
+                                            <span class="text-gray-400 dark:text-gray-500 font-medium shrink-0 w-16 text-[11px]">Sumber:</span>
+                                            <span class="font-bold text-left text-[11px] {{ $sourceBadge['class'] }}">
+                                                {{ $sourceBadge['label'] }}
                                             </span>
                                         </div>
                                         <div class="flex items-start gap-1.5 text-left text-gray-800 dark:text-gray-200">
                                             <span class="text-gray-400 dark:text-gray-500 font-medium shrink-0 w-16 text-[11px]">Alasan:</span>
-                                            <span class="font-semibold text-rose-600 dark:text-rose-400 break-words flex-1 text-left text-xs">{{ $item->reason }}</span>
+                                            <span class="font-semibold text-rose-600 dark:text-rose-400 break-words flex-1 text-left text-xs">{{ $displayReason }}</span>
                                         </div>
                                     </div>
 
-                                    {{-- Toggle Accordion Button --}}
-                                    <button @click="isExpanded = !isExpanded" class="w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 text-rose-600 dark:text-rose-400 transition cursor-pointer">
-                                        <span x-text="isExpanded ? 'Sembunyikan Rincian' : 'Lihat Detail Pembatalan Lengkap'"></span>
-                                        <svg :class="isExpanded ? 'rotate-180' : ''" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
+                                    {{-- Action Buttons on Card --}}
+                                    <div class="flex items-center gap-2">
+                                        <button @click="isExpanded = !isExpanded" class="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 text-rose-600 dark:text-rose-400 transition cursor-pointer">
+                                            <span x-text="isExpanded ? 'Sembunyikan Rincian' : 'Lihat Detail Pembatalan Lengkap'"></span>
+                                            <svg :class="isExpanded ? 'rotate-180' : ''" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+
+                                        @if($report || $isUnderReview)
+                                            <a href="{{ route('mitra.chat', ['help' => $help->id]) }}" wire:navigate class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs transition shadow-2xs inline-flex items-center gap-1.5 shrink-0" title="Buka Ruang Diskusi Admin">
+                                                <span>💬 Chat Admin</span>
+                                            </a>
+                                        @endif
+                                    </div>
                                 </div>
 
                                 {{-- Expanded Full Details --}}
@@ -482,14 +525,14 @@
                                     
                                     {{-- 1. Info Tugas & Customer --}}
                                     <div class="space-y-2">
-                                        @if($help?->scheduled_at)
+                                        @if($help->scheduled_at)
                                             <div class="bg-gray-50 dark:bg-gray-750 p-2.5 rounded-xl text-xs flex items-center justify-between border border-gray-100 dark:border-gray-700/60">
                                                 <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Jadwal Keberangkatan:</span>
                                                 <span class="font-bold text-gray-800 dark:text-gray-200">📅 {{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') }}</span>
                                             </div>
                                         @endif
 
-                                        @if($help?->description)
+                                        @if($help->description)
                                             <div>
                                                 <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 mb-1">Deskripsi Tugas</h4>
                                                 <p class="text-xs text-gray-800 dark:text-gray-200 leading-relaxed bg-gray-50 dark:bg-gray-750 p-2.5 rounded-xl border border-gray-100 dark:border-gray-700/40">
@@ -499,7 +542,7 @@
                                         @endif
 
                                         {{-- Rute atau Lokasi --}}
-                                        @if($help?->service_type === 'pickup_delivery')
+                                        @if($help->service_type === 'pickup_delivery')
                                             <div class="bg-gray-50 dark:bg-gray-750 p-3 rounded-xl space-y-2 text-xs">
                                                 <div class="flex items-center justify-between font-bold text-gray-700 dark:text-gray-300 text-[11px]">
                                                     <span>🗺️ Rute {{ $help->service_category === 'passenger' ? 'Antar Penumpang' : 'Pengantaran' }}</span>
@@ -527,7 +570,7 @@
                                                 <div>
                                                     <div class="text-[10px] text-gray-400 dark:text-gray-400 uppercase font-semibold">Lokasi</div>
                                                     <div class="font-medium text-gray-800 dark:text-gray-200 truncate mt-0.5">
-                                                        {{ $help?->full_address ?? optional($help?->city)->name ?? '-' }}
+                                                        {{ $help->full_address ?? optional($help->city)->name ?? '-' }}
                                                     </div>
                                                 </div>
 
@@ -557,37 +600,37 @@
                                         @endif
                                     </div>
 
-                                    {{-- 2. Detail Pengajuan Pembatalan --}}
+                                    {{-- 2. Detail Pengajuan Pembatalan / Aduan --}}
                                     <div class="bg-rose-50/70 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/40 rounded-xl p-3 text-xs space-y-2">
                                         <div class="flex items-center justify-between pb-1.5 border-b border-rose-100/70 dark:border-rose-900/30">
                                             <span class="font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1">
-                                                <span>📋 Detail Pengajuan Pembatalan</span>
+                                                <span>📋 Detail Pembatalan / Aduan</span>
                                             </span>
                                             <span class="text-[10px] text-gray-500 dark:text-gray-400">
-                                                {{ ($item->requested_at ?? $item->created_at)->translatedFormat('d M Y • H:i') }}
+                                                {{ ($cancelRequest?->requested_at ?? $report?->created_at ?? $help->updated_at ?? $help->created_at)->translatedFormat('d M Y • H:i') }}
                                             </span>
                                         </div>
 
                                         <div>
-                                            <div class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Alasan Resmi:</div>
+                                            <div class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Alasan / Judul:</div>
                                             <div class="font-bold text-rose-900 dark:text-rose-200 mt-0.5 break-words">
-                                                {{ $item->reason }}
+                                                {{ $displayReason }}
                                             </div>
                                         </div>
 
-                                        @if($item->notes)
+                                        @if($displayNotes)
                                             <div>
-                                                <div class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Catatan Pengaju:</div>
+                                                <div class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Kronologi / Catatan:</div>
                                                 <div class="text-gray-700 dark:text-gray-300 italic mt-0.5 bg-white/60 dark:bg-gray-800/60 p-2 rounded-lg border border-rose-100/60 dark:border-rose-900/30 leading-relaxed">
-                                                    "{{ $item->notes }}"
+                                                    "{{ $displayNotes }}"
                                                 </div>
                                             </div>
                                         @endif
 
-                                        {{-- Foto Bukti Pengajuan --}}
+                                        {{-- Foto Bukti --}}
                                         @if($evidencePhoto)
                                             <div class="pt-1">
-                                                <div class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">Foto Bukti Pengajuan:</div>
+                                                <div class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">Foto Bukti:</div>
                                                 <div class="w-20 h-20 rounded-xl overflow-hidden border border-rose-200 dark:border-rose-800/60 cursor-pointer hover:opacity-90 transition relative group shadow-2xs"
                                                      @click="previewPhotoUrl = '{{ asset('storage/' . $evidencePhoto) }}'">
                                                     <img src="{{ asset('storage/' . $evidencePhoto) }}" alt="Bukti Pembatalan" class="w-full h-full object-cover">
@@ -602,20 +645,20 @@
                                         @endif
                                     </div>
 
-                                    {{-- 3. Tanggapan / Klarifikasi Mitra (jika diajukan oleh customer) --}}
-                                    @if($item->requester_type === 'customer')
+                                    {{-- 3. Tanggapan / Klarifikasi Mitra (jika ada) --}}
+                                    @if($cancelRequest && $cancelRequest->requester_type === 'customer')
                                         <div class="bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 text-xs space-y-1.5">
                                             <div class="flex items-center justify-between pb-1 border-b border-blue-100/70 dark:border-blue-900/30">
                                                 <span class="font-bold text-blue-900 dark:text-blue-200">🗣️ Tanggapan / Klarifikasi Anda</span>
-                                                @if($item->partner_clarified_at)
+                                                @if($cancelRequest->partner_clarified_at)
                                                     <span class="text-[10px] text-gray-500 dark:text-gray-400">
-                                                        {{ $item->partner_clarified_at->translatedFormat('d M Y • H:i') }}
+                                                        {{ $cancelRequest->partner_clarified_at->translatedFormat('d M Y • H:i') }}
                                                     </span>
                                                 @endif
                                             </div>
-                                            @if($item->partner_clarification)
+                                            @if($cancelRequest->partner_clarification)
                                                 <p class="text-gray-800 dark:text-gray-200 italic leading-relaxed bg-white/60 dark:bg-gray-800/60 p-2 rounded-lg border border-blue-100/60 dark:border-blue-900/30">
-                                                    "{{ $item->partner_clarification }}"
+                                                    "{{ $cancelRequest->partner_clarification }}"
                                                 </p>
                                             @else
                                                 <p class="text-[11px] text-gray-500 dark:text-gray-400 italic">
@@ -623,11 +666,11 @@
                                                 </p>
                                             @endif
 
-                                            @if($item->partner_clarification_photo)
+                                            @if($cancelRequest->partner_clarification_photo)
                                                 <div class="pt-1">
                                                     <div class="w-16 h-16 rounded-xl overflow-hidden border border-blue-200 dark:border-blue-800/60 cursor-pointer hover:opacity-90 transition shadow-2xs"
-                                                         @click="previewPhotoUrl = '{{ asset('storage/' . $item->partner_clarification_photo) }}'">
-                                                        <img src="{{ asset('storage/' . $item->partner_clarification_photo) }}" alt="Foto Klarifikasi" class="w-full h-full object-cover">
+                                                         @click="previewPhotoUrl = '{{ asset('storage/' . $cancelRequest->partner_clarification_photo) }}'">
+                                                        <img src="{{ asset('storage/' . $cancelRequest->partner_clarification_photo) }}" alt="Foto Klarifikasi" class="w-full h-full object-cover">
                                                     </div>
                                                 </div>
                                             @endif
@@ -635,11 +678,11 @@
                                     @endif
 
                                     {{-- 4. Status Pengerjaan (Hanya tampil jika ada progres) --}}
-                                    @if($item->work_completed_percentage > 0)
+                                    @if($cancelRequest && $cancelRequest->work_completed_percentage > 0)
                                         <div class="bg-gray-50 dark:bg-gray-750 p-2.5 rounded-xl text-xs flex items-center justify-between">
                                             <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Progres Pengerjaan:</span>
                                             <span class="font-bold text-gray-800 dark:text-gray-200">
-                                                {{ number_format($item->work_completed_percentage, 0) }}% Selesai
+                                                {{ number_format($cancelRequest->work_completed_percentage, 0) }}% Selesai
                                             </span>
                                         </div>
                                     @endif
@@ -648,56 +691,56 @@
                                     <div class="bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 rounded-xl p-3 text-xs space-y-2">
                                         <div class="flex items-center justify-between pb-1.5 border-b border-indigo-100/70 dark:border-indigo-900/30">
                                             <span class="font-bold text-indigo-950 dark:text-indigo-200 flex items-center gap-1">
-                                                <span>⚖️ Keputusan & Audit Admin</span>
+                                                <span>⚖️ Keputusan & Tinjauan Admin</span>
                                             </span>
-                                            @if($item->reviewed_at)
+                                            @if($cancelRequest?->reviewed_at || $report?->resolved_at)
                                                 <span class="text-[10px] text-gray-500 dark:text-gray-400">
-                                                    Ditinjau: {{ $item->reviewed_at->translatedFormat('d M Y • H:i') }}
+                                                    Ditinjau: {{ ($cancelRequest?->reviewed_at ?? $report?->resolved_at)->translatedFormat('d M Y • H:i') }}
                                                 </span>
                                             @endif
                                         </div>
 
-                                        @if($item->admin_notes)
+                                        @if($displayAdminNotes)
                                             <div>
                                                 <div class="text-[11px] text-gray-500 dark:text-gray-400 font-semibold">Catatan Keputusan:</div>
                                                 <div class="text-gray-800 dark:text-gray-200 mt-0.5 leading-relaxed bg-white/60 dark:bg-gray-800/60 p-2 rounded-lg border border-indigo-100/60 dark:border-indigo-900/30">
-                                                    {{ $item->admin_notes }}
+                                                    {{ $displayAdminNotes }}
                                                 </div>
                                             </div>
                                         @else
                                             <div class="text-[11px] text-gray-500 dark:text-gray-400 italic">
-                                                {{ $item->status === 'pending' ? 'Pengajuan ini sedang menunggu peninjauan dan investigasi oleh Admin Wilayah.' : 'Tidak ada catatan audit tertulis.' }}
+                                                {{ $isUnderReview ? 'Pengajuan ini sedang dalam peninjauan dan investigasi oleh Admin Wilayah.' : 'Tidak ada catatan audit tertulis.' }}
                                             </div>
                                         @endif
 
                                         {{-- Sanksi / SP Information --}}
-                                        @if($item->partner_sp_level > 0)
+                                        @if($spLevel > 0)
                                             <div class="p-2.5 bg-rose-100/90 dark:bg-rose-950/60 rounded-xl text-rose-900 dark:text-rose-200 font-medium border border-rose-200 dark:border-rose-900/50">
                                                 <div class="font-bold flex items-center gap-1">
-                                                    <span>⚠️ Sanksi Diterima: SP {{ $item->partner_sp_level }}</span>
+                                                    <span>⚠️ Sanksi Diterima: SP {{ $spLevel }}</span>
                                                 </div>
-                                                @if($item->partner_sp_reason)
-                                                    <span class="font-normal block text-[11px] mt-0.5 text-rose-800 dark:text-rose-300">Alasan sanksi: {{ $item->partner_sp_reason }}</span>
+                                                @if($spReason)
+                                                    <span class="font-normal block text-[11px] mt-0.5 text-rose-800 dark:text-rose-300">Alasan sanksi: {{ $spReason }}</span>
                                                 @endif
                                             </div>
-                                        @elseif($item->status === 'approved' && ($item->audit_decision === 'valid_no_sp' || $item->sp_target === 'none'))
+                                        @elseif(($cancelRequest?->status === 'approved' && ($auditDecision === 'valid_no_sp' || $cancelRequest?->sp_target === 'none')) || ($report && $report->status === 'resolved'))
                                             <div class="p-2.5 bg-emerald-100/90 dark:bg-emerald-950/60 rounded-xl text-emerald-900 dark:text-emerald-200 font-medium text-[11px] border border-emerald-200 dark:border-emerald-900/50">
-                                                <span class="font-bold">✅ Bebas Sanksi:</span> Pembatalan dinilai sah karena kendala di lapangan. Tidak ada sanksi SP yang diberikan ke akun Anda.
+                                                <span class="font-bold">✅ Bebas Sanksi:</span> Pembatalan / resolusi dinilai sah. Tidak ada sanksi SP yang diberikan ke akun Anda.
                                             </div>
                                         @endif
 
-                                        @if($item->reviewedBy)
+                                        @if($cancelRequest?->reviewedBy || $report?->resolvedBy)
                                             <div class="text-[10px] text-gray-400 dark:text-gray-500 text-right pt-1">
-                                                Diverifikasi oleh: <span class="font-semibold text-gray-700 dark:text-gray-300">{{ $item->reviewedBy->name }}</span>
+                                                Diverifikasi oleh: <span class="font-semibold text-gray-700 dark:text-gray-300">{{ ($cancelRequest?->reviewedBy ?? $report?->resolvedBy)->name }}</span>
                                             </div>
                                         @endif
                                     </div>
 
-                                    {{-- 6. Penyelesaian Dana Keuangan (Settlement) - Khusus Layanan Antar Jemput --}}
-                                    @if(($help?->service_type === 'pickup_delivery' || ($help && method_exists($help, 'isPickup') && $help->isPickup())) && ($settlementLabel || $item->payout_amount_mitra > 0 || $item->refund_amount_customer > 0))
+                                    {{-- 6. Penyelesaian Dana Keuangan (Settlement) --}}
+                                    @if($settlementLabel || $payoutMitra > 0 || $refundCustomer > 0)
                                         <div class="bg-gray-50 dark:bg-gray-750 p-3 rounded-xl text-xs space-y-2 border border-gray-100 dark:border-gray-700/60">
                                             <div class="font-bold text-gray-700 dark:text-gray-200 text-[11px] flex items-center gap-1">
-                                                <span> Penyelesaian Finansial:</span>
+                                                <span>💰 Penyelesaian Finansial:</span>
                                             </div>
                                             @if($settlementLabel)
                                                 <div class="text-[11px] text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200/60 dark:border-gray-700/60 font-medium">
@@ -707,28 +750,27 @@
                                             <div class="grid grid-cols-2 gap-2 pt-1 border-t border-gray-200/60 dark:border-gray-700/60 text-xs">
                                                 <div class="bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200/60 dark:border-gray-700/60">
                                                     <span class="text-gray-400 text-[10px] block">Kompensasi Mitra:</span>
-                                                    <span class="font-bold text-sm block mt-0.5 {{ $item->payout_amount_mitra > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-400' }}">
-                                                        Rp {{ number_format($item->payout_amount_mitra, 0, ',', '.') }}
+                                                    <span class="font-bold text-sm block mt-0.5 {{ $payoutMitra > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-400' }}">
+                                                        Rp {{ number_format($payoutMitra, 0, ',', '.') }}
                                                     </span>
                                                 </div>
                                                 <div class="bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200/60 dark:border-gray-700/60 text-right">
                                                     <span class="text-gray-400 text-[10px] block">Refund Customer:</span>
-                                                    <span class="font-bold text-sm block mt-0.5 {{ $item->refund_amount_customer > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-600 dark:text-gray-400' }}">
-                                                        Rp {{ number_format($item->refund_amount_customer, 0, ',', '.') }}
+                                                    <span class="font-bold text-sm block mt-0.5 {{ $refundCustomer > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-600 dark:text-gray-400' }}">
+                                                        Rp {{ number_format($refundCustomer, 0, ',', '.') }}
                                                     </span>
                                                 </div>
                                             </div>
                                         </div>
                                     @endif
 
-                                    @if($help)
-                                        <div class="pt-2 border-t border-gray-100 dark:border-gray-700/60">
-                                            <a href="{{ route('mitra.helps.detail', $help->id) }}" wire:navigate class="w-full py-2.5 px-3 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 border border-rose-200 dark:border-rose-800/60">
-                                                <span>Buka Halaman Detail Lengkap</span>
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                                            </a>
-                                        </div>
-                                    @endif
+                                    {{-- 7. Tombol Aksi --}}
+                                    <div class="pt-2 border-t border-gray-100 dark:border-gray-700/60 flex items-center gap-2">
+                                        <a href="{{ route('mitra.helps.detail', $help->id) }}" wire:navigate class="flex-1 py-2.5 px-3 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 border border-rose-200 dark:border-rose-800/60">
+                                            <span>Buka Halaman Detail Lengkap</span>
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         @endforeach

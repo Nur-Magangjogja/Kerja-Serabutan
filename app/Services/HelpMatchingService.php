@@ -241,11 +241,24 @@ class HelpMatchingService
 
     /**
      * Hitung batas maksimum radius matching untuk order ini:
-     * - On-Site: Maksimal 10.0 KM
+     * - On-Site (Kerja Serabutan): Tiered radius berdasarkan nominal biaya bantuan:
+     *     * Biaya Rp 10.000 - Rp 20.000: Maksimal 5.0 KM
+     *     * Biaya Rp 20.001 - Rp 40.000: Maksimal 7.5 KM
+     *     * Biaya > Rp 40.000: Maksimal 10.0 KM
      * - Pickup/Delivery: Maksimal 10.0 KM (dengan dual-ring: 5 KM priority, 10 KM fallback)
      */
     public function computeServiceMaxMatchingRadius(Help $help): float
     {
+        if ($help->service_type === Help::SERVICE_TYPE_ON_SITE) {
+            $amount = (float) ($help->amount ?? $help->service_fee ?? 0);
+            if ($amount <= 20000) {
+                return 5.0;
+            } elseif ($amount <= 40000) {
+                return 7.5;
+            }
+            return (float) AppSetting::MAX_OPERATIONAL_RADIUS_KM; // 10.0 KM
+        }
+
         return (float) AppSetting::MAX_OPERATIONAL_RADIUS_KM; // 10.0 KM
     }
 
@@ -491,9 +504,9 @@ class HelpMatchingService
             return false;
         }
 
-        // 2. Dual-Ring Matching:
-        // - Pickup & Delivery: Prioritaskan Ring 1 (<= 5.0 KM), jika kosong fallback ke Ring 2 (<= 10.0 KM)
-        // - On-Site: Langsung cari dalam radius standar (<= 10.0 KM)
+        // 2. Matching Radius:
+        // - Pickup & Delivery: Dual-Ring (Prioritas Ring 1 <= 5.0 KM, fallback ke Ring 2 <= 10.0 KM)
+        // - On-Site: Tiered radius berdasarkan nominal biaya bantuan (5.0 KM, 7.5 KM, atau 10.0 KM)
         if ($help->isPickup()) {
             // Ring 1: Prioritas <= 5 KM dari titik jemput
             $candidates = $this->getRankedCandidates($help, [], 5.0);
@@ -504,7 +517,8 @@ class HelpMatchingService
                 $candidates = $this->getRankedCandidates($help, [], 10.0);
             }
         } else {
-            $candidates = $this->getRankedCandidates($help, [], 10.0);
+            $maxRadius = $this->computeServiceMaxMatchingRadius($help);
+            $candidates = $this->getRankedCandidates($help, [], $maxRadius);
         }
 
         if ($candidates->isEmpty()) {

@@ -198,6 +198,12 @@ class HelpDetail extends Component
     public function markPartnerArrived()
     {
         try {
+            $progress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($this->help);
+            if (!$progress['is_arrived'] && ($progress['target_lat'] != 0 && $progress['target_lng'] != 0 && $progress['partner_lat'] != 0 && $progress['partner_lng'] != 0)) {
+                session()->flash('error', 'Anda belum berada di lokasi penugasan (Jarak tersisa: ' . $progress['formatted_distance'] . '). Tombol konfirmasi hanya dapat ditekan saat GPS Anda berada dalam radius 50 meter.');
+                return;
+            }
+
             app(HelpTransactionService::class)->markArrived($this->help, auth()->user());
             $this->loadHelp();
             $this->dispatch('show-status-notification', message: 'Anda sudah tiba di lokasi!');
@@ -230,6 +236,14 @@ class HelpDetail extends Component
     public function advanceStage(string $stage): void
     {
         try {
+            if (in_array($stage, ['at_pickup', 'at_destination'], true)) {
+                $progress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($this->help);
+                if (!$progress['is_arrived'] && ($progress['target_lat'] != 0 && $progress['target_lng'] != 0 && $progress['partner_lat'] != 0 && $progress['partner_lng'] != 0)) {
+                    session()->flash('error', 'Anda belum berada di lokasi tujuan (Jarak tersisa: ' . $progress['formatted_distance'] . '). Tombol hanya dapat ditekan saat GPS Anda berada dalam radius 50 meter.');
+                    return;
+                }
+            }
+
             app(\App\Services\HelpTrackingService::class)->advanceStage($this->help, auth()->user(), $stage);
             $this->loadHelp();
             $this->dispatch('show-status-notification', message: 'Tahapan berhasil diperbarui!');
@@ -583,8 +597,11 @@ class HelpDetail extends Component
                 ->first();
         }
 
+        $travelProgress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($this->help);
+
         return view('livewire.mitra.helps.help-detail', [
-            'cancelRequest' => $cancelRequest,
+            'cancelRequest'  => $cancelRequest,
+            'travelProgress' => $travelProgress,
         ]);
     }
 }

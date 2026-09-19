@@ -179,7 +179,7 @@ class HelpCreationService
                 'status'                        => Help::STATUS_MENUNGGU_MITRA,
                 'payment_status'                => Help::PAYMENT_STATUS_PAID,
                 'escrow_status'                 => Help::ESCROW_STATUS_HELD,
-                'dispatch_mode'                 => ($scheduleData['order_mode'] === Help::ORDER_MODE_SCHEDULED || $serviceType !== Help::SERVICE_TYPE_ON_SITE) ? Help::DISPATCH_MODE_POOL : Help::DISPATCH_MODE_SEEKING,
+                'dispatch_mode'                 => ($scheduleData['order_mode'] === Help::ORDER_MODE_SCHEDULED || $serviceType !== Help::SERVICE_TYPE_ON_SITE || !AppSetting::isMatchingSeekingEnabled($data['city_id'] ?? null)) ? Help::DISPATCH_MODE_POOL : Help::DISPATCH_MODE_SEEKING,
                 'rating_status'                 => Help::RATING_STATUS_PENDING,
                 'model_version'                 => 3,
                 'escrow_locked_at'              => now(),
@@ -218,13 +218,23 @@ class HelpCreationService
             $createdHelp &&
             $createdHelp->order_mode === Help::ORDER_MODE_INSTANT &&
             $createdHelp->service_type === Help::SERVICE_TYPE_ON_SITE &&
-            AppSetting::isMatchingSeekingEnabled($createdHelp->city_id)
+            $createdHelp->dispatch_mode === Help::DISPATCH_MODE_SEEKING
         ) {
             try {
-                $this->matchingService->initiateMatching($createdHelp);
+                $matched = $this->matchingService->initiateMatching($createdHelp);
+                if (!$matched && $createdHelp->fresh()->dispatch_mode === Help::DISPATCH_MODE_SEEKING) {
+                    $createdHelp->update([
+                        'dispatch_mode'  => Help::DISPATCH_MODE_POOL,
+                        'pool_opened_at' => now(),
+                    ]);
+                }
             } catch (\Throwable $e) {
                 Log::error('[HelpCreationService] Failed initiating matching: ' . $e->getMessage(), [
                     'help_id' => $createdHelp->id,
+                ]);
+                $createdHelp->update([
+                    'dispatch_mode'  => Help::DISPATCH_MODE_POOL,
+                    'pool_opened_at' => now(),
                 ]);
             }
         }

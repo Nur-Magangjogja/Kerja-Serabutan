@@ -15,8 +15,8 @@
                     </div>
 
                     <div class="text-center flex-1 min-w-0 px-2">
-                        <h1 class="text-base font-bold truncate">Riwayat Mutasi</h1>
-                        <p class="text-xs text-white/90 truncate mt-0.5">Pendapatan & penarikan saldo</p>
+                        <h1 class="text-base font-bold truncate">Riwayat Transaksi & Mutasi</h1>
+                        <p class="text-xs text-white/90 truncate mt-0.5">Pendapatan, pencairan dana, & mutasi saldo</p>
                     </div>
 
                     <div class="w-10 flex items-center justify-end">

@@ -984,12 +984,10 @@
                                     </p>
                                     <div class="pt-1">
                                         <button type="button" 
-                                                wire:click="unlinkPartnerAndHoldTask" 
+                                                wire:click="openUnlinkConfirmModal" 
                                                 wire:loading.attr="disabled"
-                                                wire:confirm="Yakin ingin memisahkan dan membebaskan mitra dari tugas ini? Status sibuk mitra akan langsung dilepas dan tugas ditahan (tidak tampil di pool) sampai customer mengonfirmasi."
                                                 class="w-full py-2.5 px-3 bg-sky-600 hover:bg-sky-700 active:scale-[0.99] text-white font-bold rounded-xl text-xs transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
-                                            <span wire:loading.remove wire:target="unlinkPartnerAndHoldTask">⚡ Pisahkan Mitra & Tahan Tugas (Bebaskan Akun Mitra)</span>
-                                            <span wire:loading wire:target="unlinkPartnerAndHoldTask">Memproses Pelepasan Mitra...</span>
+                                            <span>⚡ Pisahkan Mitra & Tahan Tugas (Bebaskan Akun Mitra)</span>
                                         </button>
                                     </div>
                                 </div>
@@ -1076,17 +1074,43 @@
                             </div>
 
                         @elseif(($selectedCancelRequest->action_type ?? '') === 'switch_partner')
-                            {{-- KONDISI 2A: CUSTOMER GANTI MITRA (OTOMATIS SELESAI) --}}
-                            <div class="p-3.5 bg-white dark:bg-black border border-emerald-300 dark:border-emerald-800 rounded-2xl text-xs space-y-1.5">
-                                <div class="font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
-                                    <span class="text-sm">⚡</span>
-                                    <span>Status Operasional: Pengalihan Mitra (Ganti Mitra) Selesai</span>
+                            {{-- KONDISI 2A: CUSTOMER GANTI MITRA --}}
+                            @php
+                                $partnerResp = $selectedCancelRequest->partner_response_type ?? 'pending';
+                            @endphp
+                            <div class="p-3.5 bg-white dark:bg-black border border-blue-300 dark:border-blue-800 rounded-2xl text-xs space-y-2.5">
+                                <div class="font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+                                    <span class="text-sm">🔄</span>
+                                    <span>Status: Pengajuan Ganti Mitra (Relist ke Pool)</span>
                                 </div>
-                                <p class="text-emerald-800 dark:text-emerald-300/90 leading-relaxed text-[11px]">
-                                    Customer memilih <strong>Ganti Mitra</strong> karena mitra lama tidak bergerak / lambat. Sistem telah otomatis melepas dan mengeksklusi mitra lama, serta mengembalikan pesanan ke pool terbuka.
+                                <p class="text-blue-800 dark:text-blue-300/90 leading-relaxed text-[11px]">
+                                    Customer mengajukan <strong>Ganti Mitra</strong> karena mitra lama tidak bergerak / lambat / tidak merespons chat & telepon.
+                                    @if($partnerResp === 'confirmed')
+                                        Mitra telah <strong>menyetujui pelepasan tugas</strong>.
+                                    @elseif($partnerResp === 'rejected')
+                                        Mitra mengajukan <strong>keberatan / klarifikasi</strong>: <em>"{{ $selectedCancelRequest->partner_response_notes }}"</em>.
+                                    @else
+                                        Mitra <strong>belum memberikan respon/konfirmasi</strong>. Admin dapat memutuskan untuk <strong>melepaskan mitra dan mengembalikan tugas ke pool terbuka</strong>.
+                                    @endif
+                                    Saldo Dana Tahan <strong>(Rp {{ number_format($gross, 0, ',', '.') }})</strong> tetap aman di sistem untuk mitra pengganti baru.
                                 </p>
-                                <div class="pt-1.5 border-t border-emerald-200 dark:border-emerald-800 text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">
-                                    💡 <em>Tugas Admin: Periksa durasi dan aktivitas chat di atas untuk memberikan sanksi SP1 kepada mitra yang pasif/lambat.</em>
+
+                                {{-- Tombol Tindakan Cepat: Konfirmasi Paksa Ganti Mitra --}}
+                                @if($selectedCancelRequest->status === 'pending')
+                                    <div class="pt-2 border-t border-blue-100 dark:border-blue-900/60">
+                                        <button type="button"
+                                                wire:click="openForceSwitchModal"
+                                                class="w-full py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.99] text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-1.5 cursor-pointer">
+                                            <span>⚡ Konfirmasi Paksa Lepas Mitra & Kembalikan ke Pool</span>
+                                        </button>
+                                        <p class="text-[10.5px] text-blue-600 dark:text-blue-400 text-center mt-1">
+                                            Gunakan tombol ini jika mitra tidak merespons chat/telepon atau menghilang.
+                                        </p>
+                                    </div>
+                                @endif
+
+                                <div class="pt-1.5 border-t border-blue-200 dark:border-blue-800 text-[10px] text-blue-700 dark:text-blue-400 font-medium">
+                                    💡 <em>Tugas Admin: Simpan hasil audit untuk mengembalikan pesanan ke pool mitra lain dan berikan sanksi SP bila mitra terbukti pasif/lambat.</em>
                                 </div>
                             </div>
 
@@ -1255,6 +1279,170 @@
                     <button wire:click="executeCancelReview" wire:loading.attr="disabled" type="button" class="flex-1 py-2.5 sm:py-3 bg-primary-600 hover:bg-primary-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
                         <span wire:loading.remove wire:target="executeCancelReview">Simpan Hasil Audit & Sanksi SP</span>
                         <span wire:loading wire:target="executeCancelReview">Memproses...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- MODAL KONFIRMASI: Pisahkan & Bebaskan Mitra --}}
+    @if ($showUnlinkConfirmModal && $selectedCancelRequest)
+        @php
+            $helpItem = $selectedCancelRequest->help;
+            $partnerItem = $helpItem?->mitra ?? $selectedCancelRequest->partner;
+        @endphp
+        <div class="fixed inset-0 z-[60] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in overflow-y-auto"
+             wire:click.self="closeUnlinkConfirmModal">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl sm:rounded-3xl max-w-md w-full shadow-2xl p-5 sm:p-6 text-center space-y-4 animate-scale-in">
+                {{-- Header Icon --}}
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-2xl shadow-inner">
+                    ⚡
+                </div>
+
+                {{-- Title & Subtitle --}}
+                <div class="space-y-1.5">
+                    <h3 class="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white leading-snug">
+                        Pisahkan & Bebaskan Mitra?
+                    </h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Konfirmasi tindakan admin untuk penugasan #{{ $selectedCancelRequest->help_id }}
+                    </p>
+                </div>
+
+                {{-- Detail Alert Box --}}
+                <div class="p-3.5 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/80 rounded-2xl text-left text-xs space-y-2.5">
+                    <p class="text-sky-950 dark:text-sky-100 font-semibold leading-relaxed">
+                        Yakin ingin memisahkan dan membebaskan mitra dari tugas ini?
+                    </p>
+                    <div class="space-y-2 text-[11px] text-sky-900/90 dark:text-sky-200/90 leading-relaxed border-t border-sky-200/70 dark:border-sky-800/60 pt-2">
+                        <div class="flex items-start gap-2">
+                            <span class="text-emerald-600 dark:text-emerald-400 font-bold shrink-0">✓</span>
+                            <span><strong>Status Mitra ({{ $partnerItem?->name ?? 'Mitra' }}):</strong> Status sibuk akan langsung dilepas ke <em>Online Standby</em> agar mitra dapat segera mengambil tugas baru kembali.</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="text-amber-600 dark:text-amber-400 font-bold shrink-0">⏳</span>
+                            <span><strong>Status Tugas:</strong> Tugas ditahan (tidak tampil di pool) sampai Customer mengonfirmasi pilihan (mencari pengganti atau refund).</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="text-blue-600 dark:text-blue-400 font-bold shrink-0">🛡️</span>
+                            <span><strong>Dana Escrow:</strong> Tetap aman terkunci di platform sampai ada kesepakatan final.</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Action Buttons --}}
+                <div class="flex items-center gap-2.5 pt-1">
+                    <button type="button"
+                            wire:click="closeUnlinkConfirmModal"
+                            class="flex-1 py-2.5 sm:py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs sm:text-sm font-bold rounded-xl transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="button"
+                            wire:click="unlinkPartnerAndHoldTask"
+                            wire:loading.attr="disabled"
+                            class="flex-1 py-2.5 sm:py-3 bg-sky-600 hover:bg-sky-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]">
+                        <span wire:loading.remove wire:target="unlinkPartnerAndHoldTask">Ya, Pisahkan & Bebaskan</span>
+                        <span wire:loading wire:target="unlinkPartnerAndHoldTask">Memproses...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- MODAL KONFIRMASI: Konfirmasi Paksa Ganti Mitra (Relist ke Pool) --}}
+    @if ($showForceSwitchModal && $selectedCancelRequest)
+        @php
+            $helpItem = $selectedCancelRequest->help;
+            $partnerItem = $helpItem?->mitra ?? $selectedCancelRequest->partner;
+            $customerItem = $helpItem?->user ?? $selectedCancelRequest->customer;
+        @endphp
+        <div class="fixed inset-0 z-[60] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in overflow-y-auto"
+             wire:click.self="closeForceSwitchModal">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl sm:rounded-3xl max-w-lg w-full shadow-2xl p-5 sm:p-6 text-left space-y-4 animate-scale-in">
+                {{-- Header --}}
+                <div class="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-3">
+                    <div class="w-11 h-11 rounded-2xl bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-xl shadow-inner shrink-0">
+                        ⚡
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-gray-900 dark:text-white leading-snug">
+                            Konfirmasi Paksa Ganti Mitra
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Pelepasan mitra pasif/menghilang untuk tugas #{{ $selectedCancelRequest->help_id }}
+                        </p>
+                    </div>
+                </div>
+
+                {{-- Information Box --}}
+                <div class="p-3.5 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/80 rounded-2xl text-xs space-y-2">
+                    <div class="flex items-center justify-between text-[11px] pb-1.5 border-b border-blue-200/60 dark:border-blue-800/60">
+                        <span class="text-blue-700 dark:text-blue-300 font-semibold">👤 Customer:</span>
+                        <strong class="text-blue-950 dark:text-white">{{ $customerItem?->name ?? 'Customer' }}</strong>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] pb-1.5 border-b border-blue-200/60 dark:border-blue-800/60">
+                        <span class="text-blue-700 dark:text-blue-300 font-semibold">🛵 Mitra Terpasang:</span>
+                        <strong class="text-blue-950 dark:text-white">{{ $partnerItem?->name ?? 'Mitra' }} ({{ $partnerItem?->phone ?? '-' }})</strong>
+                    </div>
+                    <div class="text-[11px] text-blue-900 dark:text-blue-200">
+                        <span class="font-semibold text-blue-700 dark:text-blue-300">Alasan Ganti Mitra:</span>
+                        <p class="mt-0.5 italic font-medium">"{{ $selectedCancelRequest->reason ?: 'Mitra tidak merespons chat / telepon' }}"</p>
+                    </div>
+                </div>
+
+                {{-- Action Description --}}
+                <div class="space-y-1.5 text-xs text-gray-600 dark:text-gray-300">
+                    <p class="font-bold text-gray-800 dark:text-gray-200 text-xs">Dampak Tindakan:</p>
+                    <ul class="space-y-1 text-[11px] list-disc list-inside text-gray-600 dark:text-gray-400">
+                        <li>Status mitra lama akan langsung dilepaskan dan dieksklusi dari pesanan ini.</li>
+                        <li>Tugas akan <strong>langsung dikembalikan ke pool terbuka</strong> agar segera diambil rekan jasa pengganti.</li>
+                        <li>Saldo dana tahan customer tetap aman tersimpan tanpa terpotong.</li>
+                    </ul>
+                </div>
+
+                {{-- SP Option Form --}}
+                <div class="p-3 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl space-y-2.5 text-xs">
+                    <label class="flex items-center gap-2 cursor-pointer font-bold text-gray-900 dark:text-white">
+                        <input type="checkbox" wire:model.live="forceSwitchIssueSp" class="rounded text-rose-600 focus:ring-rose-500">
+                        <span>Berikan Sanksi SP kepada Mitra karena tidak merespons</span>
+                    </label>
+
+                    @if($forceSwitchIssueSp)
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 border-t border-gray-200 dark:border-gray-700">
+                            <div class="sm:col-span-5">
+                                <label class="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Tingkat Sanksi SP</label>
+                                <select wire:model.live="forceSwitchSpLevel" class="w-full h-8 px-2.5 bg-white dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-bold text-gray-900 dark:text-white">
+                                    <option value="1">SP 1 (Peringatan Ringan)</option>
+                                    <option value="2">SP 2 (Peringatan Sedang)</option>
+                                    <option value="3">SP 3 (Peringatan Keras)</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-7">
+                                <label class="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1">Alasan SP</label>
+                                <input type="text" wire:model.defer="forceSwitchSpReason" class="w-full h-8 px-2.5 bg-white dark:bg-gray-750 border border-gray-300 dark:border-gray-600 rounded-lg text-xs text-gray-900 dark:text-white">
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                <div>
+                    <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1 text-[11px]">Catatan Admin (Opsional)</label>
+                    <input type="text" wire:model.defer="forceSwitchNotes" placeholder="Catatan audit admin..." class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                </div>
+
+                {{-- Action Buttons --}}
+                <div class="flex items-center gap-2.5 pt-1">
+                    <button type="button"
+                            wire:click="closeForceSwitchModal"
+                            class="flex-1 py-2.5 sm:py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs sm:text-sm font-bold rounded-xl transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="button"
+                            wire:click="executeForceSwitchPartner"
+                            wire:loading.attr="disabled"
+                            class="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]">
+                        <span wire:loading.remove wire:target="executeForceSwitchPartner">⚡ Ya, Konfirmasi & Buka ke Pool</span>
+                        <span wire:loading wire:target="executeForceSwitchPartner">Memproses...</span>
                     </button>
                 </div>
             </div>

@@ -10,6 +10,33 @@ class PartnerReport extends Model
 {
     use HasFactory;
 
+    // Status Constants
+    public const STATUS_PENDING        = 'pending';
+    public const STATUS_IN_PROGRESS    = 'in_progress';
+    public const STATUS_INVESTIGATING  = 'investigating';
+    public const STATUS_UNDER_REVIEW   = 'under_review';
+    public const STATUS_PROSES         = 'proses';
+    public const STATUS_RESOLVED       = 'resolved';
+    public const STATUS_DISMISSED      = 'dismissed';
+    public const STATUS_CLOSED         = 'closed';
+
+    public const ACTIVE_STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_IN_PROGRESS,
+        self::STATUS_INVESTIGATING,
+        self::STATUS_UNDER_REVIEW,
+        self::STATUS_PROSES,
+    ];
+
+    public const TERMINAL_STATUSES = [
+        self::STATUS_RESOLVED,
+        self::STATUS_DISMISSED,
+        self::STATUS_CLOSED,
+        'rejected',
+        'ditolak',
+        'selesai',
+    ];
+
     protected $fillable = [
         'reporter_id',
         'reported_user_id',
@@ -187,27 +214,73 @@ class PartnerReport extends Model
     // Helper methods
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return $this->status === self::STATUS_PENDING;
     }
 
     public function isActive(): bool
     {
-        return in_array($this->status, ['pending', 'in_progress', 'investigating'], true);
+        return in_array($this->status, self::ACTIVE_STATUSES, true);
     }
 
     public function isResolved(): bool
     {
-        return $this->status === 'resolved';
+        return $this->status === self::STATUS_RESOLVED;
     }
 
     public function isDismissed(): bool
     {
-        return $this->status === 'dismissed';
+        return $this->status === self::STATUS_DISMISSED;
     }
 
     public function isResolvedOrClosed(): bool
     {
-        return in_array($this->status, ['resolved', 'dismissed', 'closed'], true);
+        return in_array($this->status, self::TERMINAL_STATUSES, true);
+    }
+
+    /**
+     * Cek apakah ada laporan aduan aktif (pending/in progress) untuk tugas tertentu.
+     */
+    public static function hasActiveReportForHelp(int $helpId, ?int $reporterId = null): bool
+    {
+        return static::where('reported_help_id', $helpId)
+            ->when($reporterId, fn($q) => $q->where('reporter_id', $reporterId))
+            ->whereIn('status', self::ACTIVE_STATUSES)
+            ->exists();
+    }
+
+    /**
+     * Ambil laporan aduan aktif terakhir untuk tugas tertentu.
+     */
+    public static function getActiveReportForHelp(int $helpId, ?int $reporterId = null): ?self
+    {
+        return static::where('reported_help_id', $helpId)
+            ->when($reporterId, fn($q) => $q->where('reporter_id', $reporterId))
+            ->whereIn('status', self::ACTIVE_STATUSES)
+            ->latest()
+            ->first();
+    }
+
+    /**
+     * Ambil laporan terakhir (termasuk yang sudah resolved/closed) untuk tugas tertentu.
+     */
+    public static function getLatestReportForHelp(int $helpId, ?int $reporterId = null): ?self
+    {
+        return static::where('reported_help_id', $helpId)
+            ->when($reporterId, fn($q) => $q->where('reporter_id', $reporterId))
+            ->latest()
+            ->first();
+    }
+
+    /**
+     * Ambil laporan terakhir yang sudah diselesaikan (resolved/closed) untuk tugas tertentu.
+     */
+    public static function getLatestResolvedReportForHelp(int $helpId, ?int $reporterId = null): ?self
+    {
+        return static::where('reported_help_id', $helpId)
+            ->when($reporterId, fn($q) => $q->where('reporter_id', $reporterId))
+            ->whereIn('status', self::TERMINAL_STATUSES)
+            ->latest()
+            ->first();
     }
 
     public function isFromCustomer(): bool

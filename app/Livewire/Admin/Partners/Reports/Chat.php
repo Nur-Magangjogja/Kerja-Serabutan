@@ -98,6 +98,9 @@ class Chat extends Component
             $photoPath = $this->photo->store('reports/messages', 'public');
         }
 
+        $customerReadAt = $this->activeTab === 'mitra' ? now() : null;
+        $mitraReadAt    = $this->activeTab === 'customer' ? now() : null;
+
         PartnerReportMessage::create([
             'partner_report_id' => $this->report->id,
             'sender_id'         => auth()->id(),
@@ -105,6 +108,8 @@ class Chat extends Component
             'message'           => trim($this->message ?? ''),
             'photo'             => $photoPath,
             'is_read'           => false,
+            'customer_read_at'  => $customerReadAt,
+            'mitra_read_at'     => $mitraReadAt,
         ]);
 
         $this->reset(['message', 'photo']);

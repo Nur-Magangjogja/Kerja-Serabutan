@@ -159,6 +159,31 @@ class Activity extends Component
         $this->selectedHelp = null;
     }
 
+    /**
+     * Pemetaan kategori filter ke nilai acuan activity_type di database
+     * agar kompatibel dengan seluruh varian penamaan riwayat aktivitas di sistem.
+     */
+    public static function getActivityTypeAliases(string $filter): array
+    {
+        $map = [
+            'help_created'            => ['help_created'],
+            'take_help'               => ['take_help', 'help_accepted'],
+            'partner_on_the_way'      => ['partner_on_the_way', 'partner_departed', 'partner_started_moving'],
+            'partner_arrived'         => ['partner_arrived'],
+            'help_started'            => ['help_started', 'service_started'],
+            'help_completed'          => ['help_completed', 'service_completed', 'help_completed_waiting_confirmation'],
+            'help_confirmed'          => ['help_confirmed', 'confirm_completion', 'help_auto_confirmed', 'auto_complete'],
+            'cancel_help'             => ['cancel_help', 'help_cancelled', 'help_auto_cancelled', 'partner_cancel_executed', 'request_partner_cancel'],
+            'partner_cancel_executed' => ['partner_cancel_executed', 'request_partner_cancel'],
+            'dispute_raised'          => ['dispute_raised', 'dispute_resolved', 'warranty_claim_escrow_clawback'],
+            'help_reviewed'           => ['help_reviewed'],
+            'account_updated'         => ['profile_updated', 'password_changed'],
+            'balance_topup'           => ['balance_topup'],
+        ];
+
+        return $map[$filter] ?? [$filter];
+    }
+
     public function render()
     {
         $admin = auth()->user();
@@ -276,7 +301,8 @@ class Activity extends Component
         }
 
         if ($this->activityTypeFilter !== 'all') {
-            $activityQuery->where('activity_type', $this->activityTypeFilter);
+            $aliases = self::getActivityTypeAliases($this->activityTypeFilter);
+            $activityQuery->whereIn('activity_type', $aliases);
         }
 
         if ($this->cityId !== 'all') {
@@ -327,22 +353,38 @@ class Activity extends Component
 
         $baseStats = PartnerActivity::whereHas('user', fn($q) => $q->whereIn('role', ['customer', 'mitra']));
         if (!$isSuperAdmin && !empty($effectiveDistrictIds)) {
-            $baseStats->whereHas('user', fn($q) => $q->whereIn('district_id', $effectiveDistrictIds));
+            $baseStats->where(function ($q) use ($effectiveDistrictIds) {
+                $q->whereHas('user', fn($uq) => $uq->whereIn('district_id', $effectiveDistrictIds))
+                  ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $effectiveDistrictIds));
+            });
         } elseif (!$isSuperAdmin && $admin && $admin->role === 'admin') {
             $baseStats->whereRaw('1 = 0');
         } elseif ($isSuperAdmin && $admin) {
             $saTerritory = $admin->getActiveSuperadminTerritory();
             if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
                 $dId = (int) $saTerritory['id'];
-                $baseStats->whereHas('user', fn($q) => $q->where('district_id', $dId));
+                $baseStats->where(function ($q) use ($dId) {
+                    $q->whereHas('user', fn($uq) => $uq->where('district_id', $dId))
+                      ->orWhereHas('help', fn($hq) => $hq->where('district_id', $dId));
+                });
             } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
                 $cityId = (int) $saTerritory['id'];
                 $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
-                $baseStats->whereHas('user', function ($q) use ($cityId, $saDistrictIds) {
-                    if (!empty($saDistrictIds)) $q->whereIn('district_id', $saDistrictIds);
-                    if ($cityId) $q->orWhere('city_id', $cityId);
+                $baseStats->where(function ($q) use ($cityId, $saDistrictIds) {
+                    $q->whereHas('user', function ($uq) use ($cityId, $saDistrictIds) {
+                        if (!empty($saDistrictIds)) $uq->whereIn('district_id', $saDistrictIds);
+                        if ($cityId) $uq->orWhere('city_id', $cityId);
+                    })->orWhereHas('help', function ($hq) use ($cityId, $saDistrictIds) {
+                        if (!empty($saDistrictIds)) $hq->whereIn('district_id', $saDistrictIds);
+                        if ($cityId) $hq->orWhere('city_id', $cityId);
+                    });
                 });
             }
+        }
+
+        // Terapkan filter khusus pengguna pelaku jika sedang aktif
+        if ($this->selectedUserId) {
+            $baseStats->where('user_id', $this->selectedUserId);
         }
 
         $stats = [
@@ -352,6 +394,7 @@ class Activity extends Component
             'mitra_acts'     => (clone $baseStats)->whereHas('user', fn($q) => $q->where('role', 'mitra'))->count(),
             'completed_jobs' => (clone $baseStats)->whereIn('activity_type', ['help_completed', 'service_completed', 'confirm_completion', 'help_confirmed'])->count(),
         ];
+
 
         $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 

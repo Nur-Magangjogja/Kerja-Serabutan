@@ -94,6 +94,33 @@
                                     </div>
                                 @endif
                             </div>
+
+                            {{-- Status Laporan Aduan Aktif vs Selesai --}}
+                            @if ($activeReport)
+                                <div class="p-3 bg-amber-100/80 dark:bg-amber-950/60 rounded-xl border border-amber-300 dark:border-amber-800 text-xs space-y-1.5">
+                                    <div class="flex items-start justify-between gap-2 flex-wrap">
+                                        <div class="flex items-start gap-2">
+                                            <span class="text-base">⚠️</span>
+                                            <div>
+                                                <h4 class="font-bold text-amber-950 dark:text-amber-200 text-xs">
+                                                    Laporan Aduan Aktif Sedang Ditinjau (Laporan #{{ $activeReport->id }})
+                                                </h4>
+                                                <p class="text-[11px] text-amber-900/90 dark:text-amber-300 mt-0.5">
+                                                    Status: <span class="font-bold uppercase tracking-wider px-1.5 py-0.5 bg-amber-200 dark:bg-amber-900 text-[10px] rounded">{{ $activeReport->status }}</span>. Anda tidak dapat membuat laporan baru sampai laporan sebelumnya selesai dikonfirmasi Admin.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <a href="{{ route('mitra.chat', ['admin' => 1, 'report' => $activeReport->id]) }}" wire:navigate class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-[11px] transition shadow-2xs">
+                                            💬 Chat / Diskusi Admin
+                                        </a>
+                                    </div>
+                                </div>
+                            @elseif ($latestResolvedReport)
+                                <div class="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-900 dark:text-emerald-200 flex items-center gap-2">
+                                    <span class="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                                    <span>Laporan sebelumnya (<strong>#{{ $latestResolvedReport->id }}</strong> - {{ ucfirst($latestResolvedReport->status) }}) telah selesai diproses oleh Admin. Anda dapat mengajukan laporan baru jika ada kendala tambahan.</span>
+                                </div>
+                            @endif
                         </div>
                     @else
                         {{-- Dropdown Pilih Bantuan jika tidak dibuka dari context chat --}}
@@ -102,7 +129,7 @@
                                 Tugas Terkait <span class="text-xs text-gray-400 font-normal">(Opsional)</span>
                             </label>
                             <select id="help_id" wire:model.live="help_id"
-                                class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all">
+                                class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all @error('help_id') border-red-500 @enderror">
                                 <option value="" class="text-gray-400">-- Pilih Tugas Terkait (Jika Ada) --</option>
                                 @foreach ($helps as $h)
                                     <option value="{{ $h->id }}">
@@ -110,6 +137,12 @@
                                     </option>
                                 @endforeach
                             </select>
+                            @error('help_id')
+                                <div class="mt-2 p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-300 flex items-start gap-2">
+                                    <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>{{ $message }}</span>
+                                </div>
+                            @enderror
                         </div>
                     @endif
 
@@ -257,12 +290,16 @@
                             </svg>
                             Batal
                         </a>
-                        <button type="submit"
-                            class="inline-flex items-center justify-center px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl shadow-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all cursor-pointer">
-                            <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                            </svg>
-                            Kirim Laporan
+                        <button type="submit" {{ $activeReport ? 'disabled' : '' }}
+                            class="inline-flex items-center justify-center px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl shadow-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                            @if (!$activeReport)
+                                <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                                </svg>
+                                <span>Kirim Laporan</span>
+                            @else
+                                <span>Menunggu Laporan #{{ $activeReport->id }}</span>
+                            @endif
                         </button>
                     </div>
                 </div>

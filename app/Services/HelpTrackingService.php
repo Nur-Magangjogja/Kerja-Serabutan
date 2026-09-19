@@ -227,6 +227,40 @@ class HelpTrackingService
             }
         }
 
+        // Guard GPS kedatangan saat tiba di penjemputan
+        if ($nextStage === Help::STAGE_AT_PICKUP) {
+            $partnerLat = (float) ($help->partner_current_lat ?: $help->partner_initial_lat ?: 0);
+            $partnerLng = (float) ($help->partner_current_lng ?: $help->partner_initial_lng ?: 0);
+            $pickupLat  = (float) ($help->pickup_latitude ?: $help->latitude ?: 0);
+            $pickupLng  = (float) ($help->pickup_longitude ?: $help->longitude ?: 0);
+
+            if ($partnerLat != 0 && $partnerLng != 0 && $pickupLat != 0 && $pickupLng != 0) {
+                $distMeters = $this->calculateDistance($partnerLat, $partnerLng, $pickupLat, $pickupLng);
+                if ($distMeters > 50.0) {
+                    $distKm = round($distMeters / 1000.0, 2);
+                    $formattedDist = $distMeters >= 1000 ? str_replace('.', ',', (string) $distKm) . ' KM' : round($distMeters) . ' m';
+                    throw new \RuntimeException("Anda belum berada di lokasi penjemputan (Jarak tersisa: {$formattedDist}). Konfirmasi tiba hanya dapat dilakukan saat GPS Anda berada dalam radius 50 meter.");
+                }
+            }
+        }
+
+        // Guard GPS kedatangan saat tiba di tujuan pengantaran
+        if ($nextStage === Help::STAGE_AT_DESTINATION) {
+            $partnerLat = (float) ($help->partner_current_lat ?: $help->partner_initial_lat ?: 0);
+            $partnerLng = (float) ($help->partner_current_lng ?: $help->partner_initial_lng ?: 0);
+            $destLat    = (float) ($help->delivery_latitude ?: $help->latitude ?: 0);
+            $destLng    = (float) ($help->delivery_longitude ?: $help->longitude ?: 0);
+
+            if ($partnerLat != 0 && $partnerLng != 0 && $destLat != 0 && $destLng != 0) {
+                $distMeters = $this->calculateDistance($partnerLat, $partnerLng, $destLat, $destLng);
+                if ($distMeters > 50.0) {
+                    $distKm = round($distMeters / 1000.0, 2);
+                    $formattedDist = $distMeters >= 1000 ? str_replace('.', ',', (string) $distKm) . ' KM' : round($distMeters) . ' m';
+                    throw new \RuntimeException("Anda belum berada di lokasi tujuan (Jarak tersisa: {$formattedDist}). Konfirmasi tiba hanya dapat dilakukan saat GPS Anda berada dalam radius 50 meter.");
+                }
+            }
+        }
+
         return DB::transaction(function () use ($help, $nextStage, $extraData) {
             $locked = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
 

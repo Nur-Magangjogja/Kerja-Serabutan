@@ -114,16 +114,30 @@ class CancellationAuditService
                 } else {
                     // Disetujui
                     if ($settlementType === HelpCancelRequest::SETTLEMENT_RELIST_POOL) {
-                        // Lepas mitra jika masih terpasang dan buka pool pencarian mitra baru
-                        if ($help->mitra_id) {
-                            $this->onlineService->releaseBusy($help->mitra_id, $help->id);
+                        $oldPartnerId = $help->mitra_id ?: $lockedReq->partner_id;
+                        // Lepas mitra jika masih terpasang, catat eksklusi, dan buka pool pencarian mitra baru
+                        if ($oldPartnerId) {
+                            $this->onlineService->releaseBusy($oldPartnerId, $help->id);
+                            $help->addExcludedPartner($oldPartnerId, "Admin mengembalikan tugas ke pool via audit pembatalan/ganti mitra: " . ($adminNotes ?? ''));
                         }
                         $help->update([
-                            'status'              => Help::STATUS_MENUNGGU_MITRA,
-                            'mitra_id'            => null,
-                            'dispatch_mode'       => Help::DISPATCH_MODE_POOL,
-                            'cancel_requested_by' => null,
-                            'cancel_deadline_at'  => null,
+                            'status'                      => Help::STATUS_MENUNGGU_MITRA,
+                            'mitra_id'                    => null,
+                            'service_stage'               => null,
+                            'partner_initial_lat'         => null,
+                            'partner_initial_lng'         => null,
+                            'partner_current_lat'         => null,
+                            'partner_current_lng'         => null,
+                            'partner_started_at'          => null,
+                            'partner_started_moving_at'   => null,
+                            'partner_arrived_at'          => null,
+                            'arrived_at'                  => null,
+                            'partner_location_updated_at' => null,
+                            'cancel_requested_by'         => null,
+                            'cancel_deadline_at'          => null,
+                            'dispatch_mode'               => Help::DISPATCH_MODE_POOL,
+                            'pool_opened_at'              => now(),
+                            'admin_notes'                 => $adminNotes ?: 'Dikonfirmasi oleh Admin untuk mengembalikan tugas ke pool pencarian rekan jasa baru.',
                         ]);
                         $finalRefund = 0.0;
                         $finalPayout = 0.0;
@@ -145,6 +159,9 @@ class CancellationAuditService
                 }
             }
 
+            $isPartnerSp  = in_array($spTarget, [HelpCancelRequest::SP_TARGET_PARTNER, HelpCancelRequest::SP_TARGET_BOTH], true);
+            $isCustomerSp = in_array($spTarget, [HelpCancelRequest::SP_TARGET_CUSTOMER, HelpCancelRequest::SP_TARGET_BOTH], true);
+
             // 3. Update Tiket Audit
             $lockedReq->update([
                 'status'                 => $finalStatus,
@@ -155,10 +172,10 @@ class CancellationAuditService
                 'refund_amount_customer' => $finalRefund,
                 'payout_amount_mitra'    => $finalPayout,
                 'sp_target'              => $spTarget ?? HelpCancelRequest::SP_TARGET_NONE,
-                'partner_sp_level'       => $partnerSpLevel,
-                'partner_sp_reason'      => $partnerSpReason,
-                'customer_sp_level'      => $customerSpLevel,
-                'customer_sp_reason'     => $customerSpReason,
+                'partner_sp_level'       => $isPartnerSp ? $partnerSpLevel : null,
+                'partner_sp_reason'      => $isPartnerSp ? $partnerSpReason : null,
+                'customer_sp_level'      => $isCustomerSp ? $customerSpLevel : null,
+                'customer_sp_reason'     => $isCustomerSp ? $customerSpReason : null,
                 'audit_decision'         => $decision,
             ]);
 

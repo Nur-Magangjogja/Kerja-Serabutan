@@ -570,7 +570,7 @@
     @if($showRefundModal)
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
             <div class="bg-white dark:bg-gray-800 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-gray-100 dark:border-gray-700 space-y-4 max-h-[90vh] overflow-y-auto">
-                <h3 class="text-sm font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+                <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <span>🛡️</span> Konfirmasi Persetujuan Refund
                 </h3>
                 <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed break-words">
@@ -593,7 +593,7 @@
     @if($showRejectModal)
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
             <div class="bg-white dark:bg-gray-800 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-gray-100 dark:border-gray-700 space-y-4 max-h-[90vh] overflow-y-auto">
-                <h3 class="text-sm font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+                <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <span>❌</span> Tolak Permintaan Refund
                 </h3>
                 <div>

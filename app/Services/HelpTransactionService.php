@@ -328,6 +328,21 @@ class HelpTransactionService
         $this->assertMitraAssigned($help, $mitra);
         $this->assertCanTransition($help, Help::STATUS_PARTNER_ARRIVED);
 
+        // Validasi GPS Kedatangan (Mitra harus berada dalam radius <= 50 meter jika koordinat tersedia)
+        $partnerLat = (float) ($help->partner_current_lat ?: $help->partner_initial_lat ?: 0);
+        $partnerLng = (float) ($help->partner_current_lng ?: $help->partner_initial_lng ?: 0);
+        $targetLat = (float) ($help->latitude ?: 0);
+        $targetLng = (float) ($help->longitude ?: 0);
+
+        if ($partnerLat != 0 && $partnerLng != 0 && $targetLat != 0 && $targetLng != 0) {
+            $distMeters = $this->trackingService->calculateDistance($partnerLat, $partnerLng, $targetLat, $targetLng);
+            if ($distMeters > 50.0) {
+                $distKm = round($distMeters / 1000.0, 2);
+                $formattedDist = $distMeters >= 1000 ? str_replace('.', ',', (string) $distKm) . ' KM' : round($distMeters) . ' m';
+                throw new \RuntimeException("Anda belum berada di lokasi penugasan (Jarak tersisa: {$formattedDist}). Konfirmasi tiba hanya dapat dilakukan saat GPS Anda berada dalam radius 50 meter.");
+            }
+        }
+
         DB::transaction(function () use ($help) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
             $lockedHelp->update([
@@ -529,6 +544,11 @@ class HelpTransactionService
                 throw new \RuntimeException('Sengketa untuk pesanan ini telah diputuskan oleh Admin secara final dan tidak dapat diajukan kembali.');
             }
 
+            $activeReport = PartnerReport::getActiveReportForHelp($lockedHelp->id);
+            if ($activeReport) {
+                throw new \RuntimeException("Laporan sengketa (Laporan #{$activeReport->id}) untuk tugas ini sedang aktif ditinjau oleh Admin (Status: {$activeReport->status}). Mohon tunggu proses mediasi selesai.");
+            }
+
             if ($lockedHelp->escrow_status !== Help::ESCROW_STATUS_HELD) {
                 throw new \RuntimeException('Dana bantuan tidak berada dalam status holding (telah dicairkan atau telah dibatalkan). Sengketa pembekuan tidak dapat diajukan.');
             }
@@ -611,6 +631,12 @@ class HelpTransactionService
 
             if ($lockedHelp->dispute_resolved_at !== null) {
                 throw new \RuntimeException('Sengketa untuk pesanan ini telah diputuskan oleh Admin secara final dan tidak dapat diajukan kembali.');
+            }
+
+            // Validasi: Cegah penumpukan laporan jika masih ada laporan aktif yang belum selesai
+            $activeReport = PartnerReport::getActiveReportForHelp($lockedHelp->id);
+            if ($activeReport) {
+                throw new \RuntimeException("Laporan klaim garansi (Laporan #{$activeReport->id}) untuk tugas ini sedang aktif ditinjau oleh Admin (Status: {$activeReport->status}). Anda tidak dapat mengajukan laporan baru sampai laporan sebelumnya selesai dikonfirmasi.");
             }
 
             // Pastikan garansi 1x24 jam belum kadaluarsa jika pesanan telah selesai

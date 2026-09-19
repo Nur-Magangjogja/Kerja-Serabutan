@@ -490,6 +490,14 @@ class PartnerOnlineService
     }
 
     /**
+     * Alias method untuk setBusy (kompatibilitas antar service).
+     */
+    public function markBusy(int $mitraId, int $helpId): bool
+    {
+        return $this->setBusy($mitraId, $helpId);
+    }
+
+    /**
      * Melepaskan status BUSY setelah bantuan selesai / dibatalkan (Atomic Lock).
      * Transisi Eksplisit: BUSY -> ONLINE (Standby).
      * Memberikan kontrol penuh kepada Mitra untuk menekan tombol "Cari Order" secara sadar saat siap menerima tugas baru.

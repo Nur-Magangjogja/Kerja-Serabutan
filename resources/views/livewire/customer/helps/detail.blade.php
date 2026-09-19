@@ -710,8 +710,8 @@
                     </svg>
                 </div>
                 <div class="flex-1 text-xs text-blue-950 dark:text-blue-200 leading-relaxed">
-                    <span class="font-bold block text-blue-950 dark:text-blue-100 text-xs mb-0.5">Selesai Otomatis oleh Rekan Jasa</span>
-                    Pesanan ini akan otomatis selesai begitu Rekan Jasa menyelesaikan tugas dan mengunggah foto bukti pengerjaan. Tidak perlu konfirmasi manual dari 2 pihak, sehingga Rekan Jasa dapat segera melanjutkan pekerjaan berikutnya dan Anda dapat langsung memberikan rating & ulasan.
+                    <span class="font-bold block text-blue-950 dark:text-blue-100 text-xs mb-0.5">Sedang di selesaikan oleh Rekan Jasa</span>
+                    Tugas ini akan otomatis selesai begitu Rekan Jasa menyelesaikan tugas dan mengunggah foto bukti pengerjaan.
                 </div>
             </div>
         @endif
@@ -894,14 +894,29 @@
                         </div>
                     </div>
 
-                    <a href="{{ route('customer.reports.create', ['help_id' => $help->id, 'user_id' => $help->mitra_id, 'type' => 'klaim_refund_pekerjaan_fiktif']) }}" 
-                       wire:navigate
-                       class="w-full py-2.5 px-4 bg-[#0098e7] hover:bg-[#0086cc] text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
-                        <span>Laporkan / Ajukan Refund</span>
-                    </a>
+                    @if ($this->activeReport)
+                        <div class="p-3 bg-amber-100/80 dark:bg-amber-950/50 rounded-xl border border-amber-300 dark:border-amber-800 text-xs flex items-center justify-between gap-3 flex-wrap">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">⚠️</span>
+                                <div>
+                                    <span class="font-bold text-amber-950 dark:text-amber-200 block">Laporan Aduan Sedang Ditinjau Admin (Laporan #{{ $this->activeReport->id }})</span>
+                                    <span class="text-[11px] text-amber-800 dark:text-amber-300">Status: {{ ucfirst($this->activeReport->status) }}</span>
+                                </div>
+                            </div>
+                            <a href="{{ route('customer.chat', ['admin' => 1, 'report' => $this->activeReport->id]) }}" wire:navigate class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-[11px] transition shadow-2xs">
+                                💬 Buka Diskusi Admin
+                            </a>
+                        </div>
+                    @else
+                        <a href="{{ route('customer.reports.create', ['help_id' => $help->id, 'user_id' => $help->mitra_id, 'type' => 'klaim_refund_pekerjaan_fiktif']) }}" 
+                           wire:navigate
+                           class="w-full py-2.5 px-4 bg-[#0098e7] hover:bg-[#0086cc] text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <span>Laporkan / Ajukan Refund</span>
+                        </a>
+                    @endif
                 </div>
             @endif
         @endif
@@ -1285,15 +1300,47 @@
                 </div>
             </div>
         @elseif($help->status === 'customer_cancel_requested')
-            <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mt-3 flex items-start gap-2.5">
-                <span class="text-xl leading-none">⏳</span>
-                <div>
-                    <h4 class="font-bold text-sm text-blue-900 dark:text-blue-200">Pengajuan Pembatalan Sedang Ditinjau</h4>
-                    <p class="text-xs text-blue-800 dark:text-blue-300 mt-0.5">
-                        Pengajuan pembatalan Anda telah diterima oleh Admin Wilayah. Mitra diberikan kesempatan klarifikasi sebelum diputuskan secara resmi.
-                    </p>
+            @php
+                $latestCancelReq = $help->latestCancelRequest;
+                $isSwitchPartner = $latestCancelReq && $latestCancelReq->action_type === 'switch_partner';
+            @endphp
+            @if($isSwitchPartner)
+                <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mt-3 flex items-start gap-2.5">
+                    <span class="text-xl leading-none">🔄</span>
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h4 class="font-bold text-sm text-blue-900 dark:text-blue-200">Pengajuan Ganti Mitra Sedang Diproses</h4>
+                            <span class="text-[10px] font-extrabold bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-700">2x Konfirmasi</span>
+                        </div>
+                        <p class="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+                            Sistem telah meminta konfirmasi kepada mitra dan meminta mitra menghubungi Anda terlebih dahulu. Jika mitra menyetujui, atau bila tidak ada respon/konfirmasi dari mitra, Admin dapat langsung memutuskan untuk mengembalikan pesanan ke pool pencarian rekan jasa baru. Saldo Anda tetap aman tersimpan.
+                        </p>
+                        @if($help->cancel_deadline_at)
+                            <p class="text-[10.5px] text-blue-600 dark:text-blue-400 font-medium">
+                                ⏳ Batas waktu konfirmasi: <strong>{{ $help->cancel_deadline_at->diffForHumans() }}</strong>
+                            </p>
+                        @endif
+                    </div>
                 </div>
-            </div>
+            @else
+                <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl p-4 mt-3 flex items-start gap-2.5">
+                    <span class="text-xl leading-none">⏳</span>
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h4 class="font-bold text-sm text-rose-900 dark:text-rose-200">Pengajuan Penarikan Pekerjaan Sedang Ditinjau</h4>
+                            <span class="text-[10px] font-extrabold bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300 px-2 py-0.5 rounded-full border border-rose-200 dark:border-rose-700">Full Refund 100%</span>
+                        </div>
+                        <p class="text-xs text-rose-800 dark:text-rose-300 leading-relaxed">
+                            Pengajuan penarikan pekerjaan dan pengembalian dana 100% Anda sedang dalam proses konfirmasi mitra dan tinjauan Admin Wilayah.
+                        </p>
+                        @if($help->cancel_deadline_at)
+                            <p class="text-[10.5px] text-rose-600 dark:text-rose-400 font-medium">
+                                ⏳ Batas waktu konfirmasi: <strong>{{ $help->cancel_deadline_at->diffForHumans() }}</strong>
+                            </p>
+                        @endif
+                    </div>
+                </div>
+            @endif
         @endif
     </div>
 
@@ -1521,7 +1568,7 @@
                 @if($cancelOption === 'switch')
                     <div class="p-3.5 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/70 rounded-xl text-xs space-y-3">
                         <div class="text-blue-900 dark:text-blue-200 leading-relaxed text-[11px]">
-                            <strong>Konfirmasi 2 Arah:</strong> Pengajuan ganti mitra memerlukan 2x konfirmasi (Admin & Mitra). Tim Admin akan <strong>menghubungi mitra terlebih dahulu</strong> untuk meminta konfirmasi dan jawaban atas kendala yang dialami. Setelah dikonfirmasi oleh Admin, pesanan Anda akan langsung dicarikan mitra baru yang siap tanpa memotong saldo Anda.
+                            <strong>Konfirmasi 2 Arah:</strong> Pengajuan ganti mitra memerlukan konfirmasi mitra & Admin. Sistem akan meminta mitra untuk segera mengonfirmasi dan menghubungi Anda di awal atas kendala yang dialami. Jika mitra menyetujui, atau <strong>bila tidak ada respon dan tidak dikonfirmasi</strong> dalam batas waktu, Admin dapat langsung memutuskan untuk mengembalikannya ke pool pencarian rekan jasa baru tanpa memotong saldo Anda.
                         </div>
 
                         <div>
