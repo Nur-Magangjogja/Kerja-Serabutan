@@ -410,6 +410,29 @@ class AppSetting extends Model
         return (bool) static::get('matching_seeking_enabled', true);
     }
 
+    public static function isMatchingSeekingEnabledForUser(?User $user): bool
+    {
+        if (!$user) {
+            return (bool) static::get('matching_seeking_enabled', true);
+        }
+
+        $cityId = $user->city_id;
+
+        if (!$cityId) {
+            $onlineState = \App\Models\PartnerOnlineState::where('user_id', $user->id)->first();
+            if ($onlineState && $onlineState->latitude && $onlineState->longitude) {
+                $closestCity = City::where('is_active', true)
+                    ->whereNotNull('latitude')
+                    ->whereNotNull('longitude')
+                    ->orderByRaw("(6371 * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) ASC", [$onlineState->latitude, $onlineState->longitude, $onlineState->latitude])
+                    ->first();
+                $cityId = $closestCity?->id;
+            }
+        }
+
+        return static::isMatchingSeekingEnabled($cityId);
+    }
+
     public static function getPickupDeliveryBaseFare(): float
     {
         return (float) static::get('pickup_delivery.base_fare', 10000.0);

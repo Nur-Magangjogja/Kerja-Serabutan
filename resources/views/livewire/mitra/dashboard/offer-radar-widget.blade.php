@@ -1,3 +1,5 @@
+<div>
+@if($isSeekingEnabled ?? true)
 <div @if(($onlineState?->matching_status ?? '') === 'searching') wire:poll.15s.visible @elseif(($onlineState?->matching_status ?? '') === 'offer_pending') wire:poll.3s.visible @endif
      @visibilitychange.window="if (!document.hidden) scheduleHeartbeat()"
      x-data="{
@@ -197,13 +199,21 @@
                                 @if(($onlineState?->matching_status ?? 'offline') === 'searching')
                                     Sedang aktif mencari order terdekat di lokasi Anda.
                                 @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
-                                    Siap menerima order. Klik "Cari Order" untuk mengaktifkan radar.
+                                    @if(!($isSeekingEnabled ?? true))
+                                        Mode Open Pool aktif. Order bantuan langsung tersedia di daftar bantuan tanpa perlu antrean pencarian.
+                                    @else
+                                        Siap menerima order. Klik "Cari Order" untuk mengaktifkan radar.
+                                    @endif
                                 @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')
                                     Ada tawaran order khusus untuk Anda! Silakan cek & respon penawaran di bawah.
                                 @elseif(($onlineState?->matching_status ?? 'offline') === 'busy')
                                     Anda sedang menjalankan tugas aktif. Selesaikan pesanan dengan baik.
                                 @else
-                                    Aktifkan status online untuk mulai menerima tawaran order bantuan.
+                                    @if(!($isSeekingEnabled ?? true))
+                                        Aktifkan status online untuk mulai bersiap menerima pekerjaan bantuan.
+                                    @else
+                                        Aktifkan status online untuk mulai menerima tawaran order bantuan.
+                                    @endif
                                 @endif
                             </p>
                         </div>
@@ -227,21 +237,38 @@
                                 </button>
                             </div>
                         @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
-                            <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700/60">
-                                <button @click="triggerAction('startSearching')"
-                                        :disabled="isGettingLocation"
-                                        class="w-full sm:w-auto px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                                    <span x-show="!isGettingLocation">Cari Order</span>
-                                    <span x-show="isGettingLocation" x-cloak>GPS...</span>
-                                </button>
-                                <button wire:click="goOffline"
-                                        wire:loading.attr="disabled"
-                                        class="w-full sm:w-auto px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-gray-600/60 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-98">
-                                    <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
-                                    <span>Offline</span>
-                                </button>
-                            </div>
+                            @if(!($isSeekingEnabled ?? true))
+                                <div class="flex items-center gap-2 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700/60">
+                                    <a href="{{ route('mitra.helps.all') }}"
+                                       wire:navigate
+                                       class="w-full sm:w-auto px-3.5 py-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                                        <span>Daftar Bantuan</span>
+                                    </a>
+                                    <button wire:click="goOffline"
+                                            wire:loading.attr="disabled"
+                                            class="w-full sm:w-auto px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-gray-600/60 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-98">
+                                        <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                        <span>Offline</span>
+                                    </button>
+                                </div>
+                            @else
+                                <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700/60">
+                                    <button @click="triggerAction('startSearching')"
+                                            :disabled="isGettingLocation"
+                                            class="w-full sm:w-auto px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                        <span x-show="!isGettingLocation">Cari Order</span>
+                                        <span x-show="isGettingLocation" x-cloak>GPS...</span>
+                                    </button>
+                                    <button wire:click="goOffline"
+                                            wire:loading.attr="disabled"
+                                            class="w-full sm:w-auto px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-gray-600/60 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-98">
+                                        <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                        <span>Offline</span>
+                                    </button>
+                                </div>
+                            @endif
                         @elseif(($onlineState?->matching_status ?? 'offline') === 'offline')
                             <div class="pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700/60">
                                 <button @click="triggerAction('goOnline')"
@@ -267,6 +294,22 @@
                         @endif
                     </div>
                 </div>
+
+                {{-- Banner Penjelasan Mode Open Pool saat fitur antrean dinonaktifkan --}}
+                @if(!($isSeekingEnabled ?? true) && ($onlineState?->matching_status ?? 'offline') === 'online')
+                    <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between text-xs text-primary-700 dark:text-primary-300">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary-50 dark:bg-primary-950/80 border border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-300 flex-shrink-0">
+                                📋 Open Pool
+                            </span>
+                            <span class="text-[11px] text-gray-500 dark:text-gray-400 truncate">Fitur antrean nonaktif • Order langsung masuk ke daftar bantuan</span>
+                        </div>
+                        <a href="{{ route('mitra.helps.all') }}" wire:navigate class="text-[11px] font-bold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-0.5 flex-shrink-0 ml-2">
+                            <span>Buka</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </a>
+                    </div>
+                @endif
 
                 {{-- Indikator Gamifikasi Status Antrean & Waktu Tunggu --}}
                 @if(($onlineState?->matching_status ?? 'offline') === 'searching')
@@ -601,4 +644,6 @@
             </div>
         </div>
     @endif
+</div>
+@endif
 </div>

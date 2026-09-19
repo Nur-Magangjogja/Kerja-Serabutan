@@ -69,6 +69,14 @@ class MitraMatchingActions
             ];
         }
 
+        if (!\App\Models\AppSetting::isMatchingSeekingEnabledForUser($user)) {
+            return [
+                'success'    => false,
+                'message'    => 'Fitur pencarian antrean / matching dinonaktifkan di wilayah Anda. Order bantuan dapat langsung diambil melalui menu Bantuan.',
+                'flash_type' => 'warning',
+            ];
+        }
+
         try {
             $this->onlineService->startSearching($user, $latitude, $longitude);
             return [

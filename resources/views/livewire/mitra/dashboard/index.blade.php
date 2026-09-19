@@ -137,7 +137,9 @@
     </div>
 
     <!-- Isolated Realtime Offer & Radar Widget (Fase 1 Dekomposisi) -->
-    <livewire:mitra.dashboard.offer-radar-widget />
+    @if(\App\Models\AppSetting::isMatchingSeekingEnabledForUser(auth()->user()))
+        <livewire:mitra.dashboard.offer-radar-widget />
+    @endif
 
     {{-- Official Warning / Shadow Ban Alert Banner for Mitra --}}
     @if(auth()->check() && (auth()->user()->warning_level > 0 || auth()->user()->is_shadow_banned))

@@ -170,14 +170,16 @@ class OfferRadarWidget extends Component
             ]);
         }
 
-        $onlineState  = app(PartnerOnlineService::class)->getOrCreateState($user);
-        $activeOffer  = app(DashboardQueryService::class)->getActiveOfferForRadar($user->id, $onlineState);
-        $isRestricted = app(MitraMatchingActions::class)->isRestricted($user);
+        $onlineState       = app(PartnerOnlineService::class)->getOrCreateState($user);
+        $activeOffer       = app(DashboardQueryService::class)->getActiveOfferForRadar($user->id, $onlineState);
+        $isRestricted      = app(MitraMatchingActions::class)->isRestricted($user);
+        $isSeekingEnabled  = \App\Models\AppSetting::isMatchingSeekingEnabledForUser($user);
 
         return view('livewire.mitra.dashboard.offer-radar-widget', [
-            'onlineState'  => $onlineState,
-            'activeOffer'  => $activeOffer,
-            'isRestricted' => $isRestricted,
+            'onlineState'       => $onlineState,
+            'activeOffer'       => $activeOffer,
+            'isRestricted'      => $isRestricted,
+            'isSeekingEnabled'  => $isSeekingEnabled,
         ]);
     }
 }

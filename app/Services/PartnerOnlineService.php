@@ -87,6 +87,17 @@ class PartnerOnlineService
             }
         }
 
+        // Self-Healing: Jika fitur matching/seeking dinonaktifkan di wilayah mitra, cegah mode SEARCHING
+        if ($user && !\App\Models\AppSetting::isMatchingSeekingEnabledForUser($user)) {
+            if ($state->matching_status === PartnerOnlineState::STATUS_SEARCHING) {
+                $state->update([
+                    'matching_status' => PartnerOnlineState::STATUS_ONLINE,
+                    'searching_since' => null,
+                ]);
+                $state->refresh();
+            }
+        }
+
         self::$memoizedStates[$userId] = $state;
         return $state;
     }
@@ -167,6 +178,11 @@ class PartnerOnlineService
                     'user_id'         => $mitra->id,
                     'matching_status' => PartnerOnlineState::STATUS_OFFLINE,
                 ]);
+            }
+
+            // Guard: Validasi ketersediaan fitur pencarian antrean (matching seeking switch)
+            if (!\App\Models\AppSetting::isMatchingSeekingEnabledForUser($mitra)) {
+                throw new \RuntimeException('Fitur pencarian antrean / matching dinonaktifkan di wilayah Anda. Semua order bantuan langsung masuk ke daftar bantuan.');
             }
 
             // Guard: Validasi sanksi moderasi
