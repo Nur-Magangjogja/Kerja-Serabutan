@@ -832,6 +832,14 @@ class Help extends Model
         return $this->isOnSite();
     }
 
+    /**
+     * Cek apakah pesanan layanan antar jemput memiliki mitra dengan data kendaraan lengkap.
+     */
+    public function hasAssignedPartnerVehicle(): bool
+    {
+        return $this->isPickup() && $this->mitra && !empty($this->mitra->vehicle_plate_number);
+    }
+
     public function isPublished(): bool
     {
         if (!$this->published_at) {

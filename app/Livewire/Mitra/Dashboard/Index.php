@@ -126,6 +126,19 @@ class Index extends Component
     public function takeHelp($helpId, $latitude = null, $longitude = null)
     {
         $help = Help::findOrFail($helpId);
+        $user = auth()->user();
+
+        // Guard: Kelayakan kendaraan untuk layanan Antar & Jemput (pickup_delivery)
+        if ($help->isPickup() && !$user?->canTakePickupDelivery()) {
+            if (!$user?->hasVehicleProfile()) {
+                session()->flash('error', 'Untuk mengambil pekerjaan Antar & Jemput, lengkapi Plat Nomor, SIM Motor, dan STNK pada profil Anda terlebih dahulu.');
+            } elseif ($user?->vehicle_verification_status === 'rejected') {
+                session()->flash('error', 'Verifikasi data kendaraan Anda ditolak. Alasan: ' . ($user?->vehicle_rejection_reason ?? '-') . '. Silakan perbarui dokumen di profil.');
+            } else {
+                session()->flash('error', 'Data kendaraan Anda sedang dalam proses verifikasi oleh Admin.');
+            }
+            return;
+        }
 
         try {
             app(HelpTransactionService::class)->takeHelp(

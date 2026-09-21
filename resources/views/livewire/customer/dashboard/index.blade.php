@@ -454,6 +454,18 @@
                                             <span>{{ \Carbon\Carbon::parse($help->scheduled_at)->translatedFormat('d M Y, H:i') }} WIB</span>
                                         </div>
                                     @endif
+                                    @if($help->mitra)
+                                        <div class="mt-1 mb-1.5 flex items-center gap-1.5 flex-wrap text-[11px]">
+                                            <span class="font-semibold text-gray-700 dark:text-gray-300">👤 {{ $help->mitra->name }}</span>
+                                            @if($help->isPickup())
+                                                <span class="text-gray-400">•</span>
+                                                <span class="text-gray-600 dark:text-gray-400">🛵 {{ $help->mitra->vehicle_display_name }}</span>
+                                                @if(!empty($help->mitra->vehicle_plate_number))
+                                                    <span class="px-1.5 py-0.2 bg-zinc-900 dark:bg-zinc-950 text-white rounded font-mono text-[9px] font-bold tracking-wider border border-zinc-700">{{ $help->mitra->vehicle_plate_number }}</span>
+                                                @endif
+                                            @endif
+                                        </div>
+                                    @endif
                                     <div class="flex items-center gap-3 text-[11px] text-gray-400 dark:text-gray-500">
                                         <span class="flex items-center gap-1">
                                             <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>

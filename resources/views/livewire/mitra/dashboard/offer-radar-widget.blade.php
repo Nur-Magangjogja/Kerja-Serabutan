@@ -359,6 +359,83 @@
                         @endif
                     </div>
                 @endif
+
+                {{-- Pilihan Target Jenis Bantuan Mitra (Preferensi Layanan Radar) --}}
+                <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-700/60">
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <span class="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                                Cari Jenis Bantuan:
+                            </span>
+                            <span class="text-[10px] text-gray-400 dark:text-gray-500 hidden sm:inline">
+                                (Pilih pekerjaan yang ingin Anda prioritaskan)
+                            </span>
+                        </div>
+                        @if(!$canTakePickupDelivery)
+                            <a href="{{ route('mitra.profile') }}" wire:navigate class="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 hover:underline flex-shrink-0">
+                                <span>⚠️ Verifikasi Kendaraan</span>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </a>
+                        @endif
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-1.5 p-1 bg-gray-50 dark:bg-gray-900/60 rounded-xl border border-gray-100 dark:border-gray-800">
+                        {{-- Option 1: Semua Layanan --}}
+                        <button type="button"
+                                wire:click="setServicePreference('all')"
+                                wire:loading.attr="disabled"
+                                @if(!$canTakePickupDelivery)
+                                    title="Kendaraan belum diverifikasi. Memilih ini akan difokuskan ke Kerja Serabutan."
+                                @endif
+                                class="relative px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer
+                                    @if($servicePreference === 'all')
+                                        bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-xs border border-gray-200/80 dark:border-gray-700
+                                    @else
+                                        text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-800/50
+                                    @endif">
+                            <span class="text-sm">🌟</span>
+                            <span class="truncate">Semua</span>
+                        </button>
+
+                        {{-- Option 2: Kerja Serabutan --}}
+                        <button type="button"
+                                wire:click="setServicePreference('on_site_service')"
+                                wire:loading.attr="disabled"
+                                class="relative px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer
+                                    @if($servicePreference === 'on_site_service')
+                                        bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-xs border border-gray-200/80 dark:border-gray-700
+                                    @else
+                                        text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-800/50
+                                    @endif">
+                            <span class="text-sm">🛠️</span>
+                            <span class="truncate">Serabutan</span>
+                        </button>
+
+                        {{-- Option 3: Antar & Jemput --}}
+                        @if($canTakePickupDelivery)
+                            <button type="button"
+                                    wire:click="setServicePreference('pickup_delivery')"
+                                    wire:loading.attr="disabled"
+                                    class="relative px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer
+                                        @if($servicePreference === 'pickup_delivery')
+                                            bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-xs border border-gray-200/80 dark:border-gray-700
+                                        @else
+                                            text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-800/50
+                                        @endif">
+                                <span class="text-sm">🛵</span>
+                                <span class="truncate">Antar-Jemput</span>
+                            </button>
+                        @else
+                            <button type="button"
+                                    disabled
+                                    title="Lengkapi SIM C & STNK di profil Anda untuk membuka opsi Antar & Jemput"
+                                    class="relative px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-400 dark:text-gray-500 opacity-60 cursor-not-allowed flex items-center justify-center gap-1">
+                                <span class="text-sm">🔒</span>
+                                <span class="truncate">Antar-Jemput</span>
+                            </button>
+                        @endif
+                    </div>
+                </div>
             </div>
         @endif
     </div>

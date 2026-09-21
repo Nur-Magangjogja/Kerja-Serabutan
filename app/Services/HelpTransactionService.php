@@ -138,6 +138,27 @@ class HelpTransactionService
                 throw new \RuntimeException("Lokasi titik awal bantuan ini berjarak " . round($distKm, 1) . " km dari posisi Anda saat ini, melebihi batas jangkauan operasional maksimal platform ({$maxRadiusKm} km).");
             }
         }
+
+        // 9. Validasi Kelayakan Kendaraan untuk Layanan Antar & Jemput (pickup_delivery)
+        if ($help->isPickup() && !$mitra->canTakePickupDelivery()) {
+            if (!$mitra->hasVehicleProfile()) {
+                throw new \RuntimeException(
+                    'Untuk mengambil pekerjaan Antar & Jemput, Anda wajib melengkapi data kendaraan '
+                    . '(Plat Nomor, SIM Motor, dan STNK) pada halaman Profil terlebih dahulu.'
+                );
+            }
+            if ($mitra->vehicle_verification_status === 'rejected') {
+                throw new \RuntimeException(
+                    'Verifikasi data kendaraan Anda ditolak oleh admin. Alasan: '
+                    . ($mitra->vehicle_rejection_reason ?? '-')
+                    . '. Silakan perbarui dokumen di halaman Profil.'
+                );
+            }
+            throw new \RuntimeException(
+                'Data kendaraan Anda (SIM & STNK) sedang dalam proses verifikasi oleh Admin. '
+                . 'Anda baru dapat mengambil pekerjaan Antar & Jemput setelah data diverifikasi.'
+            );
+        }
     }
 
     /**

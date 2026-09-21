@@ -1,12 +1,12 @@
 @php
-    $title = 'Manajemen Admin';
+    $title = 'Manajemen Admin Wilayah';
 @endphp
 
 <div>
     {{-- ===== Page Header ===== --}}
     <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div>
-            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Manajemen Admin</h1>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Manajemen Admin Wilayah</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola akun admin wilayah dan hak akses kota</p>
         </div>
         <div class="flex items-center gap-3">

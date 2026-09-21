@@ -17,13 +17,15 @@ class AllHelps extends Component
     use WithPagination;
 
     protected $queryString = [
-        'search'         => ['except' => ''],
-        'districtFilter' => ['except' => 'all'],
-        'sortBy'         => ['except' => 'nearby'],
+        'search'            => ['except' => ''],
+        'districtFilter'    => ['except' => 'all'],
+        'serviceTypeFilter' => ['except' => 'all'],
+        'sortBy'            => ['except' => 'nearby'],
     ];
 
     public $search              = '';
     public $districtFilter      = 'all'; // 'all' (radius 10 km), 'my_district', 'my_city', or district_id
+    public $serviceTypeFilter   = 'all'; // 'all', 'on_site_service', 'pickup_delivery'
     public $sortBy              = 'nearby'; // nearby, latest, oldest, price_high, price_low
     public $mitraLat            = null;
     public $mitraLng            = null;
@@ -56,6 +58,11 @@ class AllHelps extends Component
     }
 
     public function updatingDistrictFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingServiceTypeFilter()
     {
         $this->resetPage();
     }
@@ -173,6 +180,18 @@ class AllHelps extends Component
             return;
         }
 
+        // Guard: Kelayakan kendaraan untuk layanan Antar & Jemput (pickup_delivery)
+        if ($help->isPickup() && !$user->canTakePickupDelivery()) {
+            if (!$user->hasVehicleProfile()) {
+                session()->flash('error', 'Untuk mengambil pekerjaan Antar & Jemput, lengkapi Plat Nomor, SIM Motor, dan STNK pada profil Anda terlebih dahulu.');
+            } elseif ($user->vehicle_verification_status === 'rejected') {
+                session()->flash('error', 'Verifikasi data kendaraan Anda ditolak. Alasan: ' . ($user->vehicle_rejection_reason ?? '-') . '. Silakan perbarui dokumen di profil.');
+            } else {
+                session()->flash('error', 'Data kendaraan Anda sedang dalam proses verifikasi oleh Admin.');
+            }
+            return;
+        }
+
         try {
             app(HelpTransactionService::class)->takeHelp(
                 $help,
@@ -246,6 +265,22 @@ class AllHelps extends Component
                 $q->whereNull('expires_at')
                   ->orWhere('expires_at', '>', now());
             });
+
+        // Sembunyikan tugas jenis Antar & Jemput (pickup_delivery) jika mitra belum melengkapi
+        // dan belum terverifikasi SIM/STNK kendaraannya oleh Admin
+        if ($user && !$user->canTakePickupDelivery()) {
+            $basePoolQuery->where('service_type', '!=', Help::SERVICE_TYPE_PICKUP_DELIVERY);
+            if ($this->serviceTypeFilter === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+                $this->serviceTypeFilter = 'all';
+            }
+        }
+
+        // Filter eksplisit preferensi jenis layanan yang dipilih mitra
+        if ($this->serviceTypeFilter === Help::SERVICE_TYPE_ON_SITE) {
+            $basePoolQuery->where('service_type', Help::SERVICE_TYPE_ON_SITE);
+        } elseif ($this->serviceTypeFilter === Help::SERVICE_TYPE_PICKUP_DELIVERY && $user?->canTakePickupDelivery()) {
+            $basePoolQuery->where('service_type', Help::SERVICE_TYPE_PICKUP_DELIVERY);
+        }
 
         // Setup GPS parameters & Haversine SQL formula jika ada koordinat mitra
         $hasGps = ($this->mitraLat && $this->mitraLng);

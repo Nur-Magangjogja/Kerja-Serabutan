@@ -27,23 +27,53 @@ class Index extends Component
 
     protected function rules()
     {
+        $linkRule = [
+            'nullable',
+            'string',
+            'max:1000',
+            function ($attribute, $value, $fail) {
+                if ($value === null || trim($value) === '') {
+                    return;
+                }
+                $trimmed = trim($value);
+                if (preg_match('/^(javascript|data|vbscript):/i', $trimmed)) {
+                    $fail('Format link tujuan tidak aman.');
+                    return;
+                }
+                // Disallow internal relative paths (e.g., /customer/helps)
+                if (str_starts_with($trimmed, '/')) {
+                    $fail('Format link tujuan tidak boleh menggunakan path internal (contoh: /customer/helps). Gunakan alamat URL lengkap (contoh: https://sayabantu.com/promo).');
+                    return;
+                }
+                // Only allow full valid HTTP or HTTPS URLs
+                if (filter_var($trimmed, FILTER_VALIDATE_URL) && preg_match('/^https?:\/\//i', $trimmed)) {
+                    return;
+                }
+                $fail('Format link tujuan tidak valid. Masukkan alamat URL lengkap diawali http:// atau https:// (contoh: https://sayabantu.com/promo).');
+            },
+        ];
+
         return [
             'customerUploads.*'      => 'image|mimes:png,jpg,jpeg|max:5120',
             'mitraUploads.*'         => 'image|mimes:png,jpg,jpeg|max:5120',
-            'customerBanners.*.link' => 'nullable|string|max:1000',
-            'mitraBanners.*.link'    => 'nullable|string|max:1000',
-            'customerNewLinks.*'     => 'nullable|string|max:1000',
-            'mitraNewLinks.*'        => 'nullable|string|max:1000',
+            'customerBanners.*.link' => $linkRule,
+            'mitraBanners.*.link'    => $linkRule,
+            'customerNewLinks.*'     => $linkRule,
+            'mitraNewLinks.*'        => $linkRule,
         ];
     }
 
     protected $messages = [
-        'customerUploads.*.image' => 'File yang diunggah harus berupa gambar (bukan PDF, dokumen, atau file lain).',
-        'customerUploads.*.mimes' => 'Format file banner yang diizinkan hanya PNG, JPG, atau JPEG.',
-        'customerUploads.*.max'   => 'Ukuran file banner maksimal 5MB.',
-        'mitraUploads.*.image'    => 'File yang diunggah harus berupa gambar (bukan PDF, dokumen, atau file lain).',
-        'mitraUploads.*.mimes'    => 'Format file banner yang diizinkan hanya PNG, JPG, atau JPEG.',
-        'mitraUploads.*.max'      => 'Ukuran file banner maksimal 5MB.',
+        'customerUploads.*.image'    => 'File yang diunggah harus berupa gambar (bukan PDF, dokumen, atau file lain).',
+        'customerUploads.*.mimes'    => 'Format file banner yang diizinkan hanya PNG, JPG, atau JPEG.',
+        'customerUploads.*.max'      => 'Ukuran file banner maksimal 5MB.',
+        'mitraUploads.*.image'       => 'File yang diunggah harus berupa gambar (bukan PDF, dokumen, atau file lain).',
+        'mitraUploads.*.mimes'       => 'Format file banner yang diizinkan hanya PNG, JPG, atau JPEG.',
+        'mitraUploads.*.max'         => 'Ukuran file banner maksimal 5MB.',
+        'customerBanners.*.link.max' => 'Panjang link tujuan maksimal 1000 karakter.',
+        'mitraBanners.*.link.max'    => 'Panjang link tujuan maksimal 1000 karakter.',
+        'customerNewLinks.*.max'     => 'Panjang link tujuan maksimal 1000 karakter.',
+        'mitraNewLinks.*.max'        => 'Panjang link tujuan maksimal 1000 karakter.',
     ];
 
     private function normalizeBanners(array $banners): array

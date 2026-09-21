@@ -177,20 +177,39 @@
                 </button>
             </div>
 
-            <!-- Sort Filter in List View -->
-            <div class="flex items-center justify-between mb-4">
-                <span class="text-xs text-gray-500 font-medium">Urutkan:</span>
-                <select wire:model.live="sortBy" class="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-medium text-gray-700 focus:ring-2 focus:ring-blue-200 outline-none">
-                    <option value="nearby">📍 Terdekat (Jarak GPS)</option>
-                    <option value="latest">Terbaru</option>
-                    <option value="oldest">Terlama</option>
-                    <option value="price_high">Harga Tertinggi</option>
-                    <option value="price_low">Harga Terendah</option>
-                </select>
+            <!-- Service Type Filter & Sort Filter in List View -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4">
+                <div class="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 w-fit">
+                    <button type="button" wire:click="$set('serviceTypeFilter', 'all')"
+                        class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer {{ $serviceTypeFilter === 'all' ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
+                        🌟 Semua
+                    </button>
+                    <button type="button" wire:click="$set('serviceTypeFilter', 'on_site_service')"
+                        class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer {{ $serviceTypeFilter === 'on_site_service' ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
+                        🛠️ Serabutan
+                    </button>
+                    @if(auth()->user()?->canTakePickupDelivery())
+                        <button type="button" wire:click="$set('serviceTypeFilter', 'pickup_delivery')"
+                            class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer {{ $serviceTypeFilter === 'pickup_delivery' ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
+                            🛵 Antar-Jemput
+                        </button>
+                    @endif
+                </div>
+
+                <div class="flex items-center gap-2 self-end sm:self-auto">
+                    <span class="text-xs text-gray-500 font-medium">Urutkan:</span>
+                    <select wire:model.live="sortBy" class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-medium text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-200 outline-none">
+                        <option value="nearby">📍 Terdekat (Jarak GPS)</option>
+                        <option value="latest">Terbaru</option>
+                        <option value="oldest">Terlama</option>
+                        <option value="price_high">Harga Tertinggi</option>
+                        <option value="price_low">Harga Terendah</option>
+                    </select>
+                </div>
             </div> 
 
             <div class="space-y-4" wire:poll.10s.visible>
-                <div class="space-y-3.5 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="districtFilter,sortBy,search">
+                <div class="space-y-3.5 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="districtFilter,serviceTypeFilter,sortBy,search">
                     {{-- List based on filter --}}
                     @forelse($helps as $help)
                     <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all border border-gray-100">

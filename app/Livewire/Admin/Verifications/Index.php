@@ -9,10 +9,15 @@ use App\Models\Registration;
 use App\Models\User;
 use App\Models\District;
 use App\Models\City;
+use App\Models\ActivityLog;
+use App\Notifications\VehicleVerificationNotification;
 
 class Index extends Component
 {
     use WithPagination;
+
+    #[Url(history: true)]
+    public $activeTab = 'ktp'; // 'ktp' or 'vehicle'
 
     #[Url(history: true)]
     public $perPage = 10;
@@ -26,6 +31,9 @@ class Index extends Component
     #[Url(history: true)]
     public $roleFilter = '';
 
+    #[Url(history: true)]
+    public $vehicleStatusFilter = '';
+
     public $districtFilter = '';
     public $cityFilter = ''; // Backward compatibility alias
 
@@ -34,6 +42,13 @@ class Index extends Component
     public $showRejectModal = false;
     public $rejectReason = '';
     public $rejectingId = null;
+
+    // Vehicle verification modal states
+    public $showVehicleModal = false;
+    public $selectedVehicleUser = null;
+    public $showRejectVehicleModal = false;
+    public $vehicleRejectReason = '';
+    public $rejectingVehicleUserId = null;
 
     protected $listeners = [
         'admin-district-changed'         => 'onAdminDistrictChanged',
@@ -263,12 +278,159 @@ class Index extends Component
         $this->closeModal();
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // VEHICLE VERIFICATION METHODS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function setActiveTab(string $tab): void
+    {
+        $this->activeTab = in_array($tab, ['ktp', 'vehicle']) ? $tab : 'ktp';
+        $this->resetPage();
+    }
+
+    public function updatingActiveTab(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingVehicleStatusFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    protected function isAuthorizedForUser(User $u): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+        if (in_array($user->role, ['super_admin', 'superadmin'])) return true;
+        if ($user->role === 'admin') {
+            $allowedDistrictIds = $user->getEffectiveAdminDistrictIds();
+            return !empty($u->district_id) && in_array((int) $u->district_id, $allowedDistrictIds, true);
+        }
+        return false;
+    }
+
+    public function viewVehicle(int $id): void
+    {
+        $targetUser = User::find($id);
+        if (!$targetUser || !$this->isAuthorizedForUser($targetUser)) {
+            session()->flash('message', 'Data mitra tidak ditemukan atau berada di luar wilayah wewenang Anda.');
+            return;
+        }
+        $this->selectedVehicleUser = $targetUser;
+        $this->showVehicleModal = true;
+    }
+
+    public function closeVehicleModal(): void
+    {
+        $this->selectedVehicleUser = null;
+        $this->showVehicleModal = false;
+    }
+
+    public function approveVehicle(int $id): void
+    {
+        $targetUser = User::find($id);
+        if (!$targetUser || !$this->isAuthorizedForUser($targetUser)) {
+            session()->flash('message', 'Mitra tidak ditemukan atau berada di luar wilayah wewenang Anda.');
+            return;
+        }
+
+        $targetUser->update([
+            'vehicle_verified'            => true,
+            'vehicle_verification_status' => 'verified',
+            'vehicle_verified_at'         => now(),
+            'vehicle_verified_by'         => auth()->id(),
+            'vehicle_rejection_reason'    => null,
+        ]);
+
+        ActivityLog::record(
+            auth()->user(),
+            'vehicle_verified',
+            "Admin " . (auth()->user()->name ?? 'Admin') . " menyetujui verifikasi kendaraan untuk mitra {$targetUser->name} (Plat: {$targetUser->vehicle_plate_number})",
+            ['user_id' => $targetUser->id, 'plate' => $targetUser->vehicle_plate_number]
+        );
+
+        try {
+            $targetUser->notify(new VehicleVerificationNotification('verified', null, $targetUser->vehicle_plate_number));
+        } catch (\Throwable $e) {
+            // ignore notification failure
+        }
+
+        session()->flash('message', "Data kendaraan untuk {$targetUser->name} ({$targetUser->vehicle_plate_number}) berhasil disetujui.");
+        $this->closeVehicleModal();
+    }
+
+    public function openRejectVehicleModal(int $id): void
+    {
+        $targetUser = User::find($id);
+        if (!$targetUser || !$this->isAuthorizedForUser($targetUser)) {
+            session()->flash('message', 'Mitra tidak ditemukan atau berada di luar wilayah wewenang Anda.');
+            return;
+        }
+        $this->rejectingVehicleUserId = $id;
+        $this->vehicleRejectReason = $targetUser->vehicle_rejection_reason ?? '';
+        $this->showRejectVehicleModal = true;
+    }
+
+    public function cancelRejectVehicle(): void
+    {
+        $this->rejectingVehicleUserId = null;
+        $this->vehicleRejectReason = '';
+        $this->showRejectVehicleModal = false;
+    }
+
+    public function confirmRejectVehicle(): void
+    {
+        $this->validate([
+            'vehicleRejectReason' => 'required|string|min:3|max:500',
+        ], [
+            'vehicleRejectReason.required' => 'Alasan penolakan wajib diisi agar mitra mengetahui apa yang perlu diperbaiki.',
+            'vehicleRejectReason.min'      => 'Alasan penolakan minimal 3 karakter.',
+        ]);
+
+        if (!$this->rejectingVehicleUserId) {
+            session()->flash('message', 'Mitra tidak ditemukan.');
+            $this->cancelRejectVehicle();
+            return;
+        }
+
+        $targetUser = User::find($this->rejectingVehicleUserId);
+        if (!$targetUser) {
+            session()->flash('message', 'Mitra tidak ditemukan.');
+            $this->cancelRejectVehicle();
+            return;
+        }
+
+        $targetUser->update([
+            'vehicle_verified'            => false,
+            'vehicle_verification_status' => 'rejected',
+            'vehicle_rejection_reason'    => $this->vehicleRejectReason,
+        ]);
+
+        ActivityLog::record(
+            auth()->user(),
+            'vehicle_rejected',
+            "Admin " . (auth()->user()->name ?? 'Admin') . " menolak verifikasi kendaraan untuk mitra {$targetUser->name}. Alasan: {$this->vehicleRejectReason}",
+            ['user_id' => $targetUser->id, 'plate' => $targetUser->vehicle_plate_number]
+        );
+
+        try {
+            $targetUser->notify(new VehicleVerificationNotification('rejected', $this->vehicleRejectReason, $targetUser->vehicle_plate_number));
+        } catch (\Throwable $e) {
+            // ignore notification failure
+        }
+
+        session()->flash('message', "Verifikasi kendaraan mitra {$targetUser->name} telah ditolak.");
+        $this->cancelRejectVehicle();
+        $this->closeVehicleModal();
+    }
+
     public function render()
     {
         $authUser = auth()->user();
         $isSuperAdmin = $authUser && in_array($authUser->role, ['super_admin', 'superadmin']);
 
-        // Only include completed registrations waiting for or with decision (exclude in-progress/drafts)
+        // 1. KTP Registrations Query
         $query = Registration::query()
             ->with(['district', 'city'])
             ->whereIn('status', ['pending_verification', 'pending', 'approved', 'rejected']);
@@ -311,8 +473,8 @@ class Index extends Component
             }
         }
 
-        // Search query
-        if (!empty($this->search)) {
+        // Search query (KTP)
+        if (!empty($this->search) && $this->activeTab === 'ktp') {
             $s = trim($this->search);
             $query->where(function ($q) use ($s) {
                 $q->where('full_name', 'like', "%{$s}%")
@@ -329,7 +491,7 @@ class Index extends Component
             $query->where('role', $this->roleFilter);
         }
 
-        // Status filter
+        // Status filter (KTP)
         if (!empty($this->statusFilter)) {
             if ($this->statusFilter === 'pending') {
                 $query->whereIn('status', ['pending', 'pending_verification']);
@@ -340,7 +502,70 @@ class Index extends Component
 
         $verifications = $query->latest()->paginate($this->perPage);
 
-        // Cache master data distrik & kota selama 10 menit agar tidak query ulang saat paging/search
+        // 2. Vehicle Verifications Query
+        $vehicleQuery = User::query()
+            ->where('role', 'mitra')
+            ->whereIn('vehicle_verification_status', ['pending', 'verified', 'rejected']);
+
+        if (!$isSuperAdmin && $authUser && $authUser->role === 'admin') {
+            $effectiveDistrictIds = $authUser->getEffectiveAdminDistrictIds();
+            $adminCityId = $authUser->city_id;
+            if (!empty($effectiveDistrictIds)) {
+                $vehicleQuery->whereIn('district_id', $effectiveDistrictIds);
+            } elseif (!empty($adminCityId)) {
+                $vehicleQuery->where('city_id', $adminCityId);
+            }
+        } elseif ($isSuperAdmin && $authUser) {
+            $saTerritory = $authUser->getActiveSuperadminTerritory();
+            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                $vehicleQuery->where('district_id', $saTerritory['id']);
+            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                $saDistrictIds = $authUser->getEffectiveSuperadminDistrictIds();
+                $cityId = (int) $saTerritory['id'];
+                $vehicleQuery->where(function ($sub) use ($cityId, $saDistrictIds) {
+                    if (!empty($saDistrictIds)) {
+                        $sub->whereIn('district_id', $saDistrictIds);
+                    }
+                    if ($cityId) {
+                        $sub->orWhere('city_id', $cityId);
+                    }
+                });
+            }
+
+            if ($this->districtFilter !== '' && $this->districtFilter !== 'all') {
+                if ($this->districtFilter === 'unassigned') {
+                    $vehicleQuery->whereNull('district_id');
+                } else {
+                    $vehicleQuery->where('district_id', $this->districtFilter);
+                }
+            }
+        }
+
+        // Search in vehicle query
+        if (!empty($this->search) && $this->activeTab === 'vehicle') {
+            $s = trim($this->search);
+            $vehicleQuery->where(function ($q) use ($s) {
+                $q->where('name', 'like', "%{$s}%")
+                  ->orWhere('email', 'like', "%{$s}%")
+                  ->orWhere('phone', 'like', "%{$s}%")
+                  ->orWhere('vehicle_plate_number', 'like', "%{$s}%")
+                  ->orWhere('vehicle_sim_number', 'like', "%{$s}%")
+                  ->orWhere('vehicle_stnk_number', 'like', "%{$s}%");
+            });
+        }
+
+        // Vehicle status filter
+        if (!empty($this->vehicleStatusFilter)) {
+            $vehicleQuery->where('vehicle_verification_status', $this->vehicleStatusFilter);
+        }
+
+        $vehicleVerifications = $vehicleQuery->latest('updated_at')->paginate($this->perPage, ['*'], 'vehicle_page');
+
+        // Badge counters
+        $pendingKtpCount = Registration::whereIn('status', ['pending', 'pending_verification'])->count();
+        $pendingVehicleCount = User::where('role', 'mitra')->where('vehicle_verification_status', 'pending')->count();
+
+        // Cache master data distrik & kota
         $districts = $isSuperAdmin
             ? cache()->remember('admin_all_districts_with_city', 600, fn() => District::with('city')->orderBy('name')->get())
             : ($authUser ? $authUser->getAdminDistricts() : collect());
@@ -351,12 +576,15 @@ class Index extends Component
             : 'layouts.admin';
 
         return view('livewire.admin.verifications.index', [
-            'verifications'  => $verifications,
-            'districts'      => $districts,
-            'cities'         => $districts, // Backward compatibility
-            'districtFilter' => $this->districtFilter,
-            'cityFilter'     => $this->districtFilter,
-            'authUser'       => $authUser,
+            'verifications'        => $verifications,
+            'vehicleVerifications' => $vehicleVerifications,
+            'pendingKtpCount'      => $pendingKtpCount,
+            'pendingVehicleCount'  => $pendingVehicleCount,
+            'districts'            => $districts,
+            'cities'               => $districts, // Backward compatibility
+            'districtFilter'       => $this->districtFilter,
+            'cityFilter'           => $this->districtFilter,
+            'authUser'             => $authUser,
         ])->layout($layout);
     }
 }

@@ -366,8 +366,16 @@
 										<div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
 											<div class="text-[10px] text-gray-400 font-semibold mb-0.5">Mitra Pelaksana</div>
 											<div class="font-bold text-gray-800 dark:text-gray-200 truncate">{{ $help->mitra->name }}</div>
+											@if($help->isPickup())
+												<div class="mt-1 flex items-center gap-1.5 flex-wrap">
+													<span class="text-[10px] text-gray-500 dark:text-gray-400">🛵 {{ $help->mitra->vehicle_display_name }}</span>
+													@if(!empty($help->mitra->vehicle_plate_number))
+														<span class="px-1.5 py-0.2 bg-zinc-900 dark:bg-zinc-950 text-white rounded font-mono text-[10px] font-bold tracking-wider">{{ $help->mitra->vehicle_plate_number }}</span>
+													@endif
+												</div>
+											@endif
 											@if($help->mitra->phone)
-												<a href="tel:{{ $help->mitra->phone }}" class="text-[11px] font-bold text-sky-600 dark:text-sky-400 hover:underline block truncate">{{ $help->mitra->phone }}</a>
+												<a href="tel:{{ $help->mitra->phone }}" class="text-[11px] font-bold text-sky-600 dark:text-sky-400 hover:underline block truncate mt-0.5">{{ $help->mitra->phone }}</a>
 											@endif
 										</div>
 									@else

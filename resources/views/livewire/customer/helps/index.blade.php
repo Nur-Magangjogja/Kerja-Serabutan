@@ -209,8 +209,16 @@
                                         <div>
                                             <div class="text-[11px] text-gray-400 mb-0.5">Mitra Pelaksana</div>
                                             <div class="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{{ $help->mitra->name }}</div>
+                                            @if($help->isPickup())
+                                                <div class="mt-1 flex items-center gap-1.5 flex-wrap">
+                                                    <span class="text-[10px] text-gray-600 dark:text-gray-400">🛵 {{ $help->mitra->vehicle_display_name }}</span>
+                                                    @if(!empty($help->mitra->vehicle_plate_number))
+                                                        <span class="px-1.5 py-0.2 bg-zinc-900 dark:bg-zinc-950 text-white rounded font-mono text-[10px] font-bold tracking-wider border border-zinc-700">{{ $help->mitra->vehicle_plate_number }}</span>
+                                                    @endif
+                                                </div>
+                                            @endif
                                             @if($help->mitra->phone)
-                                                <a href="tel:{{ $help->mitra->phone }}" class="text-[11px] font-semibold text-primary-600 dark:text-sky-400">{{ $help->mitra->phone }}</a>
+                                                <a href="tel:{{ $help->mitra->phone }}" class="text-[11px] font-semibold text-primary-600 dark:text-sky-400 block mt-0.5">{{ $help->mitra->phone }}</a>
                                             @endif
                                         </div>
                                     @endif
@@ -390,7 +398,15 @@
                                             <div class="w-4 h-4 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 flex items-center justify-center text-[10px] font-bold">
                                                 {{ strtoupper(substr($help->mitra->name, 0, 1)) }}
                                             </div>
-                                            <span class="text-xs font-semibold text-gray-800 dark:text-gray-200 max-w-[90px] truncate">{{ $help->mitra->name }}</span>
+                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                <span class="text-xs font-semibold text-gray-800 dark:text-gray-200 max-w-[90px] truncate">{{ $help->mitra->name }}</span>
+                                                @if($help->isPickup())
+                                                    <span class="text-[10px] text-gray-500 dark:text-gray-400">🛵 {{ $help->mitra->vehicle_display_name }}</span>
+                                                    @if(!empty($help->mitra->vehicle_plate_number))
+                                                        <span class="text-[9px] font-mono font-bold bg-zinc-900 dark:bg-zinc-950 text-white px-1.5 py-0.5 rounded border border-zinc-700">{{ $help->mitra->vehicle_plate_number }}</span>
+                                                    @endif
+                                                @endif
+                                            </div>
                                         </div>
 
                                         <a href="{{ route('customer.chat', $help->id) }}" wire:navigate class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition shadow-xs cursor-pointer relative" aria-label="Buka chat">

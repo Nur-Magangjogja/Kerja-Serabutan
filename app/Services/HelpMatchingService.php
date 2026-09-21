@@ -372,14 +372,32 @@ class HelpMatchingService
             }
         }
 
+        $effectiveServiceType = $help->service_type ?: Help::SERVICE_TYPE_ON_SITE;
+
         $statesQuery = PartnerOnlineState::eligibleForMatching($ttl)
             ->whereNull('current_help_id')
+            ->where(function ($q) use ($effectiveServiceType) {
+                $q->where('service_preference', PartnerOnlineState::PREFERENCE_ALL)
+                  ->orWhere('service_preference', $effectiveServiceType)
+                  ->orWhereNull('service_preference');
+            })
             ->whereHas('user', function ($q) use ($help, $excludeIds, $eligibleDistrictIds) {
                 $q->where('role', 'mitra')
                   ->where('status', 'active')
                   ->where('is_shadow_banned', false)
                   ->where('warning_level', '<', 3)
                   ->whereNotIn('id', $excludeIds);
+
+                // Untuk layanan Antar & Jemput, hanya kandidat yang sudah melengkapi & diverifikasi kendaraannya (Keduanya SIM & STNK)
+                if ($help->isPickup()) {
+                    $q->where('vehicle_verified', true)
+                      ->where('vehicle_verification_status', 'verified')
+                      ->whereNotNull('vehicle_plate_number')
+                      ->whereNotNull('vehicle_sim_number')
+                      ->whereNotNull('vehicle_sim_photo')
+                      ->whereNotNull('vehicle_stnk_number')
+                      ->whereNotNull('vehicle_stnk_photo');
+                }
 
                 if (!empty($eligibleDistrictIds)) {
                     $q->where(function ($sub) use ($eligibleDistrictIds, $help) {
@@ -573,11 +591,24 @@ class HelpMatchingService
                 return false;
             }
 
+            // Validasi Kelayakan Kendaraan untuk Layanan Antar & Jemput
+            if ($lockedHelp->isPickup() && !$mitra->canTakePickupDelivery()) {
+                Log::warning("[HelpMatchingService] Cannot dispatch offer to Mitra #{$mitra->id}: missing or unverified vehicle data for pickup_delivery.");
+                return false;
+            }
+
             $state = PartnerOnlineState::where('user_id', $mitra->id)->lockForUpdate()->first();
 
             if (!$state || $state->matching_status !== PartnerOnlineState::STATUS_SEARCHING || !$state->isHeartbeatFresh($ttl)) {
                 Log::warning("[HelpMatchingService] Cannot lock Mitra #{$mitra->id} at Rank {$rank}: status '{$state?->matching_status}', fresh: " . ($state?->isHeartbeatFresh($ttl) ? 'yes' : 'no'));
                 return false; // Mitra tidak dapat dikunci (sudah offline/ambil order), lanjut ke rank berikutnya
+            }
+
+            // Validasi Preferensi Jenis Layanan Mitra
+            $effectiveServiceType = $lockedHelp->service_type ?: Help::SERVICE_TYPE_ON_SITE;
+            if (!$state->allowsServiceType($effectiveServiceType)) {
+                Log::info("[HelpMatchingService] Skipping Mitra #{$mitra->id} for Help #{$lockedHelp->id}: preference '{$state->service_preference}' does not allow service type '{$effectiveServiceType}'.");
+                return false;
             }
 
             // 3. Atomically update PartnerOnlineState menjadi OFFER_PENDING
@@ -698,6 +729,16 @@ class HelpMatchingService
             }
             if ($mitra->warning_level >= 3) {
                 throw new \RuntimeException('Akun Anda sedang dalam masa penangguhan (SP 3) akibat pelanggaran kepatuhan.');
+            }
+
+            // Validasi Kelayakan Kendaraan untuk Layanan Antar & Jemput
+            if ($lockedHelp->isPickup() && !$mitra->canTakePickupDelivery()) {
+                $dispatch->update([
+                    'status'           => HelpDispatch::STATUS_REJECTED,
+                    'responded_at'     => now(),
+                    'rejection_reason' => 'Data kendaraan tidak lengkap atau belum diverifikasi admin',
+                ]);
+                throw new \RuntimeException('Untuk menerima tawaran Antar & Jemput, data kendaraan (Plat Nomor, SIM Motor, dan STNK) harus telah diverifikasi oleh Admin.');
             }
 
             // STEP 3 (Tier 3): Lock PartnerOnlineState mitra

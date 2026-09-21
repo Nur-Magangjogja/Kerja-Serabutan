@@ -50,6 +50,20 @@ class User extends Authenticatable implements MustVerifyEmail
         'selfie_photo',
         'profile_photo',
         'notification_settings',
+        // Vehicle Profile Fields (Mitra)
+        'vehicle_plate_number',
+        'vehicle_sim_number',
+        'vehicle_sim_photo',
+        'vehicle_stnk_number',
+        'vehicle_stnk_photo',
+        'vehicle_brand',
+        'vehicle_model',
+        'vehicle_color',
+        'vehicle_verification_status',
+        'vehicle_verified',
+        'vehicle_verified_at',
+        'vehicle_verified_by',
+        'vehicle_rejection_reason',
         // Greylist, Shadow Ban, and Warning Fields
         'is_greylisted',
         'greylisted_at',
@@ -93,6 +107,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'shadow_banned_at' => 'datetime',
             'warning_level' => 'integer',
             'latest_warning_at' => 'datetime',
+            'vehicle_verified' => 'boolean',
+            'vehicle_verified_at' => 'datetime',
         ];
     }
 
@@ -253,6 +269,142 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->warning_level > 0;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // VEHICLE PROFILE & VERIFICATION HELPERS (MITRA)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function getVehicleSimPhotoUrlAttribute(): ?string
+    {
+        if ($this->vehicle_sim_photo) {
+            if (str_starts_with($this->vehicle_sim_photo, 'http://') || str_starts_with($this->vehicle_sim_photo, 'https://')) {
+                return $this->vehicle_sim_photo;
+            }
+            return asset('storage/' . $this->vehicle_sim_photo);
+        }
+        return null;
+    }
+
+    public function getVehicleStnkPhotoUrlAttribute(): ?string
+    {
+        if ($this->vehicle_stnk_photo) {
+            if (str_starts_with($this->vehicle_stnk_photo, 'http://') || str_starts_with($this->vehicle_stnk_photo, 'https://')) {
+                return $this->vehicle_stnk_photo;
+            }
+            return asset('storage/' . $this->vehicle_stnk_photo);
+        }
+        return null;
+    }
+
+    /**
+     * Cek apakah mitra sudah mengisi dokumen SIM Motor (nomor + foto).
+     */
+    public function hasSimMotor(): bool
+    {
+        return !empty($this->vehicle_sim_number) && !empty($this->vehicle_sim_photo);
+    }
+
+    /**
+     * Cek apakah mitra sudah mengisi dokumen STNK (nomor + foto).
+     */
+    public function hasStnk(): bool
+    {
+        return !empty($this->vehicle_stnk_number) && !empty($this->vehicle_stnk_photo);
+    }
+
+    /**
+     * Cek apakah mitra sudah mengisi data kendaraan wajib yang sah:
+     * Plat Nomor terisi DAN SIM Motor terisi DAN STNK terisi (Keduanya Wajib).
+     */
+    public function hasVehicleProfile(): bool
+    {
+        if (empty($this->vehicle_plate_number)) {
+            return false;
+        }
+
+        return $this->hasSimMotor() && $this->hasStnk();
+    }
+
+    /**
+     * Cek apakah data kendaraan sudah disetujui / diverifikasi oleh admin.
+     */
+    public function isVehicleVerified(): bool
+    {
+        return (bool) $this->vehicle_verified && $this->vehicle_verification_status === 'verified';
+    }
+
+    /**
+     * Syarat mutlak bagi mitra untuk dapat melihat dan mengambil order Antar & Jemput:
+     * Data kendaraan telah diisi DAN telah terverifikasi oleh admin.
+     */
+    public function canTakePickupDelivery(): bool
+    {
+        return $this->hasVehicleProfile() && $this->isVehicleVerified();
+    }
+
+    /**
+     * Nama tampilan jenis/tipe sepeda motor mitra.
+     * Menggabungkan Merek, Model, dan Warna jika ada (contoh: "Honda Vario 160 (Hitam)").
+     */
+    public function getVehicleDisplayNameAttribute(): string
+    {
+        $parts = [];
+        if (!empty($this->vehicle_brand)) {
+            $parts[] = trim($this->vehicle_brand);
+        }
+        if (!empty($this->vehicle_model)) {
+            $parts[] = trim($this->vehicle_model);
+        }
+
+        $displayName = !empty($parts) ? implode(' ', $parts) : 'Sepeda Motor';
+
+        if (!empty($this->vehicle_color)) {
+            $displayName .= ' (' . trim($this->vehicle_color) . ')';
+        }
+
+        return $displayName;
+    }
+
+    /**
+     * Presenter badge status verifikasi kendaraan untuk UI mitra & admin.
+     */
+    public function getVehicleStatusBadgeAttribute(): array
+    {
+        return match ($this->vehicle_verification_status) {
+            'verified' => [
+                'label' => 'Terverifikasi',
+                'color' => 'emerald',
+                'bg'    => 'bg-emerald-50 dark:bg-emerald-950/40',
+                'text'  => 'text-emerald-700 dark:text-emerald-300',
+                'border'=> 'border-emerald-200 dark:border-emerald-800',
+                'icon'  => 'shield-check',
+            ],
+            'pending' => [
+                'label' => 'Menunggu Verifikasi',
+                'color' => 'amber',
+                'bg'    => 'bg-amber-50 dark:bg-amber-950/40',
+                'text'  => 'text-amber-700 dark:text-amber-300',
+                'border'=> 'border-amber-200 dark:border-amber-800',
+                'icon'  => 'clock',
+            ],
+            'rejected' => [
+                'label' => 'Verifikasi Ditolak',
+                'color' => 'rose',
+                'bg'    => 'bg-rose-50 dark:bg-rose-950/40',
+                'text'  => 'text-rose-700 dark:text-rose-300',
+                'border'=> 'border-rose-200 dark:border-rose-800',
+                'icon'  => 'x-circle',
+            ],
+            default => [
+                'label' => 'Belum Dilengkapi',
+                'color' => 'zinc',
+                'bg'    => 'bg-zinc-100 dark:bg-zinc-800/60',
+                'text'  => 'text-zinc-600 dark:text-zinc-400',
+                'border'=> 'border-zinc-200 dark:border-zinc-700',
+                'icon'  => 'alert-circle',
+            ],
+        };
+    }
+
     /**
      * Hapus otomatis akun yang belum memverifikasi email setelah 10 menit.
      *
@@ -343,6 +495,11 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     // Relationships
+    public function onlineState()
+    {
+        return $this->hasOne(PartnerOnlineState::class, 'user_id');
+    }
+
     public function city()
     {
         return $this->belongsTo(City::class, 'city_id');
@@ -1170,11 +1327,6 @@ class User extends Authenticatable implements MustVerifyEmail
         } else {
             static::$unreadNotificationCountCache = [];
         }
-    }
-
-    public function onlineState()
-    {
-        return $this->hasOne(PartnerOnlineState::class, 'user_id');
     }
 
     /**

@@ -45,9 +45,10 @@ class PartnerOnlineService
         $state = PartnerOnlineState::firstOrCreate(
             ['user_id' => $userId],
             [
-                'matching_status' => PartnerOnlineState::STATUS_OFFLINE,
-                'last_seen_at'    => null,
-                'searching_since' => null,
+                'matching_status'    => PartnerOnlineState::STATUS_OFFLINE,
+                'service_preference' => PartnerOnlineState::PREFERENCE_ALL,
+                'last_seen_at'       => null,
+                'searching_since'    => null,
             ]
         );
 
@@ -213,6 +214,11 @@ class PartnerOnlineService
             $state->searching_since      = now();
             $state->last_seen_at         = now();
             $state->consecutive_declines = 0;
+
+            // Jika kendaraan belum diverifikasi, paksa preferensi radar hanya untuk Kerja Serabutan (on-site)
+            if (!$mitra->canTakePickupDelivery() && in_array($state->service_preference, [PartnerOnlineState::PREFERENCE_PICKUP_DELIVERY, PartnerOnlineState::PREFERENCE_ALL], true)) {
+                $state->service_preference = PartnerOnlineState::PREFERENCE_ON_SITE;
+            }
 
             if ($lat !== null && $lng !== null) {
                 $state->latitude  = $lat;
@@ -548,6 +554,64 @@ class PartnerOnlineService
     public function releaseFromCancelledHelp(int $mitraId, int $helpId): void
     {
         $this->releaseBusy($mitraId, $helpId);
+    }
+
+    /**
+     * Ubah preferensi jenis layanan bantuan untuk matching/radar mitra.
+     *
+     * @param User $mitra
+     * @param string $preference 'all' | 'on_site_service' | 'pickup_delivery'
+     * @return array{success: bool, message: string, preference: string}
+     */
+    public function updateServicePreference(User $mitra, string $preference): array
+    {
+        $allowed = [
+            PartnerOnlineState::PREFERENCE_ALL,
+            PartnerOnlineState::PREFERENCE_ON_SITE,
+            PartnerOnlineState::PREFERENCE_PICKUP_DELIVERY,
+        ];
+
+        if (!in_array($preference, $allowed, true)) {
+            return [
+                'success'    => false,
+                'message'    => 'Pilihan jenis bantuan tidak valid.',
+                'preference' => PartnerOnlineState::PREFERENCE_ALL,
+            ];
+        }
+
+        // Keamanan: Jika memilih Antar & Jemput (atau Semua), pastikan kendaraan mitra sudah diverifikasi
+        if (in_array($preference, [PartnerOnlineState::PREFERENCE_PICKUP_DELIVERY, PartnerOnlineState::PREFERENCE_ALL], true)) {
+            if (!$mitra->canTakePickupDelivery()) {
+                if ($preference === PartnerOnlineState::PREFERENCE_PICKUP_DELIVERY) {
+                    return [
+                        'success'    => false,
+                        'message'    => 'Untuk mencari orderan Antar & Jemput, Anda wajib melengkapi data kendaraan (Plat Nomor, SIM, dan STNK) pada halaman Profil serta diverifikasi Admin.',
+                        'preference' => PartnerOnlineState::PREFERENCE_ON_SITE,
+                    ];
+                }
+                // Jika pilih 'all' tapi kendaraan belum diverifikasi, set ke 'on_site_service'
+                $preference = PartnerOnlineState::PREFERENCE_ON_SITE;
+            }
+        }
+
+        $state = $this->getOrCreateState($mitra, true);
+        $state->update([
+            'service_preference' => $preference,
+        ]);
+
+        self::clearStateCache($mitra->id);
+
+        $label = match ($preference) {
+            PartnerOnlineState::PREFERENCE_ON_SITE         => 'Khusus Kerja Serabutan',
+            PartnerOnlineState::PREFERENCE_PICKUP_DELIVERY => 'Khusus Antar & Jemput',
+            default                                        => 'Semua Jenis Bantuan',
+        };
+
+        return [
+            'success'    => true,
+            'message'    => "Preferensi radar diperbarui: {$label}.",
+            'preference' => $preference,
+        ];
     }
 
     // ═════════════════════════════════════════════════════════════════════════
