@@ -64,34 +64,6 @@
                 <option value="mitra">Mitra</option>
             </select>
 
-            {{-- District Filter (Super Admin only) / District Badge (Admin Kecamatan) --}}
-            @if($authUser && in_array($authUser->role, ['super_admin', 'superadmin']))
-                <select wire:model.live="districtFilter"
-                    class="py-2 pl-3 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50/50 dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 max-w-[180px]">
-                    <option value="all">Semua Kecamatan</option>
-                    @foreach($districts as $district)
-                        <option value="{{ $district->id }}">Kec. {{ $district->name }}</option>
-                    @endforeach
-                    <option value="unassigned">Kecamatan Belum Terdaftar</option>
-                </select>
-            @elseif($authUser && $authUser->role === 'admin' && $authUser->getAdminDistricts()->count() > 1)
-                <select wire:model.live="districtFilter"
-                    class="py-2 pl-3 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50/50 dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 max-w-[180px]">
-                    <option value="all">Semua Wilayah Saya</option>
-                    @foreach($authUser->getAdminDistricts() as $d)
-                        <option value="{{ $d->id }}">Kec. {{ $d->name }}</option>
-                    @endforeach
-                </select>
-            @elseif($authUser && ($authUser->district_id || $authUser->district || $authUser->getAdminDistricts()->isNotEmpty()))
-                <div class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <svg class="w-3.5 h-3.5 text-primary-600 dark:text-sky-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                    <span>Wilayah: Kec. {{ optional($authUser->district)->name ?? $authUser->getAdminDistricts()->first()?->name ?? ($authUser->kecamatan ?? 'Terdaftar') }}</span>
-                </div>
-            @endif
-
             {{-- Status Filter --}}
             <select wire:model.live="statusFilter"
                 class="py-2 pl-3 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50/50 dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">

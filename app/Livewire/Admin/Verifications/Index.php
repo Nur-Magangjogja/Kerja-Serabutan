@@ -462,15 +462,6 @@ class Index extends Component
                     }
                 });
             }
-
-            // In-page dropdown filter override if specifically selected
-            if ($this->districtFilter !== '' && $this->districtFilter !== 'all') {
-                if ($this->districtFilter === 'unassigned') {
-                    $query->whereNull('district_id');
-                } else {
-                    $query->where('district_id', $this->districtFilter);
-                }
-            }
         }
 
         // Search query (KTP)
@@ -531,14 +522,6 @@ class Index extends Component
                     }
                 });
             }
-
-            if ($this->districtFilter !== '' && $this->districtFilter !== 'all') {
-                if ($this->districtFilter === 'unassigned') {
-                    $vehicleQuery->whereNull('district_id');
-                } else {
-                    $vehicleQuery->where('district_id', $this->districtFilter);
-                }
-            }
         }
 
         // Search in vehicle query
@@ -565,12 +548,6 @@ class Index extends Component
         $pendingKtpCount = Registration::whereIn('status', ['pending', 'pending_verification'])->count();
         $pendingVehicleCount = User::where('role', 'mitra')->where('vehicle_verification_status', 'pending')->count();
 
-        // Cache master data distrik & kota
-        $districts = $isSuperAdmin
-            ? cache()->remember('admin_all_districts_with_city', 600, fn() => District::with('city')->orderBy('name')->get())
-            : ($authUser ? $authUser->getAdminDistricts() : collect());
-        $cities = cache()->remember('admin_all_cities', 600, fn() => City::orderBy('name')->get());
-
         $layout = ($authUser && in_array($authUser->role, ['super_admin', 'superadmin'])) 
             ? 'layouts.superadmin' 
             : 'layouts.admin';
@@ -580,10 +557,6 @@ class Index extends Component
             'vehicleVerifications' => $vehicleVerifications,
             'pendingKtpCount'      => $pendingKtpCount,
             'pendingVehicleCount'  => $pendingVehicleCount,
-            'districts'            => $districts,
-            'cities'               => $districts, // Backward compatibility
-            'districtFilter'       => $this->districtFilter,
-            'cityFilter'           => $this->districtFilter,
             'authUser'             => $authUser,
         ])->layout($layout);
     }

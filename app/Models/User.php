@@ -15,6 +15,14 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasFactory, Notifiable;
 
     /**
+     * In-request memoization caches for high-frequency territory and filter lookups.
+     */
+    protected ?array $memoizedAdminDistrictIds = null;
+    protected ?\Illuminate\Database\Eloquent\Collection $memoizedAdminDistricts = null;
+    protected ?string $memoizedActiveAdminDistrictFilter = null;
+    protected ?array $memoizedActiveSuperadminTerritory = null;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -553,6 +561,10 @@ class User extends Authenticatable implements MustVerifyEmail
             return [];
         }
 
+        if ($this->memoizedAdminDistrictIds !== null) {
+            return $this->memoizedAdminDistrictIds;
+        }
+
         if ($this->relationLoaded('managedDistricts')) {
             $managedIds = $this->managedDistricts->pluck('id')->all();
         } else {
@@ -560,22 +572,22 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         if (!empty($managedIds)) {
-            return array_values(array_unique(array_map('intval', $managedIds)));
+            return $this->memoizedAdminDistrictIds = array_values(array_unique(array_map('intval', $managedIds)));
         }
 
         if (!empty($this->district_id)) {
-            return [(int) $this->district_id];
+            return $this->memoizedAdminDistrictIds = [(int) $this->district_id];
         }
 
         $cityIds = $this->getAdminCityIds();
         if (!empty($cityIds)) {
             $cityDistrictIds = District::whereIn('city_id', $cityIds)->pluck('id')->map('intval')->all();
             if (!empty($cityDistrictIds)) {
-                return $cityDistrictIds;
+                return $this->memoizedAdminDistrictIds = $cityDistrictIds;
             }
         }
 
-        return [];
+        return $this->memoizedAdminDistrictIds = [];
     }
 
     /**
@@ -602,12 +614,16 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getAdminDistricts()
     {
-        $districtIds = $this->getAdminDistrictIds();
-        if (empty($districtIds)) {
-            return collect();
+        if ($this->memoizedAdminDistricts !== null) {
+            return $this->memoizedAdminDistricts;
         }
 
-        return District::whereIn('id', $districtIds)->with('city')->orderBy('name')->get();
+        $districtIds = $this->getAdminDistrictIds();
+        if (empty($districtIds)) {
+            return $this->memoizedAdminDistricts = collect();
+        }
+
+        return $this->memoizedAdminDistricts = District::whereIn('id', $districtIds)->with('city')->orderBy('name')->get();
     }
 
     /**
@@ -629,20 +645,24 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getActiveAdminDistrictFilter(): string
     {
+        if ($this->memoizedActiveAdminDistrictFilter !== null) {
+            return $this->memoizedActiveAdminDistrictFilter;
+        }
+
         $cachedDistrict = cache()->get("admin_active_district_{$this->id}");
         $sessionDistrict = session('admin_active_district_filter');
 
         $active = $sessionDistrict ?? $cachedDistrict ?? 'all';
         if ($active === 'all' || empty($active)) {
-            return 'all';
+            return $this->memoizedActiveAdminDistrictFilter = 'all';
         }
 
         $allowedIds = $this->getAdminDistrictIds();
         if (!in_array((int) $active, $allowedIds, true)) {
-            return 'all';
+            return $this->memoizedActiveAdminDistrictFilter = 'all';
         }
 
-        return (string) $active;
+        return $this->memoizedActiveAdminDistrictFilter = (string) $active;
     }
 
     /**
@@ -650,6 +670,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function setActiveAdminDistrictFilter(?string $districtId): void
     {
+        $this->memoizedActiveAdminDistrictFilter = null;
         $val = ($districtId === null || $districtId === '' || $districtId === 'all') ? 'all' : (string) (int) $districtId;
         if ($val !== 'all') {
             $allowedIds = $this->getAdminDistrictIds();
@@ -708,6 +729,10 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getActiveSuperadminTerritory(): array
     {
+        if ($this->memoizedActiveSuperadminTerritory !== null) {
+            return $this->memoizedActiveSuperadminTerritory;
+        }
+
         $sessionType = session('superadmin_active_territory_type');
         $sessionId   = session('superadmin_active_territory_id');
 
@@ -721,7 +746,7 @@ class User extends Authenticatable implements MustVerifyEmail
             $district = District::with('city')->find((int) $id);
             if ($district) {
                 $cityLabel = $district->city ? " ({$district->city->name})" : '';
-                return [
+                return $this->memoizedActiveSuperadminTerritory = [
                     'type'  => 'district',
                     'id'    => (int) $id,
                     'label' => "Kec. {$district->name}{$cityLabel}",
@@ -730,7 +755,7 @@ class User extends Authenticatable implements MustVerifyEmail
         } elseif ($type === 'city' && $id) {
             $city = City::find((int) $id);
             if ($city) {
-                return [
+                return $this->memoizedActiveSuperadminTerritory = [
                     'type'  => 'city',
                     'id'    => (int) $id,
                     'label' => "Kota {$city->name} (Semua Kec.)",
@@ -738,7 +763,7 @@ class User extends Authenticatable implements MustVerifyEmail
             }
         }
 
-        return [
+        return $this->memoizedActiveSuperadminTerritory = [
             'type'  => 'all',
             'id'    => null,
             'label' => 'Semua Wilayah (Nasional)',
@@ -750,6 +775,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function setActiveSuperadminTerritory(string $type, $id = null): void
     {
+        $this->memoizedActiveSuperadminTerritory = null;
         $type = in_array($type, ['city', 'district'], true) ? $type : 'all';
         $id   = ($type !== 'all' && $id) ? (int) $id : null;
 
@@ -903,6 +929,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function setActiveAdminCityFilter(string $cityFilter): void
     {
+        $this->memoizedActiveAdminDistrictFilter = null;
         $allowedIds = $this->getAdminCityIds();
 
         if ($cityFilter === 'all' || empty($cityFilter)) {

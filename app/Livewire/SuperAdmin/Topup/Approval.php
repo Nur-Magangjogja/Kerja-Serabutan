@@ -28,12 +28,10 @@ class Approval extends Component
     public $cancellationReason = '';
     public $filterStatus = 'waiting_approval';
     public $search = '';
-    public $cityFilter = 'all';
     
     protected $queryString = [
         'filterStatus' => ['except' => 'waiting_approval'],
         'search' => ['except' => ''],
-        'cityFilter' => ['except' => 'all'],
     ];
 
     protected $listeners = [
@@ -45,11 +43,6 @@ class Approval extends Component
     ];
 
     public function updatingSearch()
-    {
-        $this->resetPage();
-    }
-
-    public function updatingCityFilter()
     {
         $this->resetPage();
     }
@@ -361,10 +354,6 @@ class Approval extends Component
             $query->where('status', 'rejected');
         }
 
-        if ($this->cityFilter !== 'all') {
-            $query->whereHas('user', fn($q) => $q->where('city_id', (int) $this->cityFilter));
-        }
-
         if (!empty(trim($this->search))) {
             $searchTerm = '%' . trim($this->search) . '%';
             $query->where(function ($q) use ($searchTerm) {
@@ -384,12 +373,10 @@ class Approval extends Component
             });
         }
 
-        $cities = \App\Models\City::orderBy('name')->get();
         $transactions = $query->orderBy('created_at', 'desc')->paginate(15);
 
         return view('livewire.superadmin.topup.approval', [
             'transactions' => $transactions,
-            'cities' => $cities,
             'totalPending' => $totalPending,
             'totalCompleted' => $totalCompleted,
             'totalCancelled' => $totalCancelled,

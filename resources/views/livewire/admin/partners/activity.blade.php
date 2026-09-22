@@ -228,19 +228,6 @@
                         Mitra
                     </button>
                 </div>
-
-                {{-- Filter Kota (Jika SuperAdmin) --}}
-                @if(count($cities) > 1)
-                <div>
-                    <select wire:model.live="userCityId"
-                        class="py-1.5 pl-3 pr-8 text-xs font-semibold rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
-                        <option value="all">Semua Kota</option>
-                        @foreach($cities as $city)
-                            <option value="{{ $city->id }}">{{ $city->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                @endif
             </div>
         </div>
 
@@ -369,7 +356,7 @@
 
             {{-- Filter Bar --}}
             <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-gray-700/80">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     
                     {{-- Search --}}
                     <div class="relative lg:col-span-2">
@@ -407,17 +394,6 @@
                             <option value="partner_cancel_executed">Batal oleh Mitra</option>
                             <option value="dispute_raised">Sengketa / Komplain</option>
                             <option value="account_updated">Pembaruan Profil / Sandi</option>
-                        </select>
-                    </div>
-
-                    {{-- City Filter --}}
-                    <div>
-                        <select wire:model.live="cityId"
-                            class="w-full py-2 pl-3 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
-                            <option value="all">Semua Kota</option>
-                            @foreach($cities as $c)
-                                <option value="{{ $c->id }}">{{ $c->name }}</option>
-                            @endforeach
                         </select>
                     </div>
 

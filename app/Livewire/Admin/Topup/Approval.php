@@ -484,13 +484,10 @@ class Approval extends Component
             });
         }
 
-        $districts = $admin ? $admin->getAdminDistricts() : collect();
         $transactions = $query->orderBy('created_at', 'desc')->paginate(15);
 
         return view('livewire.admin.topup.approval', [
             'transactions'      => $transactions,
-            'districts'         => $districts,
-            'cities'            => $districts, // Backward compatibility
             'adminDistrictName' => $adminDistrictName,
             'adminCityName'     => $adminDistrictName,
             'totalPending'      => $totalPending,

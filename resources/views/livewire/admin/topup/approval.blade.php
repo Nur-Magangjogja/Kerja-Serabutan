@@ -101,24 +101,6 @@
                         </button>
                     @endif
                 </div>
-
-                {{-- District Filter --}}
-                @if(isset($districts) && $districts->count() > 1)
-                    <div class="relative flex-shrink-0 w-full sm:w-auto">
-                        <select wire:model.live="districtFilter"
-                            class="w-full sm:w-auto py-2 pl-3.5 pr-8 text-xs font-semibold rounded-xl bg-primary-50/60 dark:bg-primary-950/40 border border-primary-200/80 dark:border-primary-800/60 text-primary-700 dark:text-primary-300 focus:ring-2 focus:ring-primary-500 outline-none transition cursor-pointer shadow-2xs">
-                            <option value="all">Semua Wilayah Saya ({{ $districts->count() }} Kecamatan)</option>
-                            @foreach($districts as $d)
-                                <option value="{{ $d->id }}">Kec. {{ $d->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                @elseif(isset($districts) && $districts->count() === 1)
-                    <div class="inline-flex items-center gap-1.5 px-3 py-2 bg-primary-50/70 dark:bg-primary-950/40 border border-primary-200/80 dark:border-primary-800/60 rounded-xl text-xs font-semibold text-primary-700 dark:text-primary-300 flex-shrink-0">
-                        <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                        <span>Wilayah: Kec. {{ $districts->first()->name }}</span>
-                    </div>
-                @endif
             </div>
         </div>
 

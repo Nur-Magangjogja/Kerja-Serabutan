@@ -155,19 +155,6 @@
                         Admin
                     </button>
                 </div>
-
-                {{-- Filter Kota --}}
-                @if(count($cities) > 1)
-                <div>
-                    <select wire:model.live="userCityId"
-                        class="py-1.5 pl-3 pr-8 text-xs font-semibold rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
-                        <option value="all">Semua Kota</option>
-                        @foreach($cities as $city)
-                            <option value="{{ $city->id }}">{{ $city->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                @endif
             </div>
         </div>
 

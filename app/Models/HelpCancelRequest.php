@@ -307,13 +307,25 @@ class HelpCancelRequest extends Model
         return $this->expires_at && $this->expires_at->isPast() && $this->isPending();
     }
 
+    /**
+     * In-request static memoization cache for badge counters.
+     */
+    protected static array $memoizedPendingReviewsCounts = [];
+
     protected static function booted()
     {
         static::created(function () {
+            static::$memoizedPendingReviewsCounts = [];
             \Illuminate\Support\Facades\Cache::increment('active_cancellations_count_version');
         });
 
         static::updated(function () {
+            static::$memoizedPendingReviewsCounts = [];
+            \Illuminate\Support\Facades\Cache::increment('active_cancellations_count_version');
+        });
+
+        static::deleted(function () {
+            static::$memoizedPendingReviewsCounts = [];
             \Illuminate\Support\Facades\Cache::increment('active_cancellations_count_version');
         });
     }
@@ -330,13 +342,18 @@ class HelpCancelRequest extends Model
         }
 
         $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
-        $version = \Illuminate\Support\Facades\Cache::get('active_cancellations_count_version', 1);
-
         $saTerritory = $isSuperAdmin ? $user->getActiveSuperadminTerritory() : null;
         $saKeyPart = $isSuperAdmin ? ('sa_' . $saTerritory['type'] . '_' . ($saTerritory['id'] ?? 'all')) : ('admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
+
+        $memoKey = $user->id . '_' . $saKeyPart;
+        if (array_key_exists($memoKey, static::$memoizedPendingReviewsCounts)) {
+            return static::$memoizedPendingReviewsCounts[$memoKey];
+        }
+
+        $version = \Illuminate\Support\Facades\Cache::get('active_cancellations_count_version', 1);
         $cacheKey = 'active_cancels_disputes_count_v' . $version . '_' . $saKeyPart;
 
-        return (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin, $saTerritory) {
+        return static::$memoizedPendingReviewsCounts[$memoKey] = (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 180, function () use ($user, $isSuperAdmin, $saTerritory) {
             // 1. Permintaan pembatalan tugas yang menunggu audit admin
             $cancelQuery = static::where('status', self::STATUS_PENDING);
 

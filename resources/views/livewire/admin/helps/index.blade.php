@@ -208,7 +208,7 @@
 
         @if($helps->hasPages())
             <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-                {{ $helps->links() }}
+                {{ $helps->links('vendor.pagination.superadmin') }}
             </div>
         @endif
     </div>

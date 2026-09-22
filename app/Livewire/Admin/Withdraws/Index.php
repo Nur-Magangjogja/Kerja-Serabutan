@@ -386,19 +386,9 @@ class Index extends Component
     {
         $admin = auth()->user();
         $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
-
-        // Ambil daftar kecamatan untuk filter
-        if ($isSuperAdmin) {
-            $districts = District::with('city')->orderBy('name')->get();
-        } else {
-            $districts = $admin ? $admin->getAdminDistricts() : collect();
-        }
-
         $query = WithdrawRequest::with(['user.district', 'user.city'])->latest();
 
         if (! $isSuperAdmin) {
-            $this->districtFilter = $admin ? $admin->getActiveAdminDistrictFilter() : 'all';
-            $this->cityFilter = $this->districtFilter;
             $effectiveDistrictIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
             if (!empty($effectiveDistrictIds)) {
                 $query->whereHas('user', fn($q) => $q->whereIn('district_id', $effectiveDistrictIds));
@@ -419,8 +409,6 @@ class Index extends Component
                         $q->orWhereIn('district_id', $districtIds);
                     }
                 });
-            } elseif ($this->districtFilter !== 'all') {
-                $query->whereHas('user', fn($q) => $q->where('district_id', (int) $this->districtFilter));
             }
         }
 
@@ -452,10 +440,6 @@ class Index extends Component
 
         return view('livewire.admin.withdraws.index', [
             'withdraws'        => $withdraws,
-            'districts'        => $districts,
-            'cities'           => $districts, // Backward compatibility
-            'districtFilter'   => $this->districtFilter,
-            'cityFilter'       => $this->districtFilter,
             'isSuperAdmin'     => $isSuperAdmin,
         ])->layout($layout);
     }

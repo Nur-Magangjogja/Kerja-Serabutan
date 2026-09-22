@@ -25,6 +25,31 @@ class City extends Model
         'is_matching_seeking_enabled'  => 'boolean',
     ];
 
+    protected static function booted()
+    {
+        static::saved(function () {
+            cache()->forget('all_cities_cached');
+            cache()->forget('admin_all_cities');
+        });
+
+        static::deleted(function () {
+            cache()->forget('all_cities_cached');
+            cache()->forget('admin_all_cities');
+        });
+    }
+
+    /**
+     * Dapatkan semua kota terurut abjad dengan caching (1 jam).
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public static function getAllCached()
+    {
+        return cache()->remember('all_cities_cached', 3600, function () {
+            return static::orderBy('name')->get();
+        });
+    }
+
     /**
      * Cek status efektif seeking mode kota (dengan fallback ke global AppSetting).
      */

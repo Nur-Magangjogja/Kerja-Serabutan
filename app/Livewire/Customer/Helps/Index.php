@@ -12,21 +12,30 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
+use Livewire\Attributes\Url;
 
 class Index extends Component
 {
     use WithPagination, WithFileUploads;
 
-    protected $queryString = [
-        'statusFilter' => ['except' => Help::STATUS_MENUNGGU_MITRA],
-    ];
+    #[Url]
+    public $statusFilter = '';
 
     protected $listeners = [
         'refreshHelps'      => '$refresh',
         'handleExpiredHelp' => 'handleExpiredHelp',
     ];
 
-    public $statusFilter = Help::STATUS_MENUNGGU_MITRA;
+    public function updatingStatusFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function setStatusFilter(string $status): void
+    {
+        $this->statusFilter = $status;
+        $this->resetPage();
+    }
 
     /**
      * Handler saat batas waktu pencarian berakhir (expired) secara live dari frontend
@@ -50,6 +59,10 @@ class Index extends Component
 
     public function mount()
     {
+        if (!empty($this->statusFilter)) {
+            return;
+        }
+
         if (request()->has('statusFilter') && !empty(request()->get('statusFilter'))) {
             $this->statusFilter = request()->get('statusFilter');
             return;

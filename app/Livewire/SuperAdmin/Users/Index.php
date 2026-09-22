@@ -420,7 +420,7 @@ class Index extends Component
             ->latest()
             ->paginate($this->perPage);
 
-        $cities = City::orderBy('name')->get();
+        $cities = City::getAllCached();
         $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 
         return view('livewire.superadmin.users.index', compact('users', 'cities'))->layout($layout);

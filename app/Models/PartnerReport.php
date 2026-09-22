@@ -64,14 +64,21 @@ class PartnerReport extends Model
         'refund_amount'       => 'decimal:2',
     ];
 
+    /**
+     * In-request static memoization cache for badge counters.
+     */
+    protected static array $memoizedActiveReportsCounts = [];
+
     protected static function booted()
     {
         static::saved(function () {
+            static::$memoizedActiveReportsCounts = [];
             \Illuminate\Support\Facades\Cache::forget('active_reports_count_superadmin');
             \Illuminate\Support\Facades\Cache::increment('active_reports_count_version');
         });
 
         static::deleted(function () {
+            static::$memoizedActiveReportsCounts = [];
             \Illuminate\Support\Facades\Cache::forget('active_reports_count_superadmin');
             \Illuminate\Support\Facades\Cache::increment('active_reports_count_version');
         });
@@ -89,13 +96,18 @@ class PartnerReport extends Model
         }
 
         $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
-        $version = \Illuminate\Support\Facades\Cache::get('active_reports_count_version', 1);
-
         $saTerritory = $isSuperAdmin ? $user->getActiveSuperadminTerritory() : null;
         $saKeyPart = $isSuperAdmin ? ('sa_' . $saTerritory['type'] . '_' . ($saTerritory['id'] ?? 'all')) : ('admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
+
+        $memoKey = $user->id . '_' . $saKeyPart;
+        if (array_key_exists($memoKey, static::$memoizedActiveReportsCounts)) {
+            return static::$memoizedActiveReportsCounts[$memoKey];
+        }
+
+        $version = \Illuminate\Support\Facades\Cache::get('active_reports_count_version', 1);
         $cacheKey = 'active_reports_count_v' . $version . '_' . $saKeyPart;
 
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin, $saTerritory) {
+        return static::$memoizedActiveReportsCounts[$memoKey] = (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 180, function () use ($user, $isSuperAdmin, $saTerritory) {
             $query = static::whereIn('status', ['pending', 'in_progress', 'investigating']);
 
             if (!$isSuperAdmin) {

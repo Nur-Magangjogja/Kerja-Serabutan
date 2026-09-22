@@ -101,19 +101,6 @@
                         </button>
                     @endif
                 </div>
-
-                {{-- City Filter --}}
-                @if(isset($cities) && $cities->count() > 0)
-                    <div class="relative flex-shrink-0 w-full sm:w-auto">
-                        <select wire:model.live="cityFilter"
-                            class="w-full sm:w-auto py-2 pl-3.5 pr-8 text-xs font-semibold rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 outline-none transition cursor-pointer shadow-2xs">
-                            <option value="all">Semua Wilayah (Nasional)</option>
-                            @foreach($cities as $city)
-                                <option value="{{ $city->id }}">{{ $city->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                @endif
             </div>
         </div>
 

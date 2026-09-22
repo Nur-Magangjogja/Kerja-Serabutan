@@ -50,6 +50,11 @@ class BalanceTransaction extends Model
 
 
 
+    /**
+     * In-request static memoization cache for badge counters.
+     */
+    protected static array $memoizedPendingTopupsCounts = [];
+
     // Relationships
     public function user()
     {
@@ -269,12 +274,14 @@ class BalanceTransaction extends Model
         });
 
         static::saved(function () {
+            static::$memoizedPendingTopupsCounts = [];
             \Illuminate\Support\Facades\Cache::forget('pending_topups_count_superadmin');
             $ver = (int) \Illuminate\Support\Facades\Cache::get('pending_topups_count_version', 1);
             \Illuminate\Support\Facades\Cache::put('pending_topups_count_version', $ver + 1, now()->addDays(7));
         });
 
         static::deleted(function () {
+            static::$memoizedPendingTopupsCounts = [];
             \Illuminate\Support\Facades\Cache::forget('pending_topups_count_superadmin');
             $ver = (int) \Illuminate\Support\Facades\Cache::get('pending_topups_count_version', 1);
             \Illuminate\Support\Facades\Cache::put('pending_topups_count_version', $ver + 1, now()->addDays(7));
@@ -293,13 +300,18 @@ class BalanceTransaction extends Model
         }
 
         $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
-        $version = \Illuminate\Support\Facades\Cache::get('pending_topups_count_version', 1);
-
         $saTerritory = $isSuperAdmin ? $user->getActiveSuperadminTerritory() : null;
         $saKeyPart = $isSuperAdmin ? ('sa_' . $saTerritory['type'] . '_' . ($saTerritory['id'] ?? 'all')) : ('admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
+
+        $memoKey = $user->id . '_' . $saKeyPart;
+        if (array_key_exists($memoKey, static::$memoizedPendingTopupsCounts)) {
+            return static::$memoizedPendingTopupsCounts[$memoKey];
+        }
+
+        $version = \Illuminate\Support\Facades\Cache::get('pending_topups_count_version', 1);
         $cacheKey = 'pending_topups_count_v' . $version . '_' . $saKeyPart;
 
-        return (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin, $saTerritory) {
+        return static::$memoizedPendingTopupsCounts[$memoKey] = (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 180, function () use ($user, $isSuperAdmin, $saTerritory) {
             $query = static::where('type', 'topup')->where('status', 'waiting_approval');
 
             if (!$isSuperAdmin) {

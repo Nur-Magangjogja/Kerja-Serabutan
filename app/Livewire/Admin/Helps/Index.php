@@ -5,6 +5,7 @@ namespace App\Livewire\Admin\Helps;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use App\Models\Help;
 use App\Models\District;
 use App\Models\City;
@@ -14,8 +15,12 @@ class Index extends Component
 {
     use WithPagination;
 
+    #[Url]
     public $search = '';
+
+    #[Url]
     public $statusFilter = '';
+
     public $districtFilter = 'all';
     public $cityFilter = 'all'; // Backward compatibility alias
     public $perPage = 10;
@@ -25,11 +30,6 @@ class Index extends Component
     protected $listeners = [
         'admin-district-changed' => 'onAdminDistrictChanged',
         'admin-city-changed'     => 'onAdminDistrictChanged',
-    ];
-
-    protected $queryString = [
-        'search' => ['except' => ''],
-        'statusFilter' => ['except' => ''],
     ];
 
     public function mount()
@@ -94,13 +94,19 @@ class Index extends Component
     {
         $admin = auth()->user();
         $target = (string) ($districtId ?? ($admin ? ($admin->getActiveAdminDistrictFilter() !== 'all' ? $admin->getActiveAdminDistrictFilter() : $admin->getActiveAdminCityFilter()) : 'all'));
+        
+        $changed = ($this->districtFilter !== $target);
+
         if ($admin && $admin->role === 'admin') {
             $admin->setActiveAdminDistrictFilter($target);
             $admin->setActiveAdminCityFilter($target);
         }
         $this->districtFilter = $target;
         $this->cityFilter = $target;
-        $this->resetPage();
+
+        if ($changed) {
+            $this->resetPage();
+        }
     }
 
     public function onAdminCityChanged($cityId = null)

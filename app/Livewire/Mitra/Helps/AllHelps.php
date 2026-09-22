@@ -69,8 +69,19 @@ class AllHelps extends Component
 
     public function setMitraLocation($lat, $lng, $cityName = null, $districtName = null)
     {
-        $this->mitraLat = (float) $lat;
-        $this->mitraLng = (float) $lng;
+        $newLat = (float) $lat;
+        $newLng = (float) $lng;
+
+        // Cek apakah koordinat berpindah secara signifikan (> 0.001 derajat atau koordinat awal)
+        $hasMovedSignificantly = (
+            $this->mitraLat === null ||
+            $this->mitraLng === null ||
+            abs($this->mitraLat - $newLat) > 0.001 ||
+            abs($this->mitraLng - $newLng) > 0.001
+        );
+
+        $this->mitraLat = $newLat;
+        $this->mitraLng = $newLng;
 
         $user = auth()->user();
         if ($user) {
@@ -84,17 +95,23 @@ class AllHelps extends Component
             );
         }
 
-        $this->resolveCurrentTerritory($cityName, $districtName);
-        $this->resetPage();
+        $territoryChanged = $this->resolveCurrentTerritory($cityName, $districtName);
+
+        // Hanya reset paginasi jika ada pergerakan lokasi GPS signifikan atau wilayah kota/kecamatan berubah
+        if ($hasMovedSignificantly || $territoryChanged) {
+            $this->resetPage();
+        }
     }
 
     /**
      * Resolusikan Kecamatan & Kota/Kabupaten secara dinamis dari titik koordinat GPS posisi saat ini.
      * Fallback ke data profil pengguna jika koordinat GPS belum tersedia.
      */
-    public function resolveCurrentTerritory(?string $cityName = null, ?string $districtName = null): void
+    public function resolveCurrentTerritory(?string $cityName = null, ?string $districtName = null): bool
     {
         $user = auth()->user();
+        $oldCityId = $this->currentCityId;
+        $oldDistrictId = $this->currentDistrictId;
 
         // 1. Jika ada koordinat GPS, temukan Kota terdekat berdasarkan koordinat
         if ($this->mitraLat && $this->mitraLng) {
@@ -158,6 +175,8 @@ class AllHelps extends Component
             $this->currentDistrictId   = $userDistrict?->id ?? $user->district_id;
             $this->currentDistrictName = $userDistrict?->name ?? $user->district ?? $user->kecamatan;
         }
+
+        return ($oldCityId !== $this->currentCityId || $oldDistrictId !== $this->currentDistrictId);
     }
 
     /**
