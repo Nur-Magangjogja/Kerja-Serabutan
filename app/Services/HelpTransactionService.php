@@ -159,6 +159,14 @@ class HelpTransactionService
                 . 'Anda baru dapat mengambil pekerjaan Antar & Jemput setelah data diverifikasi.'
             );
         }
+
+        // 10. Validasi Status Wilayah Operasional (Mencegah Pengambilan di Wilayah Nonaktif)
+        if ($help->city && !$help->city->is_active) {
+            throw new \RuntimeException('Wilayah tugas ini sedang ditutup sementara dan tidak dapat diambil.');
+        }
+        if ($help->district && !$help->district->is_active) {
+            throw new \RuntimeException('Kecamatan tugas ini sedang ditutup sementara dan tidak dapat diambil.');
+        }
     }
 
     /**

@@ -192,6 +192,17 @@ class AllHelps extends Component
             return;
         }
 
+        // Guard: Wilayah atau Kecamatan sedang dinonaktifkan
+        if ($help->city && !$help->city->is_active) {
+            session()->flash('error', 'Bantuan ini berada di wilayah yang sedang ditutup sementara dan tidak dapat diambil.');
+            return;
+        }
+
+        if ($help->district && !$help->district->is_active) {
+            session()->flash('error', 'Bantuan ini berada di kecamatan yang sedang ditutup sementara dan tidak dapat diambil.');
+            return;
+        }
+
         try {
             app(HelpTransactionService::class)->takeHelp(
                 $help,
@@ -264,6 +275,12 @@ class AllHelps extends Component
             ->where(function ($q) {
                 $q->whereNull('expires_at')
                   ->orWhere('expires_at', '>', now());
+            })
+            // Sembunyikan tugas di kota atau kecamatan yang sedang dinonaktifkan
+            ->whereHas('city', fn($c) => $c->where('is_active', true))
+            ->where(function ($q) {
+                $q->whereNull('district_id')
+                  ->orWhereHas('district', fn($d) => $d->where('is_active', true));
             });
 
         // Sembunyikan tugas jenis Antar & Jemput (pickup_delivery) jika mitra belum melengkapi

@@ -72,14 +72,16 @@ class PartnerDisciplineService
             'latest_warning_at'      => now(),
         ];
 
-        // Pada SP 3 untuk mitra, aktifkan Shadow Ban otomatis
-        if ($targetLevel === 3 && $user->role === 'mitra') {
+        // Pada SP 3 (Mitra maupun Customer), aktifkan Shadow Ban otomatis
+        if ($targetLevel === 3) {
             $updateData['is_shadow_banned'] = true;
             $updateData['shadow_banned_at'] = now();
-            \App\Models\PartnerOnlineState::where('user_id', $user->id)->update([
-                'matching_status' => \App\Models\PartnerOnlineState::STATUS_OFFLINE,
-                'searching_since' => null,
-            ]);
+            if ($user->role === 'mitra') {
+                \App\Models\PartnerOnlineState::where('user_id', $user->id)->update([
+                    'matching_status' => \App\Models\PartnerOnlineState::STATUS_OFFLINE,
+                    'searching_since' => null,
+                ]);
+            }
         }
 
         $user->update($updateData);
@@ -93,14 +95,14 @@ class PartnerDisciplineService
             'message'       => $warningMsg,
         ]);
 
-        if ($targetLevel === 3 && $user->role === 'mitra') {
+        if ($targetLevel === 3) {
             UserGreylistLog::create([
                 'user_id'       => $user->id,
                 'admin_id'      => $admin?->id,
                 'action'        => 'shadow_ban_enabled',
                 'warning_level' => 3,
                 'reason'        => "Shadow Ban diaktifkan karena telah mencapai SP 3.",
-                'message'       => "Akun dikenakan Shadow Ban oleh {$adminName}.",
+                'message'       => "Akun {$user->name} dikenakan Shadow Ban oleh {$adminName}.",
             ]);
         }
 
