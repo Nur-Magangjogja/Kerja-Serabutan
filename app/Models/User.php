@@ -73,6 +73,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'warning_level',
         'latest_warning_message',
         'latest_warning_at',
+        'konsep1_cancel_count',
+        'konsep1_pardoned_at',
+        'konsep1_pardon_notes',
     ];
 
     /**
@@ -107,6 +110,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'shadow_banned_at' => 'datetime',
             'warning_level' => 'integer',
             'latest_warning_at' => 'datetime',
+            'konsep1_cancel_count' => 'integer',
+            'konsep1_pardoned_at' => 'datetime',
             'vehicle_verified' => 'boolean',
             'vehicle_verified_at' => 'datetime',
         ];
@@ -267,6 +272,15 @@ class User extends Authenticatable implements MustVerifyEmail
     public function hasWarning(): bool
     {
         return $this->warning_level > 0;
+    }
+
+    /**
+     * Hitung total pembatalan Konsep 1 (Kendala Perjalanan - Transit) yang diajukan oleh mitra ini.
+     * Mengambil dari counter akun yang dapat diatur ulang (pengampunan) oleh Admin di Daftar Abu-Abu.
+     */
+    public function getKonsep1CancellationCount(): int
+    {
+        return (int) ($this->konsep1_cancel_count ?? 0);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

@@ -185,6 +185,9 @@ class OnSiteCancellationService
             $this->onlineService->releaseBusy($mitra->id, $lockedHelp->id);
             $lockedHelp->addExcludedPartner($mitra->id, "Mitra membatalkan di perjalanan (insiden/kendala): {$reason}");
 
+            // Tambah hitungan pembatalan mitra khusus Konsep 1 (Kendala Perjalanan - Transit)
+            $mitra->increment('konsep1_cancel_count');
+
             // Buat tiket audit untuk Admin Wilayah
             $cancelRequest = HelpCancelRequest::create([
                 'help_id'               => $lockedHelp->id,

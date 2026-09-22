@@ -30,6 +30,7 @@ class Index extends Component
     public $name = '';
     public $province = '';
     public $province_id = null;
+    public $manualProvince = false;
     public $admin_id = null;
     public $is_active = true;
     public $deleteId = null;
@@ -92,7 +93,7 @@ class Index extends Component
 
     public function openCreateModal()
     {
-        $this->reset(['name', 'province', 'province_id', 'admin_id', 'is_active', 'cityId', 'editMode']);
+        $this->reset(['name', 'province', 'province_id', 'admin_id', 'is_active', 'cityId', 'editMode', 'manualProvince']);
         $this->is_active = true;
         $this->showModal = true;
     }
@@ -107,7 +108,36 @@ class Index extends Component
         $this->admin_id = $city->admin_id;
         $this->is_active = $city->is_active;
         $this->editMode = true;
+        $this->manualProvince = false;
+
+        // Jika province_id belum terisi tetapi ada nama provinsi, cocokkan otomatis ke tabel provinces
+        if (!$this->province_id && !empty($this->province)) {
+            $matchedProv = Province::where('name', $this->province)->first();
+            if ($matchedProv) {
+                $this->province_id = $matchedProv->id;
+            } else {
+                $this->manualProvince = true;
+            }
+        }
+
         $this->showModal = true;
+    }
+
+    public function toggleManualProvince()
+    {
+        $this->manualProvince = !$this->manualProvince;
+    }
+
+    public function updatedProvinceId($value)
+    {
+        if ($value) {
+            $prov = Province::find($value);
+            if ($prov) {
+                $this->province = $prov->name;
+            }
+        } else {
+            $this->province = '';
+        }
     }
 
     public function confirmDelete($id)
@@ -128,19 +158,20 @@ class Index extends Component
     public function save()
     {
         $rules = [
-            'name' => 'required|string|max:255',
-            'admin_id' => 'nullable|exists:users,id',
+            'name'      => 'required|string|max:255',
+            'province'  => 'required|string|max:255',
+            'admin_id'  => 'nullable|exists:users,id',
             'is_active' => 'boolean',
         ];
 
-        // if province_id chosen, validate it; otherwise require free-text province
-        if ($this->province_id) {
-            $rules['province_id'] = 'exists:provinces,id';
-        } else {
-            $rules['province'] = 'required|string|max:255';
+        if ($this->province_id && Schema::hasTable('provinces')) {
+            $rules['province_id'] = 'nullable|exists:provinces,id';
         }
 
-        $validated = $this->validate($rules);
+        $validated = $this->validate($rules, [
+            'name.required'     => 'Nama kota wajib diisi.',
+            'province.required' => 'Provinsi wajib dipilih atau diisi.',
+        ]);
 
         $admin = null;
         if (!empty($validated['admin_id'])) {
@@ -151,15 +182,13 @@ class Index extends Component
             }
         }
 
+        if ($this->province_id) {
+            $validated['province_id'] = $this->province_id;
+        }
+
         if ($this->editMode && $this->cityId) {
             $city = City::findOrFail($this->cityId);
             $oldAdminId = $city->admin_id;
-            // ensure province name is stored for backward compatibility
-            if ($this->province_id) {
-                $prov = Province::find($this->province_id);
-                if ($prov) $validated['province'] = $prov->name;
-                $validated['province_id'] = $this->province_id;
-            }
 
             $city->update($validated);
 
@@ -179,12 +208,6 @@ class Index extends Component
 
             session()->flash('message', 'Kota berhasil diperbarui');
         } else {
-            if ($this->province_id) {
-                $prov = Province::find($this->province_id);
-                if ($prov) $validated['province'] = $prov->name;
-                $validated['province_id'] = $this->province_id;
-            }
-
             $city = City::create($validated);
 
             if ($admin) {
@@ -196,7 +219,7 @@ class Index extends Component
         }
 
         $this->showModal = false;
-        $this->reset(['name', 'province', 'province_id', 'admin_id', 'is_active', 'cityId', 'editMode']);
+        $this->reset(['name', 'province', 'province_id', 'admin_id', 'is_active', 'cityId', 'editMode', 'manualProvince']);
     }
 
     /** Provinces management */
@@ -215,15 +238,27 @@ class Index extends Component
 
     public function saveProvince()
     {
-        $this->validate(['provinceName' => 'required|string|max:255']);
+        $this->validate(['provinceName' => 'required|string|max:255'], [
+            'provinceName.required' => 'Nama provinsi wajib diisi.',
+        ]);
 
         if ($this->provinceEditId) {
             $prov = Province::findOrFail($this->provinceEditId);
             $prov->update(['name' => $this->provinceName]);
-            session()->flash('message', 'Provinsi diperbarui');
+            if ($this->province_id == $prov->id) {
+                $this->province = $prov->name;
+            }
+            session()->flash('message', "Provinsi {$prov->name} berhasil diperbarui.");
         } else {
-            Province::create(['name' => $this->provinceName]);
-            session()->flash('message', 'Provinsi dibuat');
+            $prov = Province::create(['name' => $this->provinceName]);
+            session()->flash('message', "Provinsi {$prov->name} berhasil dibuat.");
+
+            // Jika sedang membuka modal tambah/edit kota, otomatis pilih provinsi baru ini via Livewire
+            if ($this->showModal) {
+                $this->province_id = $prov->id;
+                $this->province = $prov->name;
+                $this->manualProvince = false;
+            }
         }
 
         $this->showProvinceModal = false;

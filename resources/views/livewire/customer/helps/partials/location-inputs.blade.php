@@ -4,7 +4,7 @@
         <!-- Mode Antar / Jemput: 2 Alamat (Titik Jemput & Titik Antar) -->
         <div class="space-y-3">
             <!-- Titik 1: Jemput (Pickup) -->
-            <div class="p-3 bg-blue-50/60 dark:bg-gray-800/80 rounded-xl border border-blue-200/80 dark:border-gray-700 space-y-1.5 shadow-2xs"
+            <div id="group-pickup-address" class="p-3 bg-blue-50/60 dark:bg-gray-800/80 rounded-xl border border-blue-200/80 dark:border-gray-700 space-y-1.5 shadow-2xs"
                  x-data="{
                      searchQuery: @entangle('pickup_address').live,
                      searchResults: [],
@@ -188,7 +188,7 @@
             </div>
 
             <!-- Titik 2: Antar (Tujuan) -->
-            <div class="p-3 bg-emerald-50/60 dark:bg-gray-800/80 rounded-xl border border-emerald-200/80 dark:border-gray-700 space-y-1.5 shadow-2xs"
+            <div id="group-delivery-address" class="p-3 bg-emerald-50/60 dark:bg-gray-800/80 rounded-xl border border-emerald-200/80 dark:border-gray-700 space-y-1.5 shadow-2xs"
                  x-data="{
                      searchQuery: @entangle('delivery_address').live,
                      searchResults: [],
@@ -386,7 +386,7 @@
                         <div class="flex items-center justify-between font-semibold text-emerald-950 dark:text-white text-xs bg-emerald-100 dark:bg-emerald-900/80 px-3 py-2.5 rounded-xl border border-emerald-300 dark:border-emerald-700 mt-1.5 shadow-2xs flex-wrap gap-2">
                             <div class="flex items-center gap-1.5">
                                 <span>🛣️</span>
-                                <span>Jarak Rute: <strong class="font-bold text-emerald-950 dark:text-white">{{ number_format((float)$route_distance_km, 1, ',', '.') }} KM</strong> (dibulatkan {{ ceil((float)$route_distance_km) }} KM)</span>
+                                <span>Jarak Rute: <strong class="font-bold text-emerald-950 dark:text-white"></strong> {{ ceil((float)$route_distance_km) }} KM</span>
                             </div>
                             <div class="flex items-center gap-1 text-blue-800 dark:text-blue-200">
                                 <span>⏱️</span>
@@ -403,7 +403,7 @@
         </div>
     @else
         <!-- Mode Kerja Serabutan (On-Site): 1 Alamat Tunggal -->
-        <div x-data="{
+        <div id="group-onsite-location" x-data="{
                  searchQuery: @entangle('location').live,
                  searchResults: [],
                  isSearching: false,

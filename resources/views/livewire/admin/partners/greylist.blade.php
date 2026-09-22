@@ -141,6 +141,14 @@
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase {{ $user->role === 'mitra' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300' }}">
                                         {{ $user->role === 'mitra' ? '🛵 Mitra' : '👤 Customer' }}
                                     </span>
+                                    @if($user->role === 'mitra')
+                                        @php $k1Count = $user->getKonsep1CancellationCount(); @endphp
+                                        <div class="mt-1">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium {{ $k1Count >= 3 ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' }}" title="Hitungan pembatalan di perjalanan (Konsep 1)">
+                                                🚗 K1: <strong>{{ $k1Count }}x</strong>
+                                            </span>
+                                        </div>
+                                    @endif
                                 </td>
 
                                 <td class="px-4 py-3.5 whitespace-nowrap">
@@ -218,6 +226,14 @@
                                             class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer" title="Terbitkan Surat Peringatan">
                                             <span>📢 Beri SP</span>
                                         </button>
+
+                                        {{-- Pengampunan Pembatalan Mitra (Khusus Mitra) --}}
+                                        @if($user->role === 'mitra')
+                                            <button type="button" wire:click="openPardonModal({{ $user->id }})"
+                                                class="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer" title="Atur Ulang / Pengampunan Hitungan Pembatalan">
+                                                <span>🕊️ Ampuni</span>
+                                            </button>
+                                        @endif
 
                                         {{-- Toggle Shadow Ban --}}
                                         <button type="button" wire:click="toggleShadowBan({{ $user->id }})" wire:confirm="{{ $user->is_shadow_banned ? 'Cabut Shadow Ban untuk user ini?' : 'Terapkan Shadow Ban untuk membatasi fitur bantuan user ini?' }}"
@@ -458,7 +474,7 @@
                     </div>
 
                     {{-- Moderation Status Grid --}}
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 {{ $detailUser->role === 'mitra' ? 'lg:grid-cols-4' : 'lg:grid-cols-3' }} gap-2.5">
                         <div class="p-3 bg-amber-50/60 dark:bg-amber-950/30 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 block">Surat Peringatan</span>
                             <div class="text-sm font-extrabold text-amber-950 dark:text-amber-100 mt-0.5">
@@ -488,6 +504,32 @@
                                 {{ $detailUser->greylisted_at ? $detailUser->greylisted_at->diffForHumans() : 'Belum diawasi' }}
                             </span>
                         </div>
+
+                        @if($detailUser->role === 'mitra')
+                            @php $k1Total = $detailUser->getKonsep1CancellationCount(); @endphp
+                            <div class="p-3 rounded-xl border flex flex-col justify-between {{ $k1Total >= 3 ? 'bg-rose-50/60 dark:bg-rose-950/30 border-rose-200/60 dark:border-rose-800/40 text-rose-950 dark:text-rose-100' : 'bg-gray-50 dark:bg-gray-700/40 border-gray-100 dark:border-gray-600 text-gray-900 dark:text-white' }}">
+                                <div>
+                                    <span class="text-[10px] font-bold uppercase tracking-wider block {{ $k1Total >= 3 ? 'text-rose-700 dark:text-rose-300' : 'text-gray-400' }}">Batal di Jalan (Konsep 1)</span>
+                                    <div class="text-sm font-extrabold mt-0.5 {{ $k1Total >= 3 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-900 dark:text-white' }}">
+                                        {{ $k1Total }}x Batal
+                                    </div>
+                                    <span class="text-[10px] block mt-0.5 {{ $k1Total >= 3 ? 'text-rose-700/70 dark:text-rose-300/70 font-semibold' : 'text-gray-400' }}">
+                                        {{ $k1Total >= 3 ? '⚠️ Sering membatalkan' : 'Kendala perjalanan wajar' }}
+                                    </span>
+                                    @if($detailUser->konsep1_pardoned_at)
+                                        <p class="text-[9px] text-purple-600 dark:text-purple-400 mt-1 font-medium">
+                                            🕊️ Diampuni: {{ $detailUser->konsep1_pardoned_at->format('d M Y') }}
+                                        </p>
+                                    @endif
+                                </div>
+                                <div class="mt-2 pt-2 border-t border-gray-200/60 dark:border-gray-600/60">
+                                    <button type="button" wire:click="openPardonModal({{ $detailUser->id }})"
+                                        class="w-full px-2 py-1 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/40 dark:hover:bg-purple-800/60 text-purple-800 dark:text-purple-200 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer">
+                                        <span>🕊️ Atur Ulang / Pengampunan</span>
+                                    </button>
+                                </div>
+                            </div>
+                        @endif
                     </div>
 
                     @if($detailUser->warning_level == 0)
@@ -593,6 +635,102 @@
                             Tutup
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+        @endteleport
+    @endif
+
+    {{-- MODAL 4: Pengampunan Pembatalan Konsep 1 (Khusus Mitra) --}}
+    @if($showPardonModal && $pardonUser)
+        @teleport('body')
+        <div class="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" wire:click="closePardonModal"></div>
+            <div class="relative bg-white dark:bg-gray-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700 space-y-4 z-10">
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center gap-2.5">
+                        <span class="p-2 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl text-base">🕊️</span>
+                        <div>
+                            <h3 class="text-sm font-extrabold text-gray-900 dark:text-white">Pengampunan Pembatalan Mitra</h3>
+                            <p class="text-[11px] text-gray-400">Atur ulang hitungan pembatalan di perjalanan (Konsep 1)</p>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="closePardonModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none cursor-pointer">&times;</button>
+                </div>
+
+                {{-- Partner Info Card --}}
+                <div class="p-3 bg-purple-50/60 dark:bg-purple-950/30 rounded-2xl border border-purple-100 dark:border-purple-800/40 flex items-center justify-between gap-3">
+                    <div>
+                        <h4 class="font-extrabold text-xs text-purple-950 dark:text-purple-100">{{ $pardonUser->name }}</h4>
+                        <p class="text-[10px] text-purple-800/80 dark:text-purple-300/80">{{ $pardonUser->phone ?? $pardonUser->email }}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] uppercase font-bold text-purple-700 dark:text-purple-300 block">Hitungan Saat Ini</span>
+                        <span class="text-sm font-black text-purple-900 dark:text-purple-100">{{ $pardonCurrentCount }}x Batal</span>
+                    </div>
+                </div>
+
+                <div class="space-y-3.5 text-xs">
+                    <div>
+                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                            Atur Hitungan Pembatalan Baru
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" min="0" wire:model="pardonNewCount"
+                                class="w-24 px-3 py-2 text-center font-bold text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <button type="button" wire:click="setPardonCountQuick(0)"
+                                    class="px-2.5 py-1.5 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 text-emerald-800 dark:text-emerald-300 rounded-lg text-[11px] font-bold transition cursor-pointer">
+                                    ✓ Set 0 (Ampuni Penuh)
+                                </button>
+                                @if($pardonCurrentCount > 0)
+                                    <button type="button" wire:click="setPardonCountQuick({{ max(0, $pardonCurrentCount - 1) }})"
+                                        class="px-2.5 py-1.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-950/60 dark:hover:bg-blue-900/80 text-blue-800 dark:text-blue-300 rounded-lg text-[11px] font-bold transition cursor-pointer">
+                                        -1 (Kurangi 1)
+                                    </button>
+                                @endif
+                                @if($pardonCurrentCount > 2)
+                                    <button type="button" wire:click="setPardonCountQuick({{ max(0, $pardonCurrentCount - 3) }})"
+                                        class="px-2.5 py-1.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-950/60 dark:hover:bg-blue-900/80 text-blue-800 dark:text-blue-300 rounded-lg text-[11px] font-bold transition cursor-pointer">
+                                        -3 (Kurangi 3)
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
+                        @error('pardonNewCount') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
+                        <p class="text-[10px] text-gray-400 mt-1">
+                            Pilih angka 0 untuk mereset seluruh catatan akumulasi pembatalan transit mitra.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                            Alasan & Catatan Pengampunan <span class="text-rose-500">*</span>
+                        </label>
+                        <textarea wire:model="pardonReason" rows="3" placeholder="Tuliskan pertimbangan / kompensasi / klarifikasi yang telah disepakati..."
+                            class="w-full px-3.5 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                        @error('pardonReason') <span class="text-rose-500 text-[10px] mt-1 block">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div class="p-3 bg-amber-50/70 dark:bg-amber-950/30 rounded-xl border border-amber-200/60 dark:border-amber-800/40 text-[11px] text-amber-800 dark:text-amber-200 space-y-1">
+                        <div class="font-bold flex items-center gap-1.5">
+                            <span>💡</span> Informasi Pengampunan
+                        </div>
+                        <p class="text-[10px] text-amber-700/90 dark:text-amber-300/90 leading-relaxed">
+                            Pengampunan ini akan langsung memperbarui data akumulasi pembatalan mitra dan dicatat pada riwayat moderasi (UserGreylistLog).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <button type="button" wire:click="closePardonModal"
+                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="button" wire:click="submitPardon"
+                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-xs flex items-center gap-1.5">
+                        <span>🕊️ Simpan Pengampunan</span>
+                    </button>
                 </div>
             </div>
         </div>

@@ -185,7 +185,7 @@
             </div>
         @endif
 
-        {{-- Review Banner (Khusus Status Pengajuan Batal / Kendala Lapangan oleh Mitra - Konsep 2) --}}
+        {{-- Review Banner (Khusus Status Pengajuan Batal / Kendala Lapangan oleh Mitra - ) --}}
         @if($help->status === 'partner_cancel_requested')
             @php
                 $effectiveExpiry = $help->effective_expires_at;
@@ -516,7 +516,7 @@
             @endif
         </div>
 
-        {{-- Live Dynamic Travel ETA & Progress Card (Konsep 2) --}}
+        {{-- Live Dynamic Travel ETA & Progress Card  --}}
         @if($help->mitra_id && in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']))
             @php
                 $travelProgress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($help);

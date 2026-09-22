@@ -39,7 +39,8 @@ class UserGreylistLog extends Model
             'warning_issued'           => 'Diberikan Surat Peringatan (SP ' . $this->warning_level . ')',
             'shadow_ban_enabled'       => 'Shadow Ban Diaktifkan',
             'shadow_ban_disabled'      => 'Shadow Ban Dinonaktifkan',
-            default                    => ucfirst($this->action),
+            'konsep1_pardon'           => 'Pengampunan Pembatalan (Reset Konsep 1)',
+            default                    => ucfirst(str_replace('_', ' ', $this->action)),
         };
     }
 }

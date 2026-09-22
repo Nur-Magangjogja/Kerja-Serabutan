@@ -166,7 +166,7 @@
         @endif
 
         {{-- ───────────────────────────────────────────────────────────────── --}}
-        {{-- CASE: MITRA MENGAJUKAN KENDALA LAPANGAN (KONSEP 2 IN-PROGRESS)    --}}
+        {{-- CASE: MITRA MENGAJUKAN KENDALA LAPANGAN ( IN-PROGRESS)    --}}
         {{-- ───────────────────────────────────────────────────────────────── --}}
         @if ($isPartnerCancelRequested)
             <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 rounded-2xl p-4 mb-3 shadow-xs space-y-3">
@@ -181,7 +181,7 @@
                                     Menunggu Tinjauan Admin
                                 </span>
                                 <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
-                                    Konsep 2 (Saat Pengerjaan)
+                                     (Saat Pengerjaan)
                                 </span>
                             </div>
                             <h3 class="font-bold text-sm text-gray-900 dark:text-white mt-1">Pengajuan Kendala Lapangan</h3>
@@ -1565,7 +1565,7 @@
                 <button type="button" wire:click="openPartnerCancelModal"
                     class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
                     <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    <span>Ajukan Kendala Lapangan (Konsep 2)</span>
+                    <span>Ajukan Kendala Lapangan </span>
                 </button>
             </div>
         @elseif ($help->status === 'waiting_customer_confirmation')
@@ -1624,7 +1624,7 @@
                                     {{ $isInProgress ? 'Ajukan Kendala Lapangan' : 'Batalkan Penugasan' }}
                                 </h3>
                                 <p class="text-[11px] text-gray-500 dark:text-gray-400">
-                                    {{ $isInProgress ? 'Pengajuan pembatalan tahap pengerjaan (Konsep 2)' : 'Pengajuan pembatalan kendala perjalanan (Konsep 1)' }}
+                                    {{ $isInProgress ? 'Pengajuan pembatalan tahap pengerjaan ' : 'Pengajuan pembatalan kendala perjalanan ' }}
                                 </p>
                             </div>
                         </div>
@@ -1640,7 +1640,7 @@
 
                 <form wire:submit.prevent="requestPartnerCancel" class="p-5 overflow-y-auto space-y-4 text-xs">
                     @if($isInProgress)
-                        {{-- INFO BANNER KONSEP 2: PENGERJAAN SUDAH DIMULAI --}}
+                        {{-- INFO BANNER : PENGERJAAN SUDAH DIMULAI --}}
                         <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-2xl p-3.5 space-y-2">
                             <div class="flex items-start gap-2.5">
                                 <span class="text-lg leading-none mt-0.5">⚠️</span>
@@ -1655,7 +1655,7 @@
                             </div>
                         </div>
                     @else
-                        {{-- INFO BANNER KONSEP 1: SAAT PERJALANAN / BELUM MULAI KERJA --}}
+                        {{-- INFO BANNER : SAAT PERJALANAN / BELUM MULAI KERJA --}}
                         <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-3.5 space-y-2">
                             <div class="flex items-start gap-2.5">
                                 <span class="text-lg leading-none mt-0.5">ℹ️</span>
@@ -1679,7 +1679,7 @@
                             <select wire:model="partnerCancelReason" 
                                     class="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition cursor-pointer">
                                 @if($isInProgress)
-                                    <option value="">-- Pilih Alasan Kendala Lapangan (Konsep 2) --</option>
+                                    <option value="">-- Pilih Alasan Kendala Lapangan  --</option>
                                     <option value="Lokasi / Kondisi Kerja Berbahaya & Tidak Aman">Lokasi / Kondisi Kerja Berbahaya & Tidak Aman</option>
                                     <option value="Beban / Volume Pekerjaan Melebihi Kesepakatan Awal">Beban / Volume Pekerjaan Melebihi Kesepakatan Awal</option>
                                     <option value="Alat Kerja / Material Mengalami Kerusakan di Lokasi">Alat Kerja / Material Mengalami Kerusakan di Lokasi</option>
@@ -1687,7 +1687,7 @@
                                     <option value="Mitra Mengalami Cedera / Sakit Mendadak Saat Bekerja">Mitra Mengalami Cedera / Sakit Mendadak Saat Bekerja</option>
                                     <option value="Lainnya">Lainnya (Tuliskan rincian di catatan)</option>
                                 @else
-                                    <option value="">-- Pilih Alasan Kendala Perjalanan (Konsep 1) --</option>
+                                    <option value="">-- Pilih Alasan Kendala Perjalanan  --</option>
                                     <option value="Kendaraan Bermasalah / Mogok / Ban Bocor">Kendaraan Bermasalah / Mogok / Ban Bocor</option>
                                     <option value="Terjebak Macet Total / Cuaca Ekstrem Tidak Memungkinkan">Terjebak Macet Total / Cuaca Ekstrem Tidak Memungkinkan</option>
                                     <option value="Kondisi Darurat Pribadi / Sakit di Perjalanan">Kondisi Darurat Pribadi / Sakit di Perjalanan</option>
@@ -1756,7 +1756,7 @@
                                 wire:target="requestPartnerCancel, cancel_evidence_photo"
                                 class="flex-1 px-4 py-3 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl text-xs font-bold transition disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shadow-rose-500/20 active:scale-[0.99]">
                             <span wire:loading.remove wire:target="requestPartnerCancel">
-                                {{ $isInProgress ? 'Kirim Pengajuan (Konsep 2)' : 'Kirim Pengajuan Batal' }}
+                                {{ $isInProgress ? 'Kirim Pengajuan ' : 'Kirim Pengajuan Batal' }}
                             </span>
                             <span wire:loading wire:target="requestPartnerCancel" class="inline-flex items-center gap-1">
                                 <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>

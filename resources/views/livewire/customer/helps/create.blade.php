@@ -46,6 +46,14 @@
         }
     </style>
 
+    <script>
+        if (typeof window.scrollToFirstError !== 'function') {
+            window.scrollToFirstError = function() {
+                window.dispatchEvent(new CustomEvent('scroll-to-first-error'));
+            };
+        }
+    </script>
+
     <div id="main-content" class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <div class="max-w-md mx-auto">
             <!-- Header Section -->
@@ -76,7 +84,7 @@
             <div class="px-5 pt-5 pb-8">
                 {{-- Floating Validation Error Banner --}}
                 @if ($errors->any())
-                    <div x-data="{ show: true }" x-show="show" x-init="scrollToFirstError(); setTimeout(() => show = false, 6000)"
+                    <div id="error-banner-top" x-data="{ show: true }" x-show="show" x-init="if (typeof window.scrollToFirstError === 'function') { window.scrollToFirstError(); } setTimeout(() => show = false, 6000)"
                          class="mb-4 bg-red-50 dark:bg-red-950/40 border-l-4 border-red-500 dark:border-red-500 p-3.5 rounded-r-xl shadow-sm flex items-start justify-between gap-3 animate-fade-in border border-red-100 dark:border-red-900/50">
                         <div class="flex items-start gap-2.5">
                             <svg class="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -396,6 +404,7 @@
                             Batal
                         </a>
                         <button type="submit" wire:loading.attr="disabled"
+                            @click="setTimeout(() => { if (typeof window.scrollToFirstError === 'function') window.scrollToFirstError(); }, 350)"
                             class="flex-1 inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-3 text-sm rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                             <span wire:loading.remove wire:target="prepareConfirm">Lanjut Konfirmasi</span>
                             <span wire:loading wire:target="prepareConfirm" class="flex items-center justify-center gap-2">
