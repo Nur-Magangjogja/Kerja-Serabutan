@@ -45,6 +45,21 @@ return new class extends Migration
             $table->string('occupation', 100)->nullable();
             $table->json('notification_settings')->nullable();
 
+            // Data Identitas Kendaraan & Legalitas Dokumen (Mitra)
+            $table->string('vehicle_plate_number', 20)->nullable()->comment('Nomor plat kendaraan mitra (contoh: AB 1234 CD)');
+            $table->string('vehicle_sim_number', 50)->nullable()->comment('Nomor SIM C (motor)');
+            $table->string('vehicle_sim_photo')->nullable()->comment('Path file foto SIM C');
+            $table->string('vehicle_stnk_number', 50)->nullable()->comment('Nomor STNK');
+            $table->string('vehicle_stnk_photo')->nullable()->comment('Path file foto STNK');
+            $table->string('vehicle_brand', 50)->nullable()->comment('Merek kendaraan (opsional)');
+            $table->string('vehicle_model', 50)->nullable()->comment('Tipe/model kendaraan (opsional)');
+            $table->string('vehicle_color', 30)->nullable()->comment('Warna kendaraan (opsional)');
+            $table->string('vehicle_verification_status', 20)->default('unsubmitted')->comment('Status verifikasi: unsubmitted, pending, verified, rejected');
+            $table->boolean('vehicle_verified')->default(false)->comment('Apakah data kendaraan sudah disetujui admin');
+            $table->timestamp('vehicle_verified_at')->nullable()->comment('Waktu data kendaraan disetujui');
+            $table->foreignId('vehicle_verified_by')->nullable()->constrained('users')->nullOnDelete()->comment('Admin yang memverifikasi data kendaraan');
+            $table->text('vehicle_rejection_reason')->nullable()->comment('Alasan penolakan jika verifikasi kendaraan ditolak');
+
             // Greylist & Shadow Ban System
             $table->boolean('is_greylisted')->default(false);
             $table->timestamp('greylisted_at')->nullable();
@@ -54,6 +69,11 @@ return new class extends Migration
             $table->unsignedTinyInteger('warning_level')->default(0); // 0=normal, 1=SP1, 2=SP2, 3=SP3
             $table->text('latest_warning_message')->nullable();
             $table->timestamp('latest_warning_at')->nullable();
+
+            // Konsep 1 Cancellation Tracking
+            $table->unsignedInteger('konsep1_cancel_count')->default(0);
+            $table->timestamp('konsep1_pardoned_at')->nullable();
+            $table->text('konsep1_pardon_notes')->nullable();
 
             $table->timestamps();
 

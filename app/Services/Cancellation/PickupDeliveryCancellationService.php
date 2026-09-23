@@ -7,6 +7,7 @@ use App\Models\Help;
 use App\Models\HelpCancelRequest;
 use App\Models\User;
 use App\Services\GeoService;
+use App\Services\HelpChatService;
 use App\Services\HelpEscrowService;
 use App\Services\PartnerOnlineService;
 use Carbon\Carbon;
@@ -18,15 +19,18 @@ class PickupDeliveryCancellationService
     protected GeoService $geoService;
     protected PartnerOnlineService $onlineService;
     protected HelpEscrowService $escrowService;
+    protected HelpChatService $chatService;
 
     public function __construct(
         GeoService $geoService,
         PartnerOnlineService $onlineService,
-        HelpEscrowService $escrowService
+        HelpEscrowService $escrowService,
+        ?HelpChatService $chatService = null
     ) {
-        $this->geoService = $geoService;
+        $this->geoService    = $geoService;
         $this->onlineService = $onlineService;
         $this->escrowService = $escrowService;
+        $this->chatService   = $chatService ?? app(HelpChatService::class);
     }
 
     /**
@@ -350,6 +354,28 @@ class PickupDeliveryCancellationService
                 'financials'        => $financials,
                 'cancel_request_id' => $cancelRequest->id,
             ]);
+
+            // Kirim notifikasi chat otomatis jika mitra telah ditugaskan
+            if ($mitra && $customer) {
+                if ($requester->id === $mitra->id) {
+                    $this->chatService->sendPartnerCancellationChat(
+                        $lockedHelp,
+                        $mitra,
+                        $reason,
+                        $notes,
+                        'pickup_delivery'
+                    );
+                } elseif ($requester->id === $customer->id) {
+                    $this->chatService->sendCustomerCancellationChat(
+                        $lockedHelp,
+                        $customer,
+                        $mitra,
+                        $reason,
+                        $notes,
+                        'pickup_delivery'
+                    );
+                }
+            }
 
             return [
                 'success'           => true,

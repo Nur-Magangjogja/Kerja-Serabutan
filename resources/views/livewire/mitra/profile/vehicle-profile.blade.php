@@ -1,8 +1,10 @@
 <div>
     @if ($showModal)
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 z-[60] overflow-y-auto" id="vehicle-profile-modal" data-vehicle-modal="true" aria-labelledby="modal-title" role="dialog" aria-modal="true"
+             x-data
+             x-init="$dispatch('vehicle-modal-opened'); $cleanup(() => $dispatch('vehicle-modal-closed'))">
             {{-- Backdrop --}}
-            <div class="fixed inset-0 bg-zinc-900/70 backdrop-blur-sm transition-opacity" wire:click="closeModal"></div>
+            <div class="fixed inset-0 bg-zinc-900/70 backdrop-blur-sm transition-opacity" wire:click="closeModal" @click="$dispatch('vehicle-modal-closed')"></div>
 
             <div class="flex min-h-screen items-center justify-center p-4 text-center sm:p-0">
                 <div class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-xl border border-zinc-200 dark:border-zinc-800">
@@ -22,7 +24,7 @@
                                 </p>
                             </div>
                         </div>
-                        <button type="button" wire:click="closeModal" class="rounded-lg p-1.5 text-zinc-400 hover:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
+                        <button type="button" wire:click="closeModal" @click="$dispatch('vehicle-modal-closed')" class="rounded-lg p-1.5 text-zinc-400 hover:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
@@ -133,11 +135,15 @@
                             </div>
 
                             <div class="space-y-1">
-                                <label class="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Nomor SIM C <span class="text-rose-500">*</span></label>
+                                <div class="flex items-center justify-between">
+                                    <label class="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Nomor SIM C <span class="text-rose-500">*</span></label>
+                                    <span class="text-[10px] text-zinc-400 font-medium">Maks. 14 karakter</span>
+                                </div>
                                 <input type="text"
                                     wire:model.defer="vehicle_sim_number"
-                                    placeholder="Masukkan 12-16 digit nomor SIM"
-                                    class="w-full px-3 py-2 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500">
+                                    maxlength="14"
+                                    placeholder="Masukkan 14 digit nomor SIM C"
+                                    class="w-full px-3 py-2 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-mono">
                                 @error('vehicle_sim_number')
                                     <p class="text-xs text-rose-500">{{ $message }}</p>
                                 @enderror
@@ -183,11 +189,15 @@
                             </div>
 
                             <div class="space-y-1">
-                                <label class="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Nomor STNK <span class="text-rose-500">*</span></label>
+                                <div class="flex items-center justify-between">
+                                    <label class="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Nomor STNK <span class="text-rose-500">*</span></label>
+                                    <span class="text-[10px] text-zinc-400 font-medium">Maks. 8 karakter</span>
+                                </div>
                                 <input type="text"
                                     wire:model.defer="vehicle_stnk_number"
-                                    placeholder="Masukkan nomor STNK"
-                                    class="w-full px-3 py-2 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500">
+                                    maxlength="8"
+                                    placeholder="Masukkan 8 karakter nomor STNK"
+                                    class="w-full px-3 py-2 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 uppercase font-mono">
                                 @error('vehicle_stnk_number')
                                     <p class="text-xs text-rose-500">{{ $message }}</p>
                                 @enderror
@@ -261,7 +271,7 @@
 
                         {{-- Modal Footer --}}
                         <div class="pt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-end space-x-3">
-                            <button type="button" wire:click="closeModal" class="px-4 py-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition">
+                            <button type="button" wire:click="closeModal" @click="$dispatch('vehicle-modal-closed')" class="px-4 py-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition">
                                 Batal
                             </button>
                             <button type="submit" wire:loading.attr="disabled" class="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md hover:shadow-lg transition flex items-center space-x-1.5 disabled:opacity-50">

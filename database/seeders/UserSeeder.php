@@ -53,21 +53,7 @@ class UserSeeder extends Seeder
         [$jakselCity, $tebetDist]     = $resolveLocation('Jakarta Selatan', 'Tebet');
 
         // =========================================================================
-        // 1. SUPER ADMIN
-        // =========================================================================
-        User::updateOrCreate(
-            ['email' => 'superadmin@sayabantu.com'],
-            [
-                'name'              => 'superadmin',
-                'password'          => $commonPassword,
-                'role'              => 'super_admin',
-                'status'            => 'active',
-                'email_verified_at' => $now,
-            ]
-        );
-
-        // =========================================================================
-        // 2. ADMIN WILAYAH
+        // 1. ADMIN WILAYAH
         // =========================================================================
         $admins = [
             [
@@ -128,7 +114,7 @@ class UserSeeder extends Seeder
         }
 
         // =========================================================================
-        // 3. MITRA (REKAN JASA)
+        // 2. MITRA (REKAN JASA)
         // =========================================================================
         $mitras = [
             [
@@ -213,7 +199,7 @@ class UserSeeder extends Seeder
         }
 
         // =========================================================================
-        // 4. CUSTOMER (PEMESAN JASA)
+        // 3. CUSTOMER (PEMESAN JASA)
         // =========================================================================
         $customers = [
             [

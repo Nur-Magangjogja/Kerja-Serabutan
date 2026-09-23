@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->unique()->constrained('users')->cascadeOnDelete();
             $table->enum('matching_status', ['offline', 'online', 'searching', 'offer_pending', 'busy'])->default('offline')->index();
+            $table->string('service_preference', 30)->default('all')->index()->comment('Preferensi jenis bantuan radar: all, on_site_service, pickup_delivery');
             $table->foreignId('current_help_id')->nullable()->constrained('helps')->nullOnDelete();
             $table->unsignedTinyInteger('consecutive_declines')->default(0);
             $table->timestamp('last_seen_at')->nullable()->index();

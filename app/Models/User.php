@@ -15,12 +15,45 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasFactory, Notifiable;
 
     /**
-     * In-request memoization caches for high-frequency territory and filter lookups.
+     * In-request static and instance memoization caches for high-frequency territory and filter lookups.
      */
+    protected static array $reqAdminDistrictIds = [];
+    protected static array $reqAdminDistricts = [];
+    protected static array $reqAdminCityIds = [];
+    protected static array $reqAdminCities = [];
+    protected static array $reqActiveSaTerritory = [];
+    protected static array $reqEffectiveSaDistrictIds = [];
+
     protected ?array $memoizedAdminDistrictIds = null;
     protected ?\Illuminate\Database\Eloquent\Collection $memoizedAdminDistricts = null;
     protected ?string $memoizedActiveAdminDistrictFilter = null;
     protected ?array $memoizedActiveSuperadminTerritory = null;
+    protected ?\Carbon\Carbon $memoizedLastActivityAt = null;
+    protected bool $memoizedLastActivityLoaded = false;
+
+    /**
+     * Flush all request-level static caches (opsional: untuk user tertentu).
+     */
+    public static function flushRequestCache(?int $userId = null): void
+    {
+        if ($userId !== null) {
+            unset(
+                self::$reqAdminDistrictIds[$userId],
+                self::$reqAdminDistricts[$userId],
+                self::$reqAdminCityIds[$userId],
+                self::$reqAdminCities[$userId],
+                self::$reqActiveSaTerritory[$userId],
+                self::$reqEffectiveSaDistrictIds[$userId]
+            );
+        } else {
+            self::$reqAdminDistrictIds = [];
+            self::$reqAdminDistricts = [];
+            self::$reqAdminCityIds = [];
+            self::$reqAdminCities = [];
+            self::$reqActiveSaTerritory = [];
+            self::$reqEffectiveSaDistrictIds = [];
+        }
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -561,6 +594,11 @@ class User extends Authenticatable implements MustVerifyEmail
             return [];
         }
 
+        $uid = $this->id;
+        if ($uid && isset(self::$reqAdminDistrictIds[$uid])) {
+            return self::$reqAdminDistrictIds[$uid];
+        }
+
         if ($this->memoizedAdminDistrictIds !== null) {
             return $this->memoizedAdminDistrictIds;
         }
@@ -572,22 +610,32 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         if (!empty($managedIds)) {
-            return $this->memoizedAdminDistrictIds = array_values(array_unique(array_map('intval', $managedIds)));
+            $res = array_values(array_unique(array_map('intval', $managedIds)));
+            $this->memoizedAdminDistrictIds = $res;
+            if ($uid) self::$reqAdminDistrictIds[$uid] = $res;
+            return $res;
         }
 
         if (!empty($this->district_id)) {
-            return $this->memoizedAdminDistrictIds = [(int) $this->district_id];
+            $res = [(int) $this->district_id];
+            $this->memoizedAdminDistrictIds = $res;
+            if ($uid) self::$reqAdminDistrictIds[$uid] = $res;
+            return $res;
         }
 
         $cityIds = $this->getAdminCityIds();
         if (!empty($cityIds)) {
             $cityDistrictIds = District::whereIn('city_id', $cityIds)->pluck('id')->map('intval')->all();
             if (!empty($cityDistrictIds)) {
-                return $this->memoizedAdminDistrictIds = $cityDistrictIds;
+                $this->memoizedAdminDistrictIds = $cityDistrictIds;
+                if ($uid) self::$reqAdminDistrictIds[$uid] = $cityDistrictIds;
+                return $cityDistrictIds;
             }
         }
 
-        return $this->memoizedAdminDistrictIds = [];
+        $this->memoizedAdminDistrictIds = [];
+        if ($uid) self::$reqAdminDistrictIds[$uid] = [];
+        return [];
     }
 
     /**
@@ -614,16 +662,27 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getAdminDistricts()
     {
+        $uid = $this->id;
+        if ($uid && isset(self::$reqAdminDistricts[$uid])) {
+            return self::$reqAdminDistricts[$uid];
+        }
+
         if ($this->memoizedAdminDistricts !== null) {
             return $this->memoizedAdminDistricts;
         }
 
         $districtIds = $this->getAdminDistrictIds();
         if (empty($districtIds)) {
-            return $this->memoizedAdminDistricts = collect();
+            $res = collect();
+            $this->memoizedAdminDistricts = $res;
+            if ($uid) self::$reqAdminDistricts[$uid] = $res;
+            return $res;
         }
 
-        return $this->memoizedAdminDistricts = District::whereIn('id', $districtIds)->with('city')->orderBy('name')->get();
+        $res = District::whereIn('id', $districtIds)->with('city')->orderBy('name')->get();
+        $this->memoizedAdminDistricts = $res;
+        if ($uid) self::$reqAdminDistricts[$uid] = $res;
+        return $res;
     }
 
     /**
@@ -671,6 +730,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function setActiveAdminDistrictFilter(?string $districtId): void
     {
         $this->memoizedActiveAdminDistrictFilter = null;
+        self::flushRequestCache($this->id);
         $val = ($districtId === null || $districtId === '' || $districtId === 'all') ? 'all' : (string) (int) $districtId;
         if ($val !== 'all') {
             $allowedIds = $this->getAdminDistrictIds();
@@ -729,6 +789,11 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getActiveSuperadminTerritory(): array
     {
+        $uid = $this->id;
+        if ($uid && isset(self::$reqActiveSaTerritory[$uid])) {
+            return self::$reqActiveSaTerritory[$uid];
+        }
+
         if ($this->memoizedActiveSuperadminTerritory !== null) {
             return $this->memoizedActiveSuperadminTerritory;
         }
@@ -746,28 +811,37 @@ class User extends Authenticatable implements MustVerifyEmail
             $district = District::with('city')->find((int) $id);
             if ($district) {
                 $cityLabel = $district->city ? " ({$district->city->name})" : '';
-                return $this->memoizedActiveSuperadminTerritory = [
+                $res = [
                     'type'  => 'district',
                     'id'    => (int) $id,
                     'label' => "Kec. {$district->name}{$cityLabel}",
                 ];
+                $this->memoizedActiveSuperadminTerritory = $res;
+                if ($uid) self::$reqActiveSaTerritory[$uid] = $res;
+                return $res;
             }
         } elseif ($type === 'city' && $id) {
             $city = City::find((int) $id);
             if ($city) {
-                return $this->memoizedActiveSuperadminTerritory = [
+                $res = [
                     'type'  => 'city',
                     'id'    => (int) $id,
                     'label' => "Kota {$city->name} (Semua Kec.)",
                 ];
+                $this->memoizedActiveSuperadminTerritory = $res;
+                if ($uid) self::$reqActiveSaTerritory[$uid] = $res;
+                return $res;
             }
         }
 
-        return $this->memoizedActiveSuperadminTerritory = [
+        $res = [
             'type'  => 'all',
             'id'    => null,
             'label' => 'Semua Wilayah (Nasional)',
         ];
+        $this->memoizedActiveSuperadminTerritory = $res;
+        if ($uid) self::$reqActiveSaTerritory[$uid] = $res;
+        return $res;
     }
 
     /**
@@ -776,6 +850,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function setActiveSuperadminTerritory(string $type, $id = null): void
     {
         $this->memoizedActiveSuperadminTerritory = null;
+        self::flushRequestCache($this->id);
         $type = in_array($type, ['city', 'district'], true) ? $type : 'all';
         $id   = ($type !== 'all' && $id) ? (int) $id : null;
 
@@ -813,15 +888,25 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getEffectiveSuperadminDistrictIds(): array
     {
+        $uid = $this->id;
+        if ($uid && isset(self::$reqEffectiveSaDistrictIds[$uid])) {
+            return self::$reqEffectiveSaDistrictIds[$uid];
+        }
+
         $territory = $this->getActiveSuperadminTerritory();
         if ($territory['type'] === 'district' && $territory['id']) {
-            return [(int) $territory['id']];
+            $res = [(int) $territory['id']];
+            if ($uid) self::$reqEffectiveSaDistrictIds[$uid] = $res;
+            return $res;
         }
 
         if ($territory['type'] === 'city' && $territory['id']) {
-            return District::where('city_id', (int) $territory['id'])->pluck('id')->map(fn($id) => (int)$id)->all();
+            $res = District::where('city_id', (int) $territory['id'])->pluck('id')->map(fn($id) => (int)$id)->all();
+            if ($uid) self::$reqEffectiveSaDistrictIds[$uid] = $res;
+            return $res;
         }
 
+        if ($uid) self::$reqEffectiveSaDistrictIds[$uid] = [];
         return [];
     }
 
@@ -838,6 +923,11 @@ class User extends Authenticatable implements MustVerifyEmail
             return [];
         }
 
+        $uid = $this->id;
+        if ($uid && isset(self::$reqAdminCityIds[$uid])) {
+            return self::$reqAdminCityIds[$uid];
+        }
+
         $cityIds = [];
 
         // 1. Directly assigned managed cities (admin_city pivot)
@@ -847,13 +937,8 @@ class User extends Authenticatable implements MustVerifyEmail
             $cityIds = array_merge($cityIds, $this->managedCities()->allRelatedIds()->all());
         }
 
-        // 2. Cities derived from managed districts (admin_district pivot)
-        $districtIds = [];
-        if ($this->relationLoaded('managedDistricts')) {
-            $districtIds = $this->managedDistricts->pluck('id')->all();
-        } else {
-            $districtIds = $this->managedDistricts()->allRelatedIds()->all();
-        }
+        // 2. Cities derived from managed districts (menggunakan getAdminDistrictIds yang sudah termemoize)
+        $districtIds = $this->getAdminDistrictIds();
         if (!empty($districtIds)) {
             $cityIds = array_merge($cityIds, District::whereIn('id', $districtIds)->pluck('city_id')->all());
         }
@@ -871,7 +956,11 @@ class User extends Authenticatable implements MustVerifyEmail
             $cityIds[] = (int) $this->city_id;
         }
 
-        return array_values(array_unique(array_filter(array_map('intval', $cityIds))));
+        $result = array_values(array_unique(array_filter(array_map('intval', $cityIds))));
+        if ($uid) {
+            self::$reqAdminCityIds[$uid] = $result;
+        }
+        return $result;
     }
 
     /**
@@ -881,12 +970,23 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getAdminCities()
     {
-        $cityIds = $this->getAdminCityIds();
-        if (empty($cityIds)) {
-            return collect();
+        $uid = $this->id;
+        if ($uid && isset(self::$reqAdminCities[$uid])) {
+            return self::$reqAdminCities[$uid];
         }
 
-        return City::whereIn('id', $cityIds)->orderBy('name')->get();
+        $cityIds = $this->getAdminCityIds();
+        if (empty($cityIds)) {
+            $res = collect();
+            if ($uid) self::$reqAdminCities[$uid] = $res;
+            return $res;
+        }
+
+        $res = City::whereIn('id', $cityIds)->orderBy('name')->get();
+        if ($uid) {
+            self::$reqAdminCities[$uid] = $res;
+        }
+        return $res;
     }
 
     /**
@@ -1160,17 +1260,34 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getLastActivityAtAttribute(): ?\Carbon\Carbon
     {
-        $dt1 = $this->helps_max_updated_at ?? null;
-        $dt2 = $this->taken_helps_max_updated_at ?? null;
-
-        if ($dt1 || $dt2) {
-            $c1 = $dt1 ? \Carbon\Carbon::parse($dt1) : null;
-            $c2 = $dt2 ? \Carbon\Carbon::parse($dt2) : null;
-            if ($c1 && $c2) return $c1->max($c2);
-            return $c1 ?: $c2;
+        if ($this->memoizedLastActivityLoaded) {
+            return $this->memoizedLastActivityAt;
         }
 
-        // Direct database lookup if withMax was not loaded
+        $this->memoizedLastActivityLoaded = true;
+
+        // 1. Jika query sebelumnya sudah memuat kolom alias 'last_activity_at' (e.g. withMax('... as last_activity_at'))
+        if (array_key_exists('last_activity_at', $this->attributes)) {
+            $val = $this->attributes['last_activity_at'];
+            return $this->memoizedLastActivityAt = $val ? \Carbon\Carbon::parse($val) : null;
+        }
+
+        // 2. Jika query memuat withMax('helps', 'updated_at') / withMax('takenHelps', 'updated_at')
+        $hasHelpsMax = array_key_exists('helps_max_updated_at', $this->attributes);
+        $hasTakenHelpsMax = array_key_exists('taken_helps_max_updated_at', $this->attributes);
+
+        if ($hasHelpsMax || $hasTakenHelpsMax) {
+            $dt1 = $this->attributes['helps_max_updated_at'] ?? null;
+            $dt2 = $this->attributes['taken_helps_max_updated_at'] ?? null;
+            $c1 = $dt1 ? \Carbon\Carbon::parse($dt1) : null;
+            $c2 = $dt2 ? \Carbon\Carbon::parse($dt2) : null;
+            if ($c1 && $c2) {
+                return $this->memoizedLastActivityAt = $c1->max($c2);
+            }
+            return $this->memoizedLastActivityAt = ($c1 ?: $c2);
+        }
+
+        // 3. Fallback database lookup HANYA jika withMax belum diload sama sekali
         $latestCustomerHelp = $this->helps()->latest('updated_at')->value('updated_at');
         $latestMitraHelp = $this->takenHelps()->latest('updated_at')->value('updated_at');
 
@@ -1178,7 +1295,7 @@ class User extends Authenticatable implements MustVerifyEmail
             ->filter()
             ->map(fn($d) => \Carbon\Carbon::parse($d));
 
-        return $dates->max();
+        return $this->memoizedLastActivityAt = $dates->max();
     }
 
     /**
@@ -1206,6 +1323,10 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         if (!empty($this->city_id)) {
+            $cityModel = City::getAllCached()->firstWhere('id', (int) $this->city_id);
+            if ($cityModel && isset($cityModel->name)) {
+                return $cityModel->name;
+            }
             $cityModel = City::find($this->city_id);
             if ($cityModel && isset($cityModel->name)) {
                 return $cityModel->name;

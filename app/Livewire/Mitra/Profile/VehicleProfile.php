@@ -41,6 +41,7 @@ class VehicleProfile extends Component
         $this->new_sim_photo = null;
         $this->new_stnk_photo = null;
         $this->showModal = true;
+        $this->dispatch('vehicle-modal-opened');
     }
 
     public function closeModal(): void
@@ -48,6 +49,7 @@ class VehicleProfile extends Component
         $this->showModal = false;
         $this->new_sim_photo = null;
         $this->new_stnk_photo = null;
+        $this->dispatch('vehicle-modal-closed');
     }
 
     public function mount(): void
@@ -84,6 +86,12 @@ class VehicleProfile extends Component
         if ($this->vehicle_plate_number) {
             $this->vehicle_plate_number = strtoupper(trim(preg_replace('/\s+/', ' ', $this->vehicle_plate_number)));
         }
+        if ($this->vehicle_sim_number) {
+            $this->vehicle_sim_number = trim(preg_replace('/[^0-9]/', '', $this->vehicle_sim_number));
+        }
+        if ($this->vehicle_stnk_number) {
+            $this->vehicle_stnk_number = strtoupper(trim(preg_replace('/\s+/', '', $this->vehicle_stnk_number)));
+        }
 
         // Rules: Wajib Plat Nomor + Wajib SIM Motor + Wajib STNK
         $rules = [
@@ -94,8 +102,8 @@ class VehicleProfile extends Component
                 'max:15',
                 'regex:/^[A-Z]{1,2}\s?[0-9]{1,4}\s?[A-Z]{1,3}$/i',
             ],
-            'vehicle_sim_number'   => 'required|string|min:8|max:30',
-            'vehicle_stnk_number'  => 'required|string|min:5|max:30',
+            'vehicle_sim_number'   => 'required|string|min:8|max:14',
+            'vehicle_stnk_number'  => 'required|string|min:5|max:8',
             'vehicle_brand'        => 'nullable|string|max:50',
             'vehicle_model'        => 'nullable|string|max:50',
             'vehicle_color'        => 'nullable|string|max:30',
@@ -119,10 +127,14 @@ class VehicleProfile extends Component
             'vehicle_plate_number.required' => 'Plat nomor kendaraan wajib diisi.',
             'vehicle_plate_number.regex'    => 'Format plat nomor tidak valid (contoh: AB 1234 CD atau B 1234 ABC).',
             'vehicle_sim_number.required'   => 'Nomor SIM Motor (SIM C) wajib diisi.',
+            'vehicle_sim_number.min'        => 'Nomor SIM Motor minimal 8 digit.',
+            'vehicle_sim_number.max'        => 'Nomor SIM Motor maksimal 14 karakter.',
             'new_sim_photo.required'        => 'Foto fisik SIM Motor (SIM C) wajib diunggah.',
             'new_sim_photo.image'           => 'File foto SIM harus berupa gambar (JPG, PNG, WEBP).',
             'new_sim_photo.max'             => 'Ukuran foto SIM maksimal 4MB.',
             'vehicle_stnk_number.required'  => 'Nomor STNK kendaraan wajib diisi.',
+            'vehicle_stnk_number.min'       => 'Nomor STNK kendaraan minimal 5 karakter.',
+            'vehicle_stnk_number.max'      => 'Nomor STNK kendaraan maksimal 8 karakter.',
             'new_stnk_photo.required'       => 'Foto fisik STNK kendaraan wajib diunggah.',
             'new_stnk_photo.image'          => 'File foto STNK harus berupa gambar (JPG, PNG, WEBP).',
             'new_stnk_photo.max'            => 'Ukuran foto STNK maksimal 4MB.',

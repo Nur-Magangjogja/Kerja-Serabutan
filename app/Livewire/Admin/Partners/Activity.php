@@ -354,8 +354,17 @@ class Activity extends Component
             $baseStats->where('user_id', $this->selectedUserId);
         }
 
+        $hasCustomFilters = !empty($this->search)
+            || !empty($this->selectedUserId)
+            || ($this->roleFilter !== 'all')
+            || ($this->activityTypeFilter !== 'all')
+            || !empty($this->dateFrom)
+            || !empty($this->dateTo);
+
+        $totalStats = !$hasCustomFilters ? $activities->total() : (clone $baseStats)->count();
+
         $stats = [
-            'total'          => (clone $baseStats)->count(),
+            'total'          => $totalStats,
             'today'          => (clone $baseStats)->whereDate('created_at', today())->count(),
             'customer_acts'  => (clone $baseStats)->whereHas('user', fn($q) => $q->where('role', 'customer'))->count(),
             'mitra_acts'     => (clone $baseStats)->whereHas('user', fn($q) => $q->where('role', 'mitra'))->count(),

@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('photo')->nullable();
             $table->boolean('is_read')->default(false);
             $table->timestamp('read_at')->nullable();
+            $table->timestamp('customer_read_at')->nullable();
+            $table->timestamp('mitra_read_at')->nullable();
             $table->timestamps();
 
             $table->index(['help_cancel_request_id', 'created_at']);

@@ -328,8 +328,18 @@ class Index extends Component
             ->orderBy('action')
             ->pluck('action');
 
+        $hasCustomFilters = !empty($this->search)
+            || $this->roleFilter !== 'all'
+            || $this->actionFilter !== 'all'
+            || !empty($this->dateFrom)
+            || !empty($this->dateTo)
+            || !empty($this->selectedUserId);
+
+        $isTerritoryAll = !isset($saTerritory) || ($saTerritory['type'] ?? 'all') === 'all';
+        $totalLogs = (!$hasCustomFilters && $isTerritoryAll) ? $logs->total() : ActivityLog::count();
+
         $stats = [
-            'total_logs'    => ActivityLog::count(),
+            'total_logs'    => $totalLogs,
             'today_logs'    => ActivityLog::whereDate('created_at', today())->count(),
             'admin_logs'    => ActivityLog::whereHas('user', fn($q) => $q->whereIn('role', ['admin', 'super_admin', 'superadmin']))->count(),
             'customer_logs' => ActivityLog::whereHas('user', fn($q) => $q->where('role', 'customer'))->count(),

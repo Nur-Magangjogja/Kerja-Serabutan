@@ -427,11 +427,21 @@ class Approval extends Component
             }
         }
 
-        $totalPending = (clone $baseQuery)->where('status', 'waiting_approval')->count();
-        $totalCompleted = (clone $baseQuery)->where('status', 'completed')->count();
-        $totalCancelled = (clone $baseQuery)->where('status', 'cancelled')->count();
-        $totalRejected = (clone $baseQuery)->where('status', 'rejected')->count();
-        $totalAll = (clone $baseQuery)->count();
+        $statusCounts = (clone $baseQuery)
+            ->selectRaw("
+                COUNT(*) as total_all,
+                SUM(CASE WHEN status = 'waiting_approval' THEN 1 ELSE 0 END) as total_pending,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as total_completed,
+                SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as total_cancelled,
+                SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as total_rejected
+            ")
+            ->first();
+
+        $totalPending   = (int) ($statusCounts->total_pending ?? 0);
+        $totalCompleted = (int) ($statusCounts->total_completed ?? 0);
+        $totalCancelled = (int) ($statusCounts->total_cancelled ?? 0);
+        $totalRejected  = (int) ($statusCounts->total_rejected ?? 0);
+        $totalAll       = (int) ($statusCounts->total_all ?? 0);
 
         $query = BalanceTransaction::where('type', 'topup')
             ->with(['user', 'user.district', 'user.city', 'approvedBy']);

@@ -812,10 +812,12 @@
                 @endif
             </div>
 
-            {{-- GPS Simulator Widget --}}
-            <div class="mb-3">
-                <livewire:mitra.gps.simulator :helpId="$help->id" :key="'gps-sim-'.$help->id" />
-            </div>
+            {{-- GPS Simulator Widget (Hanya tampil jika diaktifkan via GPS_SIMULATOR=true di .env / config) --}}
+            @if (config('app.gps_simulator', false))
+                <div class="mb-3">
+                    <livewire:mitra.gps.simulator :helpId="$help->id" :key="'gps-sim-'.$help->id" />
+                </div>
+            @endif
         @endif
 
         {{-- ───────────────────────────────────────────────────────────────── --}}

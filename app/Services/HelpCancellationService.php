@@ -12,6 +12,7 @@ use App\Services\Cancellation\CancellationAuditService;
 use App\Services\Cancellation\CancellationSettlementService;
 use App\Services\Cancellation\OnSiteCancellationService;
 use App\Services\Cancellation\PickupDeliveryCancellationService;
+use App\Services\HelpChatService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -24,6 +25,7 @@ class HelpCancellationService
     protected PickupDeliveryCancellationService $pickupCancellation;
     protected CancellationAuditService $auditService;
     protected CancellationSettlementService $settlementService;
+    protected HelpChatService $chatService;
 
     public function __construct(
         HelpEscrowService $escrowService,
@@ -32,7 +34,8 @@ class HelpCancellationService
         OnSiteCancellationService $onSiteCancellation,
         PickupDeliveryCancellationService $pickupCancellation,
         CancellationAuditService $auditService,
-        CancellationSettlementService $settlementService
+        CancellationSettlementService $settlementService,
+        ?HelpChatService $chatService = null
     ) {
         $this->escrowService      = $escrowService;
         $this->onlineService      = $onlineService;
@@ -41,6 +44,7 @@ class HelpCancellationService
         $this->pickupCancellation = $pickupCancellation;
         $this->auditService       = $auditService;
         $this->settlementService  = $settlementService;
+        $this->chatService        = $chatService ?? app(HelpChatService::class);
     }
 
     /**
@@ -261,15 +265,20 @@ class HelpCancellationService
 
             $this->onlineService->releaseBusy($partner->id, $lockedHelp->id);
 
-            if ($lockedHelp->user) {
+            $customer = $lockedHelp->user ?? User::find($lockedHelp->user_id);
+
+            if ($customer) {
                 try {
-                    $lockedHelp->user->notify(new HelpStatusNotification(
+                    $customer->notify(new HelpStatusNotification(
                         $lockedHelp,
                         "Pesanan Anda dibatalkan karena Anda tidak hadir/merespons di titik penjemputan lebih dari 10 menit. Ongkos antar telah diteruskan ke mitra."
                     ));
                 } catch (\Throwable $e) {
                     Log::warning("[HelpCancellationService] Failed notifying customer of no-show: " . $e->getMessage());
                 }
+
+                // Kirim notifikasi chat pembatalan no-show
+                $this->chatService->sendNoShowCancellationChat($lockedHelp, $partner, $customer);
             }
 
             Log::info("[HelpCancellationService] Customer No-Show triggered by Partner #{$partner->id} on Help #{$lockedHelp->id}.");
@@ -506,6 +515,11 @@ class HelpCancellationService
                     'admin_notes'            => 'Disetujui langsung oleh Customer.',
                 ]);
 
+            $mitra = $partnerId ? ($lockedHelp->mitra ?? User::find($partnerId)) : null;
+            if ($mitra) {
+                $this->chatService->sendCustomerResolutionToPartnerCancelChat($lockedHelp, $customer, $mitra, 'accepted');
+            }
+
             Log::info("[HelpCancellationService] Customer #{$customer->id} accepted cancellation for Help #{$lockedHelp->id}.");
         });
     }
@@ -533,6 +547,7 @@ class HelpCancellationService
             }
 
             $oldPartnerId = $lockedHelp->mitra_id;
+            $oldMitra = $oldPartnerId ? ($lockedHelp->mitra ?? User::find($oldPartnerId)) : null;
 
             // 1. Rekam eksklusi agar mitra yang membatalkan tidak mengambil order yang sama kembali
             if ($oldPartnerId) {
@@ -575,6 +590,10 @@ class HelpCancellationService
                     'reviewed_at'            => now(),
                     'admin_notes'            => 'Disetujui oleh Customer untuk mencari rekan jasa pengganti (Kembalikan ke Pool).',
                 ]);
+
+            if ($oldMitra) {
+                $this->chatService->sendCustomerResolutionToPartnerCancelChat($lockedHelp, $customer, $oldMitra, 'relisted');
+            }
 
             Log::info("[HelpCancellationService] Customer #{$customer->id} relisted Help #{$lockedHelp->id} back to pool after partner cancel request.");
         });

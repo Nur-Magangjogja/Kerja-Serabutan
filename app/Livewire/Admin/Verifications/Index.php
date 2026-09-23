@@ -128,8 +128,11 @@ class Index extends Component
         if (!$user) return false;
         if (in_array($user->role, ['super_admin', 'superadmin'])) return true;
         if ($user->role === 'admin') {
-            $allowedDistrictIds = $user->getAdminDistrictIds();
-            return !empty($reg->district_id) && in_array((int) $reg->district_id, $allowedDistrictIds, true);
+            $allowedDistrictIds = $user->getEffectiveAdminDistrictIds();
+            if (!empty($allowedDistrictIds)) {
+                return !empty($reg->district_id) && in_array((int) $reg->district_id, $allowedDistrictIds, true);
+            }
+            return !empty($user->city_id) && (int) $reg->city_id === (int) $user->city_id;
         }
         return false;
     }
@@ -305,7 +308,10 @@ class Index extends Component
         if (in_array($user->role, ['super_admin', 'superadmin'])) return true;
         if ($user->role === 'admin') {
             $allowedDistrictIds = $user->getEffectiveAdminDistrictIds();
-            return !empty($u->district_id) && in_array((int) $u->district_id, $allowedDistrictIds, true);
+            if (!empty($allowedDistrictIds)) {
+                return !empty($u->district_id) && in_array((int) $u->district_id, $allowedDistrictIds, true);
+            }
+            return !empty($user->city_id) && (int) $u->city_id === (int) $user->city_id;
         }
         return false;
     }
@@ -431,9 +437,8 @@ class Index extends Component
         $isSuperAdmin = $authUser && in_array($authUser->role, ['super_admin', 'superadmin']);
 
         // 1. KTP Registrations Query
-        $query = Registration::query()
-            ->with(['district', 'city'])
-            ->whereIn('status', ['pending_verification', 'pending', 'approved', 'rejected']);
+        $baseKtpQuery = Registration::query()
+            ->with(['district', 'city']);
 
         // Strict district isolation: Admin only sees registrations from their assigned districts/city
         if (!$isSuperAdmin && $authUser && $authUser->role === 'admin') {
@@ -442,18 +447,18 @@ class Index extends Component
             $effectiveDistrictIds = $authUser->getEffectiveAdminDistrictIds();
             $adminCityId = $authUser->city_id;
             if (!empty($effectiveDistrictIds)) {
-                $query->whereIn('district_id', $effectiveDistrictIds);
+                $baseKtpQuery->whereIn('district_id', $effectiveDistrictIds);
             } elseif (!empty($adminCityId)) {
-                $query->where('city_id', $adminCityId);
+                $baseKtpQuery->where('city_id', $adminCityId);
             }
         } elseif ($isSuperAdmin && $authUser) {
             $saTerritory = $authUser->getActiveSuperadminTerritory();
             if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
-                $query->where('district_id', $saTerritory['id']);
+                $baseKtpQuery->where('district_id', $saTerritory['id']);
             } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
                 $saDistrictIds = $authUser->getEffectiveSuperadminDistrictIds();
                 $cityId = (int) $saTerritory['id'];
-                $query->where(function ($sub) use ($cityId, $saDistrictIds) {
+                $baseKtpQuery->where(function ($sub) use ($cityId, $saDistrictIds) {
                     if (!empty($saDistrictIds)) {
                         $sub->whereIn('district_id', $saDistrictIds);
                     }
@@ -463,6 +468,15 @@ class Index extends Component
                 });
             }
         }
+
+        // Badge counter: KTP Pending sesuai wilayah wewenang admin
+        $pendingKtpCount = (clone $baseKtpQuery)
+            ->whereIn('status', ['pending', 'pending_verification'])
+            ->count();
+
+        // Query tabel verifikasi KTP
+        $query = (clone $baseKtpQuery)
+            ->whereIn('status', ['pending_verification', 'pending', 'approved', 'rejected']);
 
         // Search query (KTP)
         if (!empty($this->search) && $this->activeTab === 'ktp') {
@@ -494,26 +508,25 @@ class Index extends Component
         $verifications = $query->latest()->paginate($this->perPage);
 
         // 2. Vehicle Verifications Query
-        $vehicleQuery = User::query()
-            ->where('role', 'mitra')
-            ->whereIn('vehicle_verification_status', ['pending', 'verified', 'rejected']);
+        $baseVehicleQuery = User::query()
+            ->where('role', 'mitra');
 
         if (!$isSuperAdmin && $authUser && $authUser->role === 'admin') {
             $effectiveDistrictIds = $authUser->getEffectiveAdminDistrictIds();
             $adminCityId = $authUser->city_id;
             if (!empty($effectiveDistrictIds)) {
-                $vehicleQuery->whereIn('district_id', $effectiveDistrictIds);
+                $baseVehicleQuery->whereIn('district_id', $effectiveDistrictIds);
             } elseif (!empty($adminCityId)) {
-                $vehicleQuery->where('city_id', $adminCityId);
+                $baseVehicleQuery->where('city_id', $adminCityId);
             }
         } elseif ($isSuperAdmin && $authUser) {
             $saTerritory = $authUser->getActiveSuperadminTerritory();
             if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
-                $vehicleQuery->where('district_id', $saTerritory['id']);
+                $baseVehicleQuery->where('district_id', $saTerritory['id']);
             } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
                 $saDistrictIds = $authUser->getEffectiveSuperadminDistrictIds();
                 $cityId = (int) $saTerritory['id'];
-                $vehicleQuery->where(function ($sub) use ($cityId, $saDistrictIds) {
+                $baseVehicleQuery->where(function ($sub) use ($cityId, $saDistrictIds) {
                     if (!empty($saDistrictIds)) {
                         $sub->whereIn('district_id', $saDistrictIds);
                     }
@@ -523,6 +536,15 @@ class Index extends Component
                 });
             }
         }
+
+        // Badge counter: Kendaraan Mitra Pending sesuai wilayah wewenang admin
+        $pendingVehicleCount = (clone $baseVehicleQuery)
+            ->where('vehicle_verification_status', 'pending')
+            ->count();
+
+        // Query tabel verifikasi kendaraan
+        $vehicleQuery = (clone $baseVehicleQuery)
+            ->whereIn('vehicle_verification_status', ['pending', 'verified', 'rejected']);
 
         // Search in vehicle query
         if (!empty($this->search) && $this->activeTab === 'vehicle') {
@@ -543,10 +565,6 @@ class Index extends Component
         }
 
         $vehicleVerifications = $vehicleQuery->latest('updated_at')->paginate($this->perPage, ['*'], 'vehicle_page');
-
-        // Badge counters
-        $pendingKtpCount = Registration::whereIn('status', ['pending', 'pending_verification'])->count();
-        $pendingVehicleCount = User::where('role', 'mitra')->where('vehicle_verification_status', 'pending')->count();
 
         $layout = ($authUser && in_array($authUser->role, ['super_admin', 'superadmin'])) 
             ? 'layouts.superadmin' 
