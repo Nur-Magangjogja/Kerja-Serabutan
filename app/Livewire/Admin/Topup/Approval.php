@@ -209,7 +209,7 @@ class Approval extends Component
                 ActivityLog::create([
                     'user_id' => auth()->id(),
                     'action' => 'topup_approved',
-                    'description' => 'Admin (Kec. ' . $districtLabel . ') menyetujui top-up #' . ($transaction->request_code ?? $transaction->id) . ' milik ' . ($transaction->user->name ?? 'Customer') . ' sebesar Rp ' . number_format($transaction->amount, 0, ',', '.'),
+                    'description' => 'Admin (Kec. ' . $districtLabel . ') menyetujui top-up ' . ($transaction->request_code ? '#' . $transaction->request_code . ' ' : '') . 'milik ' . ($transaction->user->name ?? 'Customer') . ' sebesar Rp ' . number_format($transaction->amount, 0, ',', '.'),
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                     'properties' => [
@@ -230,7 +230,7 @@ class Approval extends Component
                 $transaction->user->notify(new TopupApproved($transaction));
             }
 
-            session()->flash('success', 'Request top-up #' . ($transaction->request_code ?? $transaction->id) . ' berhasil disetujui! Saldo customer telah ditambahkan.');
+            session()->flash('success', 'Request top-up ' . ($transaction->request_code ? '#' . $transaction->request_code . ' ' : '') . 'berhasil disetujui! Saldo customer telah ditambahkan.');
 
             $this->closeModal();
 
@@ -279,7 +279,7 @@ class Approval extends Component
                 ActivityLog::create([
                     'user_id' => auth()->id(),
                     'action' => 'topup_rejected',
-                    'description' => 'Admin (Kec. ' . $districtLabel . ') menolak top-up #' . ($transaction->request_code ?? $transaction->id) . ' milik ' . ($transaction->user->name ?? 'Customer') . '. Alasan: ' . $this->rejectionReason,
+                    'description' => 'Admin (Kec. ' . $districtLabel . ') menolak top-up ' . ($transaction->request_code ? '#' . $transaction->request_code . ' ' : '') . 'milik ' . ($transaction->user->name ?? 'Customer') . '. Alasan: ' . $this->rejectionReason,
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                 ]);
@@ -347,7 +347,7 @@ class Approval extends Component
                 'user_id' => $transaction->user_id,
                 'amount' => $amount,
                 'type' => 'deduction',
-                'description' => 'Penarikan/Koreksi Saldo: Top-Up #' . ($transaction->request_code ?? $transaction->id) . ' Dibatalkan oleh Admin (Alasan: ' . $this->cancellationReason . ')',
+                'description' => 'Penarikan/Koreksi Saldo: Top-Up ' . ($transaction->request_code ? '#' . $transaction->request_code . ' ' : '') . 'Dibatalkan oleh Admin (Alasan: ' . $this->cancellationReason . ')',
                 'reference_id' => $transaction->id,
                 'status' => 'completed',
                 'processed_at' => now(),
@@ -365,7 +365,7 @@ class Approval extends Component
                 ActivityLog::create([
                     'user_id' => auth()->id(),
                     'action' => 'topup_approval_cancelled',
-                    'description' => 'Admin (Kec. ' . $districtLabel . ') membatalkan approval top-up #' . ($transaction->request_code ?? $transaction->id) . ' milik ' . ($customer->name ?? 'Customer') . ' (Rp ' . number_format($amount, 0, ',', '.') . '). Alasan: ' . $this->cancellationReason,
+                    'description' => 'Admin (Kec. ' . $districtLabel . ') membatalkan approval top-up ' . ($transaction->request_code ? '#' . $transaction->request_code . ' ' : '') . 'milik ' . ($customer->name ?? 'Customer') . ' (Rp ' . number_format($amount, 0, ',', '.') . '). Alasan: ' . $this->cancellationReason,
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                 ]);

@@ -28,7 +28,7 @@
                     </div>
                     <div>
                         <h4 class="text-base font-semibold text-gray-900 dark:text-white">{{ $withdraw->user?->name ?? '-' }}</h4>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">ID Mitra: {{ $withdraw->user_id }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Data penarikan saldo mitra</p>
                     </div>
                 </div>
                 <div>
@@ -169,12 +169,7 @@
                                 {{ $withdraw->processed_at ? $withdraw->processed_at->format('d M Y, H:i') : '-' }}
                             </span>
                         </div>
-                        @if($withdraw->external_id)
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600 dark:text-gray-400">Referensi</span>
-                            <span class="text-sm font-mono font-semibold text-gray-900 dark:text-white">{{ $withdraw->external_id }}</span>
-                        </div>
-                        @endif
+
                     </div>
                 </div>
             @endif

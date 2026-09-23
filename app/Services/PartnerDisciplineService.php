@@ -52,7 +52,7 @@ class PartnerDisciplineService
     ): void {
         $targetLevel = max(1, min(3, $targetLevel));
         $adminName   = $admin ? $admin->name : 'Admin Wilayah';
-        $helpInfo    = $help ? " pada pesanan #{$help->id} ('{$help->title}')" : "";
+        $helpInfo    = $help ? " pada pesanan '{$help->title}'" : "";
 
         $roleTitle = ($user->role === 'mitra') ? 'Mitra' : 'Customer';
 
@@ -109,7 +109,7 @@ class PartnerDisciplineService
         ActivityLog::record(
             $admin?->id,
             'admin_manual_warning_issued',
-            "{$adminName} menerbitkan SP {$targetLevel} kepada {$roleTitle} {$user->name} (#{$user->id}){$helpInfo}. Alasan: {$reason}",
+            "{$adminName} menerbitkan SP {$targetLevel} kepada {$roleTitle} {$user->name}{$helpInfo}. Alasan: {$reason}",
             [
                 'target_user_id' => $user->id,
                 'role'           => $user->role,

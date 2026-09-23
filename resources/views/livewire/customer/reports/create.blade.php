@@ -84,7 +84,7 @@
                                 <span class="text-base">⚠️</span>
                                 <div>
                                     <h4 class="font-bold text-amber-950 dark:text-amber-200">
-                                        Laporan Aduan Aktif Sedang Ditinjau (Laporan #{{ $activeReport->id }})
+                                        Laporan Aduan Aktif Sedang Ditinjau
                                     </h4>
                                     <p class="text-[11px] text-amber-900/90 dark:text-amber-300 mt-0.5">
                                         Tugas ini sedang dalam status <span class="font-bold uppercase tracking-wider px-1.5 py-0.5 bg-amber-200/90 dark:bg-amber-900 text-[10px] rounded">{{ $activeReport->status }}</span>. Anda tidak dapat membuat laporan baru sampai laporan sebelumnya selesai dikonfirmasi oleh Admin.
@@ -100,7 +100,7 @@
                     <div class="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-900 dark:text-emerald-200 flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2">
                             <span class="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                            <span>Laporan sebelumnya (<strong>#{{ $latestResolvedReport->id }}</strong> - {{ ucfirst($latestResolvedReport->status) }}) telah selesai diproses oleh Admin. Anda dapat mengajukan laporan baru jika diperlukan.</span>
+                            <span>Laporan sebelumnya (<strong>{{ ucfirst($latestResolvedReport->status) }}</strong>) telah selesai diproses oleh Admin. Anda dapat mengajukan laporan baru jika diperlukan.</span>
                         </div>
                     </div>
                 @endif
@@ -276,7 +276,7 @@
                     class="px-6 py-2.5 bg-primary-600 text-white text-xs font-bold rounded-xl shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                     <span wire:loading.remove wire:target="submit">
                         @if ($activeReport)
-                            Menunggu Penyelesaian Laporan #{{ $activeReport->id }}
+                            Menunggu Penyelesaian Laporan
                         @else
                             Kirim Laporan & Aduan
                         @endif

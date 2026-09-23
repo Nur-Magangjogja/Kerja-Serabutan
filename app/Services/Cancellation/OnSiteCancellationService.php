@@ -107,7 +107,7 @@ class OnSiteCancellationService
                     'partner_cancel_reason'       => $reason,
                     'cancel_deadline_at'          => now()->addHours(24),
                     'cancel_evidence_photo'       => $evidencePhotoPath,
-                    'admin_notes'                 => "Mitra #{$mitra->id} mengajukan kendala lapangan (Konsep 2 - Pengerjaan Dimulai): {$reason}. Menunggu klarifikasi Admin ke Customer.",
+                    'admin_notes'                 => "Mitra ({$mitra->name}) mengajukan kendala lapangan (Konsep 2 - Pengerjaan Dimulai): {$reason}. Menunggu klarifikasi Admin ke Customer.",
                 ]);
 
                 $cancelRequest = HelpCancelRequest::create([

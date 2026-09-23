@@ -72,7 +72,7 @@
 
                         <div class="pt-2 border-t">
                             <div class="flex items-center justify-between">
-                                <div class="text-sm text-gray-600">ID: {{ $help->id }} • Dibuat:
+                                <div class="text-sm text-gray-600">Dibuat:
                                     {{ $help->created_at->format('d M Y H:i') }}
                                 </div>
                                 <div class="text-sm text-gray-600">Ulasan: {{ $help->ratings->count() ?? 0 }}</div>

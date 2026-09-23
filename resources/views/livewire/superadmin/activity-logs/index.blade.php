@@ -263,7 +263,7 @@
         <div class="p-3.5 bg-primary-50 dark:bg-primary-950/50 border border-primary-200 dark:border-primary-800 rounded-2xl flex items-center justify-between gap-3 text-xs sm:text-sm text-primary-900 dark:text-primary-200 shadow-xs">
             <div class="flex items-center gap-2 min-w-0">
                 <span class="text-lg">👤</span>
-                <span class="truncate">Menampilkan aktivitas khusus untuk pelaku: <strong>{{ $selectedUserName ?? 'User #' . $selectedUserId }}</strong></span>
+                <span class="truncate">Menampilkan aktivitas khusus untuk pelaku: <strong>{{ $selectedUserName ?? 'Pengguna' }}</strong></span>
             </div>
             <button type="button" wire:click="clearUserFilter"
                 class="px-3 py-1.5 bg-white dark:bg-gray-800 text-primary-700 dark:text-primary-300 hover:bg-primary-600 hover:text-white rounded-xl font-bold text-xs border border-primary-300 dark:border-primary-700 shadow-2xs transition shrink-0 cursor-pointer">
@@ -468,7 +468,7 @@
                     </div>
                     <div>
                         <h3 class="text-sm font-extrabold text-gray-900 dark:text-white">Detail Riwayat Aktivitas</h3>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400">ID Log #{{ $selectedLog->id }} • {{ $selectedLog->created_at->translatedFormat('l, d F Y - H:i:s') }} WIB</p>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Detail Aktivitas • {{ $selectedLog->created_at->translatedFormat('l, d F Y - H:i:s') }} WIB</p>
                     </div>
                 </div>
                 <button wire:click="closePropertiesModal" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer">

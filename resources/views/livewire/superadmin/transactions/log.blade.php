@@ -575,7 +575,7 @@
             <div class="bg-primary-50 dark:bg-primary-950/60 border-b border-primary-100 dark:border-primary-800/80 px-5 py-3 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-2 text-xs font-semibold text-primary-900 dark:text-primary-200">
                     <span class="w-2.5 h-2.5 rounded-full bg-primary-600 animate-pulse"></span>
-                    <span>Menampilkan mutasi & aliran dana khusus untuk: <strong>{{ $selectedUserName ?? 'User #' . $selectedUserId }}</strong></span>
+                    <span>Menampilkan mutasi & aliran dana khusus untuk: <strong>{{ $selectedUserName ?? 'Pengguna' }}</strong></span>
                 </div>
                 <button type="button" wire:click="clearUserFilter"
                     class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-bold hover:bg-rose-50 cursor-pointer shadow-2xs">
@@ -725,17 +725,11 @@
                             </td>
                             <td class="px-4 py-3.5 hidden lg:table-cell">
                                 <div class="flex flex-col gap-1 items-start">
-                                    @if(!empty($t->reference_id))
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60">
-                                            Bantuan {{ $t->reference_id }}
-                                        </span>
-                                    @endif
                                     @if(!empty($t->request_code))
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
                                             KODE: {{ $t->request_code }}
                                         </span>
-                                    @endif
-                                    @if(empty($t->reference_id) && empty($t->request_code))
+                                    @else
                                         <span class="text-gray-400">—</span>
                                     @endif
                                 </div>

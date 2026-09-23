@@ -16,8 +16,8 @@
         $rep = $report->reporter ?? $report->user;
         $mitra = $report->reportedUser ?? $help?->mitra;
 
-        $customerWaText = "Halo Kak " . ($rep?->name ?? 'Customer') . ", Kami dari Tim Admin Moderasi SayaBantu ingin mengkonfirmasi Laporan Aduan #" . $report->id . ($help ? " terkait Bantuan #" . $help->id . " '" . $help->title . "'" : "") . ". Mohon waktu sebentar untuk verifikasi data.";
-        $mitraWaText = "Halo Rekan " . ($mitra?->name ?? 'Mitra') . ", Kami dari Tim Admin Moderasi SayaBantu ingin meminta klarifikasi dan konfirmasi terkait Laporan Aduan #" . $report->id . ($help ? " pada tugas Bantuan #" . $help->id . " '" . $help->title . "'" : "") . ". Mohon segera merespons.";
+        $customerWaText = "Halo Kak " . ($rep?->name ?? 'Customer') . ", Kami dari Tim Admin Moderasi SayaBantu ingin mengkonfirmasi Laporan Aduan" . ($help ? " terkait bantuan '" . $help->title . "'" : "") . ". Mohon waktu sebentar untuk verifikasi data.";
+        $mitraWaText = "Halo Rekan " . ($mitra?->name ?? 'Mitra') . ", Kami dari Tim Admin Moderasi SayaBantu ingin meminta klarifikasi dan konfirmasi terkait laporan aduan" . ($help ? " pada tugas '" . $help->title . "'" : "") . ". Mohon segera merespons.";
     @endphp
 
     {{-- ===== Flash Notification ===== --}}

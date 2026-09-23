@@ -575,7 +575,7 @@ class HelpTransactionService
 
             $activeReport = PartnerReport::getActiveReportForHelp($lockedHelp->id);
             if ($activeReport) {
-                throw new \RuntimeException("Laporan sengketa (Laporan #{$activeReport->id}) untuk tugas ini sedang aktif ditinjau oleh Admin (Status: {$activeReport->status}). Mohon tunggu proses mediasi selesai.");
+                throw new \RuntimeException("Laporan sengketa untuk tugas ini sedang aktif ditinjau oleh Admin (Status: {$activeReport->status}). Mohon tunggu proses mediasi selesai.");
             }
 
             if ($lockedHelp->escrow_status !== Help::ESCROW_STATUS_HELD) {
@@ -665,7 +665,7 @@ class HelpTransactionService
             // Validasi: Cegah penumpukan laporan jika masih ada laporan aktif yang belum selesai
             $activeReport = PartnerReport::getActiveReportForHelp($lockedHelp->id);
             if ($activeReport) {
-                throw new \RuntimeException("Laporan klaim garansi (Laporan #{$activeReport->id}) untuk tugas ini sedang aktif ditinjau oleh Admin (Status: {$activeReport->status}). Anda tidak dapat mengajukan laporan baru sampai laporan sebelumnya selesai dikonfirmasi.");
+                throw new \RuntimeException("Laporan klaim garansi untuk tugas ini sedang aktif ditinjau oleh Admin (Status: {$activeReport->status}). Anda tidak dapat mengajukan laporan baru sampai laporan sebelumnya selesai dikonfirmasi.");
             }
 
             // Pastikan garansi 1x24 jam belum kadaluarsa jika pesanan telah selesai
@@ -1139,7 +1139,7 @@ class HelpTransactionService
                 $refundAmount,
                 $help?->id,
                 $help?->order_id,
-                "Pengembalian Dana Refund (Laporan #{$report->id}: '{$report->title}')",
+                "Pengembalian Dana Refund (Laporan: '{$report->title}')",
                 "report:{$report->id}:refund:{$customer->id}"
             );
 

@@ -88,7 +88,7 @@
             <div class="flex items-center gap-2.5 flex-1 min-w-[280px]">
                 <div class="relative w-full max-w-md">
                     <input wire:model.live.debounce.300ms="search" type="text"
-                        placeholder="Cari judul, order ID, pemohon..."
+                        placeholder="Cari judul, pesanan, pemohon..."
                         class="w-full pl-9 pr-4 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>

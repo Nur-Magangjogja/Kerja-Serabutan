@@ -38,8 +38,8 @@ class NewReportMessageNotification extends Notification
             'message_id'    => $this->reportMessage->id,
             'sender_id'     => $this->reportMessage->sender_id,
             'sender_name'   => $senderName,
-            'title'         => "Pesan Baru Aduan #{$reportId}: {$senderName}",
-            'message'       => "{$senderName} mengirim pesan pada aduan #{$reportId}: \"{$preview}\"",
+            'title'         => "Pesan Baru Aduan: {$senderName}",
+            'message'       => "{$senderName} mengirim pesan pada aduan: \"{$preview}\"",
             'url'           => route('admin.partners.reports.chat', $reportId),
             'icon'          => '📢',
         ];

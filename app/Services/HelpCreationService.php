@@ -44,7 +44,7 @@ class HelpCreationService
         if (!empty($data['city_id'])) {
             $city = City::find($data['city_id']);
             if (!$city || !$city->is_active) {
-                $cityName = $city ? $city->name : "ID: {$data['city_id']}";
+                $cityName = $city ? $city->name : 'wilayah yang dipilih';
                 throw new \RuntimeException("Wilayah \"{$cityName}\" sedang dinonaktifkan sementara dan tidak menerima permintaan bantuan baru.");
             }
         }

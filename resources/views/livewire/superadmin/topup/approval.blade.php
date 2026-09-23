@@ -153,7 +153,7 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-3.5 hidden md:table-cell">
-                                    <code class="text-xs bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded font-mono">{{ $transaction->request_code ?? '#' . $transaction->id }}</code>
+                                    <code class="text-xs bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded font-mono">{{ $transaction->request_code ?? 'Top Up' }}</code>
                                 </td>
                                 <td class="px-4 py-3.5 hidden sm:table-cell">
                                     <p class="text-sm font-bold text-primary-600 dark:text-primary-400">Rp {{ number_format($transaction->total_payment, 0, ',', '.') }}</p>

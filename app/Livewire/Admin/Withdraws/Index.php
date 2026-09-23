@@ -213,7 +213,7 @@ class Index extends Component
                 \App\Models\ActivityLog::record(
                     auth()->user(),
                     'withdraw_approved',
-                    "Admin " . (auth()->user()->name ?? 'Admin') . " menyetujui pencairan dana #WD-{$withdraw->id} sebesar Rp " . number_format($withdraw->amount, 0, ',', '.') . " untuk user {$withdraw->user?->name}",
+                    "Admin " . (auth()->user()->name ?? 'Admin') . " menyetujui pencairan dana sebesar Rp " . number_format($withdraw->amount, 0, ',', '.') . " untuk user {$withdraw->user?->name}",
                     ['withdraw_id' => $withdraw->id, 'amount' => $withdraw->amount, 'user_id' => $withdraw->user_id]
                 );
             });
@@ -283,14 +283,14 @@ class Index extends Component
                     'amount' => $refundAmount,
                     'total_payment' => $refundAmount,
                     'status' => 'success',
-                    'description' => "Pengembalian dana penarikan #WD-{$withdraw->id} yang ditolak: {$this->rejectReason}",
+                    'description' => "Pengembalian dana penarikan yang ditolak: {$this->rejectReason}",
                 ]);
 
                 // Catat ke log aktivitas sistem
                 \App\Models\ActivityLog::record(
                     auth()->user(),
                     'withdraw_rejected',
-                    "Admin " . (auth()->user()->name ?? 'Admin') . " menolak pencairan dana #WD-{$withdraw->id} sebesar Rp " . number_format($refundAmount, 0, ',', '.') . " untuk user {$user?->name}. Alasan: {$this->rejectReason}",
+                    "Admin " . (auth()->user()->name ?? 'Admin') . " menolak pencairan dana sebesar Rp " . number_format($refundAmount, 0, ',', '.') . " untuk user {$user?->name}. Alasan: {$this->rejectReason}",
                     ['withdraw_id' => $withdraw->id, 'amount' => $refundAmount, 'user_id' => $withdraw->user_id, 'reason' => $this->rejectReason]
                 );
             });
@@ -367,7 +367,7 @@ class Index extends Component
                 \App\Models\ActivityLog::record(
                     auth()->user(),
                     'withdraw_proof_updated',
-                    "Admin " . (auth()->user()->name ?? 'Admin') . " memperbarui foto bukti transfer untuk pencairan dana #WD-{$withdraw->id} milik {$withdraw->user?->name}",
+                    "Admin " . (auth()->user()->name ?? 'Admin') . " memperbarui foto bukti transfer untuk pencairan dana milik {$withdraw->user?->name}",
                     ['withdraw_id' => $withdraw->id, 'user_id' => $withdraw->user_id]
                 );
             });

@@ -481,22 +481,22 @@ class PartnerOnlineService
 
             // Invariant 1: Jika sudah BUSY pada tugas yang berbeda, tolak tegas
             if ($state->matching_status === PartnerOnlineState::STATUS_BUSY && $state->current_help_id && $state->current_help_id != $helpId) {
-                throw new \RuntimeException("Mitra #{$mitraId} saat ini sedang sibuk (BUSY) mengerjakan Help #{$state->current_help_id}.");
+                throw new \RuntimeException("Mitra saat ini sedang sibuk mengerjakan tugas lain.");
             }
 
             // Invariant 2: Jika dalam status OFFER_PENDING, pastikan order yang diambil cocok
             if ($state->matching_status === PartnerOnlineState::STATUS_OFFER_PENDING && $state->current_help_id && $state->current_help_id != $helpId) {
-                throw new \RuntimeException("Mitra #{$mitraId} memiliki penawaran tertunda untuk Help #{$state->current_help_id}, tidak cocok dengan Help #{$helpId}.");
+                throw new \RuntimeException("Mitra masih memiliki penawaran tugas tertunda.");
             }
 
             // Invariant 3: Verifikasi keberadaan dan kepemilikan record Help
             $help = \App\Models\Help::find($helpId);
             if ($help) {
                 if ($help->mitra_id !== null && $help->mitra_id !== $mitraId) {
-                    throw new \RuntimeException("Help #{$helpId} sudah ditugaskan ke Mitra lain (#{$help->mitra_id}).");
+                    throw new \RuntimeException("Tugas ini sudah ditugaskan ke mitra lain.");
                 }
                 if (in_array($help->status, [\App\Models\Help::STATUS_SELESAI, \App\Models\Help::STATUS_DIBATALKAN, 'completed', 'cancelled'])) {
-                    throw new \RuntimeException("Help #{$helpId} sudah dalam status terminal ('{$help->status}').");
+                    throw new \RuntimeException("Tugas ini sudah berada pada status akhir.");
                 }
             }
 

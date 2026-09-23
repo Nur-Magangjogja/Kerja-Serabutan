@@ -135,7 +135,7 @@ class HelpEscrowService
             $refundAmount,
             $help->id,
             $help->order_id,
-            "{$note} (Bantuan #{$help->id} '{$help->title}')",
+            "{$note} (Bantuan '{$help->title}')",
             "help:{$help->id}:refund_direct:" . uniqid()
         );
 
@@ -164,7 +164,7 @@ class HelpEscrowService
         $mitraBalance->receiveEarning(
             $payoutAmount,
             $help->id,
-            "{$note} (Bantuan #{$help->id} '{$help->title}')",
+            "{$note} (Bantuan '{$help->title}')",
             $help->order_id,
             "help:{$help->id}:payout_direct:" . uniqid()
         );

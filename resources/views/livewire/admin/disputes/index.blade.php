@@ -400,7 +400,7 @@
                                                         <div class="flex items-center justify-between flex-wrap gap-1.5 mb-1.5">
                                                             <div class="flex items-center gap-2 flex-wrap">
                                                                 <span class="font-extrabold text-[11px] {{ $isCurrentRow ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300' }}">
-                                                                    Log #{{ $logNumber }} • {{ $log->created_at ? $log->created_at->translatedFormat('d M Y, H:i') : '-' }} WIB
+                                                                    Aktivitas • {{ $log->created_at ? $log->created_at->translatedFormat('d M Y, H:i') : '-' }} WIB
                                                                 </span>
                                                                 @if($isCurrentRow)
                                                                     <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-primary-600 text-white">
@@ -817,7 +817,7 @@
                             <div class="flex items-center gap-2">
                                 <span class="text-sm">📜</span>
                                 <span class="font-bold text-gray-900 dark:text-gray-100 text-xs">
-                                    Log Aktivitas Pembatalan Tugas (ID: #{{ $selectedCancelRequest->help_id }})
+                                    Log Aktivitas Pembatalan Tugas
                                 </span>
                             </div>
                             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black {{ $totalLogs > 1 ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700 animate-pulse' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' }}">
@@ -842,7 +842,7 @@
                                     <div class="flex items-center justify-between flex-wrap gap-1 mb-1">
                                         <div class="flex items-center gap-1.5 flex-wrap">
                                             <span class="font-extrabold {{ $isCurrent ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300' }}">
-                                                Log #{{ $logNum }} • {{ $cLog->created_at ? $cLog->created_at->translatedFormat('d M Y, H:i') : '-' }} WIB
+                                                Aktivitas • {{ $cLog->created_at ? $cLog->created_at->translatedFormat('d M Y, H:i') : '-' }} WIB
                                             </span>
                                             @if($isCurrent)
                                                 <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-primary-600 text-white">
@@ -1331,7 +1331,7 @@
                                     <span>ℹ️ Pengajuan Pembatalan:</span>
                                 </div>
                                 <p class="text-blue-800 dark:text-blue-300/90 leading-relaxed text-[11px]">
-                                    Permohonan pembatalan tugas bantuan #{{ $help?->id }}. Tinjau informasi telemetri dan konfirmasi evaluasi kedisiplinan.
+                                    Permohonan pembatalan tugas bantuan. Tinjau informasi telemetri dan konfirmasi evaluasi kedisiplinan.
                                 </p>
                             </div>
                         @endif
@@ -1457,7 +1457,7 @@
                             Konfirmasi Simpan Hasil Audit & Sanksi
                         </h3>
                         <p class="text-xs text-gray-500 dark:text-gray-400">
-                            Pemeriksaan kedua sebelum eksekusi untuk Bantuan #{{ $selectedCancelRequest->help_id }}
+                            Pemeriksaan kedua sebelum eksekusi
                         </p>
                     </div>
                 </div>
@@ -1614,7 +1614,7 @@
                         Pisahkan & Bebaskan Mitra?
                     </h3>
                     <p class="text-xs text-gray-500 dark:text-gray-400">
-                        Konfirmasi tindakan admin untuk penugasan #{{ $selectedCancelRequest->help_id }}
+                        Konfirmasi tindakan admin untuk penugasan ini
                     </p>
                 </div>
 
@@ -1678,7 +1678,7 @@
                             Konfirmasi Paksa Ganti Mitra
                         </h3>
                         <p class="text-xs text-gray-500 dark:text-gray-400">
-                            Pelepasan mitra pasif/menghilang untuk tugas #{{ $selectedCancelRequest->help_id }}
+                            Pelepasan mitra pasif/menghilang untuk tugas ini
                         </p>
                     </div>
                 </div>

@@ -294,7 +294,7 @@ class TopupRequest extends Component
 
         if ($recentDuplicate) {
             session()->forget('topup_form_data');
-            session()->flash('success', 'Request top-up telah berhasil dikirim sebelumnya (Kode: ' . ($recentDuplicate->request_code ?? $recentDuplicate->id) . ').');
+            session()->flash('success', 'Request top-up telah berhasil dikirim sebelumnya' . ($recentDuplicate->request_code ? ' (Kode: ' . $recentDuplicate->request_code . ')' : '') . '.');
             $lock->release();
             return $this->redirectRoute('customer.transactions.index', navigate: true);
         }

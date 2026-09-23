@@ -256,7 +256,7 @@ class HelpCancellationService
                 'escrow_status'         => Help::ESCROW_STATUS_RELEASED,
                 'payment_status'        => Help::PAYMENT_STATUS_PAID,
                 'cancel_evidence_photo' => $photo,
-                'admin_notes'           => "Customer No-Show dipicu oleh Mitra #{$partner->id} ({$partner->name}) setelah masa tunggu 10 menit terlewati. 100% ongkos antar (Rp " . number_format($serviceFee, 0, ',', '.') . ") diteruskan ke saldo mitra.",
+                'admin_notes'           => "Customer No-Show dipicu oleh Mitra {$partner->name} setelah masa tunggu 10 menit terlewati. 100% ongkos antar (Rp " . number_format($serviceFee, 0, ',', '.') . ") diteruskan ke saldo mitra.",
             ]);
 
             $this->onlineService->releaseBusy($partner->id, $lockedHelp->id);
@@ -265,7 +265,7 @@ class HelpCancellationService
                 try {
                     $lockedHelp->user->notify(new HelpStatusNotification(
                         $lockedHelp,
-                        "Pesanan #{$lockedHelp->id} dibatalkan karena Anda tidak hadir/merespons di titik penjemputan lebih dari 10 menit. Ongkos antar telah diteruskan ke mitra."
+                        "Pesanan Anda dibatalkan karena Anda tidak hadir/merespons di titik penjemputan lebih dari 10 menit. Ongkos antar telah diteruskan ke mitra."
                     ));
                 } catch (\Throwable $e) {
                     Log::warning("[HelpCancellationService] Failed notifying customer of no-show: " . $e->getMessage());
@@ -561,7 +561,7 @@ class HelpCancellationService
                 'partner_cancel_reason'       => null,
                 'dispatch_mode'               => Help::DISPATCH_MODE_POOL,
                 'pool_opened_at'              => now(),
-                'admin_notes'                 => "Customer memilih mencari mitra pengganti atas pengajuan kendala Mitra #{$oldPartnerId}. Tugas dialihkan kembali ke pool.",
+                'admin_notes'                 => "Customer memilih mencari mitra pengganti atas pengajuan kendala Mitra sebelumnya. Tugas dialihkan kembali ke pool.",
             ]);
 
             // 4. Update tiket audit cancel request jika ada
@@ -801,7 +801,7 @@ class HelpCancellationService
                 'partner_arrived_at'          => null,
                 'arrived_at'                  => null,
                 'partner_location_updated_at' => null,
-                'admin_notes'                 => ($help->admin_notes ? $help->admin_notes . ' | ' : '') . "Admin #{$adminUser->id} ({$adminUser->name}) memisahkan Mitra #{$partnerId}. Tugas ditahan (pending) hingga Customer mengonfirmasi.",
+                'admin_notes'                 => ($help->admin_notes ? $help->admin_notes . ' | ' : '') . "Admin {$adminUser->name} memisahkan Mitra terkait. Tugas ditahan (pending) hingga Customer mengonfirmasi.",
             ]);
 
             // 4. Update tiket cancel request

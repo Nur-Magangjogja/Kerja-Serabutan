@@ -15,16 +15,12 @@
 
                     <div class="text-left bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700 p-4 rounded-xl mb-4">
                         <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400">
-                            <span>Order ID</span>
-                            <span class="font-medium text-gray-900 dark:text-white">{{ $transaction->order_id }}</span>
+                            <span>Status Pembayaran</span>
+                            <span class="font-semibold text-emerald-600 dark:text-emerald-400">Berhasil diproses</span>
                         </div>
                         <div class="flex justify-between mt-2.5 text-xs text-gray-600 dark:text-gray-400">
                             <span>Jumlah</span>
                             <span class="font-bold text-gray-900 dark:text-white">Rp {{ number_format($transaction->amount, 0, ',', '.') }}</span>
-                        </div>
-                        <div class="flex justify-between mt-2.5 text-xs text-gray-600 dark:text-gray-400">
-                            <span>Status</span>
-                            <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{{ ucfirst($transaction->status) }}</span>
                         </div>
                     </div>
                 @else
@@ -35,7 +31,7 @@
                         </svg>
                     </div>
                     <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Transaksi Tidak Ditemukan</h1>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Order ID: {{ $order_id ?? '-' }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Transaksi top up tidak dapat ditemukan. Silakan kembali ke halaman transaksi.</p>
                 @endif
 
                 <div class="space-y-2 mt-4">

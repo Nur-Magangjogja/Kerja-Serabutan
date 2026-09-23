@@ -53,26 +53,15 @@
                                 @if($transaction->type === 'topup')
                                     {{-- Prefer explicit payment_type when available --}}
                                     {{ $transaction->payment_type ? 'Topup via ' . ucfirst($transaction->payment_type) : ($transaction->description ?? 'Topup Saldo') }}
-                                    @if($transaction->order_id)
-                                        <div class="text-xs text-gray-400">Order: {{ $transaction->order_id }}</div>
-                                    @endif
                                 @elseif(in_array($transaction->type, ['cancellation', 'penalty']))
                                     <span class="text-rose-600 font-medium">
                                         {{ $transaction->description ?? 'Pembatalan Tugas Bantuan' }}
                                     </span>
                                     <div class="text-xs text-gray-400 mt-0.5">
                                         💼 Pembatalan tugas
-                                        @if($transaction->reference_id)
-                                            · Bantuan {{ $transaction->reference_id }}
-                                        @endif
                                     </div>
                                 @else
-                                    {{-- deduction: show reference help id if present --}}
-                                    @if($transaction->reference_id)
-                                        Untuk Bantuan {{ $transaction->reference_id }}
-                                    @else
-                                        {{ $transaction->description ?? 'Pengurangan' }}
-                                    @endif
+                                    {{ $transaction->description ?? 'Pengurangan' }}
                                 @endif
                             </div>
                             <div class="text-xs text-gray-400 mt-0.5">

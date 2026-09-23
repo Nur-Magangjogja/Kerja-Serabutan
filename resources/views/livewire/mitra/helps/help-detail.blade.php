@@ -262,7 +262,7 @@
                 } elseif (str_starts_with($waPhone, '8')) {
                     $waPhone = '62' . $waPhone;
                 }
-                $waText = urlencode("Halo Kak " . ($help->user->name ?? 'Customer') . ", saya " . (auth()->user()->name ?? 'Mitra') . " mengenai pesanan bantuan #" . ($help->order_id ?: $help->id) . ".");
+                $waText = urlencode("Halo Kak " . ($help->user->name ?? 'Customer') . ", saya " . (auth()->user()->name ?? 'Mitra') . " mengenai pesanan bantuan '" . $help->title . "'.");
             @endphp
             @if ($isSwitchPartner)
                 <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/70 rounded-2xl p-4 mb-3 shadow-xs space-y-3">
@@ -976,7 +976,7 @@
                         } elseif (str_starts_with($waPhone, '8')) {
                             $waPhone = '62' . $waPhone;
                         }
-                        $waText = urlencode("Halo Kak " . ($help->user->name ?? 'Customer') . ", saya " . (auth()->user()->name ?? 'Mitra SayaBantu') . " terkait pesanan bantuan #" . ($help->order_id ?: $help->id) . ".");
+                        $waText = urlencode("Halo Kak " . ($help->user->name ?? 'Customer') . ", saya " . (auth()->user()->name ?? 'Mitra SayaBantu') . " terkait pesanan bantuan '" . $help->title . "'.");
                     @endphp
                     <a href="https://wa.me/{{ $waPhone }}?text={{ $waText }}"
                         target="_blank"

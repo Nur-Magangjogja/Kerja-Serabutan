@@ -103,7 +103,7 @@
                                             <span class="text-base">⚠️</span>
                                             <div>
                                                 <h4 class="font-bold text-amber-950 dark:text-amber-200 text-xs">
-                                                    Laporan Aduan Aktif Sedang Ditinjau (Laporan #{{ $activeReport->id }})
+                                                    Laporan Aduan Aktif Sedang Ditinjau
                                                 </h4>
                                                 <p class="text-[11px] text-amber-900/90 dark:text-amber-300 mt-0.5">
                                                     Status: <span class="font-bold uppercase tracking-wider px-1.5 py-0.5 bg-amber-200 dark:bg-amber-900 text-[10px] rounded">{{ $activeReport->status }}</span>. Anda tidak dapat membuat laporan baru sampai laporan sebelumnya selesai dikonfirmasi Admin.
@@ -118,7 +118,7 @@
                             @elseif ($latestResolvedReport)
                                 <div class="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-900 dark:text-emerald-200 flex items-center gap-2">
                                     <span class="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                                    <span>Laporan sebelumnya (<strong>#{{ $latestResolvedReport->id }}</strong> - {{ ucfirst($latestResolvedReport->status) }}) telah selesai diproses oleh Admin. Anda dapat mengajukan laporan baru jika ada kendala tambahan.</span>
+                                    <span>Laporan sebelumnya (<strong>{{ ucfirst($latestResolvedReport->status) }}</strong>) telah selesai diproses oleh Admin. Anda dapat mengajukan laporan baru jika ada kendala tambahan.</span>
                                 </div>
                             @endif
                         </div>
@@ -298,7 +298,7 @@
                                 </svg>
                                 <span>Kirim Laporan</span>
                             @else
-                                <span>Menunggu Laporan #{{ $activeReport->id }}</span>
+                                <span>Menunggu Penyelesaian Laporan</span>
                             @endif
                         </button>
                     </div>

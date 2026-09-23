@@ -447,7 +447,7 @@ class Log extends Component
             foreach ($transactions as $index => $t) {
                 $userName = $t->user ? $t->user->name : ($t->type === 'platform_fee' ? 'Kas Platform' : 'Sistem');
                 $userEmail = $t->user ? $t->user->email : '-';
-                $ref = $t->reference_id ? "Bantuan #{$t->reference_id}" : ($t->request_code ? "Kode: {$t->request_code}" : '-');
+                $ref = $t->request_code ? "Kode: {$t->request_code}" : ($t->reference_id ? "Bantuan" : '-');
 
                 fputcsv($handle, [
                     $index + 1,

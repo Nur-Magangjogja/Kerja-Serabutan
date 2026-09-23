@@ -128,7 +128,7 @@ class Rating extends Model
                 \App\Models\ActivityLog::record(
                     null,
                     'auto_greylist_low_rating',
-                    "Sistem otomatis memasukkan mitra {$mitra->name} (#{$mitra->id}) ke Daftar Abu-Abu karena menerima rating 1 bintang 3x berturut-turut.",
+                    "Sistem otomatis memasukkan mitra {$mitra->name} ke Daftar Abu-Abu karena menerima rating 1 bintang 3x berturut-turut.",
                     ['mitra_id' => $mitra->id]
                 );
             }

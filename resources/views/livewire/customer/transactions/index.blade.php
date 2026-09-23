@@ -207,18 +207,16 @@
                                             {{ $t->payment_method ? strtoupper($t->payment_method) : ($t->payment_type ? ucfirst($t->payment_type) : 'Top Up Saldo') }}
                                             @if(!empty($t->request_code))
                                                 • {{ $t->request_code }}
-                                            @elseif(!empty($t->order_id))
-                                                • {{ $t->order_id }}
                                             @endif
                                         @elseif($type === 'refund')
-                                            {{ $t->description ?? ($t->help?->title ? 'Refund: ' . $t->help->title : 'Pengembalian Dana Bantuan ' . $t->reference_id) }}
+                                            {{ $t->description ?? ($t->help?->title ? 'Refund: ' . $t->help->title : 'Pengembalian Dana Bantuan') }}
                                         @elseif($isHelpCompleted)
                                             {{ $t->help?->title ? $t->help->title : ($t->description ?? 'Pekerjaan Selesai') }}
                                             @if($t->help?->mitra)
                                                 • Rekan: {{ $t->help->mitra->name }}
                                             @endif
                                         @elseif($type === 'escrow_lock')
-                                            {{ $t->help?->title ? 'Bantuan: ' . $t->help->title : ($t->description ?? 'Pembayaran Bantuan ' . $t->reference_id) }}
+                                            {{ $t->help?->title ? 'Bantuan: ' . $t->help->title : ($t->description ?? 'Pembayaran Bantuan') }}
                                         @else
                                             {{ $t->description ?? 'Mutasi Saldo' }}
                                         @endif
@@ -492,19 +490,7 @@
                             </div>
                         @endif
 
-                        @if($selectedTransaction['order_id'])
-                            <div class="flex justify-between items-center text-xs sm:text-sm">
-                                <span class="text-gray-500 dark:text-gray-400">Order ID</span>
-                                <span class="font-mono font-bold text-xs text-gray-800 dark:text-gray-200">{{ $selectedTransaction['order_id'] }}</span>
-                            </div>
-                        @endif
 
-                        @if($selectedTransaction['reference_id'])
-                            <div class="flex justify-between items-center text-xs sm:text-sm">
-                                <span class="text-gray-500 dark:text-gray-400">ID Referensi</span>
-                                <span class="font-mono font-bold text-xs text-gray-800 dark:text-gray-200">{{ $selectedTransaction['reference_id'] }}</span>
-                            </div>
-                        @endif
 
                         @if($selectedTransaction['completed_at'])
                             <div class="flex justify-between items-center text-xs sm:text-sm">

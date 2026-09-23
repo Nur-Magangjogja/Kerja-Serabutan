@@ -222,7 +222,7 @@ class Index extends Component
                 $service->resolveDispute($this->selectedHelp, $admin, $this->resolutionType);
             }
 
-            session()->flash('message', "Sengketa bantuan #{$this->selectedHelp->id} berhasil diselesaikan.");
+            session()->flash('message', "Sengketa bantuan berhasil diselesaikan.");
             $this->closeResolveModal();
         } catch (\RuntimeException $e) {
             session()->flash('error', $e->getMessage());
@@ -587,7 +587,7 @@ class Index extends Component
                 ]
             );
 
-            session()->flash('message', "Permintaan pembatalan #{$this->selectedCancelRequest->id} berhasil diproses.");
+            session()->flash('message', "Permintaan pembatalan berhasil diproses.");
             $this->showCancelReviewConfirmModal = false;
             $this->closeCancelReviewModal();
         } catch (\RuntimeException $e) {
@@ -623,7 +623,7 @@ class Index extends Component
                 $this->cancelAdminNotes ?: 'Mitra dipisahkan & dibebaskan oleh Admin karena customer belum mengonfirmasi.'
             );
 
-            session()->flash('message', "Mitra berhasil dipisahkan dan dibebaskan dari tugas #{$this->selectedCancelRequest->help_id}. Tugas ditahan (tidak tampil di pool) sampai Customer mengonfirmasi.");
+            session()->flash('message', "Mitra berhasil dipisahkan dan dibebaskan dari tugas ini. Tugas ditahan (tidak tampil di pool) sampai Customer mengonfirmasi.");
             $this->showUnlinkConfirmModal = false;
             $this->closeCancelReviewModal();
         } catch (\RuntimeException $e) {
@@ -683,7 +683,7 @@ class Index extends Component
                 ]
             );
 
-            session()->flash('message', "Konfirmasi paksa ganti mitra untuk bantuan #{$req->help_id} berhasil diproses. Tugas telah dikembalikan ke pool pencarian mitra baru dan mitra lama telah dilepaskan.");
+            session()->flash('message', "Konfirmasi paksa ganti mitra untuk bantuan ini berhasil diproses. Tugas telah dikembalikan ke pool pencarian mitra baru dan mitra lama telah dilepaskan.");
             $this->showForceSwitchModal = false;
             $this->closeCancelReviewModal();
         } catch (\RuntimeException $e) {

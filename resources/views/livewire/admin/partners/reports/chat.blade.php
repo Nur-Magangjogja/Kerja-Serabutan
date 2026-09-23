@@ -26,9 +26,7 @@
             <div class="min-w-0">
                 <p class="text-xs font-bold text-rose-800 dark:text-rose-200">Data Laporan Tidak Valid — Pelapor dan Terlapor adalah Orang yang Sama</p>
                 <p class="text-[11px] text-rose-700 dark:text-rose-300 mt-0.5">
-                    Laporan ini tercatat dengan <code class="font-mono bg-rose-100 dark:bg-rose-900 px-1 rounded">reporter_id = reported_user_id = {{ $report->reporter_id }}</code>
-                    ({{ $report->reporter?->name ?? 'Tidak Diketahui' }}). Kemungkinan besar ini adalah data dummy/seeder yang salah atau ada bug saat laporan dibuat.
-                    Sistem telah diperbaiki untuk mencegah kejadian serupa di masa mendatang.
+                    Laporan ini tercatat dengan pelapor dan terlapor yang sama.
                 </p>
             </div>
         </div>

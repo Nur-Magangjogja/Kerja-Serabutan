@@ -210,25 +210,11 @@ class BalanceTransaction extends Model
 
     public function getFormattedReferenceAttribute(): string
     {
-        $items = [];
-        if (!empty($this->order_id)) {
-            $items[] = 'Order: ' . $this->order_id;
-        }
         if (!empty($this->request_code)) {
-            $items[] = 'Kode: ' . $this->request_code;
-        }
-        if (!empty($this->reference_id)) {
-            $items[] = 'ID Bantuan: ' . $this->reference_id;
-        }
-        if (!empty($this->reference) && !in_array((string)$this->reference, [$this->order_id, $this->request_code, (string)$this->reference_id])) {
-            $items[] = 'Ref: ' . $this->reference;
+            return 'Kode: ' . $this->request_code;
         }
 
-        if (empty($items)) {
-            return '—';
-        }
-
-        return implode(' | ', $items);
+        return '—';
     }
 
     protected static function booted()

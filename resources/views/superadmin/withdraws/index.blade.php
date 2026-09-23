@@ -76,7 +76,7 @@
                 </div>
                 <div>
                     <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">User</label>
-                    <input type="text" name="user" value="{{ request('user') }}" placeholder="ID atau nama"
+                    <input type="text" name="user" value="{{ request('user') }}" placeholder="Nama atau informasi penarikan"
                         class="py-2 px-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
                 <div>
@@ -144,7 +144,7 @@
                                 <div>
                                     <p class="font-medium text-gray-800 dark:text-gray-100">{{ $item->user->name }}</p>
                                     <p class="text-xs text-gray-400 dark:text-gray-500">
-                                        <span class="capitalize">{{ $item->user->role }}</span> • ID: {{ $item->user_id }}
+                                        <span class="capitalize">{{ $item->user->role }}</span>
                                     </p>
                                 </div>
                             </div>
