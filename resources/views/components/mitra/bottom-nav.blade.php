@@ -1,43 +1,14 @@
 @auth
     @if(auth()->user()->role === 'mitra')
-        <div x-data="{
-            isInputFocused: false,
-            isChatRoomOpen: false,
-            init() {
-                const handleFocusIn = (e) => {
-                    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) && e.target.type !== 'checkbox' && e.target.type !== 'radio') {
-                        this.isInputFocused = true;
-                    }
-                };
-                const handleFocusOut = () => {
-                    setTimeout(() => {
-                        const active = document.activeElement;
-                        if (!active || !['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)) {
-                            this.isInputFocused = false;
-                        }
-                    }, 120);
-                };
-                window.addEventListener('focusin', handleFocusIn);
-                window.addEventListener('focusout', handleFocusOut);
-
-                const checkChatRoom = () => {
-                    this.isChatRoomOpen = !!document.getElementById('messagesWrapper');
-                };
-                checkChatRoom();
-                if (window.MutationObserver) {
-                    const observer = new MutationObserver(checkChatRoom);
-                    observer.observe(document.body, { childList: true, subtree: true });
-                }
-            }
-        }"
-        x-show="!isInputFocused && !isChatRoomOpen"
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0 translate-y-4"
-        x-transition:enter-end="opacity-100 translate-y-0"
-        x-transition:leave="transition ease-in duration-150"
-        x-transition:leave-start="opacity-100 translate-y-0"
-        x-transition:leave-end="opacity-0 translate-y-4"
-        class="fixed bottom-4 inset-x-0 mx-auto w-full max-w-md px-3 sm:px-4 z-50 pointer-events-none">
+        <div x-data="mitraBottomNav()"
+            x-show="!isInputFocused && !isChatRoomOpen && !isModalOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 translate-y-4"
+            x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 translate-y-0"
+            x-transition:leave-end="opacity-0 translate-y-4"
+            class="fixed bottom-4 inset-x-0 mx-auto w-full max-w-md px-3 sm:px-4 z-40 pointer-events-none">
             <nav id="bottom-nav" class="pointer-events-auto h-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl border border-white/60 dark:border-gray-700/60 shadow-xl shadow-gray-900/10 dark:shadow-black/50 px-2 py-1.5 transition-all">
                 <div class="flex items-center justify-around h-full">
                     <a href="{{ route('mitra.dashboard') }}" wire:navigate
@@ -74,5 +45,67 @@
                 </div>
             </nav>
         </div>
+
+        <script>
+            (function() {
+                function createMitraBottomNav() {
+                    return {
+                        isInputFocused: false,
+                        isChatRoomOpen: false,
+                        isModalOpen: false,
+                        init() {
+                            const handleFocusIn = (e) => {
+                                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) && e.target.type !== 'checkbox' && e.target.type !== 'radio') {
+                                    this.isInputFocused = true;
+                                }
+                            };
+                            const handleFocusOut = () => {
+                                setTimeout(() => {
+                                    const active = document.activeElement;
+                                    if (!active || !['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)) {
+                                        this.isInputFocused = false;
+                                    }
+                                }, 120);
+                            };
+                            window.addEventListener('focusin', handleFocusIn);
+                            window.addEventListener('focusout', handleFocusOut);
+
+                            const checkState = () => {
+                                this.isChatRoomOpen = !!document.getElementById('messagesWrapper');
+                                this.isModalOpen = !!document.querySelector('[data-vehicle-modal]')
+                                    || !!document.getElementById('vehicle-profile-modal')
+                                    || !!document.querySelector('[role="dialog"][aria-modal="true"]');
+                            };
+                            checkState();
+                            if (window.MutationObserver) {
+                                const observer = new MutationObserver(checkState);
+                                observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+                            }
+
+                            window.addEventListener('openVehicleProfileModal', () => {
+                                this.isModalOpen = true;
+                            });
+                            window.addEventListener('vehicle-modal-opened', () => {
+                                this.isModalOpen = true;
+                            });
+                            window.addEventListener('vehicle-modal-closed', () => {
+                                this.isModalOpen = false;
+                                setTimeout(() => checkState(), 120);
+                            });
+                        }
+                    };
+                }
+
+                window.mitraBottomNav = createMitraBottomNav;
+
+                if (window.Alpine) {
+                    Alpine.data('mitraBottomNav', createMitraBottomNav);
+                } else {
+                    document.addEventListener('alpine:init', () => {
+                        Alpine.data('mitraBottomNav', createMitraBottomNav);
+                    });
+                }
+            })();
+        </script>
     @endif
 @endauth

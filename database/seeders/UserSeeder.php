@@ -53,40 +53,7 @@ class UserSeeder extends Seeder
         [$jakselCity, $tebetDist]     = $resolveLocation('Jakarta Selatan', 'Tebet');
 
         // =========================================================================
-        // 1. SUPER ADMIN
-        // =========================================================================
-        User::updateOrCreate(
-            ['email' => 'superadmin@sayabantu.com'],
-            [
-                'name'              => 'SuperAdmin SayaBantu',
-                'password'          => $commonPassword,
-                'role'              => 'super_admin',
-                'nik'               => '3404011205850001',
-                'gender'            => 'Laki-laki',
-                'place_of_birth'    => 'Sleman',
-                'date_of_birth'     => '1985-05-12',
-                'city_id'           => $slemanCity?->id,
-                'district_id'       => $ngaglikDist?->id,
-                'verified'          => true,
-                'status'            => 'active',
-                'phone'             => '081234567800',
-                'address'           => 'Jl. Kaliurang KM 9.5, Sardonoharjo, Sleman',
-                'kelurahan'         => 'Sardonoharjo',
-                'kecamatan'         => $ngaglikDist?->name ?? 'Ngaglik',
-                'city'              => $slemanCity?->name ?? 'Kabupaten Sleman',
-                'province'          => 'D.I. Yogyakarta',
-                'religion'          => 'Islam',
-                'marital_status'    => 'Kawin',
-                'occupation'        => 'Platform Administrator',
-                'is_greylisted'     => false,
-                'is_shadow_banned'  => false,
-                'warning_level'     => 0,
-                'email_verified_at' => $now,
-            ]
-        );
-
-        // =========================================================================
-        // 2. ADMIN WILAYAH
+        // 1. ADMIN WILAYAH
         // =========================================================================
         $admins = [
             [
@@ -147,7 +114,7 @@ class UserSeeder extends Seeder
         }
 
         // =========================================================================
-        // 3. MITRA (REKAN JASA)
+        // 2. MITRA (REKAN JASA)
         // =========================================================================
         $mitras = [
             [
@@ -232,7 +199,7 @@ class UserSeeder extends Seeder
         }
 
         // =========================================================================
-        // 4. CUSTOMER (PEMESAN JASA)
+        // 3. CUSTOMER (PEMESAN JASA)
         // =========================================================================
         $customers = [
             [

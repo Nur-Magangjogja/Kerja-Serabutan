@@ -13,11 +13,35 @@ use Livewire\Component;
 class OfferRadarWidget extends Component
 {
     public ?int $userId = null;
+    public string $servicePreference = PartnerOnlineState::PREFERENCE_ALL;
 
     public function mount(): void
     {
         $this->userId = auth()->id();
         $this->validateAndRepairState();
+
+        $user = auth()->user();
+        if ($user) {
+            $onlineState = app(PartnerOnlineService::class)->getOrCreateState($user);
+            $this->servicePreference = $onlineState->service_preference ?? PartnerOnlineState::PREFERENCE_ALL;
+        }
+    }
+
+    public function setServicePreference(string $preference): void
+    {
+        $user = auth()->user();
+        if (!$user) return;
+
+        $res = app(PartnerOnlineService::class)->updateServicePreference($user, $preference);
+
+        if ($res['success']) {
+            $this->servicePreference = $res['preference'];
+            $this->dispatch('show-status-notification', message: $res['message']);
+            $this->dispatch('partner-state-changed');
+        } else {
+            $this->servicePreference = $res['preference'] ?? PartnerOnlineState::PREFERENCE_ON_SITE;
+            session()->flash('error', $res['message']);
+        }
     }
 
     /**
@@ -171,15 +195,18 @@ class OfferRadarWidget extends Component
         }
 
         $onlineState       = app(PartnerOnlineService::class)->getOrCreateState($user);
+        $this->servicePreference = $onlineState->service_preference ?? PartnerOnlineState::PREFERENCE_ALL;
         $activeOffer       = app(DashboardQueryService::class)->getActiveOfferForRadar($user->id, $onlineState);
         $isRestricted      = app(MitraMatchingActions::class)->isRestricted($user);
         $isSeekingEnabled  = \App\Models\AppSetting::isMatchingSeekingEnabledForUser($user);
+        $canTakePickupDelivery = $user->canTakePickupDelivery();
 
         return view('livewire.mitra.dashboard.offer-radar-widget', [
-            'onlineState'       => $onlineState,
-            'activeOffer'       => $activeOffer,
-            'isRestricted'      => $isRestricted,
-            'isSeekingEnabled'  => $isSeekingEnabled,
+            'onlineState'           => $onlineState,
+            'activeOffer'           => $activeOffer,
+            'isRestricted'          => $isRestricted,
+            'isSeekingEnabled'      => $isSeekingEnabled,
+            'canTakePickupDelivery' => $canTakePickupDelivery,
         ]);
     }
 }

@@ -118,6 +118,8 @@ new #[Layout('layouts.guest')] class extends Component {
             }
 
             $this->preview_url = asset('storage/' . $path);
+            $this->reset('ktp_photo');
+            $this->iteration++;
         }
     }
 
@@ -219,7 +221,7 @@ new #[Layout('layouts.guest')] class extends Component {
             <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Unggah foto e-KTP Anda dengan jelas dan pencahayaan yang cukup.</p>
 
             <!-- Hidden File Input (Always in DOM with key to allow clean re-upload) -->
-            <input wire:model="ktp_photo" id="ktp_photo" type="file"
+            <input wire:model.live="ktp_photo" id="ktp_photo" type="file"
                 accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg"
                 class="hidden"
                 wire:key="ktp-photo-input-{{ $iteration }}">

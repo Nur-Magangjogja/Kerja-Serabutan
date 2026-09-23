@@ -15,6 +15,47 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasFactory, Notifiable;
 
     /**
+     * In-request static and instance memoization caches for high-frequency territory and filter lookups.
+     */
+    protected static array $reqAdminDistrictIds = [];
+    protected static array $reqAdminDistricts = [];
+    protected static array $reqAdminCityIds = [];
+    protected static array $reqAdminCities = [];
+    protected static array $reqActiveSaTerritory = [];
+    protected static array $reqEffectiveSaDistrictIds = [];
+
+    protected ?array $memoizedAdminDistrictIds = null;
+    protected ?\Illuminate\Database\Eloquent\Collection $memoizedAdminDistricts = null;
+    protected ?string $memoizedActiveAdminDistrictFilter = null;
+    protected ?array $memoizedActiveSuperadminTerritory = null;
+    protected ?\Carbon\Carbon $memoizedLastActivityAt = null;
+    protected bool $memoizedLastActivityLoaded = false;
+
+    /**
+     * Flush all request-level static caches (opsional: untuk user tertentu).
+     */
+    public static function flushRequestCache(?int $userId = null): void
+    {
+        if ($userId !== null) {
+            unset(
+                self::$reqAdminDistrictIds[$userId],
+                self::$reqAdminDistricts[$userId],
+                self::$reqAdminCityIds[$userId],
+                self::$reqAdminCities[$userId],
+                self::$reqActiveSaTerritory[$userId],
+                self::$reqEffectiveSaDistrictIds[$userId]
+            );
+        } else {
+            self::$reqAdminDistrictIds = [];
+            self::$reqAdminDistricts = [];
+            self::$reqAdminCityIds = [];
+            self::$reqAdminCities = [];
+            self::$reqActiveSaTerritory = [];
+            self::$reqEffectiveSaDistrictIds = [];
+        }
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -50,6 +91,20 @@ class User extends Authenticatable implements MustVerifyEmail
         'selfie_photo',
         'profile_photo',
         'notification_settings',
+        // Vehicle Profile Fields (Mitra)
+        'vehicle_plate_number',
+        'vehicle_sim_number',
+        'vehicle_sim_photo',
+        'vehicle_stnk_number',
+        'vehicle_stnk_photo',
+        'vehicle_brand',
+        'vehicle_model',
+        'vehicle_color',
+        'vehicle_verification_status',
+        'vehicle_verified',
+        'vehicle_verified_at',
+        'vehicle_verified_by',
+        'vehicle_rejection_reason',
         // Greylist, Shadow Ban, and Warning Fields
         'is_greylisted',
         'greylisted_at',
@@ -59,6 +114,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'warning_level',
         'latest_warning_message',
         'latest_warning_at',
+        'konsep1_cancel_count',
+        'konsep1_pardoned_at',
+        'konsep1_pardon_notes',
     ];
 
     /**
@@ -93,6 +151,10 @@ class User extends Authenticatable implements MustVerifyEmail
             'shadow_banned_at' => 'datetime',
             'warning_level' => 'integer',
             'latest_warning_at' => 'datetime',
+            'konsep1_cancel_count' => 'integer',
+            'konsep1_pardoned_at' => 'datetime',
+            'vehicle_verified' => 'boolean',
+            'vehicle_verified_at' => 'datetime',
         ];
     }
 
@@ -254,6 +316,151 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Hitung total pembatalan Konsep 1 (Kendala Perjalanan - Transit) yang diajukan oleh mitra ini.
+     * Mengambil dari counter akun yang dapat diatur ulang (pengampunan) oleh Admin di Daftar Abu-Abu.
+     */
+    public function getKonsep1CancellationCount(): int
+    {
+        return (int) ($this->konsep1_cancel_count ?? 0);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // VEHICLE PROFILE & VERIFICATION HELPERS (MITRA)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function getVehicleSimPhotoUrlAttribute(): ?string
+    {
+        if ($this->vehicle_sim_photo) {
+            if (str_starts_with($this->vehicle_sim_photo, 'http://') || str_starts_with($this->vehicle_sim_photo, 'https://')) {
+                return $this->vehicle_sim_photo;
+            }
+            return asset('storage/' . $this->vehicle_sim_photo);
+        }
+        return null;
+    }
+
+    public function getVehicleStnkPhotoUrlAttribute(): ?string
+    {
+        if ($this->vehicle_stnk_photo) {
+            if (str_starts_with($this->vehicle_stnk_photo, 'http://') || str_starts_with($this->vehicle_stnk_photo, 'https://')) {
+                return $this->vehicle_stnk_photo;
+            }
+            return asset('storage/' . $this->vehicle_stnk_photo);
+        }
+        return null;
+    }
+
+    /**
+     * Cek apakah mitra sudah mengisi dokumen SIM Motor (nomor + foto).
+     */
+    public function hasSimMotor(): bool
+    {
+        return !empty($this->vehicle_sim_number) && !empty($this->vehicle_sim_photo);
+    }
+
+    /**
+     * Cek apakah mitra sudah mengisi dokumen STNK (nomor + foto).
+     */
+    public function hasStnk(): bool
+    {
+        return !empty($this->vehicle_stnk_number) && !empty($this->vehicle_stnk_photo);
+    }
+
+    /**
+     * Cek apakah mitra sudah mengisi data kendaraan wajib yang sah:
+     * Plat Nomor terisi DAN SIM Motor terisi DAN STNK terisi (Keduanya Wajib).
+     */
+    public function hasVehicleProfile(): bool
+    {
+        if (empty($this->vehicle_plate_number)) {
+            return false;
+        }
+
+        return $this->hasSimMotor() && $this->hasStnk();
+    }
+
+    /**
+     * Cek apakah data kendaraan sudah disetujui / diverifikasi oleh admin.
+     */
+    public function isVehicleVerified(): bool
+    {
+        return (bool) $this->vehicle_verified && $this->vehicle_verification_status === 'verified';
+    }
+
+    /**
+     * Syarat mutlak bagi mitra untuk dapat melihat dan mengambil order Antar & Jemput:
+     * Data kendaraan telah diisi DAN telah terverifikasi oleh admin.
+     */
+    public function canTakePickupDelivery(): bool
+    {
+        return $this->hasVehicleProfile() && $this->isVehicleVerified();
+    }
+
+    /**
+     * Nama tampilan jenis/tipe sepeda motor mitra.
+     * Menggabungkan Merek, Model, dan Warna jika ada (contoh: "Honda Vario 160 (Hitam)").
+     */
+    public function getVehicleDisplayNameAttribute(): string
+    {
+        $parts = [];
+        if (!empty($this->vehicle_brand)) {
+            $parts[] = trim($this->vehicle_brand);
+        }
+        if (!empty($this->vehicle_model)) {
+            $parts[] = trim($this->vehicle_model);
+        }
+
+        $displayName = !empty($parts) ? implode(' ', $parts) : 'Sepeda Motor';
+
+        if (!empty($this->vehicle_color)) {
+            $displayName .= ' (' . trim($this->vehicle_color) . ')';
+        }
+
+        return $displayName;
+    }
+
+    /**
+     * Presenter badge status verifikasi kendaraan untuk UI mitra & admin.
+     */
+    public function getVehicleStatusBadgeAttribute(): array
+    {
+        return match ($this->vehicle_verification_status) {
+            'verified' => [
+                'label' => 'Terverifikasi',
+                'color' => 'emerald',
+                'bg'    => 'bg-emerald-50 dark:bg-emerald-950/40',
+                'text'  => 'text-emerald-700 dark:text-emerald-300',
+                'border'=> 'border-emerald-200 dark:border-emerald-800',
+                'icon'  => 'shield-check',
+            ],
+            'pending' => [
+                'label' => 'Menunggu Verifikasi',
+                'color' => 'amber',
+                'bg'    => 'bg-amber-50 dark:bg-amber-950/40',
+                'text'  => 'text-amber-700 dark:text-amber-300',
+                'border'=> 'border-amber-200 dark:border-amber-800',
+                'icon'  => 'clock',
+            ],
+            'rejected' => [
+                'label' => 'Verifikasi Ditolak',
+                'color' => 'rose',
+                'bg'    => 'bg-rose-50 dark:bg-rose-950/40',
+                'text'  => 'text-rose-700 dark:text-rose-300',
+                'border'=> 'border-rose-200 dark:border-rose-800',
+                'icon'  => 'x-circle',
+            ],
+            default => [
+                'label' => 'Belum Dilengkapi',
+                'color' => 'zinc',
+                'bg'    => 'bg-zinc-100 dark:bg-zinc-800/60',
+                'text'  => 'text-zinc-600 dark:text-zinc-400',
+                'border'=> 'border-zinc-200 dark:border-zinc-700',
+                'icon'  => 'alert-circle',
+            ],
+        };
+    }
+
+    /**
      * Hapus otomatis akun yang belum memverifikasi email setelah 10 menit.
      *
      * @param string|null $email
@@ -343,6 +550,11 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     // Relationships
+    public function onlineState()
+    {
+        return $this->hasOne(PartnerOnlineState::class, 'user_id');
+    }
+
     public function city()
     {
         return $this->belongsTo(City::class, 'city_id');
@@ -382,6 +594,15 @@ class User extends Authenticatable implements MustVerifyEmail
             return [];
         }
 
+        $uid = $this->id;
+        if ($uid && isset(self::$reqAdminDistrictIds[$uid])) {
+            return self::$reqAdminDistrictIds[$uid];
+        }
+
+        if ($this->memoizedAdminDistrictIds !== null) {
+            return $this->memoizedAdminDistrictIds;
+        }
+
         if ($this->relationLoaded('managedDistricts')) {
             $managedIds = $this->managedDistricts->pluck('id')->all();
         } else {
@@ -389,21 +610,31 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         if (!empty($managedIds)) {
-            return array_values(array_unique(array_map('intval', $managedIds)));
+            $res = array_values(array_unique(array_map('intval', $managedIds)));
+            $this->memoizedAdminDistrictIds = $res;
+            if ($uid) self::$reqAdminDistrictIds[$uid] = $res;
+            return $res;
         }
 
         if (!empty($this->district_id)) {
-            return [(int) $this->district_id];
+            $res = [(int) $this->district_id];
+            $this->memoizedAdminDistrictIds = $res;
+            if ($uid) self::$reqAdminDistrictIds[$uid] = $res;
+            return $res;
         }
 
         $cityIds = $this->getAdminCityIds();
         if (!empty($cityIds)) {
             $cityDistrictIds = District::whereIn('city_id', $cityIds)->pluck('id')->map('intval')->all();
             if (!empty($cityDistrictIds)) {
+                $this->memoizedAdminDistrictIds = $cityDistrictIds;
+                if ($uid) self::$reqAdminDistrictIds[$uid] = $cityDistrictIds;
                 return $cityDistrictIds;
             }
         }
 
+        $this->memoizedAdminDistrictIds = [];
+        if ($uid) self::$reqAdminDistrictIds[$uid] = [];
         return [];
     }
 
@@ -431,12 +662,27 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getAdminDistricts()
     {
-        $districtIds = $this->getAdminDistrictIds();
-        if (empty($districtIds)) {
-            return collect();
+        $uid = $this->id;
+        if ($uid && isset(self::$reqAdminDistricts[$uid])) {
+            return self::$reqAdminDistricts[$uid];
         }
 
-        return District::whereIn('id', $districtIds)->with('city')->orderBy('name')->get();
+        if ($this->memoizedAdminDistricts !== null) {
+            return $this->memoizedAdminDistricts;
+        }
+
+        $districtIds = $this->getAdminDistrictIds();
+        if (empty($districtIds)) {
+            $res = collect();
+            $this->memoizedAdminDistricts = $res;
+            if ($uid) self::$reqAdminDistricts[$uid] = $res;
+            return $res;
+        }
+
+        $res = District::whereIn('id', $districtIds)->with('city')->orderBy('name')->get();
+        $this->memoizedAdminDistricts = $res;
+        if ($uid) self::$reqAdminDistricts[$uid] = $res;
+        return $res;
     }
 
     /**
@@ -458,20 +704,24 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getActiveAdminDistrictFilter(): string
     {
+        if ($this->memoizedActiveAdminDistrictFilter !== null) {
+            return $this->memoizedActiveAdminDistrictFilter;
+        }
+
         $cachedDistrict = cache()->get("admin_active_district_{$this->id}");
         $sessionDistrict = session('admin_active_district_filter');
 
         $active = $sessionDistrict ?? $cachedDistrict ?? 'all';
         if ($active === 'all' || empty($active)) {
-            return 'all';
+            return $this->memoizedActiveAdminDistrictFilter = 'all';
         }
 
         $allowedIds = $this->getAdminDistrictIds();
         if (!in_array((int) $active, $allowedIds, true)) {
-            return 'all';
+            return $this->memoizedActiveAdminDistrictFilter = 'all';
         }
 
-        return (string) $active;
+        return $this->memoizedActiveAdminDistrictFilter = (string) $active;
     }
 
     /**
@@ -479,6 +729,8 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function setActiveAdminDistrictFilter(?string $districtId): void
     {
+        $this->memoizedActiveAdminDistrictFilter = null;
+        self::flushRequestCache($this->id);
         $val = ($districtId === null || $districtId === '' || $districtId === 'all') ? 'all' : (string) (int) $districtId;
         if ($val !== 'all') {
             $allowedIds = $this->getAdminDistrictIds();
@@ -537,6 +789,15 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getActiveSuperadminTerritory(): array
     {
+        $uid = $this->id;
+        if ($uid && isset(self::$reqActiveSaTerritory[$uid])) {
+            return self::$reqActiveSaTerritory[$uid];
+        }
+
+        if ($this->memoizedActiveSuperadminTerritory !== null) {
+            return $this->memoizedActiveSuperadminTerritory;
+        }
+
         $sessionType = session('superadmin_active_territory_type');
         $sessionId   = session('superadmin_active_territory_id');
 
@@ -550,28 +811,37 @@ class User extends Authenticatable implements MustVerifyEmail
             $district = District::with('city')->find((int) $id);
             if ($district) {
                 $cityLabel = $district->city ? " ({$district->city->name})" : '';
-                return [
+                $res = [
                     'type'  => 'district',
                     'id'    => (int) $id,
                     'label' => "Kec. {$district->name}{$cityLabel}",
                 ];
+                $this->memoizedActiveSuperadminTerritory = $res;
+                if ($uid) self::$reqActiveSaTerritory[$uid] = $res;
+                return $res;
             }
         } elseif ($type === 'city' && $id) {
             $city = City::find((int) $id);
             if ($city) {
-                return [
+                $res = [
                     'type'  => 'city',
                     'id'    => (int) $id,
                     'label' => "Kota {$city->name} (Semua Kec.)",
                 ];
+                $this->memoizedActiveSuperadminTerritory = $res;
+                if ($uid) self::$reqActiveSaTerritory[$uid] = $res;
+                return $res;
             }
         }
 
-        return [
+        $res = [
             'type'  => 'all',
             'id'    => null,
             'label' => 'Semua Wilayah (Nasional)',
         ];
+        $this->memoizedActiveSuperadminTerritory = $res;
+        if ($uid) self::$reqActiveSaTerritory[$uid] = $res;
+        return $res;
     }
 
     /**
@@ -579,6 +849,8 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function setActiveSuperadminTerritory(string $type, $id = null): void
     {
+        $this->memoizedActiveSuperadminTerritory = null;
+        self::flushRequestCache($this->id);
         $type = in_array($type, ['city', 'district'], true) ? $type : 'all';
         $id   = ($type !== 'all' && $id) ? (int) $id : null;
 
@@ -616,15 +888,25 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getEffectiveSuperadminDistrictIds(): array
     {
+        $uid = $this->id;
+        if ($uid && isset(self::$reqEffectiveSaDistrictIds[$uid])) {
+            return self::$reqEffectiveSaDistrictIds[$uid];
+        }
+
         $territory = $this->getActiveSuperadminTerritory();
         if ($territory['type'] === 'district' && $territory['id']) {
-            return [(int) $territory['id']];
+            $res = [(int) $territory['id']];
+            if ($uid) self::$reqEffectiveSaDistrictIds[$uid] = $res;
+            return $res;
         }
 
         if ($territory['type'] === 'city' && $territory['id']) {
-            return District::where('city_id', (int) $territory['id'])->pluck('id')->map(fn($id) => (int)$id)->all();
+            $res = District::where('city_id', (int) $territory['id'])->pluck('id')->map(fn($id) => (int)$id)->all();
+            if ($uid) self::$reqEffectiveSaDistrictIds[$uid] = $res;
+            return $res;
         }
 
+        if ($uid) self::$reqEffectiveSaDistrictIds[$uid] = [];
         return [];
     }
 
@@ -641,6 +923,11 @@ class User extends Authenticatable implements MustVerifyEmail
             return [];
         }
 
+        $uid = $this->id;
+        if ($uid && isset(self::$reqAdminCityIds[$uid])) {
+            return self::$reqAdminCityIds[$uid];
+        }
+
         $cityIds = [];
 
         // 1. Directly assigned managed cities (admin_city pivot)
@@ -650,13 +937,8 @@ class User extends Authenticatable implements MustVerifyEmail
             $cityIds = array_merge($cityIds, $this->managedCities()->allRelatedIds()->all());
         }
 
-        // 2. Cities derived from managed districts (admin_district pivot)
-        $districtIds = [];
-        if ($this->relationLoaded('managedDistricts')) {
-            $districtIds = $this->managedDistricts->pluck('id')->all();
-        } else {
-            $districtIds = $this->managedDistricts()->allRelatedIds()->all();
-        }
+        // 2. Cities derived from managed districts (menggunakan getAdminDistrictIds yang sudah termemoize)
+        $districtIds = $this->getAdminDistrictIds();
         if (!empty($districtIds)) {
             $cityIds = array_merge($cityIds, District::whereIn('id', $districtIds)->pluck('city_id')->all());
         }
@@ -674,7 +956,11 @@ class User extends Authenticatable implements MustVerifyEmail
             $cityIds[] = (int) $this->city_id;
         }
 
-        return array_values(array_unique(array_filter(array_map('intval', $cityIds))));
+        $result = array_values(array_unique(array_filter(array_map('intval', $cityIds))));
+        if ($uid) {
+            self::$reqAdminCityIds[$uid] = $result;
+        }
+        return $result;
     }
 
     /**
@@ -684,12 +970,23 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getAdminCities()
     {
-        $cityIds = $this->getAdminCityIds();
-        if (empty($cityIds)) {
-            return collect();
+        $uid = $this->id;
+        if ($uid && isset(self::$reqAdminCities[$uid])) {
+            return self::$reqAdminCities[$uid];
         }
 
-        return City::whereIn('id', $cityIds)->orderBy('name')->get();
+        $cityIds = $this->getAdminCityIds();
+        if (empty($cityIds)) {
+            $res = collect();
+            if ($uid) self::$reqAdminCities[$uid] = $res;
+            return $res;
+        }
+
+        $res = City::whereIn('id', $cityIds)->orderBy('name')->get();
+        if ($uid) {
+            self::$reqAdminCities[$uid] = $res;
+        }
+        return $res;
     }
 
     /**
@@ -732,6 +1029,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function setActiveAdminCityFilter(string $cityFilter): void
     {
+        $this->memoizedActiveAdminDistrictFilter = null;
         $allowedIds = $this->getAdminCityIds();
 
         if ($cityFilter === 'all' || empty($cityFilter)) {
@@ -962,17 +1260,34 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getLastActivityAtAttribute(): ?\Carbon\Carbon
     {
-        $dt1 = $this->helps_max_updated_at ?? null;
-        $dt2 = $this->taken_helps_max_updated_at ?? null;
-
-        if ($dt1 || $dt2) {
-            $c1 = $dt1 ? \Carbon\Carbon::parse($dt1) : null;
-            $c2 = $dt2 ? \Carbon\Carbon::parse($dt2) : null;
-            if ($c1 && $c2) return $c1->max($c2);
-            return $c1 ?: $c2;
+        if ($this->memoizedLastActivityLoaded) {
+            return $this->memoizedLastActivityAt;
         }
 
-        // Direct database lookup if withMax was not loaded
+        $this->memoizedLastActivityLoaded = true;
+
+        // 1. Jika query sebelumnya sudah memuat kolom alias 'last_activity_at' (e.g. withMax('... as last_activity_at'))
+        if (array_key_exists('last_activity_at', $this->attributes)) {
+            $val = $this->attributes['last_activity_at'];
+            return $this->memoizedLastActivityAt = $val ? \Carbon\Carbon::parse($val) : null;
+        }
+
+        // 2. Jika query memuat withMax('helps', 'updated_at') / withMax('takenHelps', 'updated_at')
+        $hasHelpsMax = array_key_exists('helps_max_updated_at', $this->attributes);
+        $hasTakenHelpsMax = array_key_exists('taken_helps_max_updated_at', $this->attributes);
+
+        if ($hasHelpsMax || $hasTakenHelpsMax) {
+            $dt1 = $this->attributes['helps_max_updated_at'] ?? null;
+            $dt2 = $this->attributes['taken_helps_max_updated_at'] ?? null;
+            $c1 = $dt1 ? \Carbon\Carbon::parse($dt1) : null;
+            $c2 = $dt2 ? \Carbon\Carbon::parse($dt2) : null;
+            if ($c1 && $c2) {
+                return $this->memoizedLastActivityAt = $c1->max($c2);
+            }
+            return $this->memoizedLastActivityAt = ($c1 ?: $c2);
+        }
+
+        // 3. Fallback database lookup HANYA jika withMax belum diload sama sekali
         $latestCustomerHelp = $this->helps()->latest('updated_at')->value('updated_at');
         $latestMitraHelp = $this->takenHelps()->latest('updated_at')->value('updated_at');
 
@@ -980,7 +1295,7 @@ class User extends Authenticatable implements MustVerifyEmail
             ->filter()
             ->map(fn($d) => \Carbon\Carbon::parse($d));
 
-        return $dates->max();
+        return $this->memoizedLastActivityAt = $dates->max();
     }
 
     /**
@@ -1008,6 +1323,10 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         if (!empty($this->city_id)) {
+            $cityModel = City::getAllCached()->firstWhere('id', (int) $this->city_id);
+            if ($cityModel && isset($cityModel->name)) {
+                return $cityModel->name;
+            }
             $cityModel = City::find($this->city_id);
             if ($cityModel && isset($cityModel->name)) {
                 return $cityModel->name;
@@ -1170,11 +1489,6 @@ class User extends Authenticatable implements MustVerifyEmail
         } else {
             static::$unreadNotificationCountCache = [];
         }
-    }
-
-    public function onlineState()
-    {
-        return $this->hasOne(PartnerOnlineState::class, 'user_id');
     }
 
     /**

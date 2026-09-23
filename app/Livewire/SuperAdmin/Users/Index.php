@@ -380,7 +380,8 @@ class Index extends Component
         $query = User::with(['district', 'city', 'managedDistricts'])
             ->withMax('helps', 'updated_at')
             ->withMax('takenHelps', 'updated_at')
-            ->where('verified', true);
+            ->where('verified', true)
+            ->whereIn('role', ['mitra', 'customer']);
 
         if (! $isSuperAdmin) {
             $managedDistrictIds = $currentUser ? $currentUser->getEffectiveAdminDistrictIds() : [];
@@ -413,16 +414,13 @@ class Index extends Component
                         ->orWhere('phone', 'like', '%' . $this->search . '%');
                 });
             })
-            ->when($this->roleFilter, function ($q) {
+            ->when(in_array($this->roleFilter, ['mitra', 'customer']), function ($q) {
                 $q->where('role', $this->roleFilter);
-            }, function ($q) {
-                // default: show only mitra and customer
-                $q->whereIn('role', ['mitra', 'customer']);
             })
             ->latest()
             ->paginate($this->perPage);
 
-        $cities = City::orderBy('name')->get();
+        $cities = City::getAllCached();
         $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 
         return view('livewire.superadmin.users.index', compact('users', 'cities'))->layout($layout);

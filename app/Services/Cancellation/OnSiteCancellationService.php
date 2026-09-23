@@ -8,6 +8,7 @@ use App\Models\HelpCancelRequest;
 use App\Models\HelpPartnerExclusion;
 use App\Models\User;
 use App\Services\GeoService;
+use App\Services\HelpChatService;
 use App\Services\HelpEscrowService;
 use App\Services\PartnerOnlineService;
 use Carbon\Carbon;
@@ -19,15 +20,18 @@ class OnSiteCancellationService
     protected PartnerOnlineService $onlineService;
     protected HelpEscrowService $escrowService;
     protected GeoService $geoService;
+    protected HelpChatService $chatService;
 
     public function __construct(
         PartnerOnlineService $onlineService,
         HelpEscrowService $escrowService,
-        GeoService $geoService
+        GeoService $geoService,
+        ?HelpChatService $chatService = null
     ) {
         $this->onlineService = $onlineService;
         $this->escrowService = $escrowService;
         $this->geoService    = $geoService;
+        $this->chatService   = $chatService ?? app(HelpChatService::class);
     }
 
     /**
@@ -107,7 +111,7 @@ class OnSiteCancellationService
                     'partner_cancel_reason'       => $reason,
                     'cancel_deadline_at'          => now()->addHours(24),
                     'cancel_evidence_photo'       => $evidencePhotoPath,
-                    'admin_notes'                 => "Mitra #{$mitra->id} mengajukan kendala lapangan (Konsep 2 - Pengerjaan Dimulai): {$reason}. Menunggu klarifikasi Admin ke Customer.",
+                    'admin_notes'                 => "Mitra ({$mitra->name}) mengajukan kendala lapangan (Konsep 2 - Pengerjaan Dimulai): {$reason}. Menunggu klarifikasi Admin ke Customer.",
                 ]);
 
                 $cancelRequest = HelpCancelRequest::create([
@@ -148,6 +152,15 @@ class OnSiteCancellationService
                     'cancel_request_id' => $cancelRequest->id,
                 ]);
 
+                // Kirim notifikasi chat ke ruang obrolan (Konsep 2: kendala saat pengerjaan)
+                $this->chatService->sendPartnerCancellationChat(
+                    $lockedHelp,
+                    $mitra,
+                    $reason,
+                    $notes,
+                    'in_progress'
+                );
+
                 return [
                     'success'           => true,
                     'relisted'          => false,
@@ -185,6 +198,9 @@ class OnSiteCancellationService
             $this->onlineService->releaseBusy($mitra->id, $lockedHelp->id);
             $lockedHelp->addExcludedPartner($mitra->id, "Mitra membatalkan di perjalanan (insiden/kendala): {$reason}");
 
+            // Tambah hitungan pembatalan mitra khusus Konsep 1 (Kendala Perjalanan - Transit)
+            $mitra->increment('konsep1_cancel_count');
+
             // Buat tiket audit untuk Admin Wilayah
             $cancelRequest = HelpCancelRequest::create([
                 'help_id'               => $lockedHelp->id,
@@ -221,6 +237,15 @@ class OnSiteCancellationService
                 'cancel_request_id' => $cancelRequest->id,
                 'moved_km'          => $partnerMovedKm,
             ]);
+
+            // Kirim notifikasi chat ke ruang obrolan (Konsep 1: kendala di perjalanan / transit)
+            $this->chatService->sendPartnerCancellationChat(
+                $lockedHelp,
+                $mitra,
+                $reason,
+                $notes,
+                'transit'
+            );
 
             return [
                 'success'           => true,
@@ -325,6 +350,18 @@ class OnSiteCancellationService
                 'old_partner_id'    => $oldPartnerId,
                 'cancel_request_id' => $cancelRequest->id,
             ]);
+
+            // Kirim notifikasi chat ke mitra lama terkait pergantian mitra
+            $oldMitra = User::find($oldPartnerId);
+            if ($oldMitra) {
+                $this->chatService->sendCustomerSwitchPartnerChat(
+                    $lockedHelp,
+                    $customer,
+                    $oldMitra,
+                    $reason,
+                    $notes
+                );
+            }
 
             return [
                 'success'           => true,
@@ -440,6 +477,19 @@ class OnSiteCancellationService
                 'cancel_request_id' => $cancelRequest->id,
             ]);
 
+            // Kirim pesan chat pengajuan penarikan dari Customer ke Mitra
+            $mitra = $lockedHelp->mitra ?? User::find($lockedHelp->mitra_id);
+            if ($mitra) {
+                $this->chatService->sendCustomerCancellationChat(
+                    $lockedHelp,
+                    $customer,
+                    $mitra,
+                    $reason,
+                    $notes,
+                    'withdraw'
+                );
+            }
+
             return [
                 'success'           => true,
                 'under_review'      => true,
@@ -515,6 +565,18 @@ class OnSiteCancellationService
                         'partner_id' => $partner->id,
                     ]);
 
+                    // Kirim notifikasi respon mitra menyetujui ganti mitra
+                    $customer = $lockedHelp->user ?? User::find($lockedHelp->user_id);
+                    if ($customer) {
+                        $this->chatService->sendPartnerResponseToWithdrawChat(
+                            $lockedHelp,
+                            $partner,
+                            $customer,
+                            true,
+                            $notes
+                        );
+                    }
+
                     return [
                         'success'   => true,
                         'confirmed' => true,
@@ -556,6 +618,18 @@ class OnSiteCancellationService
                     'partner_id' => $partner->id,
                 ]);
 
+                // Kirim notifikasi respon mitra menyetujui penarikan
+                $customer = $lockedHelp->user ?? User::find($lockedHelp->user_id);
+                if ($customer) {
+                    $this->chatService->sendPartnerResponseToWithdrawChat(
+                        $lockedHelp,
+                        $partner,
+                        $customer,
+                        true,
+                        $notes
+                    );
+                }
+
                 return [
                     'success'   => true,
                     'confirmed' => true,
@@ -575,6 +649,18 @@ class OnSiteCancellationService
                 'help_id'    => $lockedHelp->id,
                 'partner_id' => $partner->id,
             ]);
+
+            // Kirim notifikasi penolakan / keberatan mitra ke Customer
+            $customer = $lockedHelp->user ?? User::find($lockedHelp->user_id);
+            if ($customer) {
+                $this->chatService->sendPartnerResponseToWithdrawChat(
+                    $lockedHelp,
+                    $partner,
+                    $customer,
+                    false,
+                    $notes
+                );
+            }
 
             return [
                 'success'   => true,

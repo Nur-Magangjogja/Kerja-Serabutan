@@ -123,6 +123,8 @@ new #[Layout('layouts.guest')] class extends Component {
             }
 
             $this->preview_url = asset('storage/' . $path);
+            $this->reset('selfie_photo');
+            $this->iteration++;
         }
     }
 
@@ -223,7 +225,7 @@ new #[Layout('layouts.guest')] class extends Component {
             <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Unggah foto selfie sambil memegang e-KTP Anda untuk verifikasi keaslian akun.</p>
 
             <!-- Hidden File Input (Always in DOM with key to allow clean re-upload) -->
-            <input wire:model="selfie_photo" id="selfie_photo" type="file"
+            <input wire:model.live="selfie_photo" id="selfie_photo" type="file"
                 accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg"
                 class="hidden"
                 wire:key="selfie-photo-input-{{ $iteration }}">

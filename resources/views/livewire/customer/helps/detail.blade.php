@@ -8,6 +8,8 @@
             customerLat: {{ $help->latitude ?? -6.2088 }},
             customerLng: {{ $help->longitude ?? 106.8456 }},
             partnerName: '{{ $help->mitra->name ?? "Mitra" }}',
+            partnerPlate: '{{ $help->isPickup() ? ($help->mitra?->vehicle_plate_number ?? "") : "" }}',
+            partnerVehicle: '{{ $help->isPickup() ? ($help->mitra?->vehicle_display_name ?? "") : "" }}',
             location: '{{ $help->location ?? "Tujuan" }}'
         }
     }"
@@ -183,7 +185,7 @@
             </div>
         @endif
 
-        {{-- Review Banner (Khusus Status Pengajuan Batal / Kendala Lapangan oleh Mitra - Konsep 2) --}}
+        {{-- Review Banner (Khusus Status Pengajuan Batal / Kendala Lapangan oleh Mitra - ) --}}
         @if($help->status === 'partner_cancel_requested')
             @php
                 $effectiveExpiry = $help->effective_expires_at;
@@ -278,45 +280,70 @@
 
             {{-- Partner Info --}}
             @if($help->mitra)
-                <div class="p-3.5 bg-gray-50/80 dark:bg-gray-750/70 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-gray-700/60 shadow-2xs">
-                    <div class="flex items-center gap-3 min-w-0">
-                        @if($help->mitra->profile_photo ?? $help->mitra->photo)
-                            <img src="{{ asset('storage/' . ($help->mitra->profile_photo ?? $help->mitra->photo)) }}" alt="{{ $help->mitra->name }}" class="w-11 h-11 rounded-full object-cover border-2 border-sky-200 dark:border-sky-800 shrink-0">
-                        @else
-                            <div class="w-11 h-11 rounded-full bg-sky-600 flex items-center justify-center text-white font-bold shrink-0 shadow-2xs">
-                                {{ strtoupper(substr($help->mitra->name ?? 'M', 0, 1)) }}
-                            </div>
-                        @endif
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-1.5">
-                                <h3 class="font-bold text-sm text-gray-900 dark:text-white truncate">{{ $help->mitra->name ?? 'Mitra' }}</h3>
-                                <span class="text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded-md">Mitra</span>
-                            </div>
-                            <div class="flex items-center gap-1.5 mt-0.5">
-                                <div class="flex items-center gap-0.5 text-amber-500">
-                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
-                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                    </svg>
-                                    @php
-                                        $mitra = $help->mitra;
-                                        $avgRating = $mitra ? ($mitra->mitra_average_rating ?? ($mitra->rating ?? 0)) : 0;
-                                        $ratingCount = $mitra ? ($mitra->mitra_rating_count ?? null) : null;
-                                    @endphp
-                                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ number_format($avgRating, 1) }}</span>
+                <div class="p-3.5 bg-gray-50/80 dark:bg-gray-750/70 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-2xs space-y-2.5">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            @if($help->mitra->profile_photo ?? $help->mitra->photo)
+                                <img src="{{ asset('storage/' . ($help->mitra->profile_photo ?? $help->mitra->photo)) }}" alt="{{ $help->mitra->name }}" class="w-11 h-11 rounded-full object-cover border-2 border-sky-200 dark:border-sky-800 shrink-0">
+                            @else
+                                <div class="w-11 h-11 rounded-full bg-sky-600 flex items-center justify-center text-white font-bold shrink-0 shadow-2xs">
+                                    {{ strtoupper(substr($help->mitra->name ?? 'M', 0, 1)) }}
                                 </div>
-                                @if($ratingCount)
-                                    <span class="text-[11px] text-gray-400 dark:text-gray-400">({{ $ratingCount }} ulasan)</span>
-                                @endif
+                            @endif
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                    <h3 class="font-bold text-sm text-gray-900 dark:text-white truncate">{{ $help->mitra->name ?? 'Mitra' }}</h3>
+                                    <span class="text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded-md">Mitra</span>
+                                </div>
+                                <div class="flex items-center gap-1.5 mt-0.5">
+                                    <div class="flex items-center gap-0.5 text-amber-500">
+                                        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                        @php
+                                            $mitra = $help->mitra;
+                                            $avgRating = $mitra ? ($mitra->mitra_average_rating ?? ($mitra->rating ?? 0)) : 0;
+                                            $ratingCount = $mitra ? ($mitra->mitra_rating_count ?? null) : null;
+                                        @endphp
+                                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ number_format($avgRating, 1) }}</span>
+                                    </div>
+                                    @if($ratingCount)
+                                        <span class="text-[11px] text-gray-400 dark:text-gray-400">({{ $ratingCount }} ulasan)</span>
+                                    @endif
+                                </div>
                             </div>
                         </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <a href="{{ route('customer.chat', $help->id) }}" wire:navigate class="w-10 h-10 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-sky-50 dark:hover:bg-gray-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-2xs text-gray-700 dark:text-gray-200 cursor-pointer">
+                                <svg class="w-5 h-5 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                </svg>
+                            </a>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <a href="{{ route('customer.chat', $help->id) }}" wire:navigate class="w-10 h-10 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-sky-50 dark:hover:bg-gray-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-2xs text-gray-700 dark:text-gray-200 cursor-pointer">
-                            <svg class="w-5 h-5 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                            </svg>
-                        </a>
-                    </div>
+
+                    {{-- Informasi Kendaraan Khusus Layanan Antar & Jemput --}}
+                    @if($help->isPickup())
+                        <div class="pt-2.5 border-t border-gray-200/60 dark:border-gray-700/60 flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 flex items-center justify-center text-xs shrink-0 shadow-2xs">
+                                    🛵
+                                </span>
+                                <div class="min-w-0">
+                                    <div class="text-[10px] text-gray-400 dark:text-gray-400 font-semibold uppercase tracking-wider">Kendaraan Mitra</div>
+                                    <div class="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">
+                                        {{ $help->mitra->vehicle_display_name }}
+                                    </div>
+                                </div>
+                            </div>
+                            @if(!empty($help->mitra->vehicle_plate_number))
+                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-zinc-900 dark:bg-zinc-950 text-white rounded-lg border border-zinc-700 shadow-xs">
+                                    <span class="text-[9px] font-bold text-amber-400 font-mono tracking-wide">PLAT</span>
+                                    <span class="font-mono font-black text-xs tracking-wider">{{ $help->mitra->vehicle_plate_number }}</span>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
                 </div>
             @endif
 
@@ -333,6 +360,23 @@
 
                 {{-- Detail Grid Pills --}}
                 <div class="grid grid-cols-2 gap-2 text-xs">
+                    @if($help->isPickup() && $help->mitra)
+                        <div class="col-span-2 p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-base shrink-0">🛵</span>
+                                <div class="min-w-0">
+                                    <span class="text-[10px] font-semibold text-amber-900/80 dark:text-amber-300/80 block">Kendaraan Rekan Jasa:</span>
+                                    <span class="font-bold text-xs text-gray-900 dark:text-white truncate block">{{ $help->mitra->vehicle_display_name }}</span>
+                                </div>
+                            </div>
+                            @if(!empty($help->mitra->vehicle_plate_number))
+                                <div class="px-2 py-0.5 bg-black text-white dark:bg-zinc-900 rounded font-mono font-bold text-xs tracking-wider border border-zinc-700 shrink-0">
+                                    {{ $help->mitra->vehicle_plate_number }}
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+
                     @if(!empty($help->equipment_provided))
                         <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750/70 border border-gray-100 dark:border-gray-700/60">
                             <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-400 block mb-0.5">Perlengkapan:</span>
@@ -472,7 +516,7 @@
             @endif
         </div>
 
-        {{-- Live Dynamic Travel ETA & Progress Card (Konsep 2) --}}
+        {{-- Live Dynamic Travel ETA & Progress Card  --}}
         @if($help->mitra_id && in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived']))
             @php
                 $travelProgress = app(\App\Services\HelpScheduleService::class)->getLiveTravelProgress($help);
@@ -547,6 +591,29 @@
                             </span>
                         </div>
                     </div>
+
+                    {{-- Identitas Kendaraan & Penjemput --}}
+                    @if($help->isPickup() && $help->mitra)
+                        <div class="bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 rounded-xl p-3 flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 flex items-center justify-center text-sm shrink-0 shadow-2xs">
+                                    🛵
+                                </div>
+                                <div class="min-w-0">
+                                    <span class="text-[10px] text-amber-900/70 dark:text-amber-300/70 font-semibold block uppercase tracking-wider">Mitra & Kendaraan:</span>
+                                    <span class="text-xs font-bold text-gray-900 dark:text-white truncate block">
+                                        {{ $help->mitra->name }} • {{ $help->mitra->vehicle_display_name }}
+                                    </span>
+                                </div>
+                            </div>
+                            @if(!empty($help->mitra->vehicle_plate_number))
+                                <div class="px-2.5 py-1 bg-black dark:bg-zinc-900 text-white rounded-lg font-mono font-black text-xs tracking-wider border border-zinc-700 shadow-xs shrink-0 text-center">
+                                    <span class="block text-[8px] text-amber-400 leading-none mb-0.5">PLAT NO</span>
+                                    <span>{{ $help->mitra->vehicle_plate_number }}</span>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
 
                     {{-- Traffic Condition Bar (Deteksi Evaluasi 10 Menit) --}}
                     @if($help->status === 'partner_on_the_way')
@@ -846,7 +913,7 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
-                                <h4 class="text-xs sm:text-sm font-bold text-purple-950 dark:text-purple-100">Laporan Aduan ({{ $existingReport->id }})</h4>
+                                <h4 class="text-xs sm:text-sm font-bold text-purple-950 dark:text-purple-100">Laporan Aduan</h4>
                                 <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full {{ $existingReport->status === 'resolved' ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300' }}">
                                     {{ $existingReport->refund_status === 'approved' ? 'Refund Disetujui' : ucfirst($existingReport->status) }}
                                 </span>
@@ -899,7 +966,7 @@
                             <div class="flex items-center gap-2">
                                 <span class="text-base">⚠️</span>
                                 <div>
-                                    <span class="font-bold text-amber-950 dark:text-amber-200 block">Laporan Aduan Sedang Ditinjau Admin (Laporan #{{ $this->activeReport->id }})</span>
+                                    <span class="font-bold text-amber-950 dark:text-amber-200 block">Laporan Aduan Sedang Ditinjau Admin</span>
                                     <span class="text-[11px] text-amber-800 dark:text-amber-300">Status: {{ ucfirst($this->activeReport->status) }}</span>
                                 </div>
                             </div>
@@ -1389,6 +1456,25 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- Vehicle Info Bar in Modal --}}
+                @if($help->isPickup() && $help->mitra)
+                    <div class="px-4 py-2 bg-amber-50/90 dark:bg-amber-950/40 border-b border-amber-200/80 dark:border-amber-800/60 flex items-center justify-between text-xs shrink-0">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-sm">🛵</span>
+                            <div class="min-w-0">
+                                <span class="font-bold text-gray-900 dark:text-white truncate block">
+                                    {{ $help->mitra->name }} • {{ $help->mitra->vehicle_display_name }}
+                                </span>
+                            </div>
+                        </div>
+                        @if(!empty($help->mitra->vehicle_plate_number))
+                            <span class="px-2 py-0.5 bg-black text-white dark:bg-zinc-900 rounded font-mono font-bold text-[11px] tracking-wider border border-zinc-700 shrink-0">
+                                {{ $help->mitra->vehicle_plate_number }}
+                            </span>
+                        @endif
+                    </div>
+                @endif
 
                 {{-- Map Container --}}
                 <div class="relative shrink-0" style="height: 400px;" wire:ignore>

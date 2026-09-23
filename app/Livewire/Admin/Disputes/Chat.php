@@ -20,7 +20,7 @@ class Chat extends Component
 
     public function mount(HelpCancelRequest $cancelRequest)
     {
-        $this->cancelRequest = $cancelRequest->load([
+        $this->cancelRequest = $cancelRequest->loadMissing([
             'help.user',
             'help.mitra',
             'help.city',
@@ -30,6 +30,12 @@ class Chat extends Component
             'customer',
             'reviewedBy'
         ]);
+
+        if (!$this->cancelRequest->relationLoaded('help') || !$this->cancelRequest->help) {
+            if ($this->cancelRequest->help_id) {
+                $this->cancelRequest->setRelation('help', \App\Models\Help::with(['user', 'mitra', 'city', 'district'])->find($this->cancelRequest->help_id));
+            }
+        }
 
         $admin = auth()->user();
         if ($admin && $admin->role === 'admin') {
@@ -56,6 +62,10 @@ class Chat extends Component
 
     public function markAsRead()
     {
+        if ($this->activeTab === 'task_log') {
+            return;
+        }
+
         $help = $this->cancelRequest->help;
         $customerId = $this->cancelRequest->customer_id ?? $help?->user_id;
         $partnerId = $this->cancelRequest->partner_id ?? $help?->mitra_id;
@@ -117,11 +127,15 @@ class Chat extends Component
     public function render()
     {
         $help = $this->cancelRequest->help;
+        if (!$help && $this->cancelRequest->help_id) {
+            $help = \App\Models\Help::with(['user', 'mitra', 'city', 'district'])->find($this->cancelRequest->help_id);
+        }
+
         $customer = $help?->user ?? $this->cancelRequest->customer;
         $partner = $help?->mitra ?? $this->cancelRequest->partner;
 
-        $customerId = $customer?->id;
-        $partnerId = $partner?->id;
+        $customerId = $customer?->id ?? $this->cancelRequest->customer_id;
+        $partnerId = $partner?->id ?? $this->cancelRequest->partner_id;
 
         // Ambil semua pesan investigasi pembatalan
         $allCancelMessages = HelpCancelMessage::where('help_cancel_request_id', $this->cancelRequest->id)
@@ -131,9 +145,10 @@ class Chat extends Component
 
         // Ambil riwayat chat tugas terdahulu (jika ada)
         $historicalTaskChats = collect();
-        if ($help) {
-            $historicalTaskChats = ChatModel::where('help_id', $help->id)
-                ->with(['mitra', 'customer'])
+        $helpId = $this->cancelRequest->help_id ?? $help?->id;
+        if ($helpId) {
+            $historicalTaskChats = ChatModel::where('help_id', $helpId)
+                ->with(['mitra', 'customer', 'sender'])
                 ->oldest()
                 ->get();
         }
@@ -166,11 +181,16 @@ class Chat extends Component
         $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 
         return view('livewire.admin.disputes.chat', [
+            'cancelRequest'       => $this->cancelRequest,
+            'activeTab'           => $this->activeTab,
+            'photo'               => $this->photo,
             'messages'            => $messages,
             'allCancelMessages'   => $allCancelMessages,
             'historicalTaskChats' => $historicalTaskChats,
             'customer'            => $customer,
             'partner'             => $partner,
+            'customerId'          => $customerId,
+            'partnerId'           => $partnerId,
             'help'                => $help,
             'unreadCustomer'      => $unreadCustomer,
             'unreadMitra'         => $unreadMitra,

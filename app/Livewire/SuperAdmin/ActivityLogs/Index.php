@@ -20,7 +20,6 @@ class Index extends Component
     // Filter Direktori Pengguna
     public $userSearch = '';
     public $userRoleFilter = 'all'; // all, super_admin, admin, customer, mitra
-    public $userCityId = 'all';
     public $userPerPage = 12;
 
     // Filter Khusus Pengguna Terpilih (saat klik dari direktori)
@@ -49,7 +48,6 @@ class Index extends Component
         'selectedUserId'     => ['except' => null],
         'userSearch'         => ['except' => ''],
         'userRoleFilter'     => ['except' => 'all'],
-        'userCityId'         => ['except' => 'all'],
         'search'             => ['except' => ''],
         'roleFilter'         => ['except' => 'all'],
         'actionFilter'       => ['except' => 'all'],
@@ -101,14 +99,9 @@ class Index extends Component
         $this->resetPage('usersPage');
     }
 
-    public function updatingUserCityId()
-    {
-        $this->resetPage('usersPage');
-    }
-
     public function clearUserFilters()
     {
-        $this->reset(['userSearch', 'userRoleFilter', 'userCityId']);
+        $this->reset(['userSearch', 'userRoleFilter']);
         $this->resetPage('usersPage');
     }
 
@@ -254,13 +247,6 @@ class Index extends Component
             }
         }
 
-        if ($this->userCityId !== 'all') {
-            $userQuery->where(function($q) {
-                $q->where('district_id', $this->userCityId)
-                  ->orWhere('city_id', $this->userCityId);
-            });
-        }
-
         if (!empty($this->userSearch)) {
             $us = trim($this->userSearch);
             $userQuery->where(function ($q) use ($us) {
@@ -342,22 +328,29 @@ class Index extends Component
             ->orderBy('action')
             ->pluck('action');
 
+        $hasCustomFilters = !empty($this->search)
+            || $this->roleFilter !== 'all'
+            || $this->actionFilter !== 'all'
+            || !empty($this->dateFrom)
+            || !empty($this->dateTo)
+            || !empty($this->selectedUserId);
+
+        $isTerritoryAll = !isset($saTerritory) || ($saTerritory['type'] ?? 'all') === 'all';
+        $totalLogs = (!$hasCustomFilters && $isTerritoryAll) ? $logs->total() : ActivityLog::count();
+
         $stats = [
-            'total_logs'    => ActivityLog::count(),
+            'total_logs'    => $totalLogs,
             'today_logs'    => ActivityLog::whereDate('created_at', today())->count(),
             'admin_logs'    => ActivityLog::whereHas('user', fn($q) => $q->whereIn('role', ['admin', 'super_admin', 'superadmin']))->count(),
             'customer_logs' => ActivityLog::whereHas('user', fn($q) => $q->where('role', 'customer'))->count(),
             'mitra_logs'    => ActivityLog::whereHas('user', fn($q) => $q->where('role', 'mitra'))->count(),
         ];
 
-        $cities = City::where('is_active', true)->orderBy('name')->get();
-
         return view('livewire.superadmin.activity-logs.index', [
             'users'   => $users,
             'logs'    => $logs,
             'actions' => $actions,
             'stats'   => $stats,
-            'cities'  => $cities,
         ]);
     }
 }

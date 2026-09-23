@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\AppSetting;
+use App\Models\City;
+use App\Models\District;
 use App\Models\Help;
 use App\Models\User;
 use App\Models\UserBalance;
@@ -32,6 +34,27 @@ class HelpCreationService
     public function createHelp(User $customer, array $data): Help
     {
         $serviceType = $data['service_type'] ?? Help::SERVICE_TYPE_ON_SITE;
+
+        // Guard: Customer dalam status sanksi / pembatasan moderasi
+        if ($customer->isShadowBanned() || (int) $customer->warning_level >= 3 || $customer->status === 'blocked') {
+            throw new \RuntimeException("Akun Anda saat ini dibatasi dari membuat pesanan bantuan baru karena dalam status sanksi moderasi / SP 3.");
+        }
+
+        // 0. Benteng Terakhir — Validasi Status Wilayah Aktif
+        if (!empty($data['city_id'])) {
+            $city = City::find($data['city_id']);
+            if (!$city || !$city->is_active) {
+                $cityName = $city ? $city->name : 'wilayah yang dipilih';
+                throw new \RuntimeException("Wilayah \"{$cityName}\" sedang dinonaktifkan sementara dan tidak menerima permintaan bantuan baru.");
+            }
+        }
+
+        if (!empty($data['district_id'])) {
+            $district = District::find($data['district_id']);
+            if ($district && !$district->is_active) {
+                throw new \RuntimeException("Kecamatan \"{$district->name}\" sedang dinonaktifkan sementara dan tidak menerima permintaan bantuan baru.");
+            }
+        }
 
         // 1. Validasi Jarak Maksimal untuk Pickup/Delivery
         $routeDistanceKm = (float) ($data['route_distance_km'] ?? $data['service_route_distance_km'] ?? 0.0);

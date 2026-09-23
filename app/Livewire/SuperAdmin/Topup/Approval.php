@@ -28,12 +28,10 @@ class Approval extends Component
     public $cancellationReason = '';
     public $filterStatus = 'waiting_approval';
     public $search = '';
-    public $cityFilter = 'all';
     
     protected $queryString = [
         'filterStatus' => ['except' => 'waiting_approval'],
         'search' => ['except' => ''],
-        'cityFilter' => ['except' => 'all'],
     ];
 
     protected $listeners = [
@@ -45,11 +43,6 @@ class Approval extends Component
     ];
 
     public function updatingSearch()
-    {
-        $this->resetPage();
-    }
-
-    public function updatingCityFilter()
     {
         $this->resetPage();
     }
@@ -122,7 +115,7 @@ class Approval extends Component
                 ActivityLog::create([
                     'user_id' => auth()->id(),
                     'action' => 'topup_approved',
-                    'description' => 'Menyetujui top-up #' . ($transaction->request_code ?? $transaction->id) . ' milik ' . ($transaction->user->name ?? 'Customer') . ' sebesar Rp ' . number_format($transaction->amount, 0, ',', '.'),
+                    'description' => 'Menyetujui top-up ' . ($transaction->request_code ? '#' . $transaction->request_code . ' ' : '') . 'milik ' . ($transaction->user->name ?? 'Customer') . ' sebesar Rp ' . number_format($transaction->amount, 0, ',', '.'),
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                     'properties' => [
@@ -190,7 +183,7 @@ class Approval extends Component
                 ActivityLog::create([
                     'user_id' => auth()->id(),
                     'action' => 'topup_rejected',
-                    'description' => 'Menolak top-up #' . ($transaction->request_code ?? $transaction->id) . ' milik ' . ($transaction->user->name ?? 'Customer') . '. Alasan: ' . $this->rejectionReason,
+                    'description' => 'Menolak top-up ' . ($transaction->request_code ? '#' . $transaction->request_code . ' ' : '') . 'milik ' . ($transaction->user->name ?? 'Customer') . '. Alasan: ' . $this->rejectionReason,
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                 ]);
@@ -261,7 +254,7 @@ class Approval extends Component
                 'user_id' => $transaction->user_id,
                 'amount' => $amount,
                 'type' => 'deduction',
-                'description' => 'Penarikan/Koreksi Saldo: Top-Up #' . ($transaction->request_code ?? $transaction->id) . ' Dibatalkan (Alasan: ' . $this->cancellationReason . ')',
+                'description' => 'Penarikan/Koreksi Saldo: Top-Up ' . ($transaction->request_code ? '#' . $transaction->request_code . ' ' : '') . 'Dibatalkan (Alasan: ' . $this->cancellationReason . ')',
                 'reference_id' => $transaction->id,
                 'status' => 'completed',
                 'processed_at' => now(),
@@ -278,7 +271,7 @@ class Approval extends Component
                 ActivityLog::create([
                     'user_id' => auth()->id(),
                     'action' => 'topup_approval_cancelled',
-                    'description' => 'Membatalkan approval top-up #' . ($transaction->request_code ?? $transaction->id) . ' milik ' . ($customer->name ?? 'Customer') . ' (Rp ' . number_format($amount, 0, ',', '.') . '). Alasan: ' . $this->cancellationReason,
+                    'description' => 'Membatalkan approval top-up ' . ($transaction->request_code ? '#' . $transaction->request_code . ' ' : '') . 'milik ' . ($customer->name ?? 'Customer') . ' (Rp ' . number_format($amount, 0, ',', '.') . '). Alasan: ' . $this->cancellationReason,
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent(),
                     'properties' => [
@@ -361,10 +354,6 @@ class Approval extends Component
             $query->where('status', 'rejected');
         }
 
-        if ($this->cityFilter !== 'all') {
-            $query->whereHas('user', fn($q) => $q->where('city_id', (int) $this->cityFilter));
-        }
-
         if (!empty(trim($this->search))) {
             $searchTerm = '%' . trim($this->search) . '%';
             $query->where(function ($q) use ($searchTerm) {
@@ -384,12 +373,10 @@ class Approval extends Component
             });
         }
 
-        $cities = \App\Models\City::orderBy('name')->get();
         $transactions = $query->orderBy('created_at', 'desc')->paginate(15);
 
         return view('livewire.superadmin.topup.approval', [
             'transactions' => $transactions,
-            'cities' => $cities,
             'totalPending' => $totalPending,
             'totalCompleted' => $totalCompleted,
             'totalCancelled' => $totalCancelled,

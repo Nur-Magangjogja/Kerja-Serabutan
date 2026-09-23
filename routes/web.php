@@ -144,10 +144,13 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
                 'partnerLng' => $help->partner_current_lng,
                 'customerLat' => $help->latitude,
                 'customerLng' => $help->longitude,
-                'partnerName' => $help->mitra?->name ?? null,
-                'updated_at' => $help->updated_at?->toDateTimeString(),
+                'partnerName'        => $help->mitra?->name ?? null,
+                'partnerPlateNumber' => $help->isPickup() ? ($help->mitra?->vehicle_plate_number ?? null) : null,
+                'partnerVehicle'     => $help->isPickup() ? ($help->mitra?->vehicle_display_name ?? null) : null,
+                'isPickup'           => $help->isPickup(),
+                'updated_at'         => $help->updated_at?->toDateTimeString(),
             ]);
-        })->name('customer.helps.tracking');
+        })->name('helps.tracking');
 
         // Lightweight JSON endpoint to fetch help details
         Route::get('/helps/{id}/json', function ($id) {

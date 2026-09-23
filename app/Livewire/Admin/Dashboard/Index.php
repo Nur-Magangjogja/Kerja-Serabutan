@@ -347,7 +347,7 @@ class Index extends Component
 
         // 6. Latest 6 Helps in Selected Period
         $latestHelps = (clone $helpQuery)
-            ->with(['customer', 'user', 'district', 'city'])
+            ->with(['user', 'district', 'city'])
             ->latest()
             ->take(6)
             ->get();

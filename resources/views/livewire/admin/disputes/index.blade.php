@@ -81,10 +81,6 @@
                             class="px-3.5 py-2 rounded-xl text-xs font-bold transition {{ $status === 'approved' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white dark:bg-black border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900' }}">
                         Disetujui
                     </button>
-                    <button wire:click="$set('status', 'rejected')" 
-                            class="px-3.5 py-2 rounded-xl text-xs font-bold transition {{ $status === 'rejected' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white dark:bg-black border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900' }}">
-                        Ditolak
-                    </button>
                     <button wire:click="$set('status', 'all')" 
                             class="px-3.5 py-2 rounded-xl text-xs font-bold transition {{ $status === 'all' ? 'bg-primary-600 text-white shadow-sm' : 'bg-white dark:bg-black border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900' }}">
                         Semua Status
@@ -260,11 +256,15 @@
                                             @endphp
                                             @if($isReqKonsep2)
                                                 <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800" title="Pembatalan Tahap Pengerjaan">
-                                                    Mitra (Konsep 2)
+                                                    Mitra (Saat Pengerjaan)
                                                 </span>
                                             @else
-                                                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800" title="Pembatalan Kendala Perjalanan">
-                                                    Mitra (Konsep 1)
+                                                @php
+                                                    $pId = $req->partner_id ?: $req->help?->mitra_id;
+                                                    $k1Count = $pId ? ($konsep1PartnerCounts[$pId] ?? 1) : 1;
+                                                @endphp
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold {{ $k1Count >= 3 ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-700 ring-1 ring-rose-500/20' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800' }}" title="Pembatalan Kendala Perjalanan (Total akumulasi mitra: {{ $k1Count }}x)">
+                                                    Mitra (Kendala Perjalanan) • Ke-{{ $k1Count }}x
                                                 </span>
                                             @endif
                                         @endif
@@ -400,7 +400,7 @@
                                                         <div class="flex items-center justify-between flex-wrap gap-1.5 mb-1.5">
                                                             <div class="flex items-center gap-2 flex-wrap">
                                                                 <span class="font-extrabold text-[11px] {{ $isCurrentRow ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300' }}">
-                                                                    Log #{{ $logNumber }} • {{ $log->created_at ? $log->created_at->translatedFormat('d M Y, H:i') : '-' }} WIB
+                                                                    Aktivitas • {{ $log->created_at ? $log->created_at->translatedFormat('d M Y, H:i') : '-' }} WIB
                                                                 </span>
                                                                 @if($isCurrentRow)
                                                                     <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-primary-600 text-white">
@@ -637,15 +637,23 @@
                     <div class="min-w-0 flex-1 pr-2">
                         <div class="flex items-center gap-2 flex-wrap">
                             <h3 class="font-bold text-base sm:text-lg text-gray-900 dark:text-white leading-tight">
-                                Audit Pembatalan & Sanksi SP
+                                {{ $selectedCancelRequest->status === 'pending' ? 'Audit Pembatalan & Sanksi SP' : 'Detail Log Audit Pembatalan' }}
                             </h3>
+                            @if($selectedCancelRequest->status !== 'pending')
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shrink-0">
+                                    ✓ Selesai Diaudit
+                                </span>
+                            @endif
                             @if($isKonsep2)
                                 <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shrink-0">
-                                    🛵 Mitra (Konsep 2 - In Progress)
+                                    🛵 Mitra (Saat Pengerjaan - In Progress)
                                 </span>
                             @elseif($isPartner)
                                 <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-black text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shrink-0">
-                                    🛵 Mitra (Konsep 1 - Transit)
+                                    🛵 Mitra (Kendala Perjalanan - Transit)
+                                    @if($partnerKonsep1CancelCount > 0)
+                                        <span class="font-black text-amber-900 dark:text-amber-200">• Ke-{{ $partnerKonsep1CancelCount }}x</span>
+                                    @endif
                                 </span>
                             @else
                                 <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-black text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
@@ -714,15 +722,21 @@
                             </div>
 
                             {{-- 4. Aktivitas Chat --}}
-                            <div class="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl p-2.5 text-center flex flex-col justify-center min-w-0">
-                                <span class="text-[10px] text-gray-500 dark:text-gray-400 block font-medium">Aktivitas Chat</span>
+                            <a href="{{ route($routePrefix . 'cancellations.chat', ['cancelRequest' => $selectedCancelRequest->id, 'tab' => 'task_log']) }}" 
+                               wire:navigate
+                               title="Buka Log Chat Percakapan Pesanan Awal"
+                               class="bg-white dark:bg-black border border-purple-200 dark:border-purple-800/80 hover:border-purple-400 dark:hover:border-purple-600 rounded-xl p-2.5 text-center flex flex-col justify-center min-w-0 transition hover:shadow-xs group cursor-pointer">
+                                <span class="text-[10px] text-gray-500 dark:text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 block font-medium flex items-center justify-center gap-1">
+                                    <span>Aktivitas Chat</span>
+                                    <svg class="w-2.5 h-2.5 opacity-60 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                </span>
                                 <span class="text-xs sm:text-sm font-black text-purple-600 dark:text-purple-400 block mt-0.5 truncate">
                                     {{ $selectedCancelRequest->chat_messages_count ?? 0 }} Pesan
                                 </span>
                                 <span class="text-[9px] sm:text-[10px] text-gray-400 dark:text-gray-500 block mt-0.5 truncate" title="{{ $selectedCancelRequest->partner_last_chat_at ? $selectedCancelRequest->partner_last_chat_at->diffForHumans() : 'Belum balas' }}">
                                     {{ $selectedCancelRequest->partner_last_chat_at ? 'Mitra aktif' : 'Mitra pasif' }}
                                 </span>
-                            </div>
+                            </a>
                         </div>
 
                         {{-- Status Respons Konfirmasi Mitra --}}
@@ -803,7 +817,7 @@
                             <div class="flex items-center gap-2">
                                 <span class="text-sm">📜</span>
                                 <span class="font-bold text-gray-900 dark:text-gray-100 text-xs">
-                                    Log Aktivitas Pembatalan Tugas (ID: #{{ $selectedCancelRequest->help_id }})
+                                    Log Aktivitas Pembatalan Tugas
                                 </span>
                             </div>
                             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black {{ $totalLogs > 1 ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700 animate-pulse' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' }}">
@@ -828,7 +842,7 @@
                                     <div class="flex items-center justify-between flex-wrap gap-1 mb-1">
                                         <div class="flex items-center gap-1.5 flex-wrap">
                                             <span class="font-extrabold {{ $isCurrent ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300' }}">
-                                                Log #{{ $logNum }} • {{ $cLog->created_at ? $cLog->created_at->translatedFormat('d M Y, H:i') : '-' }} WIB
+                                                Aktivitas • {{ $cLog->created_at ? $cLog->created_at->translatedFormat('d M Y, H:i') : '-' }} WIB
                                             </span>
                                             @if($isCurrent)
                                                 <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-primary-600 text-white">
@@ -944,16 +958,147 @@
                                 </div>
                             </div>
                         </div>
+
+                        {{-- Indikator Riwayat Khusus Pembatalan Konsep 1 (Kendala Perjalanan) Mitra --}}
+                        @if(!$isKonsep2 && $partner)
+                            <div class="p-3 rounded-2xl border text-xs space-y-2 {{ $partnerKonsep1CancelCount >= 3 ? 'bg-rose-50/70 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/80 text-rose-950 dark:text-rose-200' : 'bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/80 dark:border-amber-800/60 text-amber-950 dark:text-amber-200' }}">
+                                <div class="flex items-center justify-between flex-wrap gap-1.5">
+                                    <span class="font-bold flex items-center gap-1.5 text-xs">
+                                        <span>{{ $partnerKonsep1CancelCount >= 3 ? '🚨' : '🛵' }}</span>
+                                        <span>Riwayat Pembatalan Konsep 1 (Kendala Perjalanan / Transit)</span>
+                                    </span>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black {{ $partnerKonsep1CancelCount >= 3 ? 'bg-rose-100 text-rose-900 dark:bg-rose-900 dark:text-rose-200 border border-rose-300' : 'bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-200 border border-amber-300' }}">
+                                        Total: {{ $partnerKonsep1CancelCount }}x Pembatalan
+                                    </span>
+                                </div>
+                                <p class="text-[11px] leading-relaxed opacity-90">
+                                    Mitra <strong>{{ $partner->name }}</strong> tercatat telah melakukan pembatalan saat perjalanan sebanyak <strong>{{ $partnerKonsep1CancelCount }} kali</strong> sepanjang riwayat akun.
+                                </p>
+                                @if($partnerKonsep1CancelCount >= 3)
+                                    <div class="p-2 bg-white dark:bg-black/60 rounded-xl border border-rose-200 dark:border-rose-800/60 text-[11px] text-rose-700 dark:text-rose-300 flex items-start gap-1.5 font-medium">
+                                        <span class="shrink-0 font-bold">💡</span>
+                                        <span><strong>Rekomendasi Admin:</strong> Frekuensi pembatalan di perjalanan sudah tergolong sering (≥ 3x). Pertimbangkan pemberian sanksi SP (SP 1 / SP 2) pada form audit di bawah jika alasan kendala dinilai berulang / tidak wajar.</span>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
                     </div>
 
-                    {{-- Pilihan Keputusan & Penyelesaian Berdasarkan Pengaju & Status Otomatis --}}
-                    <div class="space-y-3 pt-1">
+                    {{-- Rekapitulasi Hasil Audit (Jika Sudah Selesai) vs Form Input Keputusan (Jika Masih Pending) --}}
+                    @if($selectedCancelRequest->status !== 'pending')
+                        <div class="space-y-3 pt-1">
+                            <div class="p-4 bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl space-y-3 shadow-xs">
+                                {{-- Header Status & Petugas Audit --}}
+                                <div class="flex items-center justify-between border-b border-emerald-200/80 dark:border-emerald-800/60 pb-3 flex-wrap gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xl">✅</span>
+                                        <div>
+                                            <h4 class="font-extrabold text-xs sm:text-sm text-emerald-900 dark:text-emerald-200">
+                                                Tiket Pembatalan Telah Selesai Diaudit
+                                            </h4>
+                                            <p class="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+                                                Diverifikasi oleh <strong class="font-bold">{{ $selectedCancelRequest->reviewedBy?->name ?? 'Sistem / Admin' }}</strong>
+                                                @if($selectedCancelRequest->reviewed_at)
+                                                    • {{ $selectedCancelRequest->reviewed_at->translatedFormat('d M Y, H:i') }} WIB
+                                                @endif
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-600 text-white uppercase tracking-wider shadow-2xs">
+                                        {{ strtoupper($selectedCancelRequest->status) }}
+                                    </span>
+                                </div>
+
+                                {{-- 1. Keputusan Penyelesaian (Settlement) --}}
+                                <div class="bg-white dark:bg-black rounded-xl p-3 border border-emerald-100 dark:border-emerald-900/50 space-y-2">
+                                    <div class="flex items-center justify-between flex-wrap gap-1">
+                                        <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Metode Penyelesaian Saldo</span>
+                                        @php
+                                            $stType = $selectedCancelRequest->settlement_type;
+                                            $stLabels = [
+                                                'full_refund'           => '100% Full Refund ke Customer',
+                                                'partial_settlement'    => 'Kompensasi / Bagi Saldo (Partial)',
+                                                'item_settled'          => 'Ganti Uang Belanja Barang Mitra',
+                                                'relist_pool'           => 'Lepas Mitra & Kembalikan ke Pool',
+                                                'partner_unlinked_held' => 'Mitra Dibebaskan & Tugas Ditahan',
+                                            ];
+                                        @endphp
+                                        <span class="px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
+                                            {{ $stLabels[$stType] ?? strtoupper(str_replace('_', ' ', $stType ?? 'Selesai')) }}
+                                        </span>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                                        <div class="p-2.5 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200/70 dark:border-gray-800">
+                                            <span class="text-[10px] text-gray-500 dark:text-gray-400 block">Pengembalian ke Customer</span>
+                                            <span class="text-sm font-extrabold text-blue-600 dark:text-blue-400 block mt-0.5">
+                                                Rp {{ number_format($selectedCancelRequest->refund_amount_customer ?? 0, 0, ',', '.') }}
+                                            </span>
+                                        </div>
+                                        <div class="p-2.5 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200/70 dark:border-gray-800">
+                                            <span class="text-[10px] text-gray-500 dark:text-gray-400 block">Kompensasi / Payout ke Mitra</span>
+                                            <span class="text-sm font-extrabold text-amber-600 dark:text-amber-400 block mt-0.5">
+                                                Rp {{ number_format($selectedCancelRequest->payout_amount_mitra ?? 0, 0, ',', '.') }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- 2. Status Sanksi Disiplin (SP) --}}
+                                <div class="bg-white dark:bg-black rounded-xl p-3 border border-emerald-100 dark:border-emerald-900/50 space-y-1.5">
+                                    <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">Sanksi Disiplin (Surat Peringatan)</span>
+                                    @if(!$selectedCancelRequest->sp_target || $selectedCancelRequest->sp_target === 'none')
+                                        <div class="flex items-center gap-1.5 text-xs text-emerald-800 dark:text-emerald-300 font-medium pt-0.5">
+                                            <span class="text-emerald-600 font-bold">✓</span>
+                                            <span>Tidak ada sanksi SP yang dijatuhkan (Penyelesaian wajar / disepakati kedua belah pihak).</span>
+                                        </div>
+                                    @else
+                                        <div class="space-y-1.5 pt-1">
+                                            @if(in_array($selectedCancelRequest->sp_target, ['partner', 'both']))
+                                                <div class="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs">
+                                                    <div class="flex items-center justify-between">
+                                                        <strong class="font-bold text-rose-800 dark:text-rose-300">🛵 Sanksi Mitra: SP {{ $selectedCancelRequest->partner_sp_level ?? 1 }}</strong>
+                                                        <span class="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">Tercatat di Profil Mitra</span>
+                                                    </div>
+                                                    @if($selectedCancelRequest->partner_sp_reason)
+                                                        <p class="text-[11px] text-rose-700 dark:text-rose-300/90 mt-1 italic">"{{ $selectedCancelRequest->partner_sp_reason }}"</p>
+                                                    @endif
+                                                </div>
+                                            @endif
+
+                                            @if(in_array($selectedCancelRequest->sp_target, ['customer', 'both']))
+                                                <div class="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs">
+                                                    <div class="flex items-center justify-between">
+                                                        <strong class="font-bold text-rose-800 dark:text-rose-300">👤 Sanksi Customer: SP {{ $selectedCancelRequest->customer_sp_level ?? 1 }}</strong>
+                                                        <span class="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">Tercatat di Profil Customer</span>
+                                                    </div>
+                                                    @if($selectedCancelRequest->customer_sp_reason)
+                                                        <p class="text-[11px] text-rose-700 dark:text-rose-300/90 mt-1 italic">"{{ $selectedCancelRequest->customer_sp_reason }}"</p>
+                                                    @endif
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
+
+                                {{-- 3. Catatan Audit Admin --}}
+                                <div class="bg-white dark:bg-black rounded-xl p-3 border border-emerald-100 dark:border-emerald-900/50 space-y-1">
+                                    <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">Catatan Resmi Hasil Audit</span>
+                                    <p class="text-xs text-gray-800 dark:text-gray-200 italic leading-relaxed pt-0.5">
+                                        {{ $selectedCancelRequest->admin_notes ? '"' . $selectedCancelRequest->admin_notes . '"' : 'Tidak ada catatan tambahan yang dituliskan oleh admin saat peninjauan.' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        {{-- Pilihan Keputusan & Penyelesaian Berdasarkan Pengaju & Status Otomatis (Hanya untuk Pending) --}}
+                        <div class="space-y-3 pt-1">
                         @if($isKonsep2)
-                            {{-- KONDISI KONSEP 2: PEMBATALAN TAHAP PENGERJAAN OLEH MITRA (IN-PROGRESS) --}}
+                            {{-- KONDISI : PEMBATALAN TAHAP PENGERJAAN OLEH MITRA (IN-PROGRESS) --}}
                             <div class="p-3.5 bg-rose-50/70 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 rounded-2xl text-xs space-y-2">
                                 <div class="font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5 text-xs sm:text-sm">
                                     <span class="text-base">⚠️</span>
-                                    <span>Konsep 2: Pengajuan Pembatalan Saat Pengerjaan Telah Dimulai</span>
+                                    <span>Pengajuan Pembatalan Saat Pengerjaan Telah Dimulai</span>
                                 </div>
                                 <p class="text-rose-800 dark:text-rose-300/90 leading-relaxed text-[11px]">
                                     Mitra mengajukan pembatalan tugas setelah menekan 'Mulai Pekerjaan'. Sesuai SOP, Admin <strong>wajib menghubungi Customer terlebih dahulu</strong> via WhatsApp atau Chat Platform untuk klarifikasi kondisi riil di lapangan dan menentukan pengembalian dana (refund) berdasarkan kesepakatan.
@@ -993,7 +1138,7 @@
                                 </div>
                             @endif
 
-                            {{-- Opsi Keputusan Penyelesaian Saldo & Refund (Konsep 2) --}}
+                            {{-- Opsi Keputusan Penyelesaian Saldo & Refund  --}}
                             <div class="space-y-2">
                                 <label class="block font-bold text-gray-800 dark:text-gray-200 text-xs mb-1">
                                     Pilihan Penyelesaian Saldo / Refund (Sesuai Kesepakatan Customer & Admin):
@@ -1063,7 +1208,7 @@
                             <div class="p-3.5 bg-white dark:bg-black border border-emerald-300 dark:border-emerald-800 rounded-2xl text-xs space-y-1.5">
                                 <div class="font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
                                     <span class="text-sm">⚡</span>
-                                    <span>Status Operasional: Relist Otomatis ke Pool Mitra Selesai (Konsep 1)</span>
+                                    <span>Status Operasional: Relist Otomatis ke Pool Mitra Selesai (Kendala Perjalanan)</span>
                                 </div>
                                 <p class="text-emerald-800 dark:text-emerald-300/90 leading-relaxed text-[11px]">
                                     Sistem telah <strong>otomatis melepaskan tugas</strong> dari mitra ini dan <strong>mengembalikan pesanan ke pool terbuka</strong> agar customer segera mendapatkan mitra pengganti. Saldo Dana Tahan <strong>(Rp {{ number_format($gross, 0, ',', '.') }})</strong> tetap aman di sistem.
@@ -1186,7 +1331,7 @@
                                     <span>ℹ️ Pengajuan Pembatalan:</span>
                                 </div>
                                 <p class="text-blue-800 dark:text-blue-300/90 leading-relaxed text-[11px]">
-                                    Permohonan pembatalan tugas bantuan #{{ $help?->id }}. Tinjau informasi telemetri dan konfirmasi evaluasi kedisiplinan.
+                                    Permohonan pembatalan tugas bantuan. Tinjau informasi telemetri dan konfirmasi evaluasi kedisiplinan.
                                 </p>
                             </div>
                         @endif
@@ -1269,16 +1414,180 @@
                             <textarea wire:model.defer="cancelAdminNotes" rows="2" class="w-full p-2.5 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="Penjelasan hasil verifikasi atau catatan penyelesaian... (opsional)"></textarea>
                         </div>
                     </div>
+                    @endif
                 </div>
 
                 {{-- Sticky Modal Footer Actions --}}
                 <div class="px-4 py-3 sm:px-6 sm:py-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-black shrink-0 flex items-center gap-2.5 z-10" style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom));">
-                    <button wire:click="closeCancelReviewModal" type="button" class="flex-1 py-2.5 sm:py-3 bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs sm:text-sm font-bold rounded-xl border border-gray-200 dark:border-gray-800 transition cursor-pointer">
-                        Batal
+                    @if($selectedCancelRequest->status !== 'pending')
+                        <button wire:click="closeCancelReviewModal" type="button" class="w-full py-2.5 sm:py-3 bg-gray-900 hover:bg-black dark:bg-gray-800 dark:hover:bg-gray-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                            <span>Tutup Log Audit</span>
+                        </button>
+                    @else
+                        <button wire:click="closeCancelReviewModal" type="button" class="flex-1 py-2.5 sm:py-3 bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs sm:text-sm font-bold rounded-xl border border-gray-200 dark:border-gray-800 transition cursor-pointer">
+                            Batal
+                        </button>
+                        <button wire:click="openCancelReviewConfirmModal" wire:loading.attr="disabled" type="button" class="flex-1 py-2.5 sm:py-3 bg-primary-600 hover:bg-primary-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
+                            <span wire:loading.remove wire:target="openCancelReviewConfirmModal">Simpan Hasil Audit & Sanksi SP</span>
+                            <span wire:loading wire:target="openCancelReviewConfirmModal">Memeriksa...</span>
+                        </button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- MODAL KONFIRMASI: Simpan Hasil Audit & Sanksi SP (Konfirmasi 2x) --}}
+    @if ($showCancelReviewConfirmModal && $selectedCancelRequest)
+        @php
+            $confirmHelpItem = $selectedCancelRequest->help;
+            $confirmPartnerItem = $confirmHelpItem?->mitra ?? $selectedCancelRequest->partner;
+            $confirmCustomerItem = $confirmHelpItem?->user ?? $selectedCancelRequest->customer;
+        @endphp
+        <div class="fixed inset-0 z-[60] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in overflow-y-auto"
+             wire:click.self="closeCancelReviewConfirmModal">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl sm:rounded-3xl max-w-lg w-full shadow-2xl p-5 sm:p-6 text-left space-y-4 animate-scale-in">
+                {{-- Header --}}
+                <div class="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-3">
+                    <div class="w-11 h-11 rounded-2xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-xl shadow-inner shrink-0">
+                        ⚖️
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-gray-900 dark:text-white leading-snug">
+                            Konfirmasi Simpan Hasil Audit & Sanksi
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Pemeriksaan kedua sebelum eksekusi
+                        </p>
+                    </div>
+                </div>
+
+                {{-- Detail Summary Card --}}
+                <div class="space-y-2.5 text-xs">
+                    {{-- Metode Penyelesaian --}}
+                    <div class="p-3 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/80 rounded-xl space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-500 dark:text-gray-400 font-medium text-[11px]">Metode Penyelesaian:</span>
+                            @if($settlementType === 'full_refund')
+                                <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                    ✓ Refund Penuh (Full Refund)
+                                </span>
+                            @elseif($settlementType === 'partial_settlement')
+                                <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                    ⚖️ Penyelesaian Sebagian (Split Saldo)
+                                </span>
+                            @elseif($settlementType === 'item_settled')
+                                <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                    📦 Barang Dibeli (Ganti Biaya Mitra)
+                                </span>
+                            @elseif($settlementType === 'relist_pool')
+                                <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                                    🔄 Buka Kembali ke Pool (Ganti Mitra)
+                                </span>
+                            @elseif($settlementType === 'partner_unlinked_held')
+                                <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                    ⚡ Lepas Mitra & Tahan Tugas
+                                </span>
+                            @else
+                                <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
+                                    {{ $settlementType }}
+                                </span>
+                            @endif
+                        </div>
+
+                        {{-- Financial Breakdown --}}
+                        <div class="grid grid-cols-2 gap-2 pt-1.5 border-t border-gray-200 dark:border-gray-700/60">
+                            <div class="p-2 bg-white dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800">
+                                <span class="block text-[10px] text-gray-500 dark:text-gray-400 font-medium">Refund ke Customer:</span>
+                                <span class="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+                                    Rp {{ number_format((float)($cancelRefundAmount ?: 0), 0, ',', '.') }}
+                                </span>
+                            </div>
+                            <div class="p-2 bg-white dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800">
+                                <span class="block text-[10px] text-gray-500 dark:text-gray-400 font-medium">Bayaran/Kompensasi Mitra:</span>
+                                <span class="text-xs font-extrabold text-blue-600 dark:text-blue-400">
+                                    Rp {{ number_format((float)($cancelPartnerAmount ?: 0), 0, ',', '.') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Disciplinary Sanctions Breakdown --}}
+                    <div class="p-3 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/80 rounded-xl space-y-2">
+                        <span class="block text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">Penerapan Sanksi Disiplin (SP):</span>
+                        @if($spTarget === 'none')
+                            <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-semibold text-xs py-0.5">
+                                <span class="text-sm">✓</span>
+                                <span>Tidak ada sanksi SP yang dijatuhkan (Penyelesaian Wajar / Damai)</span>
+                            </div>
+                        @else
+                            @if(in_array($spTarget, ['partner', 'both'], true))
+                                <div class="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/80 rounded-lg space-y-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-extrabold text-rose-800 dark:text-rose-300 text-xs">
+                                            ⚠️ Sanksi SP {{ $partnerSpLevel }} untuk Mitra
+                                        </span>
+                                        <span class="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">
+                                            ({{ $confirmPartnerItem?->name ?? 'Mitra' }})
+                                        </span>
+                                    </div>
+                                    <p class="text-[11px] text-rose-700 dark:text-rose-400 italic">
+                                        "{{ $partnerSpReason ?: 'Pelanggaran ketentuan / SOP pembatalan tugas.' }}"
+                                    </p>
+                                </div>
+                            @endif
+
+                            @if(in_array($spTarget, ['customer', 'both'], true))
+                                <div class="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/80 rounded-lg space-y-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-extrabold text-rose-800 dark:text-rose-300 text-xs">
+                                            ⚠️ Sanksi SP {{ $customerSpLevel }} untuk Customer
+                                        </span>
+                                        <span class="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">
+                                            ({{ $confirmCustomerItem?->name ?? 'Customer' }})
+                                        </span>
+                                    </div>
+                                    <p class="text-[11px] text-rose-700 dark:text-rose-400 italic">
+                                        "{{ $customerSpReason ?: 'Pelanggaran ketentuan pembatalan sepihak.' }}"
+                                    </p>
+                                </div>
+                            @endif
+                        @endif
+                    </div>
+
+                    {{-- Admin Notes (if any) --}}
+                    @if(!empty(trim($cancelAdminNotes)))
+                        <div class="p-2.5 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/80 rounded-xl space-y-1">
+                            <span class="block text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">Catatan Audit:</span>
+                            <p class="text-xs text-gray-700 dark:text-gray-300 italic">"{{ $cancelAdminNotes }}"</p>
+                        </div>
+                    @endif
+
+                    {{-- Warning Alert Box --}}
+                    <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-xl text-[11px] text-amber-900 dark:text-amber-200 space-y-1">
+                        <div class="font-bold flex items-center gap-1.5 text-amber-800 dark:text-amber-300">
+                            <span>⚠️</span>
+                            <span>Peringatan Tindakan Final</span>
+                        </div>
+                        <p class="leading-relaxed">
+                            Apakah Anda yakin ingin menyelesaikan audit ini? Tindakan ini <strong>bersifat permanen</strong> dan sistem akan langsung mengeksekusi perpindahan saldo serta mencatat sanksi SP resmi.
+                        </p>
+                    </div>
+                </div>
+
+                {{-- Action Buttons --}}
+                <div class="flex items-center gap-2.5 pt-1">
+                    <button type="button"
+                            wire:click="closeCancelReviewConfirmModal"
+                            class="flex-1 py-2.5 sm:py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs sm:text-sm font-bold rounded-xl transition cursor-pointer">
+                        Periksa Kembali
                     </button>
-                    <button wire:click="executeCancelReview" wire:loading.attr="disabled" type="button" class="flex-1 py-2.5 sm:py-3 bg-primary-600 hover:bg-primary-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
-                        <span wire:loading.remove wire:target="executeCancelReview">Simpan Hasil Audit & Sanksi SP</span>
-                        <span wire:loading wire:target="executeCancelReview">Memproses...</span>
+                    <button type="button"
+                            wire:click="executeCancelReview"
+                            wire:loading.attr="disabled"
+                            class="flex-1 py-2.5 sm:py-3 bg-primary-600 hover:bg-primary-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]">
+                        <span wire:loading.remove wire:target="executeCancelReview">Ya, Simpan & Terapkan</span>
+                        <span wire:loading wire:target="executeCancelReview">Menyimpan...</span>
                     </button>
                 </div>
             </div>
@@ -1305,7 +1614,7 @@
                         Pisahkan & Bebaskan Mitra?
                     </h3>
                     <p class="text-xs text-gray-500 dark:text-gray-400">
-                        Konfirmasi tindakan admin untuk penugasan #{{ $selectedCancelRequest->help_id }}
+                        Konfirmasi tindakan admin untuk penugasan ini
                     </p>
                 </div>
 
@@ -1369,7 +1678,7 @@
                             Konfirmasi Paksa Ganti Mitra
                         </h3>
                         <p class="text-xs text-gray-500 dark:text-gray-400">
-                            Pelepasan mitra pasif/menghilang untuk tugas #{{ $selectedCancelRequest->help_id }}
+                            Pelepasan mitra pasif/menghilang untuk tugas ini
                         </p>
                     </div>
                 </div>

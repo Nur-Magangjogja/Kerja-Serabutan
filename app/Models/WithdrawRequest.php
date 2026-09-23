@@ -71,15 +71,22 @@ class WithdrawRequest extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * In-request static memoization cache for badge counters.
+     */
+    protected static array $memoizedPendingWithdrawsCounts = [];
+
     protected static function booted()
     {
         static::saved(function () {
+            static::$memoizedPendingWithdrawsCounts = [];
             \Illuminate\Support\Facades\Cache::forget('pending_withdraws_count_superadmin');
             $ver = (int) \Illuminate\Support\Facades\Cache::get('pending_withdraws_count_version', 1);
             \Illuminate\Support\Facades\Cache::put('pending_withdraws_count_version', $ver + 1, now()->addDays(7));
         });
 
         static::deleted(function () {
+            static::$memoizedPendingWithdrawsCounts = [];
             \Illuminate\Support\Facades\Cache::forget('pending_withdraws_count_superadmin');
             $ver = (int) \Illuminate\Support\Facades\Cache::get('pending_withdraws_count_version', 1);
             \Illuminate\Support\Facades\Cache::put('pending_withdraws_count_version', $ver + 1, now()->addDays(7));
@@ -98,13 +105,18 @@ class WithdrawRequest extends Model
         }
 
         $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
-        $version = \Illuminate\Support\Facades\Cache::get('pending_withdraws_count_version', 1);
-
         $saTerritory = $isSuperAdmin ? $user->getActiveSuperadminTerritory() : null;
         $saKeyPart = $isSuperAdmin ? ('sa_' . $saTerritory['type'] . '_' . ($saTerritory['id'] ?? 'all')) : ('admin_' . $user->id . '_' . ($user->getActiveAdminDistrictFilter() ?? 'all'));
+
+        $memoKey = $user->id . '_' . $saKeyPart;
+        if (array_key_exists($memoKey, static::$memoizedPendingWithdrawsCounts)) {
+            return static::$memoizedPendingWithdrawsCounts[$memoKey];
+        }
+
+        $version = \Illuminate\Support\Facades\Cache::get('pending_withdraws_count_version', 1);
         $cacheKey = 'pending_withdraws_count_v' . $version . '_' . $saKeyPart;
 
-        return (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($user, $isSuperAdmin, $saTerritory) {
+        return static::$memoizedPendingWithdrawsCounts[$memoKey] = (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 180, function () use ($user, $isSuperAdmin, $saTerritory) {
             $query = static::where('status', self::STATUS_PENDING);
 
             if (!$isSuperAdmin) {

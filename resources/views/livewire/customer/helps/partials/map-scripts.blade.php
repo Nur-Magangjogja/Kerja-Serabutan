@@ -1667,27 +1667,142 @@
             }
         });
 
-        function scrollToFirstError() {
-            setTimeout(() => {
-                const errorEl = document.querySelector('.field-error-message, #group-title .field-error-message, #title-input.border-red-500, input.border-red-500, textarea.border-red-500');
-                if (errorEl) {
-                    const yOffset = -140;
-                    const y = errorEl.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+        window.scrollToFirstError = function() {
+            const findAndScroll = () => {
+                // Cari semua elemen penanda error, abaikan floating banner atas
+                const errorElements = Array.from(document.querySelectorAll(
+                    '.field-error-message, ' +
+                    '#group-title .field-error-message, #title-input.border-red-500, ' +
+                    'input.border-red-500, textarea.border-red-500, select.border-red-500, ' +
+                    '[class*="border-red-500"], [class*="ring-red-500"], ' +
+                    '#group-map .border-red-500'
+                )).filter(el => !el.closest('#error-banner-top'));
 
-                    const parentGroup = errorEl.closest('div[id^="group-"]') || errorEl.closest('div');
-                    if (parentGroup) {
-                        const input = parentGroup.querySelector('input:not([type="hidden"]), textarea, select');
-                        if (input) {
-                            input.focus();
-                            input.classList.add('ring-4', 'ring-red-400', 'transition-all');
-                            setTimeout(() => input.classList.remove('ring-4', 'ring-red-400'), 3500);
-                        }
+                if (!errorElements || errorElements.length === 0) {
+                    return false;
+                }
+
+                // Ambil error pertama sesuai urutan vertikal dokumen
+                let firstEl = null;
+                let minTop = Infinity;
+                for (const el of errorElements) {
+                    const rect = el.getBoundingClientRect();
+                    const docY = rect.top + window.pageYOffset;
+                    if (docY < minTop) {
+                        minTop = docY;
+                        firstEl = el;
                     }
                 }
-            }, 80);
-        }
 
-        window.addEventListener('scroll-to-first-error', scrollToFirstError);
+                if (!firstEl) firstEl = errorElements[0];
+
+                // Arahkan ke LABEL error yang bersangkutan sesuai permintaan pengguna
+                let targetLabel = null;
+                const groupContainer = firstEl.closest(
+                    '#group-title, #group-amount, #group-map, #group-pickup-address, #group-delivery-address, ' +
+                    '#group-onsite-location, #group-location, #group-full-address, #group-schedule, ' +
+                    '#group-description, #group-photo, [id^="group-"], .space-y-3, .space-y-2, .space-y-4'
+                );
+
+                if (groupContainer) {
+                    targetLabel = groupContainer.querySelector('label');
+                }
+
+                if (!targetLabel) {
+                    let curr = firstEl;
+                    while (curr && curr !== document.body && !targetLabel) {
+                        if (curr.tagName === 'LABEL') {
+                            targetLabel = curr;
+                            break;
+                        }
+                        targetLabel = curr.querySelector && curr.querySelector('label');
+                        if (!targetLabel && curr.previousElementSibling && curr.previousElementSibling.tagName === 'LABEL') {
+                            targetLabel = curr.previousElementSibling;
+                        }
+                        curr = curr.parentElement;
+                    }
+                }
+
+                // Target scroll adalah label error (atau elemen error sebagai fallback)
+                const scrollTarget = targetLabel || firstEl;
+                const yOffset = -90; // Jarak nyaman di bawah header atas
+                const targetY = scrollTarget.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
+                window.scrollTo({
+                    top: Math.max(0, targetY),
+                    behavior: 'smooth'
+                });
+
+                // Berikan animasi penekanan visual pada label error
+                if (targetLabel) {
+                    targetLabel.classList.add('text-red-600', 'dark:text-red-400', 'transition-all');
+                    targetLabel.style.transition = 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.25s ease';
+                    targetLabel.style.transform = 'scale(1.03)';
+                    setTimeout(() => {
+                        targetLabel.style.transform = 'scale(1)';
+                    }, 350);
+                    setTimeout(() => {
+                        targetLabel.classList.remove('text-red-600', 'dark:text-red-400');
+                        targetLabel.style.transition = '';
+                        targetLabel.style.transform = '';
+                    }, 3500);
+                }
+
+                // Fokus pada input/textarea terkait dan beri highlight ring
+                const parentForInput = groupContainer || (targetLabel ? targetLabel.parentElement : null) || firstEl.parentElement;
+                if (parentForInput) {
+                    const input = parentForInput.querySelector('input:not([type="hidden"]), textarea, select');
+                    if (input && typeof input.focus === 'function') {
+                        input.focus({ preventScroll: true });
+                        input.classList.add('ring-4', 'ring-red-400/60', 'transition-all');
+                        setTimeout(() => {
+                            input.classList.remove('ring-4', 'ring-red-400/60');
+                        }, 3500);
+                    }
+                }
+
+                return true;
+            };
+
+            // Jalankan segera dan beberapa kali jeda singkat agar sinkron dengan morphing DOM Livewire
+            findAndScroll();
+            setTimeout(findAndScroll, 60);
+            setTimeout(findAndScroll, 180);
+            setTimeout(findAndScroll, 350);
+        };
+
+        window.addEventListener('scroll-to-first-error', () => {
+            if (window.scrollToFirstError) window.scrollToFirstError();
+        });
+        document.addEventListener('scroll-to-first-error', () => {
+            if (window.scrollToFirstError) window.scrollToFirstError();
+        });
+
+        if (typeof Livewire !== 'undefined') {
+            Livewire.on('scroll-to-first-error', () => {
+                if (window.scrollToFirstError) window.scrollToFirstError();
+            });
+        }
     })();
+
+    // Listeners untuk integrasi Livewire lifecycle
+    document.addEventListener('livewire:initialized', () => {
+        if (typeof Livewire !== 'undefined') {
+            Livewire.on('scroll-to-first-error', () => {
+                if (window.scrollToFirstError) window.scrollToFirstError();
+            });
+            if (Livewire.hook) {
+                Livewire.hook('commit', ({ component, succeed }) => {
+                    succeed(() => {
+                        setTimeout(() => {
+                            const hasErrors = document.querySelector('.field-error-message, input.border-red-500, textarea.border-red-500, [class*="border-red-500"]');
+                            if (hasErrors && window.scrollToFirstError) {
+                                window.scrollToFirstError();
+                            }
+                        }, 80);
+                    });
+                });
+            }
+        }
+    });
 </script>

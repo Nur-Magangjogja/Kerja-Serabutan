@@ -32,7 +32,7 @@
 
     {{-- ===== Realtime Filter Toolbar ===== --}}
     <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-3.5 sm:p-4 shadow-xs">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
             <div class="relative w-full">
                 <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Cari Rekening / Pengguna</label>
                 <div class="relative">
@@ -43,37 +43,6 @@
                         class="w-full pl-9 pr-4 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition">
                 </div>
             </div>
-
-            @if($isSuperAdmin)
-                <div class="w-full">
-                    <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Wilayah / Kecamatan</label>
-                    <select wire:model.live="districtFilter"
-                        class="w-full py-2 pl-3 pr-8 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition cursor-pointer">
-                        <option value="all">Semua Wilayah (Nasional)</option>
-                        @foreach($districts as $district)
-                            <option value="{{ $district->id }}">Kec. {{ $district->name }} ({{ $district->city?->name ?? 'Kota' }})</option>
-                        @endforeach
-                    </select>
-                </div>
-            @elseif($districts->count() > 1)
-                <div class="w-full">
-                    <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Wilayah / Kecamatan</label>
-                    <select wire:model.live="districtFilter"
-                        class="w-full py-2 pl-3 pr-8 text-xs border border-primary-200 dark:border-primary-800 rounded-xl bg-primary-50/50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 font-bold focus:outline-none focus:ring-2 focus:ring-primary-500 transition cursor-pointer">
-                        <option value="all">Semua Wilayah Saya ({{ $districts->count() }} Kec.)</option>
-                        @foreach($districts as $district)
-                            <option value="{{ $district->id }}">Kec. {{ $district->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            @elseif($districts->count() === 1)
-                <div class="w-full">
-                    <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Wilayah Wewenang</label>
-                    <div class="py-2 px-3 text-xs font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 rounded-xl truncate">
-                        📍 Kec. {{ $districts->first()->name }}
-                    </div>
-                </div>
-            @endif
 
             <div class="w-full">
                 <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 block">Peran Pengguna</label>

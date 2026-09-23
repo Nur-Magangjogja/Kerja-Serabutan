@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('admin_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->enum('action', ['greylist_add', 'greylist_remove', 'warning_issued', 'shadow_ban_enabled', 'shadow_ban_disabled']);
+            $table->string('action', 50);
             $table->unsignedTinyInteger('warning_level')->nullable();
             $table->text('reason')->nullable();
             $table->text('message')->nullable();

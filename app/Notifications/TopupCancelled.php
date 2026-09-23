@@ -42,7 +42,7 @@ class TopupCancelled extends Notification
             ->subject('⚠️ Pembatalan Top-Up Saldo')
             ->greeting('Pemberitahuan, ' . $notifiable->name . '!')
             ->line('Persetujuan top-up saldo Anda sebelumnya telah dibatalkan oleh Superadmin.')
-            ->line('Kode Request: ' . ($this->transaction->request_code ?? '#' . $this->transaction->id))
+            ->line('Kode Request: ' . ($this->transaction->request_code ?? 'Transaksi Top Up'))
             ->line('Nominal: Rp ' . number_format($this->transaction->amount, 0, ',', '.'))
             ->line('Alasan Pembatalan: ' . ($this->reason ?: ($this->transaction->rejection_reason ?: 'Bukti pembayaran tidak valid / terindikasi penipuan.')))
             ->line('Saldo akun Anda telah disesuaikan kembali (dikurangi sesuai nominal top-up yang dibatalkan).')
@@ -61,7 +61,7 @@ class TopupCancelled extends Notification
         return [
             'type' => 'topup_cancelled',
             'transaction_id' => $this->transaction->id,
-            'request_code' => $this->transaction->request_code ?? '#' . $this->transaction->id,
+            'request_code' => $this->transaction->request_code ?? 'Transaksi Top Up',
             'amount' => $this->transaction->amount,
             'rejection_reason' => $reasonText,
             'message' => 'Top-up saldo sebesar Rp ' . number_format($this->transaction->amount, 0, ',', '.') . ' telah dibatalkan oleh Superadmin. Alasan: ' . $reasonText,

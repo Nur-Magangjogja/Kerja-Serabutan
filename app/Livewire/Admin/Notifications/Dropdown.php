@@ -13,7 +13,24 @@ class Dropdown extends Component
 
     public function mount()
     {
-        $this->loadNotifications();
+        $this->loadUnreadCount();
+    }
+
+    public function loadUnreadCount()
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            $this->notifications = collect([]);
+            $this->unreadCount = 0;
+            return;
+        }
+
+        $this->unreadCount = $user->unreadNotifications()->count();
+
+        if ($this->isOpen) {
+            $this->loadNotifications();
+        }
     }
 
     public function loadNotifications()
@@ -47,6 +64,9 @@ class Dropdown extends Component
     public function toggleDropdown()
     {
         $this->isOpen = !$this->isOpen;
+        if ($this->isOpen) {
+            $this->loadNotifications();
+        }
     }
 
     public function closeDropdown()

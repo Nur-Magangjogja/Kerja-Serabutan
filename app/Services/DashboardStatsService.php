@@ -22,7 +22,7 @@ class DashboardStatsService
      */
     public function availablePoolQuery(User $user): \Illuminate\Database\Eloquent\Builder
     {
-        return Help::where('status', Help::STATUS_MENUNGGU_MITRA)
+        $query = Help::where('status', Help::STATUS_MENUNGGU_MITRA)
             ->where(function ($q) {
                 $q->where('dispatch_mode', Help::DISPATCH_MODE_POOL)
                   ->orWhereNull('dispatch_mode');
@@ -33,6 +33,14 @@ class DashboardStatsService
                 $q->whereNull('expires_at')
                   ->orWhere('expires_at', '>', now());
             });
+
+        // Sembunyikan tugas jenis Antar & Jemput (pickup_delivery) jika mitra belum melengkapi
+        // dan belum terverifikasi SIM/STNK kendaraannya oleh Admin
+        if (!$user->canTakePickupDelivery()) {
+            $query->where('service_type', '!=', Help::SERVICE_TYPE_PICKUP_DELIVERY);
+        }
+
+        return $query;
     }
 
     /**

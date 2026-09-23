@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -132,8 +133,8 @@ class Create extends Component
             abort(403, 'Akses ditolak. Hanya akun Customer yang dapat membuat permintaan bantuan.');
         }
 
-        if (auth()->user()->isShadowBanned()) {
-            session()->flash('error', 'Akun Anda saat ini dibatasi dari membuat pekerjaan bantuan baru karena dalam status peninjauan moderasi.');
+        if (auth()->user()->isShadowBanned() || (int) auth()->user()->warning_level >= 3) {
+            session()->flash('error', 'Akun Anda saat ini dibatasi dari membuat pekerjaan bantuan baru karena dalam status peninjauan moderasi / sanksi SP 3.');
         }
 
         $this->minHelpNominal = (int) AppSetting::get('min_help_nominal', 10000);
@@ -345,8 +346,19 @@ class Create extends Component
 
     public function setCityId($id, $name = null, $province = null)
     {
-        $this->city_id = $id;
         $city = City::find($id);
+        if ($city && !$city->is_active) {
+            $this->city_id       = '';
+            $this->cityQuery     = '';
+            $this->district_id   = '';
+            $this->districtQuery = '';
+            $this->districtsList = [];
+            $this->searchResults = [];
+            $this->addError('city_id', 'Wilayah "' . $city->name . '" sedang ditutup sementara dan tidak menerima permintaan bantuan baru.');
+            return;
+        }
+
+        $this->city_id = $id;
         if ($city) {
             // Cari display dari searchResults (bisa lebih kaya, mencakup kecamatan)
             $usedDisplay = false;
@@ -467,6 +479,26 @@ class Create extends Component
         }
 
         if ($matchedCity) {
+            // Guard Wilayah Nonaktif
+            if (!$matchedCity->is_active) {
+                $this->latitude      = null;
+                $this->longitude     = null;
+                $this->location      = '';
+                $this->city_id       = '';
+                $this->cityQuery     = '';
+                $this->district_id   = '';
+                $this->districtQuery = '';
+                $this->districtsList = [];
+                $errorMsg = 'Wilayah "' . $matchedCity->name . '" sedang ditutup sementara demi keamanan / penataan operasional dan tidak menerima permintaan bantuan baru.';
+                $this->addError('latitude', $errorMsg);
+                $this->addError('city_id', $errorMsg);
+                $this->dispatch('restricted-location-detected', [
+                    'reason' => $errorMsg,
+                    'point'  => 'onsite'
+                ]);
+                return;
+            }
+
             $this->city_id       = $matchedCity->id;
             $this->cityQuery     = $matchedCity->name;
             $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $matchedCity->id);
@@ -519,14 +551,22 @@ class Create extends Component
                 $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $matchedCity->id);
             }
 
-            // Strategi D: Fallback ke kecamatan pertama yang terdaftar di kota tersebut jika ada
+            // Strategi D: Fallback ke kecamatan pertama yang terdaftar dan aktif di kota tersebut jika ada
             if (!$matchedDistrict) {
-                $matchedDistrict = \App\Models\District::where('city_id', $matchedCity->id)->first();
+                $matchedDistrict = \App\Models\District::where('city_id', $matchedCity->id)
+                    ->where('is_active', true)
+                    ->first();
             }
 
             if ($matchedDistrict) {
-                $this->district_id   = $matchedDistrict->id;
-                $this->districtQuery = $matchedDistrict->name;
+                if (!$matchedDistrict->is_active) {
+                    $this->district_id   = '';
+                    $this->districtQuery = '';
+                    $this->addError('district_id', 'Kecamatan "' . $matchedDistrict->name . '" sedang ditutup sementara dan tidak menerima permintaan bantuan baru.');
+                } else {
+                    $this->district_id   = $matchedDistrict->id;
+                    $this->districtQuery = $matchedDistrict->name;
+                }
             }
 
             if (empty($this->location)) {
@@ -582,6 +622,14 @@ class Create extends Component
         }
 
         $this->resolveLocationFromMap($lat, $lng, $cityName, $districtName, $fullAddress ?: $this->pickup_address, $provinceName);
+
+        if ($this->latitude === null) {
+            $this->pickup_latitude  = null;
+            $this->pickup_longitude = null;
+            $this->pickup_address   = '';
+            $this->location         = '';
+            return;
+        }
 
         if (empty($this->pickup_address)) {
             $this->pickup_address = ($this->districtQuery ? 'Kec. ' . $this->districtQuery . ', ' : '') . ($this->cityQuery ?: sprintf('Titik Jemput (%.4f, %.4f)', (float)$lat, (float)$lng));
@@ -956,32 +1004,37 @@ class Create extends Component
     // VALIDATION RULES
     // ─────────────────────────────────────────────────────────────────────────
 
-    protected $rules = [
-        'title'              => 'required|string|max:255',
-        'description'        => 'required|string',
-        'equipment_provided' => 'nullable|string|max:1000',
-        'amount'             => 'required|numeric|min:0|max:100000000',
-        'city_id'            => 'required|exists:cities,id',
-        'district_id'        => 'nullable|exists:districts,id',
-        'location'           => 'nullable|string|max:255',
-        'full_address'       => 'nullable|string|max:1000',
-        'latitude'           => 'required|numeric|between:-90,90',
-        'longitude'          => 'required|numeric|between:-180,180',
-        'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-        'scheduled_date'     => 'nullable|date',
-        'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
-        'publish_time'       => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
-        'custom_expiry_date' => 'nullable|date',
-        'custom_expiry_time' => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
-    ];
+    protected $rules = [];
+
+    protected function rules()
+    {
+        return [
+            'title'              => 'required|string|max:255',
+            'description'        => 'required|string',
+            'equipment_provided' => 'nullable|string|max:1000',
+            'amount'             => 'required|numeric|min:0|max:100000000',
+            'city_id'            => ['required', Rule::exists('cities', 'id')->where('is_active', true)],
+            'district_id'        => ['nullable', Rule::exists('districts', 'id')->where('is_active', true)],
+            'location'           => 'nullable|string|max:255',
+            'full_address'       => 'nullable|string|max:1000',
+            'latitude'           => 'required|numeric|between:-90,90',
+            'longitude'          => 'required|numeric|between:-180,180',
+            'photo'              => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'scheduled_date'     => 'nullable|date',
+            'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
+            'publish_time'       => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
+            'custom_expiry_date' => 'nullable|date',
+            'custom_expiry_time' => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
+        ];
+    }
 
     protected $messages = [
         'title.required'        => 'Judul bantuan wajib diisi',
         'description.required'  => 'Deskripsi bantuan wajib diisi',
         'city_id.required'      => 'Silakan pilih kota lokasi bantuan',
-        'city_id.exists'        => 'Kota yang dipilih tidak valid atau belum terdaftar',
+        'city_id.exists'        => 'Kota yang dipilih tidak valid, belum terdaftar, atau sedang ditutup sementara.',
         'district_id.required'  => 'Silakan pilih kecamatan lokasi bantuan',
-        'district_id.exists'    => 'Kecamatan yang dipilih tidak valid atau belum terdaftar',
+        'district_id.exists'    => 'Kecamatan yang dipilih tidak valid, belum terdaftar, atau sedang ditutup sementara.',
         'amount.required'       => 'Nominal uang harus diisi',
         'amount.numeric'        => 'Nominal harus berupa angka',
         'amount.min'            => 'Nominal tidak boleh kurang dari nilai minimal yang ditetapkan',
@@ -999,7 +1052,8 @@ class Create extends Component
         'scheduled_time.regex' => 'Format waktu tidak valid. Gunakan format 24-jam HH:MM, contoh: 9:30 atau 09:30',
         'publish_time.regex'   => 'Format jam mulai siar tidak valid. Gunakan format 24-jam HH:MM, contoh: 07:00',
         'custom_expiry_time.regex' => 'Format jam batas waktu tidak valid. Gunakan format 24-jam HH:MM, contoh: 23:59',
-        'photo.image'          => 'File harus berupa gambar (JPG, PNG, JPEG)',
+        'photo.image'          => 'File harus berupa gambar (JPG, PNG, JPEG, WebP)',
+        'photo.mimes'          => 'Format foto harus berupa JPG, JPEG, PNG, atau WebP',
         'photo.max'            => 'Ukuran foto maksimal 2MB',
     ];
 
@@ -1226,14 +1280,14 @@ class Create extends Component
             abort(403, 'Akses ditolak. Hanya akun Customer yang dapat membuat permintaan bantuan.');
         }
 
-        if (auth()->user()->isShadowBanned()) {
-            $this->addError('amount', 'Akun Anda saat ini dibatasi dari membuat pesanan bantuan baru karena dalam peninjauan moderasi.');
+        if (auth()->user()->isShadowBanned() || (int) auth()->user()->warning_level >= 3) {
+            $this->addError('amount', 'Akun Anda saat ini dibatasi dari membuat pesanan bantuan baru karena dalam peninjauan moderasi / sanksi SP 3.');
             $this->dispatch('scroll-to-first-error');
             return;
         }
 
         if (empty($this->district_id) && !empty($this->city_id)) {
-            $matchedDistrict = \App\Models\District::where('city_id', $this->city_id)->first();
+            $matchedDistrict = \App\Models\District::where('city_id', $this->city_id)->where('is_active', true)->first();
             if ($matchedDistrict) {
                 $this->district_id = $matchedDistrict->id;
                 $this->districtQuery = $matchedDistrict->name;
@@ -1300,15 +1354,15 @@ class Create extends Component
                 'description'        => 'required|string',
                 'equipment_provided' => 'nullable|string|max:1000',
                 'amount'             => 'required|numeric|min:10000|max:100000000',
-                'city_id'            => 'required|exists:cities,id',
-                'district_id'        => 'nullable|exists:districts,id',
+                'city_id'            => ['required', Rule::exists('cities', 'id')->where('is_active', true)],
+                'district_id'        => ['nullable', Rule::exists('districts', 'id')->where('is_active', true)],
                 'pickup_address'     => 'required|string|max:500',
                 'pickup_latitude'    => 'required|numeric|between:-90,90',
                 'pickup_longitude'   => 'required|numeric|between:-180,180',
                 'delivery_address'   => 'required|string|max:500',
                 'delivery_latitude'  => 'required|numeric|between:-90,90',
                 'delivery_longitude' => 'required|numeric|between:-180,180',
-                'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+                'photo'              => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
                 'scheduled_date'     => 'nullable|date',
                 'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
             ];
@@ -1352,13 +1406,13 @@ class Create extends Component
                 'description'        => 'required|string',
                 'equipment_provided' => 'nullable|string|max:1000',
                 'amount'             => 'required|numeric|min:10000|max:100000000',
-                'city_id'            => 'required|exists:cities,id',
-                'district_id'        => 'nullable|exists:districts,id',
+                'city_id'            => ['required', Rule::exists('cities', 'id')->where('is_active', true)],
+                'district_id'        => ['nullable', Rule::exists('districts', 'id')->where('is_active', true)],
                 'location'           => 'required|string|max:500',
                 'full_address'       => 'nullable|string|max:1000',
                 'latitude'           => 'required|numeric|between:-90,90',
                 'longitude'          => 'required|numeric|between:-180,180',
-                'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+                'photo'              => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
                 'scheduled_date'     => 'nullable|date',
                 'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
             ];
@@ -1515,13 +1569,13 @@ class Create extends Component
 
     public function save()
     {
-        if (auth()->user()->isShadowBanned()) {
-            $this->addError('amount', 'Akun Anda saat ini dibatasi dari membuat pesanan bantuan baru karena dalam peninjauan moderasi.');
+        if (auth()->user()->isShadowBanned() || (int) auth()->user()->warning_level >= 3) {
+            $this->addError('amount', 'Akun Anda saat ini dibatasi dari membuat pesanan bantuan baru karena dalam peninjauan moderasi / sanksi SP 3.');
             return;
         }
 
         if (empty($this->district_id) && !empty($this->city_id)) {
-            $matchedDistrict = \App\Models\District::where('city_id', $this->city_id)->first();
+            $matchedDistrict = \App\Models\District::where('city_id', $this->city_id)->where('is_active', true)->first();
             if ($matchedDistrict) {
                 $this->district_id = $matchedDistrict->id;
                 $this->districtQuery = $matchedDistrict->name;
@@ -1556,8 +1610,8 @@ class Create extends Component
             $this->rules = [
                 'title'              => 'required|string|max:255',
                 'description'        => 'required|string',
-                'city_id'            => 'required|exists:cities,id',
-                'district_id'        => 'nullable|exists:districts,id',
+                'city_id'            => ['required', Rule::exists('cities', 'id')->where('is_active', true)],
+                'district_id'        => ['nullable', Rule::exists('districts', 'id')->where('is_active', true)],
                 'pickup_address'     => 'required|string|max:500',
                 'pickup_latitude'    => 'required|numeric|between:-90,90',
                 'pickup_longitude'   => 'required|numeric|between:-180,180',
@@ -1587,8 +1641,8 @@ class Create extends Component
             $this->rules = [
                 'title'        => 'required|string|max:255',
                 'description'  => 'required|string',
-                'city_id'      => 'required|exists:cities,id',
-                'district_id'  => 'nullable|exists:districts,id',
+                'city_id'      => ['required', Rule::exists('cities', 'id')->where('is_active', true)],
+                'district_id'  => ['nullable', Rule::exists('districts', 'id')->where('is_active', true)],
                 'location'     => 'required|string|max:500',
                 'latitude'     => 'required|numeric|between:-90,90',
                 'longitude'    => 'required|numeric|between:-180,180',

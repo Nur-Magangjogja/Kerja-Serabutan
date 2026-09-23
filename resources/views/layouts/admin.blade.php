@@ -234,7 +234,7 @@
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
                     </svg>
-                    <span class="whitespace-nowrap">Verifikasi KTP</span>
+                    <span class="whitespace-nowrap">Verifikasi KTP & Kendaraan</span>
                 </a>
 
                 <a href="{{ route('admin.users.index') }}" wire:navigate
@@ -242,7 +242,7 @@
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
-                    <span class="whitespace-nowrap">Manajemen User</span>
+                    <span class="whitespace-nowrap">Manajemen Mitra & Customer</span>
                 </a>
 
                 <a href="{{ route('admin.partners.activity') }}" wire:navigate
@@ -302,7 +302,7 @@
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                     </svg>
-                    <span class="whitespace-nowrap">Blokir Mitra</span>
+                    <span class="whitespace-nowrap">Blokir Mitra & Customer</span>
                 </a>
 
                 <div class="pt-3.5 pb-1">
@@ -381,6 +381,8 @@
                     request()->routeIs('admin.ktp-ocr.*') || request()->routeIs('admin.ktp-ocr') => 'OCR KTP & Verifikasi',
                     request()->routeIs('admin.partners.reports*') || request()->routeIs('admin.reports.*') => 'Laporan Aduan',
                     request()->routeIs('admin.disputes*') || request()->routeIs('admin.cancellations*') => 'Tinjauan Pembatalan & Sengketa',
+                    request()->routeIs('admin.partners.blocked*') => 'Blokir Mitra & Customer',
+                    request()->routeIs('admin.users.*') || request()->routeIs('admin.users.index') => 'Manajemen Mitra & Customer',
                     request()->routeIs('admin.withdraws.*') => 'Manajemen Withdraw',
                     request()->routeIs('admin.topup.approvals*') => 'Manajemen Top-Up',
                     request()->routeIs('admin.settings.*') => 'Pengaturan',

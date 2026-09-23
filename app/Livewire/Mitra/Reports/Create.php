@@ -162,7 +162,7 @@ class Create extends Component
                     'in_progress', 'investigating', 'under_review', 'proses' => 'Sedang Diinvestigasi Admin',
                     default => ucfirst($activeReport->status),
                 };
-                $this->addError('help_id', "Tugas #{$this->reported_help_id} saat ini masih memiliki Laporan Aduan #{$activeReport->id} yang sedang aktif ({$statusText}). Anda baru dapat mengajukan laporan baru setelah laporan sebelumnya selesai dikonfirmasi oleh Admin.");
+                $this->addError('help_id', "Tugas ini saat ini masih memiliki Laporan Aduan yang sedang aktif ({$statusText}). Anda baru dapat mengajukan laporan baru setelah laporan sebelumnya selesai dikonfirmasi oleh Admin.");
                 return;
             }
         }

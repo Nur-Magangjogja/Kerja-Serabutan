@@ -138,6 +138,35 @@ class HelpTransactionService
                 throw new \RuntimeException("Lokasi titik awal bantuan ini berjarak " . round($distKm, 1) . " km dari posisi Anda saat ini, melebihi batas jangkauan operasional maksimal platform ({$maxRadiusKm} km).");
             }
         }
+
+        // 9. Validasi Kelayakan Kendaraan untuk Layanan Antar & Jemput (pickup_delivery)
+        if ($help->isPickup() && !$mitra->canTakePickupDelivery()) {
+            if (!$mitra->hasVehicleProfile()) {
+                throw new \RuntimeException(
+                    'Untuk mengambil pekerjaan Antar & Jemput, Anda wajib melengkapi data kendaraan '
+                    . '(Plat Nomor, SIM Motor, dan STNK) pada halaman Profil terlebih dahulu.'
+                );
+            }
+            if ($mitra->vehicle_verification_status === 'rejected') {
+                throw new \RuntimeException(
+                    'Verifikasi data kendaraan Anda ditolak oleh admin. Alasan: '
+                    . ($mitra->vehicle_rejection_reason ?? '-')
+                    . '. Silakan perbarui dokumen di halaman Profil.'
+                );
+            }
+            throw new \RuntimeException(
+                'Data kendaraan Anda (SIM & STNK) sedang dalam proses verifikasi oleh Admin. '
+                . 'Anda baru dapat mengambil pekerjaan Antar & Jemput setelah data diverifikasi.'
+            );
+        }
+
+        // 10. Validasi Status Wilayah Operasional (Mencegah Pengambilan di Wilayah Nonaktif)
+        if ($help->city && !$help->city->is_active) {
+            throw new \RuntimeException('Wilayah tugas ini sedang ditutup sementara dan tidak dapat diambil.');
+        }
+        if ($help->district && !$help->district->is_active) {
+            throw new \RuntimeException('Kecamatan tugas ini sedang ditutup sementara dan tidak dapat diambil.');
+        }
     }
 
     /**
@@ -546,7 +575,7 @@ class HelpTransactionService
 
             $activeReport = PartnerReport::getActiveReportForHelp($lockedHelp->id);
             if ($activeReport) {
-                throw new \RuntimeException("Laporan sengketa (Laporan #{$activeReport->id}) untuk tugas ini sedang aktif ditinjau oleh Admin (Status: {$activeReport->status}). Mohon tunggu proses mediasi selesai.");
+                throw new \RuntimeException("Laporan sengketa untuk tugas ini sedang aktif ditinjau oleh Admin (Status: {$activeReport->status}). Mohon tunggu proses mediasi selesai.");
             }
 
             if ($lockedHelp->escrow_status !== Help::ESCROW_STATUS_HELD) {
@@ -636,7 +665,7 @@ class HelpTransactionService
             // Validasi: Cegah penumpukan laporan jika masih ada laporan aktif yang belum selesai
             $activeReport = PartnerReport::getActiveReportForHelp($lockedHelp->id);
             if ($activeReport) {
-                throw new \RuntimeException("Laporan klaim garansi (Laporan #{$activeReport->id}) untuk tugas ini sedang aktif ditinjau oleh Admin (Status: {$activeReport->status}). Anda tidak dapat mengajukan laporan baru sampai laporan sebelumnya selesai dikonfirmasi.");
+                throw new \RuntimeException("Laporan klaim garansi untuk tugas ini sedang aktif ditinjau oleh Admin (Status: {$activeReport->status}). Anda tidak dapat mengajukan laporan baru sampai laporan sebelumnya selesai dikonfirmasi.");
             }
 
             // Pastikan garansi 1x24 jam belum kadaluarsa jika pesanan telah selesai
@@ -1110,7 +1139,7 @@ class HelpTransactionService
                 $refundAmount,
                 $help?->id,
                 $help?->order_id,
-                "Pengembalian Dana Refund (Laporan #{$report->id}: '{$report->title}')",
+                "Pengembalian Dana Refund (Laporan: '{$report->title}')",
                 "report:{$report->id}:refund:{$customer->id}"
             );
 

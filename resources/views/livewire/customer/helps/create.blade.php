@@ -1,5 +1,6 @@
-<div>
+<div x-data="{ previewModalPhoto: null, previewModalTitle: 'Review Foto Pendukung' }">
     <style>
+        [x-cloak] { display: none !important; }
         :root {
             --brand-500: #0ea5a4;
             --brand-600: #08979a;
@@ -45,6 +46,14 @@
         }
     </style>
 
+    <script>
+        if (typeof window.scrollToFirstError !== 'function') {
+            window.scrollToFirstError = function() {
+                window.dispatchEvent(new CustomEvent('scroll-to-first-error'));
+            };
+        }
+    </script>
+
     <div id="main-content" class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <div class="max-w-md mx-auto">
             <!-- Header Section -->
@@ -75,7 +84,7 @@
             <div class="px-5 pt-5 pb-8">
                 {{-- Floating Validation Error Banner --}}
                 @if ($errors->any())
-                    <div x-data="{ show: true }" x-show="show" x-init="scrollToFirstError(); setTimeout(() => show = false, 6000)"
+                    <div id="error-banner-top" x-data="{ show: true }" x-show="show" x-init="if (typeof window.scrollToFirstError === 'function') { window.scrollToFirstError(); } setTimeout(() => show = false, 6000)"
                          class="mb-4 bg-red-50 dark:bg-red-950/40 border-l-4 border-red-500 dark:border-red-500 p-3.5 rounded-r-xl shadow-sm flex items-start justify-between gap-3 animate-fade-in border border-red-100 dark:border-red-900/50">
                         <div class="flex items-start gap-2.5">
                             <svg class="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -210,56 +219,182 @@
                     </div>
 
                     <!-- 11. Foto Pendukung -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                            <span class="flex items-center">
-                                <svg class="w-3.5 h-3.5 mr-1.5 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-                                </svg>
-                                Foto Pendukung
-                                <span class="text-gray-400 dark:text-gray-500 text-xs ml-1 font-normal">(Opsional)</span>
+                    <div id="group-photo" class="space-y-2">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
+                            <span class="flex items-center justify-between">
+                                <span class="flex items-center">
+                                    <svg class="w-3.5 h-3.5 mr-1.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                                    </svg>
+                                    Foto Pendukung
+                                    <span class="text-gray-400 dark:text-gray-500 text-xs ml-1 font-normal">(Opsional)</span>
+                                </span>
+                                @if ($photo)
+                                    <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Foto Terpilih
+                                    </span>
+                                @endif
                             </span>
                         </label>
-                        <div class="relative">
-                            <input type="file" wire:model="photo" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" id="photo-input" class="hidden">
-                            <label for="photo-input"
-                                class="flex items-center justify-center w-full h-28 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer transition bg-gray-50 dark:bg-gray-800/60 hover:bg-blue-50 dark:hover:bg-gray-700/50 overflow-hidden relative">
-                                @if ($photo)
-                                    @php
-                                        $canPreview = false;
-                                        try {
-                                            $canPreview = method_exists($photo, 'temporaryUrl') && $photo->isPreviewable();
-                                        } catch (\Throwable $e) {
-                                            $canPreview = false;
-                                        }
-                                    @endphp
+
+                        <!-- Hidden Input File -->
+                        <input type="file" wire:model="photo" accept="image/png, image/jpeg, image/jpg, image/webp, .png, .jpg, .jpeg, .webp" id="photo-input" class="hidden">
+
+                        <!-- Loading State saat Upload Berlangsung -->
+                        <div wire:loading wire:target="photo" class="w-full p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl text-center">
+                            <div class="flex items-center justify-center gap-2.5 text-blue-600 dark:text-blue-400 font-semibold text-xs">
+                                <svg class="animate-spin h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                                <span>Sedang memproses & mengunggah gambar...</span>
+                            </div>
+                        </div>
+
+                        @if ($photo)
+                            @php
+                                $canPreview = false;
+                                $previewUrl = '';
+                                $fileName = 'Foto Terpilih';
+                                $fileSize = '';
+                                try {
+                                    $canPreview = method_exists($photo, 'temporaryUrl') && $photo->isPreviewable();
+                                    if ($canPreview) {
+                                        $previewUrl = $photo->temporaryUrl();
+                                    }
+                                    if (method_exists($photo, 'getClientOriginalName')) {
+                                        $fileName = $photo->getClientOriginalName();
+                                    }
+                                    if (method_exists($photo, 'getSize')) {
+                                        $sizeKb = round($photo->getSize() / 1024, 1);
+                                        $fileSize = $sizeKb > 1024 ? round($sizeKb / 1024, 2) . ' MB' : $sizeKb . ' KB';
+                                    }
+                                } catch (\Throwable $e) {
+                                    $canPreview = false;
+                                }
+                            @endphp
+
+                            <!-- Uploaded Photo Review Container (Uncropped / Tanpa Terpotong di Segala Ukuran) -->
+                            <div wire:loading.remove wire:target="photo" class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xs overflow-hidden transition-all duration-200">
+                                <!-- Header info file & action buttons -->
+                                <div class="px-3.5 py-2.5 bg-gray-50/90 dark:bg-gray-750/80 border-b border-gray-100 dark:border-gray-700/70 flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2 min-w-0 flex-1">
+                                        <span class="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 flex items-center justify-center shrink-0">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                        </span>
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate" title="{{ $fileName }}">
+                                                {{ $fileName }}
+                                            </p>
+                                            @if ($fileSize)
+                                                <p class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">{{ $fileSize }}</p>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        @if ($canPreview)
+                                            <button type="button" 
+                                                @click="previewModalPhoto = '{{ $previewUrl }}'; previewModalTitle = 'Review Foto Pendukung'"
+                                                class="p-1.5 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-lg transition cursor-pointer"
+                                                title="Perbesar Layar Penuh">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                                </svg>
+                                            </button>
+                                        @endif
+                                        <button type="button"
+                                            wire:click="$set('photo', null)"
+                                            class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition cursor-pointer"
+                                            title="Hapus Foto">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Preview Frame: Uncropped, Auto-fit all dimensions with neutral backdrop -->
+                                <div class="p-3 bg-gray-900/5 dark:bg-black/30">
                                     @if ($canPreview)
-                                        <img src="{{ $photo->temporaryUrl() }}" alt="preview" class="w-full h-full object-cover">
+                                        <div class="relative w-full rounded-xl overflow-hidden bg-gray-950/5 dark:bg-black/50 border border-gray-200/60 dark:border-gray-700/60 flex items-center justify-center p-2 min-h-[160px] max-h-80 cursor-pointer group shadow-2xs"
+                                             @click="previewModalPhoto = '{{ $previewUrl }}'; previewModalTitle = 'Review Foto Pendukung'"
+                                             title="Klik untuk melihat foto dalam ukuran penuh">
+                                            <!-- Image rendered with object-contain to guarantee 100% visible uncropped rendering across all aspect ratios -->
+                                            <img src="{{ $previewUrl }}" 
+                                                 alt="Review Foto" 
+                                                 class="w-auto h-auto max-w-full max-h-72 object-contain mx-auto rounded-lg transition-transform duration-300 group-hover:scale-[1.01]">
+                                            
+                                            <!-- Floating Zoom Overlay Badge -->
+                                            <div class="absolute bottom-2.5 right-2.5 bg-gray-900/75 hover:bg-gray-900 text-white text-[11px] font-medium px-2.5 py-1 rounded-full backdrop-blur-xs flex items-center gap-1.5 transition shadow-sm opacity-90 group-hover:opacity-100 pointer-events-none">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                                                </svg>
+                                                <span>Perbesar</span>
+                                            </div>
+                                        </div>
                                     @else
-                                        <div class="flex flex-col items-center justify-center w-full p-2 text-center">
-                                            <svg class="w-6 h-6 text-gray-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                            <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">{{ $photo->getClientOriginalName() }}</span>
+                                        <div class="flex flex-col items-center justify-center py-6 text-center">
+                                            <svg class="w-8 h-8 text-gray-400 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                            <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">{{ $fileName }}</span>
                                         </div>
                                     @endif
+                                </div>
 
-                                    <button type="button" onclick="event.stopPropagation()"
-                                        wire:click="$set('photo', null)"
-                                        class="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg hover:bg-red-600 transition">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                <!-- Action footer -->
+                                <div class="px-3.5 py-2.5 bg-gray-50/90 dark:bg-gray-750/80 border-t border-gray-100 dark:border-gray-700/70 flex items-center justify-between text-xs">
+                                    <span class="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                        <svg class="w-3 h-3 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                         </svg>
-                                    </button>
-                                @else
-                                    <div class="flex flex-col items-center justify-center w-full">
-                                        <svg class="w-6 h-6 text-gray-400 dark:text-gray-500 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Pilih atau ambil foto pendukung</span>
-                                        <span class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">Maksimal 2MB (JPG, PNG)</span>
+                                        Foto utuh tanpa terpotong
+                                    </span>
+                                    <div class="flex items-center gap-2">
+                                        <label for="photo-input" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 rounded-lg cursor-pointer transition">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            </svg>
+                                            Ganti Foto
+                                        </label>
+                                        <button type="button" wire:click="$set('photo', null)" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-red-600 dark:text-red-400 hover:text-red-700 bg-red-50 dark:bg-red-950/60 hover:bg-red-100 rounded-lg cursor-pointer transition">
+                                            Hapus
+                                        </button>
                                     </div>
-                                @endif
+                                </div>
+                            </div>
+                        @else
+                            <!-- Empty Upload Dropzone -->
+                            <label for="photo-input" wire:loading.remove wire:target="photo"
+                                class="group flex flex-col items-center justify-center w-full py-6 px-4 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer transition-all duration-200 bg-white dark:bg-gray-800/80 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 text-center shadow-2xs">
+                                <div class="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <p class="text-xs font-bold text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                    Pilih atau Ambil Foto Pendukung
+                                </p>
+                                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                                    Maksimal 2MB (JPG, JPEG, PNG, WebP)
+                                </p>
                             </label>
-                        </div>
+                        @endif
+
+                        @error('photo')
+                            <span class="text-red-500 dark:text-red-400 text-xs mt-1.5 flex items-center font-medium">
+                                <svg class="w-3.5 h-3.5 mr-1 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                {{ $message }}
+                            </span>
+                        @enderror
                     </div>
 
                     <!-- Submit Button -->
@@ -269,6 +404,7 @@
                             Batal
                         </a>
                         <button type="submit" wire:loading.attr="disabled"
+                            @click="setTimeout(() => { if (typeof window.scrollToFirstError === 'function') window.scrollToFirstError(); }, 350)"
                             class="flex-1 inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-3 text-sm rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                             <span wire:loading.remove wire:target="prepareConfirm">Lanjut Konfirmasi</span>
                             <span wire:loading wire:target="prepareConfirm" class="flex items-center justify-center gap-2">
@@ -506,4 +642,68 @@
             document.addEventListener('livewire:navigated', checkAndRestoreDraft);
         })();
     </script>
+
+    <!-- 15. Lightbox Modal untuk Review Foto Penuh (Alpine.js) - Uncropped & Segala Ukuran -->
+    <div x-show="previewModalPhoto" 
+         x-cloak 
+         class="fixed inset-0 z-[99999] overflow-y-auto"
+         role="dialog" 
+         aria-modal="true"
+         @keydown.escape.window="previewModalPhoto = null"
+         style="display: none;">
+        <!-- Backdrop Blur Overlay -->
+        <div x-show="previewModalPhoto"
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-black/85 backdrop-blur-sm transition-opacity"
+             @click="previewModalPhoto = null"></div>
+
+        <div class="flex min-h-full items-center justify-center p-3 sm:p-5 text-center">
+            <div x-show="previewModalPhoto"
+                 x-transition:enter="ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="ease-in duration-150"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="relative transform overflow-hidden rounded-2xl sm:rounded-3xl bg-white dark:bg-gray-900 text-left shadow-2xl border border-gray-200 dark:border-gray-700 transition-all w-full max-w-2xl p-4 sm:p-5">
+                
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800 mb-3">
+                    <div class="flex items-center gap-2 min-w-0 pr-2">
+                        <span class="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </span>
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-white truncate" x-text="previewModalTitle || 'Review Foto Pendukung'"></h3>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400">Tampilan ukuran asli tanpa terpotong</p>
+                        </div>
+                    </div>
+                    <button type="button" 
+                            @click="previewModalPhoto = null"
+                            class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center justify-center transition cursor-pointer shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="bg-gray-950/5 dark:bg-black/60 rounded-xl p-2 border border-gray-100 dark:border-gray-800/80 flex items-center justify-center min-h-[220px]">
+                    <img :src="previewModalPhoto" alt="Review Foto Pendukung" class="max-h-[75vh] w-auto max-w-full object-contain mx-auto rounded-lg shadow-md">
+                </div>
+
+                <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                    <span class="text-[11px] text-gray-400 dark:text-gray-500">Tekan ESC atau klik luar untuk menutup</span>
+                    <button type="button" @click="previewModalPhoto = null" class="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-semibold transition cursor-pointer">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use App\Models\AppSetting;
 use App\Models\City;
 use App\Models\Help;
@@ -49,6 +50,7 @@ class HelpSettings extends Component
     public $max_fairness_boost_minutes = 60;
 
     // Regional Seeking Mode Overrides (City-Level)
+    #[Url]
     public $city_search = '';
     public $city_overrides = [];
 
@@ -154,7 +156,7 @@ class HelpSettings extends Component
         );
 
         // Load City Seeking Overrides
-        $cities = City::orderBy('name')->get();
+        $cities = City::getAllCached();
         foreach ($cities as $city) {
             $this->city_overrides[$city->id] = $city->getSeekingModeConfigLabel();
         }

@@ -16,8 +16,8 @@ class AdminUsers extends Component
     use WithPagination;
 
     public $search = '';
-    public $title = 'Manajemen Admin';
-    public $breadcrumb = 'Manajemen Admin';
+    public $title = 'Manajemen Admin Wilayah';
+    public $breadcrumb = 'Manajemen Admin Wilayah';
     public $roleFilter = 'admin';
     public $perPage = 10;
     public $selectedUser = null;

@@ -96,7 +96,7 @@ class Create extends Component
             $this->report_type = $targetType;
             if (in_array($targetType, ['klaim_refund_pekerjaan_fiktif', 'mitra_tidak_selesai'])) {
                 $this->is_refund_request = true;
-                $this->title = 'Klaim Pengembalian Dana (Refund) - Bantuan #' . ($this->help_id ?? '');
+                $this->title = 'Klaim Pengembalian Dana (Refund)';
             }
         }
     }
@@ -161,7 +161,7 @@ class Create extends Component
             if ($this->isRefundEligible) {
                 $this->is_refund_request = true;
                 if (empty($this->title) || str_starts_with($this->title, 'Klaim Pengembalian Dana')) {
-                    $this->title = 'Klaim Pengembalian Dana (Refund) - Bantuan #' . ($this->help_id ?? '');
+                    $this->title = 'Klaim Pengembalian Dana (Refund)';
                 }
             } else {
                 $this->is_refund_request = false;
@@ -233,7 +233,7 @@ class Create extends Component
                     'in_progress', 'investigating', 'under_review', 'proses' => 'Sedang Diinvestigasi Admin',
                     default => ucfirst($activeReport->status),
                 };
-                $this->addError('help_id', "Tugas #{$this->reported_help_id} saat ini masih memiliki Laporan Aduan #{$activeReport->id} yang sedang aktif ({$statusText}). Anda baru dapat mengajukan laporan baru setelah laporan sebelumnya selesai dikonfirmasi oleh Admin.");
+                $this->addError('help_id', "Tugas ini saat ini masih memiliki Laporan Aduan yang sedang aktif ({$statusText}). Anda baru dapat mengajukan laporan baru setelah laporan sebelumnya selesai dikonfirmasi oleh Admin.");
                 return;
             }
         }

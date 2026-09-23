@@ -1,4 +1,4 @@
-<div class="relative" wire:poll.60s.visible="loadNotifications">
+<div class="relative" wire:poll.60s.visible="loadUnreadCount">
     <!-- Notification Bell Button -->
     <button 
         wire:click="toggleDropdown"

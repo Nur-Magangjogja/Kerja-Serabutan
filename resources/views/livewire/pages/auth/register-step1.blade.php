@@ -275,7 +275,7 @@ new #[Layout('layouts.guest')] class extends Component {
                     $query->where('email', '!=', $authEmail);
                 }
                 if ($query->exists()) {
-                    $fail('Nomor NIK ini sudah terdaftar di sistem. Setiap pengguna hanya dapat memiliki 1 akun.');
+                    $fail('Nomor NIK ini sudah terdaftar. Setiap pengguna hanya dapat memiliki 1 akun.');
                     return;
                 }
 
@@ -300,7 +300,7 @@ new #[Layout('layouts.guest')] class extends Component {
             'nik.required' => 'Nomor NIK KTP wajib diisi.',
             'nik.size' => 'Nomor NIK harus berjumlah tepat 16 digit angka.',
             'nik.regex' => 'Nomor NIK hanya boleh berisi angka.',
-            'nik.unique' => 'Nomor NIK ini sudah terdaftar di sistem. Setiap pengguna hanya dapat memiliki 1 akun.',
+            'nik.unique' => 'Nomor NIK ini sudah terdaftar. Setiap pengguna hanya dapat memiliki 1 akun.',
             'full_name.required' => 'Nama lengkap sesuai KTP wajib diisi.',
             'full_name.min' => 'Nama lengkap minimal 3 karakter.',
             'full_name.max' => 'Nama lengkap maksimal 255 karakter.',

@@ -158,7 +158,7 @@ class Show extends Component
         $this->spIsGreylisted = (bool) $user->is_greylisted;
 
         $this->spWarningLevel = $defaultLevel ?: min(3, max(1, $this->spCurrentWarningLevel + 1));
-        $this->spReason = "Pelanggaran pada Laporan Aduan #{$this->report->id}: '{$this->report->title}'";
+        $this->spReason = "Pelanggaran pada Laporan Aduan: '{$this->report->title}'";
         $this->spAutoNoteInReport = true;
         $this->showSpModal = true;
     }
@@ -198,7 +198,7 @@ class Show extends Component
                 $timestamp = now()->format('d M Y H:i');
                 $adminName = $admin->name;
                 $roleLabel = ($targetUser->role === 'mitra') ? 'Mitra' : 'Customer';
-                $entry = "[{$timestamp} oleh {$adminName}]: Menerbitkan SP {$this->spWarningLevel} kepada {$roleLabel} {$targetUser->name} (#{$targetUser->id}). Alasan: " . trim($this->spReason);
+                $entry = "[{$timestamp} oleh {$adminName}]: Menerbitkan SP {$this->spWarningLevel} kepada {$roleLabel} {$targetUser->name}. Alasan: " . trim($this->spReason);
 
                 $existing = $this->report->admin_notes ? $this->report->admin_notes . "\n" : '';
                 $updatedNotes = $existing . $entry;

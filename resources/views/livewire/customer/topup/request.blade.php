@@ -271,9 +271,6 @@
                                  class="w-56 h-56 sm:w-64 sm:h-64 object-contain mx-auto rounded-lg">
                             <div class="mt-2 text-center">
                                 <p class="text-xs font-bold text-gray-900 uppercase tracking-wider">{{ $qrisMerchantName ?: 'PT SAYA BANTU NUSANTARA' }}</p>
-                                @if($qrisNmid)
-                                    <p class="text-[11px] text-gray-500 font-mono">NMID: {{ $qrisNmid }}</p>
-                                @endif
                             </div>
 
                             <!-- Tombol Unduh QRIS -->

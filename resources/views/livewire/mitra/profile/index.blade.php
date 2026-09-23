@@ -114,6 +114,49 @@
         <div class="px-5 pt-5 pb-24 space-y-4">
             @livewire('mitra.profile.update-photo')
 
+            <!-- Section: Kelengkapan Kendaraan (Antar & Jemput) -->
+            @livewire('mitra.profile.vehicle-profile')
+
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xl shrink-0">
+                            🛵
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-900 dark:text-white flex items-center space-x-2">
+                                <span>Data Kendaraan Mitra</span>
+                                @php
+                                    $vBadge = auth()->user()?->vehicle_status_badge ?? [
+                                        'label' => 'Belum Lengkap', 'bg' => 'bg-gray-100 dark:bg-gray-700', 'text' => 'text-gray-600 dark:text-gray-300'
+                                    ];
+                                @endphp
+                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full {{ $vBadge['bg'] }} {{ $vBadge['text'] }}">
+                                    {{ $vBadge['label'] }}
+                                </span>
+                            </h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                @if (auth()->user()?->canTakePickupDelivery())
+                                    {{ auth()->user()->vehicle_plate_number }} • Akses Layanan Antar & Jemput Aktif
+                                @elseif (auth()->user()?->vehicle_verification_status === 'pending')
+                                    Menunggu verifikasi admin untuk Plat {{ auth()->user()->vehicle_plate_number }}
+                                @elseif (auth()->user()?->vehicle_verification_status === 'rejected')
+                                    Verifikasi ditolak. Klik untuk periksa & unggah ulang.
+                                @else
+                                    Wajib Plat Nomor + (SIM / STNK) untuk mengambil order Antar & Jemput
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button"
+                        x-data
+                        @click="$dispatch('openVehicleProfileModal')"
+                        class="px-3 py-1.5 text-xs font-semibold rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition shrink-0">
+                        Kelola
+                    </button>
+                </div>
+            </div>
+
             <!-- Section: Akun & Aktivitas -->
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/60">
                 <x-profile-menu-item :href="route('mitra.profile.edit')" title="Edit Profil" subtitle="Ubah nama, biodata, & kontak mitra" iconBg="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">

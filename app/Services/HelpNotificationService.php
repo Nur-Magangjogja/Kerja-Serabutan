@@ -31,7 +31,7 @@ class HelpNotificationService
             ActivityLog::record(
                 $userId,
                 $activityType,
-                $description ?? "Aktivitas bantuan #{$helpId}"
+                $description ?? "Aktivitas bantuan"
             );
         } catch (\Throwable $e) {
             Log::warning('[HelpNotificationService] logActivity failed: ' . $e->getMessage(), [

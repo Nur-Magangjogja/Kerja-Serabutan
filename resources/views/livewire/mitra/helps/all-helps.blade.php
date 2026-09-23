@@ -6,7 +6,7 @@
     $mitraLng = $mitraLng ?? null;
 @endphp
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-x-hidden">
     <style>
         :root{
             --brand-500: #0ea5a4;
@@ -177,20 +177,55 @@
                 </button>
             </div>
 
-            <!-- Sort Filter in List View -->
-            <div class="flex items-center justify-between mb-4">
-                <span class="text-xs text-gray-500 font-medium">Urutkan:</span>
-                <select wire:model.live="sortBy" class="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-medium text-gray-700 focus:ring-2 focus:ring-blue-200 outline-none">
-                    <option value="nearby">📍 Terdekat (Jarak GPS)</option>
-                    <option value="latest">Terbaru</option>
-                    <option value="oldest">Terlama</option>
-                    <option value="price_high">Harga Tertinggi</option>
-                    <option value="price_low">Harga Terendah</option>
-                </select>
+            <!-- Service Type Filter & Sort Filter in List View -->
+            <div class="space-y-2.5 mb-4">
+                <!-- Filter Tabs Kategori Layanan (Scrollable & Responsive) -->
+                <div class="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200/80 dark:border-gray-700/80 w-full max-w-full overflow-x-auto hide-scrollbar">
+                    <button type="button" wire:click="$set('serviceTypeFilter', 'all')"
+                        class="flex-1 min-w-fit px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap text-center {{ $serviceTypeFilter === 'all' ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
+                        🌟 Semua
+                    </button>
+                    <button type="button" wire:click="$set('serviceTypeFilter', 'on_site_service')"
+                        class="flex-1 min-w-fit px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap text-center {{ $serviceTypeFilter === 'on_site_service' ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
+                        🛠️ Serabutan
+                    </button>
+                    @if(auth()->user()?->canTakePickupDelivery())
+                        <button type="button" wire:click="$set('serviceTypeFilter', 'pickup_delivery')"
+                            class="flex-1 min-w-fit px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap text-center {{ $serviceTypeFilter === 'pickup_delivery' ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
+                            🛵 Antar-Jemput
+                        </button>
+                    @endif
+                </div>
+
+                <!-- Sort Filter Bar (Responsive, Anti-Overflow) -->
+                <div class="flex items-center justify-between gap-2 px-0.5">
+                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 font-medium shrink-0">
+                        <svg class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
+                        </svg>
+                        <span>Urutkan:</span>
+                    </div>
+
+                    <div class="relative min-w-0 flex-1 max-w-[210px] sm:max-w-[240px]">
+                        <select wire:model.live="sortBy" 
+                            class="w-full pl-2.5 pr-7 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-semibold text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none truncate shadow-2xs appearance-none cursor-pointer">
+                            <option value="nearby">📍 Terdekat (Jarak GPS)</option>
+                            <option value="latest">Terbaru</option>
+                            <option value="oldest">Terlama</option>
+                            <option value="price_high">Harga Tertinggi</option>
+                            <option value="price_low">Harga Terendah</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 dark:text-gray-500">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
             </div> 
 
             <div class="space-y-4" wire:poll.10s.visible>
-                <div class="space-y-3.5 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="districtFilter,sortBy,search">
+                <div class="space-y-3.5 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="districtFilter,serviceTypeFilter,sortBy,search">
                     {{-- List based on filter --}}
                     @forelse($helps as $help)
                     <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all border border-gray-100">

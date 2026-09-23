@@ -35,28 +35,28 @@
 
                 <!-- Filter Tabs - Segmented Grid (No Overflow) -->
                 <div class="grid grid-cols-4 gap-1 bg-black/15 backdrop-blur-md p-1 rounded-xl border border-white/20 text-center">
-                    <button type="button" wire:click="$set('statusFilter', 'menunggu_mitra')" role="tab"
+                    <button type="button" wire:click="setStatusFilter('menunggu_mitra')" role="tab"
                         class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'menunggu_mitra' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
                         <span>Menunggu</span>
                         @if(!empty($counts['menunggu']) && $counts['menunggu'] > 0)
                             <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'menunggu_mitra' ? 'bg-primary-100 text-primary-700 dark:bg-white/20 dark:text-white' : 'bg-white/20 text-white' }}">{{ $counts['menunggu'] }}</span>
                         @endif
                     </button>
-                    <button type="button" wire:click="$set('statusFilter', 'diproses')" role="tab"
+                    <button type="button" wire:click="setStatusFilter('diproses')" role="tab"
                         class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'diproses' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
                         <span>Diproses</span>
                         @if(!empty($counts['diproses']) && $counts['diproses'] > 0)
                             <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'diproses' ? 'bg-primary-100 text-primary-700 dark:bg-white/20 dark:text-white' : 'bg-white/20 text-white' }}">{{ $counts['diproses'] }}</span>
                         @endif
                     </button>
-                    <button type="button" wire:click="$set('statusFilter', 'waiting_customer_confirmation')" role="tab"
+                    <button type="button" wire:click="setStatusFilter('waiting_customer_confirmation')" role="tab"
                         class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'waiting_customer_confirmation' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
                         <span>Konfirmasi</span>
                         @if(!empty($counts['konfirmasi']) && $counts['konfirmasi'] > 0)
                             <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $statusFilter === 'waiting_customer_confirmation' ? 'bg-amber-100 text-amber-800 dark:bg-amber-400 dark:text-amber-950 font-extrabold' : 'bg-amber-400/80 text-gray-900 font-extrabold' }} animate-pulse">{{ $counts['konfirmasi'] }}</span>
                         @endif
                     </button>
-                    <button type="button" wire:click="$set('statusFilter', 'selesai')" role="tab"
+                    <button type="button" wire:click="setStatusFilter('selesai')" role="tab"
                         class="py-2 px-1 rounded-lg text-center font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center justify-center gap-1 {{ $statusFilter === 'selesai' ? 'bg-white text-primary-700 dark:!bg-primary-600 dark:!text-white shadow-sm' : 'text-white/90 hover:bg-white/10' }}">
                         <span>Selesai</span>
                         @if(!empty($counts['selesai']) && $counts['selesai'] > 0)
@@ -209,8 +209,16 @@
                                         <div>
                                             <div class="text-[11px] text-gray-400 mb-0.5">Mitra Pelaksana</div>
                                             <div class="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{{ $help->mitra->name }}</div>
+                                            @if($help->isPickup())
+                                                <div class="mt-1 flex items-center gap-1.5 flex-wrap">
+                                                    <span class="text-[10px] text-gray-600 dark:text-gray-400">🛵 {{ $help->mitra->vehicle_display_name }}</span>
+                                                    @if(!empty($help->mitra->vehicle_plate_number))
+                                                        <span class="px-1.5 py-0.2 bg-zinc-900 dark:bg-zinc-950 text-white rounded font-mono text-[10px] font-bold tracking-wider border border-zinc-700">{{ $help->mitra->vehicle_plate_number }}</span>
+                                                    @endif
+                                                </div>
+                                            @endif
                                             @if($help->mitra->phone)
-                                                <a href="tel:{{ $help->mitra->phone }}" class="text-[11px] font-semibold text-primary-600 dark:text-sky-400">{{ $help->mitra->phone }}</a>
+                                                <a href="tel:{{ $help->mitra->phone }}" class="text-[11px] font-semibold text-primary-600 dark:text-sky-400 block mt-0.5">{{ $help->mitra->phone }}</a>
                                             @endif
                                         </div>
                                     @endif
@@ -390,7 +398,15 @@
                                             <div class="w-4 h-4 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 flex items-center justify-center text-[10px] font-bold">
                                                 {{ strtoupper(substr($help->mitra->name, 0, 1)) }}
                                             </div>
-                                            <span class="text-xs font-semibold text-gray-800 dark:text-gray-200 max-w-[90px] truncate">{{ $help->mitra->name }}</span>
+                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                <span class="text-xs font-semibold text-gray-800 dark:text-gray-200 max-w-[90px] truncate">{{ $help->mitra->name }}</span>
+                                                @if($help->isPickup())
+                                                    <span class="text-[10px] text-gray-500 dark:text-gray-400">🛵 {{ $help->mitra->vehicle_display_name }}</span>
+                                                    @if(!empty($help->mitra->vehicle_plate_number))
+                                                        <span class="text-[9px] font-mono font-bold bg-zinc-900 dark:bg-zinc-950 text-white px-1.5 py-0.5 rounded border border-zinc-700">{{ $help->mitra->vehicle_plate_number }}</span>
+                                                    @endif
+                                                @endif
+                                            </div>
                                         </div>
 
                                         <a href="{{ route('customer.chat', $help->id) }}" wire:navigate class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition shadow-xs cursor-pointer relative" aria-label="Buka chat">

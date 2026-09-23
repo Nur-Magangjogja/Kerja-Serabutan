@@ -15,9 +15,19 @@ class PartnerOnlineState extends Model
     public const STATUS_OFFER_PENDING = 'offer_pending';
     public const STATUS_BUSY          = 'busy';
 
+    public const PREFERENCE_ALL             = 'all';
+    public const PREFERENCE_ON_SITE         = 'on_site_service';
+    public const PREFERENCE_PICKUP_DELIVERY = 'pickup_delivery';
+
+    protected $attributes = [
+        'matching_status'    => self::STATUS_OFFLINE,
+        'service_preference' => self::PREFERENCE_ALL,
+    ];
+
     protected $fillable = [
         'user_id',
         'matching_status',
+        'service_preference',
         'current_help_id',
         'consecutive_declines',
         'last_seen_at',
@@ -115,5 +125,31 @@ class PartnerOnlineState extends Model
     public function isOffline(): bool
     {
         return $this->matching_status === self::STATUS_OFFLINE;
+    }
+
+    /**
+     * Cek apakah preferensi pencarian mitra mengizinkan jenis layanan bantuan tertentu.
+     */
+    public function allowsServiceType(?string $serviceType): bool
+    {
+        if (empty($this->service_preference) || $this->service_preference === self::PREFERENCE_ALL) {
+            return true;
+        }
+
+        $effectiveType = $serviceType ?: Help::SERVICE_TYPE_ON_SITE;
+
+        return $this->service_preference === $effectiveType;
+    }
+
+    /**
+     * Label teks preferensi layanan untuk antarmuka pengguna.
+     */
+    public function getServicePreferenceLabelAttribute(): string
+    {
+        return match ($this->service_preference) {
+            self::PREFERENCE_ON_SITE         => 'Khusus Kerja Serabutan',
+            self::PREFERENCE_PICKUP_DELIVERY => 'Khusus Antar & Jemput',
+            default                          => 'Semua Jenis Bantuan',
+        };
     }
 }

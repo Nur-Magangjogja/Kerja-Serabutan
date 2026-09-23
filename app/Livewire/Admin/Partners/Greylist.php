@@ -38,6 +38,14 @@ class Greylist extends Component
     public $detailUserId = null;
     public $detailUser = null;
 
+    // Modal Pengampunan Pembatalan Konsep 1 (Khusus Mitra)
+    public $showPardonModal = false;
+    public $pardonUserId = null;
+    public $pardonUser = null;
+    public $pardonCurrentCount = 0;
+    public $pardonNewCount = 0;
+    public $pardonReason = '';
+
     protected $queryString = [
         'search' => ['except' => ''],
         'roleFilter' => ['except' => 'all'],
@@ -408,6 +416,108 @@ class Greylist extends Component
         );
 
         session()->flash('success', "Akun {$user->name} telah dipulihkan dan status normal kembali.");
+    }
+
+    public function openPardonModal($userId)
+    {
+        $user = User::findOrFail($userId);
+
+        if ($user->role !== 'mitra') {
+            session()->flash('error', 'Fitur pengampunan pembatalan hanya berlaku untuk akun Mitra.');
+            return;
+        }
+
+        $admin = auth()->user();
+        $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
+
+        if (!$isSuperAdmin) {
+            $managedDistrictIds = $admin ? $admin->getAdminDistrictIds() : [];
+            if (!empty($managedDistrictIds) && !in_array($user->district_id, $managedDistrictIds)) {
+                session()->flash('error', 'Anda tidak memiliki hak akses untuk memoderasi mitra di luar wilayah kecamatan wewenang Anda.');
+                return;
+            } elseif (empty($managedDistrictIds)) {
+                session()->flash('error', 'Anda belum memiliki wilayah wewenang.');
+                return;
+            }
+        }
+
+        $this->pardonUserId = $user->id;
+        $this->pardonUser = $user;
+        $this->pardonCurrentCount = (int) ($user->konsep1_cancel_count ?? 0);
+        $this->pardonNewCount = 0;
+        $this->pardonReason = 'Pengampunan pembatalan di perjalanan (Konsep 1) setelah evaluasi kepatuhan mitra.';
+        $this->showPardonModal = true;
+    }
+
+    public function closePardonModal()
+    {
+        $this->showPardonModal = false;
+        $this->pardonUserId = null;
+        $this->pardonUser = null;
+        $this->pardonCurrentCount = 0;
+        $this->pardonNewCount = 0;
+        $this->pardonReason = '';
+    }
+
+    public function setPardonCountQuick(int $count)
+    {
+        $this->pardonNewCount = max(0, $count);
+    }
+
+    public function submitPardon()
+    {
+        $this->validate([
+            'pardonUserId'   => 'required|exists:users,id',
+            'pardonNewCount' => 'required|integer|min:0',
+            'pardonReason'   => 'required|string|min:5',
+        ], [
+            'pardonNewCount.required' => 'Jumlah hitungan baru wajib ditentukan.',
+            'pardonNewCount.min'      => 'Jumlah hitungan tidak boleh bernilai negatif.',
+            'pardonReason.required'   => 'Alasan pengampunan wajib diisi.',
+            'pardonReason.min'        => 'Alasan pengampunan minimal 5 karakter.',
+        ]);
+
+        $user = User::findOrFail($this->pardonUserId);
+        $admin = auth()->user();
+        $oldCount = (int) ($user->konsep1_cancel_count ?? 0);
+        $newCount = (int) $this->pardonNewCount;
+
+        $user->update([
+            'konsep1_cancel_count' => $newCount,
+            'konsep1_pardoned_at'  => now(),
+            'konsep1_pardon_notes' => $this->pardonReason,
+        ]);
+
+        UserGreylistLog::create([
+            'user_id'       => $user->id,
+            'admin_id'      => $admin->id,
+            'action'        => 'konsep1_pardon',
+            'warning_level' => (int) $user->warning_level,
+            'reason'        => $this->pardonReason,
+            'message'       => "Pengampunan pembatalan Konsep 1: Hitungan diatur ulang dari {$oldCount}x menjadi {$newCount}x oleh Admin {$admin->name}.",
+        ]);
+
+        \App\Models\ActivityLog::record(
+            $admin,
+            'konsep1_pardon',
+            "Admin {$admin->name} memberikan pengampunan pembatalan tugas (Konsep 1) kepada mitra {$user->name}: hitungan diatur dari {$oldCount}x menjadi {$newCount}x. Alasan: {$this->pardonReason}",
+            [
+                'target_user_id' => $user->id,
+                'role'           => $user->role,
+                'old_count'      => $oldCount,
+                'new_count'      => $newCount,
+                'reason'         => $this->pardonReason,
+            ]
+        );
+
+        if ($this->detailUserId === $user->id) {
+            $this->detailUser = $user->fresh(['city', 'greylistLogs.admin']);
+        }
+
+        $userName = $user->name;
+        $this->closePardonModal();
+
+        session()->flash('success', "Hitungan pembatalan mitra {$userName} berhasil diatur ulang menjadi {$newCount}x (Pengampunan telah disimpan).");
     }
 
     public function render()

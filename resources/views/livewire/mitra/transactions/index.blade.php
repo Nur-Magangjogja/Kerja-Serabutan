@@ -128,7 +128,7 @@
                                         @if($type === 'cancellation' || $type === 'penalty')
                                             {{ $t->description ?? 'Pembatalan Tugas Bantuan' }}
                                         @elseif($type === 'earning')
-                                            {{ $t->description ?? ($t->help?->title ? 'Pendapatan: ' . $t->help->title : 'Pendapatan Bantuan ' . $t->reference_id) }}
+                                            {{ $t->description ?? ($t->help?->title ? 'Pendapatan: ' . $t->help->title : 'Pendapatan Bantuan') }}
                                         @elseif($type === 'withdraw')
                                             {{ $t->description ?? 'Penarikan Saldo Dompet Mitra' }}
                                         @else
@@ -306,19 +306,7 @@
                             </div>
                         @endif
 
-                        @if($selectedTransaction['order_id'])
-                            <div class="flex justify-between items-center text-xs sm:text-sm">
-                                <span class="text-gray-500 dark:text-gray-400">Order ID</span>
-                                <span class="font-mono font-bold text-xs text-gray-800 dark:text-gray-200">{{ $selectedTransaction['order_id'] }}</span>
-                            </div>
-                        @endif
 
-                        @if($selectedTransaction['reference_id'])
-                            <div class="flex justify-between items-center text-xs sm:text-sm">
-                                <span class="text-gray-500 dark:text-gray-400">ID Referensi</span>
-                                <span class="font-mono font-bold text-xs text-gray-800 dark:text-gray-200">{{ $selectedTransaction['reference_id'] }}</span>
-                            </div>
-                        @endif
 
                         @if($selectedTransaction['description'])
                             <div class="flex justify-between items-start text-xs sm:text-sm">

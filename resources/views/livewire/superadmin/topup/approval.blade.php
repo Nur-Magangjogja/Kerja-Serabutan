@@ -101,19 +101,6 @@
                         </button>
                     @endif
                 </div>
-
-                {{-- City Filter --}}
-                @if(isset($cities) && $cities->count() > 0)
-                    <div class="relative flex-shrink-0 w-full sm:w-auto">
-                        <select wire:model.live="cityFilter"
-                            class="w-full sm:w-auto py-2 pl-3.5 pr-8 text-xs font-semibold rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 outline-none transition cursor-pointer shadow-2xs">
-                            <option value="all">Semua Wilayah (Nasional)</option>
-                            @foreach($cities as $city)
-                                <option value="{{ $city->id }}">{{ $city->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                @endif
             </div>
         </div>
 
@@ -166,7 +153,7 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-3.5 hidden md:table-cell">
-                                    <code class="text-xs bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded font-mono">{{ $transaction->request_code ?? '#' . $transaction->id }}</code>
+                                    <code class="text-xs bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded font-mono">{{ $transaction->request_code ?? 'Top Up' }}</code>
                                 </td>
                                 <td class="px-4 py-3.5 hidden sm:table-cell">
                                     <p class="text-sm font-bold text-primary-600 dark:text-primary-400">Rp {{ number_format($transaction->total_payment, 0, ',', '.') }}</p>

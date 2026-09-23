@@ -65,6 +65,27 @@
         </div>
     @endif
 
+    @if ($errors->any())
+        <div id="alert-validation-errors" class="mb-6 p-4 text-rose-800 rounded-2xl bg-rose-50 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 shadow-xs ring-2 ring-rose-500/20" role="alert">
+            <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                </div>
+                <div class="flex-1 text-xs sm:text-sm">
+                    <p class="font-bold">Terdapat kesalahan format pada link atau file banner:</p>
+                    <ul class="list-disc list-inside mt-1.5 space-y-0.5 font-medium">
+                        @foreach ($errors->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+                <button type="button" onclick="document.getElementById('alert-validation-errors')?.remove()" class="text-rose-500 hover:text-rose-700 dark:hover:text-rose-200 p-1.5 transition cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+        </div>
+    @endif
+
     <!-- Unified Banner Management & Preview Card -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-8">
         <!-- Header Card: Kelola Banner -->
@@ -139,9 +160,15 @@
                                             @endif
                                         </div>
                                         <input type="text"
-                                               wire:model.defer="customerBanners.{{ $i }}.link"
-                                               placeholder="Contoh: https://sayabantu.com/promo atau /customer/helps/create"
-                                               class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition" />
+                                               wire:model="customerBanners.{{ $i }}.link"
+                                               placeholder="Contoh: https://sayabantu.com/promo"
+                                               class="w-full px-3 py-1.5 text-xs rounded-lg border @error('customerBanners.'.$i.'.link') border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500 @else border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 @enderror bg-gray-50/50 dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-1 transition" />
+                                        @error('customerBanners.'.$i.'.link')
+                                            <p class="text-[11px] text-red-500 dark:text-red-400 font-semibold flex items-center gap-1 mt-1">
+                                                <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                                                <span>{{ $message }}</span>
+                                            </p>
+                                        @enderror
                                         <p class="text-[10px] text-gray-400 dark:text-gray-500">Kosongkan bila banner hanya berupa gambar info tanpa link.</p>
                                     </div>
 
@@ -218,9 +245,15 @@
                                                 </div>
                                                 <div class="flex-1 min-w-0 w-full">
                                                     <label class="block text-[10px] font-bold text-gray-600 dark:text-gray-300 mb-0.5">Link Tujuan Href (Opsional):</label>
-                                                    <input type="text" wire:model.defer="customerNewLinks.{{ $idx }}"
-                                                           placeholder="Contoh: https://... atau /customer/helps/create"
-                                                           class="w-full px-2.5 py-1 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-1 focus:ring-blue-500" />
+                                                    <input type="text" wire:model="customerNewLinks.{{ $idx }}"
+                                                           placeholder="Contoh: https://sayabantu.com/promo"
+                                                           class="w-full px-2.5 py-1 text-xs rounded-lg border @error('customerNewLinks.'.$idx) border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500 @else border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 @enderror bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-1" />
+                                                    @error('customerNewLinks.'.$idx)
+                                                        <p class="text-[10px] text-red-500 dark:text-red-400 font-semibold flex items-center gap-1 mt-1">
+                                                            <svg class="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                                                            <span>{{ $message }}</span>
+                                                        </p>
+                                                    @enderror
                                                 </div>
                                             </div>
                                         @endif
@@ -280,9 +313,15 @@
                                             @endif
                                         </div>
                                         <input type="text"
-                                               wire:model.defer="mitraBanners.{{ $i }}.link"
-                                               placeholder="Contoh: https://sayabantu.com/mitra-promo atau /mitra/helps/all"
-                                               class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition" />
+                                               wire:model="mitraBanners.{{ $i }}.link"
+                                               placeholder="Contoh: https://sayabantu.com/mitra-promo"
+                                               class="w-full px-3 py-1.5 text-xs rounded-lg border @error('mitraBanners.'.$i.'.link') border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500 @else border-gray-300 dark:border-gray-600 focus:ring-emerald-500 focus:border-emerald-500 @enderror bg-gray-50/50 dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:bg-white dark:focus:bg-gray-900 focus:ring-1 transition" />
+                                        @error('mitraBanners.'.$i.'.link')
+                                            <p class="text-[11px] text-red-500 dark:text-red-400 font-semibold flex items-center gap-1 mt-1">
+                                                <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                                                <span>{{ $message }}</span>
+                                            </p>
+                                        @enderror
                                         <p class="text-[10px] text-gray-400 dark:text-gray-500">Kosongkan bila banner hanya berupa gambar info tanpa link.</p>
                                     </div>
 
@@ -359,9 +398,15 @@
                                                 </div>
                                                 <div class="flex-1 min-w-0 w-full">
                                                     <label class="block text-[10px] font-bold text-gray-600 dark:text-gray-300 mb-0.5">Link Tujuan Href (Opsional):</label>
-                                                    <input type="text" wire:model.defer="mitraNewLinks.{{ $idx }}"
-                                                           placeholder="Contoh: https://... atau /mitra/helps/all"
-                                                           class="w-full px-2.5 py-1 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-1 focus:ring-emerald-500" />
+                                                    <input type="text" wire:model="mitraNewLinks.{{ $idx }}"
+                                                           placeholder="Contoh: https://sayabantu.com/mitra-promo"
+                                                           class="w-full px-2.5 py-1 text-xs rounded-lg border @error('mitraNewLinks.'.$idx) border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500 @else border-gray-300 dark:border-gray-600 focus:ring-emerald-500 focus:border-emerald-500 @enderror bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-1" />
+                                                    @error('mitraNewLinks.'.$idx)
+                                                        <p class="text-[10px] text-red-500 dark:text-red-400 font-semibold flex items-center gap-1 mt-1">
+                                                            <svg class="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                                                            <span>{{ $message }}</span>
+                                                        </p>
+                                                    @enderror
                                                 </div>
                                             </div>
                                         @endif

@@ -33,7 +33,7 @@ class NewReportNotification extends Notification
             'report_id' => $this->report->id,
             'reporter_name' => $reporterName,
             'report_type' => $reportType,
-            'title' => 'Laporan Aduan Baru #' . $this->report->id,
+            'title' => 'Laporan Aduan Baru',
             'message' => $reporterName . " mengirim laporan: '{$this->report->title}' ({$reportType})",
             'url' => route('admin.partners.reports.show', $this->report->id),
             'icon' => '📢',

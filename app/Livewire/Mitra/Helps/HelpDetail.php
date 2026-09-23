@@ -143,7 +143,7 @@ class HelpDetail extends Component
                         $mitra->id,
                         $this->help->id,
                         'scheduled_departure_reminder',
-                        "Pengingat keberangkatan tugas terjadwal #{$this->help->id} terkirim ke Mitra {$mitra->name}"
+                        "Pengingat keberangkatan tugas terjadwal ini terkirim ke Mitra {$mitra->name}"
                     );
                 } catch (\Throwable $e) {
                     Log::warning("[HelpDetail] Gagal kirim departure reminder: " . $e->getMessage());

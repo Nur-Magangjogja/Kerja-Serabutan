@@ -6,6 +6,7 @@ use App\Models\City;
 use App\Models\Help;
 use App\Models\HelpCancelRequest;
 use App\Models\PartnerReport;
+use App\Models\User;
 use App\Services\HelpCancellationService;
 use App\Services\HelpTransactionService;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +18,7 @@ class Index extends Component
     use WithPagination;
 
     public $activeTab = 'cancellations'; // Default to cancellations
-    public $status = 'pending'; // 'frozen', 'resolved', 'all' for disputes | 'pending', 'approved', 'rejected', 'all' for cancellations
+    public $status = 'pending'; // 'frozen', 'resolved', 'all' for disputes | 'pending', 'approved', 'all' for cancellations
     public $search = '';
     public $requesterTypeFilter = 'all'; // 'all', 'partner', 'customer'
 
@@ -38,7 +39,7 @@ class Index extends Component
         } else {
             $this->activeTab = 'cancellations';
             $this->status = request('status', 'pending');
-            if (!in_array($this->status, ['pending', 'approved', 'rejected', 'all'], true)) {
+            if (!in_array($this->status, ['pending', 'approved', 'all'], true)) {
                 $this->status = 'pending';
             }
         }
@@ -55,9 +56,11 @@ class Index extends Component
     public $adminNotes       = '';
 
     // Modal state (Cancellation Requests)
-    public $showCancelReviewModal     = false;
-    public $showUnlinkConfirmModal    = false;
-    public $showForceSwitchModal      = false;
+    public $showCancelReviewModal        = false;
+    public $showCancelReviewConfirmModal = false;
+    public $showUnlinkConfirmModal       = false;
+    public $showForceSwitchModal         = false;
+    public $partnerKonsep1CancelCount    = 0;
     public $forceSwitchIssueSp        = true;
     public $forceSwitchSpLevel        = 1;
     public $forceSwitchSpReason       = 'Mitra tidak merespons chat / telepon dan tidak ada konfirmasi saat penugasan.';
@@ -219,7 +222,7 @@ class Index extends Component
                 $service->resolveDispute($this->selectedHelp, $admin, $this->resolutionType);
             }
 
-            session()->flash('message', "Sengketa bantuan #{$this->selectedHelp->id} berhasil diselesaikan.");
+            session()->flash('message', "Sengketa bantuan berhasil diselesaikan.");
             $this->closeResolveModal();
         } catch (\RuntimeException $e) {
             session()->flash('error', $e->getMessage());
@@ -400,7 +403,7 @@ class Index extends Component
     public function openCancelReviewModal(int $cancelRequestId)
     {
         $this->selectedCancelRequestId = $cancelRequestId;
-        $this->selectedCancelRequest   = HelpCancelRequest::with(['help.user', 'help.mitra', 'requestedBy', 'district'])->findOrFail($cancelRequestId);
+        $this->selectedCancelRequest   = HelpCancelRequest::with(['help.user', 'help.mitra', 'requestedBy', 'district', 'reviewedBy', 'partner', 'customer'])->findOrFail($cancelRequestId);
 
         // Muat seluruh log pembatalan untuk ID pekerjaan yang sama
         $this->cancelLogs = HelpCancelRequest::with(['requestedBy', 'partner', 'customer', 'reviewedBy'])
@@ -422,7 +425,7 @@ class Index extends Component
         }
 
         $help = $this->selectedCancelRequest->help;
-        $gross = (float) ($help->total_amount > 0 ? $help->total_amount : $help->amount);
+        $gross = (float) ($help?->total_amount > 0 ? $help->total_amount : ($help?->amount ?: 0));
         $isPartner = ($this->selectedCancelRequest->requester_type === 'partner');
         $actionType = $this->selectedCancelRequest->action_type;
         $partnerResponse = $this->selectedCancelRequest->partner_response_type;
@@ -430,52 +433,78 @@ class Index extends Component
 
         $this->cancelDecision = 'approved';
 
-        $isKonsep2PartnerCancel = ($isPartner && ($cancellationStage === 'in_progress' || $this->selectedCancelRequest->previous_status === 'in_progress' || $help?->status === Help::STATUS_PARTNER_CANCEL_REQUESTED));
-
-        if ($isKonsep2PartnerCancel) {
-            // Konsep 2: Mitra membatalkan saat pengerjaan telah dimulai -> Default Full Refund / Penyesuaian Saldo Admin & Customer
-            $this->settlementType      = 'full_refund';
-            $this->cancelRefundAmount  = $gross;
-            $this->cancelPartnerAmount = 0;
-        } elseif ($actionType === HelpCancelRequest::ACTION_SWITCH_PARTNER || ($isPartner && $actionType === HelpCancelRequest::ACTION_PARTNER_INCIDENT)) {
-            // Konsep 1: Transit / Kendala perjalanan / Ganti Mitra -> Relist Pool
-            $this->settlementType      = 'relist_pool';
-            $this->cancelRefundAmount  = 0;
-            $this->cancelPartnerAmount = 0;
-        } elseif ($actionType === HelpCancelRequest::ACTION_CUSTOMER_WITHDRAW && $partnerResponse === HelpCancelRequest::PARTNER_RESPONSE_CONFIRMED) {
-            $this->settlementType      = 'full_refund';
-            $this->cancelRefundAmount  = $gross;
-            $this->cancelPartnerAmount = 0;
-        } elseif ($actionType === HelpCancelRequest::ACTION_CUSTOMER_WITHDRAW && $partnerResponse === HelpCancelRequest::PARTNER_RESPONSE_REJECTED) {
-            $this->settlementType      = 'partial_settlement';
-            $dist = (float) ($this->selectedCancelRequest->partner_moved_km ?? 0);
-            $pAmt = min(round($gross * 0.5), round($gross * min(1.0, max(0.2, $dist / 5.0))));
-            $this->cancelPartnerAmount = max(5000, $pAmt);
-            $this->cancelRefundAmount  = max(0, $gross - $this->cancelPartnerAmount);
+        if ($this->selectedCancelRequest->status !== 'pending') {
+            // Jika tiket sudah diproses/disetujui, muat data riwayat aktual dari database
+            $this->settlementType      = $this->selectedCancelRequest->settlement_type ?? 'full_refund';
+            $this->cancelRefundAmount  = (float) ($this->selectedCancelRequest->refund_amount_customer ?? 0);
+            $this->cancelPartnerAmount = (float) ($this->selectedCancelRequest->payout_amount_mitra ?? 0);
+            $this->cancelAdminNotes    = (string) ($this->selectedCancelRequest->admin_notes ?? '');
+            $this->spTarget            = (string) ($this->selectedCancelRequest->sp_target ?? 'none');
+            $this->partnerSpLevel      = $this->selectedCancelRequest->partner_sp_level ?? 1;
+            $this->partnerSpReason     = (string) ($this->selectedCancelRequest->partner_sp_reason ?? '');
+            $this->customerSpLevel     = $this->selectedCancelRequest->customer_sp_level ?? 1;
+            $this->customerSpReason    = (string) ($this->selectedCancelRequest->customer_sp_reason ?? '');
         } else {
-            $this->settlementType      = $this->selectedCancelRequest->item_purchased ? 'item_settled' : 'full_refund';
-            $this->cancelRefundAmount  = $gross;
-            $this->cancelPartnerAmount = $this->selectedCancelRequest->item_purchase_amount ?: 0;
-        }
-        $this->cancelAdminNotes = '';
+            $isKonsep2PartnerCancel = ($isPartner && ($cancellationStage === 'in_progress' || $this->selectedCancelRequest->previous_status === 'in_progress' || $help?->status === Help::STATUS_PARTNER_CANCEL_REQUESTED));
 
-        // Reset SP Controls
-        $this->spTarget         = 'none';
-        $this->partnerSpLevel   = 1;
-        $this->partnerSpReason  = '';
-        $this->customerSpLevel  = 1;
-        $this->customerSpReason = '';
+            if ($isKonsep2PartnerCancel) {
+                // Konsep 2: Mitra membatalkan saat pengerjaan telah dimulai -> Default Full Refund / Penyesuaian Saldo Admin & Customer
+                $this->settlementType      = 'full_refund';
+                $this->cancelRefundAmount  = $gross;
+                $this->cancelPartnerAmount = 0;
+            } elseif ($actionType === HelpCancelRequest::ACTION_SWITCH_PARTNER || ($isPartner && $actionType === HelpCancelRequest::ACTION_PARTNER_INCIDENT)) {
+                // Konsep 1: Transit / Kendala perjalanan / Ganti Mitra -> Relist Pool
+                $this->settlementType      = 'relist_pool';
+                $this->cancelRefundAmount  = 0;
+                $this->cancelPartnerAmount = 0;
+            } elseif ($actionType === HelpCancelRequest::ACTION_CUSTOMER_WITHDRAW && $partnerResponse === HelpCancelRequest::PARTNER_RESPONSE_CONFIRMED) {
+                $this->settlementType      = 'full_refund';
+                $this->cancelRefundAmount  = $gross;
+                $this->cancelPartnerAmount = 0;
+            } elseif ($actionType === HelpCancelRequest::ACTION_CUSTOMER_WITHDRAW && $partnerResponse === HelpCancelRequest::PARTNER_RESPONSE_REJECTED) {
+                $this->settlementType      = 'partial_settlement';
+                $dist = (float) ($this->selectedCancelRequest->partner_moved_km ?? 0);
+                $pAmt = min(round($gross * 0.5), round($gross * min(1.0, max(0.2, $dist / 5.0))));
+                $this->cancelPartnerAmount = max(5000, $pAmt);
+                $this->cancelRefundAmount  = max(0, $gross - $this->cancelPartnerAmount);
+            } else {
+                $this->settlementType      = $this->selectedCancelRequest->item_purchased ? 'item_settled' : 'full_refund';
+                $this->cancelRefundAmount  = $gross;
+                $this->cancelPartnerAmount = $this->selectedCancelRequest->item_purchase_amount ?: 0;
+            }
+            $this->cancelAdminNotes = '';
+
+            // Reset SP Controls
+            $this->spTarget         = 'none';
+            $this->partnerSpLevel   = 1;
+            $this->partnerSpReason  = '';
+            $this->customerSpLevel  = 1;
+            $this->customerSpReason = '';
+        }
+
+        // Ambil akumulasi pembatalan Konsep 1 (Kendala Perjalanan - Transit) dari data akun mitra (termasuk status pengampunan)
+        $targetPartnerId = $this->selectedCancelRequest->partner_id ?: $this->selectedCancelRequest->help?->mitra_id;
+        if ($targetPartnerId) {
+            $targetPartner = $this->selectedCancelRequest->partner ?: User::find($targetPartnerId);
+            $this->partnerKonsep1CancelCount = $targetPartner ? $targetPartner->getKonsep1CancellationCount() : 0;
+        } else {
+            $this->partnerKonsep1CancelCount = 0;
+        }
 
         $this->showCancelReviewModal = true;
     }
 
     public function closeCancelReviewModal()
     {
-        $this->showCancelReviewModal  = false;
-        $this->showUnlinkConfirmModal = false;
+        $this->showCancelReviewModal        = false;
+        $this->showCancelReviewConfirmModal = false;
+        $this->showUnlinkConfirmModal       = false;
+        $this->partnerKonsep1CancelCount    = 0;
         $this->cancelLogs = [];
         $this->reset([
+            'showCancelReviewConfirmModal',
             'showUnlinkConfirmModal',
+            'partnerKonsep1CancelCount',
             'selectedCancelRequestId',
             'selectedCancelRequest',
             'cancelDecision',
@@ -494,9 +523,35 @@ class Index extends Component
         ]);
     }
 
+    public function openCancelReviewConfirmModal()
+    {
+        if (!$this->selectedCancelRequest || $this->selectedCancelRequest->status !== 'pending') {
+            session()->flash('error', 'Tiket pembatalan ini sudah selesai diproses dan tidak dapat diaudit ulang.');
+            return;
+        }
+
+        $this->validate([
+            'cancelDecision'     => 'required|in:approved,rejected',
+            'settlementType'     => 'required_if:cancelDecision,approved|in:full_refund,item_settled,partial_settlement,relist_pool',
+            'cancelRefundAmount' => 'nullable|numeric|min:0',
+            'cancelPartnerAmount'=> 'nullable|numeric|min:0',
+            'spTarget'           => 'required|in:none,partner,customer,both',
+            'partnerSpLevel'     => 'required_if:spTarget,partner,both|integer|min:1|max:3',
+            'customerSpLevel'    => 'required_if:spTarget,customer,both|integer|min:1|max:3',
+        ]);
+
+        $this->showCancelReviewConfirmModal = true;
+    }
+
+    public function closeCancelReviewConfirmModal()
+    {
+        $this->showCancelReviewConfirmModal = false;
+    }
+
     public function executeCancelReview()
     {
-        if (!$this->selectedCancelRequest) {
+        if (!$this->selectedCancelRequest || $this->selectedCancelRequest->status !== 'pending') {
+            session()->flash('error', 'Tiket pembatalan ini sudah selesai diproses dan tidak dapat diaudit ulang.');
             return;
         }
 
@@ -532,11 +587,14 @@ class Index extends Component
                 ]
             );
 
-            session()->flash('message', "Permintaan pembatalan #{$this->selectedCancelRequest->id} berhasil diproses.");
+            session()->flash('message', "Permintaan pembatalan berhasil diproses.");
+            $this->showCancelReviewConfirmModal = false;
             $this->closeCancelReviewModal();
         } catch (\RuntimeException $e) {
+            $this->showCancelReviewConfirmModal = false;
             session()->flash('error', $e->getMessage());
         } catch (\Throwable $e) {
+            $this->showCancelReviewConfirmModal = false;
             Log::error('[AdminDisputes] executeCancelReview error: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat memproses permintaan pembatalan: ' . $e->getMessage());
         }
@@ -565,7 +623,7 @@ class Index extends Component
                 $this->cancelAdminNotes ?: 'Mitra dipisahkan & dibebaskan oleh Admin karena customer belum mengonfirmasi.'
             );
 
-            session()->flash('message', "Mitra berhasil dipisahkan dan dibebaskan dari tugas #{$this->selectedCancelRequest->help_id}. Tugas ditahan (tidak tampil di pool) sampai Customer mengonfirmasi.");
+            session()->flash('message', "Mitra berhasil dipisahkan dan dibebaskan dari tugas ini. Tugas ditahan (tidak tampil di pool) sampai Customer mengonfirmasi.");
             $this->showUnlinkConfirmModal = false;
             $this->closeCancelReviewModal();
         } catch (\RuntimeException $e) {
@@ -625,7 +683,7 @@ class Index extends Component
                 ]
             );
 
-            session()->flash('message', "Konfirmasi paksa ganti mitra untuk bantuan #{$req->help_id} berhasil diproses. Tugas telah dikembalikan ke pool pencarian mitra baru dan mitra lama telah dilepaskan.");
+            session()->flash('message', "Konfirmasi paksa ganti mitra untuk bantuan ini berhasil diproses. Tugas telah dikembalikan ke pool pencarian mitra baru dan mitra lama telah dilepaskan.");
             $this->showForceSwitchModal = false;
             $this->closeCancelReviewModal();
         } catch (\RuntimeException $e) {
@@ -704,7 +762,7 @@ class Index extends Component
         }
 
         if ($this->activeTab === 'cancellations') {
-            if (!in_array($this->status, ['pending', 'approved', 'rejected', 'all'], true)) {
+            if (!in_array($this->status, ['pending', 'approved', 'all'], true)) {
                 $this->status = 'pending';
             }
 
@@ -768,12 +826,24 @@ class Index extends Component
             }
 
             $cancellations = $query->latest()->paginate(10);
+
+            // Ambil akumulasi pembatalan Konsep 1 (Transit) dari akun mitra yang tampil di halaman ini
+            $partnerIds = $cancellations->pluck('partner_id')->filter()->unique();
+            $konsep1PartnerCounts = [];
+            if ($partnerIds->isNotEmpty()) {
+                $konsep1PartnerCounts = User::whereIn('id', $partnerIds)
+                    ->pluck('konsep1_cancel_count', 'id')
+                    ->map(fn($val) => (int) ($val ?? 0))
+                    ->toArray();
+            }
+
             $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 
             $routePrefix = $isSuperAdmin ? 'superadmin.' : 'admin.';
 
             return view('livewire.admin.disputes.index', [
                 'cancellations'             => $cancellations,
+                'konsep1PartnerCounts'      => $konsep1PartnerCounts,
                 'disputes'                  => collect(),
                 'isSuperAdmin'              => $isSuperAdmin,
                 'routePrefix'               => $routePrefix,

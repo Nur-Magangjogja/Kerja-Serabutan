@@ -213,7 +213,7 @@ class Index extends Component
                 \App\Models\ActivityLog::record(
                     auth()->user(),
                     'withdraw_approved',
-                    "Admin " . (auth()->user()->name ?? 'Admin') . " menyetujui pencairan dana #WD-{$withdraw->id} sebesar Rp " . number_format($withdraw->amount, 0, ',', '.') . " untuk user {$withdraw->user?->name}",
+                    "Admin " . (auth()->user()->name ?? 'Admin') . " menyetujui pencairan dana sebesar Rp " . number_format($withdraw->amount, 0, ',', '.') . " untuk user {$withdraw->user?->name}",
                     ['withdraw_id' => $withdraw->id, 'amount' => $withdraw->amount, 'user_id' => $withdraw->user_id]
                 );
             });
@@ -283,14 +283,14 @@ class Index extends Component
                     'amount' => $refundAmount,
                     'total_payment' => $refundAmount,
                     'status' => 'success',
-                    'description' => "Pengembalian dana penarikan #WD-{$withdraw->id} yang ditolak: {$this->rejectReason}",
+                    'description' => "Pengembalian dana penarikan yang ditolak: {$this->rejectReason}",
                 ]);
 
                 // Catat ke log aktivitas sistem
                 \App\Models\ActivityLog::record(
                     auth()->user(),
                     'withdraw_rejected',
-                    "Admin " . (auth()->user()->name ?? 'Admin') . " menolak pencairan dana #WD-{$withdraw->id} sebesar Rp " . number_format($refundAmount, 0, ',', '.') . " untuk user {$user?->name}. Alasan: {$this->rejectReason}",
+                    "Admin " . (auth()->user()->name ?? 'Admin') . " menolak pencairan dana sebesar Rp " . number_format($refundAmount, 0, ',', '.') . " untuk user {$user?->name}. Alasan: {$this->rejectReason}",
                     ['withdraw_id' => $withdraw->id, 'amount' => $refundAmount, 'user_id' => $withdraw->user_id, 'reason' => $this->rejectReason]
                 );
             });
@@ -367,7 +367,7 @@ class Index extends Component
                 \App\Models\ActivityLog::record(
                     auth()->user(),
                     'withdraw_proof_updated',
-                    "Admin " . (auth()->user()->name ?? 'Admin') . " memperbarui foto bukti transfer untuk pencairan dana #WD-{$withdraw->id} milik {$withdraw->user?->name}",
+                    "Admin " . (auth()->user()->name ?? 'Admin') . " memperbarui foto bukti transfer untuk pencairan dana milik {$withdraw->user?->name}",
                     ['withdraw_id' => $withdraw->id, 'user_id' => $withdraw->user_id]
                 );
             });
@@ -386,19 +386,9 @@ class Index extends Component
     {
         $admin = auth()->user();
         $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
-
-        // Ambil daftar kecamatan untuk filter
-        if ($isSuperAdmin) {
-            $districts = District::with('city')->orderBy('name')->get();
-        } else {
-            $districts = $admin ? $admin->getAdminDistricts() : collect();
-        }
-
         $query = WithdrawRequest::with(['user.district', 'user.city'])->latest();
 
         if (! $isSuperAdmin) {
-            $this->districtFilter = $admin ? $admin->getActiveAdminDistrictFilter() : 'all';
-            $this->cityFilter = $this->districtFilter;
             $effectiveDistrictIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
             if (!empty($effectiveDistrictIds)) {
                 $query->whereHas('user', fn($q) => $q->whereIn('district_id', $effectiveDistrictIds));
@@ -419,8 +409,6 @@ class Index extends Component
                         $q->orWhereIn('district_id', $districtIds);
                     }
                 });
-            } elseif ($this->districtFilter !== 'all') {
-                $query->whereHas('user', fn($q) => $q->where('district_id', (int) $this->districtFilter));
             }
         }
 
@@ -452,10 +440,6 @@ class Index extends Component
 
         return view('livewire.admin.withdraws.index', [
             'withdraws'        => $withdraws,
-            'districts'        => $districts,
-            'cities'           => $districts, // Backward compatibility
-            'districtFilter'   => $this->districtFilter,
-            'cityFilter'       => $this->districtFilter,
             'isSuperAdmin'     => $isSuperAdmin,
         ])->layout($layout);
     }

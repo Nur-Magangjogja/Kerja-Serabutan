@@ -20,7 +20,6 @@ class Activity extends Component
     // Filter Direktori Pengguna
     public $userSearch = '';
     public $userRoleFilter = 'all'; // all, customer, mitra
-    public $userCityId = 'all';
     public $userPerPage = 12;
 
     // Filter Khusus Pengguna Terpilih (saat klik user dari direktori)
@@ -31,7 +30,6 @@ class Activity extends Component
     public $search = '';
     public $roleFilter = 'all'; // all, customer, mitra
     public $activityTypeFilter = 'all';
-    public $cityId = 'all';
     public $dateFrom = '';
     public $dateTo = '';
     public $perPage = 15;
@@ -98,11 +96,6 @@ class Activity extends Component
         $this->resetPage('usersPage');
     }
 
-    public function updatingUserCityId()
-    {
-        $this->resetPage('usersPage');
-    }
-
     public function updatingSearch()
     {
         $this->resetPage();
@@ -114,11 +107,6 @@ class Activity extends Component
     }
 
     public function updatingActivityTypeFilter()
-    {
-        $this->resetPage();
-    }
-
-    public function updatingCityId()
     {
         $this->resetPage();
     }
@@ -135,7 +123,7 @@ class Activity extends Component
 
     public function clearFilters()
     {
-        $this->reset(['search', 'roleFilter', 'activityTypeFilter', 'cityId', 'dateFrom', 'dateTo']);
+        $this->reset(['search', 'roleFilter', 'activityTypeFilter', 'dateFrom', 'dateTo']);
         $this->resetPage();
     }
 
@@ -225,13 +213,6 @@ class Activity extends Component
             $userQuery->where('role', $this->userRoleFilter);
         }
 
-        if ($this->userCityId !== 'all') {
-            $userQuery->where(function($q) {
-                $q->where('district_id', $this->userCityId)
-                  ->orWhere('city_id', $this->userCityId);
-            });
-        }
-
         if (!empty($this->userSearch)) {
             $us = trim($this->userSearch);
             $userQuery->where(function ($q) use ($us) {
@@ -305,14 +286,6 @@ class Activity extends Component
             $activityQuery->whereIn('activity_type', $aliases);
         }
 
-        if ($this->cityId !== 'all') {
-            $cId = $this->cityId;
-            $activityQuery->where(function ($q) use ($cId) {
-                $q->whereHas('user', fn($uq) => $uq->where('district_id', $cId)->orWhere('city_id', $cId))
-                  ->orWhereHas('help', fn($hq) => $hq->where('district_id', $cId)->orWhere('city_id', $cId));
-            });
-        }
-
         if ($this->dateFrom) {
             $activityQuery->whereDate('created_at', '>=', $this->dateFrom);
         }
@@ -343,14 +316,8 @@ class Activity extends Component
         $activities = $activityQuery->paginate($this->perPage);
 
         // ─────────────────────────────────────────────────────────────────────
-        // 3. DAFTAR WILAYAH & STATISTIK
+        // 3. STATISTIK AKTIVITAS
         // ─────────────────────────────────────────────────────────────────────
-        if ($isSuperAdmin) {
-            $cities = City::orderBy('name')->get();
-        } else {
-            $cities = $admin ? $admin->getAdminDistricts() : collect();
-        }
-
         $baseStats = PartnerActivity::whereHas('user', fn($q) => $q->whereIn('role', ['customer', 'mitra']));
         if (!$isSuperAdmin && !empty($effectiveDistrictIds)) {
             $baseStats->where(function ($q) use ($effectiveDistrictIds) {
@@ -387,8 +354,17 @@ class Activity extends Component
             $baseStats->where('user_id', $this->selectedUserId);
         }
 
+        $hasCustomFilters = !empty($this->search)
+            || !empty($this->selectedUserId)
+            || ($this->roleFilter !== 'all')
+            || ($this->activityTypeFilter !== 'all')
+            || !empty($this->dateFrom)
+            || !empty($this->dateTo);
+
+        $totalStats = !$hasCustomFilters ? $activities->total() : (clone $baseStats)->count();
+
         $stats = [
-            'total'          => (clone $baseStats)->count(),
+            'total'          => $totalStats,
             'today'          => (clone $baseStats)->whereDate('created_at', today())->count(),
             'customer_acts'  => (clone $baseStats)->whereHas('user', fn($q) => $q->where('role', 'customer'))->count(),
             'mitra_acts'     => (clone $baseStats)->whereHas('user', fn($q) => $q->where('role', 'mitra'))->count(),
@@ -401,7 +377,6 @@ class Activity extends Component
         return view('livewire.admin.partners.activity', [
             'users'      => $users,
             'activities' => $activities,
-            'cities'     => $cities,
             'stats'      => $stats,
         ])->layout($layout);
     }

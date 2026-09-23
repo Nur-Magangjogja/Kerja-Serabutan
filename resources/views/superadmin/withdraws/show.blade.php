@@ -42,7 +42,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
                     <div class="text-xs text-gray-500 dark:text-gray-400">Mitra</div>
-                    <div class="font-semibold text-gray-900 dark:text-white mt-1">{{ $withdraw->user?->name ?? '-' }} <span class="text-xs text-gray-400 dark:text-gray-500">(ID: {{ $withdraw->user_id }})</span></div>
+                    <div class="font-semibold text-gray-900 dark:text-white mt-1">{{ $withdraw->user?->name ?? '-' }}</div>
                 </div>
 
                 <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
@@ -91,7 +91,6 @@
                 <div class="mt-2 text-sm text-gray-700 dark:text-gray-300">Diproses pada:
                     {{ $withdraw->processed_at ? $withdraw->processed_at->format('Y-m-d H:i') : '-' }}
                 </div>
-                <div class="mt-2 text-sm text-gray-700 dark:text-gray-300">Referensi: {{ $withdraw->external_id ?? '-' }}</div>
             @endif
         </div>
     </div>

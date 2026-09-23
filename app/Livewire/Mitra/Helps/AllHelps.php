@@ -17,13 +17,15 @@ class AllHelps extends Component
     use WithPagination;
 
     protected $queryString = [
-        'search'         => ['except' => ''],
-        'districtFilter' => ['except' => 'all'],
-        'sortBy'         => ['except' => 'nearby'],
+        'search'            => ['except' => ''],
+        'districtFilter'    => ['except' => 'all'],
+        'serviceTypeFilter' => ['except' => 'all'],
+        'sortBy'            => ['except' => 'nearby'],
     ];
 
     public $search              = '';
     public $districtFilter      = 'all'; // 'all' (radius 10 km), 'my_district', 'my_city', or district_id
+    public $serviceTypeFilter   = 'all'; // 'all', 'on_site_service', 'pickup_delivery'
     public $sortBy              = 'nearby'; // nearby, latest, oldest, price_high, price_low
     public $mitraLat            = null;
     public $mitraLng            = null;
@@ -60,10 +62,26 @@ class AllHelps extends Component
         $this->resetPage();
     }
 
+    public function updatingServiceTypeFilter()
+    {
+        $this->resetPage();
+    }
+
     public function setMitraLocation($lat, $lng, $cityName = null, $districtName = null)
     {
-        $this->mitraLat = (float) $lat;
-        $this->mitraLng = (float) $lng;
+        $newLat = (float) $lat;
+        $newLng = (float) $lng;
+
+        // Cek apakah koordinat berpindah secara signifikan (> 0.001 derajat atau koordinat awal)
+        $hasMovedSignificantly = (
+            $this->mitraLat === null ||
+            $this->mitraLng === null ||
+            abs($this->mitraLat - $newLat) > 0.001 ||
+            abs($this->mitraLng - $newLng) > 0.001
+        );
+
+        $this->mitraLat = $newLat;
+        $this->mitraLng = $newLng;
 
         $user = auth()->user();
         if ($user) {
@@ -77,17 +95,23 @@ class AllHelps extends Component
             );
         }
 
-        $this->resolveCurrentTerritory($cityName, $districtName);
-        $this->resetPage();
+        $territoryChanged = $this->resolveCurrentTerritory($cityName, $districtName);
+
+        // Hanya reset paginasi jika ada pergerakan lokasi GPS signifikan atau wilayah kota/kecamatan berubah
+        if ($hasMovedSignificantly || $territoryChanged) {
+            $this->resetPage();
+        }
     }
 
     /**
      * Resolusikan Kecamatan & Kota/Kabupaten secara dinamis dari titik koordinat GPS posisi saat ini.
      * Fallback ke data profil pengguna jika koordinat GPS belum tersedia.
      */
-    public function resolveCurrentTerritory(?string $cityName = null, ?string $districtName = null): void
+    public function resolveCurrentTerritory(?string $cityName = null, ?string $districtName = null): bool
     {
         $user = auth()->user();
+        $oldCityId = $this->currentCityId;
+        $oldDistrictId = $this->currentDistrictId;
 
         // 1. Jika ada koordinat GPS, temukan Kota terdekat berdasarkan koordinat
         if ($this->mitraLat && $this->mitraLng) {
@@ -151,6 +175,8 @@ class AllHelps extends Component
             $this->currentDistrictId   = $userDistrict?->id ?? $user->district_id;
             $this->currentDistrictName = $userDistrict?->name ?? $user->district ?? $user->kecamatan;
         }
+
+        return ($oldCityId !== $this->currentCityId || $oldDistrictId !== $this->currentDistrictId);
     }
 
     /**
@@ -170,6 +196,29 @@ class AllHelps extends Component
         // Guard: manual takeHelp hanya diizinkan jika order sudah berstatus Open Pool
         if ($help->dispatch_mode && $help->dispatch_mode !== Help::DISPATCH_MODE_POOL) {
             session()->flash('error', 'Pesanan ini sedang dalam penawaran sequential khusus dan belum dibuka untuk pool umum.');
+            return;
+        }
+
+        // Guard: Kelayakan kendaraan untuk layanan Antar & Jemput (pickup_delivery)
+        if ($help->isPickup() && !$user->canTakePickupDelivery()) {
+            if (!$user->hasVehicleProfile()) {
+                session()->flash('error', 'Untuk mengambil pekerjaan Antar & Jemput, lengkapi Plat Nomor, SIM Motor, dan STNK pada profil Anda terlebih dahulu.');
+            } elseif ($user->vehicle_verification_status === 'rejected') {
+                session()->flash('error', 'Verifikasi data kendaraan Anda ditolak. Alasan: ' . ($user->vehicle_rejection_reason ?? '-') . '. Silakan perbarui dokumen di profil.');
+            } else {
+                session()->flash('error', 'Data kendaraan Anda sedang dalam proses verifikasi oleh Admin.');
+            }
+            return;
+        }
+
+        // Guard: Wilayah atau Kecamatan sedang dinonaktifkan
+        if ($help->city && !$help->city->is_active) {
+            session()->flash('error', 'Bantuan ini berada di wilayah yang sedang ditutup sementara dan tidak dapat diambil.');
+            return;
+        }
+
+        if ($help->district && !$help->district->is_active) {
+            session()->flash('error', 'Bantuan ini berada di kecamatan yang sedang ditutup sementara dan tidak dapat diambil.');
             return;
         }
 
@@ -245,7 +294,29 @@ class AllHelps extends Component
             ->where(function ($q) {
                 $q->whereNull('expires_at')
                   ->orWhere('expires_at', '>', now());
+            })
+            // Sembunyikan tugas di kota atau kecamatan yang sedang dinonaktifkan
+            ->whereHas('city', fn($c) => $c->where('is_active', true))
+            ->where(function ($q) {
+                $q->whereNull('district_id')
+                  ->orWhereHas('district', fn($d) => $d->where('is_active', true));
             });
+
+        // Sembunyikan tugas jenis Antar & Jemput (pickup_delivery) jika mitra belum melengkapi
+        // dan belum terverifikasi SIM/STNK kendaraannya oleh Admin
+        if ($user && !$user->canTakePickupDelivery()) {
+            $basePoolQuery->where('service_type', '!=', Help::SERVICE_TYPE_PICKUP_DELIVERY);
+            if ($this->serviceTypeFilter === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+                $this->serviceTypeFilter = 'all';
+            }
+        }
+
+        // Filter eksplisit preferensi jenis layanan yang dipilih mitra
+        if ($this->serviceTypeFilter === Help::SERVICE_TYPE_ON_SITE) {
+            $basePoolQuery->where('service_type', Help::SERVICE_TYPE_ON_SITE);
+        } elseif ($this->serviceTypeFilter === Help::SERVICE_TYPE_PICKUP_DELIVERY && $user?->canTakePickupDelivery()) {
+            $basePoolQuery->where('service_type', Help::SERVICE_TYPE_PICKUP_DELIVERY);
+        }
 
         // Setup GPS parameters & Haversine SQL formula jika ada koordinat mitra
         $hasGps = ($this->mitraLat && $this->mitraLng);

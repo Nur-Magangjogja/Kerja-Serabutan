@@ -104,7 +104,7 @@
                 const user = (help.user && help.user.name) ? help.user.name : (help.user && help.user.name) || 'Unknown';
                 const created = help.created_at ? new Date(help.created_at).toLocaleString() : '';
                 document.getElementById('help-modal-meta').textContent = (user ? user + ' • ' : '') + (help.created_at ? timeAgo(help.created_at) : '');
-                document.getElementById('help-modal-meta2').textContent = 'ID: ' + (help.id ?? '-') + (help.created_at ? ' • Dibuat: ' + (new Date(help.created_at).toLocaleString()) : '');
+                document.getElementById('help-modal-meta2').textContent = help.created_at ? 'Dibuat: ' + (new Date(help.created_at).toLocaleString()) : '';
 
                 // Photo or initial
                 const photo = document.getElementById('help-modal-photo');

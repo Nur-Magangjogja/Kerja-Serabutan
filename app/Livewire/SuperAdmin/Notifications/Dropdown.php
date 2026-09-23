@@ -13,21 +13,12 @@ class Dropdown extends Component
 
     public function mount()
     {
-        $this->loadNotifications();
+        $this->loadUnreadCount();
     }
 
-    public function loadNotifications()
+    protected function getNotificationsBaseQuery($user)
     {
-        $user = Auth::user();
-        
-        if (!$user) {
-            $this->notifications = collect([]);
-            $this->unreadCount = 0;
-            return;
-        }
-        
-        // Load only Top Up and Withdraw notifications for Super Admin Header
-        $query = $user->notifications()
+        return $user->notifications()
             ->where(function ($q) {
                 $q->whereIn('type', [
                     \App\Notifications\NewTopupRequest::class,
@@ -40,12 +31,43 @@ class Dropdown extends Component
                 ->orWhere('data->category', 'topup')
                 ->orWhere('data->category', 'withdraw');
             });
+    }
+
+    public function loadUnreadCount()
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            $this->notifications = collect([]);
+            $this->unreadCount = 0;
+            return;
+        }
+
+        $this->unreadCount = $this->getNotificationsBaseQuery($user)
+            ->whereNull('read_at')
+            ->count();
+
+        if ($this->isOpen) {
+            $this->loadNotifications();
+        }
+    }
+
+    public function loadNotifications()
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            $this->notifications = collect([]);
+            $this->unreadCount = 0;
+            return;
+        }
+        
+        $query = $this->getNotificationsBaseQuery($user);
 
         $this->notifications = (clone $query)
             ->take(10)
             ->get();
         
-        // Get unread count specifically for topup & withdraw
         $this->unreadCount = (clone $query)
             ->whereNull('read_at')
             ->count();
@@ -54,7 +76,7 @@ class Dropdown extends Component
     public function markAsRead($notificationId)
     {
         $notification = Auth::user()
-            ->notifications()
+            ?->notifications()
             ->find($notificationId);
         
         if ($notification) {
@@ -66,6 +88,9 @@ class Dropdown extends Component
     public function toggleDropdown()
     {
         $this->isOpen = !$this->isOpen;
+        if ($this->isOpen) {
+            $this->loadNotifications();
+        }
     }
 
     public function closeDropdown()

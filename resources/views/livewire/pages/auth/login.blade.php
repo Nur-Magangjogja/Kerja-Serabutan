@@ -238,7 +238,7 @@ new #[Layout('layouts.blank')] class extends Component {
                                     required 
                                     autofocus
                                     autocomplete="username"
-                                    placeholder="@gmail.com atau username"
+                                    placeholder="user@gmail.com atau username"
                                     class="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400 text-sm focus:bg-white dark:focus:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all shadow-2xs font-medium"
                                 />
                             </div>

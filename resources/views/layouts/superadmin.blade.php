@@ -251,7 +251,7 @@
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
                     </svg>
-                    <span class="whitespace-nowrap">Verifikasi KTP</span>
+                    <span class="whitespace-nowrap">Verifikasi KTP & Kendaraan</span>
                 </a>
 
                 <a href="{{ route('superadmin.users') }}" wire:navigate
@@ -259,7 +259,7 @@
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
-                    <span class="whitespace-nowrap">Manajemen User</span>
+                    <span class="whitespace-nowrap">Manajemen Mitra & Customer</span>
                 </a>
 
                 <a href="{{ route('superadmin.cities') }}" wire:navigate
@@ -276,7 +276,7 @@
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
-                    <span class="whitespace-nowrap">Manajemen Admin</span>
+                    <span class="whitespace-nowrap">Manajemen Admin Wilayah</span>
                 </a>
 
 
@@ -321,7 +321,7 @@
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                     </svg>
-                    <span class="whitespace-nowrap">Blokir Mitra</span>
+                    <span class="whitespace-nowrap">Blokir Mitra & Customer</span>
                 </a>
 
                 <div class="pt-3.5 pb-1">
@@ -420,10 +420,11 @@
                     request()->routeIs('superadmin.ktp-ocr.*') || request()->routeIs('superadmin.ktp-ocr') => 'OCR KTP & Verifikasi',
                     request()->routeIs('superadmin.reports.*') || request()->routeIs('superadmin.partners.reports*') => 'Laporan Aduan',
                     request()->routeIs('superadmin.disputes*') || request()->routeIs('superadmin.cancellations*') => 'Tinjauan Pembatalan & Sengketa',
-                    request()->routeIs('superadmin.users.*') => 'Manajemen Pengguna',
+                    request()->routeIs('superadmin.users*') => 'Manajemen Mitra & Customer',
+                    request()->routeIs('superadmin.admin.users*') => 'Manajemen Admin Wilayah',
                     request()->routeIs('superadmin.categories.*') => 'Kategori Bantuan',
                     request()->routeIs('superadmin.banners.*') => 'Manajemen Banner Promo',
-                    request()->routeIs('superadmin.blacklist-partners.*') => 'Blokir Mitra',
+                    request()->routeIs('superadmin.partners.blocked*') || request()->routeIs('superadmin.blacklist-partners.*') => 'Blokir Mitra & Customer',
                     request()->routeIs('superadmin.withdraws.*') => 'Manajemen Withdraw',
                     request()->routeIs('superadmin.topup.approvals*') => 'Manajemen Top-Up',
                     request()->routeIs('superadmin.transactions.log*') => 'Financial Report',
