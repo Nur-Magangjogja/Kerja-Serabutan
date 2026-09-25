@@ -502,6 +502,21 @@ class AppSetting extends Model
         return (int) static::get('pickup_delivery.cancellation.final_approach_eta_minutes', 10);
     }
 
+    public static function isPickupDeliveryMatchingEnabled(): bool
+    {
+        return (bool) static::get('pickup_delivery.matching_enabled', true);
+    }
+
+    public static function getPickupDeliveryMatchingRing1Km(): float
+    {
+        return (float) static::get('pickup_delivery.matching_ring1_km', 5.0);
+    }
+
+    public static function getPickupDeliveryMaxMatchingRadiusKm(): float
+    {
+        return (float) static::get('pickup_delivery.matching_radius_km', 10.0);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // TAHAP 7: SCHEDULED ORDERS DEPARTURE WINDOW & REMINDER CONFIGURATION
     // ─────────────────────────────────────────────────────────────────────────

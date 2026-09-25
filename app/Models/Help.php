@@ -1333,26 +1333,62 @@ class Help extends Model
             return true;
         }
 
+        // Pesanan sudah selesai atau telah dibatalkan
         if (in_array($this->status, [self::STATUS_SELESAI, self::STATUS_DIBATALKAN], true)) {
             return false;
         }
 
-        // Tahap final approach / tiba di tujuan -> Terkunci demi keselamatan
-        if (in_array($this->service_stage, [self::STAGE_FINAL_APPROACH, self::STAGE_AT_DESTINATION], true)) {
+        // Tombol pembatalan/penyelesaian selalu aktif selama pesanan berjalan (tidak terkunci di tahap akhir / > 5 KM).
+        // Pada tahap akhir (> 5 KM atau final approach), pesanan dianggap sudah sampai dan memerlukan konfirmasi customer.
+        return in_array($this->status, [
+            self::STATUS_TAKEN,
+            self::STATUS_PARTNER_ON_THE_WAY,
+            self::STATUS_PARTNER_ARRIVED,
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_WAITING_CONFIRMATION,
+        ], true);
+    }
+
+    /**
+     * Cek apakah pesanan pickup_delivery masih berada dalam fase pra-jemput (belum mengangkut barang).
+     */
+    public function isPrePickup(): bool
+    {
+        if (!$this->isPickup()) {
             return false;
         }
 
-        // Tahap barang/penumpang sedang diantar
+        if (in_array($this->service_stage, [self::STAGE_ITEM_COLLECTED, self::STAGE_GOING_TO_DESTINATION, self::STAGE_FINAL_APPROACH, self::STAGE_AT_DESTINATION], true)) {
+            return false;
+        }
+
+        return in_array($this->status, [self::STATUS_MENUNGGU_MITRA, self::STATUS_TAKEN, self::STATUS_PARTNER_ON_THE_WAY, self::STATUS_PARTNER_ARRIVED], true)
+            || in_array($this->service_stage, [self::STAGE_GOING_TO_PICKUP, self::STAGE_AT_PICKUP, self::STAGE_WAITING_FOR_CUSTOMER], true);
+    }
+
+    /**
+     * Cek apakah pesanan pickup_delivery sudah masuk tahap 6 (jarak pasca jemput > 5 KM atau mendekati tujuan)
+     * di mana pesanan dianggap sudah sampai dan memerlukan konfirmasi pelepasan ongkos ke mitra.
+     */
+    public function isStage6Arrived(?float $partnerLat = null, ?float $partnerLng = null): bool
+    {
+        if (!$this->isPickup()) {
+            return false;
+        }
+
+        if (in_array($this->service_stage, [self::STAGE_FINAL_APPROACH, self::STAGE_AT_DESTINATION], true)) {
+            return true;
+        }
+
         if (in_array($this->service_stage, [self::STAGE_ITEM_COLLECTED, self::STAGE_GOING_TO_DESTINATION], true) || $this->status === self::STATUS_IN_PROGRESS) {
             $pLat = $partnerLat ?: (float) ($this->partner_current_lat ?: $this->partner_initial_lat ?: 0);
             $pLng = $partnerLng ?: (float) ($this->partner_current_lng ?: $this->partner_initial_lng ?: 0);
             $dCancel = app(\App\Services\GeoService::class)->calculateCancelDistanceAfterPickup($this, $pLat, $pLng);
             $maxPostPickupKm = AppSetting::getPickupDeliveryMaxCancellationDistanceAfterPickup(); // 5.0 KM
-            return $dCancel <= $maxPostPickupKm;
+            return $dCancel > $maxPostPickupKm;
         }
 
-        // Status sebelum barang diambil (taken, partner_on_the_way, partner_arrived)
-        return in_array($this->status, [self::STATUS_TAKEN, self::STATUS_PARTNER_ON_THE_WAY, self::STATUS_PARTNER_ARRIVED], true);
+        return false;
     }
 
     /**

@@ -79,10 +79,30 @@ class MitraMatchingActions
 
         try {
             $this->onlineService->startSearching($user, $latitude, $longitude);
+
+            // Reaktif: Segera cek apakah ada order instan yang sedang menunggu di sekitar mitra
+            $matched = null;
+            try {
+                $matched = $this->matchingService->matchPendingOrderForPartner($user);
+            } catch (\Throwable $matchingEx) {
+                Log::warning('[MitraMatchingActions] matchPendingOrderForPartner notice: ' . $matchingEx->getMessage());
+            }
+
+            if ($matched) {
+                PartnerOnlineService::clearStateCache($user->id);
+                return [
+                    'success'    => true,
+                    'message'    => 'Tawaran pesanan baru ditemukan! Menampilkan rincian order...',
+                    'flash_type' => 'success',
+                    'matched'    => true,
+                ];
+            }
+
             return [
                 'success'    => true,
                 'message'    => 'Mode pencarian aktif! Radar mencari order di sekitar Anda.',
                 'flash_type' => 'info',
+                'matched'    => false,
             ];
         } catch (\RuntimeException $e) {
             return [

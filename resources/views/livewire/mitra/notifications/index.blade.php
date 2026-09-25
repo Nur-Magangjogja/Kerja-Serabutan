@@ -102,6 +102,11 @@
                             }
 
                             $bodyText = $data['message'] ?? ($data['body'] ?? 'Pemberitahuan aktivitas');
+                            // Sanitize: strip order references, admin names, and database IDs from stored messages
+                            $bodyText = preg_replace('/\s*pada pesanan\s+[^\.]+/', '', $bodyText);
+                            $bodyText = preg_replace('/dari\s+(?!Admin\s+Wilayah\b)[^\.\:]+(?=[\.\:])/', 'dari Admin Wilayah SayaBantu', $bodyText);
+                            $bodyText = preg_replace('/\s*#\d+\s*/', ' ', $bodyText);
+                            $bodyText = preg_replace('/\s{2,}/', ' ', trim($bodyText));
                         @endphp
 
                         <div wire:key="notification-{{ $notification->id }}" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 transition-all hover:shadow-md">

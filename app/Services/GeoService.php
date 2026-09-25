@@ -404,7 +404,23 @@ class GeoService
             ];
         }
 
-        // 2. Validasi Klasifikasi OSM Data jika tersedia
+        // 2. Jika $osmDetails belum disediakan, lakukan reverse geocode via Nominatim dengan cache
+        if ($osmDetails === null) {
+            $cacheKey = 'osm_safety_' . round($lat, 4) . '_' . round($lng, 4);
+            try {
+                $osmDetails = \Illuminate\Support\Facades\Cache::remember($cacheKey, 86400, function () use ($lat, $lng) {
+                    $url = "https://nominatim.openstreetmap.org/reverse?format=json&lat={$lat}&lon={$lng}&zoom=18&addressdetails=1";
+                    $res = \Illuminate\Support\Facades\Http::timeout(3)
+                        ->withHeaders(['User-Agent' => 'SayaBantuApp/1.0 (SafetyCheck)'])
+                        ->get($url);
+                    return $res->successful() ? $res->json() : null;
+                });
+            } catch (\Throwable $e) {
+                $osmDetails = null;
+            }
+        }
+
+        // 3. Validasi Klasifikasi OSM Data jika tersedia
         if ($osmDetails) {
             $category = strtolower($osmDetails['category'] ?? $osmDetails['class'] ?? '');
             $type     = strtolower($osmDetails['type'] ?? '');
@@ -418,18 +434,11 @@ class GeoService
             }
 
             // Perairan terbuka / lautan / perairan bebas
-            $forbiddenWaterTypes = ['water', 'sea', 'ocean', 'bay', 'coastline', 'beach', 'strait', 'lake', 'riverbank'];
-            if ($category === 'natural' && in_array($type, $forbiddenWaterTypes, true)) {
+            $forbiddenWaterTypes = ['water', 'sea', 'ocean', 'bay', 'coastline', 'beach', 'strait', 'lake', 'riverbank', 'reservoir', 'pond', 'wetland', 'dock', 'harbour'];
+            if (($category === 'natural' && in_array($type, $forbiddenWaterTypes, true)) || in_array($category, ['waterway', 'water'], true) || in_array($type, ['water', 'waterway'], true)) {
                 return [
                     'is_safe' => false,
                     'reason'  => 'Titik lokasi terdeteksi berada di area perairan / lautan yang tidak dapat diakses rekan jasa.',
-                ];
-            }
-
-            if ($category === 'waterway' || $type === 'waterway') {
-                return [
-                    'is_safe' => false,
-                    'reason'  => 'Titik lokasi terdeteksi berada di perairan sungai / kanal.',
                 ];
             }
 

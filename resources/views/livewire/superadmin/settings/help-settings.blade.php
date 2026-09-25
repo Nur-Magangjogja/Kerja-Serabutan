@@ -208,6 +208,61 @@
                     </label>
                 </div>
 
+                <!-- Sub-Section: Pengaturan Pencocokan Otomatis (Matching) Khusus Layanan Antar & Jemput -->
+                <div class="p-4 sm:p-5 bg-emerald-50/60 dark:bg-emerald-950/20 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-lg flex-shrink-0">
+                                🛵
+                            </div>
+                            <div>
+                                <h4 class="text-xs sm:text-sm font-bold text-emerald-950 dark:text-emerald-100 flex items-center gap-2">
+                                    <span>Pencocokan Radar Otomatis Layanan Antar & Jemput</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
+                                        Motor
+                                    </span>
+                                </h4>
+                                <p class="text-[11px] sm:text-xs text-emerald-800/80 dark:text-emerald-300 mt-0.5">
+                                    Aktifkan pencocokan otomatis radar sekuensial khusus untuk pesanan antar jemput. Jika dinonaktifkan, pesanan antar jemput langsung masuk ke pool umum.
+                                </p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                            <input type="checkbox" wire:model="pickup_delivery_matching_enabled" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-600"></div>
+                        </label>
+                    </div>
+
+                    <!-- Dual Ring Radius Inputs -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-emerald-200/60 dark:border-emerald-800/50">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-800 dark:text-gray-200 mb-1.5 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span>Ring 1: Radius Prioritas Penjemputan (KM)</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" step="0.5" wire:model="pickup_delivery_matching_ring1_km" min="1" max="50"
+                                       class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-xs">KM</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Jangkauan ring pertama untuk mitra terdekat ke titik penjemputan (default: 5.0 KM).</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-800 dark:text-gray-200 mb-1.5 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                <span>Ring 2: Radius Fallback Perluasan (KM)</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" step="0.5" wire:model="pickup_delivery_matching_radius_km" min="1" max="50"
+                                       class="w-full px-3.5 py-2.5 bg-white dark:bg-gray-900 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs text-gray-900 dark:text-white">
+                                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-xs">KM</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Perluasan jangkauan jika tidak ada mitra aktif di Ring 1 (default: 10.0 KM).</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Sub-Section: Kustomisasi Pengaturan per Wilayah / Kota -->
                 <div class="p-4 sm:p-5 bg-gray-50/70 dark:bg-gray-900/40 rounded-2xl border border-gray-200 dark:border-gray-700/80 space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-200 dark:border-gray-700">

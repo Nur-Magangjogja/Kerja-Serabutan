@@ -228,7 +228,8 @@
          x-cloak
          x-init="
              window.addEventListener('restricted-location-detected', (e) => {
-                 message = (e.detail && e.detail.reason) ? e.detail.reason : 'Titik lokasi berada di wilayah terlarang atau perairan.';
+                 const detail = (e.detail && Array.isArray(e.detail)) ? e.detail[0] : (e.detail || {});
+                 message = detail.reason || 'Titik lokasi berada di wilayah terlarang atau perairan.';
                  show = true;
                  setTimeout(() => show = false, 8000);
              });
@@ -271,8 +272,12 @@
         <button type="button" @click="show = false" class="text-white hover:text-white/80 font-bold text-sm cursor-pointer">&times;</button>
     </div>
 
+    @php
+        $hasMapError = $errors->has('latitude') || $errors->has('pickup_latitude') || $errors->has('delivery_latitude') || $errors->has('pickup_address') || $errors->has('delivery_address');
+    @endphp
+
     <!-- Map Container -->
-    <div class="relative rounded-xl overflow-hidden border @error('latitude') border-red-500 ring-2 ring-red-500/30 @else border-gray-300 dark:border-gray-700 @enderror shadow-inner bg-gray-100 dark:bg-gray-800 mb-2">
+    <div class="relative rounded-xl overflow-hidden border {{ $hasMapError ? 'border-red-500 ring-2 ring-red-500/30' : 'border-gray-300 dark:border-gray-700' }} shadow-inner bg-gray-100 dark:bg-gray-800 mb-2">
         <div wire:ignore id="map" style="height: 300px; min-height: 300px;" class="w-full"></div>
     </div>
 
@@ -310,10 +315,30 @@
         {{ $service_type === 'pickup_delivery' ? 'Klik pada peta atau geser pin 1 (Jemput) & 2 (Antar) untuk menentukan rute.' : 'Klik pada peta atau geser pin untuk menentukan titik lokasi yang tepat.' }}
     </p>
 
-    @error('latitude')
+    @if ($errors->has('latitude'))
         <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block font-medium flex items-center">
             <svg class="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-            {{ $message }}
+            {{ $errors->first('latitude') }}
         </span>
-    @enderror
+    @elseif ($errors->has('pickup_address'))
+        <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block font-medium flex items-center">
+            <svg class="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+            {{ $errors->first('pickup_address') }}
+        </span>
+    @elseif ($errors->has('delivery_address'))
+        <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block font-medium flex items-center">
+            <svg class="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+            {{ $errors->first('delivery_address') }}
+        </span>
+    @elseif ($errors->has('pickup_latitude'))
+        <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block font-medium flex items-center">
+            <svg class="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+            {{ $errors->first('pickup_latitude') }}
+        </span>
+    @elseif ($errors->has('delivery_latitude'))
+        <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 block font-medium flex items-center">
+            <svg class="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+            {{ $errors->first('delivery_latitude') }}
+        </span>
+    @endif
 </div>

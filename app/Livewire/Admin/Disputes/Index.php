@@ -445,9 +445,25 @@ class Index extends Component
             $this->customerSpLevel     = $this->selectedCancelRequest->customer_sp_level ?? 1;
             $this->customerSpReason    = (string) ($this->selectedCancelRequest->customer_sp_reason ?? '');
         } else {
+            $isPickup = $help && $help->isPickup();
             $isKonsep2PartnerCancel = ($isPartner && ($cancellationStage === 'in_progress' || $this->selectedCancelRequest->previous_status === 'in_progress' || $help?->status === Help::STATUS_PARTNER_CANCEL_REQUESTED));
 
-            if ($isKonsep2PartnerCancel) {
+            if ($isPickup && $help->isPrePickup()) {
+                // Antar & Jemput Fase Pra-Jemput (Tahap 3 & 4): Mitra baru menuju atau menunggu di titik jemput (belum membawa barang).
+                // Rekomendasi: 100% Full Refund ke Customer, Rp 0 ke Mitra.
+                $this->settlementType      = 'full_refund';
+                $this->cancelRefundAmount  = $gross;
+                $this->cancelPartnerAmount = 0;
+                $this->cancelAdminNotes    = 'Pesanan Antar & Jemput Fase Pra-Jemput: Mitra belum membawa barang/penumpang. 100% Saldo dikembalikan ke Customer.';
+            } elseif ($isPickup && $help->isStage6Arrived()) {
+                // Antar & Jemput Tahap 6: Pasca-jemput > 5 KM atau mendekati tujuan.
+                // Dianggap sudah sampai: 100% Ongkos antar dialokasikan ke Rekan Jasa.
+                $serviceFee = (float) ($help->service_fee > 0 ? $help->service_fee : $help->amount);
+                $this->settlementType      = 'partial_settlement';
+                $this->cancelPartnerAmount = $serviceFee;
+                $this->cancelRefundAmount  = max(0.0, $gross - $serviceFee);
+                $this->cancelAdminNotes    = 'Pesanan Antar & Jemput Tahap 6: Dianggap telah sampai di tujuan. Ongkos antar dialokasikan penuh ke Rekan Jasa.';
+            } elseif ($isKonsep2PartnerCancel) {
                 // Konsep 2: Mitra membatalkan saat pengerjaan telah dimulai -> Default Full Refund / Penyesuaian Saldo Admin & Customer
                 $this->settlementType      = 'full_refund';
                 $this->cancelRefundAmount  = $gross;

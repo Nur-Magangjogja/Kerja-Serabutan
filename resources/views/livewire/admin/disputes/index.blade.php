@@ -660,6 +660,18 @@
                                     👤 Pengaju: Customer
                                 </span>
                             @endif
+
+                            @if($help?->isPickup())
+                                @if($help->isPrePickup())
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700 shrink-0">
+                                        🛵 Antar & Jemput (Fase Pra-Jemput)
+                                    </span>
+                                @elseif($help->isStage6Arrived())
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 shrink-0">
+                                        🛵 Antar & Jemput (Tahap 6 - Dianggap Sampai)
+                                    </span>
+                                @endif
+                            @endif
                         </div>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ $help?->title ?? 'Tugas Bantuan' }} • Nilai: Rp {{ number_format($gross, 0, ',', '.') }}</p>
                     </div>
@@ -1136,6 +1148,30 @@
                                         </button>
                                     </div>
                                 </div>
+                            @endif
+
+                            @if($help?->isPickup())
+                                @if($help->isPrePickup())
+                                    <div class="p-3 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-2xl text-xs space-y-1">
+                                        <div class="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                                            <span>🛵</span>
+                                            <span>Panduan Audit Antar & Jemput (Fase Pra-Jemput)</span>
+                                        </div>
+                                        <p class="text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed">
+                                            Mitra masih dalam proses menuju atau menunggu di titik penjemputan (barang belum dibawa). Tidak ada potongan 100% ongkos antar ataupun potongan rumus jarak \(D_{\text{leg1}}\). Rekomendasi audit standar: <strong>100% Full Refund ke Customer</strong>.
+                                        </p>
+                                    </div>
+                                @elseif($help->isStage6Arrived())
+                                    <div class="p-3 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-2xl text-xs space-y-1">
+                                        <div class="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                                            <span>📍</span>
+                                            <span>Panduan Audit Antar & Jemput (Tahap 6 - Mendekati Tujuan / > 5 KM)</span>
+                                        </div>
+                                        <p class="text-emerald-800 dark:text-emerald-300 text-[11px] leading-relaxed">
+                                            Pengantaran telah menempuh > 5 KM atau mendekati titik tujuan. Pesanan <strong>dianggap telah sampai di tujuan</strong>. Ongkos antar (Rp {{ number_format($help->service_fee > 0 ? $help->service_fee : $help->amount, 0, ',', '.') }}) dialokasikan penuh ke Rekan Jasa.
+                                        </p>
+                                    </div>
+                                @endif
                             @endif
 
                             {{-- Opsi Keputusan Penyelesaian Saldo & Refund  --}}

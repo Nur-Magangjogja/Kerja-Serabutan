@@ -140,73 +140,80 @@ class HelpCreationService
             $pricePerKmApplied  = (float) AppSetting::getPickupDeliveryPricePerKm();
             $platformFeeApplied = (float) ($estimate['platform_fee'] ?? AppSetting::getPlatformServiceFee());
 
-            $help = Help::create([
-                'user_id'                       => $customer->id,
-                'order_id'                      => $orderId,
-                'city_id'                       => $data['city_id'],
-                'district_id'                   => $data['district_id'] ?? null,
-                'title'                         => $data['title'],
-                'service_type'                  => $serviceType,
-                'service_stage'                 => null,
-                'order_mode'                    => $scheduleData['order_mode'],
-                'service_category'              => $data['service_category'] ?? 'general',
-                'service_duration_hours'        => (float) ($data['service_duration_hours'] ?? 1.0),
-                'amount'                        => $estimate['service_fee'],
-                'service_fee'                   => $estimate['service_fee'],
-                'travel_fee'                    => 0.0,
-                'material_fee'                  => 0.0,
-                'item_fund'                     => 0.0,
-                'item_fund_mode'                => $data['item_fund_mode'] ?? 'customer_paid_in_app',
-                'customer_reimbursement_method' => $data['customer_reimbursement_method'] ?? 'cash',
-                'advance_limit'                 => (float) ($data['advance_limit'] ?? 100000),
-                'minimum_service_fee'           => $estimate['minimum_service_fee'],
-                'minimum_order_value'           => $estimate['minimum_order_value'],
-                'admin_fee'                     => $platformFeeApplied,
-                'platform_fee_amount'           => $platformFeeApplied,
-                'total_amount'                  => $totalAmount,
-                'mitra_earning'                 => $estimate['mitra_earning'],
-                'description'                   => $data['description'],
-                'equipment_provided'            => $data['equipment_provided'] ?? null,
-                'location'                      => $data['location'] ?? null,
-                'full_address'                  => $data['full_address'] ?? null,
-                'latitude'                      => $data['latitude'],
-                'longitude'                     => $data['longitude'],
-                'pickup_address'                => $data['pickup_address'] ?? null,
-                'pickup_latitude'               => $data['pickup_latitude'] ?? null,
-                'pickup_longitude'              => $data['pickup_longitude'] ?? null,
-                'delivery_address'              => $data['delivery_address'] ?? null,
-                'delivery_latitude'             => $data['delivery_latitude'] ?? null,
-                'delivery_longitude'            => $data['delivery_longitude'] ?? null,
-                'store_name'                    => null,
-                'store_address'                 => null,
-                'store_latitude'                => null,
-                'store_longitude'               => null,
-                'service_route_distance_km'     => ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY) ? $routeDistanceKm : 0.0,
-                
-                // Snapshot Immutability Fields
-                'base_fare_applied'             => $baseFareApplied,
-                'price_per_km_applied'          => $pricePerKmApplied,
-                'platform_fee_applied'          => $platformFeeApplied,
-                'estimated_road_distance_km'    => ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY) ? $routeDistanceKm : null,
+                $isSeekingAllowed = ($scheduleData['order_mode'] !== Help::ORDER_MODE_SCHEDULED)
+                    && AppSetting::isMatchingSeekingEnabled($data['city_id'] ?? null);
 
-                // Scheduling Fields
-                'scheduled_at'                  => ($scheduleData['order_mode'] === Help::ORDER_MODE_SCHEDULED) ? $scheduleData['service_scheduled_at'] : null,
-                'published_at'                  => $scheduleData['published_at'],
-                'departure_at'                  => $scheduleData['departure_at'],
-                'service_scheduled_at'          => ($scheduleData['order_mode'] === Help::ORDER_MODE_SCHEDULED) ? $scheduleData['service_scheduled_at'] : null,
-                'pickup_scheduled_at'           => $scheduleData['pickup_scheduled_at'],
-                'delivery_deadline_at'          => $scheduleData['delivery_deadline_at'],
-                'early_departure_minutes'       => $scheduleData['early_departure_minutes'],
-                'expires_at'                    => $expiresAt->format('Y-m-d H:i:s'),
-                'photo'                         => $data['photo_path'] ?? null,
-                'status'                        => Help::STATUS_MENUNGGU_MITRA,
-                'payment_status'                => Help::PAYMENT_STATUS_PAID,
-                'escrow_status'                 => Help::ESCROW_STATUS_HELD,
-                'dispatch_mode'                 => ($scheduleData['order_mode'] === Help::ORDER_MODE_SCHEDULED || $serviceType !== Help::SERVICE_TYPE_ON_SITE || !AppSetting::isMatchingSeekingEnabled($data['city_id'] ?? null)) ? Help::DISPATCH_MODE_POOL : Help::DISPATCH_MODE_SEEKING,
-                'rating_status'                 => Help::RATING_STATUS_PENDING,
-                'model_version'                 => 3,
-                'escrow_locked_at'              => now(),
-            ]);
+                if ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY && !AppSetting::isPickupDeliveryMatchingEnabled()) {
+                    $isSeekingAllowed = false;
+                }
+
+                $help = Help::create([
+                    'user_id'                       => $customer->id,
+                    'order_id'                      => $orderId,
+                    'city_id'                       => $data['city_id'],
+                    'district_id'                   => $data['district_id'] ?? null,
+                    'title'                         => $data['title'],
+                    'service_type'                  => $serviceType,
+                    'service_stage'                 => null,
+                    'order_mode'                    => $scheduleData['order_mode'],
+                    'service_category'              => $data['service_category'] ?? 'general',
+                    'service_duration_hours'        => (float) ($data['service_duration_hours'] ?? 1.0),
+                    'amount'                        => $estimate['service_fee'],
+                    'service_fee'                   => $estimate['service_fee'],
+                    'travel_fee'                    => 0.0,
+                    'material_fee'                  => 0.0,
+                    'item_fund'                     => 0.0,
+                    'item_fund_mode'                => $data['item_fund_mode'] ?? 'customer_paid_in_app',
+                    'customer_reimbursement_method' => $data['customer_reimbursement_method'] ?? 'cash',
+                    'advance_limit'                 => (float) ($data['advance_limit'] ?? 100000),
+                    'minimum_service_fee'           => $estimate['minimum_service_fee'],
+                    'minimum_order_value'           => $estimate['minimum_order_value'],
+                    'admin_fee'                     => $platformFeeApplied,
+                    'platform_fee_amount'           => $platformFeeApplied,
+                    'total_amount'                  => $totalAmount,
+                    'mitra_earning'                 => $estimate['mitra_earning'],
+                    'description'                   => $data['description'],
+                    'equipment_provided'            => $data['equipment_provided'] ?? null,
+                    'location'                      => $data['location'] ?? null,
+                    'full_address'                  => $data['full_address'] ?? null,
+                    'latitude'                      => $data['latitude'],
+                    'longitude'                     => $data['longitude'],
+                    'pickup_address'                => $data['pickup_address'] ?? null,
+                    'pickup_latitude'               => $data['pickup_latitude'] ?? null,
+                    'pickup_longitude'              => $data['pickup_longitude'] ?? null,
+                    'delivery_address'              => $data['delivery_address'] ?? null,
+                    'delivery_latitude'             => $data['delivery_latitude'] ?? null,
+                    'delivery_longitude'            => $data['delivery_longitude'] ?? null,
+                    'store_name'                    => null,
+                    'store_address'                 => null,
+                    'store_latitude'                => null,
+                    'store_longitude'               => null,
+                    'service_route_distance_km'     => ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY) ? $routeDistanceKm : 0.0,
+                    
+                    // Snapshot Immutability Fields
+                    'base_fare_applied'             => $baseFareApplied,
+                    'price_per_km_applied'          => $pricePerKmApplied,
+                    'platform_fee_applied'          => $platformFeeApplied,
+                    'estimated_road_distance_km'    => ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY) ? $routeDistanceKm : null,
+
+                    // Scheduling Fields
+                    'scheduled_at'                  => ($scheduleData['order_mode'] === Help::ORDER_MODE_SCHEDULED) ? $scheduleData['service_scheduled_at'] : null,
+                    'published_at'                  => $scheduleData['published_at'],
+                    'departure_at'                  => $scheduleData['departure_at'],
+                    'service_scheduled_at'          => ($scheduleData['order_mode'] === Help::ORDER_MODE_SCHEDULED) ? $scheduleData['service_scheduled_at'] : null,
+                    'pickup_scheduled_at'           => $scheduleData['pickup_scheduled_at'],
+                    'delivery_deadline_at'          => $scheduleData['delivery_deadline_at'],
+                    'early_departure_minutes'       => $scheduleData['early_departure_minutes'],
+                    'expires_at'                    => $expiresAt->format('Y-m-d H:i:s'),
+                    'photo'                         => $data['photo_path'] ?? null,
+                    'status'                        => Help::STATUS_MENUNGGU_MITRA,
+                    'payment_status'                => Help::PAYMENT_STATUS_PAID,
+                    'escrow_status'                 => Help::ESCROW_STATUS_HELD,
+                    'dispatch_mode'                 => $isSeekingAllowed ? Help::DISPATCH_MODE_SEEKING : Help::DISPATCH_MODE_POOL,
+                    'rating_status'                 => Help::RATING_STATUS_PENDING,
+                    'model_version'                 => 3,
+                    'escrow_locked_at'              => now(),
+                ]);
 
             // Escrow Lock ke Saldo Customer dengan database lock
             $customerBalance = UserBalance::where('user_id', $customer->id)->lockForUpdate()->first();
@@ -236,11 +243,11 @@ class HelpCreationService
             return $help;
         });
 
-        // 6. Picu Matching Engine jika On-Site Instan dan Fitur Seeking Aktif
+        // 6. Picu Matching Engine jika Order Instan dan Fitur Seeking Aktif
         if (
             $createdHelp &&
             $createdHelp->order_mode === Help::ORDER_MODE_INSTANT &&
-            $createdHelp->service_type === Help::SERVICE_TYPE_ON_SITE &&
+            in_array($createdHelp->service_type, [Help::SERVICE_TYPE_ON_SITE, Help::SERVICE_TYPE_PICKUP_DELIVERY], true) &&
             $createdHelp->dispatch_mode === Help::DISPATCH_MODE_SEEKING
         ) {
             try {

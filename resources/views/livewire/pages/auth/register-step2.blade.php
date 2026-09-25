@@ -186,7 +186,7 @@ new #[Layout('layouts.guest')] class extends Component {
 
     public function previousStep(): void
     {
-        $this->redirect(route('register.step1'), navigate: true);
+        $this->redirect(route('register.step1'));
     }
 
     public function cancelRegistration(CancelRegistration $cancelRegistration): void

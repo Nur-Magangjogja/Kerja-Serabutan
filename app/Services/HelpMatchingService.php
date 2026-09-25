@@ -523,16 +523,25 @@ class HelpMatchingService
         }
 
         // 2. Matching Radius:
-        // - Pickup & Delivery: Dual-Ring (Prioritas Ring 1 <= 5.0 KM, fallback ke Ring 2 <= 10.0 KM)
+        // - Pickup & Delivery: Dual-Ring (Prioritas Ring 1, fallback ke Ring 2)
         // - On-Site: Tiered radius berdasarkan nominal biaya bantuan (5.0 KM, 7.5 KM, atau 10.0 KM)
         if ($help->isPickup()) {
-            // Ring 1: Prioritas <= 5 KM dari titik jemput
-            $candidates = $this->getRankedCandidates($help, [], 5.0);
+            if (!AppSetting::isPickupDeliveryMatchingEnabled()) {
+                Log::info("[HelpMatchingService] Cari order is disabled for Pickup/Delivery globally. Falling back to Open Pool for Help #{$help->id}.");
+                $this->fallbackToOpenPool($help);
+                return false;
+            }
+
+            $ring1 = AppSetting::getPickupDeliveryMatchingRing1Km();
+            $ring2 = AppSetting::getPickupDeliveryMaxMatchingRadiusKm();
+
+            // Ring 1: Prioritas <= ring1 KM dari titik jemput
+            $candidates = $this->getRankedCandidates($help, [], $ring1);
             
-            // Ring 2: Fallback hingga 10 KM jika ring 1 kosong
+            // Ring 2: Fallback hingga ring2 KM jika ring 1 kosong
             if ($candidates->isEmpty()) {
-                Log::info("[HelpMatchingService] Priority Ring (<= 5 KM) empty for Pickup/Delivery Help #{$help->id}. Expanding to Fallback Ring (<= 10 KM).");
-                $candidates = $this->getRankedCandidates($help, [], 10.0);
+                Log::info("[HelpMatchingService] Priority Ring (<= {$ring1} KM) empty for Pickup/Delivery Help #{$help->id}. Expanding to Fallback Ring (<= {$ring2} KM).");
+                $candidates = $this->getRankedCandidates($help, [], $ring2);
             }
         } else {
             $maxRadius = $this->computeServiceMaxMatchingRadius($help);
@@ -615,6 +624,7 @@ class HelpMatchingService
             $state->matching_status = PartnerOnlineState::STATUS_OFFER_PENDING;
             $state->current_help_id = $lockedHelp->id;
             $state->save();
+            \App\Services\PartnerOnlineService::clearStateCache($mitra->id);
 
             // 4. Atomically create HelpDispatch record
             $record = HelpDispatch::create([
@@ -985,5 +995,141 @@ class HelpMatchingService
         });
 
         Log::info("[HelpMatchingService] Help #{$help->id} dispatch_mode is now POOL (Open Pool).");
+    }
+
+    /**
+     * Cari pesanan instan yang sedang menunggu mitra dan cocok dengan preferensi serta lokasi mitra yang sedang mencari order.
+     */
+    public function matchPendingOrderForPartner(User $mitra): ?Help
+    {
+        $state = PartnerOnlineState::where('user_id', $mitra->id)->first();
+        $ttl   = AppSetting::getHeartbeatTtlSeconds();
+
+        if (
+            !$state ||
+            $state->matching_status !== PartnerOnlineState::STATUS_SEARCHING ||
+            !$state->isHeartbeatFresh($ttl) ||
+            $state->current_help_id !== null ||
+            $mitra->isShadowBanned() ||
+            $mitra->warning_level >= 3 ||
+            $mitra->status !== 'active'
+        ) {
+            return null;
+        }
+
+        if (!AppSetting::isMatchingSeekingEnabledForUser($mitra)) {
+            return null;
+        }
+
+        $mitraLat = (float) ($state->latitude ?? $mitra->latitude ?? 0);
+        $mitraLng = (float) ($state->longitude ?? $mitra->longitude ?? 0);
+
+        // Ambil ID bantuan yang pernah ditolak/kedaluwarsa oleh mitra ini
+        $excludedHelpIds = HelpDispatch::where('mitra_id', $mitra->id)
+            ->whereIn('status', [HelpDispatch::STATUS_REJECTED, HelpDispatch::STATUS_EXPIRED])
+            ->pluck('help_id')
+            ->all();
+
+        $query = Help::where('status', Help::STATUS_MENUNGGU_MITRA)
+            ->whereNull('mitra_id')
+            ->where('order_mode', Help::ORDER_MODE_INSTANT)
+            ->whereIn('dispatch_mode', [Help::DISPATCH_MODE_SEEKING, Help::DISPATCH_MODE_POOL])
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->whereHas('city', fn($c) => $c->where('is_active', true))
+            ->where(function ($q) {
+                $q->whereNull('district_id')
+                  ->orWhereHas('district', fn($d) => $d->where('is_active', true));
+            })
+            ->availableForMitra($mitra->id);
+
+        if (!empty($excludedHelpIds)) {
+            $query->whereNotIn('id', $excludedHelpIds);
+        }
+
+        $effectivePref = $state->service_preference ?? PartnerOnlineState::PREFERENCE_ALL;
+        if ($effectivePref === PartnerOnlineState::PREFERENCE_ON_SITE) {
+            $query->where(function ($q) {
+                $q->where('service_type', Help::SERVICE_TYPE_ON_SITE)
+                  ->orWhereNull('service_type');
+            });
+        } elseif ($effectivePref === PartnerOnlineState::PREFERENCE_PICKUP_DELIVERY) {
+            if (!$mitra->canTakePickupDelivery()) {
+                return null;
+            }
+            $query->where('service_type', Help::SERVICE_TYPE_PICKUP_DELIVERY);
+        } else {
+            // PREFERENCE_ALL: Jika mitra belum verifikasi kendaraan, hanya ambil on_site
+            if (!$mitra->canTakePickupDelivery()) {
+                $query->where(function ($q) {
+                    $q->where('service_type', '!=', Help::SERVICE_TYPE_PICKUP_DELIVERY)
+                      ->orWhereNull('service_type');
+                });
+            }
+        }
+
+        // Bounding Box GPS Pre-filter atau Fallback ke City ID
+        if ($mitraLat != 0 && $mitraLng != 0) {
+            $maxDist = ($effectivePref === PartnerOnlineState::PREFERENCE_PICKUP_DELIVERY)
+                ? AppSetting::getPickupDeliveryMaxMatchingRadiusKm()
+                : AppSetting::getMaxMatchingRadiusKm();
+            $latDelta = $maxDist / 111.045;
+            $lngDelta = $maxDist / (111.045 * max(0.01, cos(deg2rad($mitraLat))));
+            $minLat = $mitraLat - $latDelta;
+            $maxLat = $mitraLat + $latDelta;
+            $minLng = $mitraLng - $lngDelta;
+            $maxLng = $mitraLng + $lngDelta;
+
+            $query->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $mitra) {
+                $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng) {
+                    $sub->whereBetween('latitude', [$minLat, $maxLat])
+                        ->whereBetween('longitude', [$minLng, $maxLng]);
+                })->orWhere(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng) {
+                    $sub->whereBetween('pickup_latitude', [$minLat, $maxLat])
+                        ->whereBetween('pickup_longitude', [$minLng, $maxLng]);
+                });
+
+                if ($mitra->city_id) {
+                    $q->orWhere('city_id', $mitra->city_id);
+                }
+            });
+        } elseif ($mitra->city_id) {
+            $query->where('city_id', $mitra->city_id);
+        }
+
+        $pendingHelps = $query->latest()->limit(15)->get();
+
+        foreach ($pendingHelps as $help) {
+            if ($help->isPickup()) {
+                if (!$mitra->canTakePickupDelivery()) {
+                    continue;
+                }
+                $targetLat = (float) ($help->pickup_latitude ?: $help->latitude ?: 0);
+                $targetLng = (float) ($help->pickup_longitude ?: $help->longitude ?: 0);
+                $maxRadius = 10.0;
+            } else {
+                $targetLat = (float) ($help->latitude ?: 0);
+                $targetLng = (float) ($help->longitude ?: 0);
+                $maxRadius = $this->computeServiceMaxMatchingRadius($help);
+            }
+
+            if ($targetLat != 0 && $targetLng != 0 && $mitraLat != 0 && $mitraLng != 0) {
+                $dist = $this->geoService->calculateStraightDistance($targetLat, $targetLng, $mitraLat, $mitraLng);
+                if ($dist > $maxRadius) {
+                    continue;
+                }
+            }
+
+            // Temukan pesanan yang cocok dan kirimkan tawaran (dispatch)
+            $help->update(['dispatch_mode' => Help::DISPATCH_MODE_SEEKING]);
+            $help->refresh();
+            $matched = $this->initiateMatching($help);
+            if ($matched) {
+                return $help;
+            }
+        }
+
+        return null;
     }
 }
