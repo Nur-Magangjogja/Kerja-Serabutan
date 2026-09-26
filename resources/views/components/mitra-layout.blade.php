@@ -134,8 +134,16 @@
             } catch(e) {}
         }
 
+        let _lastSoundPlayedAtMitraComp = 0;
         window.playNotificationSound = function(options = {}) {
             try {
+                const now = Date.now();
+                const minInterval = (typeof options.minInterval === 'number') ? options.minInterval : 4000;
+                if (!options.ignoreThrottle && (now - _lastSoundPlayedAtMitraComp < minInterval)) {
+                    return;
+                }
+                _lastSoundPlayedAtMitraComp = now;
+
                 const force = options && options.force === true;
                 const soundEnabled = (typeof window.getNotificationSoundEnabled === 'function')
                     ? window.getNotificationSoundEnabled()
@@ -146,7 +154,7 @@
                 const defaultUrl = window.DEFAULT_NOTIFICATION_SOUND || "{{ asset('sfx/mixkit-software-interface-start-2574.mp3') }}";
                 const soundUrl = options.url || defaultUrl;
                 const audio = new Audio(soundUrl);
-                audio.volume = typeof options.volume === 'number' ? Math.max(0, Math.min(1, options.volume)) : 0.9;
+                audio.volume = typeof options.volume === 'number' ? Math.max(0, Math.min(1, options.volume)) : 0.55;
                 const p = audio.play();
                 if (p !== undefined) {
                     p.catch(() => {
@@ -187,12 +195,24 @@
         })();
 
         (function () {
+            let _lastToastTitle = '';
+            let _lastToastMsg = '';
+            let _lastToastTime = 0;
+
             if (!window.showMitraNotification) {
-                window.showMitraNotification = function({ title = 'Notifikasi', message = '', url = '#' , timeout = 4000, type = 'success' }) {
+                window.showMitraNotification = function({ title = 'Notifikasi', message = '', url = '#' , timeout = 4000, type = 'success', playSound = false }) {
                     try {
-                        // Mainkan audio notifikasi jika aktif
-                        if (typeof window.playNotificationSound === 'function') {
-                            window.playNotificationSound({ force: true });
+                        const now = Date.now();
+                        if (_lastToastTitle === title && _lastToastMsg === message && (now - _lastToastTime < 4000)) {
+                            return;
+                        }
+                        _lastToastTitle = title;
+                        _lastToastMsg = message;
+                        _lastToastTime = now;
+
+                        // Mainkan audio notifikasi hanya jika playSound bernilai true
+                        if (playSound && typeof window.playNotificationSound === 'function') {
+                            window.playNotificationSound({ force: true, volume: 0.55 });
                         }
 
                         const container = document.getElementById('mitra-global-notification-inner');

@@ -183,12 +183,12 @@
                 }
                 const now = ctx.currentTime;
                 
-                // Tone 1: 587.33 Hz (D5)
+                // Tone 1: 587.33 Hz (D5) - Lembut dan sopan
                 const osc1 = ctx.createOscillator();
                 const gain1 = ctx.createGain();
                 osc1.type = 'sine';
                 osc1.frequency.setValueAtTime(587.33, now);
-                gain1.gain.setValueAtTime(0.25, now);
+                gain1.gain.setValueAtTime(0.10, now);
                 gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
                 osc1.connect(gain1);
                 gain1.connect(ctx.destination);
@@ -200,7 +200,7 @@
                 const gain2 = ctx.createGain();
                 osc2.type = 'sine';
                 osc2.frequency.setValueAtTime(880, now + 0.08);
-                gain2.gain.setValueAtTime(0.25, now + 0.08);
+                gain2.gain.setValueAtTime(0.10, now + 0.08);
                 gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
                 osc2.connect(gain2);
                 gain2.connect(ctx.destination);
@@ -209,8 +209,17 @@
             } catch(e) {}
         }
 
+        let _lastSoundPlayedAt = 0;
         window.playNotificationSound = function(options = {}) {
             try {
+                const now = Date.now();
+                const minInterval = (typeof options.minInterval === 'number') ? options.minInterval : 4000;
+                // Cegah spam audio chime bertubi-tubi
+                if (!options.ignoreThrottle && (now - _lastSoundPlayedAt < minInterval)) {
+                    return;
+                }
+                _lastSoundPlayedAt = now;
+
                 const force = options && options.force === true;
                 const soundEnabled = (typeof window.getNotificationSoundEnabled === 'function')
                     ? window.getNotificationSoundEnabled()
@@ -221,7 +230,7 @@
                 const defaultUrl = window.DEFAULT_NOTIFICATION_SOUND || "{{ asset('sfx/mixkit-software-interface-start-2574.mp3') }}";
                 const soundUrl = options.url || defaultUrl;
                 const audio = new Audio(soundUrl);
-                audio.volume = typeof options.volume === 'number' ? Math.max(0, Math.min(1, options.volume)) : 0.9;
+                audio.volume = typeof options.volume === 'number' ? Math.max(0, Math.min(1, options.volume)) : 0.55;
                 const p = audio.play();
                 if (p !== undefined) {
                     p.catch(() => {
@@ -262,12 +271,25 @@
         })();
 
         (function () {
+            let _lastToastTitle = '';
+            let _lastToastMsg = '';
+            let _lastToastTime = 0;
+
             if (!window.showMitraNotification) {
-                window.showMitraNotification = function({ title = 'Notifikasi', message = '', url = '#' , timeout = 6000, type = 'success' }) {
+                window.showMitraNotification = function({ title = 'Notifikasi', message = '', url = '#' , timeout = 6000, type = 'success', playSound = false }) {
                     try {
-                        // Mainkan audio notifikasi jika aktif
-                        if (typeof window.playNotificationSound === 'function') {
-                            window.playNotificationSound({ force: true });
+                        const now = Date.now();
+                        // Jangan spam toast yang sama persis dalam 4 detik
+                        if (_lastToastTitle === title && _lastToastMsg === message && (now - _lastToastTime < 4000)) {
+                            return;
+                        }
+                        _lastToastTitle = title;
+                        _lastToastMsg = message;
+                        _lastToastTime = now;
+
+                        // Mainkan audio notifikasi hanya jika playSound bernilai true
+                        if (playSound && typeof window.playNotificationSound === 'function') {
+                            window.playNotificationSound({ force: true, volume: 0.55 });
                         }
 
                         const container = document.getElementById('mitra-global-notification-inner');
@@ -338,6 +360,45 @@
 
             if (!window._mitraListenersAttached) {
                 window._mitraListenersAttached = true;
+
+                let _lastNotifiedOfferId = null;
+                let _lastNotifiedOfferTime = 0;
+
+                window.addEventListener('offer-found', function (e) {
+                    const detail = (e && e.detail && Array.isArray(e.detail)) ? (e.detail[0] || {}) : (e && e.detail ? e.detail : {});
+                    const isSilent = Boolean(detail.silent);
+                    if (isSilent) {
+                        return;
+                    }
+
+                    const helpId = detail.helpId || detail.help_id || null;
+                    const now = Date.now();
+
+                    // Cegah spam: jika tawaran untuk order ini sudah dinotifikasikan dalam 30 detik terakhir, abaikan
+                    if (helpId && _lastNotifiedOfferId === helpId && (now - _lastNotifiedOfferTime < 30000)) {
+                        return;
+                    }
+                    if (now - _lastNotifiedOfferTime < 6000) {
+                        return;
+                    }
+
+                    _lastNotifiedOfferTime = now;
+                    if (helpId) {
+                        _lastNotifiedOfferId = helpId;
+                    }
+
+                    if (typeof window.playNotificationSound === 'function') {
+                        window.playNotificationSound({ force: true, volume: 0.55, minInterval: 6000 });
+                    }
+                    const msg = detail.message || 'Tawaran pesanan baru ditemukan! Harap respon tawaran.';
+                    window.showMitraNotification({ title: 'Tawaran Baru Masuk! ⚡', message: msg, type: 'success', timeout: 8000, playSound: false });
+                });
+
+                window.addEventListener('show-status-notification', function (e) {
+                    const detail = (e && e.detail && Array.isArray(e.detail)) ? (e.detail[0] || {}) : (e && e.detail ? e.detail : {});
+                    const msg = detail.message || (typeof e.detail === 'string' ? e.detail : 'Status diperbarui.');
+                    window.showMitraNotification({ title: 'Radar Order', message: msg, type: 'info', timeout: 4500, playSound: false });
+                });
 
                 window.addEventListener('help-taken', function (e) {
                     const helpId = e && e.detail && e.detail.helpId ? e.detail.helpId : null;

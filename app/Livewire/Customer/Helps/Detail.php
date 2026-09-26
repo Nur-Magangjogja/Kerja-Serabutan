@@ -20,6 +20,7 @@ class Detail extends Component
     // Modal state
     public $showCancelConfirm          = false;
     public $showCustomerCancelModal    = false;
+    public $showStage6ConfirmModal     = false;
     public $cancelOption               = 'switch'; // 'switch' (Ganti Mitra) | 'withdraw' (Tarik Pekerjaan)
     public $switchReason               = 'Mitra tidak bergerak / tidak merespons chat';
     public $switchNotes                = '';
@@ -119,7 +120,7 @@ class Detail extends Component
 
     public function cancelHelp()
     {
-        // Khusus pickup_delivery: Cek aturan Anti-Bypass Lock & Staged Cancellation
+        // Khusus pickup_delivery: Cek aturan tahapan perjalanan
         if ($this->help->isPickup()) {
             if ($this->help->status === Help::STATUS_MENUNGGU_MITRA || empty($this->help->mitra_id)) {
                 try {
@@ -137,10 +138,25 @@ class Detail extends Component
                 }
             }
 
+            // Jika masih dalam tahap pra-jemput (menuju titik jemput atau tiba di titik jemput menunggu customer)
+            if ($this->help->isPrePickup()) {
+                $this->showCancelConfirm = false;
+                $this->openCustomerCancelModal();
+                return;
+            }
+
+            // Jika tahap 6 (> 5 KM atau final approach): Dianggap sudah sampai dan memerlukan konfirmasi customer
+            if ($this->help->isStage6Arrived()) {
+                $this->showCancelConfirm = false;
+                $this->showStage6ConfirmModal = true;
+                return;
+            }
+
+            // Tahap 5: Pasca-jemput jarak dekat (<= 5 KM)
             if ($this->help->canCustomerCancel()) {
                 try {
-                    app(HelpCancellationService::class)->cancelPickupDeliveryByCustomer($this->help, auth()->user(), 'Dibatalkan oleh customer pada tahap penjemputan.');
-                    session()->flash('success', 'Pesanan antar/jemput berhasil dibatalkan. Kompensasi mitra dan pengembalian saldo telah diproses sesuai tahap perjalanan.');
+                    app(HelpCancellationService::class)->cancelPickupDeliveryByCustomer($this->help, auth()->user(), 'Dibatalkan oleh customer pasca penjemputan.');
+                    session()->flash('success', 'Pesanan antar/jemput berhasil dibatalkan. Kompensasi perjalanan mitra dan pengembalian saldo telah diproses.');
                     $this->showCancelConfirm = false;
                     $this->loadHelp();
                     return;
@@ -152,10 +168,6 @@ class Detail extends Component
                     session()->flash('error', 'Terjadi kesalahan saat membatalkan pesanan antar/jemput: ' . $e->getMessage());
                     return;
                 }
-            } else {
-                session()->flash('error', 'Pembatalan otomatis terkunci karena pengantaran fisik barang telah dimulai. Silakan hubungi Bantuan CS / Admin Wilayah.');
-                $this->showCancelConfirm = false;
-                return;
             }
         }
 
@@ -238,22 +250,20 @@ class Detail extends Component
      */
     public function submitCustomerCancel()
     {
-        // Guard: Pastikan mitra belum mulai bekerja (hanya saat dalam perjalanan)
-        $isPartnerWorking = in_array($this->help->status, [
-            Help::STATUS_PARTNER_ARRIVED,
-            Help::STATUS_IN_PROGRESS,
-            Help::STATUS_WAITING_CONFIRMATION,
-            Help::STATUS_SELESAI,
-        ]) || ($this->help->isPickup() && in_array($this->help->service_stage, [
-            Help::STAGE_AT_PICKUP,
-            Help::STAGE_ITEM_COLLECTED,
-            Help::STAGE_GOING_TO_DELIVERY,
-            Help::STAGE_FINAL_APPROACH,
-            Help::STAGE_AT_DESTINATION,
-        ]));
+        // Guard: Pastikan mitra belum mulai bekerja/mengantar barang
+        $isPartnerWorking = false;
+        if ($this->help->isPickup()) {
+            $isPartnerWorking = !$this->help->isPrePickup();
+        } else {
+            $isPartnerWorking = in_array($this->help->status, [
+                Help::STATUS_IN_PROGRESS,
+                Help::STATUS_WAITING_CONFIRMATION,
+                Help::STATUS_SELESAI,
+            ]);
+        }
 
         if ($isPartnerWorking) {
-            session()->flash('error', 'Opsi penarikan pekerjaan tidak tersedia karena mitra telah tiba di lokasi atau sedang bekerja. Silakan gunakan opsi Ganti Mitra atau hubungi Bantuan CS.');
+            session()->flash('error', 'Opsi penarikan pekerjaan tidak tersedia karena mitra telah memulai pengerjaan/pengantaran fisik. Silakan gunakan opsi Ganti Mitra atau hubungi Bantuan CS.');
             $this->showCustomerCancelModal = false;
             return;
         }
@@ -296,6 +306,25 @@ class Detail extends Component
         } catch (\Throwable $e) {
             Log::error('[CustomerHelpDetail] submitCustomerCancel error: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Konfirmasi penyelesaian tahap 6 antar-jemput oleh customer (dianggap sudah sampai).
+     * Meneruskan ongkos antar ke mitra dan menyelesaikan pesanan.
+     */
+    public function confirmStage6Completion()
+    {
+        try {
+            app(HelpCancellationService::class)->confirmStage6ArrivedAndReleaseFare($this->help, auth()->user());
+            $this->showStage6ConfirmModal = false;
+            $this->loadHelp();
+            session()->flash('success', 'Pesanan telah diselesaikan (dianggap sampai di tujuan). Ongkos antar telah diteruskan ke Rekan Jasa.');
+        } catch (\RuntimeException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('[CustomerHelpDetail] confirmStage6Completion error: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat mengonfirmasi penyelesaian: ' . $e->getMessage());
         }
     }
 

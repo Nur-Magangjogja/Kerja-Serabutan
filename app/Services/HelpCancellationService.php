@@ -364,8 +364,10 @@ class HelpCancellationService
 
     /**
      * Customer mengajukan penarikan pekerjaan (Batal Total & Full Refund).
-     * Untuk Layanan Biasa (On-Site): Meminta konfirmasi mitra / diaudit Admin Wilayah jika mitra menolak.
-     * Untuk Pickup & Delivery: Menggunakan formula kompensasi bertahap.
+     * Untuk Layanan Biasa (On-Site) dan Antar-Jemput Fase Pra-Jemput (Tahap 3 & 4):
+     * Meminta konfirmasi mitra / diaudit Admin Wilayah jika mitra menolak.
+     * Untuk Pickup & Delivery Tahap 6 (> 5 KM / Final Approach):
+     * Dianggap sudah sampai, ongkos antar dialokasikan ke mitra dengan konfirmasi customer.
      */
     public function submitCustomerCancelRequest(
         Help $help,
@@ -375,7 +377,7 @@ class HelpCancellationService
         ?string $evidencePhoto = null,
         int $deadlineMinutes = 30
     ): HelpCancelRequest {
-        if ($help->isOnSite() || $help->isRegular()) {
+        if ($help->isOnSite() || $help->isRegular() || ($help->isPickup() && $help->isPrePickup())) {
             $result = $this->onSiteCancellation->requestWithdrawByCustomer(
                 $help,
                 $customer,
@@ -419,6 +421,19 @@ class HelpCancellationService
             $notes
         );
         return HelpCancelRequest::findOrFail($result['cancel_request_id']);
+    }
+
+    /**
+     * Konfirmasi penyelesaian tahap 6 antar-jemput oleh customer (dianggap sudah sampai).
+     * Meneruskan 100% ongkos antar ke mitra dan menyelesaikan pesanan.
+     */
+    public function confirmStage6ArrivedAndReleaseFare(Help $help, User $customer): void
+    {
+        $this->cancelPickupDeliveryByCustomer(
+            $help,
+            $customer,
+            'Pesanan dianggap sudah sampai di tujuan (> 5 KM / mendekati tujuan). Ongkos antar diteruskan ke Rekan Jasa setelah konfirmasi customer.'
+        );
     }
 
     /**

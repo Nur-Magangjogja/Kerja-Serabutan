@@ -158,6 +158,21 @@ class HelpSettingsService
         return AppSetting::getPickupDeliveryMaxDistanceKm();
     }
 
+    public function isPickupDeliveryMatchingEnabled(): bool
+    {
+        return AppSetting::isPickupDeliveryMatchingEnabled();
+    }
+
+    public function getPickupDeliveryMatchingRing1Km(): float
+    {
+        return AppSetting::getPickupDeliveryMatchingRing1Km();
+    }
+
+    public function getPickupDeliveryMatchingRadiusKm(): float
+    {
+        return AppSetting::getPickupDeliveryMaxMatchingRadiusKm();
+    }
+
     /**
      * Generic getter with caching.
      */

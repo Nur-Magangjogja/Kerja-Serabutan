@@ -1256,27 +1256,32 @@
                 </button>
             </div>
         @elseif($help->isPickup() && in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress']))
-            @if($help->canCustomerCancel())
+            @if($help->isPrePickup())
+                <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 space-y-2">
+                    <button wire:click="openCustomerCancelModal" class="w-full py-3 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5">
+                        <span>🛑 Ajukan Pembatalan / Ganti Rekan Jasa</span>
+                    </button>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center">
+                        Rekan Jasa dalam proses keberangkatan atau menunggu di titik jemput. Anda dapat mengajukan ganti mitra atau penarikan pekerjaan dengan konfirmasi (100% Full Refund).
+                    </p>
+                </div>
+            @elseif($help->isStage6Arrived())
+                <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 space-y-2">
+                    <button wire:click="$set('showStage6ConfirmModal', true)" class="w-full py-3 border-2 border-primary-500 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950/40 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5">
+                        <span>✅ Selesaikan Pesanan (Dianggap Sampai) / Batalkan</span>
+                    </button>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center">
+                        Pengantaran telah menempuh > 5 KM atau mendekati tujuan dan dianggap telah sampai. Ongkos antar akan diteruskan ke Rekan Jasa setelah konfirmasi.
+                    </p>
+                </div>
+            @elseif($help->canCustomerCancel())
                 <div class="bg-white dark:bg-gray-800 mt-2 px-4 py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/60 space-y-2">
                     <button wire:click="confirmCancel" class="w-full py-3 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5">
-                        <span>🛑 Batalkan Pesanan (Kompensasi Sesuai Tahap)</span>
+                        <span>🛑 Batalkan Pesanan (Kompensasi Jarak Tempuh)</span>
                     </button>
                     <p class="text-[11px] text-gray-500 dark:text-gray-400 text-center">
                         Pembatalan pada tahap ini memberikan kompensasi biaya perjalanan ke Rekan Jasa dan mengembalikan sisa saldo ke akun Anda.
                     </p>
-                </div>
-            @else
-                <div class="bg-gray-100 dark:bg-gray-800/80 mt-2 px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3 text-xs text-gray-600 dark:text-gray-300">
-                    <div class="flex items-center gap-2">
-                        <span class="text-base">🔒</span>
-                        <div>
-                            <p class="font-bold text-gray-800 dark:text-gray-200">Pembatalan Otomatis Terkunci</p>
-                            <p class="text-[11px] text-gray-500 dark:text-gray-400">Pengantaran fisik telah dimulai / mendekati tujuan. Hubungi CS bila ada kendala darurat.</p>
-                        </div>
-                    </div>
-                    <a href="{{ route('customer.chat', ['admin' => 1]) }}" wire:navigate class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold text-[11px] shrink-0 hover:bg-blue-700 transition">
-                        Bantuan CS
-                    </a>
                 </div>
             @endif
         @elseif(in_array($help->status, ['taken', 'partner_on_the_way', 'partner_arrived', 'in_progress']))
@@ -1587,9 +1592,12 @@
     {{-- Modal Pilihan Pembatalan Customer (Ganti Mitra vs Tarik Pekerjaan) --}}
     @if($showCustomerCancelModal)
         @php
-            $isPartnerWorking = in_array($help->status, ['partner_arrived', 'in_progress', 'waiting_customer_confirmation', 'waiting_confirmation', 'konfirmasi_selesai', 'selesai', 'completed']) 
-                || ($help->isPickup() && in_array($help->service_stage, [\App\Models\Help::STAGE_AT_PICKUP, \App\Models\Help::STAGE_ITEM_COLLECTED, \App\Models\Help::STAGE_GOING_TO_DELIVERY, \App\Models\Help::STAGE_FINAL_APPROACH, \App\Models\Help::STAGE_AT_DESTINATION, \App\Models\Help::STAGE_SERVICE_EXECUTED]));
-            $canWithdraw = !$isPartnerWorking && in_array($help->status, ['taken', 'partner_on_the_way']);
+            if ($help->isPickup()) {
+                $canWithdraw = $help->isPrePickup();
+            } else {
+                $isPartnerWorking = in_array($help->status, ['partner_arrived', 'in_progress', 'waiting_customer_confirmation', 'waiting_confirmation', 'konfirmasi_selesai', 'selesai', 'completed']);
+                $canWithdraw = !$isPartnerWorking && in_array($help->status, ['taken', 'partner_on_the_way']);
+            }
         @endphp
         <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
              wire:click.self="closeCustomerCancelModal">
@@ -1746,6 +1754,42 @@
                         </div>
                     </div>
                 @endif
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal Konfirmasi Penyelesaian Tahap 6 (Dianggap Sudah Sampai) --}}
+    @if($showStage6ConfirmModal)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in"
+             wire:click.self="$set('showStage6ConfirmModal', false)">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-gray-100 dark:border-gray-700 space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0">
+                        📍
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-gray-900 dark:text-white">Pengantaran Dianggap Sampai</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Tahap Akhir Perjalanan Antar & Jemput</p>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-900 dark:text-blue-200 leading-relaxed">
+                    Pengantaran telah menempuh sebagian besar perjalanan (> 5 KM) atau telah mendekati titik tujuan. Oleh karena itu, pesanan <strong>dianggap telah sampai di tujuan</strong> dan ongkos antar (<strong>Rp {{ number_format($help->service_fee > 0 ? $help->service_fee : $help->amount, 0, ',', '.') }}</strong>) dialokasikan penuh untuk Rekan Jasa.
+                </div>
+
+                <p class="text-xs text-gray-600 dark:text-gray-300">
+                    Silakan konfirmasi penyelesaian agar ongkos antar diteruskan ke saldo Rekan Jasa. Sisa dana belanja (jika ada) akan dikembalikan ke saldo Anda.
+                </p>
+
+                <div class="flex items-center gap-2 pt-2">
+                    <button type="button" wire:click="$set('showStage6ConfirmModal', false)" class="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl text-xs transition cursor-pointer">
+                        Kembali
+                    </button>
+                    <button type="button" wire:click="confirmStage6Completion" wire:loading.attr="disabled" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span wire:loading.remove wire:target="confirmStage6Completion">✓ Konfirmasi Sampai & Lepaskan Ongkos</span>
+                        <span wire:loading wire:target="confirmStage6Completion">Memproses...</span>
+                    </button>
+                </div>
             </div>
         </div>
     @endif

@@ -35,6 +35,11 @@ class HelpSettings extends Component
     public $pickup_delivery_max_distance_km = 40.0;
     public $pickup_delivery_max_cancellation_distance_after_pickup = 5.0;
 
+    // Pickup & Delivery Matching Radar Configuration
+    public $pickup_delivery_matching_enabled = true;
+    public $pickup_delivery_matching_ring1_km = 5.0;
+    public $pickup_delivery_matching_radius_km = 10.0;
+
     // Matching & Fairness Calibration Properties
     public $matching_seeking_enabled = true;
     public $offer_timeout_seconds = 120;
@@ -74,6 +79,9 @@ class HelpSettings extends Component
             'pickup_delivery_long_distance_price_per_km'             => 'required|numeric|min:500',
             'pickup_delivery_max_distance_km'                        => 'required|numeric|min:5|max:100',
             'pickup_delivery_max_cancellation_distance_after_pickup' => 'required|numeric|min:1|max:20',
+            'pickup_delivery_matching_enabled'                       => 'boolean',
+            'pickup_delivery_matching_ring1_km'                      => 'required|numeric|min:1|max:50',
+            'pickup_delivery_matching_radius_km'                     => 'required|numeric|min:1|max:50',
             'matching_seeking_enabled'                               => 'boolean',
             'offer_timeout_seconds'                                  => 'required|integer|min:15|max:300',
             'max_dispatch_candidates'                                => 'required|integer|min:1|max:30',
@@ -127,6 +135,11 @@ class HelpSettings extends Component
         $this->pickup_delivery_long_distance_price_per_km             = AppSetting::getPickupDeliveryLongDistancePricePerKm();
         $this->pickup_delivery_max_distance_km                        = AppSetting::getPickupDeliveryMaxDistanceKm();
         $this->pickup_delivery_max_cancellation_distance_after_pickup = AppSetting::getPickupDeliveryMaxCancellationDistanceAfterPickup();
+
+        // Load Pickup & Delivery Matching settings
+        $this->pickup_delivery_matching_enabled   = AppSetting::isPickupDeliveryMatchingEnabled();
+        $this->pickup_delivery_matching_ring1_km  = AppSetting::getPickupDeliveryMatchingRing1Km();
+        $this->pickup_delivery_matching_radius_km = AppSetting::getPickupDeliveryMaxMatchingRadiusKm();
 
         // Load Matching & Fairness settings
         $this->matching_seeking_enabled   = AppSetting::isMatchingSeekingEnabled();
@@ -190,6 +203,11 @@ class HelpSettings extends Component
         AppSetting::set('pickup_delivery.long_distance_price_per_km', (string) $this->pickup_delivery_long_distance_price_per_km);
         AppSetting::set('pickup_delivery.max_distance_km', (string) $this->pickup_delivery_max_distance_km);
         AppSetting::set('pickup_delivery.cancellation.max_after_pickup_distance_km', (string) $this->pickup_delivery_max_cancellation_distance_after_pickup);
+
+        // Save Pickup & Delivery Matching settings
+        AppSetting::set('pickup_delivery.matching_enabled', $this->pickup_delivery_matching_enabled ? '1' : '0');
+        AppSetting::set('pickup_delivery.matching_ring1_km', (string) $this->pickup_delivery_matching_ring1_km);
+        AppSetting::set('pickup_delivery.matching_radius_km', (string) $this->pickup_delivery_matching_radius_km);
 
         // Save Matching & Fairness settings
         AppSetting::set('matching_seeking_enabled', $this->matching_seeking_enabled ? '1' : '0');

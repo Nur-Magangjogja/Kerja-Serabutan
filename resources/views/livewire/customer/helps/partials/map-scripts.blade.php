@@ -77,12 +77,9 @@
             const cat = (data.category || data.class || '').toLowerCase();
             const type = (data.type || '').toLowerCase();
 
-            const waterTypes = ['water', 'sea', 'ocean', 'bay', 'coastline', 'beach', 'strait', 'lake', 'riverbank'];
-            if (cat === 'natural' && waterTypes.includes(type)) {
+            const waterTypes = ['water', 'sea', 'ocean', 'bay', 'coastline', 'beach', 'strait', 'lake', 'riverbank', 'wetland', 'reservoir', 'pond', 'dock', 'harbour'];
+            if ((cat === 'natural' && waterTypes.includes(type)) || cat === 'water' || type === 'water' || cat === 'waterway' || type === 'waterway') {
                 return { isRestricted: true, reason: 'Titik lokasi berada di area perairan / lautan yang tidak dapat diakses rekan jasa.' };
-            }
-            if (cat === 'waterway' || type === 'waterway') {
-                return { isRestricted: true, reason: 'Titik lokasi berada di perairan sungai / kanal.' };
             }
 
             const militaryTypes = ['military', 'barracks', 'danger_area', 'airfield', 'naval_base'];
@@ -466,10 +463,11 @@
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
                     const serviceType = getCurrentServiceType();
+                    const activeMode = targetPoint || (serviceType === 'pickup_delivery' ? (window.activeMapPoint || 'pickup') : 'onsite');
 
                     if (lat > 6.5 || lat < -11.5 || lng < 94.5 || lng > 141.5) {
                         window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                            detail: { reason: 'Posisi GPS berada di luar batas wilayah Republik Indonesia.' }
+                            detail: { reason: 'Posisi GPS berada di luar batas wilayah Republik Indonesia.', point: activeMode }
                         }));
                         if (pill) {
                             pill.textContent = 'Luar Jangkauan';
@@ -536,13 +534,14 @@
 
         function selectMapLocation(lat, lng, displayName = '', targetPoint = null) {
             const serviceType = getCurrentServiceType();
+            const activeMode = targetPoint || (serviceType === 'pickup_delivery' ? (window.activeMapPoint || 'pickup') : 'onsite');
             lat = parseFloat(lat);
             lng = parseFloat(lng);
             if (isNaN(lat) || isNaN(lng)) return;
 
             if (lat > 6.5 || lat < -11.5 || lng < 94.5 || lng > 141.5) {
                 window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                    detail: { reason: 'Lokasi yang dipilih berada di luar batas wilayah Republik Indonesia.' }
+                    detail: { reason: 'Lokasi yang dipilih berada di luar batas wilayah Republik Indonesia.', point: activeMode }
                 }));
                 return;
             }
@@ -924,8 +923,11 @@
                             const lat = parseFloat(item.lat);
                             const lon = parseFloat(item.lon);
                             if (lat <= 6.5 && lat >= -11.5 && lon >= 94.5 && lon <= 141.5) {
-                                finalResults.push(formatIndonesianResult(item));
-                                if (finalResults.length >= maxResults) break;
+                                const safety = isRestrictedOsmLocation(item, lat, lon);
+                                if (!safety.isRestricted) {
+                                    finalResults.push(formatIndonesianResult(item));
+                                    if (finalResults.length >= maxResults) break;
+                                }
                             }
                         }
                     }
@@ -946,8 +948,11 @@
                                 const lat = parseFloat(item.lat);
                                 const lon = parseFloat(item.lon);
                                 if (lat <= 6.5 && lat >= -11.5 && lon >= 94.5 && lon <= 141.5) {
-                                    finalResults.push(formatIndonesianResult(item));
-                                    if (finalResults.length >= maxResults) break;
+                                    const safety = isRestrictedOsmLocation(item, lat, lon);
+                                    if (!safety.isRestricted) {
+                                        finalResults.push(formatIndonesianResult(item));
+                                        if (finalResults.length >= maxResults) break;
+                                    }
                                 }
                             }
                         }
@@ -1120,9 +1125,15 @@
                     if (locInput) { locInput.value = ''; locInput.dispatchEvent(new Event('input', { bubbles: true })); }
                     if (displayEl) displayEl.classList.add('hidden');
 
+                    const lw = getLivewire();
+                    if (lw && typeof lw.call === 'function') {
+                        lw.call('clearLocationPoint', 'onsite');
+                    }
+
                     window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                        detail: { reason: safety.reason }
+                        detail: { reason: safety.reason, point: 'onsite' }
                     }));
+                    window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'onsite' } }));
                     return;
                 }
 
@@ -1158,6 +1169,37 @@
             lat = parseFloat(lat);
             lng = parseFloat(lng);
             if (isNaN(lat) || isNaN(lng)) return;
+
+            // Batas Teritori Indonesia
+            if (lat > 6.5 || lat < -11.5 || lng < 94.5 || lng > 141.5) {
+                if (pickupMarker && customerMap) {
+                    try { customerMap.removeLayer(pickupMarker); } catch(e){}
+                    pickupMarker = null;
+                }
+                if (routePolyline && customerMap) {
+                    try { customerMap.removeLayer(routePolyline); } catch(e){}
+                    routePolyline = null;
+                }
+                const pLatInput = document.getElementById('pickup-latitude-input');
+                const pLngInput = document.getElementById('pickup-longitude-input');
+                const pAddrInput = document.getElementById('pickup-address-input');
+                if (pLatInput) { pLatInput.value = ''; pLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (pLngInput) { pLngInput.value = ''; pLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (pAddrInput) { pAddrInput.value = ''; pAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                const displayEl = document.getElementById('coordinates-display');
+                if (displayEl) displayEl.classList.add('hidden');
+
+                const lw = getLivewire();
+                if (lw && typeof lw.call === 'function') {
+                    lw.call('clearLocationPoint', 'pickup');
+                }
+                window.dispatchEvent(new CustomEvent('restricted-location-detected', {
+                    detail: { reason: 'Titik 1 (Jemput) berada di luar batas wilayah Republik Indonesia.', point: 'pickup' }
+                }));
+                window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'pickup' } }));
+                setActiveMapPoint('pickup', false);
+                return;
+            }
 
             const displayEl = document.getElementById('coordinates-display');
             if (displayEl) displayEl.classList.remove('hidden');
@@ -1264,9 +1306,16 @@
                     if (pAddrInput) { pAddrInput.value = ''; pAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
                     if (displayEl) displayEl.classList.add('hidden');
 
+                    const lw = getLivewire();
+                    if (lw && typeof lw.call === 'function') {
+                        lw.call('clearLocationPoint', 'pickup');
+                    }
+
                     window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                        detail: { reason: safety.reason }
+                        detail: { reason: 'Titik 1 (Jemput): ' + safety.reason, point: 'pickup' }
                     }));
+                    window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'pickup' } }));
+                    setActiveMapPoint('pickup', false);
                     return;
                 }
 
@@ -1300,6 +1349,36 @@
             lat = parseFloat(lat);
             lng = parseFloat(lng);
             if (isNaN(lat) || isNaN(lng)) return;
+
+            // Batas Teritori Indonesia
+            if (lat > 6.5 || lat < -11.5 || lng < 94.5 || lng > 141.5) {
+                if (deliveryMarker && customerMap) {
+                    try { customerMap.removeLayer(deliveryMarker); } catch(e){}
+                    deliveryMarker = null;
+                }
+                if (routePolyline && customerMap) {
+                    try { customerMap.removeLayer(routePolyline); } catch(e){}
+                    routePolyline = null;
+                }
+                const dLatInput = document.getElementById('delivery-latitude-input');
+                const dLngInput = document.getElementById('delivery-longitude-input');
+                const dAddrInput = document.getElementById('delivery-address-input');
+                if (dLatInput) { dLatInput.value = ''; dLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (dLngInput) { dLngInput.value = ''; dLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (dAddrInput) { dAddrInput.value = ''; dAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                const displayEl = document.getElementById('coordinates-display');
+                if (displayEl) displayEl.classList.add('hidden');
+
+                const lw = getLivewire();
+                if (lw && typeof lw.call === 'function') {
+                    lw.call('clearLocationPoint', 'delivery');
+                }
+                window.dispatchEvent(new CustomEvent('restricted-location-detected', {
+                    detail: { reason: 'Titik 2 (Antar) berada di luar batas wilayah Republik Indonesia.', point: 'delivery' }
+                }));
+                window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'delivery' } }));
+                return;
+            }
 
             const displayEl = document.getElementById('coordinates-display');
             if (displayEl) displayEl.classList.remove('hidden');
@@ -1395,19 +1474,29 @@
                     if (dAddrInput) { dAddrInput.value = ''; dAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
                     if (displayEl) displayEl.classList.add('hidden');
 
+                    const lw = getLivewire();
+                    if (lw && typeof lw.call === 'function') {
+                        lw.call('clearLocationPoint', 'delivery');
+                    }
+
                     window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                        detail: { reason: safety.reason }
+                        detail: { reason: 'Titik 2 (Antar): ' + safety.reason, point: 'delivery' }
                     }));
+                    window.dispatchEvent(new CustomEvent('map-marker-cleared', { detail: { point: 'delivery' } }));
                     return;
                 }
 
                 const fullAddress = data?.display_name || initialAddr;
+                const addr = data?.address || {};
+                const cityName = addr.city || addr.town || addr.county || addr.city_district || '';
+                const districtName = addr.municipality || addr.city_district || addr.suburb || addr.district || addr.quarter || addr.village || '';
+                const provinceName = addr.state || addr.province || '';
 
                 if (dAddrInput) { dAddrInput.value = fullAddress; dAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
 
                 const livewireInstance = getLivewire();
                 if (livewireInstance && typeof livewireInstance.call === 'function') {
-                    livewireInstance.call('syncDeliveryLocation', lat, lng, fullAddress);
+                    livewireInstance.call('syncDeliveryLocation', lat, lng, fullAddress, cityName, districtName, provinceName);
                 }
 
                 window.dispatchEvent(new CustomEvent('map-address-updated', {
@@ -1447,19 +1536,41 @@
                     try { customerMap.removeLayer(pickupMarker); } catch(e){}
                     pickupMarker = null;
                 }
+                const pLatInput = document.getElementById('pickup-latitude-input');
+                const pLngInput = document.getElementById('pickup-longitude-input');
+                const pAddrInput = document.getElementById('pickup-address-input');
+                if (pLatInput) { pLatInput.value = ''; pLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (pLngInput) { pLngInput.value = ''; pLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (pAddrInput) { pAddrInput.value = ''; pAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                setActiveMapPoint('pickup', false);
             } else if (point === 'delivery') {
                 if (deliveryMarker && customerMap) {
                     try { customerMap.removeLayer(deliveryMarker); } catch(e){}
                     deliveryMarker = null;
                 }
+                const dLatInput = document.getElementById('delivery-latitude-input');
+                const dLngInput = document.getElementById('delivery-longitude-input');
+                const dAddrInput = document.getElementById('delivery-address-input');
+                if (dLatInput) { dLatInput.value = ''; dLatInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (dLngInput) { dLngInput.value = ''; dLngInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (dAddrInput) { dAddrInput.value = ''; dAddrInput.dispatchEvent(new Event('input', { bubbles: true })); }
             } else {
                 clearOnSiteLayers();
+                const latInput = document.getElementById('latitude-input');
+                const lngInput = document.getElementById('longitude-input');
+                const locInput = document.getElementById('location-input');
+                if (latInput) { latInput.value = ''; latInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (lngInput) { lngInput.value = ''; lngInput.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (locInput) { locInput.value = ''; locInput.dispatchEvent(new Event('input', { bubbles: true })); }
             }
 
             if (routePolyline && customerMap) {
                 try { customerMap.removeLayer(routePolyline); } catch(e){}
                 routePolyline = null;
             }
+
+            const displayEl = document.getElementById('coordinates-display');
+            if (displayEl) displayEl.classList.add('hidden');
         });
 
         function initializeMap() {
@@ -1563,11 +1674,12 @@
                     const lat = e.latlng.lat;
                     const lng = e.latlng.lng;
                     const currentType = getCurrentServiceType();
+                    const activeMode = currentType === 'pickup_delivery' ? (window.activeMapPoint || 'pickup') : 'onsite';
 
                     // Check bounds bounding box Indonesia
                     if (lat > 6.5 || lat < -11.5 || lng < 94.5 || lng > 141.5) {
                         window.dispatchEvent(new CustomEvent('restricted-location-detected', {
-                            detail: { reason: 'Titik yang diklik berada di luar batas wilayah Republik Indonesia.' }
+                            detail: { reason: 'Titik yang diklik berada di luar batas wilayah Republik Indonesia.', point: activeMode }
                         }));
                         return;
                     }

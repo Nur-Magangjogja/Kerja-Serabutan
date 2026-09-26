@@ -56,11 +56,12 @@ class PartnerDisciplineService
 
         $roleTitle = ($user->role === 'mitra') ? 'Mitra' : 'Customer';
 
+        // Pesan user-facing: tanpa referensi pesanan & nama admin digeneralisasi
         $warningMsg = match ($targetLevel) {
-            1 => "Surat Peringatan Pertama (SP 1): Anda mendapatkan SP 1 dari {$adminName}{$helpInfo}. Alasan: {$reason}. Harap patuhi ketentuan layanan SayaBantu.",
-            2 => "Surat Peringatan Kedua (SP 2): Anda mendapatkan SP 2 dari {$adminName}{$helpInfo}. Alasan: {$reason}. Akun Anda berada dalam pengawasan ketat.",
-            3 => "Surat Peringatan Terakhir (SP 3): Anda mendapatkan SP 3 dari {$adminName}{$helpInfo}. Alasan: {$reason}. Akun Anda dikenakan pembatasan penuh / sanksi keras.",
-            default => "Peringatan kedisiplinan dari {$adminName}: {$reason}",
+            1 => "Surat Peringatan Pertama (SP 1): Anda mendapatkan SP 1 dari Admin Wilayah SayaBantu. Alasan: {$reason}. Harap patuhi ketentuan layanan SayaBantu.",
+            2 => "Surat Peringatan Kedua (SP 2): Anda mendapatkan SP 2 dari Admin Wilayah SayaBantu. Alasan: {$reason}. Akun Anda berada dalam pengawasan ketat.",
+            3 => "Surat Peringatan Terakhir (SP 3): Anda mendapatkan SP 3 dari Admin Wilayah SayaBantu. Alasan: {$reason}. Akun Anda dikenakan pembatasan penuh / sanksi keras.",
+            default => "Peringatan kedisiplinan dari Admin Wilayah SayaBantu: {$reason}",
         };
 
         $updateData = [

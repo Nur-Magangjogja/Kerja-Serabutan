@@ -1,6 +1,6 @@
 <div>
 @if($isSeekingEnabled ?? true)
-<div @if(($onlineState?->matching_status ?? '') === 'searching') wire:poll.15s.visible @elseif(($onlineState?->matching_status ?? '') === 'offer_pending') wire:poll.3s.visible @endif
+<div @if(($onlineState?->matching_status ?? '') === 'searching') wire:poll.3s="pollRadar" @elseif(($onlineState?->matching_status ?? '') === 'offer_pending') wire:poll.2s @elseif(($onlineState?->matching_status ?? '') === 'online') wire:poll.10s="pollRadar" @endif
      @visibilitychange.window="if (!document.hidden) scheduleHeartbeat()"
      x-data="{
          isGettingLocation: false,
@@ -56,8 +56,8 @@
              })
              .then(res => res.json())
              .then(data => {
-                 this.heartbeatBackoff = 25000;
-                 if (data.matching_status && data.matching_status !== this.status) {
+                 this.heartbeatBackoff = this.status === 'searching' ? 5000 : 25000;
+                 if (data.matching_status && (data.matching_status !== this.status || data.matching_status === 'offer_pending')) {
                      this.status = data.matching_status;
                      $wire.$refresh();
                  }
@@ -70,21 +70,26 @@
          scheduleHeartbeat() {
              if (this.heartbeatTimer) clearTimeout(this.heartbeatTimer);
              if (this.status !== 'offline') {
+                 const currentBackoff = this.status === 'searching' ? 5000 : this.heartbeatBackoff;
                  if (navigator.geolocation) {
                      navigator.geolocation.getCurrentPosition(
                          (pos) => { this.sendHeartbeat(pos.coords.latitude, pos.coords.longitude); },
                          () => { this.sendHeartbeat(); },
-                         { timeout: 5000, maximumAge: 60000 }
+                         { timeout: 4000, maximumAge: 30000 }
                      );
                  } else {
                      this.sendHeartbeat();
                  }
+                 this.heartbeatTimer = setTimeout(() => this.scheduleHeartbeat(), currentBackoff);
              }
-             this.heartbeatTimer = setTimeout(() => this.scheduleHeartbeat(), this.heartbeatBackoff);
          },
 
          init() {
              this.scheduleHeartbeat();
+             window.addEventListener('offer-found', (e) => {
+                 this.status = 'offer_pending';
+                 $wire.$refresh();
+             });
          },
 
          destroy() {
@@ -361,15 +366,31 @@
                 @endif
 
                 {{-- Pilihan Target Jenis Bantuan Mitra (Preferensi Layanan Radar) --}}
+                @php
+                    $isFilterLocked = in_array($onlineState?->matching_status, [
+                        \App\Models\PartnerOnlineState::STATUS_OFFER_PENDING,
+                        \App\Models\PartnerOnlineState::STATUS_BUSY,
+                    ], true) || !empty($onlineState?->current_help_id) || !empty($activeOffer);
+                @endphp
                 <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-700/60">
                     <div class="flex items-center justify-between gap-2 mb-2">
                         <div class="flex items-center gap-1.5 min-w-0">
                             <span class="text-[11px] font-bold text-gray-700 dark:text-gray-300">
                                 Cari Jenis Bantuan:
                             </span>
-                            <span class="text-[10px] text-gray-400 dark:text-gray-500 hidden sm:inline">
-                                (Pilih pekerjaan yang ingin Anda prioritaskan)
-                            </span>
+                            @if($isFilterLocked)
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                                    <svg class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                    <span>Terkunci ({{ !empty($activeOffer) || $onlineState?->matching_status === \App\Models\PartnerOnlineState::STATUS_OFFER_PENDING ? 'Ada Tawaran' : 'Sedang Bertugas' }})</span>
+                                </span>
+                            @else
+                                <span wire:loading.remove wire:target="setServicePreference" class="text-[10px] text-gray-400 dark:text-gray-500 hidden sm:inline">
+                                    (Pilih pekerjaan yang ingin Anda prioritaskan)
+                                </span>
+                                <span wire:loading wire:target="setServicePreference" class="text-[10px] font-semibold text-primary-600 dark:text-primary-400 animate-pulse">
+                                    (Menyesuaikan radar...)
+                                </span>
+                            @endif
                         </div>
                         @if(!$canTakePickupDelivery)
                             <a href="{{ route('mitra.profile') }}" wire:navigate class="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 hover:underline flex-shrink-0">
@@ -382,55 +403,83 @@
                     <div class="grid grid-cols-3 gap-1.5 p-1 bg-gray-50 dark:bg-gray-900/60 rounded-xl border border-gray-100 dark:border-gray-800">
                         {{-- Option 1: Semua Layanan --}}
                         <button type="button"
-                                wire:click="setServicePreference('all')"
+                                @if(!$isFilterLocked) wire:click="setServicePreference('all')" @endif
+                                @if($isFilterLocked) disabled @endif
                                 wire:loading.attr="disabled"
-                                @if(!$canTakePickupDelivery)
-                                    title="Kendaraan belum diverifikasi. Memilih ini akan difokuskan ke Kerja Serabutan."
-                                @endif
-                                class="relative px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer
+                                title="{{ $isFilterLocked ? 'Filter bantuan terkunci saat ada tawaran masuk atau sedang bertugas.' : (!$canTakePickupDelivery ? 'Kendaraan belum diverifikasi. Memilih ini akan difokuskan ke Kerja Serabutan.' : 'Cari semua jenis bantuan') }}"
+                                class="relative px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1
+                                    @if($isFilterLocked)
+                                        cursor-not-allowed opacity-60
+                                    @else
+                                        cursor-pointer
+                                    @endif
                                     @if($servicePreference === 'all')
                                         bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-xs border border-gray-200/80 dark:border-gray-700
                                     @else
                                         text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-800/50
                                     @endif">
-                            <span class="text-sm">🌟</span>
+                            <span wire:loading.remove wire:target="setServicePreference('all')" class="text-sm">🌟</span>
+                            <svg wire:loading wire:target="setServicePreference('all')" class="animate-spin w-3.5 h-3.5 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                             <span class="truncate">Semua</span>
                         </button>
 
                         {{-- Option 2: Kerja Serabutan --}}
                         <button type="button"
-                                wire:click="setServicePreference('on_site_service')"
+                                @if(!$isFilterLocked) wire:click="setServicePreference('on_site_service')" @endif
+                                @if($isFilterLocked) disabled @endif
                                 wire:loading.attr="disabled"
-                                class="relative px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer
+                                title="{{ $isFilterLocked ? 'Filter bantuan terkunci saat ada tawaran masuk atau sedang bertugas.' : 'Cari khusus Kerja Serabutan' }}"
+                                class="relative px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1
+                                    @if($isFilterLocked)
+                                        cursor-not-allowed opacity-60
+                                    @else
+                                        cursor-pointer
+                                    @endif
                                     @if($servicePreference === 'on_site_service')
                                         bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-xs border border-gray-200/80 dark:border-gray-700
                                     @else
                                         text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-800/50
                                     @endif">
-                            <span class="text-sm">🛠️</span>
+                            <span wire:loading.remove wire:target="setServicePreference('on_site_service')" class="text-sm">🛠️</span>
+                            <svg wire:loading wire:target="setServicePreference('on_site_service')" class="animate-spin w-3.5 h-3.5 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                             <span class="truncate">Serabutan</span>
                         </button>
 
                         {{-- Option 3: Antar & Jemput --}}
                         @if($canTakePickupDelivery)
                             <button type="button"
-                                    wire:click="setServicePreference('pickup_delivery')"
+                                    @if(!$isFilterLocked) wire:click="setServicePreference('pickup_delivery')" @endif
+                                    @if($isFilterLocked) disabled @endif
                                     wire:loading.attr="disabled"
-                                    class="relative px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer
+                                    title="{{ $isFilterLocked ? 'Filter bantuan terkunci saat ada tawaran masuk atau sedang bertugas.' : 'Cari khusus Antar & Jemput' }}"
+                                    class="relative px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1
+                                        @if($isFilterLocked)
+                                            cursor-not-allowed opacity-60
+                                        @else
+                                            cursor-pointer
+                                        @endif
                                         @if($servicePreference === 'pickup_delivery')
                                             bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-xs border border-gray-200/80 dark:border-gray-700
                                         @else
                                             text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-800/50
                                         @endif">
-                                <span class="text-sm">🛵</span>
+                                <span wire:loading.remove wire:target="setServicePreference('pickup_delivery')" class="text-sm">🛵</span>
+                                <svg wire:loading wire:target="setServicePreference('pickup_delivery')" class="animate-spin w-3.5 h-3.5 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                                 <span class="truncate">Antar-Jemput</span>
                             </button>
                         @else
                             <button type="button"
-                                    disabled
-                                    title="Lengkapi SIM C & STNK di profil Anda untuk membuka opsi Antar & Jemput"
-                                    class="relative px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-400 dark:text-gray-500 opacity-60 cursor-not-allowed flex items-center justify-center gap-1">
-                                <span class="text-sm">🔒</span>
+                                    @if(!$isFilterLocked) wire:click="setServicePreference('pickup_delivery')" @endif
+                                    @if($isFilterLocked) disabled @endif
+                                    title="{{ $isFilterLocked ? 'Filter bantuan terkunci saat ada tawaran masuk atau sedang bertugas.' : 'Lengkapi SIM C & STNK di profil Anda untuk membuka opsi Antar & Jemput' }}"
+                                    class="relative px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition-all flex items-center justify-center gap-1
+                                        @if($isFilterLocked)
+                                            cursor-not-allowed opacity-60
+                                        @else
+                                            cursor-pointer
+                                        @endif">
+                                <span wire:loading.remove wire:target="setServicePreference('pickup_delivery')" class="text-sm">🔒</span>
+                                <svg wire:loading wire:target="setServicePreference('pickup_delivery')" class="animate-spin w-3.5 h-3.5 text-amber-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                                 <span class="truncate">Antar-Jemput</span>
                             </button>
                         @endif
@@ -448,8 +497,12 @@
 
             $mitraLat = $onlineState?->latitude ?? auth()->user()->latitude;
             $mitraLng = $onlineState?->longitude ?? auth()->user()->longitude;
-            $helpLat  = $activeOffer->help->latitude;
-            $helpLng  = $activeOffer->help->longitude;
+            $helpLat  = $activeOffer->help->isPickup()
+                ? ($activeOffer->help->pickup_latitude ?: $activeOffer->help->latitude)
+                : $activeOffer->help->latitude;
+            $helpLng  = $activeOffer->help->isPickup()
+                ? ($activeOffer->help->pickup_longitude ?: $activeOffer->help->longitude)
+                : $activeOffer->help->longitude;
 
             $formattedDistance = null;
             $estimatedMinutes  = null;

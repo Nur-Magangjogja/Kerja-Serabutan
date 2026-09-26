@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Help;
+use App\Models\HelpDispatch;
 use App\Models\PartnerOnlineState;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -595,6 +597,46 @@ class PartnerOnlineService
         }
 
         $state = $this->getOrCreateState($mitra, true);
+
+        // Guard 1: Jika sedang bertugas (busy / active task), kunci filter
+        $hasActiveTask = Help::where('mitra_id', $mitra->id)->active()->exists();
+        if ($state->matching_status === PartnerOnlineState::STATUS_BUSY || $hasActiveTask) {
+            return [
+                'success'    => false,
+                'message'    => 'Filter bantuan terkunci saat sedang bertugas. Selesaikan tugas saat ini terlebih dahulu.',
+                'preference' => $state->service_preference ?? PartnerOnlineState::PREFERENCE_ALL,
+            ];
+        }
+
+        // Guard 2: Jika sedang ada tawaran masuk (offer_pending), periksa keabsahan tawaran
+        if ($state->matching_status === PartnerOnlineState::STATUS_OFFER_PENDING || !empty($state->current_help_id)) {
+            // Self-healing: Cek apakah tawaran benar-benar masih aktif di DB
+            $hasActiveOffer = false;
+            if ($state->current_help_id) {
+                $hasActiveOffer = HelpDispatch::where('help_id', $state->current_help_id)
+                    ->where('mitra_id', $mitra->id)
+                    ->where('status', HelpDispatch::STATUS_OFFERED)
+                    ->where(function ($q) {
+                        $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                    })
+                    ->exists();
+            }
+
+            if ($hasActiveOffer) {
+                return [
+                    'success'    => false,
+                    'message'    => 'Filter bantuan terkunci saat sedang ada tawaran masuk. Harap tanggapi tawaran terlebih dahulu.',
+                    'preference' => $state->service_preference ?? PartnerOnlineState::PREFERENCE_ALL,
+                ];
+            }
+
+            // Jika tawaran sudah expired / dibatalkan di DB, pulihkan status mitra
+            if ($state->current_help_id) {
+                $this->releaseCancelledOffer($mitra->id, $state->current_help_id);
+                $state->refresh();
+            }
+        }
+
         $state->update([
             'service_preference' => $preference,
         ]);
