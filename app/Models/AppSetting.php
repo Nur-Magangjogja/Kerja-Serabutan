@@ -526,6 +526,12 @@ class AppSetting extends Model
         $val = (int) static::get('scheduled_early_departure_window_minutes', 60);
         return max(5, min(180, $val));
     }
+
+    public static function getScheduledDepartureGraceMinutes(): int
+    {
+        $val = (int) static::get(\App\Support\Settings\AppSettingKey::SCHEDULED_DEPARTURE_GRACE_MINUTES, 10);
+        return max(0, min(120, $val));
+    }
 }
 
 

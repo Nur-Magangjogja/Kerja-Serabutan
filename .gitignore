@@ -29,3 +29,10 @@ Thumbs.db
 !/storage/logs/
 /scripts/
 /tests/
+
+# AI Agent Rules
+GEMINI.md
+AGENTS.md
+.cursorrules
+.agents/
+.agent/

@@ -83,4 +83,5 @@ class AppSettingKey
     public const SCHEDULED_DEPARTURE_REMINDER_MINUTES = 'scheduled_departure_reminder_minutes';
     public const SCHEDULED_MAX_ADVANCE_DAYS = 'scheduled_max_advance_days';
     public const SCHEDULED_MIN_LEAD_TIME_HOURS = 'scheduled_min_lead_time_hours';
+    public const SCHEDULED_DEPARTURE_GRACE_MINUTES = 'scheduled_departure_grace_minutes';
 }

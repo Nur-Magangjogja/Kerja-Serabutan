@@ -151,7 +151,11 @@ class Index extends Component
     public function toggleStatus($id)
     {
         $city = City::findOrFail($id);
-        $city->update(['is_active' => !$city->is_active]);
+        $newStatus = !$city->is_active;
+        $city->update(['is_active' => $newStatus]);
+        if (!$newStatus) {
+            app(\App\Services\RegionService::class)->cancelAndRefundUntakenOrdersInRegion('city', $city->id);
+        }
         session()->flash('message', 'Status kota berhasil diubah');
     }
 
@@ -188,9 +192,14 @@ class Index extends Component
 
         if ($this->editMode && $this->cityId) {
             $city = City::findOrFail($this->cityId);
+            $oldActive = (bool) $city->is_active;
             $oldAdminId = $city->admin_id;
 
             $city->update($validated);
+
+            if ($oldActive && isset($validated['is_active']) && !$validated['is_active']) {
+                app(\App\Services\RegionService::class)->cancelAndRefundUntakenOrdersInRegion('city', $city->id);
+            }
 
             // If admin changed, clear old admin's city_id
             if ($oldAdminId && $oldAdminId !== $city->admin_id) {
@@ -292,7 +301,11 @@ class Index extends Component
     public function toggleProvinceStatus($id)
     {
         $prov = Province::findOrFail($id);
-        $prov->update(['is_active' => !$prov->is_active]);
+        $newStatus = !$prov->is_active;
+        $prov->update(['is_active' => $newStatus]);
+        if (!$newStatus) {
+            app(\App\Services\RegionService::class)->cancelAndRefundUntakenOrdersInRegion('province', $prov->id);
+        }
         session()->flash('message', 'Status provinsi berhasil diubah');
     }
 
@@ -490,7 +503,11 @@ class Index extends Component
     public function toggleDistrictStatus($id)
     {
         $district = District::findOrFail($id);
-        $district->update(['is_active' => !$district->is_active]);
+        $newStatus = !$district->is_active;
+        $district->update(['is_active' => $newStatus]);
+        if (!$newStatus) {
+            app(\App\Services\RegionService::class)->cancelAndRefundUntakenOrdersInRegion('district', $district->id);
+        }
         session()->flash('message', "Status kecamatan {$district->name} berhasil diubah.");
     }
 
@@ -523,12 +540,16 @@ class Index extends Component
 
         if ($this->districtEditId) {
             $dist = District::findOrFail($this->districtEditId);
+            $oldActive = (bool) $dist->is_active;
             $dist->update([
                 'city_id' => $this->districtCityId,
                 'name' => $this->districtName,
                 'code' => $this->districtCode ?: null,
                 'is_active' => $this->districtIsActive,
             ]);
+            if ($oldActive && !$this->districtIsActive) {
+                app(\App\Services\RegionService::class)->cancelAndRefundUntakenOrdersInRegion('district', $dist->id);
+            }
             session()->flash('message', "Kecamatan {$this->districtName} berhasil diperbarui.");
         } else {
             District::create([

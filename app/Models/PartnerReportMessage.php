@@ -74,16 +74,29 @@ class PartnerReportMessage extends Model
                 // KONDISI UTAMA: Hanya kirim notifikasi jika laporan masih AKTIF / PENDING
                 // Jika laporan sudah selesai (resolved) atau ditutup (dismissed), notifikasi ditekan / dihentikan.
                 if ($report->isActive()) {
-                    $help = $report->reportedHelp;
+                    $isSupport = ($report->report_type === 'dukungan_umum');
+                    $districtId = $help?->district_id ?? $report->reporter?->district_id ?? $report->reportedUser?->district_id;
                     $cityId = $help?->city_id ?? $report->reporter?->city_id ?? $report->reportedUser?->city_id;
 
-                    // Ambil Admin wilayah terkait
-                    $admins = User::where('role', 'admin')
-                        ->when($cityId, fn($q) => $q->where('city_id', $cityId))
-                        ->where('status', 'active')
-                        ->get();
+                    // Ambil Admin wilayah terkait (berdasarkan kecamatan kewenangan atau kota)
+                    $admins = collect();
+                    if ($districtId) {
+                        $admins = User::where('role', 'admin')
+                            ->where('status', 'active')
+                            ->get()
+                            ->filter(fn($admin) => in_array((int)$districtId, $admin->getEffectiveAdminDistrictIds(), true));
+                    }
 
-                    if ($admins->isEmpty()) {
+                    if ($admins->isEmpty() && $cityId) {
+                        $admins = User::where('role', 'admin')
+                            ->where('status', 'active')
+                            ->where('city_id', $cityId)
+                            ->get();
+                    }
+
+                    // FALLBACK: Untuk laporan aduan lama diperbolehkan fallback, namun untuk dukungan_umum
+                    // dilarang keras fallback ke seluruh admin wilayah lain (Requirement 10).
+                    if ($admins->isEmpty() && !$isSupport) {
                         $admins = User::where('role', 'admin')->where('status', 'active')->get();
                     }
 

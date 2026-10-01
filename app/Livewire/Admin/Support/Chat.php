@@ -1,0 +1,143 @@
+<?php
+
+namespace App\Livewire\Admin\Support;
+
+use App\Models\PartnerReport;
+use App\Models\PartnerReportMessage;
+use Illuminate\Support\Facades\Cache;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+
+class Chat extends Component
+{
+    use WithFileUploads;
+
+    public PartnerReport $report;
+    public string $message = '';
+    public $photo = null;
+
+    protected function rules(): array
+    {
+        return [
+            'message' => 'required_without:photo|nullable|string|max:2000',
+            'photo'   => 'nullable|image|max:5120',
+        ];
+    }
+
+    public function mount(PartnerReport $report)
+    {
+        // 1. Must be general support
+        if ($report->report_type !== 'dukungan_umum') {
+            abort(404, 'Percakapan bukan merupakan tiket dukungan umum.');
+        }
+
+        $admin = auth()->user();
+        $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
+
+        // 2. Strict Regional Authorization for Admin Wilayah
+        if (!$isSuperAdmin) {
+            $effectiveDistricts = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
+            $targetDistrictId = $report->reporter?->district_id
+                ?? $report->reportedHelp?->district_id
+                ?? $report->district_id;
+
+            if (!$targetDistrictId || !in_array((int) $targetDistrictId, $effectiveDistricts, true)) {
+                abort(403, 'Anda tidak memiliki wewenang untuk meninjau dukungan di luar wilayah kecamatan Anda.');
+            }
+        }
+
+        $this->report = $report->load(['reporter.district', 'reporter.city', 'reportedHelp']);
+        $this->markAsRead();
+    }
+
+    public function markAsRead(): void
+    {
+        PartnerReportMessage::where('partner_report_id', $this->report->id)
+            ->where('sender_id', '!=', auth()->id())
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now(),
+            ]);
+    }
+
+    public function sendMessage(): void
+    {
+        $this->validate();
+
+        $adminId = auth()->id();
+        $photoName = $this->photo ? $this->photo->getClientOriginalName() : '';
+        $lockKey = 'send_support_' . $adminId . '_rep_' . $this->report->id . '_' . md5(($this->message ?? '') . '_' . $photoName);
+
+        if (!Cache::add($lockKey, true, 2)) {
+            return;
+        }
+
+        $photoPath = null;
+        if ($this->photo) {
+            $photoPath = $this->photo->store('reports/messages', 'public');
+        }
+
+        $msgText = trim($this->message) ?: ($photoPath ? '[Lampiran Foto]' : '');
+        $recipientType = ($this->report->category === 'dari_customer') ? 'customer' : 'mitra';
+
+        PartnerReportMessage::create([
+            'partner_report_id' => $this->report->id,
+            'sender_id'         => $adminId,
+            'recipient_type'    => $recipientType,
+            'message'           => $msgText,
+            'photo'             => $photoPath,
+            'is_read'           => false,
+        ]);
+
+        if ($this->report->status === 'pending') {
+            $this->report->update(['status' => 'in_progress']);
+        }
+
+        $this->message = '';
+        $this->photo   = null;
+
+        $this->dispatch('message-sent');
+        $this->dispatch('scroll-chat-bottom');
+    }
+
+    public function resolveTicket(): void
+    {
+        $this->report->update([
+            'status'      => 'resolved',
+            'resolved_at' => now(),
+            'resolved_by' => auth()->id(),
+        ]);
+
+        session()->flash('success', 'Percakapan dukungan berhasil ditandai sebagai selesai.');
+    }
+
+    public function reopenTicket(): void
+    {
+        $this->report->update([
+            'status'      => 'in_progress',
+            'resolved_at' => null,
+            'resolved_by' => null,
+        ]);
+
+        session()->flash('info', 'Percakapan dukungan dibuka kembali.');
+    }
+
+    public function render()
+    {
+        $admin = auth()->user();
+        $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
+        $routePrefix = $isSuperAdmin ? 'superadmin.' : 'admin.';
+        $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
+
+        $messages = PartnerReportMessage::where('partner_report_id', $this->report->id)
+            ->with('sender')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        return view('livewire.admin.support.chat', [
+            'messages'    => $messages,
+            'routePrefix' => $routePrefix,
+        ])->layout($layout);
+    }
+}

@@ -108,7 +108,11 @@ class PartnerReport extends Model
         $cacheKey = 'active_reports_count_v' . $version . '_' . $saKeyPart;
 
         return static::$memoizedActiveReportsCounts[$memoKey] = (int) \Illuminate\Support\Facades\Cache::remember($cacheKey, 180, function () use ($user, $isSuperAdmin, $saTerritory) {
-            $query = static::whereIn('status', ['pending', 'in_progress', 'investigating']);
+            $query = static::whereIn('status', ['pending', 'in_progress', 'investigating'])
+                ->where(function ($q) {
+                    $q->whereNull('report_type')
+                      ->orWhere('report_type', '!=', 'dukungan_umum');
+                });
 
             if (!$isSuperAdmin) {
                 $districtIds = $user->getEffectiveAdminDistrictIds();
@@ -150,6 +154,35 @@ class PartnerReport extends Model
 
             return (int) $query->count();
         });
+    }
+
+    /**
+     * Menghitung jumlah pesan dukungan umum aktif / belum selesai untuk Admin Wilayah.
+     */
+    public static function getActiveSupportCountForUser(?User $user = null): int
+    {
+        $user = $user ?? auth()->user();
+        if (!$user) {
+            return 0;
+        }
+
+        $isSuperAdmin = in_array($user->role ?? '', ['super_admin', 'superadmin']);
+        $query = static::where('report_type', 'dukungan_umum')
+            ->whereIn('status', ['pending', 'in_progress', 'investigating']);
+
+        if (!$isSuperAdmin) {
+            $districtIds = $user->getEffectiveAdminDistrictIds();
+            if (!empty($districtIds)) {
+                $query->where(function ($q) use ($districtIds) {
+                    $q->whereHas('reporter', fn($sq) => $sq->whereIn('district_id', $districtIds))
+                      ->orWhereHas('reportedHelp', fn($sq) => $sq->whereIn('district_id', $districtIds));
+                });
+            } else {
+                return 0;
+            }
+        }
+
+        return (int) $query->count();
     }
 
     public function reporter()

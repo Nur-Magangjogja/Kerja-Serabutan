@@ -561,6 +561,10 @@ class HelpCancellationService
                 throw new \RuntimeException('Batas waktu pencarian pesanan telah berakhir. Silakan pilih opsi Batalkan & Tarik Saldo (Refund 100%).');
             }
 
+            if (!app(\App\Services\RegionService::class)->isRegionActive($lockedHelp->district_id, $lockedHelp->city_id)) {
+                throw new \RuntimeException('Wilayah tugas ini sedang dinonaktifkan. Silakan pilih opsi Batalkan & Tarik Saldo (Refund 100%).');
+            }
+
             $oldPartnerId = $lockedHelp->mitra_id;
             $oldMitra = $oldPartnerId ? ($lockedHelp->mitra ?? User::find($oldPartnerId)) : null;
 
@@ -644,7 +648,7 @@ class HelpCancellationService
                         $isSwitchPartner = ($lockedReq->action_type === HelpCancelRequest::ACTION_SWITCH_PARTNER) 
                             || ($lockedReq->settlement_type === HelpCancelRequest::SETTLEMENT_RELIST_POOL);
 
-                        if ($isSwitchPartner) {
+                        if ($isSwitchPartner && app(\App\Services\RegionService::class)->isRegionActive($lockedHelp->district_id, $lockedHelp->city_id)) {
                             // Lepaskan mitra lama, catat eksklusi, dan kembalikan pesanan ke pool
                             $oldPartnerId = $lockedHelp->mitra_id ?: $lockedReq->partner_id;
                             if ($oldPartnerId) {

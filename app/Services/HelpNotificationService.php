@@ -60,8 +60,14 @@ class HelpNotificationService
     /**
      * Notifikasi perubahan status bantuan.
      */
-    public function sendStatusNotification(Help $help, string $newStatus, ?User $recipient, ?User $actor): void
-    {
+    public function sendStatusNotification(
+        Help $help,
+        string $newStatus,
+        ?User $recipient,
+        ?User $actor,
+        ?string $customMessage = null,
+        ?string $customTitle = null
+    ): void {
         try {
             if (!$recipient) return;
 
@@ -69,7 +75,9 @@ class HelpNotificationService
                 $help,
                 $help->status,
                 $newStatus,
-                $actor
+                $actor,
+                $customMessage,
+                $customTitle
             ));
         } catch (\Throwable $e) {
             Log::warning('[HelpNotificationService] sendStatusNotification failed: ' . $e->getMessage(), [

@@ -98,6 +98,11 @@ class HelpTransactionService
             throw new \RuntimeException('Bantuan ini belum dibuka untuk umum di pool.');
         }
 
+        // 5e. Validasi Status Wilayah Aktif
+        if (!app(\App\Services\RegionService::class)->isRegionActive($help->district_id, $help->city_id)) {
+            throw new \RuntimeException('Wilayah untuk bantuan ini sedang dinonaktifkan sementara.');
+        }
+
         // 6. Validasi Dispatch Mode (Harus Pool untuk pengambilan mandiri)
         if ($help->dispatch_mode && $help->dispatch_mode !== Help::DISPATCH_MODE_POOL) {
             throw new \RuntimeException('Pesanan ini sedang dalam penawaran sequential khusus dan belum dibuka untuk pool umum.');
@@ -106,6 +111,12 @@ class HelpTransactionService
         // 7. Validasi Riwayat Pembatalan
         if ($help->hasCancelledBy($mitra->id)) {
             throw new \RuntimeException('Anda tidak dapat mengambil bantuan ini karena sebelumnya telah Anda batalkan.');
+        }
+
+        // 7b. Validasi Batas Toleransi Keberangkatan Terjadwal (Stale Scheduled Guard)
+        if ($help->isScheduled() && $help->schedule_overdue_at === null && $help->isDepartureOverdue()) {
+            app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($help);
+            throw new \RuntimeException('Batas toleransi jadwal keberangkatan untuk bantuan ini telah terlewat. Pesanan sedang diproses ulang.');
         }
 
         // 8. Validasi Jarak Operasional Baku (Maksimal 10.0 KM untuk pesanan instan)
@@ -160,12 +171,9 @@ class HelpTransactionService
             );
         }
 
-        // 10. Validasi Status Wilayah Operasional (Mencegah Pengambilan di Wilayah Nonaktif)
-        if ($help->city && !$help->city->is_active) {
+        // 10. Validasi Status Wilayah Operasional (Single Source of Truth)
+        if (!app(\App\Services\RegionService::class)->isRegionActive($help->district_id, $help->city_id)) {
             throw new \RuntimeException('Wilayah tugas ini sedang ditutup sementara dan tidak dapat diambil.');
-        }
-        if ($help->district && !$help->district->is_active) {
-            throw new \RuntimeException('Kecamatan tugas ini sedang ditutup sementara dan tidak dapat diambil.');
         }
     }
 
@@ -195,12 +203,23 @@ class HelpTransactionService
                 throw new \RuntimeException('Batas waktu pencarian untuk bantuan ini telah habis.');
             }
 
+            // Final region check di dalam transaction setelah lock
+            if (!app(\App\Services\RegionService::class)->isRegionActive($lockedHelp->district_id, $lockedHelp->city_id)) {
+                throw new \RuntimeException('Wilayah untuk bantuan ini sedang dinonaktifkan sementara.');
+            }
+
             if ($lockedHelp->dispatch_mode && $lockedHelp->dispatch_mode !== Help::DISPATCH_MODE_POOL) {
                 throw new \RuntimeException('Pesanan ini sedang dalam penawaran sequential khusus dan belum dibuka untuk pool umum.');
             }
 
             if ($lockedHelp->hasCancelledBy($mitra->id)) {
                 throw new \RuntimeException('Anda tidak dapat mengambil bantuan ini karena sebelumnya telah Anda batalkan.');
+            }
+
+            // Validasi batas keberangkatan jadwal setelah lock (race condition guard untuk order stale)
+            if ($lockedHelp->isScheduled() && $lockedHelp->schedule_overdue_at === null && $lockedHelp->isDepartureOverdue()) {
+                app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($lockedHelp);
+                throw new \RuntimeException('Batas toleransi jadwal keberangkatan untuk bantuan ini telah terlewat. Pesanan sedang diproses ulang.');
             }
 
             // STEP 2 (Tier 2): Lock & selesaikan HelpDispatch aktif untuk mitra ini (jika ada pending offer)
@@ -326,6 +345,11 @@ class HelpTransactionService
         $this->assertMitraAssigned($help, $mitra);
         $this->assertCanTransition($help, Help::STATUS_PARTNER_ON_THE_WAY);
 
+        if ($help->isScheduled() && $help->isDepartureOverdue()) {
+            app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($help);
+            throw new \RuntimeException('Batas waktu keberangkatan telah terlewat. Tugas ini telah dilepaskan dari penugasan Anda.');
+        }
+
         if ($help->isScheduled() && !$help->canPartnerStartDeparture()) {
             $openTime = $help->departure_window_opens_at?->format('H:i') ?? '1 jam sebelum jadwal';
             $targetTime = $help->getScheduledTargetTime()?->format('H:i') ?? '-';
@@ -334,6 +358,12 @@ class HelpTransactionService
 
         DB::transaction(function () use ($help) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
+
+            if ($lockedHelp->isDepartureOverdue()) {
+                app(\App\Services\ScheduledDepartureTimeoutService::class)->handleOverdueHelp($lockedHelp);
+                throw new \RuntimeException('Batas waktu keberangkatan telah terlewat. Tugas ini telah dilepaskan dari penugasan Anda.');
+            }
+
             $lockedHelp->update([
                 'status'             => Help::STATUS_PARTNER_ON_THE_WAY,
                 'partner_started_at' => $lockedHelp->partner_started_at ?? now(),

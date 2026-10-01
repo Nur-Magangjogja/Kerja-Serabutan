@@ -15,6 +15,8 @@ Schedule::command('helps:send-departure-reminders')->everyMinute();
 Schedule::command('partners:clean-stale-states --ttl=60')->everyMinute();
 Schedule::command('city:evaluate-capacities')->hourly();
 Schedule::command('balances:sync-check --threshold=1000000')->everyFiveMinutes();
+Schedule::command('helps:cancel-inactive-regions')->everyTenMinutes();
+Schedule::command('helps:handle-scheduled-timeouts')->everyMinute();
 
 // Pembersihan otomatis akun unverified (10 menit) dan akun inactive yang tidak menyelesaikan form (1x24 jam)
 Schedule::call(function () {

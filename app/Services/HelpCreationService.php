@@ -40,20 +40,12 @@ class HelpCreationService
             throw new \RuntimeException("Akun Anda saat ini dibatasi dari membuat pesanan bantuan baru karena dalam status sanksi moderasi / SP 3.");
         }
 
-        // 0. Benteng Terakhir — Validasi Status Wilayah Aktif
-        if (!empty($data['city_id'])) {
-            $city = City::find($data['city_id']);
-            if (!$city || !$city->is_active) {
-                $cityName = $city ? $city->name : 'wilayah yang dipilih';
-                throw new \RuntimeException("Wilayah \"{$cityName}\" sedang dinonaktifkan sementara dan tidak menerima permintaan bantuan baru.");
-            }
-        }
+        // 0. Benteng Terakhir — Validasi Status Wilayah Aktif (Single Source of Truth)
+        $districtId = !empty($data['district_id']) ? (int) $data['district_id'] : null;
+        $cityId     = !empty($data['city_id']) ? (int) $data['city_id'] : null;
 
-        if (!empty($data['district_id'])) {
-            $district = District::find($data['district_id']);
-            if ($district && !$district->is_active) {
-                throw new \RuntimeException("Kecamatan \"{$district->name}\" sedang dinonaktifkan sementara dan tidak menerima permintaan bantuan baru.");
-            }
+        if (!app(\App\Services\RegionService::class)->isRegionActive($districtId, $cityId)) {
+            throw new \RuntimeException("Wilayah atau daerah yang dipilih sedang dinonaktifkan sementara dan tidak menerima permintaan bantuan baru.");
         }
 
         // 1. Validasi Jarak Maksimal untuk Pickup/Delivery
@@ -200,6 +192,7 @@ class HelpCreationService
                     'scheduled_at'                  => ($scheduleData['order_mode'] === Help::ORDER_MODE_SCHEDULED) ? $scheduleData['service_scheduled_at'] : null,
                     'published_at'                  => $scheduleData['published_at'],
                     'departure_at'                  => $scheduleData['departure_at'],
+                    'departure_grace_minutes'       => ($scheduleData['order_mode'] === Help::ORDER_MODE_SCHEDULED) ? AppSetting::getScheduledDepartureGraceMinutes() : null,
                     'service_scheduled_at'          => ($scheduleData['order_mode'] === Help::ORDER_MODE_SCHEDULED) ? $scheduleData['service_scheduled_at'] : null,
                     'pickup_scheduled_at'           => $scheduleData['pickup_scheduled_at'],
                     'delivery_deadline_at'          => $scheduleData['delivery_deadline_at'],

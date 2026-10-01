@@ -26,6 +26,7 @@ class HelpSettings extends Component
     public $platform_service_fee = 2000;
     public $admin_fee; // legacy
     public $help_auto_cancel_hours = 24;
+    public $scheduled_departure_grace_minutes = 10;
 
     // Pickup & Delivery Pricing & Policy Configurations
     public $pickup_delivery_base_fare = 10000;
@@ -73,6 +74,7 @@ class HelpSettings extends Component
             'platform_service_fee'                                   => 'required|numeric|min:0',
             'admin_fee'                                              => 'nullable|numeric|min:0',
             'help_auto_cancel_hours'                                 => 'required|integer|min:1|max:168',
+            'scheduled_departure_grace_minutes'                      => 'required|integer|min:0|max:120',
             'pickup_delivery_base_fare'                              => 'required|numeric|min:1000',
             'pickup_delivery_price_per_km'                           => 'required|numeric|min:500',
             'pickup_delivery_long_distance_threshold'                => 'required|numeric|min:5|max:40',
@@ -112,6 +114,10 @@ class HelpSettings extends Component
             'help_auto_cancel_hours.integer'  => 'Batas waktu otomatis batal harus berupa angka bulat jam.',
             'help_auto_cancel_hours.min'      => 'Batas waktu otomatis batal minimal 1 jam.',
             'help_auto_cancel_hours.max'      => 'Batas waktu otomatis batal maksimal 168 jam (7 hari).',
+            'scheduled_departure_grace_minutes.required' => 'Toleransi keterlambatan keberangkatan wajib diisi.',
+            'scheduled_departure_grace_minutes.integer'  => 'Toleransi keterlambatan keberangkatan harus berupa angka bulat menit.',
+            'scheduled_departure_grace_minutes.min'      => 'Toleransi keterlambatan keberangkatan minimal 0 menit.',
+            'scheduled_departure_grace_minutes.max'      => 'Toleransi keterlambatan keberangkatan maksimal 120 menit.',
             'offer_timeout_seconds.min'       => 'Batas waktu respon penawaran minimal 15 detik.',
             'offer_timeout_seconds.max'       => 'Batas waktu respon penawaran maksimal 300 detik.',
             'qris_image.image'                => 'File QRIS harus berupa gambar.',
@@ -127,6 +133,7 @@ class HelpSettings extends Component
         $this->platform_service_fee   = (int) AppSetting::getPlatformServiceFee();
         $this->admin_fee              = (float) AppSetting::get('admin_fee', 0);
         $this->help_auto_cancel_hours = (int) AppSetting::getHelpAutoCancelHours();
+        $this->scheduled_departure_grace_minutes = (int) AppSetting::getScheduledDepartureGraceMinutes();
 
         // Load Pickup & Delivery pricing & limitations
         $this->pickup_delivery_base_fare                              = AppSetting::getPickupDeliveryBaseFare();
@@ -192,6 +199,7 @@ class HelpSettings extends Component
         AppSetting::set('platform_fee_type', 'fixed');
         AppSetting::set('platform_commission_rate', '0');
         AppSetting::set('help_auto_cancel_hours', (string) $this->help_auto_cancel_hours);
+        AppSetting::set(\App\Support\Settings\AppSettingKey::SCHEDULED_DEPARTURE_GRACE_MINUTES, (string) $this->scheduled_departure_grace_minutes);
         if ($this->admin_fee !== null) {
             AppSetting::set('admin_fee', (string) $this->admin_fee);
         }

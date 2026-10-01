@@ -64,6 +64,14 @@ class LoginForm extends Form
         // Check user status after successful authentication
         $user = Auth::user();
 
+        // Guard Admin Wilayah: Admin yang dinonaktifkan ditolak login
+        if ($user && $user->role === 'admin' && $user->status !== 'active') {
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'form.email' => 'Akun Admin Wilayah Anda sedang dinonaktifkan. Silakan hubungi Super Admin.',
+            ]);
+        }
+
         // Allow admin and super_admin to login regardless of registration pending flag
         $isPrivileged = in_array($user->role, ['admin', 'super_admin']);
 

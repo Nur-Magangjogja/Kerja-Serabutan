@@ -358,6 +358,10 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('superadmin')->na
     Route::get('/cancellations', \App\Livewire\Admin\Disputes\Index::class)->name('cancellations.index');
     Route::get('/cancellations/{cancelRequest}/chat', \App\Livewire\Admin\Disputes\Chat::class)->name('cancellations.chat');
 
+    // Chat Admin Wilayah (Dukungan Umum)
+    Route::get('/support', \App\Livewire\Admin\Support\Index::class)->name('support.index');
+    Route::get('/support/{report}/chat', \App\Livewire\Admin\Support\Chat::class)->name('support.chat');
+
     Route::get('/settings/appearance', \App\Livewire\SuperAdmin\Settings\Appearance::class)->name('settings.appearance');
     Route::get('/settings', function () {
         return redirect()->route('superadmin.settings.identity');
@@ -389,6 +393,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/cancellations', \App\Livewire\Admin\Disputes\Index::class)->name('cancellations.index');
     Route::get('/cancellations/{cancelRequest}/chat', \App\Livewire\Admin\Disputes\Chat::class)->name('cancellations.chat');
     Route::get('/topup/approvals', \App\Livewire\Admin\Topup\Approval::class)->name('topup.approvals');
+
+    // Chat Admin Wilayah (Dukungan Umum)
+    Route::get('/support', \App\Livewire\Admin\Support\Index::class)->name('support.index');
+    Route::get('/support/{report}/chat', \App\Livewire\Admin\Support\Chat::class)->name('support.chat');
 });
 
 // ========================================

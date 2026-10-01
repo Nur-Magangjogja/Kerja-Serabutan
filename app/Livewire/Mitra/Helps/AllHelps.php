@@ -295,12 +295,8 @@ class AllHelps extends Component
                 $q->whereNull('expires_at')
                   ->orWhere('expires_at', '>', now());
             })
-            // Sembunyikan tugas di kota atau kecamatan yang sedang dinonaktifkan
-            ->whereHas('city', fn($c) => $c->where('is_active', true))
-            ->where(function ($q) {
-                $q->whereNull('district_id')
-                  ->orWhereHas('district', fn($d) => $d->where('is_active', true));
-            });
+            // Sembunyikan tugas di kota, kecamatan, atau provinsi yang sedang dinonaktifkan
+            ->inActiveRegion();
 
         // Sembunyikan tugas jenis Antar & Jemput (pickup_delivery) jika mitra belum melengkapi
         // dan belum terverifikasi SIM/STNK kendaraannya oleh Admin

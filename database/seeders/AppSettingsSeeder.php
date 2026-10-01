@@ -36,6 +36,7 @@ class AppSettingsSeeder extends Seeder
             \App\Support\Settings\AppSettingKey::MOVEMENT_MIN_METERS    => '30',   // Jarak minimum pergerakan tercatat
             'drift_max_velocity_kmh'                          => '120',  // Batas kecepatan anti-drift (km/jam)
             'adjacent_district_match_enabled'                 => '1',    // Ekspansi matching ke kecamatan tetangga aktif
+            \App\Support\Settings\AppSettingKey::SCHEDULED_DEPARTURE_GRACE_MINUTES => '10', // 10 menit toleransi keterlambatan keberangkatan
         ];
 
         foreach ($settings as $key => $value) {

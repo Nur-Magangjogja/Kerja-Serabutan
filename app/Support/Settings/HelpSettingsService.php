@@ -174,6 +174,14 @@ class HelpSettingsService
     }
 
     /**
+     * Tolerance window in minutes for scheduled order departure before being marked overdue.
+     */
+    public function getScheduledDepartureGraceMinutes(): int
+    {
+        return AppSetting::getScheduledDepartureGraceMinutes();
+    }
+
+    /**
      * Generic getter with caching.
      */
     public function get(string $key, mixed $default = null): mixed

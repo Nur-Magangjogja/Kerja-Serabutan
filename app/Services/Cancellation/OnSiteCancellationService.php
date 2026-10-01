@@ -173,10 +173,62 @@ class OnSiteCancellationService
             // ─────────────────────────────────────────────────────────────────
             // KONSEP 1: Mitra membatalkan tugas SEBELUM mulai pengerjaan (saat perjalanan/tiba).
             // Alur:
-            // 1. Relist order kembali ke pool pencarian mitra baru.
-            // 2. Bebaskan status BUSY mitra.
-            // 3. Buat tiket audit HelpCancelRequest (cancellation_stage = 'transit') untuk evaluasi SP Admin.
+            // 1. Cek status keaktifan wilayah. Jika NONAKTIF, JANGAN relist ke pool (langsung batalkan & refund).
+            // 2. Jika wilayah aktif, relist order kembali ke pool pencarian mitra baru.
+            // 3. Bebaskan status BUSY mitra.
+            // 4. Buat tiket audit HelpCancelRequest (cancellation_stage = 'transit') untuk evaluasi SP Admin.
             // ─────────────────────────────────────────────────────────────────
+            $isRegionActive = app(\App\Services\RegionService::class)->isRegionActive($lockedHelp->district_id, $lockedHelp->city_id);
+
+            if (!$isRegionActive) {
+                app(\App\Services\Cancellation\CancellationSettlementService::class)->processFullRefund(
+                    $lockedHelp,
+                    "Mitra membatalkan tugas di perjalanan saat wilayah sedang dinonaktifkan ({$reason})"
+                );
+
+                $this->onlineService->releaseBusy($mitra->id, $lockedHelp->id);
+                $lockedHelp->addExcludedPartner($mitra->id, "Mitra membatalkan di perjalanan saat wilayah nonaktif: {$reason}");
+                $mitra->increment('konsep1_cancel_count');
+
+                $cancelRequest = HelpCancelRequest::create([
+                    'help_id'                => $lockedHelp->id,
+                    'requester_type'         => HelpCancelRequest::REQUESTER_PARTNER,
+                    'action_type'            => HelpCancelRequest::ACTION_PARTNER_INCIDENT,
+                    'cancellation_stage'     => 'transit',
+                    'partner_id'             => $mitra->id,
+                    'customer_id'            => $lockedHelp->user_id,
+                    'district_id'            => $lockedHelp->district_id,
+                    'previous_status'        => $prevStatus,
+                    'previous_stage'         => $prevStage,
+                    'reason'                 => $reason,
+                    'notes'                  => $notes,
+                    'evidence_photo'         => $evidencePhotoPath,
+                    'status'                 => HelpCancelRequest::STATUS_APPROVED,
+                    'settlement_type'        => HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+                    'sp_target'              => HelpCancelRequest::SP_TARGET_NONE,
+                    'refund_amount_customer' => (float) $lockedHelp->total_amount,
+                    'requested_at'           => now(),
+                    'reviewed_at'            => now(),
+                ]);
+
+                $this->chatService->sendPartnerCancellationChat(
+                    $lockedHelp,
+                    $mitra,
+                    $reason,
+                    $notes,
+                    'transit'
+                );
+
+                return [
+                    'success'           => true,
+                    'relisted'          => false,
+                    'cancelled'         => true,
+                    'refunded'          => true,
+                    'cancel_request_id' => $cancelRequest->id,
+                    'message'           => 'Pembatalan berhasil diproses. Karena wilayah sedang dinonaktifkan, pesanan langsung dibatalkan dan dana dikembalikan penuh ke pemesan.',
+                ];
+            }
+
             $lockedHelp->update([
                 'status'                      => Help::STATUS_MENUNGGU_MITRA,
                 'mitra_id'                    => null,
@@ -523,6 +575,39 @@ class OnSiteCancellationService
                     || ($lockedReq->settlement_type === HelpCancelRequest::SETTLEMENT_RELIST_POOL);
 
                 if ($isSwitchPartner) {
+                    $isRegionActive = app(\App\Services\RegionService::class)->isRegionActive($lockedHelp->district_id, $lockedHelp->city_id);
+
+                    if (!$isRegionActive) {
+                        $this->onlineService->releaseBusy($partner->id, $lockedHelp->id);
+                        $lockedHelp->addExcludedPartner($partner->id, "Mitra menyetujui permintaan ganti mitra di wilayah nonaktif: {$lockedReq->reason}");
+
+                        $this->settlementService->processFullRefund(
+                            $lockedHelp,
+                            "Mitra menyetujui permintaan ganti mitra, namun wilayah sedang dinonaktifkan."
+                        );
+
+                        $lockedReq->update([
+                            'status'                 => HelpCancelRequest::STATUS_APPROVED,
+                            'partner_response_type'  => HelpCancelRequest::PARTNER_RESPONSE_CONFIRMED,
+                            'partner_response_notes' => $notes,
+                            'partner_response_photo' => $photoPath,
+                            'partner_responded_at'   => now(),
+                            'settlement_type'        => HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+                            'refund_amount_customer' => (float) $lockedHelp->total_amount,
+                            'payout_amount_mitra'    => 0,
+                            'reviewed_at'            => now(),
+                            'admin_notes'            => 'Disetujui oleh Mitra. Karena wilayah nonaktif, pesanan langsung dibatalkan dan direfund penuh.',
+                        ]);
+
+                        return [
+                            'success'   => true,
+                            'confirmed' => true,
+                            'cancelled' => true,
+                            'refunded'  => true,
+                            'message'   => 'Permintaan ganti mitra disetujui. Karena wilayah sedang dinonaktifkan, pesanan dibatalkan dan dana dikembalikan penuh ke pemesan.',
+                        ];
+                    }
+
                     // Mitra menyetujui ganti mitra -> Lepaskan mitra, catat eksklusi, dan kembalikan pesanan ke pool
                     $this->onlineService->releaseBusy($partner->id, $lockedHelp->id);
                     $lockedHelp->addExcludedPartner($partner->id, "Mitra menyetujui permintaan ganti mitra: {$lockedReq->reason}");

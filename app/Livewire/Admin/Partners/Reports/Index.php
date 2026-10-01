@@ -56,7 +56,10 @@ class Index extends Component
         $admin = auth()->user();
         $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
 
-        $statsQuery = PartnerReport::query();
+        $statsQuery = PartnerReport::query()->where(function ($q) {
+            $q->whereNull('report_type')
+              ->orWhere('report_type', '!=', 'dukungan_umum');
+        });
 
         if (! $isSuperAdmin) {
             $districtIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
@@ -116,7 +119,12 @@ class Index extends Component
         })->count();
 
         // Main Query
-        $query = PartnerReport::with(['reporter.district', 'reportedUser.district', 'reportedHelp.district', 'reportedHelp.city', 'resolvedBy'])->withCount('messages');
+        $query = PartnerReport::with(['reporter.district', 'reportedUser.district', 'reportedHelp.district', 'reportedHelp.city', 'resolvedBy'])
+            ->withCount('messages')
+            ->where(function ($q) {
+                $q->whereNull('report_type')
+                  ->orWhere('report_type', '!=', 'dukungan_umum');
+            });
 
         if (! $isSuperAdmin) {
             if (!empty($districtIds)) {

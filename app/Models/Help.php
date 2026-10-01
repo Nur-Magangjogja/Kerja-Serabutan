@@ -171,6 +171,7 @@ class Help extends Model
             self::STATUS_DIBATALKAN,
         ],
         self::STATUS_TAKEN => [
+            self::STATUS_MENUNGGU_MITRA, // Overdue scheduled departure release / rematch
             self::STATUS_PARTNER_ON_THE_WAY,
             self::STATUS_PARTNER_ARRIVED,
             self::STATUS_IN_PROGRESS,
@@ -395,6 +396,8 @@ class Help extends Model
         'gps_accuracy',
         'last_movement_at',
         'arrived_at',
+        'departure_grace_minutes',
+        'schedule_overdue_at',
     ];
 
     protected $casts = [
@@ -465,6 +468,8 @@ class Help extends Model
         'gps_accuracy'               => 'decimal:2',
         'last_movement_at'           => 'datetime',
         'arrived_at'                 => 'datetime',
+        'departure_grace_minutes'    => 'integer',
+        'schedule_overdue_at'        => 'datetime',
     ];
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -614,6 +619,25 @@ class Help extends Model
     }
 
     /**
+     * Scope untuk menyaring bantuan yang berada di wilayah aktif (Kecamatan, Kota, dan Provinsi aktif).
+     */
+    public function scopeInActiveRegion($query)
+    {
+        return $query
+            ->whereHas('city', function ($c) {
+                $c->where('is_active', true)
+                  ->where(function ($p) {
+                      $p->whereNull('province_id')
+                        ->orWhereHas('province', fn($prov) => $prov->where('is_active', true));
+                  });
+            })
+            ->where(function ($q) {
+                $q->whereNull('district_id')
+                  ->orWhereHas('district', fn($d) => $d->where('is_active', true));
+            });
+    }
+
+    /**
      * Scope untuk menyaring bantuan dalam satu wilayah Kecamatan.
      */
     public function scopeInDistrict($query, $districtId)
@@ -734,6 +758,10 @@ class Help extends Model
         }
 
         if ($this->hasCancelledBy($mitra->id)) {
+            return false;
+        }
+
+        if (!app(\App\Services\RegionService::class)->isRegionActive($this->district_id, $this->city_id)) {
             return false;
         }
 
@@ -1007,6 +1035,120 @@ class Help extends Model
         }
 
         return "{$minutes} menit lagi";
+    }
+
+    /**
+     * Dapatkan toleransi keterlambatan keberangkatan efektif (Snapshot order atau fallback ke AppSetting).
+     */
+    public function getEffectiveDepartureGraceMinutes(): int
+    {
+        if (!is_null($this->departure_grace_minutes)) {
+            return (int) $this->departure_grace_minutes;
+        }
+        return \App\Models\AppSetting::getScheduledDepartureGraceMinutes();
+    }
+
+    /**
+     * Batas waktu terakhir keberangkatan mitra: departure_at + departure_grace_minutes.
+     */
+    public function getDepartureDeadline(): ?\Carbon\Carbon
+    {
+        if (!$this->isScheduled() || !$this->departure_at) {
+            return null;
+        }
+
+        $grace = $this->getEffectiveDepartureGraceMinutes();
+        return \Carbon\Carbon::parse($this->departure_at)->copy()->addMinutes($grace);
+    }
+
+    /**
+     * Periksa apakah mitra sudah benar-benar memulai perjalanan / pengerjaan.
+     */
+    public function hasPartnerStartedDeparture(): bool
+    {
+        if ($this->partner_started_at !== null) {
+            return true;
+        }
+
+        if (in_array($this->status, [
+            self::STATUS_PARTNER_ON_THE_WAY,
+            self::STATUS_PARTNER_ARRIVED,
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_WAITING_CONFIRMATION,
+            self::STATUS_SELESAI,
+        ], true)) {
+            return true;
+        }
+
+        if ($this->service_stage && in_array($this->service_stage, [
+            self::STAGE_GOING_TO_PICKUP,
+            self::STAGE_AT_PICKUP,
+            self::STAGE_WAITING_FOR_CUSTOMER,
+            self::STAGE_ITEM_COLLECTED,
+            self::STAGE_GOING_TO_DESTINATION,
+            self::STAGE_FINAL_APPROACH,
+            self::STAGE_AT_DESTINATION,
+        ], true)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Cek apakah pesanan terjadwal telah melewati batas waktu keberangkatan (Overdue).
+     */
+    public function isDepartureOverdue(): bool
+    {
+        if (!$this->isScheduled()) {
+            return false;
+        }
+
+        if ($this->hasPartnerStartedDeparture()) {
+            return false;
+        }
+
+        if (in_array($this->status, [self::STATUS_SELESAI, self::STATUS_DIBATALKAN], true)) {
+            return false;
+        }
+
+        $deadline = $this->getDepartureDeadline();
+        if (!$deadline) {
+            return false;
+        }
+
+        return now()->gte($deadline);
+    }
+
+    /**
+     * Cek apakah pesanan berstatus overdue / jadwal terlewat.
+     */
+    public function isOverdue(): bool
+    {
+        return $this->schedule_overdue_at !== null || $this->isDepartureOverdue();
+    }
+
+    /**
+     * Pesan peringatan jadwal keberangkatan terlewat untuk customer.
+     */
+    public function getCustomerScheduleStatusNotice(): ?string
+    {
+        if (!$this->isScheduled() || !$this->isOverdue()) {
+            return null;
+        }
+
+        if ($this->status !== self::STATUS_MENUNGGU_MITRA) {
+            return null;
+        }
+
+        $hasPrevPartner = !empty($this->cancelled_mitra_ids)
+            || (\Illuminate\Support\Facades\Schema::hasTable('help_partner_exclusions') && $this->partnerExclusions()->exists());
+
+        if ($hasPrevPartner) {
+            return 'Jadwal keberangkatan telah terlewat dan mitra sebelumnya belum memulai perjalanan. Sistem sedang mencari mitra pengganti.';
+        }
+
+        return 'Jadwal keberangkatan telah terlewat. Sistem sedang mencari mitra untuk segera mengerjakan pesanan Anda.';
     }
 
     /**

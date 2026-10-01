@@ -510,6 +510,12 @@ class HelpMatchingService
      */
     public function initiateMatching(Help $help): bool
     {
+        // 0. Guard Region Aktif: Jangan lakukan matching jika wilayah nonaktif
+        if (!app(\App\Services\RegionService::class)->isRegionActive($help->district_id, $help->city_id)) {
+            Log::info("[HelpMatchingService] Region is inactive for Help #{$help->id}. Skipping matching.");
+            return false;
+        }
+
         // 1. Cek konfigurasi SuperAdmin / Wilayah: Apakah fitur cari order / matching seeking aktif
         if (!AppSetting::isMatchingSeekingEnabled($help->city_id)) {
             Log::info("[HelpMatchingService] Cari order is disabled for City #{$help->city_id}. Falling back to Open Pool for Help #{$help->id}.");
@@ -517,7 +523,9 @@ class HelpMatchingService
             return false;
         }
 
-        if ($help->order_mode === Help::ORDER_MODE_SCHEDULED || $help->dispatch_mode === Help::DISPATCH_MODE_POOL) {
+        $isOverdueScheduled = ($help->order_mode === Help::ORDER_MODE_SCHEDULED && $help->schedule_overdue_at !== null);
+
+        if (($help->order_mode === Help::ORDER_MODE_SCHEDULED && !$isOverdueScheduled) || ($help->dispatch_mode === Help::DISPATCH_MODE_POOL && !$isOverdueScheduled)) {
             $this->fallbackToOpenPool($help);
             return false;
         }
@@ -592,6 +600,11 @@ class HelpMatchingService
             if (!$lockedHelp || $lockedHelp->mitra_id !== null || $lockedHelp->status !== Help::STATUS_MENUNGGU_MITRA) {
                 Log::warning("[HelpMatchingService] Cannot dispatch offer: Help #{$help->id} is already taken or unavailable.");
                 return null; // Order sudah diambil orang lain atau dibatalkan
+            }
+
+            if (!app(\App\Services\RegionService::class)->isRegionActive($lockedHelp->district_id, $lockedHelp->city_id)) {
+                Log::warning("[HelpMatchingService] Cannot dispatch offer: Region for Help #{$help->id} is inactive.");
+                return null;
             }
 
             // 2. Lock record PartnerOnlineState dan verifikasi mitra masih searching dengan heartbeat segar
@@ -983,6 +996,11 @@ class HelpMatchingService
      */
     public function fallbackToOpenPool(Help $help): void
     {
+        if (!app(\App\Services\RegionService::class)->isRegionActive($help->district_id, $help->city_id)) {
+            Log::info("[HelpMatchingService] Help #{$help->id} region is inactive. Will not fallback to Open Pool.");
+            return;
+        }
+
         DB::transaction(function () use ($help) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
 
@@ -1032,16 +1050,18 @@ class HelpMatchingService
 
         $query = Help::where('status', Help::STATUS_MENUNGGU_MITRA)
             ->whereNull('mitra_id')
-            ->where('order_mode', Help::ORDER_MODE_INSTANT)
+            ->where(function ($q) {
+                $q->where('order_mode', Help::ORDER_MODE_INSTANT)
+                  ->orWhere(function ($sq) {
+                      $sq->where('order_mode', Help::ORDER_MODE_SCHEDULED)
+                         ->whereNotNull('schedule_overdue_at');
+                  });
+            })
             ->whereIn('dispatch_mode', [Help::DISPATCH_MODE_SEEKING, Help::DISPATCH_MODE_POOL])
             ->where(function ($q) {
                 $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
             })
-            ->whereHas('city', fn($c) => $c->where('is_active', true))
-            ->where(function ($q) {
-                $q->whereNull('district_id')
-                  ->orWhereHas('district', fn($d) => $d->where('is_active', true));
-            })
+            ->inActiveRegion()
             ->availableForMitra($mitra->id);
 
         if (!empty($excludedHelpIds)) {

@@ -156,7 +156,7 @@ class Index extends Component
         $adminConversation = (object) [
             'partner' => (object) [
                 'id'            => 'admin',
-                'name'          => '🛡️ Tim Admin SayaBantu',
+                'name'          => 'Tim Admin SayaBantu',
                 'email'         => 'admin@sayabantu.com',
                 'phone'         => 'Pusat Bantuan & Moderasi Resmi',
                 'profile_photo' => null,
@@ -257,7 +257,7 @@ class Index extends Component
         $this->is_admin_chat       = true;
         $this->selected_partner    = (object) [
             'id'            => 'admin',
-            'name'          => '🛡️ Tim Admin SayaBantu',
+            'name'          => 'Tim Admin SayaBantu',
             'email'         => 'admin@sayabantu.com',
             'phone'         => 'Pusat Bantuan & Moderasi Resmi',
             'profile_photo' => null,
@@ -309,10 +309,18 @@ class Index extends Component
             $this->active_help_id             = null;
             $this->active_help                = null;
         } else {
+            $this->admin_tab = $tab ?? 'report';
+            $rep = PartnerReport::where('reporter_id', $userId)
+                ->where('report_type', 'dukungan_umum')
+                ->where('category', 'dari_customer')
+                ->whereIn('status', ['pending', 'in_progress', 'under_review', 'investigating', 'proses'])
+                ->latest()
+                ->first();
+
+            $this->selected_report_id         = $rep?->id;
+            $this->selected_report            = $rep;
             $this->selected_cancel_request_id = null;
             $this->selected_cancel_request    = null;
-            $this->selected_report_id         = null;
-            $this->selected_report            = null;
             $this->active_help_id             = null;
             $this->active_help                = null;
         }
@@ -466,7 +474,7 @@ class Index extends Component
                             'message'     => $m->message,
                             'photo'       => $m->photo,
                             'sender_type' => $m->isFromAdmin() ? 'admin' : 'customer',
-                            'sender_name' => $m->isFromAdmin() ? '🛡️ Tim Admin SayaBantu' : ($m->sender?->name ?? 'Anda'),
+                            'sender_name' => $m->isFromAdmin() ? 'Tim Admin SayaBantu' : ($m->sender?->name ?? 'Anda'),
                             'created_at'  => $m->created_at,
                             'help_id'     => $m->cancelRequest?->help_id,
                             'help'        => $m->cancelRequest?->help,
@@ -498,7 +506,7 @@ class Index extends Component
                             'message'     => $m->message,
                             'photo'       => $m->photo,
                             'sender_type' => $m->isFromAdmin() ? 'admin' : 'customer',
-                            'sender_name' => $m->isFromAdmin() ? '🛡️ Tim Admin SayaBantu' : ($m->sender?->name ?? 'Anda'),
+                            'sender_name' => $m->isFromAdmin() ? 'Tim Admin SayaBantu' : ($m->sender?->name ?? 'Anda'),
                             'created_at'  => $m->created_at,
                             'help_id'     => $m->report?->reported_help_id,
                             'help'        => $m->report?->reportedHelp,
@@ -638,8 +646,14 @@ class Index extends Component
             } else {
                 $report = $this->selected_report ?? ($this->selected_report_id ? PartnerReport::find($this->selected_report_id) : null);
 
-                if (!$report) {
-                    $report = PartnerReport::where('reporter_id', $customerId)->latest()->first();
+                // Pastikan jika mencari report support umum, hanya ambil dukungan_umum milik customer (Requirement 2)
+                if (!$report || $report->report_type !== 'dukungan_umum') {
+                    $report = PartnerReport::where('reporter_id', $customerId)
+                        ->where('report_type', 'dukungan_umum')
+                        ->where('category', 'dari_customer')
+                        ->whereIn('status', ['pending', 'in_progress', 'under_review', 'investigating', 'proses'])
+                        ->latest()
+                        ->first();
                 }
 
                 if (!$report) {
@@ -647,7 +661,7 @@ class Index extends Component
                         'reporter_id' => $customerId,
                         'category'    => 'dari_customer',
                         'report_type' => 'dukungan_umum',
-                        'title'       => 'Pesan Bantuan / Diskusi dengan Tim Admin',
+                        'title'       => 'Pusat Bantuan / Konsultasi Pelanggan',
                         'message'     => $msgText,
                         'status'      => 'pending',
                     ]);

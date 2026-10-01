@@ -27,6 +27,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(Redirector $redirect): void
     {
+        // Daftarkan EnsureAdmin sebagai persistent middleware Livewire agar aksi Livewire Admin terproteksi
+        \Livewire\Livewire::addPersistentMiddleware([
+            \App\Http\Middleware\EnsureAdmin::class,
+        ]);
+
         // Register Help Observer
         Help::observe(HelpObserver::class);
 

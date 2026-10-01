@@ -159,7 +159,7 @@ class Index extends Component
         $adminConversation = (object) [
             'partner' => (object) [
                 'id'            => 'admin',
-                'name'          => '🛡️ Tim Admin SayaBantu',
+                'name'          => 'Tim Admin SayaBantu',
                 'email'         => 'admin@sayabantu.com',
                 'phone'         => 'Pusat Bantuan & Moderasi Resmi',
                 'profile_photo' => null,
@@ -263,7 +263,7 @@ class Index extends Component
         $this->is_admin_chat       = true;
         $this->selected_partner    = (object) [
             'id'            => 'admin',
-            'name'          => '🛡️ Tim Admin SayaBantu',
+            'name'          => 'Tim Admin SayaBantu',
             'email'         => 'admin@sayabantu.com',
             'phone'         => 'Pusat Bantuan & Moderasi Resmi',
             'profile_photo' => null,
@@ -315,19 +315,19 @@ class Index extends Component
             $this->selected_cancel_request    = null;
             $this->active_help_id             = $rep?->reported_help_id;
             $this->active_help                = $rep?->reportedHelp;
-        } elseif ($tab) {
-            $this->admin_tab                  = $tab;
-            $this->selected_cancel_request_id = null;
-            $this->selected_cancel_request    = null;
-            $this->selected_report_id         = null;
-            $this->selected_report            = null;
-            $this->active_help_id             = null;
-            $this->active_help                = null;
         } else {
+            $this->admin_tab = $tab ?? 'report';
+            $rep = PartnerReport::where('reporter_id', $mitraId)
+                ->where('report_type', 'dukungan_umum')
+                ->where('category', 'dari_mitra')
+                ->whereIn('status', ['pending', 'in_progress', 'under_review', 'investigating', 'proses'])
+                ->latest()
+                ->first();
+
+            $this->selected_report_id         = $rep?->id;
+            $this->selected_report            = $rep;
             $this->selected_cancel_request_id = null;
             $this->selected_cancel_request    = null;
-            $this->selected_report_id         = null;
-            $this->selected_report            = null;
             $this->active_help_id             = null;
             $this->active_help                = null;
         }
@@ -480,7 +480,7 @@ class Index extends Component
                             'message'     => $m->message,
                             'photo'       => $m->photo,
                             'sender_type' => $m->isFromAdmin() ? 'admin' : 'mitra',
-                            'sender_name' => $m->isFromAdmin() ? '🛡️ Tim Admin SayaBantu' : ($m->sender?->name ?? 'Anda'),
+                            'sender_name' => $m->isFromAdmin() ? 'Tim Admin SayaBantu' : ($m->sender?->name ?? 'Anda'),
                             'created_at'  => $m->created_at,
                             'help_id'     => $m->cancelRequest?->help_id,
                             'help'        => $m->cancelRequest?->help,
@@ -512,7 +512,7 @@ class Index extends Component
                             'message'     => $m->message,
                             'photo'       => $m->photo,
                             'sender_type' => $m->isFromAdmin() ? 'admin' : 'mitra',
-                            'sender_name' => $m->isFromAdmin() ? '🛡️ Tim Admin SayaBantu' : ($m->sender?->name ?? 'Anda'),
+                            'sender_name' => $m->isFromAdmin() ? 'Tim Admin SayaBantu' : ($m->sender?->name ?? 'Anda'),
                             'created_at'  => $m->created_at,
                             'help_id'     => $m->report?->reported_help_id,
                             'help'        => $m->report?->reportedHelp,
@@ -651,18 +651,24 @@ class Index extends Component
             } else {
                 $report = $this->selected_report ?? ($this->selected_report_id ? PartnerReport::find($this->selected_report_id) : null);
 
-                if (!$report) {
-                    $report = PartnerReport::where('reported_user_id', $mitraId)->latest()->first();
+                // Pastikan jika mencari report support umum, hanya ambil dukungan_umum milik mitra sebagai reporter (Requirement 3)
+                if (!$report || $report->report_type !== 'dukungan_umum') {
+                    $report = PartnerReport::where('reporter_id', $mitraId)
+                        ->where('report_type', 'dukungan_umum')
+                        ->where('category', 'dari_mitra')
+                        ->whereIn('status', ['pending', 'in_progress', 'under_review', 'investigating', 'proses'])
+                        ->latest()
+                        ->first();
                 }
 
                 if (!$report) {
                     $report = PartnerReport::create([
-                        'reported_user_id' => $mitraId,
-                        'category'         => 'dari_mitra',
-                        'report_type'      => 'dukungan_umum',
-                        'title'            => 'Klarifikasi / Diskusi Mitra dengan Tim Admin',
-                        'message'          => $msgText,
-                        'status'           => 'pending',
+                        'reporter_id' => $mitraId,
+                        'category'    => 'dari_mitra',
+                        'report_type' => 'dukungan_umum',
+                        'title'       => 'Pusat Bantuan / Konsultasi Rekan Jasa',
+                        'message'     => $msgText,
+                        'status'      => 'pending',
                     ]);
                 }
 
