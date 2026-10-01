@@ -21,17 +21,20 @@ class OnSiteCancellationService
     protected HelpEscrowService $escrowService;
     protected GeoService $geoService;
     protected HelpChatService $chatService;
+    protected ?CancellationSettlementService $settlementService;
 
     public function __construct(
         PartnerOnlineService $onlineService,
         HelpEscrowService $escrowService,
         GeoService $geoService,
-        ?HelpChatService $chatService = null
+        ?HelpChatService $chatService = null,
+        ?CancellationSettlementService $settlementService = null
     ) {
-        $this->onlineService = $onlineService;
-        $this->escrowService = $escrowService;
-        $this->geoService    = $geoService;
-        $this->chatService   = $chatService ?? app(HelpChatService::class);
+        $this->onlineService     = $onlineService;
+        $this->escrowService     = $escrowService;
+        $this->geoService        = $geoService;
+        $this->chatService       = $chatService ?? app(HelpChatService::class);
+        $this->settlementService = $settlementService ?? app(CancellationSettlementService::class);
     }
 
     /**

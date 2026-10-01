@@ -28,7 +28,7 @@ Thumbs.db
 !/storage/framework/
 !/storage/logs/
 /scripts/
-/tests/
+
 
 # AI Agent Rules
 GEMINI.md

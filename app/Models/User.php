@@ -673,7 +673,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
         $districtIds = $this->getAdminDistrictIds();
         if (empty($districtIds)) {
-            $res = collect();
+            $res = new \Illuminate\Database\Eloquent\Collection();
             $this->memoizedAdminDistricts = $res;
             if ($uid) self::$reqAdminDistricts[$uid] = $res;
             return $res;
@@ -937,10 +937,14 @@ class User extends Authenticatable implements MustVerifyEmail
             $cityIds = array_merge($cityIds, $this->managedCities()->allRelatedIds()->all());
         }
 
-        // 2. Cities derived from managed districts (menggunakan getAdminDistrictIds yang sudah termemoize)
-        $districtIds = $this->getAdminDistrictIds();
-        if (!empty($districtIds)) {
-            $cityIds = array_merge($cityIds, District::whereIn('id', $districtIds)->pluck('city_id')->all());
+        // 2. Cities derived from managed districts (query pivot langsung, BUKAN via getAdminDistrictIds untuk menghindari circular dependency)
+        if ($this->relationLoaded('managedDistricts')) {
+            $managedDistrictIds = $this->managedDistricts->pluck('id')->all();
+        } else {
+            $managedDistrictIds = $this->managedDistricts()->allRelatedIds()->all();
+        }
+        if (!empty($managedDistrictIds)) {
+            $cityIds = array_merge($cityIds, District::whereIn('id', $managedDistrictIds)->pluck('city_id')->all());
         }
 
         // 3. Primary district parent city
