@@ -568,12 +568,8 @@ class Create extends Component
                 $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $matchedCity->id);
             }
 
-            // Strategi D: Fallback ke kecamatan pertama yang terdaftar dan aktif di kota tersebut jika ada
-            if (!$matchedDistrict) {
-                $matchedDistrict = \App\Models\District::where('city_id', $matchedCity->id)
-                    ->where('is_active', true)
-                    ->first();
-            }
+            // Strategi D: DILENGKAPKAN (W1 Canonical) — DILARANG fallback ke kecamatan pertama secara arbitrary.
+            // Jika koordinat tidak cocok dengan nama kecamatan manapun, biarkan null (didukung resmi pada level kota).
 
             if ($matchedDistrict) {
                 if (!$matchedDistrict->is_active) {
@@ -1382,14 +1378,6 @@ class Create extends Component
             return;
         }
 
-        if (empty($this->district_id) && !empty($this->city_id)) {
-            $matchedDistrict = \App\Models\District::where('city_id', $this->city_id)->where('is_active', true)->first();
-            if ($matchedDistrict) {
-                $this->district_id = $matchedDistrict->id;
-                $this->districtQuery = $matchedDistrict->name;
-            }
-        }
-
         // ISOLASI KETAT DATA ANTAR JENIS LAYANAN SEBELUM VALIDASI & TRANSAKSI
         if ($this->service_type === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
             $this->store_name      = null;
@@ -1681,14 +1669,6 @@ class Create extends Component
         if (auth()->user()->isShadowBanned() || (int) auth()->user()->warning_level >= 3) {
             $this->addError('amount', 'Akun Anda saat ini dibatasi dari membuat pesanan bantuan baru karena dalam peninjauan moderasi / sanksi SP 3.');
             return;
-        }
-
-        if (empty($this->district_id) && !empty($this->city_id)) {
-            $matchedDistrict = \App\Models\District::where('city_id', $this->city_id)->where('is_active', true)->first();
-            if ($matchedDistrict) {
-                $this->district_id = $matchedDistrict->id;
-                $this->districtQuery = $matchedDistrict->name;
-            }
         }
 
         // ISOLASI KETAT DATA SEBELUM PENYIMPANAN TRANSAKSI

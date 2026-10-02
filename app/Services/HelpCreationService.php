@@ -40,9 +40,30 @@ class HelpCreationService
             throw new \RuntimeException("Akun Anda saat ini dibatasi dari membuat pesanan bantuan baru karena dalam status sanksi moderasi / SP 3.");
         }
 
-        // 0. Benteng Terakhir — Validasi Status Wilayah Aktif (Single Source of Truth)
+        // 0. Benteng Terakhir — Validasi Koordinat Peta & Wilayah Operasional (Single Source of Truth)
         $districtId = !empty($data['district_id']) ? (int) $data['district_id'] : null;
         $cityId     = !empty($data['city_id']) ? (int) $data['city_id'] : null;
+
+        if (!$cityId) {
+            throw new \InvalidArgumentException("Wilayah kota operasional pesanan wajib ditentukan.");
+        }
+
+        $lat = $data['latitude'] ?? ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY ? ($data['pickup_latitude'] ?? null) : null);
+        $lng = $data['longitude'] ?? ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY ? ($data['pickup_longitude'] ?? null) : null);
+
+        if ($lat === null || $lng === null || !is_numeric($lat) || !is_numeric($lng) || (float)$lat < -90 || (float)$lat > 90 || (float)$lng < -180 || (float)$lng > 180) {
+            throw new \InvalidArgumentException("Koordinat peta operasional pesanan tidak valid.");
+        }
+
+        if ($serviceType === Help::SERVICE_TYPE_PICKUP_DELIVERY) {
+            $dLat = $data['delivery_latitude'] ?? null;
+            $dLng = $data['delivery_longitude'] ?? null;
+            if ($dLat !== null || $dLng !== null) {
+                if ($dLat === null || $dLng === null || !is_numeric($dLat) || !is_numeric($dLng) || (float)$dLat < -90 || (float)$dLat > 90 || (float)$dLng < -180 || (float)$dLng > 180) {
+                    throw new \InvalidArgumentException("Koordinat tujuan pengantaran tidak valid.");
+                }
+            }
+        }
 
         if (!app(\App\Services\RegionService::class)->isRegionActive($districtId, $cityId)) {
             throw new \RuntimeException("Wilayah atau daerah yang dipilih sedang dinonaktifkan sementara dan tidak menerima permintaan bantuan baru.");

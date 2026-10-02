@@ -46,6 +46,15 @@ class PartnerOnlineState extends Model
         'longitude'            => 'decimal:8',
     ];
 
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            if (!array_key_exists('last_seen_at', $model->getAttributes())) {
+                $model->last_seen_at = now();
+            }
+        });
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // RELATIONSHIPS
     // ─────────────────────────────────────────────────────────────────────────

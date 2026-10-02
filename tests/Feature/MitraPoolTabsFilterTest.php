@@ -143,9 +143,15 @@ class MitraPoolTabsFilterTest extends TestCase
 
         $this->actingAs($this->mitra);
 
+        // --- REGRESSION GUARD: GPS tanpa district runtime TIDAK fallback ke profile district ---
+        Livewire::test(AllHelps::class)
+            ->set('districtFilter', 'my_district')
+            ->assertViewHas('countDistrict', 0);
+
         // --- TAB 1: Radius <= 10 KM ---
         // Seharusnya hanya menampilkan Order 1 dan Order 2 (jarak <= 10 KM). Order 3 (18 KM) & Order 4 tidak masuk.
         Livewire::test(AllHelps::class)
+            ->call('setMitraLocation', -7.7930, 110.3658, 'Kota Yogyakarta', 'Danurejan')
             ->set('districtFilter', 'all')
             ->assertViewHas('countRadius10km', 2)
             ->assertSee('Order Dekat Danurejan')
@@ -154,8 +160,9 @@ class MitraPoolTabsFilterTest extends TestCase
             ->assertDontSee('Order Luar Kota Sleman');
 
         // --- TAB 2: Kecamatan Danurejan ---
-        // Seharusnya menampilkan semua order di Kecamatan Danurejan (Order 1)
+        // Seharusnya menampilkan semua order di Kecamatan Danurejan (Order 1) saat runtime district teresolusi
         Livewire::test(AllHelps::class)
+            ->call('setMitraLocation', -7.7930, 110.3658, 'Kota Yogyakarta', 'Danurejan')
             ->set('districtFilter', 'my_district')
             ->assertViewHas('countDistrict', 1)
             ->assertSee('Order Dekat Danurejan')
@@ -166,6 +173,7 @@ class MitraPoolTabsFilterTest extends TestCase
         // --- TAB 3: Kabupaten / Kota Yogyakarta ---
         // Seharusnya menampilkan SEMUA order di Kota Jogja (Order 1, Order 2, DAN Order 3 yang 18 KM) tanpa terpotong radius 10 KM!
         Livewire::test(AllHelps::class)
+            ->call('setMitraLocation', -7.7930, 110.3658, 'Kota Yogyakarta', 'Danurejan')
             ->set('districtFilter', 'my_city')
             ->assertViewHas('countCity', 3)
             ->assertSee('Order Dekat Danurejan')

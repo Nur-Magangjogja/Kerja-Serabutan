@@ -70,7 +70,7 @@
             <div class="pt-0.5">
                 <div class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md text-white text-xs px-3.5 py-1.5 rounded-full font-medium shadow-xs border border-white/20">
                     <svg class="w-3.5 h-3.5 text-white/90" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 00-6-6z"/></svg>
-                    <span>{{ optional(optional(auth()->user())->city)->name ?? (auth()->user()->city ?? '-') }}</span>
+                    <span>{{ $operationalCity?->name ?? 'Lokasi belum tersedia' }}</span>
                     <span class="opacity-60">•</span>
                     <span>Bergabung sejak {{ optional(auth()->user())->created_at ? optional(auth()->user())->created_at->format('M Y') : '-' }}</span>
                 </div>

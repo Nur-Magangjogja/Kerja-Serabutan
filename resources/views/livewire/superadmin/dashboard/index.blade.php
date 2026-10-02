@@ -145,7 +145,7 @@
             <div class="min-w-0 flex-1">
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400 truncate">Customer</p>
                 <p class="text-lg sm:text-xl font-black text-amber-600 dark:text-amber-400 truncate">{{ number_format($stats['total_customers'] ?? 0) }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate hidden sm:block">Pengguna aktif</p>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate hidden sm:block">Pengguna terdaftar</p>
             </div>
         </div>
 

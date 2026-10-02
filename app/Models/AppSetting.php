@@ -410,27 +410,33 @@ class AppSetting extends Model
         return (bool) static::get('matching_seeking_enabled', true);
     }
 
-    public static function isMatchingSeekingEnabledForUser(?User $user): bool
+    public static function isMatchingSeekingEnabledForUser(?User $user, ?float $lat = null, ?float $lng = null, ?int $operationalCityId = null): bool
     {
-        if (!$user) {
-            return (bool) static::get('matching_seeking_enabled', true);
+        if ($operationalCityId) {
+            return static::isMatchingSeekingEnabled($operationalCityId);
         }
 
-        $cityId = $user->city_id;
+        // 1. Jika koordinat runtime GPS diberikan langsung
+        if ($lat !== null && $lng !== null && ((float)$lat != 0 || (float)$lng != 0)) {
+            $closestCity = City::findNearest((float) $lat, (float) $lng);
 
-        if (!$cityId) {
+            return static::isMatchingSeekingEnabled($closestCity?->id);
+        }
+
+        // 2. Jika user diberikan, cek runtime state GPS di PartnerOnlineState (bukan profil)
+        if ($user) {
             $onlineState = \App\Models\PartnerOnlineState::where('user_id', $user->id)->first();
-            if ($onlineState && $onlineState->latitude && $onlineState->longitude) {
-                $closestCity = City::where('is_active', true)
-                    ->whereNotNull('latitude')
-                    ->whereNotNull('longitude')
-                    ->orderByRaw("(6371 * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) ASC", [$onlineState->latitude, $onlineState->longitude, $onlineState->latitude])
-                    ->first();
-                $cityId = $closestCity?->id;
+            if ($onlineState && $onlineState->latitude && $onlineState->longitude && ((float)$onlineState->latitude != 0 || (float)$onlineState->longitude != 0)) {
+                $oLat = (float) $onlineState->latitude;
+                $oLng = (float) $onlineState->longitude;
+                $closestCity = City::findNearest($oLat, $oLng);
+
+                return static::isMatchingSeekingEnabled($closestCity?->id);
             }
         }
 
-        return static::isMatchingSeekingEnabled($cityId);
+        // 3. JANGAN gunakan profil user (user->city_id). Jika tidak ada GPS/lokasi operasional, gunakan pengaturan global.
+        return static::isMatchingSeekingEnabled(null);
     }
 
     public static function getPickupDeliveryBaseFare(): float

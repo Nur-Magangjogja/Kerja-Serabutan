@@ -285,16 +285,30 @@ class HelpMatchingService
             $targetLng = (float) ($help->longitude ?: 0);
         }
 
-        $mitraLat = (float) ($state->latitude ?? $mitra->latitude ?? 0);
-        $mitraLng = (float) ($state->longitude ?? $mitra->longitude ?? 0);
+        // City-level support: Jika Help tidak memiliki titik presisi namun memiliki city_id, gunakan koordinat kota Help
+        if (($targetLat == 0.0 || $targetLng == 0.0) && $help->city_id) {
+            $helpCity = $help->relationLoaded('city') ? $help->city : \App\Models\City::find($help->city_id);
+            if ($helpCity && $helpCity->latitude && $helpCity->longitude) {
+                $targetLat = (float) $helpCity->latitude;
+                $targetLng = (float) $helpCity->longitude;
+            }
+        }
 
-        if ($targetLat != 0 && $targetLng != 0 && $mitraLat != 0 && $mitraLng != 0) {
+        // Mitra location: STRICTLY RUNTIME GPS ONLY (NO profile fallback)
+        $mitraLat = (float) ($state->latitude ?? 0);
+        $mitraLng = (float) ($state->longitude ?? 0);
+
+        if ($mitraLat == 0.0 || $mitraLng == 0.0) {
+            // Mitra tidak memiliki koordinat GPS runtime aktual: eliminasi dari matching
+            $distKm = 999.0;
+            $distScore = 0.0;
+        } elseif ($targetLat != 0.0 && $targetLng != 0.0) {
             $distKm = $this->geoService->calculateStraightDistance($targetLat, $targetLng, $mitraLat, $mitraLng);
             $distScore = max(0.0, 1.0 - min($distKm / max(0.1, $maxRadius), 1.0));
         } else {
-            // Jika koordinat belum lengkap, gunakan kedekatan administratif Kecamatan
-            $distKm = 0.0;
-            $distScore = ($help->district_id && $mitra->district_id && $help->district_id === $mitra->district_id) ? 1.0 : 0.8;
+            // Jika koordinat Help benar-benar tidak tersedia di DB, netral radius
+            $distKm = 5.0;
+            $distScore = 0.5;
         }
 
         // 2. Rating Bayesian Score (In-Memory)
@@ -359,6 +373,15 @@ class HelpMatchingService
             $targetLng = (float) ($help->longitude ?: 0);
         }
 
+        // City-level support: Jika Help tidak memiliki titik presisi namun memiliki city_id, gunakan koordinat kota Help
+        if (($targetLat == 0.0 || $targetLng == 0.0) && $help->city_id) {
+            $helpCity = $help->relationLoaded('city') ? $help->city : \App\Models\City::find($help->city_id);
+            if ($helpCity && $helpCity->latitude && $helpCity->longitude) {
+                $targetLat = (float) $helpCity->latitude;
+                $targetLng = (float) $helpCity->longitude;
+            }
+        }
+
         // Tentukan daftar kecamatan yang eligible (Primary + Adjacent Districts)
         $eligibleDistrictIds = [];
         if ($help->district_id) {
@@ -381,7 +404,7 @@ class HelpMatchingService
                   ->orWhere('service_preference', $effectiveServiceType)
                   ->orWhereNull('service_preference');
             })
-            ->whereHas('user', function ($q) use ($help, $excludeIds, $eligibleDistrictIds) {
+            ->whereHas('user', function ($q) use ($help, $excludeIds) {
                 $q->where('role', 'mitra')
                   ->where('status', 'active')
                   ->where('is_shadow_banned', false)
@@ -398,22 +421,9 @@ class HelpMatchingService
                       ->whereNotNull('vehicle_stnk_number')
                       ->whereNotNull('vehicle_stnk_photo');
                 }
-
-                if (!empty($eligibleDistrictIds)) {
-                    $q->where(function ($sub) use ($eligibleDistrictIds, $help) {
-                        $sub->whereIn('district_id', $eligibleDistrictIds)
-                            ->orWhere(function ($s2) use ($help) {
-                                if ($help->city_id) {
-                                    $s2->where('city_id', $help->city_id);
-                                }
-                            });
-                    });
-                } elseif ($help->city_id) {
-                    $q->where('city_id', $help->city_id);
-                }
             });
 
-        // Bounding Box Pre-Filter: Batasi kandidat secara instan berbasis rentang maxMatchingRadius
+        // Bounding Box Pre-Filter: Batasi kandidat secara instan berbasis rentang maxMatchingRadius dari koordinat GPS aktual
         if ($targetLat != 0 && $targetLng != 0) {
             $latDelta = $maxMatchingRadius / 111.045;
             $lngDelta = $maxMatchingRadius / (111.045 * max(0.01, cos(deg2rad($targetLat))));
@@ -423,12 +433,8 @@ class HelpMatchingService
             $minLng = $targetLng - $lngDelta;
             $maxLng = $targetLng + $lngDelta;
 
-            $statesQuery->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng) {
-                $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng) {
-                    $sub->whereBetween('latitude', [$minLat, $maxLat])
-                        ->whereBetween('longitude', [$minLng, $maxLng]);
-                })->orWhereNull('latitude')->orWhereNull('longitude');
-            });
+            $statesQuery->whereBetween('latitude', [$minLat, $maxLat])
+                ->whereBetween('longitude', [$minLng, $maxLng]);
         }
 
         // Top-N Candidate Pre-selection
@@ -793,9 +799,38 @@ class HelpMatchingService
                 throw new \RuntimeException('Anda tidak dapat menerima tawaran ini karena sedang memiliki tugas aktif yang berjalan.');
             }
 
-            // STEP 4: Finalisasi Tarif & Jarak Perjalanan Aktual Mitra (Fase 2 Pricing)
-            $partnerLat = (float) ($partnerState->latitude ?? $mitra->latitude ?? 0);
-            $partnerLng = (float) ($partnerState->longitude ?? $mitra->longitude ?? 0);
+            // STEP 4: Validasi Kesegaran GPS Runtime & Jarak Aktual Mitra (GPS-First Guard)
+            $ttl = AppSetting::getHeartbeatTtlSeconds();
+            $partnerLat = (float) ($partnerState->latitude ?? 0);
+            $partnerLng = (float) ($partnerState->longitude ?? 0);
+
+            if ($partnerLat == 0.0 || $partnerLng == 0.0) {
+                throw new \RuntimeException('Lokasi GPS runtime Anda tidak tersedia.');
+            }
+
+            if (!$partnerState->isHeartbeatFresh($ttl)) {
+                throw new \RuntimeException('Lokasi GPS Anda sudah kedaluwarsa (stale). Silakan perbarui posisi GPS sebelum menerima tawaran.');
+            }
+
+            // Validasi jarak runtime GPS ke titik awal order tidak melebihi batas radius layanan
+            $maxRadius = $this->computeServiceMaxMatchingRadius($lockedHelp);
+            $targetLat = (float) ($lockedHelp->isPickup() ? ($lockedHelp->pickup_latitude ?: $lockedHelp->latitude) : ($lockedHelp->latitude ?: 0));
+            $targetLng = (float) ($lockedHelp->isPickup() ? ($lockedHelp->pickup_longitude ?: $lockedHelp->longitude) : ($lockedHelp->longitude ?: 0));
+
+            if (($targetLat == 0.0 || $targetLng == 0.0) && $lockedHelp->city_id) {
+                $helpCity = $lockedHelp->relationLoaded('city') ? $lockedHelp->city : \App\Models\City::find($lockedHelp->city_id);
+                if ($helpCity && $helpCity->latitude && $helpCity->longitude) {
+                    $targetLat = (float) $helpCity->latitude;
+                    $targetLng = (float) $helpCity->longitude;
+                }
+            }
+
+            if ($targetLat != 0.0 && $targetLng != 0.0) {
+                $currentDistKm = $this->geoService->calculateStraightDistance($targetLat, $targetLng, $partnerLat, $partnerLng);
+                if ($currentDistKm > $maxRadius) {
+                    throw new \RuntimeException("Posisi GPS Anda saat ini ({$currentDistKm} km) berada di luar batas radius operasional bantuan ({$maxRadius} km).");
+                }
+            }
 
             $finalPricing = $this->pricingService->finalizePartnerPricing($lockedHelp, $partnerLat, $partnerLng);
 
@@ -1035,12 +1070,16 @@ class HelpMatchingService
             return null;
         }
 
-        if (!AppSetting::isMatchingSeekingEnabledForUser($mitra)) {
+        if (!AppSetting::isMatchingSeekingEnabledForUser($mitra, $state->latitude, $state->longitude)) {
             return null;
         }
 
-        $mitraLat = (float) ($state->latitude ?? $mitra->latitude ?? 0);
-        $mitraLng = (float) ($state->longitude ?? $mitra->longitude ?? 0);
+        $mitraLat = (float) ($state->latitude ?? 0);
+        $mitraLng = (float) ($state->longitude ?? 0);
+
+        if ($mitraLat == 0.0 || $mitraLng == 0.0) {
+            return null;
+        }
 
         // Ambil ID bantuan yang pernah ditolak/kedaluwarsa oleh mitra ini
         $excludedHelpIds = HelpDispatch::where('mitra_id', $mitra->id)
@@ -1089,34 +1128,26 @@ class HelpMatchingService
             }
         }
 
-        // Bounding Box GPS Pre-filter atau Fallback ke City ID
-        if ($mitraLat != 0 && $mitraLng != 0) {
-            $maxDist = ($effectivePref === PartnerOnlineState::PREFERENCE_PICKUP_DELIVERY)
-                ? AppSetting::getPickupDeliveryMaxMatchingRadiusKm()
-                : AppSetting::getMaxMatchingRadiusKm();
-            $latDelta = $maxDist / 111.045;
-            $lngDelta = $maxDist / (111.045 * max(0.01, cos(deg2rad($mitraLat))));
-            $minLat = $mitraLat - $latDelta;
-            $maxLat = $mitraLat + $latDelta;
-            $minLng = $mitraLng - $lngDelta;
-            $maxLng = $mitraLng + $lngDelta;
+        // Bounding Box GPS Pre-filter (GPS-First: NO fallback to profile city)
+        $maxDist = ($effectivePref === PartnerOnlineState::PREFERENCE_PICKUP_DELIVERY)
+            ? AppSetting::getPickupDeliveryMaxMatchingRadiusKm()
+            : AppSetting::getMaxMatchingRadiusKm();
+        $latDelta = $maxDist / 111.045;
+        $lngDelta = $maxDist / (111.045 * max(0.01, cos(deg2rad($mitraLat))));
+        $minLat = $mitraLat - $latDelta;
+        $maxLat = $mitraLat + $latDelta;
+        $minLng = $mitraLng - $lngDelta;
+        $maxLng = $mitraLng + $lngDelta;
 
-            $query->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $mitra) {
-                $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng) {
-                    $sub->whereBetween('latitude', [$minLat, $maxLat])
-                        ->whereBetween('longitude', [$minLng, $maxLng]);
-                })->orWhere(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng) {
-                    $sub->whereBetween('pickup_latitude', [$minLat, $maxLat])
-                        ->whereBetween('pickup_longitude', [$minLng, $maxLng]);
-                });
-
-                if ($mitra->city_id) {
-                    $q->orWhere('city_id', $mitra->city_id);
-                }
+        $query->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng) {
+            $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng) {
+                $sub->whereBetween('latitude', [$minLat, $maxLat])
+                    ->whereBetween('longitude', [$minLng, $maxLng]);
+            })->orWhere(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng) {
+                $sub->whereBetween('pickup_latitude', [$minLat, $maxLat])
+                    ->whereBetween('pickup_longitude', [$minLng, $maxLng]);
             });
-        } elseif ($mitra->city_id) {
-            $query->where('city_id', $mitra->city_id);
-        }
+        });
 
         $pendingHelps = $query->latest()->limit(15)->get();
 

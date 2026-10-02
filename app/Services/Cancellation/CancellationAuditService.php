@@ -150,6 +150,19 @@ class CancellationAuditService
                     } elseif ($settlementType === HelpCancelRequest::SETTLEMENT_PARTIAL_SETTLEMENT || $settlementType === HelpCancelRequest::SETTLEMENT_ITEM_SETTLED) {
                         $pAmt = (float) ($partnerAmount ?? 0);
                         $rAmt = (float) ($refundAmount ?? max(0, $gross - $pAmt));
+
+                        if ($pAmt < 0 || $rAmt < 0) {
+                            throw new \InvalidArgumentException('Nominal refund dan kompensasi tidak boleh bernilai negatif.');
+                        }
+
+                        if ($pAmt > $gross || $rAmt > $gross) {
+                            throw new \InvalidArgumentException('Nominal refund atau kompensasi tidak boleh melebihi nilai escrow.');
+                        }
+
+                        if (abs(($pAmt + $rAmt) - $gross) > 0.01) {
+                            throw new \RuntimeException("Total pembagian partial settlement (Rp " . number_format($pAmt + $rAmt, 0) . ") tidak sama dengan nilai escrow (Rp " . number_format($gross, 0) . ").");
+                        }
+
                         if ($help->status !== Help::STATUS_DIBATALKAN) {
                             $this->settlementService->processPartialSettlement($help, $pAmt, $rAmt, $adminNotes ?? 'Penyelesaian audit parsial admin.');
                         }

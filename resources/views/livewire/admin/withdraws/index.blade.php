@@ -355,11 +355,11 @@
                                 <span class="px-2 py-0.5 bg-primary-100 dark:bg-primary-950 text-primary-800 dark:text-primary-300 font-extrabold rounded text-[10px] uppercase border border-primary-300 dark:border-primary-700">
                                     {{ $selectedWithdraw?->bank_code }}
                                 </span>
-                                <span class="font-mono font-black text-gray-900 dark:text-white text-xs select-all">
+                                <span class="font-mono font-black text-gray-900 dark:text-white text-base select-all">
                                     {{ $selectedWithdraw?->account_number }}
                                 </span>
                             </div>
-                            <span class="text-[11px] text-gray-600 dark:text-gray-300 font-semibold block mt-1">
+                            <span class="text-sm text-gray-600 dark:text-gray-300 font-semibold block mt-1">
                                 a.n. {{ $selectedWithdraw?->account_name ?: ($u?->name ?? '-') }}
                             </span>
                         </div>

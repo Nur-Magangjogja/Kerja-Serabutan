@@ -38,14 +38,11 @@ class AllHelps extends Component
     {
         $user = auth()->user();
         if ($user) {
-            // Ambil koordinat GPS terakhir yang tersimpan pada PartnerOnlineState atau User
+            // Ambil koordinat GPS terakhir yang tersimpan pada PartnerOnlineState (GPS-First: NO profile coordinate fallback)
             $onlineState = PartnerOnlineState::where('user_id', $user->id)->first();
-            if ($onlineState && $onlineState->latitude && $onlineState->longitude) {
+            if ($onlineState && $onlineState->isHeartbeatFresh(\App\Models\AppSetting::getHeartbeatTtlSeconds()) && $onlineState->latitude && $onlineState->longitude) {
                 $this->mitraLat = (float) $onlineState->latitude;
                 $this->mitraLng = (float) $onlineState->longitude;
-            } elseif ($user->latitude && $user->longitude) {
-                $this->mitraLat = (float) $user->latitude;
-                $this->mitraLng = (float) $user->longitude;
             }
         }
 
@@ -105,13 +102,21 @@ class AllHelps extends Component
 
     /**
      * Resolusikan Kecamatan & Kota/Kabupaten secara dinamis dari titik koordinat GPS posisi saat ini.
-     * Fallback ke data profil pengguna jika koordinat GPS belum tersedia.
+     * W2 Canonical: DILARANG fallback ke profil registrasi pendaftaran.
      */
     public function resolveCurrentTerritory(?string $cityName = null, ?string $districtName = null): bool
     {
         $user = auth()->user();
         $oldCityId = $this->currentCityId;
         $oldDistrictId = $this->currentDistrictId;
+
+        if ((!$this->mitraLat || !$this->mitraLng) && $user) {
+            $onlineState = PartnerOnlineState::where('user_id', $user->id)->first();
+            if ($onlineState && $onlineState->isHeartbeatFresh(\App\Models\AppSetting::getHeartbeatTtlSeconds()) && $onlineState->latitude && $onlineState->longitude) {
+                $this->mitraLat = (float) $onlineState->latitude;
+                $this->mitraLng = (float) $onlineState->longitude;
+            }
+        }
 
         // 1. Jika ada koordinat GPS, temukan Kota terdekat berdasarkan koordinat
         if ($this->mitraLat && $this->mitraLng) {
@@ -130,19 +135,14 @@ class AllHelps extends Component
 
             // Temukan Kota terdekat dari koordinat
             if (!$matchedCity) {
-                $matchedCity = City::select('*')
-                    ->selectRaw("(6371 * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) AS dist", [$lat, $lng, $lat])
-                    ->whereNotNull('latitude')
-                    ->whereNotNull('longitude')
-                    ->orderBy('dist')
-                    ->first();
+                $matchedCity = City::findNearest($lat, $lng);
             }
 
             if ($matchedCity) {
                 $this->currentCityId   = $matchedCity->id;
                 $this->currentCityName = $matchedCity->name;
 
-                // Cari Kecamatan pada Kota tersebut
+                // Cari Kecamatan pada Kota tersebut jika ada nama kecamatan dari geocoding
                 $matchedDistrict = null;
                 if (!empty($districtName)) {
                     $cleanDistrict = trim(preg_replace('/^(Kecamatan\s+|Kec\.\s+|Kapanewon\s+|Kemantren\s+|District of\s+)/i', '', $districtName));
@@ -154,26 +154,25 @@ class AllHelps extends Component
                         ->first();
                 }
 
-                if (!$matchedDistrict) {
-                    $matchedDistrict = District::where('city_id', $matchedCity->id)->first();
-                }
-
                 if ($matchedDistrict) {
                     $this->currentDistrictId   = $matchedDistrict->id;
                     $this->currentDistrictName = $matchedDistrict->name;
+                } else {
+                    $this->currentDistrictId   = null;
+                    $this->currentDistrictName = null;
                 }
+            } else {
+                $this->currentCityId       = null;
+                $this->currentCityName     = null;
+                $this->currentDistrictId   = null;
+                $this->currentDistrictName = null;
             }
-        }
-
-        // 2. Fallback jika GPS belum ada / belum teresolusi: gunakan data profil pendaftaran
-        if (!$this->currentCityId && $user) {
-            $userCity = $user->city_id ? City::find($user->city_id) : null;
-            $this->currentCityId   = $userCity?->id ?? $user->city_id;
-            $this->currentCityName = $userCity?->name ?? $user->city_name ?? $user->city;
-
-            $userDistrict = $user->district_id ? District::find($user->district_id) : null;
-            $this->currentDistrictId   = $userDistrict?->id ?? $user->district_id;
-            $this->currentDistrictName = $userDistrict?->name ?? $user->district ?? $user->kecamatan;
+        } else {
+            // W2 Canonical: Jika GPS belum ada / belum teresolusi, DILARANG fallback ke profil registrasi
+            $this->currentCityId       = null;
+            $this->currentCityName     = null;
+            $this->currentDistrictId   = null;
+            $this->currentDistrictName = null;
         }
 
         return ($oldCityId !== $this->currentCityId || $oldDistrictId !== $this->currentDistrictId);
@@ -350,21 +349,21 @@ class AllHelps extends Component
                     $sub->whereRaw("$initialLatSql BETWEEN $minLat AND $maxLat")
                         ->whereRaw("$initialLngSql BETWEEN $minLng AND $maxLng")
                         ->whereRaw("$haversineSql <= $maxOperationalKm");
-                })->orWhere(function ($sub) use ($user) {
+                })->orWhere(function ($sub) {
                     $sub->where(function($s) {
                         $s->whereNull('latitude')->orWhereNull('longitude');
                     });
                     if ($this->currentDistrictId) {
                         $sub->where('district_id', $this->currentDistrictId);
-                    } elseif ($user && $user->district_id) {
-                        $sub->where('district_id', $user->district_id);
+                    } else {
+                        $sub->whereRaw('1 = 0');
                     }
                 });
             })->count();
         } else {
-            $countRadius10km = (clone $basePoolQuery)
-                ->when($this->currentCityId, fn($q, $cId) => $q->where('city_id', $cId))
-                ->count();
+            $countRadius10km = !empty($this->currentCityId)
+                ? (clone $basePoolQuery)->where('city_id', $this->currentCityId)->count()
+                : 0;
         }
 
         $countDistrict = $this->currentDistrictId
@@ -388,27 +387,30 @@ class AllHelps extends Component
         if ($this->districtFilter === 'all' || $this->districtFilter === 'radius_10km') {
             // TAB 1: Radius 10 KM dari tempat Mitra berdiri
             if ($hasGps) {
-                $query->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm, $user) {
+                $query->where(function ($q) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm) {
                     $q->where(function ($sub) use ($minLat, $maxLat, $minLng, $maxLng, $haversineSql, $initialLatSql, $initialLngSql, $maxOperationalKm) {
                         $sub->whereRaw("$initialLatSql BETWEEN $minLat AND $maxLat")
                             ->whereRaw("$initialLngSql BETWEEN $minLng AND $maxLng")
                             ->whereRaw("$haversineSql <= $maxOperationalKm");
-                    })->orWhere(function ($sub) use ($user) {
-                        // Fallback untuk order legacy yang belum ada koordinat map
+                    })->orWhere(function ($sub) {
+                        // Fallback untuk order legacy yang belum ada koordinat map (hanya jika district GPS teresolusi)
                         $sub->where(function($s) {
                             $s->whereNull('latitude')->orWhereNull('longitude');
                         });
                         if ($this->currentDistrictId) {
                             $sub->where('district_id', $this->currentDistrictId);
-                        } elseif ($user && $user->district_id) {
-                            $sub->where('district_id', $user->district_id);
+                        } else {
+                            $sub->whereRaw('1 = 0');
                         }
                     });
                 });
             } else {
-                // Fallback jika GPS browser belum aktif: tampilkan order dalam kota saat ini
+                // Fallback jika GPS browser belum aktif: tampilkan order dalam kota saat ini jika teresolusi
                 if (!empty($this->currentCityId)) {
                     $query->where('city_id', $this->currentCityId);
+                } else {
+                    // Ketika GPS tidak tersedia: jangan tampilkan jobs seolah-olah Mitra sedang berada di profile territory
+                    $query->whereRaw('1 = 0');
                 }
             }
         } elseif ($this->districtFilter === 'my_district' && !empty($this->currentDistrictId)) {

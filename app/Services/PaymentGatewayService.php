@@ -52,34 +52,10 @@ class PaymentGatewayService
 
     /**
      * Handle gateway callback (internal helper used by simulation).
-     * In real world, this logic should be in a Controller endpoint that validates signature.
+     * Disabled: Payment gateway integration is dormant and live withdrawals are processed manually by Admin.
      */
     public function handleGatewayCallback(array $payload): void
     {
-        try {
-            $withdraw = WithdrawRequest::where('external_id', $payload['external_id'])->first();
-            if (!$withdraw) {
-                Log::warning('PaymentGatewayService: callback for unknown external_id', $payload);
-                return;
-            }
-
-            $newStatus = $payload['status'];
-
-            if ($newStatus === WithdrawRequest::STATUS_SUCCESS) {
-                $withdraw->update(['status' => WithdrawRequest::STATUS_SUCCESS, 'processed_at' => now()]);
-                Log::info('PaymentGatewayService: withdraw success', ['withdraw_id' => $withdraw->id]);
-            } else {
-                // failed --> refund user
-                $withdraw->update(['status' => WithdrawRequest::STATUS_FAILED, 'processed_at' => now()]);
-                $user = $withdraw->user;
-                if ($user) {
-                    $refundTotal = (int) ($withdraw->amount + ($withdraw->admin_fee ?? 0));
-                    $user->adjustBalance($refundTotal);
-                }
-                Log::info('PaymentGatewayService: withdraw failed and refunded', ['withdraw_id' => $withdraw->id]);
-            }
-        } catch (\Throwable $e) {
-            Log::error('PaymentGatewayService: error handling callback', ['error' => $e->getMessage()]);
-        }
+        Log::warning('PaymentGatewayService::handleGatewayCallback called on dormant service. Ignoring callback.', $payload);
     }
 }

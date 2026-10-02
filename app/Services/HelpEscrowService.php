@@ -120,9 +120,17 @@ class HelpEscrowService
     /**
      * Kembalikan escrow dari Holding ke saldo Customer secara langsung (Full / Parsial).
      */
-    public function refundFromEscrowDirect(Help $help, User $customer, float $refundAmount, string $note = 'Pengembalian Dana'): void
+    public function refundFromEscrowDirect(Help $help, User $customer, float $refundAmount, string $note = 'Pengembalian Dana', ?string $idempotencyKey = null): void
     {
         if ($refundAmount <= 0) {
+            return;
+        }
+
+        $idempotencyKey = $idempotencyKey ?? "help:{$help->id}:refund_direct:{$customer->id}";
+
+        $alreadyRefunded = BalanceTransaction::where('idempotency_key', $idempotencyKey)->exists();
+        if ($alreadyRefunded) {
+            Log::info("[HelpEscrowService] Direct refund already completed with key {$idempotencyKey}");
             return;
         }
 
@@ -136,7 +144,7 @@ class HelpEscrowService
             $help->id,
             $help->order_id,
             "{$note} (Bantuan '{$help->title}')",
-            "help:{$help->id}:refund_direct:" . uniqid()
+            $idempotencyKey
         );
 
         Log::info('[HelpEscrowService] refundFromEscrowDirect executed', [
@@ -150,9 +158,17 @@ class HelpEscrowService
     /**
      * Pencairan kompensasi parsial dari Escrow ke Mitra.
      */
-    public function payoutPartialFromEscrowDirect(Help $help, User $mitra, float $payoutAmount, string $note = 'Kompensasi'): void
+    public function payoutPartialFromEscrowDirect(Help $help, User $mitra, float $payoutAmount, string $note = 'Kompensasi', ?string $idempotencyKey = null): void
     {
         if ($payoutAmount <= 0) {
+            return;
+        }
+
+        $idempotencyKey = $idempotencyKey ?? "help:{$help->id}:payout_direct:{$mitra->id}";
+
+        $alreadyPaid = BalanceTransaction::where('idempotency_key', $idempotencyKey)->exists();
+        if ($alreadyPaid) {
+            Log::info("[HelpEscrowService] Direct payout already completed with key {$idempotencyKey}");
             return;
         }
 
@@ -166,7 +182,7 @@ class HelpEscrowService
             $help->id,
             "{$note} (Bantuan '{$help->title}')",
             $help->order_id,
-            "help:{$help->id}:payout_direct:" . uniqid()
+            $idempotencyKey
         );
 
         Log::info('[HelpEscrowService] payoutPartialFromEscrowDirect executed', [

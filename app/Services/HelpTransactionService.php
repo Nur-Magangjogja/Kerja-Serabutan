@@ -119,34 +119,56 @@ class HelpTransactionService
             throw new \RuntimeException('Batas toleransi jadwal keberangkatan untuk bantuan ini telah terlewat. Pesanan sedang diproses ulang.');
         }
 
-        // 8. Validasi Jarak Operasional Baku (Maksimal 10.0 KM untuk pesanan instan)
+        // 8. Validasi Jarak Operasional Baku & Runtime GPS Freshness (GPS-First Guard)
         $maxRadiusKm = (float) AppSetting::MAX_OPERATIONAL_RADIUS_KM;
-        $mitraLat = $lat ?? ($mitra->latitude ? (float) $mitra->latitude : null);
-        $mitraLng = $lng ?? ($mitra->longitude ? (float) $mitra->longitude : null);
-
-        // Tentukan koordinat titik awal sesuai jenis layanan
-        $targetLat = null;
-        $targetLng = null;
-
-        if ($help->isPickup()) {
-            $targetLat = (float) ($help->pickup_latitude ?: $help->latitude);
-            $targetLng = (float) ($help->pickup_longitude ?: $help->longitude);
-        } else {
-            $targetLat = (float) ($help->latitude ?: 0);
-            $targetLng = (float) ($help->longitude ?: 0);
-        }
+        $partnerState = PartnerOnlineState::where('user_id', $mitra->id)->first();
+        $ttl = AppSetting::getHeartbeatTtlSeconds();
 
         // Pesanan berjadwal di masa depan (> 1 jam dari sekarang) fleksibel dari lokasi saat ini
         $isFutureScheduled = $help->scheduled_at && \Carbon\Carbon::parse($help->scheduled_at)->isFuture() && \Carbon\Carbon::parse($help->scheduled_at)->diffInMinutes(now()) > 60;
 
-        if (!$isFutureScheduled && $mitraLat && $mitraLng && $targetLat && $targetLng) {
-            $distMeters = $this->trackingService->calculateDistance(
-                (float) $mitraLat, (float) $mitraLng,
-                (float) $targetLat, (float) $targetLng
-            );
-            $distKm = $distMeters / 1000;
-            if ($distKm > $maxRadiusKm) {
-                throw new \RuntimeException("Lokasi titik awal bantuan ini berjarak " . round($distKm, 1) . " km dari posisi Anda saat ini, melebihi batas jangkauan operasional maksimal platform ({$maxRadiusKm} km).");
+        if (!$isFutureScheduled) {
+            // Tentukan koordinat operasional aktual
+            if ($lat !== null && $lng !== null && (float) $lat != 0.0 && (float) $lng != 0.0) {
+                $mitraLat = (float) $lat;
+                $mitraLng = (float) $lng;
+            } elseif ($partnerState && $partnerState->latitude && $partnerState->longitude && (float) $partnerState->latitude != 0.0 && (float) $partnerState->longitude != 0.0) {
+                if (!$partnerState->isHeartbeatFresh($ttl)) {
+                    throw new \RuntimeException('Lokasi GPS Anda sudah kedaluwarsa (stale). Silakan perbarui posisi GPS sebelum mengambil bantuan ini.');
+                }
+                $mitraLat = (float) $partnerState->latitude;
+                $mitraLng = (float) $partnerState->longitude;
+            } else {
+                throw new \RuntimeException('Lokasi GPS operasional tidak tersedia. Silakan aktifkan lokasi untuk mengambil bantuan ini.');
+            }
+
+            // Tentukan koordinat titik awal sesuai jenis layanan
+            if ($help->isPickup()) {
+                $targetLat = (float) ($help->pickup_latitude ?: $help->latitude);
+                $targetLng = (float) ($help->pickup_longitude ?: $help->longitude);
+            } else {
+                $targetLat = (float) ($help->latitude ?: 0);
+                $targetLng = (float) ($help->longitude ?: 0);
+            }
+
+            // City-level support: Jika Help belum memiliki koordinat presisi namun memiliki city_id
+            if (($targetLat == 0.0 || $targetLng == 0.0) && $help->city_id) {
+                $helpCity = $help->relationLoaded('city') ? $help->city : \App\Models\City::find($help->city_id);
+                if ($helpCity && $helpCity->latitude && $helpCity->longitude) {
+                    $targetLat = (float) $helpCity->latitude;
+                    $targetLng = (float) $helpCity->longitude;
+                }
+            }
+
+            if ($targetLat != 0.0 && $targetLng != 0.0) {
+                $distMeters = $this->trackingService->calculateDistance(
+                    (float) $mitraLat, (float) $mitraLng,
+                    (float) $targetLat, (float) $targetLng
+                );
+                $distKm = $distMeters / 1000;
+                if ($distKm > $maxRadiusKm) {
+                    throw new \RuntimeException("Lokasi titik awal bantuan ini berjarak " . round($distKm, 1) . " km dari posisi Anda saat ini, melebihi batas jangkauan operasional maksimal platform ({$maxRadiusKm} km).");
+                }
             }
         }
 
@@ -292,12 +314,12 @@ class HelpTransactionService
                     'partner_current_lat' => $lat,
                     'partner_current_lng' => $lng,
                 ]);
-            } elseif ($mitra->latitude && $mitra->longitude) {
+            } elseif ($partnerState && $partnerState->latitude && $partnerState->longitude) {
                 $lockedHelp->update([
-                    'partner_initial_lat' => (float) $mitra->latitude,
-                    'partner_initial_lng' => (float) $mitra->longitude,
-                    'partner_current_lat' => (float) $mitra->latitude,
-                    'partner_current_lng' => (float) $mitra->longitude,
+                    'partner_initial_lat' => (float) $partnerState->latitude,
+                    'partner_initial_lng' => (float) $partnerState->longitude,
+                    'partner_current_lat' => (float) $partnerState->latitude,
+                    'partner_current_lng' => (float) $partnerState->longitude,
                 ]);
             }
 

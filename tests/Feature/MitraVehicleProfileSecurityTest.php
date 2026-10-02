@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\City;
 use App\Models\Help;
+use App\Models\PartnerOnlineState;
 use App\Models\User;
 use App\Models\UserBalance;
 use App\Services\DashboardStatsService;
@@ -165,6 +166,15 @@ class MitraVehicleProfileSecurityTest extends TestCase
             'status'   => 'active',
         ]);
         UserBalance::create(['user_id' => $mitraUnverified->id, 'balance' => 50000]);
+
+        // Prerequisite W2 GPS-First: Mitra harus memiliki runtime GPS fresh di territory sebelum pengujian kapabilitas kendaraan
+        PartnerOnlineState::create([
+            'user_id'         => $mitraUnverified->id,
+            'latitude'        => $this->city->latitude,
+            'longitude'       => $this->city->longitude,
+            'last_seen_at'    => now(),
+            'matching_status' => PartnerOnlineState::STATUS_SEARCHING,
+        ]);
 
         $onSiteHelp = Help::create([
             'user_id'       => $this->customer->id,

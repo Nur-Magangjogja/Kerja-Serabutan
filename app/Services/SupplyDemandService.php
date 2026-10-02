@@ -19,27 +19,60 @@ class SupplyDemandService
      */
     public function calculateCityMetrics(City $city): array
     {
+        // Guard: Jika kota nonaktif, operational supply dan demand adalah 0
+        if (!$city->is_active) {
+            return [
+                'searching_now'            => 0,
+                'busy_now'                 => 0,
+                'online_total'             => 0,
+                'current_unmatched_demand' => 0,
+                'recent_request_volume_2h' => 0,
+                'unserved_requests_24h'    => 0,
+                'avg_waiting_minutes'      => 0.0,
+                'partner_utilization_rate' => 0.0,
+            ];
+        }
+
         $ttl = AppSetting::getHeartbeatTtlSeconds();
+        $cutoff = now()->subSeconds($ttl);
 
-        // 1. Mitra searching aktif (heartbeat fresh) di kota ini
-        $searchingNow = PartnerOnlineState::eligibleForMatching($ttl)
-            ->whereHas('user', fn($q) => $q->where('city_id', $city->id)->where('role', 'mitra'))
-            ->count();
+        // Preload seluruh kota yang memiliki koordinat GPS untuk resolusi wilayah in-memory yang efisien (zero N+1)
+        $allCities = City::whereNotNull('latitude')->whereNotNull('longitude')->get();
 
-        // 2. Mitra busy (sedang bekerja) di kota ini
-        $busyNow = PartnerOnlineState::where('matching_status', PartnerOnlineState::STATUS_BUSY)
-            ->whereHas('user', fn($q) => $q->where('city_id', $city->id)->where('role', 'mitra'))
-            ->count();
-
-        // 3. Total mitra online (searching + busy + online standby)
-        $onlineTotal = PartnerOnlineState::whereIn('matching_status', [
+        // 1-3. Ambil seluruh partner state dengan heartbeat fresh, GPS valid, dan akun mitra aktif
+        $freshStates = PartnerOnlineState::whereNotNull('last_seen_at')
+            ->where('last_seen_at', '>=', $cutoff)
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->whereIn('matching_status', [
                 PartnerOnlineState::STATUS_SEARCHING,
                 PartnerOnlineState::STATUS_BUSY,
                 PartnerOnlineState::STATUS_OFFER_PENDING,
                 PartnerOnlineState::STATUS_ONLINE,
             ])
-            ->whereHas('user', fn($q) => $q->where('city_id', $city->id)->where('role', 'mitra'))
-            ->count();
+            ->whereHas('user', function ($q) {
+                $q->where('role', 'mitra')
+                  ->where('status', 'active')
+                  ->where('is_shadow_banned', false)
+                  ->where('warning_level', '<', 3);
+            })
+            ->get();
+
+        $searchingNow = 0;
+        $busyNow      = 0;
+        $onlineTotal  = 0;
+
+        foreach ($freshStates as $state) {
+            $nearestCity = City::findNearest((float) $state->latitude, (float) $state->longitude, null, $allCities);
+            if ($nearestCity && $nearestCity->id === $city->id) {
+                $onlineTotal++;
+                if ($state->matching_status === PartnerOnlineState::STATUS_SEARCHING) {
+                    $searchingNow++;
+                } elseif ($state->matching_status === PartnerOnlineState::STATUS_BUSY) {
+                    $busyNow++;
+                }
+            }
+        }
 
         // 4. Permintaan bantuan yang belum diambil mitra di kota ini
         $unmatchedDemand = Help::where('city_id', $city->id)

@@ -69,10 +69,44 @@ class MitraMatchingActions
             ];
         }
 
-        if (!\App\Models\AppSetting::isMatchingSeekingEnabledForUser($user)) {
+        $state = PartnerOnlineState::where('user_id', $user->id)->first();
+        $ttl = \App\Models\AppSetting::getHeartbeatTtlSeconds();
+
+        if ($latitude !== null && $longitude !== null && (float) $latitude != 0.0 && (float) $longitude != 0.0) {
+            $lat = (float) $latitude;
+            $lng = (float) $longitude;
+        } elseif ($state && $state->latitude && $state->longitude && (float) $state->latitude != 0.0 && (float) $state->longitude != 0.0) {
+            if (!$state->isHeartbeatFresh($ttl)) {
+                return [
+                    'success'    => false,
+                    'message'    => 'Lokasi GPS Anda sudah kedaluwarsa (stale). Silakan perbarui posisi GPS sebelum mencari order.',
+                    'flash_type' => 'warning',
+                ];
+            }
+            $lat = (float) $state->latitude;
+            $lng = (float) $state->longitude;
+        } else {
             return [
                 'success'    => false,
-                'message'    => 'Fitur pencarian antrean / matching dinonaktifkan di wilayah Anda. Order bantuan dapat langsung diambil melalui menu Bantuan.',
+                'message'    => 'Lokasi GPS tidak tersedia. Silakan aktifkan GPS atau perbarui lokasi untuk mencari order.',
+                'flash_type' => 'warning',
+            ];
+        }
+
+        $operationalCity = \App\Models\City::findNearest((float) $lat, (float) $lng);
+
+        if ($operationalCity && !$operationalCity->is_active) {
+            return [
+                'success'    => false,
+                'message'    => 'Layanan belum aktif di wilayah operasional GPS Anda saat ini.',
+                'flash_type' => 'warning',
+            ];
+        }
+
+        if (!\App\Models\AppSetting::isMatchingSeekingEnabledForUser($user, (float) $lat, (float) $lng, $operationalCity?->id)) {
+            return [
+                'success'    => false,
+                'message'    => 'Fitur pencarian antrean / matching dinonaktifkan di wilayah operasional Anda saat ini. Order bantuan dapat langsung diambil melalui menu Bantuan.',
                 'flash_type' => 'warning',
             ];
         }

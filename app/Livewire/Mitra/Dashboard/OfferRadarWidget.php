@@ -331,6 +331,10 @@ class OfferRadarWidget extends Component
         $isRestricted      = app(MitraMatchingActions::class)->isRestricted($user);
         $isSeekingEnabled  = \App\Models\AppSetting::isMatchingSeekingEnabledForUser($user);
         $canTakePickupDelivery = $user->canTakePickupDelivery();
+        $operationalCity = null;
+        if ($onlineState && $onlineState->isHeartbeatFresh(\App\Models\AppSetting::getHeartbeatTtlSeconds()) && $onlineState->latitude !== null && $onlineState->longitude !== null && ((float)$onlineState->latitude != 0 || (float)$onlineState->longitude != 0)) {
+            $operationalCity = \App\Models\City::findNearest((float) $onlineState->latitude, (float) $onlineState->longitude);
+        }
 
         return view('livewire.mitra.dashboard.offer-radar-widget', [
             'onlineState'           => $onlineState,
@@ -338,6 +342,7 @@ class OfferRadarWidget extends Component
             'isRestricted'          => $isRestricted,
             'isSeekingEnabled'      => $isSeekingEnabled,
             'canTakePickupDelivery' => $canTakePickupDelivery,
+            'operationalCity'       => $operationalCity,
         ]);
     }
 }

@@ -236,8 +236,9 @@ class Index extends Component
         $uid = $userId ?? auth()->id();
         if (!$uid) return;
 
-        $userCityId = auth()->user()?->city_id;
-        app(DashboardStatsService::class)->clearStatsCache($uid, $userCityId);
+        $user = auth()->user();
+        $operationalCityId = $user ? app(DashboardStatsService::class)->resolveMitraOperationalCityId($user) : null;
+        app(DashboardStatsService::class)->clearStatsCache($uid, $operationalCityId);
     }
 
     public function render()
@@ -277,6 +278,12 @@ class Index extends Component
         $onlineState = app(PartnerOnlineService::class)->getOrCreateState($user);
         $taskData    = $queryService->getActiveAndPendingTasks($user);
 
+        // 6. Operational Territory (W4 Canonical: Runtime GPS-first, NO profile fallback)
+        $operationalCity = null;
+        if ($onlineState && $onlineState->isHeartbeatFresh(\App\Models\AppSetting::getHeartbeatTtlSeconds()) && $onlineState->latitude !== null && $onlineState->longitude !== null && ((float)$onlineState->latitude != 0 || (float)$onlineState->longitude != 0)) {
+            $operationalCity = \App\Models\City::findNearest((float) $onlineState->latitude, (float) $onlineState->longitude);
+        }
+
         return view('livewire.mitra.dashboard.index', [
             'helps'                    => $helps,
             'balance'                  => $stats['balance'],
@@ -291,6 +298,7 @@ class Index extends Component
             'activeTask'               => $taskData['activeTask'],
             'waitingConfirmationHelps' => $taskData['waitingConfirmationHelps'],
             'onlineState'              => $onlineState,
+            'operationalCity'          => $operationalCity,
         ]);
     }
 }

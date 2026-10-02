@@ -30,6 +30,11 @@ class CancellationSettlementService
         DB::transaction(function () use ($help, $reason) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
 
+            if (in_array($lockedHelp->escrow_status, [Help::ESCROW_STATUS_RELEASED, Help::ESCROW_STATUS_PARTIAL_REFUND], true)) {
+                Log::warning("[CancellationSettlementService] Cannot full-refund Help #{$lockedHelp->id}: escrow already settled ({$lockedHelp->escrow_status}). Skipping.");
+                return;
+            }
+
             if ($lockedHelp->escrow_status !== Help::ESCROW_STATUS_REFUNDED) {
                 $customer = $lockedHelp->user;
                 if ($customer) {
@@ -65,6 +70,28 @@ class CancellationSettlementService
     ): void {
         DB::transaction(function () use ($help, $compensationMitra, $refundCustomer, $reason) {
             $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->firstOrFail();
+
+            if ($lockedHelp->escrow_status !== Help::ESCROW_STATUS_HELD) {
+                throw new \RuntimeException("Escrow untuk pesanan #{$lockedHelp->id} sudah diselesaikan atau tidak dalam status ditahan (status: {$lockedHelp->escrow_status}).");
+            }
+
+            if (in_array($lockedHelp->status, [Help::STATUS_DIBATALKAN, Help::STATUS_SELESAI], true)) {
+                throw new \RuntimeException("Pesanan #{$lockedHelp->id} sudah ditutup (status: {$lockedHelp->status}).");
+            }
+
+            $settlementAmount = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
+
+            if ($compensationMitra < 0 || $refundCustomer < 0) {
+                throw new \InvalidArgumentException('Nominal refund dan kompensasi tidak boleh bernilai negatif.');
+            }
+
+            if ($compensationMitra > $settlementAmount || $refundCustomer > $settlementAmount) {
+                throw new \InvalidArgumentException('Nominal refund atau kompensasi tidak boleh melebihi nilai escrow.');
+            }
+
+            if (abs(($compensationMitra + $refundCustomer) - $settlementAmount) > 0.01) {
+                throw new \RuntimeException("Total pembagian partial settlement (Rp " . number_format($compensationMitra + $refundCustomer, 0) . ") tidak sama dengan nilai escrow (Rp " . number_format($settlementAmount, 0) . ").");
+            }
 
             $customer = $lockedHelp->user;
             $mitra    = $lockedHelp->mitra;

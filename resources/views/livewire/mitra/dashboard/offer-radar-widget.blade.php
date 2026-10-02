@@ -199,10 +199,16 @@
                                     @endif">
                                     {{ strtoupper($onlineState?->matching_status ?? 'OFFLINE') }}
                                 </span>
+                                @if(isset($operationalCity) && $operationalCity)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
+                                        <svg class="w-3 h-3 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 00-6-6z"/></svg>
+                                        {{ $operationalCity->name }}
+                                    </span>
+                                @endif
                             </div>
                             <p class="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 leading-snug mt-0.5">
                                 @if(($onlineState?->matching_status ?? 'offline') === 'searching')
-                                    Sedang aktif mencari order terdekat di lokasi Anda.
+                                    Sedang aktif mencari order terdekat di {{ (isset($operationalCity) && $operationalCity) ? $operationalCity->name : 'lokasi Anda' }}.
                                 @elseif(($onlineState?->matching_status ?? 'offline') === 'online')
                                     @if(!($isSeekingEnabled ?? true))
                                         Mode Open Pool aktif. Order bantuan langsung tersedia di daftar bantuan tanpa perlu antrean pencarian.
@@ -495,8 +501,9 @@
             $secondsRemaining = (int) max(0, $activeOffer->expires_at ? now()->diffInSeconds($activeOffer->expires_at, false) : \App\Models\AppSetting::getOfferTimeoutSeconds());
             $initialTimeout   = (int) \App\Models\AppSetting::getOfferTimeoutSeconds();
 
-            $mitraLat = $onlineState?->latitude ?? auth()->user()->latitude;
-            $mitraLng = $onlineState?->longitude ?? auth()->user()->longitude;
+            $isHeartbeatFresh = $onlineState && $onlineState->isHeartbeatFresh(\App\Models\AppSetting::getHeartbeatTtlSeconds());
+            $mitraLat = $isHeartbeatFresh ? $onlineState->latitude : null;
+            $mitraLng = $isHeartbeatFresh ? $onlineState->longitude : null;
             $helpLat  = $activeOffer->help->isPickup()
                 ? ($activeOffer->help->pickup_latitude ?: $activeOffer->help->latitude)
                 : $activeOffer->help->latitude;

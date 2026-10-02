@@ -485,8 +485,14 @@ class Index extends Component
                 $this->cancelRefundAmount  = max(0, $gross - $this->cancelPartnerAmount);
             } else {
                 $this->settlementType      = $this->selectedCancelRequest->item_purchased ? 'item_settled' : 'full_refund';
-                $this->cancelRefundAmount  = $gross;
-                $this->cancelPartnerAmount = $this->selectedCancelRequest->item_purchase_amount ?: 0;
+                if ($this->selectedCancelRequest->item_purchased) {
+                    $itemAmt = min($gross, (float) ($this->selectedCancelRequest->item_purchase_amount ?: 0));
+                    $this->cancelPartnerAmount = $itemAmt;
+                    $this->cancelRefundAmount  = max(0.0, $gross - $itemAmt);
+                } else {
+                    $this->cancelRefundAmount  = $gross;
+                    $this->cancelPartnerAmount = 0;
+                }
             }
             $this->cancelAdminNotes = '';
 
@@ -556,6 +562,23 @@ class Index extends Component
             'customerSpLevel'    => 'required_if:spTarget,customer,both|integer|min:1|max:3',
         ]);
 
+        if ($this->cancelDecision === 'approved' && in_array($this->settlementType, ['partial_settlement', 'item_settled'])) {
+            $help = $this->selectedCancelRequest->help;
+            $gross = (float) ($help?->total_amount > 0 ? $help->total_amount : ($help?->amount ?: 0));
+            $refund = (float) ($this->cancelRefundAmount ?? 0);
+            $partner = (float) ($this->cancelPartnerAmount ?? 0);
+
+            if ($refund < 0 || $partner < 0) {
+                $this->addError('cancelRefundAmount', 'Nominal pengembalian atau pembayaran tidak boleh negatif.');
+                return;
+            }
+
+            if (abs(($refund + $partner) - $gross) > 0.01) {
+                $this->addError('cancelRefundAmount', "Total refund dan kompensasi (Rp " . number_format($refund + $partner, 0, ',', '.') . ") harus sama dengan total dana tahan (Rp " . number_format($gross, 0, ',', '.') . ").");
+                return;
+            }
+        }
+
         $this->showCancelReviewConfirmModal = true;
     }
 
@@ -580,6 +603,23 @@ class Index extends Component
             'partnerSpLevel'     => 'required_if:spTarget,partner,both|integer|min:1|max:3',
             'customerSpLevel'    => 'required_if:spTarget,customer,both|integer|min:1|max:3',
         ]);
+
+        if ($this->cancelDecision === 'approved' && in_array($this->settlementType, ['partial_settlement', 'item_settled'])) {
+            $help = $this->selectedCancelRequest->help;
+            $gross = (float) ($help?->total_amount > 0 ? $help->total_amount : ($help?->amount ?: 0));
+            $refund = (float) ($this->cancelRefundAmount ?? 0);
+            $partner = (float) ($this->cancelPartnerAmount ?? 0);
+
+            if ($refund < 0 || $partner < 0) {
+                session()->flash('error', 'Nominal pengembalian atau kompensasi tidak boleh negatif.');
+                return;
+            }
+
+            if (abs(($refund + $partner) - $gross) > 0.01) {
+                session()->flash('error', "Total refund dan kompensasi (Rp " . number_format($refund + $partner, 0, ',', '.') . ") harus sama dengan total dana tahan (Rp " . number_format($gross, 0, ',', '.') . ").");
+                return;
+            }
+        }
 
         try {
             $isApproved = ($this->cancelDecision === 'approved');

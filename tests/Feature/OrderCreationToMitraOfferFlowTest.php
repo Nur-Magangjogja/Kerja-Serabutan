@@ -215,7 +215,18 @@ class OrderCreationToMitraOfferFlowTest extends TestCase
             'platform_fee_amount' => 5000,
         ]);
 
-        // 3. Mitra 2 checks dashboard
+        // 3. Mitra 2 checks dashboard with fresh runtime GPS in city
+        PartnerOnlineState::updateOrCreate(
+            ['user_id' => $this->mitra2->id],
+            [
+                'latitude'        => $this->city->latitude,
+                'longitude'       => $this->city->longitude,
+                'matching_status' => PartnerOnlineState::STATUS_ONLINE,
+                'last_seen_at'    => now(),
+            ]
+        );
+        PartnerOnlineService::clearStateCache($this->mitra2->id);
+
         $this->actingAs($this->mitra2);
         $component = Livewire::test(MitraDashboard::class);
 
