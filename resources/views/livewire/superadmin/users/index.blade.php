@@ -19,6 +19,19 @@
         </div>
     </div>
 
+    @if (session('message'))
+        <div class="mb-4 p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>{{ session('message') }}</span>
+        </div>
+    @endif
+    @if (session('error'))
+        <div class="mb-4 p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-xs font-semibold text-rose-800 dark:text-rose-300 flex items-center gap-2">
+            <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <span>{{ session('error') }}</span>
+        </div>
+    @endif
+
     {{-- ===== Inline Filter Toolbar ===== --}}
     <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-4 py-3 mb-4 shadow-sm">
         <div class="flex flex-wrap items-center gap-3">
@@ -147,6 +160,10 @@
                                 <button wire:click="editUser({{ $user->id }})" title="Edit"
                                     class="p-1.5 rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </button>
+                                <button wire:click="openMigrationModal({{ $user->id }})" title="Migrasi Wilayah"
+                                    class="p-1.5 rounded-lg text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
                                 </button>
                                 <button wire:click="confirmDelete({{ $user->id }})" title="Hapus"
                                     class="p-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors">
@@ -459,6 +476,10 @@
                     Tutup
                 </button>
                 <div class="flex items-center gap-2">
+                    <button type="button" wire:click.prevent="openMigrationModal({{ $selectedUser->id }})" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-xs hover:shadow transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                        Migrasi Wilayah
+                    </button>
                     <button type="button" wire:click.prevent="editUser({{ $selectedUser->id }})" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-xl shadow-xs hover:shadow transition-all">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                         Edit Pengguna
@@ -691,6 +712,145 @@
                     class="px-4 py-2.5 text-xs font-bold bg-rose-600 text-white rounded-xl hover:bg-rose-700 shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60">
                     <svg wire:loading class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
                     <span>Konfirmasi & Hapus User</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ===== Migration Territory Modal ===== --}}
+    @if($showMigrationModal && $migrationUser)
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div class="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            {{-- Header --}}
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Migrasi Wilayah Profil</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Pindahkan wilayah administratif profil pengguna secara resmi</p>
+                    </div>
+                </div>
+                <button type="button" wire:click.prevent="closeModal" class="p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            {{-- Body --}}
+            <div class="px-6 py-5 overflow-y-auto flex-1 space-y-4 text-xs">
+                {{-- Info Pengguna --}}
+                <div class="p-3.5 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700 space-y-1">
+                    <span class="text-gray-400 block text-[10px] uppercase font-semibold">Pengguna Target</span>
+                    <div class="flex items-center justify-between">
+                        <p class="font-bold text-sm text-gray-900 dark:text-white">{{ $migrationUser->name }}</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 uppercase">
+                            {{ $migrationUser->role }}
+                        </span>
+                    </div>
+                </div>
+
+                {{-- Wilayah Saat Ini (Read-only) --}}
+                <div class="p-3.5 bg-gray-50 dark:bg-gray-750/50 rounded-xl border border-gray-100 dark:border-gray-700 space-y-2">
+                    <span class="text-gray-400 block text-[10px] uppercase font-semibold">Wilayah Saat Ini</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div class="bg-white dark:bg-gray-700 p-2.5 rounded-lg border border-gray-200/80 dark:border-gray-600">
+                            <span class="text-[10px] text-gray-400 block">Provinsi</span>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200 block truncate mt-0.5">
+                                {{ $migrationUser->province ?: ($migrationUser->cityRelation?->province ?? '—') }}
+                            </span>
+                        </div>
+                        <div class="bg-white dark:bg-gray-700 p-2.5 rounded-lg border border-gray-200/80 dark:border-gray-600">
+                            <span class="text-[10px] text-gray-400 block">Kota / Kabupaten</span>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200 block truncate mt-0.5">
+                                {{ $migrationUser->cityRelation?->name ?: ($migrationUser->city_name ?: ($migrationUser->city ?: '—')) }}
+                            </span>
+                        </div>
+                        <div class="bg-white dark:bg-gray-700 p-2.5 rounded-lg border border-gray-200/80 dark:border-gray-600">
+                            <span class="text-[10px] text-gray-400 block">Kecamatan</span>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200 block truncate mt-0.5">
+                                {{ $migrationUser->district?->name ?: ($migrationUser->kecamatan ?: '—') }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Wilayah Tujuan (Dropdowns) --}}
+                <div class="space-y-3 pt-1">
+                    <span class="text-gray-500 dark:text-gray-400 block text-xs font-bold uppercase tracking-wider">Wilayah Tujuan</span>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Provinsi Tujuan <span class="text-rose-500">*</span>
+                        </label>
+                        <select wire:model.live="migrationProvinceId"
+                            class="w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <option value="">-- Pilih Provinsi Tujuan --</option>
+                            @foreach($migrationAvailableProvinces as $prov)
+                            <option value="{{ $prov['id'] }}">{{ $prov['name'] }}</option>
+                            @endforeach
+                        </select>
+                        @error('migrationProvinceId') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Kota / Kabupaten Tujuan <span class="text-rose-500">*</span>
+                        </label>
+                        <select wire:model.live="migrationCityId"
+                            class="w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <option value="">-- Pilih Kota / Kabupaten --</option>
+                            @foreach($migrationAvailableCities as $c)
+                            <option value="{{ $c['id'] }}">{{ $c['name'] }}</option>
+                            @endforeach
+                        </select>
+                        @error('migrationCityId') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    @if(!empty($migrationAvailableDistricts))
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Kecamatan Tujuan <span class="text-rose-500">*</span>
+                        </label>
+                        <select wire:model="migrationDistrictId"
+                            class="w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <option value="">-- Pilih Kecamatan Tujuan --</option>
+                            @foreach($migrationAvailableDistricts as $d)
+                            <option value="{{ $d['id'] }}">{{ $d['name'] }}</option>
+                            @endforeach
+                        </select>
+                        @error('migrationDistrictId') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    @endif
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Alasan Migrasi Wilayah <span class="text-rose-500">*</span>
+                        </label>
+                        <textarea wire:model="migrationReason" rows="3" placeholder="Tuliskan alasan resmi pemindahan wilayah administratif pengguna..."
+                            class="w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
+                        @error('migrationReason') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+
+                {{-- Official Notice / Confirmation --}}
+                <div class="p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-2.5">
+                    <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <p class="text-xs text-amber-800 dark:text-amber-300 leading-relaxed font-medium">Perubahan ini hanya memindahkan wilayah administratif profil. Riwayat dan wilayah pekerjaan tidak berubah.</p>
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div class="px-6 py-3.5 bg-gray-50 dark:bg-gray-800/60 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-2.5">
+                <button type="button" wire:click.prevent="closeModal"
+                    class="px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    Batal
+                </button>
+                <button type="button" wire:click="submitMigration" wire:loading.attr="disabled"
+                    class="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-xs hover:shadow transition-all disabled:opacity-50">
+                    <svg wire:loading class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                    <span>Konfirmasi Migrasi Wilayah</span>
                 </button>
             </div>
         </div>

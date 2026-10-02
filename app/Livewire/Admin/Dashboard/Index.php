@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\District;
 use App\Models\City;
 use App\Models\BalanceTransaction;
+use App\Services\Territory\AdminTerritoryAuthorizationService;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -119,14 +120,17 @@ class Index extends Component
         $user = auth()->user();
         
         // District and City Resolution for Admin
+        $authService = app(AdminTerritoryAuthorizationService::class);
         $allowedDistrictIds = ($user && $user->role === 'admin') ? $user->getAdminDistrictIds() : [];
         $managedDistricts = ($user && $user->role === 'admin') ? $user->getAdminDistricts() : collect();
+        $explicitCityIds = ($user && $user->role === 'admin') ? $authService->getExplicitAdminCityIds($user) : [];
         $allowedCityIds = ($user && $user->role === 'admin') ? $user->getAdminCityIds() : [];
         $managedCities = ($user && $user->role === 'admin') ? $user->getAdminCities() : collect();
 
         // Determine active district / city scope
         $activeDistrictIds = [];
         $activeCityIds = [];
+        $activeExplicitCityIds = [];
 
         if ($user && $user->role === 'admin') {
             $filterValue = $this->selectedDistrict !== 'all' ? $this->selectedDistrict : ($this->selectedCity !== 'all' ? $this->selectedCity : 'all');
@@ -135,26 +139,33 @@ class Index extends Component
                 $valInt = (int) $filterValue;
                 if (in_array($valInt, $allowedDistrictIds, true)) {
                     $activeDistrictIds = [$valInt];
+                    $activeCityIds = [];
+                    $activeExplicitCityIds = [];
                     $districtObj = $managedDistricts->firstWhere('id', $valInt);
                     $activeDistrictLabel = $districtObj ? 'Kec. ' . $districtObj->name : 'Wilayah Terpilih';
                 } elseif (in_array($valInt, $allowedCityIds, true)) {
                     $activeCityIds = [$valInt];
-                    $activeDistrictIds = District::where('city_id', $valInt)->pluck('id')->map('intval')->all();
+                    $districtsInCity = District::where('city_id', $valInt)->pluck('id')->map('intval')->all();
+                    $activeDistrictIds = array_values(array_intersect($districtsInCity, $allowedDistrictIds));
+                    $activeExplicitCityIds = in_array($valInt, $explicitCityIds, true) ? [$valInt] : [];
                     $cityObj = $managedCities->firstWhere('id', $valInt) ?? City::find($valInt);
                     $activeDistrictLabel = $cityObj ? 'Kota/Kab. ' . $cityObj->name : 'Wilayah Terpilih';
                 } else {
                     $activeDistrictIds = $allowedDistrictIds;
                     $activeCityIds = $allowedCityIds;
+                    $activeExplicitCityIds = $explicitCityIds;
                     $activeDistrictLabel = $user->active_admin_district_label ?: $user->active_admin_city_label;
                 }
             } else {
                 $activeDistrictIds = $allowedDistrictIds;
                 $activeCityIds = $allowedCityIds;
+                $activeExplicitCityIds = $explicitCityIds;
                 $activeDistrictLabel = $user->admin_city_names ?: ($user->admin_district_names ?: 'Semua Wilayah');
             }
         } else {
             $activeDistrictIds = $allowedDistrictIds;
             $activeCityIds = $allowedCityIds;
+            $activeExplicitCityIds = $explicitCityIds;
             $activeDistrictLabel = 'Semua Wilayah';
         }
 
@@ -197,32 +208,22 @@ class Index extends Component
             $endOfMonth = null;
         }
 
-        // 2. Base Help Query (District & City Scoped)
+        // 2. Base Help Query (Canonical Help Territory Scoped)
         $baseHelpQuery = Help::query();
         if ($user && $user->role === 'admin') {
-            if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
-                $baseHelpQuery->where(function ($q) use ($activeDistrictIds, $activeCityIds) {
+            if (!empty($activeDistrictIds) && !empty($activeExplicitCityIds)) {
+                $baseHelpQuery->where(function ($q) use ($activeDistrictIds, $activeExplicitCityIds) {
                     $q->whereIn('district_id', $activeDistrictIds)
-                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $activeDistrictIds))
-                      ->orWhere(function ($sq) use ($activeCityIds) {
+                      ->orWhere(function ($sq) use ($activeExplicitCityIds) {
                           $sq->whereNull('district_id')
-                             ->whereIn('city_id', $activeCityIds);
-                      })
-                      ->orWhereHas('customer', function ($cq) use ($activeCityIds) {
-                          $cq->whereNull('district_id')
-                             ->whereIn('city_id', $activeCityIds);
+                             ->whereIn('city_id', $activeExplicitCityIds);
                       });
                 });
             } elseif (!empty($activeDistrictIds)) {
-                $baseHelpQuery->where(function ($q) use ($activeDistrictIds) {
-                    $q->whereIn('district_id', $activeDistrictIds)
-                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $activeDistrictIds));
-                });
-            } elseif (!empty($activeCityIds)) {
-                $baseHelpQuery->where(function ($q) use ($activeCityIds) {
-                    $q->whereIn('city_id', $activeCityIds)
-                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('city_id', $activeCityIds));
-                });
+                $baseHelpQuery->whereIn('district_id', $activeDistrictIds);
+            } elseif (!empty($activeExplicitCityIds)) {
+                $baseHelpQuery->whereNull('district_id')
+                  ->whereIn('city_id', $activeExplicitCityIds);
             } else {
                 $baseHelpQuery->whereRaw('1 = 0');
             }

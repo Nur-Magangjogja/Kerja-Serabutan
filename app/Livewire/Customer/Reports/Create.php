@@ -210,9 +210,11 @@ class Create extends Component
         }
 
         $help = null;
-        if ($this->help_id) {
-            $help = Help::find($this->help_id);
+        $targetHelpId = $this->help_id ?: $this->reported_help_id;
+        if ($targetHelpId) {
+            $help = Help::find($targetHelpId);
             if ($help) {
+                $this->help_id          = $help->id;
                 $this->reported_help_id = $help->id;
                 if ($help->mitra_id && !$this->reported_user_id) {
                     $this->reported_user_id = $help->mitra_id;
@@ -302,15 +304,20 @@ class Create extends Component
             ]
         );
 
-        // Kirim notifikasi ke Admin regional terkait
+        // Kirim notifikasi ke Admin regional terkait (G8 Canonical Routing)
         try {
-            $cityId = $help?->city_id ?? auth()->user()->city_id;
-            $admins = \App\Models\User::where('role', 'admin')
-                ->when($cityId, fn($q) => $q->where('city_id', $cityId))
-                ->where('status', 'active')
-                ->get();
-            if ($admins->isEmpty()) {
-                $admins = \App\Models\User::where('role', 'admin')->where('status', 'active')->get();
+            if ($help) {
+                // JOB_NOTIFICATION: Help territory wins! No broadcast fallback!
+                $admins = app(\App\Services\HelpNotificationService::class)->resolveAdminsForHelp($help);
+            } else {
+                $canonical = $report->getCanonicalTerritory();
+                $districtId = $canonical['district_id'];
+                $cityId = $canonical['city_id'];
+
+                $admins = app(\App\Services\AccountNotificationService::class)->resolveAdminsForTerritory(
+                    $districtId ? (int) $districtId : null,
+                    $cityId ? (int) $cityId : null
+                );
             }
             foreach ($admins as $adm) {
                 $adm->notify(new \App\Notifications\NewReportNotification($report));

@@ -32,18 +32,15 @@ class Chat extends Component
         }
 
         $admin = auth()->user();
-        $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
 
-        // 2. Strict Regional Authorization for Admin Wilayah
-        if (!$isSuperAdmin) {
-            $effectiveDistricts = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
-            $targetDistrictId = $report->reporter?->district_id
-                ?? $report->reportedHelp?->district_id
-                ?? $report->district_id;
+        // 2. Strict Regional Authorization for Admin Wilayah (G8 Canonical Territory)
+        $canonicalTerritory = $report->getCanonicalTerritory();
+        $targetDistrictId = $canonicalTerritory['district_id'];
+        $targetCityId = $canonicalTerritory['city_id'];
 
-            if (!$targetDistrictId || !in_array((int) $targetDistrictId, $effectiveDistricts, true)) {
-                abort(403, 'Anda tidak memiliki wewenang untuk meninjau dukungan di luar wilayah kecamatan Anda.');
-            }
+        $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+        if (!$authService->canAccessTerritory($admin, $targetDistrictId ? (int)$targetDistrictId : null, $targetCityId ? (int)$targetCityId : null)) {
+            abort(403, 'Anda tidak memiliki wewenang untuk meninjau dukungan di luar wilayah Anda.');
         }
 
         $this->report = $report->load(['reporter.district', 'reporter.city', 'reportedHelp']);

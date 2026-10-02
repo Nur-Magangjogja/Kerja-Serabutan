@@ -56,53 +56,13 @@ class Index extends Component
         $admin = auth()->user();
         $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
 
+        $resolver = app(\App\Services\Territory\PartnerReportTerritoryResolver::class);
+
         $statsQuery = PartnerReport::query()->where(function ($q) {
             $q->whereNull('report_type')
               ->orWhere('report_type', '!=', 'dukungan_umum');
         });
-
-        if (! $isSuperAdmin) {
-            $districtIds = $admin ? $admin->getEffectiveAdminDistrictIds() : [];
-
-            if (!empty($districtIds)) {
-                $statsQuery->where(function ($q) use ($districtIds) {
-                    $q->whereHas('reporter', function ($sq) use ($districtIds) {
-                        $sq->whereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedUser', function ($sq) use ($districtIds) {
-                        $sq->whereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedHelp', function ($sq) use ($districtIds) {
-                        $sq->whereIn('district_id', $districtIds);
-                    });
-                });
-            } else {
-                $statsQuery->whereRaw('1 = 0');
-            }
-        } else {
-            $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
-            if ($territory['type'] === 'district' && $territory['id']) {
-                $dId = (int) $territory['id'];
-                $statsQuery->where(function ($q) use ($dId) {
-                    $q->whereHas('reporter', fn($sq) => $sq->where('district_id', $dId))
-                      ->orWhereHas('reportedUser', fn($sq) => $sq->where('district_id', $dId))
-                      ->orWhereHas('reportedHelp', fn($sq) => $sq->where('district_id', $dId));
-                });
-            } elseif ($territory['type'] === 'city' && $territory['id']) {
-                $cId = (int) $territory['id'];
-                $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
-                $statsQuery->where(function ($q) use ($cId, $districtIds) {
-                    $q->whereHas('reporter', function ($sq) use ($cId, $districtIds) {
-                        $sq->where('city_id', $cId);
-                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedUser', function ($sq) use ($cId, $districtIds) {
-                        $sq->where('city_id', $cId);
-                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedHelp', function ($sq) use ($cId, $districtIds) {
-                        $sq->where('city_id', $cId);
-                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
-                    });
-                });
-            }
-        }
+        $statsQuery = $resolver->applyAdminTerritoryScope($statsQuery, $admin);
 
         // Stats
         $totalPending = (clone $statsQuery)->where('status', 'pending')->count();
@@ -125,47 +85,7 @@ class Index extends Component
                 $q->whereNull('report_type')
                   ->orWhere('report_type', '!=', 'dukungan_umum');
             });
-
-        if (! $isSuperAdmin) {
-            if (!empty($districtIds)) {
-                $query->where(function ($q) use ($districtIds) {
-                    $q->whereHas('reporter', function ($sq) use ($districtIds) {
-                        $sq->whereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedUser', function ($sq) use ($districtIds) {
-                        $sq->whereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedHelp', function ($sq) use ($districtIds) {
-                        $sq->whereIn('district_id', $districtIds);
-                    });
-                });
-            } else {
-                $query->whereRaw('1 = 0');
-            }
-        } else {
-            $territory = $admin ? $admin->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
-            if ($territory['type'] === 'district' && $territory['id']) {
-                $dId = (int) $territory['id'];
-                $query->where(function ($q) use ($dId) {
-                    $q->whereHas('reporter', fn($sq) => $sq->where('district_id', $dId))
-                      ->orWhereHas('reportedUser', fn($sq) => $sq->where('district_id', $dId))
-                      ->orWhereHas('reportedHelp', fn($sq) => $sq->where('district_id', $dId));
-                });
-            } elseif ($territory['type'] === 'city' && $territory['id']) {
-                $cId = (int) $territory['id'];
-                $districtIds = $admin ? $admin->getEffectiveSuperadminDistrictIds() : [];
-                $query->where(function ($q) use ($cId, $districtIds) {
-                    $q->whereHas('reporter', function ($sq) use ($cId, $districtIds) {
-                        $sq->where('city_id', $cId);
-                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedUser', function ($sq) use ($cId, $districtIds) {
-                        $sq->where('city_id', $cId);
-                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
-                    })->orWhereHas('reportedHelp', function ($sq) use ($cId, $districtIds) {
-                        $sq->where('city_id', $cId);
-                        if (!empty($districtIds)) $sq->orWhereIn('district_id', $districtIds);
-                    });
-                });
-            }
-        }
+        $query = $resolver->applyAdminTerritoryScope($query, $admin);
 
         if ($this->status !== 'all') {
             $query->where('status', $this->status);

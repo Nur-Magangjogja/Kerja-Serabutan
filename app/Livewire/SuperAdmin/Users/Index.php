@@ -7,6 +7,11 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use App\Models\User;
 use App\Models\City;
+use App\Models\District;
+use App\Models\Province;
+use App\Services\Territory\ProfileTerritoryMigrationService;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 
 class Index extends Component
@@ -44,9 +49,21 @@ class Index extends Component
     public $showEditModal = false;
     public $showCreateModal = false;
     public $showConfirmDelete = false;
+    public $showMigrationModal = false;
     public $confirmingDeleteId = null;
     public $userToDelete = null;
     public $adminPassword = '';
+
+    // migration modal state
+    public $migrationUserId = null;
+    public $migrationUser = null;
+    public $migrationProvinceId = null;
+    public $migrationCityId = null;
+    public $migrationDistrictId = null;
+    public $migrationReason = '';
+    public $migrationAvailableProvinces = [];
+    public $migrationAvailableCities = [];
+    public $migrationAvailableDistricts = [];
 
 
     protected $listeners = [
@@ -366,10 +383,210 @@ class Index extends Component
         $this->showEditModal = false;
         $this->showViewModal = false;
         $this->showConfirmDelete = false;
+        $this->showMigrationModal = false;
+        $this->migrationUserId = null;
+        $this->migrationUser = null;
+        $this->migrationProvinceId = null;
+        $this->migrationCityId = null;
+        $this->migrationDistrictId = null;
+        $this->migrationReason = '';
+        $this->migrationAvailableProvinces = [];
+        $this->migrationAvailableCities = [];
+        $this->migrationAvailableDistricts = [];
         $this->confirmingDeleteId = null;
         $this->userToDelete = null;
         $this->adminPassword = '';
         $this->resetErrorBag();
+    }
+
+    public function openMigrationModal($id)
+    {
+        $currentUser = auth()->user();
+        $isSuperAdmin = in_array($currentUser?->role ?? '', ['super_admin', 'superadmin'], true);
+        $isAdmin = ($currentUser?->role === 'admin');
+
+        if (!$isSuperAdmin && !$isAdmin) {
+            session()->flash('error', 'Anda tidak berwenang mengakses fitur ini.');
+            return;
+        }
+
+        $user = User::with(['district', 'city'])->find($id);
+        if (!$user) {
+            session()->flash('error', 'Pengguna tidak ditemukan.');
+            return;
+        }
+
+        if (!in_array($user->role, ['customer', 'mitra'], true)) {
+            session()->flash('error', 'Hanya profil Customer dan Mitra yang dapat dimigrasikan.');
+            return;
+        }
+
+        if ($isAdmin) {
+            $adminDistricts = $currentUser->getAdminDistrictIds();
+            $adminCities = $currentUser->getAdminCityIds();
+            $hasAccess = false;
+            if (!empty($user->district_id)) {
+                $hasAccess = in_array((int) $user->district_id, $adminDistricts, true);
+            } elseif (!empty($user->city_id)) {
+                $hasAccess = in_array((int) $user->city_id, $adminCities, true);
+            }
+
+            if (!$hasAccess) {
+                session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
+                return;
+            }
+        }
+
+        $this->migrationUserId = $user->id;
+        $this->migrationUser = $user;
+        $this->migrationProvinceId = null;
+        $this->migrationCityId = null;
+        $this->migrationDistrictId = null;
+        $this->migrationReason = '';
+        $this->migrationAvailableCities = [];
+        $this->migrationAvailableDistricts = [];
+        $this->resetErrorBag();
+
+        if ($isSuperAdmin) {
+            $this->migrationAvailableProvinces = Province::orderBy('name')->get()->toArray();
+        } else {
+            $adminCityIds = $currentUser->getAdminCityIds();
+            $adminCities = City::whereIn('id', $adminCityIds)->get();
+            $provinceIds = $adminCities->pluck('province_id')->filter()->unique()->all();
+            $provinceNames = $adminCities->pluck('province')->filter()->unique()->all();
+
+            $this->migrationAvailableProvinces = Province::where(function ($q) use ($provinceIds, $provinceNames) {
+                if (!empty($provinceIds)) {
+                    $q->whereIn('id', $provinceIds);
+                }
+                if (!empty($provinceNames)) {
+                    $q->orWhereIn('name', $provinceNames);
+                }
+            })->orderBy('name')->get()->toArray();
+
+            // Auto-select if only 1 province managed by this admin
+            if (count($this->migrationAvailableProvinces) === 1) {
+                $this->migrationProvinceId = $this->migrationAvailableProvinces[0]['id'];
+                $this->updatedMigrationProvinceId($this->migrationProvinceId);
+
+                // Auto-select if only 1 city managed by this admin
+                if (count($this->migrationAvailableCities) === 1) {
+                    $this->migrationCityId = $this->migrationAvailableCities[0]['id'];
+                    $this->updatedMigrationCityId($this->migrationCityId);
+                }
+            }
+        }
+
+        $this->showMigrationModal = true;
+    }
+
+    public function updatedMigrationProvinceId($provinceId)
+    {
+        $this->migrationCityId = null;
+        $this->migrationDistrictId = null;
+        $this->migrationAvailableDistricts = [];
+
+        if (empty($provinceId)) {
+            $this->migrationAvailableCities = [];
+            return;
+        }
+
+        $currentUser = auth()->user();
+        $isSuperAdmin = in_array($currentUser?->role ?? '', ['super_admin', 'superadmin'], true);
+
+        $province = Province::find($provinceId);
+        $provName = $province?->name;
+
+        $cityQuery = City::where(function ($q) use ($provinceId, $provName) {
+            $q->where('province_id', $provinceId);
+            if ($provName) {
+                $q->orWhere('province', $provName);
+            }
+        });
+
+        if (!$isSuperAdmin && $currentUser?->role === 'admin') {
+            $cityQuery->whereIn('id', $currentUser->getAdminCityIds());
+        }
+
+        $this->migrationAvailableCities = $cityQuery->orderBy('name')->get()->toArray();
+    }
+
+    public function updatedMigrationCityId($cityId)
+    {
+        $this->migrationDistrictId = null;
+
+        if (empty($cityId)) {
+            $this->migrationAvailableDistricts = [];
+            return;
+        }
+
+        $currentUser = auth()->user();
+        $isSuperAdmin = in_array($currentUser?->role ?? '', ['super_admin', 'superadmin'], true);
+
+        $districtQuery = District::where('city_id', $cityId);
+        if (!$isSuperAdmin && $currentUser?->role === 'admin') {
+            $districtQuery->whereIn('id', $currentUser->getAdminDistrictIds());
+        }
+
+        $this->migrationAvailableDistricts = $districtQuery->orderBy('name')->get()->toArray();
+    }
+
+    public function submitMigration(ProfileTerritoryMigrationService $migrationService)
+    {
+        $this->resetErrorBag();
+
+        $rules = [
+            'migrationReason' => ['required', 'string', 'min:5'],
+            'migrationCityId' => ['required', 'exists:cities,id'],
+        ];
+
+        if (!empty($this->migrationProvinceId)) {
+            $rules['migrationProvinceId'] = ['required', 'exists:provinces,id'];
+        }
+
+        if (!empty($this->migrationAvailableDistricts)) {
+            $rules['migrationDistrictId'] = ['required', 'exists:districts,id'];
+        } else {
+            $rules['migrationDistrictId'] = ['nullable', 'exists:districts,id'];
+        }
+
+        $this->validate($rules, [
+            'migrationReason.required' => 'Alasan migrasi wilayah wajib diisi.',
+            'migrationReason.min'      => 'Alasan migrasi minimal 5 karakter.',
+            'migrationCityId.required' => 'Kota tujuan wajib dipilih.',
+            'migrationDistrictId.required' => 'Kecamatan tujuan wajib dipilih.',
+        ]);
+
+        $user = User::find($this->migrationUserId);
+        if (!$user) {
+            $this->addError('migrationReason', 'Pengguna tidak ditemukan.');
+            return;
+        }
+
+        try {
+            $migrationService->migrate(
+                actor: auth()->user(),
+                targetUser: $user,
+                newCityId: (int) $this->migrationCityId,
+                newDistrictId: $this->migrationDistrictId ? (int) $this->migrationDistrictId : null,
+                reason: $this->migrationReason,
+                newProvinceId: $this->migrationProvinceId ? (int) $this->migrationProvinceId : null
+            );
+
+            session()->flash('message', "Wilayah profil untuk {$user->name} berhasil dimigrasikan.");
+            $this->closeModal();
+            $this->resetPage();
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $key => $messages) {
+                foreach ($messages as $msg) {
+                    $this->addError('migrationReason', $msg);
+                }
+            }
+        } catch (AuthorizationException $e) {
+            $this->addError('migrationReason', $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->addError('migrationReason', 'Terjadi kesalahan saat memproses migrasi: ' . $e->getMessage());
+        }
     }
 
     public function render()

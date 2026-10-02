@@ -199,10 +199,7 @@ class Index extends Component
                 $q->where('district_id', $districtId)
                   ->orWhereHas('district', fn($dq) => $dq->where('id', $districtId));
             });
-            $helpQuery->where(function ($q) use ($districtId) {
-                $q->where('district_id', $districtId)
-                  ->orWhereHas('customer', fn($cq) => $cq->where('district_id', $districtId));
-            });
+            $helpQuery->where('district_id', $districtId);
             $regQuery->where('district_id', $districtId);
             $withdrawQuery->whereHas('user', fn($uq) => $uq->where('district_id', $districtId));
             $topupQuery->whereHas('user', fn($uq) => $uq->where('district_id', $districtId));
@@ -215,11 +212,9 @@ class Index extends Component
                 $q->orWhereHas('district', fn($dq) => $dq->where('city_id', $cityId));
             });
             $helpQuery->where(function ($q) use ($cityId, $districtIds) {
-                $q->where('city_id', $cityId)
-                  ->orWhereHas('customer', fn($cq) => $cq->where('city_id', $cityId));
+                $q->where('city_id', $cityId);
                 if (!empty($districtIds)) {
-                    $q->orWhereIn('district_id', $districtIds)
-                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $districtIds));
+                    $q->orWhereIn('district_id', $districtIds);
                 }
             });
             $regQuery->where(function ($q) use ($cityId, $districtIds) {

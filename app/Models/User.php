@@ -603,19 +603,34 @@ class User extends Authenticatable implements MustVerifyEmail
             return $this->memoizedAdminDistrictIds;
         }
 
+        $districtIds = [];
+
+        // 1. Directly assigned managed districts (admin_district pivot)
         if ($this->relationLoaded('managedDistricts')) {
-            $managedIds = $this->managedDistricts->pluck('id')->all();
+            $districtIds = array_merge($districtIds, $this->managedDistricts->pluck('id')->all());
         } else {
-            $managedIds = $this->managedDistricts()->allRelatedIds()->all();
+            $districtIds = array_merge($districtIds, $this->managedDistricts()->allRelatedIds()->all());
         }
 
-        if (!empty($managedIds)) {
-            $res = array_values(array_unique(array_map('intval', $managedIds)));
+        // 2. Districts derived from directly assigned managed cities (admin_city pivot)
+        if ($this->relationLoaded('managedCities')) {
+            $assignedCityIds = $this->managedCities->pluck('id')->all();
+        } else {
+            $assignedCityIds = $this->managedCities()->allRelatedIds()->all();
+        }
+        if (!empty($assignedCityIds)) {
+            $districtIds = array_merge($districtIds, District::whereIn('city_id', $assignedCityIds)->pluck('id')->all());
+        }
+
+        // If explicit assigned districts/cities exist, return canonical union
+        if (!empty($districtIds)) {
+            $res = array_values(array_unique(array_filter(array_map('intval', $districtIds))));
             $this->memoizedAdminDistrictIds = $res;
             if ($uid) self::$reqAdminDistrictIds[$uid] = $res;
             return $res;
         }
 
+        // 3. Fallback to profile district_id / city_id ONLY if no explicit assignments exist (legacy fallback)
         if (!empty($this->district_id)) {
             $res = [(int) $this->district_id];
             $this->memoizedAdminDistrictIds = $res;
@@ -623,9 +638,8 @@ class User extends Authenticatable implements MustVerifyEmail
             return $res;
         }
 
-        $cityIds = $this->getAdminCityIds();
-        if (!empty($cityIds)) {
-            $cityDistrictIds = District::whereIn('city_id', $cityIds)->pluck('id')->map('intval')->all();
+        if (!empty($this->city_id)) {
+            $cityDistrictIds = District::where('city_id', $this->city_id)->pluck('id')->map('intval')->all();
             if (!empty($cityDistrictIds)) {
                 $this->memoizedAdminDistrictIds = $cityDistrictIds;
                 if ($uid) self::$reqAdminDistrictIds[$uid] = $cityDistrictIds;
@@ -947,7 +961,16 @@ class User extends Authenticatable implements MustVerifyEmail
             $cityIds = array_merge($cityIds, District::whereIn('id', $managedDistrictIds)->pluck('city_id')->all());
         }
 
-        // 3. Primary district parent city
+        // If explicit assigned cities/districts exist, return canonical union
+        if (!empty($cityIds)) {
+            $result = array_values(array_unique(array_filter(array_map('intval', $cityIds))));
+            if ($uid) {
+                self::$reqAdminCityIds[$uid] = $result;
+            }
+            return $result;
+        }
+
+        // 3. Fallback: Primary district parent city ONLY if no explicit assignments exist
         if (!empty($this->district_id)) {
             $parentCityId = District::where('id', $this->district_id)->value('city_id');
             if ($parentCityId) {
@@ -955,7 +978,7 @@ class User extends Authenticatable implements MustVerifyEmail
             }
         }
 
-        // 4. Primary city_id
+        // 4. Fallback: Primary city_id ONLY if no explicit assignments exist
         if (!empty($this->city_id)) {
             $cityIds[] = (int) $this->city_id;
         }

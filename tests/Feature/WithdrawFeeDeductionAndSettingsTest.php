@@ -7,6 +7,7 @@ use App\Livewire\Mitra\Withdraw\WithdrawForm as MitraWithdrawForm;
 use App\Livewire\SuperAdmin\Settings\WithdrawSettings;
 use App\Models\AppSetting;
 use App\Models\BalanceTransaction;
+use App\Models\City;
 use App\Models\User;
 use App\Models\UserBalance;
 use App\Models\WithdrawRequest;
@@ -19,6 +20,14 @@ use Tests\TestCase;
 class WithdrawFeeDeductionAndSettingsTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected City $city;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->city = City::create(['name' => 'Sleman', 'is_active' => true]);
+    }
 
     public function test_calculate_withdraw_fee_adds_fee_to_balance_deduction()
     {
@@ -90,8 +99,8 @@ class WithdrawFeeDeductionAndSettingsTest extends TestCase
 
     public function test_admin_reject_refunds_full_amount_plus_fee_to_mitra()
     {
-        $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
-        $mitra = User::factory()->create(['role' => 'mitra', 'status' => 'active']);
+        $admin = User::factory()->create(['role' => 'admin', 'status' => 'active', 'city_id' => $this->city->id]);
+        $mitra = User::factory()->create(['role' => 'mitra', 'status' => 'active', 'city_id' => $this->city->id]);
         UserBalance::create(['user_id' => $mitra->id, 'balance' => 47500]);
 
         $withdraw = WithdrawRequest::create([
@@ -126,8 +135,8 @@ class WithdrawFeeDeductionAndSettingsTest extends TestCase
 
     public function test_end_to_end_mitra_withdraw_request_then_admin_reject_flow()
     {
-        $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
-        $mitra = User::factory()->create(['role' => 'mitra', 'status' => 'active']);
+        $admin = User::factory()->create(['role' => 'admin', 'status' => 'active', 'city_id' => $this->city->id]);
+        $mitra = User::factory()->create(['role' => 'mitra', 'status' => 'active', 'city_id' => $this->city->id]);
         UserBalance::create(['user_id' => $mitra->id, 'balance' => 100000]);
 
         // 1. Mitra mengajukan penarikan 50.000 + fee 2.500
@@ -175,8 +184,8 @@ class WithdrawFeeDeductionAndSettingsTest extends TestCase
 
     public function test_admin_reject_is_idempotent_and_prevents_double_refund()
     {
-        $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
-        $mitra = User::factory()->create(['role' => 'mitra', 'status' => 'active']);
+        $admin = User::factory()->create(['role' => 'admin', 'status' => 'active', 'city_id' => $this->city->id]);
+        $mitra = User::factory()->create(['role' => 'mitra', 'status' => 'active', 'city_id' => $this->city->id]);
         UserBalance::create(['user_id' => $mitra->id, 'balance' => 47500]);
 
         $withdraw = WithdrawRequest::create([
@@ -219,8 +228,8 @@ class WithdrawFeeDeductionAndSettingsTest extends TestCase
     {
         Storage::fake('public');
 
-        $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
-        $mitra = User::factory()->create(['role' => 'mitra', 'status' => 'active']);
+        $admin = User::factory()->create(['role' => 'admin', 'status' => 'active', 'city_id' => $this->city->id]);
+        $mitra = User::factory()->create(['role' => 'mitra', 'status' => 'active', 'city_id' => $this->city->id]);
         UserBalance::create(['user_id' => $mitra->id, 'balance' => 100000]);
 
         // 1. Mitra ajukan penarikan (saldo terpotong 52.500 -> sisa 47.500)

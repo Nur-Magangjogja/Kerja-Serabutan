@@ -23,11 +23,16 @@ class Chat extends Component
         $this->report = $report->load(['reporter', 'reportedUser', 'reportedHelp.user', 'reportedHelp.mitra']);
         
         $admin = auth()->user();
-        if ($admin && $admin->role === 'admin') {
-            $effectiveDistricts = $admin->getEffectiveAdminDistrictIds();
-            $targetDistrictId = $this->report->district_id ?? $this->report->reportedHelp?->district_id ?? $this->report->reporter?->district_id ?? $this->report->reportedUser?->district_id;
-            if ($targetDistrictId && !in_array((int)$targetDistrictId, $effectiveDistricts, true)) {
-                session()->flash('error', 'Anda tidak memiliki wewenang untuk meninjau laporan di luar wilayah kecamatan Anda.');
+        $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
+
+        if (!$isSuperAdmin) {
+            $canonicalTerritory = $this->report->getCanonicalTerritory();
+            $targetDistrictId = $canonicalTerritory['district_id'];
+            $targetCityId = $canonicalTerritory['city_id'];
+
+            $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+            if (!$authService->canAccessTerritory($admin, $targetDistrictId ? (int)$targetDistrictId : null, $targetCityId ? (int)$targetCityId : null)) {
+                session()->flash('error', 'Anda tidak memiliki wewenang untuk meninjau laporan di luar wilayah Anda.');
                 return redirect()->route('admin.partners.reports');
             }
         }

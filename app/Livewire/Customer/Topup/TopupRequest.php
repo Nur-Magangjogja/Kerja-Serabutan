@@ -381,19 +381,8 @@ class TopupRequest extends Component
     protected function notifyAdmins($transaction)
     {
         try {
-            $customerCity = auth()->user()->city_id;
-
-            $admins = User::where('role', 'admin')
-                ->when($customerCity, fn($q) => $q->where('city_id', $customerCity))
-                ->where('status', 'active')
-                ->get();
-
-            if ($admins->isEmpty()) {
-                $admins = User::where('role', 'admin')->where('status', 'active')->get();
-            }
-
-            $superAdmins = User::whereIn('role', ['superadmin', 'super_admin'])->where('status', 'active')->get();
-            $recipients = $admins->merge($superAdmins)->unique('id');
+            $user = auth()->user();
+            $recipients = app(\App\Services\AccountNotificationService::class)->resolveAdminsForUser($user, includeSuperAdmin: true);
 
             foreach ($recipients as $recipient) {
                 $recipient->notify(new NewTopupRequest($transaction));

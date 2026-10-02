@@ -63,28 +63,24 @@
                             </div>
 
                             <div class="mt-3">
-                                 <label class="block text-sm font-medium text-gray-700">Kota / Kabupaten</label>
-                                 <select wire:model.live="city_id" class="mt-1 block w-full border rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-600 focus:ring-primary-500 focus:outline-none">
-                                     <option value="">-- Pilih Kota --</option>
-                                     @foreach($cities as $city)
-                                         <option value="{{ $city->id }}">{{ $city->name }} ({{ $city->province }})</option>
-                                     @endforeach
-                                 </select>
-                                 @error('city_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
+                                <label class="block text-sm font-medium text-gray-700">Kota / Kabupaten</label>
+                                <input type="text" disabled readonly value="{{ auth()->user()->cityModel?->name ?? auth()->user()->city ?? '-' }}"
+                                    class="mt-1 block w-full border rounded-xl px-3 py-2 text-sm bg-gray-100 text-gray-600 border-gray-200 cursor-not-allowed select-none" />
                             </div>
 
-                            @if(!empty($city_id) && !empty($districtsList))
                             <div class="mt-3">
-                                <label class="block text-sm font-medium text-gray-700">Kecamatan Operasional</label>
-                                <select wire:model.live="district_id" class="mt-1 block w-full border rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-600 focus:ring-primary-500 focus:outline-none">
-                                    <option value="">-- Pilih Kecamatan --</option>
-                                    @foreach($districtsList as $d)
-                                        <option value="{{ $d['id'] }}">Kec. {{ $d['name'] }}</option>
-                                    @endforeach
-                                </select>
-                                @error('district_id') <span class="text-red-600 text-xs">{{ $message }}</span> @enderror
+                                <label class="block text-sm font-medium text-gray-700">Kecamatan Domisili</label>
+                                <input type="text" disabled readonly value="{{ auth()->user()->district?->name ? 'Kec. ' . auth()->user()->district->name : (auth()->user()->kecamatan ? 'Kec. ' . auth()->user()->kecamatan : '-') }}"
+                                    class="mt-1 block w-full border rounded-xl px-3 py-2 text-sm bg-gray-100 text-gray-600 border-gray-200 cursor-not-allowed select-none" />
                             </div>
-                            @endif
+
+                            <div class="mt-2 flex items-center gap-2 p-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-600">
+                                <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                                <span>Wilayah domisili dikelola melalui administrasi wilayah.</span>
+                            </div>
+
 
                             <div class="mt-3">
                                 <label class="block text-sm font-medium text-gray-700">Bio / Deskripsi singkat</label>

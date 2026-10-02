@@ -114,29 +114,25 @@ class Index extends Component
     protected function isAuthorizedForWithdraw(WithdrawRequest $withdraw): bool
     {
         $admin = auth()->user();
-        if (!$admin) return false;
-        if (in_array($admin->role, ['super_admin', 'superadmin'])) return true;
-        if ($admin->role === 'admin') {
-            $allowedDistrictIds = $admin->getAdminDistrictIds();
-            if (empty($allowedDistrictIds)) {
-                return true;
-            }
-            $userDistrictId = $withdraw->user?->district_id;
-            return !empty($userDistrictId) && in_array((int) $userDistrictId, $allowedDistrictIds, true);
-        }
-        return false;
+        $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+        return $authService->canAccessTerritory(
+            $admin,
+            $withdraw->user?->district_id ? (int)$withdraw->user->district_id : null,
+            $withdraw->user?->city_id ? (int)$withdraw->user->city_id : null
+        );
     }
 
     public function openReviewModal($id, $tab = 'approve')
     {
-        $this->selectedWithdrawId = $id;
         $withdraw = WithdrawRequest::with(['user.balance', 'user.district', 'user.city'])->findOrFail($id);
         
         if (!$this->isAuthorizedForWithdraw($withdraw)) {
+            $this->selectedWithdrawId = null;
             session()->flash('error', 'Anda tidak memiliki wewenang untuk memproses penarikan dana dari luar wilayah wewenang Anda.');
             return;
         }
 
+        $this->selectedWithdrawId = $id;
         $this->selectedWithdraw = $withdraw;
         $this->reviewTab = in_array($tab, ['approve', 'reject'], true) ? $tab : 'approve';
         $this->proofPhoto = null;

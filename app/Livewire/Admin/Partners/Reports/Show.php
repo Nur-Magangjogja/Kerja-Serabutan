@@ -37,6 +37,20 @@ class Show extends Component
 
     public function mount(PartnerReport $report)
     {
+        $admin = auth()->user();
+        $isSuperAdmin = in_array($admin->role ?? '', ['super_admin', 'superadmin']);
+
+        if (!$isSuperAdmin) {
+            $canonicalTerritory = $report->getCanonicalTerritory();
+            $targetDistrictId = $canonicalTerritory['district_id'];
+            $targetCityId = $canonicalTerritory['city_id'];
+
+            $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+            if (!$authService->canAccessTerritory($admin, $targetDistrictId ? (int)$targetDistrictId : null, $targetCityId ? (int)$targetCityId : null)) {
+                abort(403, 'Anda tidak memiliki wewenang untuk meninjau laporan di luar wilayah Anda.');
+            }
+        }
+
         $this->report = $report->load([
             'reporter.userBalance',
             'reporter.greylistLogs.admin',

@@ -19,7 +19,6 @@ class EditPage extends Component
         'name' => 'required|string|max:255',
         'email' => 'required|email|max:255',
         'phone' => 'nullable|string|max:40',
-        'city_id' => 'nullable|exists:cities,id',
         'address' => 'nullable|string|max:500',
         'bio' => 'nullable|string|max:1000',
     ];
@@ -47,16 +46,16 @@ class EditPage extends Component
             return;
         }
 
+        // STRICT SECURITY: Territory fields are locked identity and cannot be edited by self-service
         $user->update([
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
-            'city_id' => $this->city_id,
             'address' => $this->address,
             'bio' => $this->bio,
         ]);
 
-        $this->emit('profile-updated');
+        $this->dispatch('profile-updated');
         session()->flash('message', 'Profil berhasil diperbarui.');
 
         $this->redirectRoute('mitra.profile');

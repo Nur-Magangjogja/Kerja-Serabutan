@@ -121,16 +121,7 @@ class WithdrawForm extends Component
 
                 // Kirim notifikasi ke Admin regional & SuperAdmin
                 try {
-                    $cityId = $user->city_id;
-                    $admins = \App\Models\User::where('role', 'admin')
-                        ->when($cityId, fn($q) => $q->where('city_id', $cityId))
-                        ->where('status', 'active')
-                        ->get();
-                    if ($admins->isEmpty()) {
-                        $admins = \App\Models\User::where('role', 'admin')->where('status', 'active')->get();
-                    }
-                    $superAdmins = \App\Models\User::whereIn('role', ['superadmin', 'super_admin'])->where('status', 'active')->get();
-                    $recipients = $admins->merge($superAdmins)->unique('id');
+                    $recipients = app(\App\Services\AccountNotificationService::class)->resolveAdminsForUser($user, includeSuperAdmin: true);
 
                     foreach ($recipients as $recipient) {
                         $recipient->notify(new \App\Notifications\NewWithdrawNotification($withdraw));

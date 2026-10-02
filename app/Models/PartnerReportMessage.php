@@ -74,38 +74,22 @@ class PartnerReportMessage extends Model
                 // KONDISI UTAMA: Hanya kirim notifikasi jika laporan masih AKTIF / PENDING
                 // Jika laporan sudah selesai (resolved) atau ditutup (dismissed), notifikasi ditekan / dihentikan.
                 if ($report->isActive()) {
-                    $isSupport = ($report->report_type === 'dukungan_umum');
-                    $districtId = $help?->district_id ?? $report->reporter?->district_id ?? $report->reportedUser?->district_id;
-                    $cityId = $help?->city_id ?? $report->reporter?->city_id ?? $report->reportedUser?->city_id;
+                    $help = $report->reportedHelp ?? $report->help;
+                    if ($help) {
+                        // JOB_NOTIFICATION: Help territory wins! No broadcast fallback!
+                        $recipients = app(\App\Services\HelpNotificationService::class)->resolveAdminsForHelp($help, includeSuperAdmin: true);
+                    } else {
+                        // ACCOUNT / REPORT NOTIFICATION: route by canonical resource territory (G8)
+                        $canonical = $report->getCanonicalTerritory();
+                        $districtId = $canonical['district_id'];
+                        $cityId = $canonical['city_id'];
 
-                    // Ambil Admin wilayah terkait (berdasarkan kecamatan kewenangan atau kota)
-                    $admins = collect();
-                    if ($districtId) {
-                        $admins = User::where('role', 'admin')
-                            ->where('status', 'active')
-                            ->get()
-                            ->filter(fn($admin) => in_array((int)$districtId, $admin->getEffectiveAdminDistrictIds(), true));
+                        $recipients = app(\App\Services\AccountNotificationService::class)->resolveAdminsForTerritory(
+                            $districtId ? (int) $districtId : null,
+                            $cityId ? (int) $cityId : null,
+                            includeSuperAdmin: true
+                        );
                     }
-
-                    if ($admins->isEmpty() && $cityId) {
-                        $admins = User::where('role', 'admin')
-                            ->where('status', 'active')
-                            ->where('city_id', $cityId)
-                            ->get();
-                    }
-
-                    // FALLBACK: Untuk laporan aduan lama diperbolehkan fallback, namun untuk dukungan_umum
-                    // dilarang keras fallback ke seluruh admin wilayah lain (Requirement 10).
-                    if ($admins->isEmpty() && !$isSupport) {
-                        $admins = User::where('role', 'admin')->where('status', 'active')->get();
-                    }
-
-                    // Ambil Super Admin
-                    $superAdmins = User::whereIn('role', ['super_admin', 'superadmin'])
-                        ->where('status', 'active')
-                        ->get();
-
-                    $recipients = $admins->merge($superAdmins)->unique('id');
 
                     foreach ($recipients as $recipient) {
                         $recipient->notify(new \App\Notifications\NewReportMessageNotification($message));

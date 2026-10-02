@@ -17,8 +17,9 @@ class HelpStatusNotification extends Notification
     protected $mitra;
     protected $customMessage;
     protected $customTitle;
+    protected $customUrl;
 
-    public function __construct($help, $oldStatus = null, $newStatus = null, $mitra = null, $customMessage = null, $customTitle = null)
+    public function __construct($help, $oldStatus = null, $newStatus = null, $mitra = null, $customMessage = null, $customTitle = null, ?string $customUrl = null)
     {
         $this->help = $help;
         $this->oldStatus = $oldStatus;
@@ -33,6 +34,7 @@ class HelpStatusNotification extends Notification
         }
 
         $this->customTitle = $customTitle;
+        $this->customUrl = $customUrl;
     }
 
     public function via($notifiable)
@@ -91,7 +93,7 @@ class HelpStatusNotification extends Notification
             default                             => "Pembaruan status untuk bantuan '{$helpTitle}'."
         };
 
-        return [
+        $payload = [
             'type' => 'help_status',
             'title' => $title,
             'help_id' => $this->help->id ?? null,
@@ -105,5 +107,11 @@ class HelpStatusNotification extends Notification
             'message' => $message,
             'body' => $message,
         ];
+
+        if ($this->customUrl) {
+            $payload['url'] = $this->customUrl;
+        }
+
+        return $payload;
     }
 }

@@ -20,8 +20,6 @@ class Edit extends Component
     protected array $rules = [
         'name' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
         'phone' => 'nullable|string|max:40',
-        'city_id' => 'nullable|exists:cities,id',
-        'district_id' => 'nullable|exists:districts,id',
         'bio' => 'nullable|string|max:1000',
     ];
 
@@ -41,7 +39,7 @@ class Edit extends Component
         $this->phone = $user->phone ?? '';
         $this->city_id = $user->city_id ?? null;
         $this->district_id = $user->district_id ?? null;
-        $this->kecamatan = $user->kecamatan ?? null;
+        $this->kecamatan = $user->district?->name ?? $user->kecamatan;
         $this->bio = $user->bio ?? '';
 
         if ($this->city_id) {
@@ -55,30 +53,12 @@ class Edit extends Component
 
     public function updatedCityId($value): void
     {
-        if ($value) {
-            $this->districtsList = app(\App\Services\CitySearchService::class)->getDistrictsByCity((int) $value);
-            if ($this->district_id) {
-                $exists = collect($this->districtsList)->contains('id', (int) $this->district_id);
-                if (!$exists) {
-                    $this->district_id = null;
-                    $this->kecamatan = null;
-                }
-            }
-        } else {
-            $this->districtsList = [];
-            $this->district_id = null;
-            $this->kecamatan = null;
-        }
+        // Locked identity territory: ignore self-service modifications
     }
 
     public function updatedDistrictId($value): void
     {
-        if ($value) {
-            $d = District::find($value);
-            $this->kecamatan = $d?->name;
-        } else {
-            $this->kecamatan = null;
-        }
+        // Locked identity territory: ignore self-service modifications
     }
 
     #[On('closeEditProfile')]
@@ -92,19 +72,18 @@ class Edit extends Component
         $this->validate();
 
         $user = auth()->user();
-        $city = $this->city_id ? City::find($this->city_id) : null;
-        $district = $this->district_id ? District::find($this->district_id) : null;
 
+        // STRICT SECURITY: Territory fields are locked identity and cannot be edited by self-service
         $user->update([
             'name' => $this->name,
             'phone' => $this->phone,
-            'city_id' => $this->city_id,
-            'city_name' => $city?->name ?? $user->city_name,
-            'city' => $city?->name ?? $user->city,
-            'district_id' => $this->district_id,
-            'kecamatan' => $district?->name ?? $this->kecamatan,
             'bio' => $this->bio,
         ]);
+
+        // Keep local state in sync with immutable user identity
+        $this->city_id = $user->city_id;
+        $this->district_id = $user->district_id;
+        $this->kecamatan = $user->district?->name ?? $user->kecamatan;
 
         $this->showModal = false;
 

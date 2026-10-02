@@ -104,24 +104,12 @@ class Approval extends Component
     protected function isAuthorizedForTransaction(BalanceTransaction $tx): bool
     {
         $admin = auth()->user();
-        if (!$admin) return false;
-        if (in_array($admin->role, ['super_admin', 'superadmin'])) return true;
-        if ($admin->role === 'admin') {
-            $allowedDistrictIds = $admin->getAdminDistrictIds();
-            if (!empty($allowedDistrictIds)) {
-                $userDistrictId = $tx->user?->district_id;
-                if (!empty($userDistrictId)) {
-                    return in_array((int) $userDistrictId, $allowedDistrictIds, true);
-                }
-            }
-            if ($admin->city_id && $tx->user?->city_id) {
-                return (int) $admin->city_id === (int) $tx->user->city_id;
-            }
-            if (empty($allowedDistrictIds) && empty($admin->city_id)) {
-                return true;
-            }
-        }
-        return false;
+        $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+        return $authService->canAccessTerritory(
+            $admin,
+            $tx->user?->district_id ? (int)$tx->user->district_id : null,
+            $tx->user?->city_id ? (int)$tx->user->city_id : null
+        );
     }
 
     public function viewDetail($transactionId)

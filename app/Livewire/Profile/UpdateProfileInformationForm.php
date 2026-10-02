@@ -31,11 +31,6 @@ class UpdateProfileInformationForm extends Component
         'name' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
         'email' => ['required', 'email', 'max:255'],
         'phone' => ['required', 'string', 'min:9', 'max:18', 'regex:/^(0[1-9][0-9]{8,12}|\+[1-9][0-9]{6,14})$/'],
-        'city_id' => ['nullable', 'exists:cities,id'],
-        'district_id' => ['nullable', 'exists:districts,id'],
-        'city' => ['required', 'string', 'max:100'],
-        'province' => ['required', 'string', 'max:100'],
-        'kecamatan' => ['nullable', 'string', 'max:100'],
     ];
 
     protected $messages = [
@@ -61,22 +56,10 @@ class UpdateProfileInformationForm extends Component
         $this->phone = $user->phone;
         $this->city_id = $user->city_id;
         $this->district_id = $user->district_id;
-        $this->city = $user->city;
-        $this->province = $user->province;
-        $this->kecamatan = $user->kecamatan ?? $user->district?->name;
+        $this->city = $user->cityModel?->name ?? $user->city;
+        $this->province = $user->cityModel?->province ?? $user->province;
+        $this->kecamatan = $user->district?->name ?? $user->kecamatan;
         $this->savedLandmarks = $user->getSavedLandmarksList();
-
-        if ($this->city_id) {
-            $cityRec = \App\Models\City::find($this->city_id);
-            if ($cityRec) {
-                $this->cityQuery = $cityRec->name . ($cityRec->province ? " — {$cityRec->province}" : '');
-                $this->city = $cityRec->name;
-                $this->province = $cityRec->province ?? $this->province;
-            }
-            $this->districtsList = app(\App\Services\CitySearchService::class)->getDistrictsByCity((int) $this->city_id);
-        } elseif (!empty($user->city)) {
-            $this->cityQuery = $user->city;
-        }
     }
 
     public function updatedPhone($value): void
@@ -86,80 +69,26 @@ class UpdateProfileInformationForm extends Component
 
     public function updatedCityQuery($value): void
     {
-        $q = trim((string) $value);
-        if (empty($q) || strlen($q) < 2) {
-            $this->searchResults = [];
-            $this->city = $q;
-            return;
-        }
-
-        $this->searchResults = \App\Models\City::where(function($b) use ($q) {
-                $b->where('name', 'like', "%{$q}%")
-                  ->orWhere('province', 'like', "%{$q}%");
-            })
-            ->where('is_active', true)
-            ->select('id', 'name', 'province')
-            ->orderBy('name')
-            ->limit(10)
-            ->get()
-            ->toArray();
+        // Locked identity territory: self-service city search is disabled
     }
 
     public function setCityId($id): void
     {
-        $this->city_id = $id;
-        $city = \App\Models\City::find($id);
-        if ($city) {
-            $this->cityQuery = $city->name . ($city->province ? " — {$city->province}" : '');
-            $this->city = $city->name;
-            $this->province = $city->province;
-            $this->districtsList = app(\App\Services\CitySearchService::class)->getDistrictsByCity((int) $id);
-            
-            // Reset district_id jika tidak termasuk dalam kota baru
-            if ($this->district_id) {
-                $exists = collect($this->districtsList)->contains('id', (int) $this->district_id);
-                if (!$exists) {
-                    $this->district_id = null;
-                    $this->kecamatan = null;
-                }
-            }
-        }
-        $this->searchResults = [];
-        $this->resetErrorBag('city');
-        $this->resetErrorBag('province');
-        $this->resetErrorBag('city_id');
+        // Locked identity territory: ignore any attempts to alter city via self-service
     }
 
     public function updatedDistrictId($value): void
     {
-        if ($value) {
-            $dist = \App\Models\District::find($value);
-            if ($dist) {
-                $this->kecamatan = $dist->name;
-            }
-        } else {
-            $this->kecamatan = null;
-        }
+        // Locked identity territory: ignore district selection
     }
 
     public function clearCity(): void
     {
-        $this->city_id = null;
-        $this->district_id = null;
-        $this->cityQuery = '';
-        $this->city = '';
-        $this->kecamatan = '';
-        $this->districtsList = [];
-        $this->searchResults = [];
+        // Locked identity territory: cannot clear assigned territory
     }
 
     public function updateProfileInformation()
     {
-        // If user manually typed city query without selecting from dropdown
-        if (empty($this->city) && !empty($this->cityQuery)) {
-            $this->city = $this->cityQuery;
-        }
-
         $this->phone = \App\Models\User::normalizePhone($this->phone) ?? '';
 
         $this->validate();
@@ -175,34 +104,20 @@ class UpdateProfileInformationForm extends Component
             return;
         }
 
-        $cityName = $this->city;
-        $provinceName = $this->province;
-        if ($this->city_id) {
-            $cityRec = \App\Models\City::find($this->city_id);
-            if ($cityRec) {
-                $cityName = $cityRec->name;
-                $provinceName = $cityRec->province ?: $provinceName;
-            }
-        }
-
-        $kecamatanName = $this->kecamatan;
-        if ($this->district_id) {
-            $distRec = \App\Models\District::find($this->district_id);
-            if ($distRec) {
-                $kecamatanName = $distRec->name;
-            }
-        }
-
+        // STRICT SECURITY: Territory fields (city_id, district_id, city, province, kecamatan)
+        // are locked identity fields and can NEVER be updated through self-service profile edits.
         $user->update([
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
-            'city_id' => $this->city_id,
-            'district_id' => $this->district_id,
-            'city' => $cityName,
-            'province' => $provinceName,
-            'kecamatan' => $kecamatanName,
         ]);
+
+        // Keep local state strictly locked and in sync with immutable user territory
+        $this->city_id = $user->city_id;
+        $this->district_id = $user->district_id;
+        $this->city = $user->cityModel?->name ?? $user->city;
+        $this->province = $user->cityModel?->province ?? $user->province;
+        $this->kecamatan = $user->district?->name ?? $user->kecamatan;
 
         session()->flash('message', 'Profil Anda berhasil diperbarui!');
     }

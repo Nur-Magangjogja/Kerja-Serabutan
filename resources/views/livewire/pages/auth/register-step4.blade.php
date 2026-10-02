@@ -160,22 +160,9 @@ new #[Layout('layouts.guest')] class extends Component {
                 // ignore
             }
 
-            // Kirim notifikasi ke admin regional terkait pengajuan KTP baru (berdasarkan kecamatan / kota)
+            // Kirim notifikasi ke admin regional terkait pengajuan KTP baru (berdasarkan Profile/Identity Territory target user)
             try {
-                $admins = User::where('role', 'admin')
-                    ->when($user->district_id, function($q) use ($user) {
-                        $q->where(function($sq) use ($user) {
-                            $sq->where('district_id', $user->district_id)
-                               ->orWhereHas('managedDistricts', fn($dq) => $dq->where('districts.id', $user->district_id));
-                        });
-                    }, function($q) use ($user) {
-                        $q->when($user->city_id, fn($cq) => $cq->where('city_id', $user->city_id));
-                    })
-                    ->where('status', 'active')
-                    ->get();
-                if ($admins->isEmpty()) {
-                    $admins = User::where('role', 'admin')->where('status', 'active')->get();
-                }
+                $admins = app(\App\Services\AccountNotificationService::class)->resolveAdminsForUser($user);
                 foreach ($admins as $adm) {
                     $adm->notify(new \App\Notifications\NewKtpVerificationNotification($user));
                 }

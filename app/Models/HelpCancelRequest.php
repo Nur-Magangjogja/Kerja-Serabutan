@@ -365,50 +365,32 @@ class HelpCancelRequest extends Model
                 $adminCityId = $user->city_id;
 
                 if (!empty($districtIds)) {
-                    $cancelQuery->where(function ($q) use ($districtIds) {
-                        $q->whereIn('district_id', $districtIds)
-                          ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $districtIds));
-                    });
-                    $disputeQuery->where(function ($q) use ($districtIds) {
-                        $q->whereIn('district_id', $districtIds)
-                          ->orWhereHas('user', fn($uq) => $uq->whereIn('district_id', $districtIds));
-                    });
-                } elseif ($adminCityId) {
+                    $cancelQuery->whereHas('help', fn($hq) => $hq->whereIn('district_id', $districtIds));
+                    $disputeQuery->whereIn('district_id', $districtIds);
+                } elseif ($adminCityId && method_exists($user, 'isCityOnlyAdmin') && $user->isCityOnlyAdmin()) {
                     $cancelQuery->whereHas('help', fn($hq) => $hq->where('city_id', $adminCityId));
-                    $disputeQuery->where(function ($q) use ($adminCityId) {
-                        $q->where('city_id', $adminCityId)
-                          ->orWhereHas('user', fn($uq) => $uq->where('city_id', $adminCityId));
-                    });
+                    $disputeQuery->where('city_id', $adminCityId);
                 } else {
                     return 0;
                 }
             } else {
                 if ($saTerritory && $saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
                     $dId = (int) $saTerritory['id'];
-                    $cancelQuery->where(function ($q) use ($dId) {
-                        $q->where('district_id', $dId)
-                          ->orWhereHas('help', fn($hq) => $hq->where('district_id', $dId));
-                    });
-                    $disputeQuery->where(function ($q) use ($dId) {
-                        $q->where('district_id', $dId)
-                          ->orWhereHas('user', fn($uq) => $uq->where('district_id', $dId));
-                    });
+                    $cancelQuery->whereHas('help', fn($hq) => $hq->where('district_id', $dId));
+                    $disputeQuery->where('district_id', $dId);
                 } elseif ($saTerritory && $saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
                     $cId = (int) $saTerritory['id'];
                     $saDistrictIds = $user->getEffectiveSuperadminDistrictIds();
-                    $cancelQuery->where(function ($q) use ($cId, $saDistrictIds) {
-                        $q->whereHas('help', fn($hq) => $hq->where('city_id', $cId));
+                    $cancelQuery->whereHas('help', function ($hq) use ($cId, $saDistrictIds) {
+                        $hq->where('city_id', $cId);
                         if (!empty($saDistrictIds)) {
-                            $q->orWhereIn('district_id', $saDistrictIds)
-                              ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $saDistrictIds));
+                            $hq->orWhereIn('district_id', $saDistrictIds);
                         }
                     });
-                    $disputeQuery->where(function ($q) use ($cId, $saDistrictIds) {
-                        $q->where('city_id', $cId)
-                          ->orWhereHas('user', fn($uq) => $uq->where('city_id', $cId));
+                    $disputeQuery->where(function ($dq) use ($cId, $saDistrictIds) {
+                        $dq->where('city_id', $cId);
                         if (!empty($saDistrictIds)) {
-                            $q->orWhereIn('district_id', $saDistrictIds)
-                              ->orWhereHas('user', fn($uq) => $uq->whereIn('district_id', $saDistrictIds));
+                            $dq->orWhereIn('district_id', $saDistrictIds);
                         }
                     });
                 }

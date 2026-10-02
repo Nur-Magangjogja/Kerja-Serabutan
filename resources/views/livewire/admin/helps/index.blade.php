@@ -80,6 +80,12 @@
             <span class="font-bold">{{ session('message') }}</span>
         </div>
     @endif
+    @if (session()->has('error'))
+        <div class="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-2xl flex items-center gap-3 text-sm shadow-xs">
+            <svg class="w-5 h-5 flex-shrink-0 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <span class="font-bold">{{ session('error') }}</span>
+        </div>
+    @endif
 
     {{-- ===== Search & Filters Bar ===== --}}
     <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">

@@ -95,36 +95,29 @@ class HelpCancelMessage extends Model
                         ));
                     }
                 } else {
-                    // Jika dikirim oleh Customer / Mitra ke Admin, kirim notifikasi ke Admin
+                    // Jika dikirim oleh Customer / Mitra ke Admin, kirim notifikasi ke Admin berwenang wilayah Help
                     $req = $message->cancelRequest;
                     if (!$req) return;
 
-                    $districtId = $req->district_id ?? $req->help?->district_id;
-                    $admins = User::where('role', 'admin')
-                        ->when($districtId, fn($q) => $q->where('district_id', $districtId))
-                        ->where('status', 'active')
-                        ->get();
+                    $help = $req->help;
+                    $notificationService = app(\App\Services\HelpNotificationService::class);
+                    $recipients = $help
+                        ? $notificationService->resolveAdminsForHelp($help, includeSuperAdmin: true)
+                        : $notificationService->resolveAdminsForTerritory($req->district_id, null, includeSuperAdmin: true);
 
-                    if ($admins->isEmpty()) {
-                        $admins = User::where('role', 'admin')->where('status', 'active')->get();
-                    }
-
-                    $superAdmins = User::whereIn('role', ['super_admin', 'superadmin'])
-                        ->where('status', 'active')
-                        ->get();
-
-                    $recipients = $admins->merge($superAdmins)->unique('id');
                     $senderName = $message->sender?->name ?? 'Pengguna';
                     $shortMsg = \Illuminate\Support\Str::limit($message->message, 80);
+                    $targetUrl = route('admin.cancellations.chat', $req->id);
 
                     foreach ($recipients as $recipient) {
                         $recipient->notify(new \App\Notifications\HelpStatusNotification(
-                            $req->help,
-                            $req->help?->status ?? 'in_progress',
+                            $help,
+                            $help?->status ?? 'in_progress',
                             'cancellation_response',
                             null,
                             "Balasan klarifikasi pembatalan dari {$senderName}: \"{$shortMsg}\"",
-                            "Tanggapan Klarifikasi Pembatalan"
+                            "Tanggapan Klarifikasi Pembatalan",
+                            $targetUrl
                         ));
                     }
                 }

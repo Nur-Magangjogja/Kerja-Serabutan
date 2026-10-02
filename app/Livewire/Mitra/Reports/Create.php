@@ -211,15 +211,21 @@ class Create extends Component
             ]
         );
 
-        // Kirim notifikasi ke Admin regional terkait
+        // Kirim notifikasi ke Admin regional terkait (G8 Canonical Routing)
         try {
-            $cityId = auth()->user()->city_id;
-            $admins = \App\Models\User::where('role', 'admin')
-                ->when($cityId, fn($q) => $q->where('city_id', $cityId))
-                ->where('status', 'active')
-                ->get();
-            if ($admins->isEmpty()) {
-                $admins = \App\Models\User::where('role', 'admin')->where('status', 'active')->get();
+            $help = $this->reported_help_id ? \App\Models\Help::find($this->reported_help_id) : null;
+            if ($help) {
+                // JOB_NOTIFICATION: Help territory wins! No broadcast fallback!
+                $admins = app(\App\Services\HelpNotificationService::class)->resolveAdminsForHelp($help);
+            } else {
+                $canonical = $report->getCanonicalTerritory();
+                $districtId = $canonical['district_id'];
+                $cityId = $canonical['city_id'];
+
+                $admins = app(\App\Services\AccountNotificationService::class)->resolveAdminsForTerritory(
+                    $districtId ? (int) $districtId : null,
+                    $cityId ? (int) $cityId : null
+                );
             }
             foreach ($admins as $adm) {
                 $adm->notify(new \App\Notifications\NewReportNotification($report));

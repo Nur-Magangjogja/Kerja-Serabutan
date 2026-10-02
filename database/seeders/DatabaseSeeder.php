@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             AppSettingsSeeder::class,
+            ProvinceSeeder::class,
             CitySeeder::class,
             SuperAdminSeeder::class,
             UserSeeder::class,

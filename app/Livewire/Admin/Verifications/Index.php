@@ -125,16 +125,8 @@ class Index extends Component
     protected function isAuthorizedForRegistration(Registration $reg): bool
     {
         $user = auth()->user();
-        if (!$user) return false;
-        if (in_array($user->role, ['super_admin', 'superadmin'])) return true;
-        if ($user->role === 'admin') {
-            $allowedDistrictIds = $user->getEffectiveAdminDistrictIds();
-            if (!empty($allowedDistrictIds)) {
-                return !empty($reg->district_id) && in_array((int) $reg->district_id, $allowedDistrictIds, true);
-            }
-            return !empty($user->city_id) && (int) $reg->city_id === (int) $user->city_id;
-        }
-        return false;
+        $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+        return $authService->canAccessTerritory($user, $reg->district_id ? (int)$reg->district_id : null, $reg->city_id ? (int)$reg->city_id : null);
     }
 
     public function viewKtp($id)

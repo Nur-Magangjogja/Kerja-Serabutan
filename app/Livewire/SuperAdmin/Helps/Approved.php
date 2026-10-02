@@ -64,19 +64,14 @@ class Approved extends Component
         $territory = $currentUser ? $currentUser->getActiveSuperadminTerritory() : ['type' => 'all', 'id' => null];
         if ($territory['type'] === 'district' && $territory['id']) {
             $dId = (int) $territory['id'];
-            $query->where(function ($q) use ($dId) {
-                $q->where('district_id', $dId)
-                  ->orWhereHas('customer', fn($cq) => $cq->where('district_id', $dId));
-            });
+            $query->where('district_id', $dId);
         } elseif ($territory['type'] === 'city' && $territory['id']) {
             $cId = (int) $territory['id'];
             $districtIds = $currentUser ? $currentUser->getEffectiveSuperadminDistrictIds() : [];
             $query->where(function ($q) use ($cId, $districtIds) {
-                $q->where('city_id', $cId)
-                  ->orWhereHas('customer', fn($cq) => $cq->where('city_id', $cId));
+                $q->where('city_id', $cId);
                 if (!empty($districtIds)) {
-                    $q->orWhereIn('district_id', $districtIds)
-                      ->orWhereHas('customer', fn($cq) => $cq->whereIn('district_id', $districtIds));
+                    $q->orWhereIn('district_id', $districtIds);
                 }
             });
         }
