@@ -1141,29 +1141,35 @@ class HelpTransactionService
     public function processReportRefund(PartnerReport $report, User $admin, ?string $adminNotes = null): void
     {
         DB::transaction(function () use ($report, $admin, $adminNotes) {
-            $customer = $report->reporter ?? User::find($report->reporter_id);
+            // 1. Lock PartnerReport row
+            $lockedReport = PartnerReport::where('id', $report->id)->lockForUpdate()->firstOrFail();
+
+            // 2. Re-read canonical refund status
+            if (!in_array($lockedReport->refund_status, ['requested', 'pending'], true) || in_array($lockedReport->status, PartnerReport::TERMINAL_STATUSES, true)) {
+                throw new \RuntimeException('Status permohonan refund pada laporan aduan ini telah berubah atau sudah diputuskan sebelumnya.');
+            }
+
+            $customer = $lockedReport->reporter ?? User::find($lockedReport->reporter_id);
             if (!$customer) {
                 throw new \Exception('Data pelapor (Customer) tidak ditemukan.');
             }
 
-            $help = $report->reportedHelp ?? ($report->reported_help_id ? Help::find($report->reported_help_id) : null);
+            $helpId = $lockedReport->reported_help_id ?: $lockedReport->help_id;
+            $lockedHelp = $helpId ? Help::where('id', $helpId)->lockForUpdate()->first() : null;
 
-            if ($help) {
-                $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
-                if ($lockedHelp) {
-                    // Cek jika dana escrow bantuan sudah pernah dirilis ke Mitra
-                    if ($lockedHelp->escrow_status === Help::ESCROW_STATUS_RELEASED) {
-                        throw new \Exception('Dana escrow untuk bantuan ini telah dicairkan ke Mitra. Refund otomatis tidak dapat diproses.');
-                    }
-                    // Cek jika sengketa telah diputuskan sebelumnya secara final
-                    if ($lockedHelp->dispute_resolved_at !== null) {
-                        throw new \Exception('Sengketa pada pesanan ini telah diputuskan secara final oleh Admin sebelumnya. Tidak dapat memproses refund baru.');
-                    }
+            if ($lockedHelp) {
+                // Cek jika dana escrow bantuan sudah pernah dirilis ke Mitra
+                if ($lockedHelp->escrow_status === Help::ESCROW_STATUS_RELEASED) {
+                    throw new \Exception('Dana escrow untuk bantuan ini telah dicairkan ke Mitra. Refund otomatis tidak dapat diproses.');
+                }
+                // Cek jika sengketa telah diputuskan sebelumnya secara final
+                if ($lockedHelp->dispute_resolved_at !== null) {
+                    throw new \Exception('Sengketa pada pesanan ini telah diputuskan secara final oleh Admin sebelumnya. Tidak dapat memproses refund baru.');
                 }
 
                 // Cek idempotensi refund: jangan sampai bantuan yang sama direfund 2x
                 $alreadyRefunded = BalanceTransaction::where('user_id', $customer->id)
-                    ->where('reference_id', $help->id)
+                    ->where('reference_id', $lockedHelp->id)
                     ->where('type', 'refund')
                     ->exists();
                 if ($alreadyRefunded) {
@@ -1172,9 +1178,9 @@ class HelpTransactionService
             }
 
             // Hitung nominal refund
-            $refundAmount = (float) $report->refund_amount;
-            if ($refundAmount <= 0 && $help) {
-                $refundAmount = (float) ($help->total_amount > 0 ? $help->total_amount : $help->amount);
+            $refundAmount = (float) $lockedReport->refund_amount;
+            if ($refundAmount <= 0 && $lockedHelp) {
+                $refundAmount = (float) ($lockedHelp->total_amount > 0 ? $lockedHelp->total_amount : $lockedHelp->amount);
             }
 
             if ($refundAmount <= 0) {
@@ -1189,16 +1195,16 @@ class HelpTransactionService
 
             $customerBalance->refundToCustomer(
                 $refundAmount,
-                $help?->id,
-                $help?->order_id,
-                "Pengembalian Dana Refund (Laporan: '{$report->title}')",
-                "report:{$report->id}:refund:{$customer->id}"
+                $lockedHelp?->id,
+                $lockedHelp?->order_id,
+                "Pengembalian Dana Refund (Laporan: '{$lockedReport->title}')",
+                "report:{$lockedReport->id}:refund:{$customer->id}"
             );
 
             $notesEntry = $adminNotes ? "[Refund Disetujui]: " . trim($adminNotes) : "[Refund Disetujui oleh {$admin->name}]";
-            $updatedNotes = $report->admin_notes ? $report->admin_notes . "\n" . $notesEntry : $notesEntry;
+            $updatedNotes = $lockedReport->admin_notes ? $lockedReport->admin_notes . "\n" . $notesEntry : $notesEntry;
 
-            $report->update([
+            $lockedReport->update([
                 'refund_status'       => 'approved',
                 'refund_amount'       => $refundAmount,
                 'refund_processed_at' => now(),
@@ -1210,8 +1216,8 @@ class HelpTransactionService
             ]);
 
             // Jika bantuan terkait belum dibatalkan, set status bantuan menjadi dibatalkan & escrow refunded
-            if ($help) {
-                $help->update([
+            if ($lockedHelp) {
+                $lockedHelp->update([
                     'status'        => Help::STATUS_DIBATALKAN,
                     'escrow_status' => Help::ESCROW_STATUS_REFUNDED,
                     'payment_status'=> Help::PAYMENT_STATUS_REFUNDED,
@@ -1220,7 +1226,7 @@ class HelpTransactionService
             }
 
             Log::info('[HelpTransactionService] Refund laporan disetujui', [
-                'report_id'     => $report->id,
+                'report_id'     => $lockedReport->id,
                 'customer_id'   => $customer->id,
                 'refund_amount' => $refundAmount,
                 'admin_id'      => $admin->id,
@@ -1235,10 +1241,21 @@ class HelpTransactionService
     public function rejectReportRefund(PartnerReport $report, User $admin, string $reason): void
     {
         DB::transaction(function () use ($report, $admin, $reason) {
-            $notesEntry = "[Refund/Komplain Ditolak]: " . trim($reason);
-            $updatedNotes = $report->admin_notes ? $report->admin_notes . "\n" . $notesEntry : $notesEntry;
+            // 1. Lock PartnerReport row
+            $lockedReport = PartnerReport::where('id', $report->id)->lockForUpdate()->firstOrFail();
 
-            $report->update([
+            // 2. Re-read canonical refund status
+            if (!in_array($lockedReport->refund_status, ['requested', 'pending'], true) || in_array($lockedReport->status, PartnerReport::TERMINAL_STATUSES, true)) {
+                throw new \RuntimeException('Status permohonan refund pada laporan aduan ini telah berubah atau sudah diputuskan sebelumnya.');
+            }
+
+            $helpId = $lockedReport->reported_help_id ?: $lockedReport->help_id;
+            $lockedHelp = $helpId ? Help::where('id', $helpId)->lockForUpdate()->first() : null;
+
+            $notesEntry = "[Refund/Komplain Ditolak]: " . trim($reason);
+            $updatedNotes = $lockedReport->admin_notes ? $lockedReport->admin_notes . "\n" . $notesEntry : $notesEntry;
+
+            $lockedReport->update([
                 'refund_status'       => 'rejected',
                 'status'              => 'resolved',
                 'resolved_at'         => now(),
@@ -1248,23 +1265,19 @@ class HelpTransactionService
 
             // Jika laporan ini terkait pesanan bantuan yang sedang dibekukan / ditahan,
             // penolakan komplain customer berarti kemenangan bagi mitra: cairkan dana escrow ke Mitra & selesaikan order!
-            $help = $report->reportedHelp;
-            if ($help) {
-                $lockedHelp = Help::where('id', $help->id)->lockForUpdate()->first();
-                if ($lockedHelp && in_array($lockedHelp->escrow_status, [Help::ESCROW_STATUS_DISPUTED_FREEZE, Help::ESCROW_STATUS_HELD])) {
-                    if ($lockedHelp->mitra_id) {
-                        $this->escrowService->releaseEscrowToMitra($lockedHelp, 'admin_dispute_release');
-                    }
-                    $lockedHelp->update([
-                        'status'              => Help::STATUS_SELESAI,
-                        'escrow_status'       => Help::ESCROW_STATUS_RELEASED,
-                        'payment_status'      => Help::PAYMENT_STATUS_PAID,
-                        'rating_status'       => Help::RATING_STATUS_PENDING,
-                        'dispatch_mode'       => Help::DISPATCH_MODE_CLOSED,
-                        'dispute_resolved_at' => now(),
-                        'dispute_resolved_by' => $admin->id,
-                    ]);
+            if ($lockedHelp && in_array($lockedHelp->escrow_status, [Help::ESCROW_STATUS_DISPUTED_FREEZE, Help::ESCROW_STATUS_HELD])) {
+                if ($lockedHelp->mitra_id) {
+                    $this->escrowService->releaseEscrowToMitra($lockedHelp, 'admin_dispute_release');
                 }
+                $lockedHelp->update([
+                    'status'              => Help::STATUS_SELESAI,
+                    'escrow_status'       => Help::ESCROW_STATUS_RELEASED,
+                    'payment_status'      => Help::PAYMENT_STATUS_PAID,
+                    'rating_status'       => Help::RATING_STATUS_PENDING,
+                    'dispatch_mode'       => Help::DISPATCH_MODE_CLOSED,
+                    'dispute_resolved_at' => now(),
+                    'dispute_resolved_by' => $admin->id,
+                ]);
             }
 
             Log::info('[HelpTransactionService] Refund laporan ditolak & dana diteruskan ke Mitra', [

@@ -14,6 +14,7 @@ class UserGreylistLog extends Model
     protected $fillable = [
         'user_id',
         'admin_id',
+        'partner_report_id',
         'action',
         'warning_level',
         'reason',
@@ -28,6 +29,11 @@ class UserGreylistLog extends Model
     public function admin()
     {
         return $this->belongsTo(User::class, 'admin_id');
+    }
+
+    public function partnerReport()
+    {
+        return $this->belongsTo(PartnerReport::class, 'partner_report_id');
     }
 
     public function getActionLabelAttribute(): string

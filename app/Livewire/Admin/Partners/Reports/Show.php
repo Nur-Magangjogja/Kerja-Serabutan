@@ -196,32 +196,16 @@ class Show extends Component
         ]);
 
         try {
-            $targetUser = User::findOrFail($this->spTargetUserId);
             $admin = auth()->user();
-            $help = $this->report->reportedHelp;
 
-            $disciplineService->issueManualWarningToUser(
-                $targetUser,
-                (int) $this->spWarningLevel,
+            $result = $disciplineService->issueInstantSpFromReport(
+                $this->report,
+                (int) $this->spTargetUserId,
                 trim($this->spReason),
                 $admin,
-                $help
+                (int) $this->spWarningLevel,
+                (bool) $this->spAutoNoteInReport
             );
-
-            if ($this->spAutoNoteInReport) {
-                $timestamp = now()->format('d M Y H:i');
-                $adminName = $admin->name;
-                $roleLabel = ($targetUser->role === 'mitra') ? 'Mitra' : 'Customer';
-                $entry = "[{$timestamp} oleh {$adminName}]: Menerbitkan SP {$this->spWarningLevel} kepada {$roleLabel} {$targetUser->name}. Alasan: " . trim($this->spReason);
-
-                $existing = $this->report->admin_notes ? $this->report->admin_notes . "\n" : '';
-                $updatedNotes = $existing . $entry;
-
-                $this->report->update([
-                    'admin_notes' => $updatedNotes,
-                ]);
-                $this->adminNotes = $updatedNotes;
-            }
 
             $this->report->load([
                 'reporter.userBalance',
@@ -235,11 +219,13 @@ class Show extends Component
                 'reportedHelp.city',
                 'resolvedBy',
                 'refundProcessedBy',
-                'messages.sender'
+                'messages.sender',
+                'greylistLog'
             ]);
 
+            $this->adminNotes = $this->report->admin_notes ?? '';
             $this->showSpModal = false;
-            session()->flash('success', "Surat Peringatan (SP {$this->spWarningLevel}) berhasil diterbitkan kepada {$targetUser->name} secara instan!");
+            session()->flash('success', "Surat Peringatan (SP {$result['targetLevel']}) berhasil diterbitkan kepada {$result['user']->name} secara instan!");
         } catch (\Throwable $e) {
             session()->flash('error', 'Gagal menerbitkan SP: ' . $e->getMessage());
         }

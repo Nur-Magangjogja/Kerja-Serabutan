@@ -203,6 +203,11 @@ class PartnerReport extends Model
         return $this->hasMany(PartnerReportMessage::class, 'partner_report_id')->orderBy('created_at', 'asc');
     }
 
+    public function greylistLog()
+    {
+        return $this->hasOne(UserGreylistLog::class, 'partner_report_id');
+    }
+
     // Scopes
     public function scopePending(Builder $query)
     {

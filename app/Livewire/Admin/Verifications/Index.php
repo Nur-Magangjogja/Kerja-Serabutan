@@ -11,6 +11,7 @@ use App\Models\District;
 use App\Models\City;
 use App\Models\ActivityLog;
 use App\Notifications\VehicleVerificationNotification;
+use Illuminate\Support\Facades\DB;
 
 class Index extends Component
 {
@@ -167,54 +168,57 @@ class Index extends Component
 
     public function approveKtp($id)
     {
-        $reg = Registration::find($id);
-        if (!$reg || !$this->isAuthorizedForRegistration($reg)) {
-            session()->flash('message', 'Registrasi tidak ditemukan atau berada di luar wilayah wewenang Anda.');
-            return;
-        }
-        $reg->update(['status' => 'approved']);
-
-        // Jika ada user terkait (dibuat saat registrasi step4), update status dan verifikasi
-        try {
-            if (!empty($reg->email)) {
-                $user = User::where('email', $reg->email)->first();
-                if ($user) {
-                    $user->verified = true;
-                    $user->status = 'active';
-                    if (empty($user->nik) && !empty($reg->nik)) $user->nik = $reg->nik;
-                    if (empty($user->ktp_photo) && !empty($reg->ktp_photo_path)) $user->ktp_photo = $reg->ktp_photo_path;
-                    if (empty($user->ktp_path) && !empty($reg->ktp_photo_path)) $user->ktp_path = $reg->ktp_photo_path;
-                    if (empty($user->selfie_photo) && !empty($reg->selfie_photo_path)) $user->selfie_photo = $reg->selfie_photo_path;
-                    if (empty($user->district_id) && !empty($reg->district_id)) $user->district_id = $reg->district_id;
-                    if (empty($user->district) && !empty($reg->district)) $user->district = $reg->district;
-                    if (empty($user->city_id) && !empty($reg->city_id)) $user->city_id = $reg->city_id;
-                    if (empty($user->city) && !empty($reg->city)) $user->city = $reg->city;
-                    if (empty($user->rt) && !empty($reg->rt)) $user->rt = $reg->rt;
-                    if (empty($user->rw) && !empty($reg->rw)) $user->rw = $reg->rw;
-                    if (empty($user->kelurahan) && !empty($reg->kelurahan)) $user->kelurahan = $reg->kelurahan;
-                    if (empty($user->kecamatan) && !empty($reg->kecamatan)) $user->kecamatan = $reg->kecamatan;
-                    if (empty($user->province) && !empty($reg->province)) $user->province = $reg->province;
-                    if (empty($user->gender) && !empty($reg->gender)) $user->gender = $reg->gender;
-                    if (empty($user->phone) && !empty($reg->phone)) $user->phone = $reg->phone;
-                    if (array_key_exists('email_verified_at', $user->getAttributes()) && empty($user->email_verified_at)) {
-                        $user->email_verified_at = now();
-                    }
-                    $user->save();
-                }
+        $result = DB::transaction(function () use ($id) {
+            $reg = Registration::where('id', $id)->lockForUpdate()->first();
+            if (!$reg || !in_array($reg->status, ['pending_verification', 'pending'], true)) {
+                return ['success' => false, 'message' => 'Registrasi tidak ditemukan, status telah berubah, atau sudah diproses.'];
             }
-        } catch (\Exception $e) {
-            // do not block admin action if user update fails
-        }
 
-        // Catat ke log aktivitas sistem
-        \App\Models\ActivityLog::record(
-            auth()->user(),
-            'ktp_verified',
-            "Admin " . (auth()->user()->name ?? 'Admin') . " menyetujui verifikasi KTP untuk pendaftar {$reg->name} ({$reg->email})",
-            ['registration_id' => $reg->id, 'email' => $reg->email]
-        );
+            if (!$this->isAuthorizedForRegistration($reg)) {
+                return ['success' => false, 'message' => 'Registrasi tidak ditemukan atau berada di luar wilayah wewenang Anda.'];
+            }
 
-        session()->flash('message', 'Registrasi berhasil disetujui.');
+            $user = !empty($reg->email) ? User::where('email', $reg->email)->lockForUpdate()->first() : null;
+
+            $reg->update(['status' => 'approved']);
+
+            // Jika ada user terkait (dibuat saat registrasi step4), update status dan verifikasi
+            if ($user) {
+                $user->verified = true;
+                $user->status = 'active';
+                if (empty($user->nik) && !empty($reg->nik)) $user->nik = $reg->nik;
+                if (empty($user->ktp_photo) && !empty($reg->ktp_photo_path)) $user->ktp_photo = $reg->ktp_photo_path;
+                if (empty($user->ktp_path) && !empty($reg->ktp_photo_path)) $user->ktp_path = $reg->ktp_photo_path;
+                if (empty($user->selfie_photo) && !empty($reg->selfie_photo_path)) $user->selfie_photo = $reg->selfie_photo_path;
+                if (empty($user->district_id) && !empty($reg->district_id)) $user->district_id = $reg->district_id;
+                if (empty($user->district) && !empty($reg->district)) $user->district = $reg->district;
+                if (empty($user->city_id) && !empty($reg->city_id)) $user->city_id = $reg->city_id;
+                if (empty($user->city) && !empty($reg->city)) $user->city = $reg->city;
+                if (empty($user->rt) && !empty($reg->rt)) $user->rt = $reg->rt;
+                if (empty($user->rw) && !empty($reg->rw)) $user->rw = $reg->rw;
+                if (empty($user->kelurahan) && !empty($reg->kelurahan)) $user->kelurahan = $reg->kelurahan;
+                if (empty($user->kecamatan) && !empty($reg->kecamatan)) $user->kecamatan = $reg->kecamatan;
+                if (empty($user->province) && !empty($reg->province)) $user->province = $reg->province;
+                if (empty($user->gender) && !empty($reg->gender)) $user->gender = $reg->gender;
+                if (empty($user->phone) && !empty($reg->phone)) $user->phone = $reg->phone;
+                if (array_key_exists('email_verified_at', $user->getAttributes()) && empty($user->email_verified_at)) {
+                    $user->email_verified_at = now();
+                }
+                $user->save();
+            }
+
+            // Catat ke log aktivitas sistem
+            \App\Models\ActivityLog::record(
+                auth()->user(),
+                'ktp_verified',
+                "Admin " . (auth()->user()->name ?? 'Admin') . " menyetujui verifikasi KTP untuk pendaftar {$reg->name} ({$reg->email})",
+                ['registration_id' => $reg->id, 'email' => $reg->email]
+            );
+
+            return ['success' => true, 'message' => 'Registrasi berhasil disetujui.'];
+        });
+
+        session()->flash('message', $result['message']);
         $this->closeModal();
     }
 
@@ -235,40 +239,44 @@ class Index extends Component
             return;
         }
 
-        $reg = Registration::find($this->rejectingId);
-        if (!$reg) {
-            session()->flash('message', 'Registrasi tidak ditemukan');
-            $this->cancelReject();
-            return;
-        }
+        $id = $this->rejectingId;
+        $reason = $this->rejectReason;
 
-        $reg->update([
-            'status' => 'rejected',
-            'rejection_reason' => $this->rejectReason,
-        ]);
-
-        try {
-            if (!empty($reg->email)) {
-                $user = User::where('email', $reg->email)->first();
-                if ($user) {
-                    $user->verified = false;
-                    $user->status = 'inactive';
-                    $user->save();
-                }
+        $result = DB::transaction(function () use ($id, $reason) {
+            $reg = Registration::where('id', $id)->lockForUpdate()->first();
+            if (!$reg || !in_array($reg->status, ['pending_verification', 'pending'], true)) {
+                return ['success' => false, 'message' => 'Registrasi tidak ditemukan, status telah berubah, atau sudah diproses.'];
             }
-        } catch (\Exception $e) {
-            // ignore
-        }
 
-        // Catat ke log aktivitas sistem
-        \App\Models\ActivityLog::record(
-            auth()->user(),
-            'ktp_rejected',
-            "Admin " . (auth()->user()->name ?? 'Admin') . " menolak verifikasi KTP untuk {$reg->name} ({$reg->email}). Alasan: " . ($this->rejectReason ?: 'Tidak ada keterangan'),
-            ['registration_id' => $reg->id, 'email' => $reg->email, 'reason' => $this->rejectReason]
-        );
+            if (!$this->isAuthorizedForRegistration($reg)) {
+                return ['success' => false, 'message' => 'Registrasi tidak ditemukan atau berada di luar wilayah wewenang Anda.'];
+            }
 
-        session()->flash('message', 'Registrasi ditolak. Alasan penolakan disimpan.');
+            $user = !empty($reg->email) ? User::where('email', $reg->email)->lockForUpdate()->first() : null;
+
+            $reg->update([
+                'status' => 'rejected',
+                'rejection_reason' => $reason,
+            ]);
+
+            if ($user) {
+                $user->verified = false;
+                $user->status = 'inactive';
+                $user->save();
+            }
+
+            // Catat ke log aktivitas sistem
+            \App\Models\ActivityLog::record(
+                auth()->user(),
+                'ktp_rejected',
+                "Admin " . (auth()->user()->name ?? 'Admin') . " menolak verifikasi KTP untuk {$reg->name} ({$reg->email}). Alasan: " . ($reason ?: 'Tidak ada keterangan'),
+                ['registration_id' => $reg->id, 'email' => $reg->email, 'reason' => $reason]
+            );
+
+            return ['success' => true, 'message' => 'Registrasi ditolak. Alasan penolakan disimpan.'];
+        });
+
+        session()->flash('message', $result['message']);
         $this->cancelReject();
         $this->closeModal();
     }
@@ -327,34 +335,44 @@ class Index extends Component
 
     public function approveVehicle(int $id): void
     {
-        $targetUser = User::find($id);
-        if (!$targetUser || !$this->isAuthorizedForUser($targetUser)) {
-            session()->flash('message', 'Mitra tidak ditemukan atau berada di luar wilayah wewenang Anda.');
-            return;
+        $result = DB::transaction(function () use ($id) {
+            $targetUser = User::where('id', $id)->lockForUpdate()->first();
+            if (!$targetUser || $targetUser->vehicle_verification_status !== 'pending') {
+                return ['success' => false, 'message' => 'Data verifikasi kendaraan mitra tidak ditemukan, status telah berubah, atau sudah diproses.'];
+            }
+
+            if (!$this->isAuthorizedForUser($targetUser)) {
+                return ['success' => false, 'message' => 'Mitra tidak ditemukan atau berada di luar wilayah wewenang Anda.'];
+            }
+
+            $targetUser->update([
+                'vehicle_verified'            => true,
+                'vehicle_verification_status' => 'verified',
+                'vehicle_verified_at'         => now(),
+                'vehicle_verified_by'         => auth()->id(),
+                'vehicle_rejection_reason'    => null,
+            ]);
+
+            ActivityLog::record(
+                auth()->user(),
+                'vehicle_verified',
+                "Admin " . (auth()->user()->name ?? 'Admin') . " menyetujui verifikasi kendaraan untuk mitra {$targetUser->name} (Plat: {$targetUser->vehicle_plate_number})",
+                ['user_id' => $targetUser->id, 'plate' => $targetUser->vehicle_plate_number]
+            );
+
+            return ['success' => true, 'user' => $targetUser, 'message' => "Data kendaraan untuk {$targetUser->name} ({$targetUser->vehicle_plate_number}) berhasil disetujui."];
+        });
+
+        session()->flash('message', $result['message']);
+
+        if ($result['success'] && isset($result['user'])) {
+            try {
+                $result['user']->notify(new VehicleVerificationNotification('verified', null, $result['user']->vehicle_plate_number));
+            } catch (\Throwable $e) {
+                // ignore notification failure
+            }
         }
 
-        $targetUser->update([
-            'vehicle_verified'            => true,
-            'vehicle_verification_status' => 'verified',
-            'vehicle_verified_at'         => now(),
-            'vehicle_verified_by'         => auth()->id(),
-            'vehicle_rejection_reason'    => null,
-        ]);
-
-        ActivityLog::record(
-            auth()->user(),
-            'vehicle_verified',
-            "Admin " . (auth()->user()->name ?? 'Admin') . " menyetujui verifikasi kendaraan untuk mitra {$targetUser->name} (Plat: {$targetUser->vehicle_plate_number})",
-            ['user_id' => $targetUser->id, 'plate' => $targetUser->vehicle_plate_number]
-        );
-
-        try {
-            $targetUser->notify(new VehicleVerificationNotification('verified', null, $targetUser->vehicle_plate_number));
-        } catch (\Throwable $e) {
-            // ignore notification failure
-        }
-
-        session()->flash('message', "Data kendaraan untuk {$targetUser->name} ({$targetUser->vehicle_plate_number}) berhasil disetujui.");
         $this->closeVehicleModal();
     }
 
@@ -392,33 +410,45 @@ class Index extends Component
             return;
         }
 
-        $targetUser = User::find($this->rejectingVehicleUserId);
-        if (!$targetUser) {
-            session()->flash('message', 'Mitra tidak ditemukan.');
-            $this->cancelRejectVehicle();
-            return;
+        $userId = $this->rejectingVehicleUserId;
+        $reason = $this->vehicleRejectReason;
+
+        $result = DB::transaction(function () use ($userId, $reason) {
+            $targetUser = User::where('id', $userId)->lockForUpdate()->first();
+            if (!$targetUser || $targetUser->vehicle_verification_status !== 'pending') {
+                return ['success' => false, 'message' => 'Data verifikasi kendaraan mitra tidak ditemukan, status telah berubah, atau sudah diproses.'];
+            }
+
+            if (!$this->isAuthorizedForUser($targetUser)) {
+                return ['success' => false, 'message' => 'Mitra tidak ditemukan atau berada di luar wilayah wewenang Anda.'];
+            }
+
+            $targetUser->update([
+                'vehicle_verified'            => false,
+                'vehicle_verification_status' => 'rejected',
+                'vehicle_rejection_reason'    => $reason,
+            ]);
+
+            ActivityLog::record(
+                auth()->user(),
+                'vehicle_rejected',
+                "Admin " . (auth()->user()->name ?? 'Admin') . " menolak verifikasi kendaraan untuk mitra {$targetUser->name}. Alasan: {$reason}",
+                ['user_id' => $targetUser->id, 'plate' => $targetUser->vehicle_plate_number]
+            );
+
+            return ['success' => true, 'user' => $targetUser, 'message' => "Verifikasi kendaraan mitra {$targetUser->name} telah ditolak."];
+        });
+
+        session()->flash('message', $result['message']);
+
+        if ($result['success'] && isset($result['user'])) {
+            try {
+                $result['user']->notify(new VehicleVerificationNotification('rejected', $reason, $result['user']->vehicle_plate_number));
+            } catch (\Throwable $e) {
+                // ignore notification failure
+            }
         }
 
-        $targetUser->update([
-            'vehicle_verified'            => false,
-            'vehicle_verification_status' => 'rejected',
-            'vehicle_rejection_reason'    => $this->vehicleRejectReason,
-        ]);
-
-        ActivityLog::record(
-            auth()->user(),
-            'vehicle_rejected',
-            "Admin " . (auth()->user()->name ?? 'Admin') . " menolak verifikasi kendaraan untuk mitra {$targetUser->name}. Alasan: {$this->vehicleRejectReason}",
-            ['user_id' => $targetUser->id, 'plate' => $targetUser->vehicle_plate_number]
-        );
-
-        try {
-            $targetUser->notify(new VehicleVerificationNotification('rejected', $this->vehicleRejectReason, $targetUser->vehicle_plate_number));
-        } catch (\Throwable $e) {
-            // ignore notification failure
-        }
-
-        session()->flash('message', "Verifikasi kendaraan mitra {$targetUser->name} telah ditolak.");
         $this->cancelRejectVehicle();
         $this->closeVehicleModal();
     }

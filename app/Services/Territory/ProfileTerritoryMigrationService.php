@@ -63,32 +63,13 @@ class ProfileTerritoryMigrationService
 
         // 3. Admin Wilayah Scope Validation
         if ($isAdmin) {
-            $adminDistrictIds = $actor->getAdminDistrictIds();
-            $adminCityIds = $actor->getAdminCityIds();
+            $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
 
-            // Check current user territory ownership:
-            // Admin must own the current territory of the user (cannot "pull" user from outside)
-            $ownsCurrentTerritory = false;
-            if (!empty($targetUser->district_id)) {
-                $ownsCurrentTerritory = in_array((int) $targetUser->district_id, $adminDistrictIds, true);
-            } elseif (!empty($targetUser->city_id)) {
-                $ownsCurrentTerritory = in_array((int) $targetUser->city_id, $adminCityIds, true);
-            }
-
-            if (!$ownsCurrentTerritory) {
+            if (!$authService->canAccessTerritory($actor, $targetUser->district_id ? (int)$targetUser->district_id : null, $targetUser->city_id ? (int)$targetUser->city_id : null)) {
                 throw new AuthorizationException('Pengguna saat ini berada di luar wilayah kewenangan Anda.');
             }
 
-            // Check destination territory ownership:
-            // Destination must also be within the admin's effective authority
-            $ownsDestination = false;
-            if (!empty($newDistrictId)) {
-                $ownsDestination = in_array((int) $newDistrictId, $adminDistrictIds, true);
-            } elseif (!empty($newCityId)) {
-                $ownsDestination = in_array((int) $newCityId, $adminCityIds, true);
-            }
-
-            if (!$ownsDestination) {
+            if (!$authService->canAccessTerritory($actor, $newDistrictId ? (int)$newDistrictId : null, (int)$newCityId)) {
                 throw new AuthorizationException('Perpindahan ke wilayah di luar kewenangan Anda harus dilakukan oleh SuperAdmin.');
             }
         }
@@ -163,9 +144,29 @@ class ProfileTerritoryMigrationService
         }
 
         // 6. Execute Atomic Transaction
-        return DB::transaction(function () use ($actor, $targetUser, $newCity, $newDistrict, $newProvince, $reason) {
+        return DB::transaction(function () use ($actor, $isAdmin, $targetUser, $newCity, $newDistrict, $newProvince, $reason) {
             /** @var User $user */
             $user = User::where('id', $targetUser->id)->lockForUpdate()->firstOrFail();
+
+            // Re-authorize Actor against CURRENT locked territory
+            if ($isAdmin) {
+                $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+                if (!$authService->canAccessTerritory($actor, $user->district_id ? (int)$user->district_id : null, $user->city_id ? (int)$user->city_id : null)) {
+                    throw new AuthorizationException('Wilayah profil pengguna telah diperbarui oleh administrator lain dan saat ini berada di luar kewenangan Anda.');
+                }
+                if (!$authService->canAccessTerritory($actor, $newDistrict?->id ? (int)$newDistrict->id : null, (int)$newCity->id)) {
+                    throw new AuthorizationException('Perpindahan ke wilayah di luar kewenangan Anda harus dilakukan oleh SuperAdmin.');
+                }
+            }
+
+            // Re-validate same territory against locked state
+            $isSameCityLocked = ((int) $user->city_id === (int) $newCity->id);
+            $isSameDistrictLocked = ((int) ($user->district_id ?? 0) === (int) ($newDistrict?->id ?? 0));
+            if ($isSameCityLocked && $isSameDistrictLocked) {
+                throw ValidationException::withMessages([
+                    'destination' => 'Wilayah tujuan sama dengan wilayah saat ini.',
+                ]);
+            }
 
             $oldCityId = $user->city_id;
             $oldDistrictId = $user->district_id;

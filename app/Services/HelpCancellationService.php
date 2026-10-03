@@ -812,6 +812,11 @@ class HelpCancellationService
     ): void {
         DB::transaction(function () use ($request, $adminUser, $adminNotes) {
             $lockedReq = HelpCancelRequest::where('id', $request->id)->lockForUpdate()->firstOrFail();
+
+            if ($lockedReq->status !== HelpCancelRequest::STATUS_PENDING) {
+                throw new \RuntimeException('Tiket pembatalan ini sudah pernah diproses sebelumnya.');
+            }
+
             $help = Help::where('id', $lockedReq->help_id)->lockForUpdate()->firstOrFail();
 
             $partnerId = $help->mitra_id ?? $lockedReq->partner_id;
