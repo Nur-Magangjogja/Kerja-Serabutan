@@ -38,6 +38,7 @@ class DualAdminConcurrencyTest extends TestCase
     protected District $districtZ;
     protected User $adminA;
     protected User $adminB;
+    protected User $superAdmin;
     protected User $customer;
     protected User $mitra;
 
@@ -122,6 +123,12 @@ class DualAdminConcurrencyTest extends TestCase
             'city'        => $this->city->name,
             'province'    => $this->province->name,
             'kecamatan'   => $this->districtX->name,
+        ]);
+
+        $this->superAdmin = User::factory()->create([
+            'role'     => 'super_admin',
+            'status'   => 'active',
+            'verified' => true,
         ]);
     }
 
@@ -958,4 +965,754 @@ class DualAdminConcurrencyTest extends TestCase
 
         $service->adminUnlinkPartnerAndHoldTask($cancelReq, $this->adminB);
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // C2: CROSS-ROLE ADMIN CONCURRENCY VERIFICATION (ADMIN WILAYAH ↔ SUPERADMIN)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function test_cross_role_as1_ktp_regional_first_superadmin_stale_blocked(): void
+    {
+        $regUser = User::factory()->create([
+            'email'    => 'cr_mitra_as1@example.com',
+            'status'   => 'inactive',
+            'verified' => false,
+        ]);
+
+        $reg = Registration::create([
+            'uuid'        => (string) \Illuminate\Support\Str::uuid(),
+            'name'        => 'Calon Mitra AS1',
+            'email'       => 'cr_mitra_as1@example.com',
+            'phone'       => '081299990001',
+            'role'        => 'mitra',
+            'nik'         => '3201019999990011',
+            'city_id'     => $this->city->id,
+            'city'        => $this->city->name,
+            'district_id' => $this->districtX->id,
+            'status'      => 'pending_verification',
+        ]);
+
+        // Regional Admin approves KTP
+        $this->actingAs($this->adminA);
+        Livewire::test(VerificationsIndex::class)
+            ->call('approveKtp', $reg->id);
+
+        $this->assertSame('approved', $reg->fresh()->status);
+        $this->assertSame('active', $regUser->fresh()->status);
+        $this->assertTrue((bool) $regUser->fresh()->verified);
+
+        // SuperAdmin attempts stale reject
+        $this->actingAs($this->superAdmin);
+        Livewire::test(VerificationsIndex::class)
+            ->set('rejectingId', $reg->id)
+            ->set('rejectReason', 'Stale reject by superadmin')
+            ->call('confirmReject');
+
+        $this->assertSame('approved', $reg->fresh()->status, 'SuperAdmin stale reject must NOT overwrite approved KTP');
+        $this->assertSame('active', $regUser->fresh()->status);
+        $this->assertTrue((bool) $regUser->fresh()->verified);
+
+        $rejectLogCount = ActivityLog::where('action', 'ktp_rejected')
+            ->where('properties->registration_id', $reg->id)
+            ->count();
+        $this->assertSame(0, $rejectLogCount);
+    }
+
+    public function test_cross_role_as2_ktp_superadmin_first_regional_stale_blocked(): void
+    {
+        $regUser = User::factory()->create([
+            'email'    => 'cr_mitra_as2@example.com',
+            'status'   => 'inactive',
+            'verified' => false,
+        ]);
+
+        $reg = Registration::create([
+            'uuid'        => (string) \Illuminate\Support\Str::uuid(),
+            'name'        => 'Calon Mitra AS2',
+            'email'       => 'cr_mitra_as2@example.com',
+            'phone'       => '081299990002',
+            'role'        => 'mitra',
+            'nik'         => '3201019999990012',
+            'city_id'     => $this->city->id,
+            'city'        => $this->city->name,
+            'district_id' => $this->districtX->id,
+            'status'      => 'pending_verification',
+        ]);
+
+        // SuperAdmin rejects KTP
+        $this->actingAs($this->superAdmin);
+        Livewire::test(VerificationsIndex::class)
+            ->set('rejectingId', $reg->id)
+            ->set('rejectReason', 'Dokumen tidak valid')
+            ->call('confirmReject');
+
+        $this->assertSame('rejected', $reg->fresh()->status);
+        $this->assertSame('inactive', $regUser->fresh()->status);
+        $this->assertFalse((bool) $regUser->fresh()->verified);
+
+        // Regional Admin attempts stale approve
+        $this->actingAs($this->adminA);
+        Livewire::test(VerificationsIndex::class)
+            ->call('approveKtp', $reg->id);
+
+        $this->assertSame('rejected', $reg->fresh()->status, 'Regional Admin stale approve must NOT overwrite rejected KTP');
+        $this->assertSame('inactive', $regUser->fresh()->status);
+        $this->assertFalse((bool) $regUser->fresh()->verified);
+
+        $approveLogCount = ActivityLog::where('action', 'ktp_approved')
+            ->where('properties->registration_id', $reg->id)
+            ->count();
+        $this->assertSame(0, $approveLogCount);
+    }
+
+    public function test_cross_role_as3_topup_superadmin_first_regional_stale_reject_blocked(): void
+    {
+        $balance = UserBalance::create([
+            'user_id' => $this->customer->id,
+            'balance' => 100000,
+        ]);
+
+        $tx = BalanceTransaction::create([
+            'user_id'                => $this->customer->id,
+            'type'                   => 'topup',
+            'amount'                 => 50000,
+            'direction'              => 'credit',
+            'total_payment'          => 50000,
+            'status'                 => 'waiting_approval',
+            'manual_approval_status' => 'pending',
+        ]);
+
+        // SuperAdmin approves Topup
+        $this->actingAs($this->superAdmin);
+        Livewire::test(TopupApproval::class)
+            ->call('approve', $tx->id);
+
+        $this->assertSame('completed', $tx->fresh()->status);
+        $this->assertSame(150000.0, (float) $balance->fresh()->balance);
+
+        // Regional Admin attempts stale reject
+        $this->actingAs($this->adminA);
+        Livewire::test(TopupApproval::class)
+            ->set('selectedTransaction', $tx)
+            ->set('rejectionReason', 'Stale reject attempt')
+            ->call('reject', $tx->id)
+            ->assertSee('tidak valid, sudah diproses');
+
+        $this->assertSame('completed', $tx->fresh()->status, 'Topup remains completed');
+        $this->assertSame(150000.0, (float) $balance->fresh()->balance, 'Balance credited exactly once');
+    }
+
+    public function test_cross_role_as4_topup_regional_first_superadmin_stale_reject_blocked(): void
+    {
+        $balance = UserBalance::create([
+            'user_id' => $this->customer->id,
+            'balance' => 100000,
+        ]);
+
+        $tx = BalanceTransaction::create([
+            'user_id'                => $this->customer->id,
+            'type'                   => 'topup',
+            'amount'                 => 50000,
+            'direction'              => 'credit',
+            'total_payment'          => 50000,
+            'status'                 => 'waiting_approval',
+            'manual_approval_status' => 'pending',
+        ]);
+
+        // Regional Admin approves Topup
+        $this->actingAs($this->adminA);
+        Livewire::test(TopupApproval::class)
+            ->call('approve', $tx->id);
+
+        $this->assertSame('completed', $tx->fresh()->status);
+        $this->assertSame(150000.0, (float) $balance->fresh()->balance);
+
+        // SuperAdmin attempts stale reject
+        $this->actingAs($this->superAdmin);
+        Livewire::test(TopupApproval::class)
+            ->set('selectedTransaction', $tx)
+            ->set('rejectionReason', 'Stale reject by superadmin')
+            ->call('reject', $tx->id)
+            ->assertSee('tidak valid, sudah diproses');
+
+        $this->assertSame('completed', $tx->fresh()->status, 'SuperAdmin stale reject must NOT overwrite completed topup');
+        $this->assertSame(150000.0, (float) $balance->fresh()->balance, 'Balance credited exactly once');
+    }
+
+    public function test_cross_role_as5_withdraw_regional_reject_superadmin_stale_approve_blocked(): void
+    {
+        $mitraBalance = UserBalance::create([
+            'user_id' => $this->mitra->id,
+            'balance' => 100000,
+        ]);
+
+        $withdraw = WithdrawRequest::create([
+            'user_id'        => $this->mitra->id,
+            'amount'         => 100000,
+            'admin_fee'      => 5000,
+            'net_amount'     => 95000,
+            'bank_code'      => 'BCA',
+            'account_number' => '1234567890',
+            'account_name'   => 'Mitra Test',
+            'status'         => 'pending',
+        ]);
+
+        // Regional Admin rejects -> refunds 105k
+        $this->actingAs($this->adminA);
+        Livewire::test(WithdrawsIndex::class)
+            ->set('selectedWithdrawId', $withdraw->id)
+            ->set('rejectReason', 'Data bank salah')
+            ->call('submitReject');
+
+        $this->assertSame('rejected', $withdraw->fresh()->status);
+        $this->assertSame(205000.0, (float) $mitraBalance->fresh()->balance);
+
+        $refundLedgers = BalanceTransaction::where('type', 'refund')
+            ->where('idempotency_key', "withdraw:{$withdraw->id}:refund")
+            ->get();
+        $this->assertCount(1, $refundLedgers);
+
+        // SuperAdmin attempts stale approve
+        $this->actingAs($this->superAdmin);
+        $file = \Illuminate\Http\UploadedFile::fake()->image('proof.jpg');
+        Livewire::test(WithdrawsIndex::class)
+            ->set('selectedWithdrawId', $withdraw->id)
+            ->set('proofPhoto', $file)
+            ->call('submitApprove')
+            ->assertSee('sudah diproses');
+
+        $this->assertSame('rejected', $withdraw->fresh()->status);
+        $this->assertSame(205000.0, (float) $mitraBalance->fresh()->balance);
+    }
+
+    public function test_cross_role_as6_withdraw_superadmin_approve_regional_stale_reject_blocked(): void
+    {
+        $mitraBalance = UserBalance::create([
+            'user_id' => $this->mitra->id,
+            'balance' => 100000,
+        ]);
+
+        $withdraw = WithdrawRequest::create([
+            'user_id'        => $this->mitra->id,
+            'amount'         => 100000,
+            'admin_fee'      => 5000,
+            'net_amount'     => 95000,
+            'bank_code'      => 'BCA',
+            'account_number' => '1234567890',
+            'account_name'   => 'Mitra Test',
+            'status'         => 'pending',
+        ]);
+
+        $ledger = BalanceTransaction::create([
+            'user_id'        => $this->mitra->id,
+            'type'           => 'withdraw',
+            'amount'         => 105000,
+            'direction'      => 'debit',
+            'reference_id'   => $withdraw->id,
+            'reference_type' => 'withdraw',
+            'status'         => 'pending',
+        ]);
+
+        $file = \Illuminate\Http\UploadedFile::fake()->image('proof.jpg');
+
+        // SuperAdmin approves withdraw
+        $this->actingAs($this->superAdmin);
+        Livewire::test(WithdrawsIndex::class)
+            ->set('selectedWithdrawId', $withdraw->id)
+            ->set('proofPhoto', $file)
+            ->call('submitApprove');
+
+        $this->assertSame('completed', $withdraw->fresh()->status);
+        $this->assertSame('success', $ledger->fresh()->status);
+        $this->assertSame(100000.0, (float) $mitraBalance->fresh()->balance);
+
+        // Regional Admin attempts stale reject
+        $this->actingAs($this->adminA);
+        Livewire::test(WithdrawsIndex::class)
+            ->set('selectedWithdrawId', $withdraw->id)
+            ->set('rejectReason', 'Stale reject')
+            ->call('submitReject')
+            ->assertSee('sudah diproses');
+
+        $this->assertSame('completed', $withdraw->fresh()->status);
+        $this->assertSame(100000.0, (float) $mitraBalance->fresh()->balance);
+        $this->assertSame(0, BalanceTransaction::where('type', 'refund')->where('idempotency_key', "withdraw:{$withdraw->id}:refund")->count());
+    }
+
+    public function test_cross_role_as7_cancellation_regional_first_superadmin_stale_blocked(): void
+    {
+        $help = Help::create([
+            'user_id'        => $this->customer->id,
+            'mitra_id'       => $this->mitra->id,
+            'city_id'        => $this->city->id,
+            'district_id'    => $this->districtX->id,
+            'title'          => 'Tugas Cancel AS7',
+            'description'    => 'Pembersihan',
+            'category'       => 'tenaga_bantuan',
+            'amount'         => 100000,
+            'total_amount'   => 100000,
+            'status'         => Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+            'escrow_status'  => Help::ESCROW_STATUS_HELD,
+            'payment_status' => Help::PAYMENT_STATUS_PAID,
+        ]);
+
+        $cancelReq = HelpCancelRequest::create([
+            'help_id'         => $help->id,
+            'customer_id'     => $this->customer->id,
+            'partner_id'      => $this->mitra->id,
+            'requester_type'  => 'customer',
+            'action_type'     => HelpCancelRequest::ACTION_CUSTOMER_WITHDRAW,
+            'district_id'     => $this->districtX->id,
+            'previous_status' => Help::STATUS_IN_PROGRESS,
+            'status'          => HelpCancelRequest::STATUS_PENDING,
+            'settlement_type' => HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+            'reason'          => 'Ingin batal',
+        ]);
+
+        $service = app(HelpCancellationService::class);
+
+        // Regional Admin approves cancel request
+        $service->reviewByAdmin(
+            $cancelReq,
+            $this->adminA,
+            true,
+            HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+            ['admin_notes' => 'Disetujui Regional Admin']
+        );
+
+        $this->assertSame(HelpCancelRequest::STATUS_APPROVED, $cancelReq->fresh()->status);
+        $this->assertSame(Help::STATUS_DIBATALKAN, $help->fresh()->status);
+
+        // SuperAdmin attempts stale reject
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('sudah pernah diproses');
+
+        $service->reviewByAdmin(
+            $cancelReq,
+            $this->superAdmin,
+            false,
+            HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+            ['admin_notes' => 'Ditolak SuperAdmin']
+        );
+    }
+
+    public function test_cross_role_as8_cancellation_superadmin_first_regional_stale_blocked(): void
+    {
+        $help = Help::create([
+            'user_id'        => $this->customer->id,
+            'mitra_id'       => $this->mitra->id,
+            'city_id'        => $this->city->id,
+            'district_id'    => $this->districtX->id,
+            'title'          => 'Tugas Cancel AS8',
+            'description'    => 'Pembersihan',
+            'category'       => 'tenaga_bantuan',
+            'amount'         => 100000,
+            'total_amount'   => 100000,
+            'status'         => Help::STATUS_CUSTOMER_CANCEL_REQUESTED,
+            'escrow_status'  => Help::ESCROW_STATUS_HELD,
+            'payment_status' => Help::PAYMENT_STATUS_PAID,
+        ]);
+
+        $cancelReq = HelpCancelRequest::create([
+            'help_id'         => $help->id,
+            'customer_id'     => $this->customer->id,
+            'partner_id'      => $this->mitra->id,
+            'requester_type'  => 'customer',
+            'action_type'     => HelpCancelRequest::ACTION_CUSTOMER_WITHDRAW,
+            'district_id'     => $this->districtX->id,
+            'previous_status' => Help::STATUS_IN_PROGRESS,
+            'status'          => HelpCancelRequest::STATUS_PENDING,
+            'settlement_type' => HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+            'reason'          => 'Batal tugas',
+        ]);
+
+        $service = app(HelpCancellationService::class);
+
+        // SuperAdmin approves cancel request
+        $service->reviewByAdmin(
+            $cancelReq,
+            $this->superAdmin,
+            true,
+            HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+            ['admin_notes' => 'Disetujui SuperAdmin']
+        );
+
+        $this->assertSame(HelpCancelRequest::STATUS_APPROVED, $cancelReq->fresh()->status);
+        $this->assertSame(Help::STATUS_DIBATALKAN, $help->fresh()->status);
+
+        // Regional Admin attempts stale reject
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('sudah pernah diproses');
+
+        $service->reviewByAdmin(
+            $cancelReq,
+            $this->adminA,
+            false,
+            HelpCancelRequest::SETTLEMENT_FULL_REFUND,
+            ['admin_notes' => 'Ditolak Regional Admin']
+        );
+    }
+
+    public function test_cross_role_as9_dispute_regional_first_superadmin_stale_blocked(): void
+    {
+        $customerBalance = UserBalance::create(['user_id' => $this->customer->id, 'balance' => 0]);
+        $mitraBalance = UserBalance::create(['user_id' => $this->mitra->id, 'balance' => 0]);
+
+        $help = Help::create([
+            'user_id'             => $this->customer->id,
+            'mitra_id'            => $this->mitra->id,
+            'city_id'             => $this->city->id,
+            'district_id'         => $this->districtX->id,
+            'title'               => 'Sengketa AS9',
+            'description'         => 'Kerusakan properti',
+            'category'            => 'tenaga_bantuan',
+            'amount'              => 200000,
+            'total_amount'        => 200000,
+            'status'              => Help::STATUS_WAITING_CONFIRMATION,
+            'escrow_status'       => Help::ESCROW_STATUS_DISPUTED_FREEZE,
+            'payment_status'      => Help::PAYMENT_STATUS_PAID,
+            'disputed_at'         => now(),
+            'dispute_resolved_at' => null,
+        ]);
+
+        $txService = app(HelpTransactionService::class);
+
+        // Regional Admin resolves full refund to customer
+        $txService->resolveDispute($help, $this->adminA, 'full_refund');
+
+        $this->assertSame(Help::STATUS_DIBATALKAN, $help->fresh()->status);
+        $this->assertSame(Help::ESCROW_STATUS_REFUNDED, $help->fresh()->escrow_status);
+        $this->assertSame(200000.0, (float) $customerBalance->fresh()->balance);
+        $this->assertSame(0.0, (float) $mitraBalance->fresh()->balance);
+
+        // SuperAdmin attempts stale full release to mitra
+        try {
+            $txService->resolveDispute($help, $this->superAdmin, 'full_release');
+            $this->fail('Second dispute resolution by SuperAdmin must throw RuntimeException');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('disputed_freeze', $e->getMessage());
+        }
+
+        $this->assertSame(200000.0, (float) $customerBalance->fresh()->balance);
+        $this->assertSame(0.0, (float) $mitraBalance->fresh()->balance);
+    }
+
+    public function test_cross_role_as10_dispute_superadmin_first_regional_stale_blocked(): void
+    {
+        $customerBalance = UserBalance::create(['user_id' => $this->customer->id, 'balance' => 0]);
+        $mitraBalance = UserBalance::create(['user_id' => $this->mitra->id, 'balance' => 0]);
+
+        $help = Help::create([
+            'user_id'             => $this->customer->id,
+            'mitra_id'            => $this->mitra->id,
+            'city_id'             => $this->city->id,
+            'district_id'         => $this->districtX->id,
+            'title'               => 'Sengketa AS10',
+            'description'         => 'Kerusakan properti',
+            'category'            => 'tenaga_bantuan',
+            'amount'              => 200000,
+            'total_amount'        => 200000,
+            'status'              => Help::STATUS_WAITING_CONFIRMATION,
+            'escrow_status'       => Help::ESCROW_STATUS_DISPUTED_FREEZE,
+            'payment_status'      => Help::PAYMENT_STATUS_PAID,
+            'disputed_at'         => now(),
+            'dispute_resolved_at' => null,
+        ]);
+
+        $txService = app(HelpTransactionService::class);
+
+        // SuperAdmin resolves full release to mitra
+        $txService->resolveDispute($help, $this->superAdmin, 'full_release');
+
+        $this->assertSame(Help::STATUS_SELESAI, $help->fresh()->status);
+        $this->assertSame(Help::ESCROW_STATUS_RELEASED, $help->fresh()->escrow_status);
+        $this->assertSame(200000.0, (float) $mitraBalance->fresh()->balance);
+        $this->assertSame(0.0, (float) $customerBalance->fresh()->balance);
+
+        // Regional Admin attempts stale full refund to customer
+        try {
+            $txService->resolveDispute($help, $this->adminA, 'full_refund');
+            $this->fail('Second dispute resolution by Regional Admin must throw RuntimeException');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('disputed_freeze', $e->getMessage());
+        }
+
+        $this->assertSame(200000.0, (float) $mitraBalance->fresh()->balance);
+        $this->assertSame(0.0, (float) $customerBalance->fresh()->balance);
+    }
+
+    public function test_cross_role_as11_partner_report_refund_regional_first_superadmin_stale_blocked(): void
+    {
+        $customerBalance = UserBalance::create(['user_id' => $this->customer->id, 'balance' => 0]);
+        $mitraBalance = UserBalance::create(['user_id' => $this->mitra->id, 'balance' => 0]);
+
+        $help = Help::create([
+            'user_id'        => $this->customer->id,
+            'mitra_id'       => $this->mitra->id,
+            'city_id'        => $this->city->id,
+            'district_id'    => $this->districtX->id,
+            'title'          => 'Pesanan AS11',
+            'description'    => 'Desc',
+            'category'       => 'tenaga_bantuan',
+            'amount'         => 150000,
+            'total_amount'   => 150000,
+            'status'         => Help::STATUS_WAITING_CONFIRMATION,
+            'escrow_status'  => Help::ESCROW_STATUS_DISPUTED_FREEZE,
+            'payment_status' => Help::PAYMENT_STATUS_PAID,
+        ]);
+
+        $report = PartnerReport::create([
+            'reporter_id'      => $this->customer->id,
+            'reported_user_id' => $this->mitra->id,
+            'reported_help_id' => $help->id,
+            'title'            => 'Laporan AS11',
+            'message'          => 'Mitra tidak hadir',
+            'status'           => 'pending',
+            'refund_status'    => 'requested',
+            'refund_amount'    => 150000,
+        ]);
+
+        $service = app(HelpTransactionService::class);
+
+        // Regional Admin approves refund
+        $service->processReportRefund($report, $this->adminA, 'Refund disetujui Regional Admin');
+
+        $this->assertSame('approved', $report->fresh()->refund_status);
+        $this->assertSame('resolved', $report->fresh()->status);
+        $this->assertSame(150000.0, (float) $customerBalance->fresh()->balance);
+
+        // SuperAdmin attempts stale reject
+        try {
+            $service->rejectReportRefund($report, $this->superAdmin, 'Stale reject');
+            $this->fail('SuperAdmin stale reject must throw RuntimeException');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('sudah diputuskan sebelumnya', $e->getMessage());
+        }
+
+        $this->assertSame('approved', $report->fresh()->refund_status);
+        $this->assertSame(150000.0, (float) $customerBalance->fresh()->balance);
+    }
+
+    public function test_cross_role_as12_partner_report_refund_superadmin_first_regional_stale_blocked(): void
+    {
+        $customerBalance = UserBalance::create(['user_id' => $this->customer->id, 'balance' => 0]);
+        $mitraBalance = UserBalance::create(['user_id' => $this->mitra->id, 'balance' => 0]);
+
+        $help = Help::create([
+            'user_id'        => $this->customer->id,
+            'mitra_id'       => $this->mitra->id,
+            'city_id'        => $this->city->id,
+            'district_id'    => $this->districtX->id,
+            'title'          => 'Pesanan AS12',
+            'description'    => 'Desc',
+            'category'       => 'tenaga_bantuan',
+            'amount'         => 150000,
+            'total_amount'   => 150000,
+            'status'         => Help::STATUS_WAITING_CONFIRMATION,
+            'escrow_status'  => Help::ESCROW_STATUS_DISPUTED_FREEZE,
+            'payment_status' => Help::PAYMENT_STATUS_PAID,
+        ]);
+
+        $report = PartnerReport::create([
+            'reporter_id'      => $this->customer->id,
+            'reported_user_id' => $this->mitra->id,
+            'reported_help_id' => $help->id,
+            'title'            => 'Laporan AS12',
+            'message'          => 'Komplain tidak valid',
+            'status'           => 'pending',
+            'refund_status'    => 'requested',
+            'refund_amount'    => 150000,
+        ]);
+
+        $service = app(HelpTransactionService::class);
+
+        // SuperAdmin rejects refund
+        $service->rejectReportRefund($report, $this->superAdmin, 'Ditolak SuperAdmin');
+
+        $this->assertSame('rejected', $report->fresh()->refund_status);
+        $this->assertSame('resolved', $report->fresh()->status);
+        $this->assertSame(0.0, (float) $customerBalance->fresh()->balance);
+        $this->assertSame(150000.0, (float) $mitraBalance->fresh()->balance);
+
+        // Regional Admin attempts stale approve
+        try {
+            $service->processReportRefund($report, $this->adminA, 'Stale approve attempt');
+            $this->fail('Regional Admin stale approve must throw RuntimeException');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('sudah diputuskan sebelumnya', $e->getMessage());
+        }
+
+        $this->assertSame('rejected', $report->fresh()->refund_status);
+        $this->assertSame(0.0, (float) $customerBalance->fresh()->balance);
+    }
+
+    public function test_cross_role_as13_partner_report_sp_regional_first_superadmin_stale_blocked(): void
+    {
+        $this->mitra->update(['warning_level' => 0, 'is_greylisted' => false]);
+
+        $report = PartnerReport::create([
+            'reporter_id'      => $this->customer->id,
+            'reported_user_id' => $this->mitra->id,
+            'title'            => 'Laporan AS13',
+            'message'          => 'Pelanggaran mitra AS13',
+            'report_type'      => 'pelanggaran_mitra',
+            'category'         => 'layanan',
+            'status'           => 'pending',
+        ]);
+
+        // Regional Admin issues SP
+        $this->actingAs($this->adminA);
+        Livewire::test(PartnerReportShow::class, ['report' => $report])
+            ->set('spTargetUserId', $this->mitra->id)
+            ->set('spWarningLevel', 1)
+            ->set('spReason', 'Pelanggaran terbukti')
+            ->set('spAutoNoteInReport', true)
+            ->call('submitInstantSp')
+            ->assertSet('showSpModal', false)
+            ->assertSee('berhasil diterbitkan');
+
+        $this->assertSame(1, $this->mitra->fresh()->warning_level);
+        $this->assertSame(1, UserGreylistLog::where('partner_report_id', $report->id)->count());
+
+        // SuperAdmin attempts stale SP on same report
+        $this->actingAs($this->superAdmin);
+        Livewire::test(PartnerReportShow::class, ['report' => $report])
+            ->set('spTargetUserId', $this->mitra->id)
+            ->set('spWarningLevel', 1)
+            ->set('spReason', 'Stale SP by SuperAdmin')
+            ->set('spAutoNoteInReport', true)
+            ->call('submitInstantSp')
+            ->assertSee('telah diproses');
+
+        $this->assertSame(1, $this->mitra->fresh()->warning_level, 'Warning level must remain 1');
+        $this->assertSame(1, UserGreylistLog::where('partner_report_id', $report->id)->count());
+    }
+
+    public function test_cross_role_as14_partner_report_sp_superadmin_first_regional_stale_blocked(): void
+    {
+        $this->mitra->update(['warning_level' => 0, 'is_greylisted' => false]);
+
+        $report = PartnerReport::create([
+            'reporter_id'      => $this->customer->id,
+            'reported_user_id' => $this->mitra->id,
+            'title'            => 'Laporan AS14',
+            'message'          => 'Pelanggaran mitra AS14',
+            'report_type'      => 'pelanggaran_mitra',
+            'category'         => 'layanan',
+            'status'           => 'pending',
+        ]);
+
+        // SuperAdmin issues SP
+        $this->actingAs($this->superAdmin);
+        Livewire::test(PartnerReportShow::class, ['report' => $report])
+            ->set('spTargetUserId', $this->mitra->id)
+            ->set('spWarningLevel', 1)
+            ->set('spReason', 'Pelanggaran terbukti oleh SuperAdmin')
+            ->set('spAutoNoteInReport', true)
+            ->call('submitInstantSp')
+            ->assertSet('showSpModal', false)
+            ->assertSee('berhasil diterbitkan');
+
+        $this->assertSame(1, $this->mitra->fresh()->warning_level);
+        $this->assertSame(1, UserGreylistLog::where('partner_report_id', $report->id)->count());
+
+        // Regional Admin attempts stale SP on same report
+        $this->actingAs($this->adminA);
+        Livewire::test(PartnerReportShow::class, ['report' => $report])
+            ->set('spTargetUserId', $this->mitra->id)
+            ->set('spWarningLevel', 1)
+            ->set('spReason', 'Stale SP by Regional Admin')
+            ->set('spAutoNoteInReport', true)
+            ->call('submitInstantSp')
+            ->assertSee('telah diproses');
+
+        $this->assertSame(1, $this->mitra->fresh()->warning_level, 'Warning level must remain 1');
+        $this->assertSame(1, UserGreylistLog::where('partner_report_id', $report->id)->count());
+    }
+
+    public function test_cross_role_as15_profile_migration_regional_first_superadmin_acts_on_locked_state(): void
+    {
+        $targetCustomer = User::factory()->create([
+            'role'        => 'customer',
+            'status'      => 'active',
+            'city_id'     => $this->city->id,
+            'district_id' => $this->districtX->id,
+        ]);
+
+        $migrationService = app(ProfileTerritoryMigrationService::class);
+
+        // 1. Regional Admin A migrates Customer: District X -> District Y
+        $migrationService->migrate(
+            $this->adminA,
+            $targetCustomer,
+            (int) $this->city->id,
+            (int) $this->districtY->id,
+            'Pindah domisili ke Kecamatan Y'
+        );
+
+        $targetCustomer->refresh();
+        $this->assertSame((int) $this->districtY->id, (int) $targetCustomer->district_id);
+
+        // 2. SuperAdmin migrates from locked state to District Z
+        $migrationService->migrate(
+            $this->superAdmin,
+            $targetCustomer,
+            (int) $this->city->id,
+            (int) $this->districtZ->id,
+            'Pindah domisili oleh SuperAdmin ke Kecamatan Z'
+        );
+
+        $targetCustomer->refresh();
+        $this->assertSame((int) $this->districtZ->id, (int) $targetCustomer->district_id);
+
+        // Verify SuperAdmin migration log recorded old district as Y (not stale X)
+        $latestLog = ActivityLog::where('action', 'profile_territory_migrated')
+            ->get()
+            ->filter(fn($log) => ($log->properties['target_user_id'] ?? null) == $targetCustomer->id)
+            ->last();
+
+        $this->assertNotNull($latestLog);
+        $this->assertSame((int) $this->districtY->id, (int) $latestLog->properties['old_district_id']);
+        $this->assertSame((int) $this->districtZ->id, (int) $latestLog->properties['new_district_id']);
+    }
+
+    public function test_cross_role_as16_profile_migration_superadmin_first_regional_stale_authority_denied(): void
+    {
+        $targetCustomer = User::factory()->create([
+            'role'        => 'customer',
+            'status'      => 'active',
+            'city_id'     => $this->city->id,
+            'district_id' => $this->districtX->id,
+        ]);
+
+        $migrationService = app(ProfileTerritoryMigrationService::class);
+
+        // 1. SuperAdmin migrates Customer: District X -> District Y (District Y is NOT owned by Admin B)
+        $migrationService->migrate(
+            $this->superAdmin,
+            $targetCustomer,
+            (int) $this->city->id,
+            (int) $this->districtY->id,
+            'SuperAdmin migrates customer to District Y'
+        );
+
+        $targetCustomer->refresh();
+        $this->assertSame((int) $this->districtY->id, (int) $targetCustomer->district_id);
+
+        // 2. Admin B (who only manages District X and District Z) attempts stale migration X -> Z
+        // In-memory view of user still had District X
+        $staleCustomerForB = clone $targetCustomer;
+        $staleCustomerForB->district_id = $this->districtX->id;
+
+        $this->expectException(AuthorizationException::class);
+        $this->expectExceptionMessage('di luar kewenangan Anda');
+
+        $migrationService->migrate(
+            $this->adminB,
+            $staleCustomerForB,
+            (int) $this->city->id,
+            (int) $this->districtZ->id,
+            'Admin B attempts stale migration to District Z'
+        );
+    }
 }
+
