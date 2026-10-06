@@ -123,6 +123,13 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function setActiveTab(string $tab): void
+    {
+        $this->activeTab = in_array($tab, ['ktp', 'vehicle'], true) ? $tab : 'ktp';
+        $this->resetPage();
+        $this->resetPage('vehicle_page');
+    }
+
     protected function isAuthorizedForRegistration(Registration $reg): bool
     {
         $user = auth()->user();
@@ -285,11 +292,6 @@ class Index extends Component
     // VEHICLE VERIFICATION METHODS
     // ─────────────────────────────────────────────────────────────────────────
 
-    public function setActiveTab(string $tab): void
-    {
-        $this->activeTab = in_array($tab, ['ktp', 'vehicle']) ? $tab : 'ktp';
-        $this->resetPage();
-    }
 
     public function updatingActiveTab(): void
     {
@@ -496,40 +498,7 @@ class Index extends Component
             ->whereIn('status', ['pending', 'pending_verification'])
             ->count();
 
-        // Query tabel verifikasi KTP
-        $query = (clone $baseKtpQuery)
-            ->whereIn('status', ['pending_verification', 'pending', 'approved', 'rejected']);
-
-        // Search query (KTP)
-        if (!empty($this->search) && $this->activeTab === 'ktp') {
-            $s = trim($this->search);
-            $query->where(function ($q) use ($s) {
-                $q->where('full_name', 'like', "%{$s}%")
-                  ->orWhere('email', 'like', "%{$s}%")
-                  ->orWhere('nik', 'like', "%{$s}%")
-                  ->orWhere('kecamatan', 'like', "%{$s}%")
-                  ->orWhere('city', 'like', "%{$s}%")
-                  ->orWhereHas('district', fn($dq) => $dq->where('name', 'like', "%{$s}%"));
-            });
-        }
-
-        // Role filter (customer / mitra)
-        if (!empty($this->roleFilter)) {
-            $query->where('role', $this->roleFilter);
-        }
-
-        // Status filter (KTP)
-        if (!empty($this->statusFilter)) {
-            if ($this->statusFilter === 'pending') {
-                $query->whereIn('status', ['pending', 'pending_verification']);
-            } else {
-                $query->where('status', $this->statusFilter);
-            }
-        }
-
-        $verifications = $query->latest()->paginate($this->perPage);
-
-        // 2. Vehicle Verifications Query
+        // 2. Base Vehicle Query for badge and active vehicle tab
         $baseVehicleQuery = User::query()
             ->where('role', 'mitra');
 
@@ -564,29 +533,68 @@ class Index extends Component
             ->where('vehicle_verification_status', 'pending')
             ->count();
 
-        // Query tabel verifikasi kendaraan
-        $vehicleQuery = (clone $baseVehicleQuery)
-            ->whereIn('vehicle_verification_status', ['pending', 'verified', 'rejected']);
+        // Lazy-load active tab dataset
+        if ($this->activeTab === 'vehicle') {
+            $verifications = new \Illuminate\Pagination\LengthAwarePaginator([], 0, $this->perPage, 1, ['pageName' => 'page']);
 
-        // Search in vehicle query
-        if (!empty($this->search) && $this->activeTab === 'vehicle') {
-            $s = trim($this->search);
-            $vehicleQuery->where(function ($q) use ($s) {
-                $q->where('name', 'like', "%{$s}%")
-                  ->orWhere('email', 'like', "%{$s}%")
-                  ->orWhere('phone', 'like', "%{$s}%")
-                  ->orWhere('vehicle_plate_number', 'like', "%{$s}%")
-                  ->orWhere('vehicle_sim_number', 'like', "%{$s}%")
-                  ->orWhere('vehicle_stnk_number', 'like', "%{$s}%");
-            });
+            // Query tabel verifikasi kendaraan
+            $vehicleQuery = (clone $baseVehicleQuery)
+                ->whereIn('vehicle_verification_status', ['pending', 'verified', 'rejected']);
+
+            // Search in vehicle query
+            if (!empty($this->search)) {
+                $s = trim($this->search);
+                $vehicleQuery->where(function ($q) use ($s) {
+                    $q->where('name', 'like', "%{$s}%")
+                      ->orWhere('email', 'like', "%{$s}%")
+                      ->orWhere('phone', 'like', "%{$s}%")
+                      ->orWhere('vehicle_plate_number', 'like', "%{$s}%")
+                      ->orWhere('vehicle_sim_number', 'like', "%{$s}%")
+                      ->orWhere('vehicle_stnk_number', 'like', "%{$s}%");
+                });
+            }
+
+            // Vehicle status filter
+            if (!empty($this->vehicleStatusFilter)) {
+                $vehicleQuery->where('vehicle_verification_status', $this->vehicleStatusFilter);
+            }
+
+            $vehicleVerifications = $vehicleQuery->latest('updated_at')->paginate($this->perPage, ['*'], 'vehicle_page');
+        } else {
+            // Default to 'ktp'
+            $query = (clone $baseKtpQuery)
+                ->whereIn('status', ['pending_verification', 'pending', 'approved', 'rejected']);
+
+            // Search query (KTP)
+            if (!empty($this->search)) {
+                $s = trim($this->search);
+                $query->where(function ($q) use ($s) {
+                    $q->where('full_name', 'like', "%{$s}%")
+                      ->orWhere('email', 'like', "%{$s}%")
+                      ->orWhere('nik', 'like', "%{$s}%")
+                      ->orWhere('kecamatan', 'like', "%{$s}%")
+                      ->orWhere('city', 'like', "%{$s}%")
+                      ->orWhereHas('district', fn($dq) => $dq->where('name', 'like', "%{$s}%"));
+                });
+            }
+
+            // Role filter (customer / mitra)
+            if (!empty($this->roleFilter)) {
+                $query->where('role', $this->roleFilter);
+            }
+
+            // Status filter (KTP)
+            if (!empty($this->statusFilter)) {
+                if ($this->statusFilter === 'pending') {
+                    $query->whereIn('status', ['pending', 'pending_verification']);
+                } else {
+                    $query->where('status', $this->statusFilter);
+                }
+            }
+
+            $verifications = $query->latest()->paginate($this->perPage);
+            $vehicleVerifications = new \Illuminate\Pagination\LengthAwarePaginator([], 0, $this->perPage, 1, ['pageName' => 'vehicle_page']);
         }
-
-        // Vehicle status filter
-        if (!empty($this->vehicleStatusFilter)) {
-            $vehicleQuery->where('vehicle_verification_status', $this->vehicleStatusFilter);
-        }
-
-        $vehicleVerifications = $vehicleQuery->latest('updated_at')->paginate($this->perPage, ['*'], 'vehicle_page');
 
         $layout = ($authUser && in_array($authUser->role, ['super_admin', 'superadmin'])) 
             ? 'layouts.superadmin' 

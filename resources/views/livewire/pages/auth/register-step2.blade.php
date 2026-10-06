@@ -196,7 +196,57 @@ new #[Layout('layouts.guest')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-5" x-data="{ confirmCancelModal: false }">
+<div class="space-y-5" 
+     x-data="{ 
+         confirmCancelModal: false,
+         isOptimizing: false,
+         clientError: '',
+         async handleKtpUpload(event) {
+             const input = event.target;
+             if (!input.files || !input.files[0]) return;
+             const rawFile = input.files[0];
+             this.clientError = '';
+             this.isOptimizing = true;
+             
+             try {
+                 let fileToUpload = rawFile;
+                 if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
+                     const result = await window.MobileImageOptimizer.optimizeImage(rawFile, 'document');
+                     if (result.error) {
+                         this.clientError = result.message || 'Foto tidak dapat diproses. Silakan gunakan JPG atau PNG.';
+                         this.isOptimizing = false;
+                         input.value = '';
+                         return;
+                     }
+                     fileToUpload = result.file;
+                 } else {
+                     // Fallback safety: if optimizer unavailable, allow raw file ONLY if within hard limit (2048 KB)
+                     if (rawFile.size > 2048 * 1024) {
+                         this.clientError = 'Ukuran foto melebihi batas maksimal 2MB. Silakan pilih foto dengan ukuran lebih kecil.';
+                         this.isOptimizing = false;
+                         input.value = '';
+                         return;
+                     }
+                 }
+                 
+                 $wire.upload('ktp_photo', fileToUpload, 
+                     () => {
+                         this.isOptimizing = false;
+                         this.clientError = '';
+                     },
+                     (error) => {
+                         this.isOptimizing = false;
+                         this.clientError = 'Gagal mengunggah foto KTP ke server. Silakan coba lagi.';
+                         input.value = '';
+                     }
+                 );
+             } catch (err) {
+                 this.isOptimizing = false;
+                 this.clientError = 'Terjadi kesalahan saat memproses foto KTP.';
+                 input.value = '';
+             }
+         }
+     }">
     <!-- Step Header -->
     <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
         <div>
@@ -221,21 +271,33 @@ new #[Layout('layouts.guest')] class extends Component {
             <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Unggah foto e-KTP Anda dengan jelas dan pencahayaan yang cukup.</p>
 
             <!-- Hidden File Input (Always in DOM with key to allow clean re-upload) -->
-            <input wire:model.live="ktp_photo" id="ktp_photo" type="file"
-                accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg"
+            <input id="ktp_photo" type="file"
+                accept="image/*"
                 class="hidden"
+                @change="handleKtpUpload($event)"
                 wire:key="ktp-photo-input-{{ $iteration }}">
 
             <!-- Upload Area -->
             <div class="mb-6">
-                <!-- Loading State during File Upload -->
+                <!-- Client-Side Optimizing State -->
+                <div x-show="isOptimizing" x-cloak class="w-full mb-3">
+                    <div class="p-4 bg-primary-50/90 dark:bg-primary-950/60 border border-primary-200 dark:border-primary-800 rounded-2xl flex items-center justify-center gap-3 text-primary-700 dark:text-primary-300 shadow-xs">
+                        <svg class="animate-spin h-5 w-5 text-primary-600 dark:text-sky-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="text-xs sm:text-sm font-semibold">Mengoptimalkan dan mengompresi foto KTP...</span>
+                    </div>
+                </div>
+
+                <!-- Loading State during Server Upload -->
                 <div wire:loading wire:target="ktp_photo" class="w-full mb-3">
                     <div class="p-4 bg-primary-50/90 dark:bg-primary-950/60 border border-primary-200 dark:border-primary-800 rounded-2xl flex items-center justify-center gap-3 text-primary-700 dark:text-primary-300 shadow-xs">
                         <svg class="animate-spin h-5 w-5 text-primary-600 dark:text-sky-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span class="text-xs sm:text-sm font-semibold">Mengunggah dan memproses foto KTP...</span>
+                        <span class="text-xs sm:text-sm font-semibold">Mengunggah foto KTP ke server...</span>
                     </div>
                 </div>
 
@@ -256,6 +318,7 @@ new #[Layout('layouts.guest')] class extends Component {
                             <div class="flex items-center gap-2">
                                 <!-- Tombol Ganti Foto -->
                                 <label for="ktp_photo"
+                                    :class="{ 'opacity-50 pointer-events-none': isOptimizing }"
                                     class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -267,7 +330,9 @@ new #[Layout('layouts.guest')] class extends Component {
                     </div>
                 @else
                     <!-- Upload Placeholder -->
-                    <label for="ktp_photo" class="block cursor-pointer group">
+                    <label for="ktp_photo" 
+                        :class="{ 'opacity-50 pointer-events-none': isOptimizing }"
+                        class="block cursor-pointer group">
                         <div class="bg-gray-50/70 dark:bg-gray-900/60 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 group-hover:border-primary-500 dark:group-hover:border-primary-500 transition-all p-7 text-center">
                             <div class="mx-auto w-16 h-16 bg-primary-100 dark:bg-primary-950/70 text-primary-600 dark:text-sky-400 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,6 +348,8 @@ new #[Layout('layouts.guest')] class extends Component {
                     </label>
                 @endif
 
+                <!-- Client-Side Error Alert -->
+                <p x-show="clientError" x-cloak x-text="clientError" class="text-xs text-rose-500 font-semibold mt-2"></p>
                 <x-input-error :messages="$errors->get('ktp_photo')" />
             </div>
 
@@ -324,7 +391,8 @@ new #[Layout('layouts.guest')] class extends Component {
         <!-- Actions (Tombol Navigasi Bawah) -->
         <div class="pt-6 pb-2 flex items-center gap-3">
             <button type="button" wire:click="previousStep"
-                class="px-5 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 font-bold text-xs sm:text-sm transition cursor-pointer flex items-center justify-center gap-1.5">
+                :disabled="isOptimizing"
+                class="px-5 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 font-bold text-xs sm:text-sm transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
@@ -333,6 +401,7 @@ new #[Layout('layouts.guest')] class extends Component {
 
             <button type="submit"
                 wire:loading.attr="disabled"
+                :disabled="isOptimizing"
                 @disabled(!$preview_url && !$ktp_photo)
                 class="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs sm:text-sm py-3.5 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2">
                 <!-- Spinner loading tepat di sebelah teks tombol -->

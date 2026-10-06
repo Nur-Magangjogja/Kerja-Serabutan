@@ -266,11 +266,11 @@
                             @else
                                 <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700/60">
                                     <button @click="triggerAction('startSearching')"
-                                            :disabled="isGettingLocation"
+                                            :disabled="$data.isGettingLocation ?? false"
                                             class="w-full sm:w-auto px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                                        <span x-show="!isGettingLocation">Cari Order</span>
-                                        <span x-show="isGettingLocation" x-cloak>GPS...</span>
+                                        <span x-show="!($data.isGettingLocation ?? false)">Cari Order</span>
+                                        <span x-show="$data.isGettingLocation ?? false" x-cloak>GPS...</span>
                                     </button>
                                     <button wire:click="goOffline"
                                             wire:loading.attr="disabled"
@@ -283,11 +283,11 @@
                         @elseif(($onlineState?->matching_status ?? 'offline') === 'offline')
                             <div class="pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-700/60">
                                 <button @click="triggerAction('goOnline')"
-                                        :disabled="isGettingLocation"
+                                        :disabled="$data.isGettingLocation ?? false"
                                         class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.072 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
-                                    <span x-show="!isGettingLocation">Aktifkan Online</span>
-                                    <span x-show="isGettingLocation" x-cloak>Memuat GPS...</span>
+                                    <span x-show="!($data.isGettingLocation ?? false)">Aktifkan Online</span>
+                                    <span x-show="$data.isGettingLocation ?? false" x-cloak>Memuat GPS...</span>
                                 </button>
                             </div>
                         @elseif(($onlineState?->matching_status ?? 'offline') === 'offer_pending')

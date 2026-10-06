@@ -173,7 +173,7 @@
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-2.5">
                         <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-                            ⏳
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
                         <div>
                             <div class="flex items-center gap-1.5 flex-wrap">
@@ -188,8 +188,9 @@
                         </div>
                     </div>
                     <div class="text-right">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 text-[10px] font-bold border border-amber-300 dark:border-amber-700">
-                            🔒 Akun Sibuk
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 text-[10px] font-bold border border-amber-300 dark:border-amber-700">
+                            <svg class="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            <span>Akun Sibuk</span>
                         </span>
                     </div>
                 </div>
@@ -228,7 +229,8 @@
                                      alt="Bukti Kendala Lapangan" 
                                      class="w-full h-28 object-cover group-hover:scale-105 transition duration-200">
                                 <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-[11px] font-semibold gap-1">
-                                    <span>🔍 Perbesar</span>
+                                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                    <span>Perbesar</span>
                                 </div>
                             </div>
                         </div>
@@ -237,13 +239,15 @@
 
                 <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 rounded-xl text-xs text-amber-900 dark:text-amber-200 space-y-1.5">
                     <p class="font-bold flex items-center gap-1.5 text-[11px]">
-                        <span>📞</span> Tim Admin Wilayah Sedang Menindaklanjuti
+                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                        <span>Tim Admin Wilayah Sedang Menindaklanjuti</span>
                     </p>
                     <p class="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
                         Admin Wilayah sedang menghubungi Customer terlebih dahulu untuk memvalidasi kendala lapangan dan menyepakati pengembalian dana (refund) yang adil. Anda akan dihubungi jika diperlukan informasi tambahan.
                     </p>
-                    <p class="text-[10px] text-amber-700 dark:text-amber-400 pt-1 border-t border-amber-200/60 dark:border-amber-800/40">
-                        ℹ️ <strong>Status Akun:</strong> Akun Anda berstatus <strong>SIBUK</strong> sementara dan tidak dapat mengambil pesanan lain hingga evaluasi pesanan ini diputuskan oleh Admin.
+                    <p class="text-[10px] text-amber-700 dark:text-amber-400 pt-1 border-t border-amber-200/60 dark:border-amber-800/40 flex items-center gap-1">
+                        <svg class="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span><strong>Status Akun:</strong> Akun Anda berstatus <strong>SIBUK</strong> sementara dan tidak dapat mengambil pesanan lain hingga evaluasi pesanan ini diputuskan oleh Admin.</span>
                     </p>
                 </div>
             </div>
@@ -269,7 +273,7 @@
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex items-center gap-2.5">
                             <div class="w-10 h-10 rounded-xl bg-blue-500 text-white flex items-center justify-center font-bold text-lg shadow-sm shadow-blue-500/30">
-                                🔄
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                             </div>
                             <div>
                                 <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700">
@@ -321,14 +325,15 @@
                                    wire:navigate
                                    class="flex-1 py-2 px-3 bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 rounded-xl text-xs font-semibold text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition flex items-center justify-center gap-1.5 shadow-2xs">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                                    <span> Chat Customer</span>
+                                    <span>Chat Customer</span>
                                 </a>
                                 @if($help->user->phone ?? null)
                                     <a href="https://wa.me/{{ $waPhone }}?text={{ $waText }}"
                                        target="_blank"
                                        rel="noopener"
                                        class="flex-1 py-2 px-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 transition flex items-center justify-center gap-1.5 shadow-2xs">
-                                        <span>📞 Hubungi WA</span>
+                                        <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                                        <span>Hubungi WA</span>
                                     </a>
                                 @endif
                             </div>
@@ -352,7 +357,7 @@
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex items-center gap-2.5">
                             <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-                                ⚠️
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                             </div>
                             <div>
                                 <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
@@ -420,9 +425,9 @@
         @if ($isCancelled)
             @php
                 $statusBadge = match($cancelRequest?->status ?? 'approved') {
-                    'pending'   => ['class' => 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700', 'label' => '⏳ Menunggu Audit Admin'],
-                    'approved'  => ['class' => 'bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700', 'label' => '❌ Pembatalan Disetujui'],
-                    'rejected'  => ['class' => 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700', 'label' => '✅ Ditolak (Tugas Lanjut)'],
+                    'pending'   => ['class' => 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700', 'label' => 'Menunggu Audit Admin'],
+                    'approved'  => ['class' => 'bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700', 'label' => 'Pembatalan Disetujui'],
+                    'rejected'  => ['class' => 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700', 'label' => 'Ditolak (Tugas Lanjut)'],
                     default     => ['class' => 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300', 'label' => 'Dibatalkan']
                 };
             @endphp
@@ -861,7 +866,9 @@
                     <div class="flex items-center justify-between mb-3 pb-2.5 border-b border-gray-100 dark:border-gray-700/60">
                         <div class="flex items-center gap-2.5">
                             <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
-                                ⭐
+                                <svg class="w-5 h-5 text-white fill-current" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
                             </div>
                             <div>
                                 <h4 class="font-bold text-sm text-gray-900 dark:text-white">Ulasan dari Customer</h4>
@@ -1607,164 +1614,344 @@
     @if ($showPartnerCancelModal)
         @php
             $isInProgress = ($help->status === 'in_progress');
+            $cancelReasons = $isInProgress ? [
+                'Lokasi / Kondisi Kerja Berbahaya & Tidak Aman',
+                'Beban / Volume Pekerjaan Melebihi Kesepakatan Awal',
+                'Alat Kerja / Material Mengalami Kerusakan di Lokasi',
+                'Customer Tidak Kooperatif / Meminta Penghentian Pekerjaan',
+                'Mitra Mengalami Cedera / Sakit Mendadak Saat Bekerja',
+                'Lainnya',
+            ] : [
+                'Kendaraan Bermasalah / Mogok / Ban Bocor',
+                'Terjebak Macet Total / Cuaca Ekstrem Tidak Memungkinkan',
+                'Kondisi Darurat Pribadi / Sakit di Perjalanan',
+                'Customer Tidak Dapat Dihubungi Sebelum Mulai',
+                'Lokasi / Akses Menuju Titik Ditutup / Bahaya',
+                'Lainnya',
+            ];
+            $placeholderText = $isInProgress 
+                ? 'Pilih kendala lapangan di lokasi...' 
+                : 'Pilih kendala perjalanan / darurat...';
         @endphp
-        <div class="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in" 
+        <div @wheel.self.prevent
+             @touchmove.self.prevent
+             class="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fade-in overscroll-contain" 
              wire:click.self="closePartnerCancelModal">
-            <div class="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl animate-slide-up relative max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700" 
-                 style="padding-bottom: env(safe-area-inset-bottom, 16px);">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl w-full max-w-md shadow-2xl animate-scale-in relative max-h-[88vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700 overscroll-contain"
+                 x-data="{
+                     isOptimizingEvidence: false,
+                     evidenceError: '',
+                     async handleEvidenceUpload(event) {
+                         const input = event.target;
+                         if (!input.files || !input.files[0]) return;
+                         const rawFile = input.files[0];
+                         this.evidenceError = '';
+                         this.isOptimizingEvidence = true;
+                         
+                         try {
+                             let fileToUpload = rawFile;
+                             if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
+                                 const result = await window.MobileImageOptimizer.optimizeImage(rawFile, 'evidence');
+                                 if (result.error) {
+                                     this.evidenceError = result.message || 'Foto bukti tidak dapat diproses. Silakan gunakan JPG atau PNG.';
+                                     this.isOptimizingEvidence = false;
+                                     input.value = '';
+                                     return;
+                                 }
+                                 fileToUpload = result.file;
+                             } else {
+                                 // Fallback safety: if optimizer unavailable, allow raw file ONLY if within hard limit (1536 KB)
+                                 if (rawFile.size > 1536 * 1024) {
+                                     this.evidenceError = 'Ukuran foto melebihi batas maksimal 1.5MB. Silakan pilih foto dengan ukuran lebih kecil.';
+                                     this.isOptimizingEvidence = false;
+                                     input.value = '';
+                                     return;
+                                 }
+                             }
+                             
+                             $wire.upload('cancel_evidence_photo', fileToUpload,
+                                 () => {
+                                     this.isOptimizingEvidence = false;
+                                     this.evidenceError = '';
+                                 },
+                                 (error) => {
+                                     this.isOptimizingEvidence = false;
+                                     this.evidenceError = 'Gagal mengunggah foto bukti ke server. Silakan coba lagi.';
+                                     input.value = '';
+                                 }
+                             );
+                         } catch (err) {
+                             this.isOptimizingEvidence = false;
+                             this.evidenceError = 'Terjadi kesalahan saat memproses foto bukti.';
+                             input.value = '';
+                         }
+                     }
+                 }">
                 
-                <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 flex-shrink-0 z-10">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-8 h-8 rounded-xl {{ $isInProgress ? 'bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400' : 'bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400' }} flex items-center justify-center flex-shrink-0">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                </svg>
+                <form wire:submit.prevent="requestPartnerCancel" class="flex flex-col flex-1 min-h-0 overflow-hidden">
+                    {{-- Pinned Modal Header --}}
+                    <div class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 flex-shrink-0 z-10">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-xl {{ $isInProgress ? 'bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400' : 'bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400' }} flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white leading-tight">
+                                        {{ $isInProgress ? 'Ajukan Kendala Lapangan' : 'Batalkan Penugasan' }}
+                                    </h3>
+                                    <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                                        {{ $isInProgress ? 'Pengajuan pembatalan tahap pengerjaan' : 'Pengajuan pembatalan kendala perjalanan' }}
+                                    </p>
+                                </div>
                             </div>
+                            <button type="button" 
+                                    wire:click="closePartnerCancelModal" 
+                                    class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Scrollable Modal Body (overscroll-contain prevents background scroll chaining) --}}
+                    <div class="p-5 overflow-y-auto space-y-4 text-xs flex-1 custom-scrollbar overscroll-contain">
+                        @if($isInProgress)
+                            {{-- INFO BANNER : PENGERJAAN SUDAH DIMULAI --}}
+                            <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-2xl p-3.5 space-y-2">
+                                <div class="flex items-start gap-2.5">
+                                    <div class="w-5 h-5 rounded-md bg-rose-200/80 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 flex items-center justify-center shrink-0 mt-0.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                    </div>
+                                    <div class="text-rose-950 dark:text-rose-200 leading-relaxed text-xs">
+                                        <strong class="block font-bold mb-0.5">Penting (Tahap Pengerjaan Berjalan):</strong>
+                                        Karena Anda telah menekan 'Mulai Pekerjaan', pembatalan ini memerlukan verifikasi dan konfirmasi dari <strong>Admin Wilayah</strong>.
+                                    </div>
+                                </div>
+                                <div class="pt-2 border-t border-rose-200/60 dark:border-rose-800/60 text-[11px] text-rose-900 dark:text-rose-300 space-y-1">
+                                    <p>Tim Admin akan <strong>menghubungi Customer terlebih dahulu</strong> untuk klarifikasi kendala lapangan dan menyepakati pengembalian dana (refund) yang adil.</p>
+                                    <p><strong>Wajib / Sangat Disarankan:</strong> Sertakan foto bukti kondisi lapangan agar audit dan penyesuaian saldo berjalan lancar.</p>
+                                </div>
+                            </div>
+                        @else
+                            {{-- INFO BANNER : SAAT PERJALANAN / BELUM MULAI KERJA --}}
+                            <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-3.5 space-y-2">
+                                <div class="flex items-start gap-2.5">
+                                    <div class="w-5 h-5 rounded-md bg-amber-200/80 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    </div>
+                                    <div class="text-amber-900 dark:text-amber-200 leading-relaxed text-xs">
+                                        <strong class="block font-bold mb-0.5">Pelepasan Tugas & Relist ke Pool:</strong>
+                                        Tugas ini akan langsung dilepaskan dan dicarikan mitra lain agar customer tidak menunggu lama. Pengajuan Anda akan ditinjau oleh <strong>Admin Wilayah</strong>.
+                                    </div>
+                                </div>
+                                <div class="pt-2 border-t border-amber-200/60 dark:border-amber-800/60 text-[11px] text-amber-800 dark:text-amber-300">
+                                    <span class="font-bold text-emerald-700 dark:text-emerald-400">Bukti Sah (Darurat / Kendala Nyata):</span> Bebas Surat Peringatan (SP).<br>
+                                    <span class="font-bold text-rose-700 dark:text-rose-400">Klaim Palsu / Berbohong:</span> Admin Wilayah berhak memberikan sanksi SP (SP 1 / SP 2 / SP 3).
+                                </div>
+                            </div>
+                        @endif
+
+                        <div class="space-y-3.5">
+                            {{-- Field Alasan Pembatalan dengan Dropdown Kustom Dinamis & Responsif --}}
                             <div>
-                                <h3 class="text-base font-bold text-gray-900 dark:text-white leading-tight">
-                                    {{ $isInProgress ? 'Ajukan Kendala Lapangan' : 'Batalkan Penugasan' }}
-                                </h3>
-                                <p class="text-[11px] text-gray-500 dark:text-gray-400">
-                                    {{ $isInProgress ? 'Pengajuan pembatalan tahap pengerjaan ' : 'Pengajuan pembatalan kendala perjalanan ' }}
+                                <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
+                                    Alasan Pembatalan <span class="text-rose-500">*</span>
+                                </label>
+                                
+                                <div x-data="{
+                                        open: false,
+                                        selected: @entangle('partnerCancelReason').live,
+                                        selectReason(val) {
+                                            this.selected = val;
+                                            this.open = false;
+                                        }
+                                    }" 
+                                    @click.outside="open = false"
+                                    @keydown.escape.window="open = false"
+                                    class="relative w-full">
+                                    
+                                    {{-- Trigger Box (Accessible Interactive Div, finger-friendly touch target) --}}
+                                    <div @click="open = !open" 
+                                         role="combobox"
+                                         :aria-expanded="open"
+                                         tabindex="0"
+                                         @keydown.enter.prevent="open = !open"
+                                         @keydown.space.prevent="open = !open"
+                                         class="w-full min-h-[48px] px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700/70 hover:bg-gray-100/90 dark:hover:bg-gray-700 border rounded-xl text-xs sm:text-sm flex items-center justify-between gap-2.5 transition-all duration-150 cursor-pointer shadow-2xs select-none focus:outline-none focus:ring-2 focus:ring-rose-500/40"
+                                         :class="open ? 'border-rose-400 dark:border-rose-500 ring-2 ring-rose-500/20' : (selected ? 'border-gray-300 dark:border-gray-600' : 'border-gray-300/80 dark:border-gray-600/80')">
+                                        
+                                        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                                            <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+                                                 :class="selected ? 'bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800' : 'bg-gray-200/70 dark:bg-gray-600 text-gray-500 dark:text-gray-400'">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                                </svg>
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <span x-text="selected || '{{ $placeholderText }}'" 
+                                                      :class="selected ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-400 dark:text-gray-400 font-normal'" 
+                                                      class="truncate block leading-tight"></span>
+                                                <span x-show="!selected" class="text-[10px] text-gray-400 block mt-0.5">
+                                                    Klik untuk memilih opsi alasan kendala
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center gap-1.5 shrink-0 text-gray-400 dark:text-gray-400">
+                                            <button type="button" 
+                                                    x-show="selected" 
+                                                    x-cloak
+                                                    @click.stop="selected = ''; open = false;" 
+                                                    title="Hapus pilihan"
+                                                    class="p-1.5 hover:bg-rose-100 dark:hover:bg-rose-950/60 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition cursor-pointer">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                </svg>
+                                            </button>
+                                            <svg class="w-4 h-4 transition-transform duration-200" 
+                                                 :class="open ? 'rotate-180 text-rose-500' : 'text-gray-400 dark:text-gray-400'" 
+                                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                    {{-- Dynamic In-Flow Options List (Collapsible, strictly within modal bounds) --}}
+                                    <div x-show="open" 
+                                         x-cloak
+                                         x-transition:enter="transition ease-out duration-150"
+                                         x-transition:enter-start="opacity-0 translate-y-[-4px]"
+                                         x-transition:enter-end="opacity-100 translate-y-0"
+                                         x-transition:leave="transition ease-in duration-100"
+                                         x-transition:leave-start="opacity-100 translate-y-0"
+                                         x-transition:leave-end="opacity-0 translate-y-[-4px]"
+                                         class="mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700/60 shadow-xs max-h-56 overflow-y-auto custom-scrollbar overscroll-contain">
+                                        
+                                        <div class="px-3.5 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 bg-gray-50/80 dark:bg-gray-900/50 flex items-center justify-between">
+                                            <span>{{ $isInProgress ? 'Pilihan Kendala Lapangan' : 'Pilihan Kendala Perjalanan' }}</span>
+                                            <span class="text-[9px] font-normal lowercase text-gray-400">pilih salah satu</span>
+                                        </div>
+
+                                        @foreach($cancelReasons as $reason)
+                                            <button type="button" 
+                                                    @click="selectReason('{{ $reason }}')"
+                                                    class="w-full px-3.5 py-3 text-xs sm:text-sm text-left flex items-center justify-between gap-3 transition-colors cursor-pointer group"
+                                                    :class="selected === '{{ $reason }}' 
+                                                        ? 'bg-rose-50/90 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-semibold' 
+                                                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'">
+                                                <div class="flex items-center gap-2.5 min-w-0">
+                                                    <span class="w-2 h-2 rounded-full shrink-0 transition-colors"
+                                                          :class="selected === '{{ $reason }}' ? 'bg-rose-500 scale-125' : 'bg-gray-300 dark:bg-gray-600 group-hover:bg-rose-400'"></span>
+                                                    <span class="leading-relaxed">{{ $reason }}</span>
+                                                </div>
+                                                <div class="shrink-0">
+                                                    <svg x-show="selected === '{{ $reason }}'" 
+                                                         x-cloak
+                                                         class="w-4 h-4 text-rose-600 dark:text-rose-400" 
+                                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                                    </svg>
+                                                </div>
+                                            </button>
+                                        @endforeach
+                                    </div>
+
+                                    <input type="hidden" name="partnerCancelReason" :value="selected">
+                                </div>
+                                @error('partnerCancelReason') 
+                                    <p class="text-[11px] text-rose-500 font-semibold mt-1">{{ $message }}</p> 
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
+                                    Foto Bukti Kendala <span class="text-rose-500 font-bold">* Wajib</span>
+                                </label>
+                                
+                                @if ($cancel_evidence_photo)
+                                    <div class="relative rounded-xl overflow-hidden border border-rose-300 dark:border-rose-700 bg-gray-50 dark:bg-gray-800 p-2 mb-2 flex items-center justify-between">
+                                        <div class="flex items-center gap-2 min-w-0 max-w-[240px]">
+                                            <svg class="w-4 h-4 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                            <span class="text-xs text-gray-700 dark:text-gray-300 truncate">
+                                                {{ method_exists($cancel_evidence_photo, 'getClientOriginalName') ? $cancel_evidence_photo->getClientOriginalName() : 'Foto bukti terpilih' }}
+                                            </span>
+                                        </div>
+                                        <button type="button" wire:click="$set('cancel_evidence_photo', null)" class="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer">
+                                            Hapus
+                                        </button>
+                                    </div>
+                                @else
+                                    <input type="file" 
+                                           accept="image/*"
+                                           @change="handleEvidenceUpload($event)"
+                                           :disabled="isOptimizingEvidence"
+                                           class="w-full p-2 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 dark:file:bg-rose-950 dark:file:text-rose-300 cursor-pointer disabled:opacity-50">
+                                @endif
+                                
+                                <div x-show="isOptimizingEvidence" x-cloak class="text-[11px] text-blue-600 font-medium mt-1 flex items-center gap-1.5">
+                                    <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                    Mengoptimalkan foto bukti...
+                                </div>
+                                <div wire:loading wire:target="cancel_evidence_photo" class="text-[11px] text-blue-600 font-medium mt-1 flex items-center gap-1.5">
+                                    <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                    Mengunggah foto bukti ke server...
+                                </div>
+                                <p x-show="evidenceError" x-cloak x-text="evidenceError" class="text-[11px] text-rose-500 font-semibold mt-1"></p>
+                                @error('cancel_evidence_photo') 
+                                    <p class="text-[11px] text-rose-500 font-semibold mt-1">{{ $message }}</p> 
+                                @enderror
+                                <p class="text-[10px] text-gray-400 mt-1">
+                                    {{ $isInProgress ? 'Unggah foto kondisi di tempat kerja/material rusak untuk memudahkan klarifikasi Admin dan Customer.' : 'Unggah foto ban bocor, kendala teknis, atau kondisi darurat untuk mempermudah audit bebas SP.' }}
                                 </p>
                             </div>
-                        </div>
-                        <button type="button" 
-                                wire:click="closePartnerCancelModal" 
-                                class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
 
-                <form wire:submit.prevent="requestPartnerCancel" class="p-5 overflow-y-auto space-y-4 text-xs">
-                    @if($isInProgress)
-                        {{-- INFO BANNER : PENGERJAAN SUDAH DIMULAI --}}
-                        <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-2xl p-3.5 space-y-2">
-                            <div class="flex items-start gap-2.5">
-                                <span class="text-lg leading-none mt-0.5">⚠️</span>
-                                <div class="text-rose-950 dark:text-rose-200 leading-relaxed text-xs">
-                                    <strong class="block font-bold mb-0.5">Penting (Tahap Pengerjaan Berjalan):</strong>
-                                    Karena Anda telah menekan 'Mulai Pekerjaan', pembatalan ini memerlukan verifikasi dan konfirmasi dari <strong>Admin Wilayah</strong>.
-                                </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
+                                    Catatan Tambahan <span class="text-rose-500 font-bold">* Wajib</span>
+                                </label>
+                                <textarea wire:model="partnerCancelNotes" rows="3"
+                                          class="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition"
+                                          placeholder="{{ $isInProgress ? 'Jelaskan kronologi kendala pengerjaan di lokasi secara detail...' : 'Jelaskan kendala darurat yang dialami secara rinci...' }}"></textarea>
+                                @error('partnerCancelNotes') 
+                                    <p class="text-[11px] text-rose-500 font-semibold mt-1">{{ $message }}</p> 
+                                @enderror
                             </div>
-                            <div class="pt-2 border-t border-rose-200/60 dark:border-rose-800/60 text-[11px] text-rose-900 dark:text-rose-300 space-y-1">
-                                <p>📞 Tim Admin akan <strong>menghubungi Customer terlebih dahulu</strong> untuk klarifikasi kendala lapangan dan menyepakati pengembalian dana (refund) yang adil.</p>
-                                <p>📸 <strong>Wajib / Sangat Disarankan:</strong> Sertakan foto bukti kondisi lapangan agar audit dan penyesuaian saldo berjalan lancar.</p>
-                            </div>
-                        </div>
-                    @else
-                        {{-- INFO BANNER : SAAT PERJALANAN / BELUM MULAI KERJA --}}
-                        <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-3.5 space-y-2">
-                            <div class="flex items-start gap-2.5">
-                                <span class="text-lg leading-none mt-0.5">ℹ️</span>
-                                <div class="text-amber-900 dark:text-amber-200 leading-relaxed text-xs">
-                                    <strong class="block font-bold mb-0.5">Pelepasan Tugas & Relist ke Pool:</strong>
-                                    Tugas ini akan langsung dilepaskan dan dicarikan mitra lain agar customer tidak menunggu lama. Pengajuan Anda akan ditinjau oleh <strong>Admin Wilayah</strong>.
-                                </div>
-                            </div>
-                            <div class="pt-2 border-t border-amber-200/60 dark:border-amber-800/60 text-[11px] text-amber-800 dark:text-amber-300">
-                                ✓ <strong>Bukti Sah (Darurat / Kendala Nyata):</strong> Bebas Surat Peringatan (SP).<br>
-                                ⚠️ <strong>Klaim Palsu / Berbohong:</strong> Admin Wilayah berhak memberikan sanksi SP (SP 1 / SP 2 / SP 3).
-                            </div>
-                        </div>
-                    @endif
-
-                    <div class="space-y-3.5">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
-                                Alasan Pembatalan <span class="text-rose-500">*</span>
-                            </label>
-                            <select wire:model="partnerCancelReason" 
-                                    class="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition cursor-pointer">
-                                @if($isInProgress)
-                                    <option value="">-- Pilih Alasan Kendala Lapangan  --</option>
-                                    <option value="Lokasi / Kondisi Kerja Berbahaya & Tidak Aman">Lokasi / Kondisi Kerja Berbahaya & Tidak Aman</option>
-                                    <option value="Beban / Volume Pekerjaan Melebihi Kesepakatan Awal">Beban / Volume Pekerjaan Melebihi Kesepakatan Awal</option>
-                                    <option value="Alat Kerja / Material Mengalami Kerusakan di Lokasi">Alat Kerja / Material Mengalami Kerusakan di Lokasi</option>
-                                    <option value="Customer Tidak Kooperatif / Meminta Penghentian Pekerjaan">Customer Tidak Kooperatif / Meminta Penghentian Pekerjaan</option>
-                                    <option value="Mitra Mengalami Cedera / Sakit Mendadak Saat Bekerja">Mitra Mengalami Cedera / Sakit Mendadak Saat Bekerja</option>
-                                    <option value="Lainnya">Lainnya (Tuliskan rincian di catatan)</option>
-                                @else
-                                    <option value="">-- Pilih Alasan Kendala Perjalanan  --</option>
-                                    <option value="Kendaraan Bermasalah / Mogok / Ban Bocor">Kendaraan Bermasalah / Mogok / Ban Bocor</option>
-                                    <option value="Terjebak Macet Total / Cuaca Ekstrem Tidak Memungkinkan">Terjebak Macet Total / Cuaca Ekstrem Tidak Memungkinkan</option>
-                                    <option value="Kondisi Darurat Pribadi / Sakit di Perjalanan">Kondisi Darurat Pribadi / Sakit di Perjalanan</option>
-                                    <option value="Customer Tidak Dapat Dihubungi Sebelum Mulai">Customer Tidak Dapat Dihubungi Sebelum Mulai</option>
-                                    <option value="Lokasi / Akses Menuju Titik Ditutup / Bahaya">Lokasi / Akses Menuju Titik Ditutup / Bahaya</option>
-                                    <option value="Lainnya">Lainnya (Tuliskan rincian di catatan)</option>
-                                @endif
-                            </select>
-                            @error('partnerCancelReason') 
-                                <p class="text-[11px] text-rose-500 font-semibold mt-1">{{ $message }}</p> 
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
-                                Foto Bukti Kendala <span class="text-rose-500 font-bold">* Wajib</span>
-                            </label>
-                            
-                            @if ($cancel_evidence_photo)
-                                <div class="relative rounded-xl overflow-hidden border border-rose-300 dark:border-rose-700 bg-gray-50 dark:bg-gray-800 p-2 mb-2 flex items-center justify-between">
-                                    <span class="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[240px]">
-                                        📸 {{ method_exists($cancel_evidence_photo, 'getClientOriginalName') ? $cancel_evidence_photo->getClientOriginalName() : 'Foto bukti terpilih' }}
-                                    </span>
-                                    <button type="button" wire:click="$set('cancel_evidence_photo', null)" class="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer">
-                                        Hapus
-                                    </button>
-                                </div>
-                            @else
-                                <input type="file" wire:model="cancel_evidence_photo" accept="image/*"
-                                       class="w-full p-2 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 dark:file:bg-rose-950 dark:file:text-rose-300 cursor-pointer">
-                            @endif
-                            
-                            <div wire:loading wire:target="cancel_evidence_photo" class="text-[11px] text-blue-600 font-medium mt-1 flex items-center gap-1.5">
-                                <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-                                Mengunggah foto bukti...
-                            </div>
-                            @error('cancel_evidence_photo') 
-                                <p class="text-[11px] text-rose-500 font-semibold mt-1">{{ $message }}</p> 
-                            @enderror
-                            <p class="text-[10px] text-gray-400 mt-1">
-                                {{ $isInProgress ? 'Unggah foto kondisi di tempat kerja/material rusak untuk memudahkan klarifikasi Admin dan Customer.' : 'Unggah foto ban bocor, kendala teknis, atau kondisi darurat untuk mempermudah audit bebas SP.' }}
-                            </p>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-gray-900 dark:text-white mb-1.5">
-                                Catatan Tambahan <span class="text-rose-500 font-bold">* Wajib</span>
-                            </label>
-                            <textarea wire:model="partnerCancelNotes" rows="3"
-                                      class="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition"
-                                      placeholder="{{ $isInProgress ? 'Jelaskan kronologi kendala pengerjaan di lokasi secara detail...' : 'Jelaskan kendala darurat yang dialami secara rinci...' }}"></textarea>
-                            @error('partnerCancelNotes') 
-                                <p class="text-[11px] text-rose-500 font-semibold mt-1">{{ $message }}</p> 
-                            @enderror
                         </div>
                     </div>
 
-                    <div class="flex gap-2.5 pt-2">
-                        <button type="button"
-                                wire:click="closePartnerCancelModal"
-                                class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-semibold transition cursor-pointer">
-                            Batal
-                        </button>
-                        <button type="submit"
-                                wire:loading.attr="disabled"
-                                wire:target="requestPartnerCancel, cancel_evidence_photo"
-                                class="flex-1 px-4 py-3 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl text-xs font-bold transition disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shadow-rose-500/20 active:scale-[0.99]">
-                            <span wire:loading.remove wire:target="requestPartnerCancel">
-                                {{ $isInProgress ? 'Kirim Pengajuan ' : 'Kirim Pengajuan Batal' }}
-                            </span>
-                            <span wire:loading wire:target="requestPartnerCancel" class="inline-flex items-center gap-1">
-                                <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-                                Memproses...
-                            </span>
-                        </button>
+                    {{-- Pinned Modal Footer Actions (Finger-friendly touch targets for mobile & desktop) --}}
+                    <div class="p-4 sm:p-5 bg-gray-50/95 dark:bg-gray-800/95 border-t border-gray-100 dark:border-gray-700 flex-shrink-0">
+                        <div class="flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-3">
+                            <button type="button"
+                                    wire:click="closePartnerCancelModal"
+                                    :disabled="isOptimizingEvidence"
+                                    class="w-full sm:flex-1 min-h-[48px] px-5 py-3.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 dark:active:bg-gray-500 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-semibold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50">
+                                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                <span>Batal</span>
+                            </button>
+                            <button type="submit"
+                                    wire:loading.attr="disabled"
+                                    :disabled="isOptimizingEvidence"
+                                    wire:target="requestPartnerCancel, cancel_evidence_photo"
+                                    class="w-full sm:flex-1 min-h-[48px] px-5 py-3.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl text-sm font-bold transition-all duration-150 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-sm shadow-rose-500/25 active:scale-[0.98]">
+                                <span wire:loading.remove wire:target="requestPartnerCancel" class="inline-flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                    <span>{{ $isInProgress ? 'Kirim Pengajuan' : 'Kirim Pengajuan Pembatalan' }}</span>
+                                </span>
+                                <span wire:loading wire:target="requestPartnerCancel" class="inline-flex items-center gap-2">
+                                    <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                    <span>Memproses...</span>
+                                </span>
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -1777,7 +1964,49 @@
     @if($showCompletionModal)
         <div class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
              wire:click.self="closeCompletionModal">
-            <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
+            <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in"
+                 x-data="{
+                     isOptimizingProof: false,
+                     proofError: '',
+                     async handleProofUpload(event) {
+                         const input = event.target;
+                         const file = input.files && input.files[0];
+                         if (!file) return;
+
+                         this.proofError = '';
+                         this.isOptimizingProof = true;
+
+                         try {
+                             let optimizedFile = file;
+                             if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
+                                 const res = await window.MobileImageOptimizer.optimizeImage(file, 'evidence');
+                                 if (!res.ok) {
+                                     this.isOptimizingProof = false;
+                                     this.proofError = res.error || 'Gagal memproses gambar.';
+                                     input.value = '';
+                                     return;
+                                 }
+                                 optimizedFile = res.file;
+                             }
+
+                             @this.upload('proof_photo', optimizedFile,
+                                 (uploadedName) => {
+                                     this.isOptimizingProof = false;
+                                     this.proofError = '';
+                                 },
+                                 (error) => {
+                                     this.isOptimizingProof = false;
+                                     this.proofError = 'Gagal mengunggah foto bukti ke server. Silakan coba lagi.';
+                                     input.value = '';
+                                 }
+                             );
+                         } catch (err) {
+                             this.isOptimizingProof = false;
+                             this.proofError = 'Terjadi kesalahan saat memproses foto bukti.';
+                             input.value = '';
+                         }
+                     }
+                 }">
                 
                 <div class="bg-blue-600 px-6 py-5 text-white flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -1822,7 +2051,7 @@
                                 @else
                                     <div class="w-full h-48 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 p-4 text-center">
                                         <svg class="w-10 h-10 text-gray-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                        <span class="text-xs font-semibold">{{ $proof_photo->getClientOriginalName() }}</span>
+                                        <span class="text-xs font-semibold">{{ method_exists($proof_photo, 'getClientOriginalName') ? $proof_photo->getClientOriginalName() : 'Foto bukti terpilih' }}</span>
                                     </div>
                                 @endif
                                 <button type="button" wire:click="$set('proof_photo', null)" class="absolute top-2 right-2 p-1.5 bg-rose-600 text-white rounded-full shadow-lg hover:bg-rose-700 transition">
@@ -1830,22 +2059,35 @@
                                 </button>
                             </div>
                         @else
-                            <label class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl cursor-pointer bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50/50 dark:hover:bg-gray-700 transition">
+                            <label class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl cursor-pointer bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50/50 dark:hover:bg-gray-700 transition"
+                                   :class="{ 'opacity-50 pointer-events-none': isOptimizingProof }">
                                 <div class="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
                                     <svg class="w-10 h-10 text-primary-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                     <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Klik untuk ambil foto / upload</p>
-                                    <p class="text-[11px] text-gray-400 mt-0.5">Format: PNG, JPG, atau JPEG (Maks. 5MB)</p>
+                                    <p class="text-[11px] text-gray-400 mt-0.5">Format: PNG, JPG, atau JPEG (Maks. 1.5MB)</p>
                                 </div>
-                                <input type="file" wire:model="proof_photo" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" class="hidden" capture="environment">
+                                <input type="file" 
+                                       accept="image/*" 
+                                       @change="handleProofUpload($event)"
+                                       :disabled="isOptimizingProof"
+                                       class="hidden" 
+                                       capture="environment">
                             </label>
                         @endif
+
+                        <div x-show="isOptimizingProof" x-cloak class="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1.5">
+                            <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                            Mengoptimalkan foto bukti...
+                        </div>
 
                         <div wire:loading wire:target="proof_photo" class="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1.5">
                             <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                             Mengunggah foto bukti...
                         </div>
+
+                        <p x-show="proofError" x-cloak x-text="proofError" class="text-xs text-rose-500 font-medium mt-1"></p>
 
                         @error('proof_photo')
                             <p class="text-xs text-rose-500 font-medium mt-1">{{ $message }}</p>
@@ -1865,7 +2107,10 @@
                             class="flex-1 py-3 px-4 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold text-xs hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                             Batal
                         </button>
-                        <button type="submit" wire:loading.attr="disabled" wire:target="submitCompletionProof, proof_photo"
+                        <button type="submit" 
+                            wire:loading.attr="disabled" 
+                            :disabled="isOptimizingProof"
+                            wire:target="submitCompletionProof, proof_photo"
                             class="flex-1 py-3 px-4 rounded-xl bg-blue-600 text-white font-bold text-xs shadow-md hover:bg-blue-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50">
                             <span wire:loading.remove wire:target="submitCompletionProof">Selesaikan Tugas</span>
                             <span wire:loading wire:target="submitCompletionProof" class="inline-flex items-center gap-1">
@@ -1884,7 +2129,49 @@
     @if ($showRejectWithdrawModal)
         <div class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
              wire:click.self="closeRejectWithdrawModal">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700"
+                 x-data="{
+                     isOptimizingReject: false,
+                     rejectError: '',
+                     async handleRejectUpload(event) {
+                         const input = event.target;
+                         const file = input.files && input.files[0];
+                         if (!file) return;
+
+                         this.rejectError = '';
+                         this.isOptimizingReject = true;
+
+                         try {
+                             let optimizedFile = file;
+                             if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
+                                 const res = await window.MobileImageOptimizer.optimizeImage(file, 'evidence');
+                                 if (!res.ok) {
+                                     this.isOptimizingReject = false;
+                                     this.rejectError = res.error || 'Gagal memproses gambar.';
+                                     input.value = '';
+                                     return;
+                                 }
+                                 optimizedFile = res.file;
+                             }
+
+                             @this.upload('rejectWithdrawPhoto', optimizedFile,
+                                 (uploadedName) => {
+                                     this.isOptimizingReject = false;
+                                     this.rejectError = '';
+                                 },
+                                 (error) => {
+                                     this.isOptimizingReject = false;
+                                     this.rejectError = 'Gagal mengunggah foto bukti ke server. Silakan coba lagi.';
+                                     input.value = '';
+                                 }
+                             );
+                         } catch (err) {
+                             this.isOptimizingReject = false;
+                             this.rejectError = 'Terjadi kesalahan saat memproses foto bukti.';
+                             input.value = '';
+                         }
+                     }
+                 }">
                 <div class="bg-rose-600 px-5 py-4 text-white flex items-center justify-between">
                     <div class="flex items-center gap-2.5">
                         <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center font-bold">
@@ -1917,7 +2204,35 @@
 
                     <div>
                         <label class="block font-bold text-gray-700 dark:text-gray-200 mb-1">Foto Bukti Lapangan (Opsional)</label>
-                        <input type="file" wire:model="rejectWithdrawPhoto" accept="image/*" class="w-full p-2 text-xs bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600 rounded-xl">
+                        @if ($rejectWithdrawPhoto)
+                            <div class="relative rounded-xl overflow-hidden border border-rose-300 dark:border-rose-700 bg-gray-50 dark:bg-gray-750 p-2 mb-2 flex items-center justify-between">
+                                <div class="flex items-center gap-2 min-w-0 max-w-[240px]">
+                                    <svg class="w-4 h-4 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    <span class="text-xs text-gray-700 dark:text-gray-300 truncate">
+                                        {{ method_exists($rejectWithdrawPhoto, 'getClientOriginalName') ? $rejectWithdrawPhoto->getClientOriginalName() : 'Foto bukti terpilih' }}
+                                    </span>
+                                </div>
+                                <button type="button" wire:click="$set('rejectWithdrawPhoto', null)" class="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer">
+                                    Hapus
+                                </button>
+                            </div>
+                        @else
+                            <input type="file" 
+                                   accept="image/*" 
+                                   @change="handleRejectUpload($event)"
+                                   :disabled="isOptimizingReject"
+                                   class="w-full p-2 text-xs bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 dark:file:bg-rose-950 dark:file:text-rose-300 cursor-pointer disabled:opacity-50">
+                        @endif
+
+                        <div x-show="isOptimizingReject" x-cloak class="text-[11px] text-blue-600 font-medium mt-1 flex items-center gap-1.5">
+                            <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                            Mengoptimalkan foto bukti...
+                        </div>
+                        <div wire:loading wire:target="rejectWithdrawPhoto" class="text-[11px] text-blue-600 font-medium mt-1 flex items-center gap-1.5">
+                            <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                            Mengunggah foto bukti...
+                        </div>
+                        <p x-show="rejectError" x-cloak x-text="rejectError" class="text-xs text-rose-500 mt-1 font-medium"></p>
                         @error('rejectWithdrawPhoto') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
                     </div>
 
@@ -1926,7 +2241,10 @@
                                 class="flex-1 py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-100 dark:hover:bg-gray-750 transition">
                             Batal
                         </button>
-                        <button type="submit" wire:loading.attr="disabled" wire:target="rejectWithdrawal, rejectWithdrawPhoto"
+                        <button type="submit" 
+                                wire:loading.attr="disabled" 
+                                :disabled="isOptimizingReject"
+                                wire:target="rejectWithdrawal, rejectWithdrawPhoto"
                                 class="flex-1 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-md transition flex items-center justify-center gap-1.5 disabled:opacity-50">
                             <span wire:loading.remove wire:target="rejectWithdrawal">Kirim Pembelaan</span>
                             <span wire:loading wire:target="rejectWithdrawal">Mengirim...</span>

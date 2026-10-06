@@ -81,4 +81,87 @@ class AccountNotificationService
 
         return $recipients;
     }
+
+    /**
+     * Dispatch informational oversight notification to Profile Admin(s) of a managed User
+     * when a significant event occurs in a foreign (Case) territory.
+     *
+     * Rules:
+     * - Case Admin(s) receive actionable notification from their respective case workflows.
+     * - Profile Admin(s) are resolved using target user's current Profile Territory ($managedUser->district_id, $managedUser->city_id).
+     * - Case Admins are excluded from oversight recipients (Profile Admins - Case Admins).
+     * - SuperAdmins are excluded from duplicate oversight notification (since SuperAdmins have global oversight).
+     * - Multi-Admin deduplicated by Admin ID.
+     * - Does NOT grant foreign-case access or mutation rights.
+     *
+     * @param User $managedUser
+     * @param iterable|User|null $caseAdmins
+     * @param string $eventType 'cancellation' | 'dispute' | 'investigation' | 'discipline' | 'shadow_ban' | 'greylist'
+     * @param string $title
+     * @param string $message
+     * @param string|null $publicRef
+     * @param string|null $incidentTerritory
+     * @param string|null $status
+     * @param array $extraData
+     * @return Collection<int, User>
+     */
+    public function notifyCrossTerritoryOversight(
+        User $managedUser,
+        iterable|User|null $caseAdmins,
+        string $eventType,
+        string $title,
+        string $message,
+        ?string $publicRef = null,
+        ?string $incidentTerritory = null,
+        ?string $status = null,
+        array $extraData = []
+    ): Collection {
+        // Collect case admin IDs to exclude
+        $caseAdminIds = [];
+        if ($caseAdmins instanceof User) {
+            $caseAdminIds[] = $caseAdmins->id;
+        } elseif (is_iterable($caseAdmins)) {
+            foreach ($caseAdmins as $ca) {
+                if ($ca instanceof User) {
+                    $caseAdminIds[] = $ca->id;
+                } elseif (is_numeric($ca)) {
+                    $caseAdminIds[] = (int) $ca;
+                }
+            }
+        }
+
+        // Resolve Profile Admins for user's CURRENT profile territory (excluding SuperAdmins)
+        $profileAdmins = $this->resolveAdminsForUser($managedUser, includeSuperAdmin: false);
+
+        // Filter out any Case Admins (same-admin dedup)
+        $oversightRecipients = $profileAdmins->reject(function (User $admin) use ($caseAdminIds) {
+            return in_array($admin->id, $caseAdminIds, true);
+        })->unique('id')->values();
+
+        if ($oversightRecipients->isEmpty()) {
+            return collect();
+        }
+
+        $notification = new \App\Notifications\AccountOversightNotification(
+            $managedUser,
+            $eventType,
+            $title,
+            $message,
+            $publicRef,
+            $incidentTerritory,
+            $status,
+            $extraData
+        );
+
+        foreach ($oversightRecipients as $recipient) {
+            try {
+                $recipient->notify($notification);
+            } catch (\Throwable $e) {
+                Log::warning("[AccountNotificationService] Failed sending oversight notification to Admin #{$recipient->id}: " . $e->getMessage());
+            }
+        }
+
+        return $oversightRecipients;
+    }
 }
+

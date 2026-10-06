@@ -216,7 +216,7 @@
             }
         };
 
-        // Pre-unlock audio on user interaction
+        // Pre-unlock audio on user interaction (only genuine activation gestures: click, touch, keydown)
         (function() {
             let unlocked = false;
             const unlock = () => {
@@ -228,7 +228,7 @@
                             window._notifAudioCtx = new AudioCtx();
                         }
                         if (window._notifAudioCtx.state === 'suspended') {
-                            window._notifAudioCtx.resume();
+                            window._notifAudioCtx.resume().catch(() => {});
                         }
                     }
                     const a = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
@@ -239,7 +239,7 @@
                     }
                 } catch(e) {}
             };
-            ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown', 'scroll'].forEach(evt => {
+            ['click', 'touchstart', 'touchend', 'keydown'].forEach(evt => {
                 window.addEventListener(evt, unlock, { once: true, passive: true });
             });
         })();

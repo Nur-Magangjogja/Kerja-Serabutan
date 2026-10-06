@@ -289,13 +289,13 @@ class HelpDetail extends Component
     public function submitCompletionProof()
     {
         $this->validate([
-            'proof_photo'      => 'required|image|mimes:jpg,jpeg,png|max:5120',
+            'proof_photo'      => 'required|image|mimes:jpg,jpeg,png|max:1536',
             'completion_notes' => 'nullable|string|max:1000',
         ], [
             'proof_photo.required' => 'Foto bukti pengerjaan wajib diunggah.',
             'proof_photo.image'    => 'File bukti harus berupa gambar (JPG, JPEG, PNG).',
             'proof_photo.mimes'    => 'Format foto bukti harus berupa PNG, JPG, atau JPEG.',
-            'proof_photo.max'      => 'Ukuran foto bukti maksimal 5MB.',
+            'proof_photo.max'      => 'Ukuran foto bukti maksimal 1.5MB.',
         ]);
 
         try {
@@ -344,14 +344,14 @@ class HelpDetail extends Component
         $this->validate([
             'partnerCancelReason'   => 'required|string|min:3|max:255',
             'partnerCancelNotes'    => 'required|string|min:5|max:1000',
-            'cancel_evidence_photo' => 'required|image|mimes:jpg,jpeg,png|max:5120',
+            'cancel_evidence_photo' => 'required|image|mimes:jpg,jpeg,png|max:1536',
         ], [
             'partnerCancelReason.required'   => 'Pilih atau isi alasan pembatalan.',
             'partnerCancelReason.min'        => 'Alasan pembatalan minimal 3 karakter.',
             'cancel_evidence_photo.required' => 'Foto bukti kendala wajib diunggah.',
             'cancel_evidence_photo.image'    => 'Foto bukti harus berupa file gambar (JPG/PNG).',
             'cancel_evidence_photo.mimes'    => 'Format foto bukti harus JPG, JPEG, atau PNG.',
-            'cancel_evidence_photo.max'      => 'Ukuran foto bukti maksimal 5MB.',
+            'cancel_evidence_photo.max'      => 'Ukuran foto bukti maksimal 1.5MB.',
             'partnerCancelNotes.required'    => 'Catatan tambahan kendala wajib diisi.',
             'partnerCancelNotes.min'         => 'Catatan tambahan minimal 5 karakter.',
             'partnerCancelNotes.max'         => 'Catatan tambahan maksimal 1000 karakter.',
@@ -440,11 +440,12 @@ class HelpDetail extends Component
     {
         $this->validate([
             'rejectWithdrawNotes' => 'required|string|min:5|max:1000',
-            'rejectWithdrawPhoto' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'rejectWithdrawPhoto' => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
         ], [
             'rejectWithdrawNotes.required' => 'Tuliskan alasan penolakan/pembelaan Anda.',
             'rejectWithdrawNotes.min'      => 'Penjelasan minimal 5 karakter.',
             'rejectWithdrawPhoto.image'    => 'Foto bukti harus berupa gambar (JPG/PNG).',
+            'rejectWithdrawPhoto.max'      => 'Ukuran foto bukti maksimal 1.5MB.',
         ]);
 
         try {
@@ -501,11 +502,12 @@ class HelpDetail extends Component
     {
         $this->validate([
             'partnerClarificationText'  => 'required|string|min:5|max:1000',
-            'partnerClarificationPhoto' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'partnerClarificationPhoto' => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
         ], [
             'partnerClarificationText.required' => 'Isi penjelasan klarifikasi/pengakuan Anda.',
             'partnerClarificationText.min'      => 'Penjelasan minimal 5 karakter.',
             'partnerClarificationPhoto.image'   => 'Foto bukti harus berupa gambar (JPG/PNG).',
+            'partnerClarificationPhoto.max'     => 'Ukuran foto bukti maksimal 1.5MB.',
         ]);
 
         try {

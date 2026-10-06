@@ -20,7 +20,7 @@ class Chat extends Component
     {
         return [
             'message' => 'required_without:photo|nullable|string|max:2000',
-            'photo'   => 'nullable|image|max:5120',
+            'photo'   => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
         ];
     }
 

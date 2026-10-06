@@ -15,7 +15,7 @@
     </div>
 
     {{-- ===== Summary Cards ===== --}}
-    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-3">
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 cursor-pointer hover:border-amber-400 transition" wire:click="$set('status', 'pending')">
             <p class="text-xs text-gray-500 dark:text-gray-400">Pending</p>
             <p class="text-xl font-bold text-amber-600 dark:text-amber-400 mt-1">{{ $totalPending }}</p>

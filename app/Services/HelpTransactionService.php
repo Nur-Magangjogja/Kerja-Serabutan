@@ -684,6 +684,45 @@ class HelpTransactionService
             }
         }
 
+        // Notifikasi ke Case Admin & Profile Admin (TG1C)
+        try {
+            $caseAdmins = $this->notificationService->resolveAdminsForHelp($help);
+            foreach ($caseAdmins as $adm) {
+                $adm->notify(new \App\Notifications\NewReportNotification($report));
+            }
+
+            $incidentTerritory = ($help->district?->name ? $help->district->name . ', ' : '') . ($help->cityRelation?->name ?? $help->city ?? 'Wilayah Kasus');
+            $accountNotifService = app(\App\Services\AccountNotificationService::class);
+
+            // Oversight untuk Customer
+            $accountNotifService->notifyCrossTerritoryOversight(
+                $customer,
+                $caseAdmins,
+                'dispute',
+                "Pengawasan Akun: Pembekuan Sengketa Dana ({$help->title})",
+                "Customer yang Anda kelola mengajukan sengketa dana di {$incidentTerritory}. Dana escrow dibekukan untuk mediasi admin.",
+                "DISPUTE-{$help->id}",
+                $incidentTerritory,
+                'disputed_freeze'
+            );
+
+            // Oversight untuk Mitra
+            if ($help->mitra) {
+                $accountNotifService->notifyCrossTerritoryOversight(
+                    $help->mitra,
+                    $caseAdmins,
+                    'dispute',
+                    "Pengawasan Akun: Pembekuan Sengketa Dana ({$help->title})",
+                    "Pesanan yang dikerjakan Mitra yang Anda kelola mengalami sengketa dana di {$incidentTerritory}. Dana escrow dibekukan.",
+                    "DISPUTE-{$help->id}",
+                    $incidentTerritory,
+                    'disputed_freeze'
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[HelpTransactionService] Failed to send dispute admin notifications: ' . $e->getMessage());
+        }
+
         $this->notificationService->logActivity(
             $customer->id,
             $help->id,
@@ -804,6 +843,45 @@ class HelpTransactionService
             } catch (\Throwable $e) {
                 Log::warning('[HelpTransactionService] Failed to notify mitra of warranty claim: ' . $e->getMessage());
             }
+        }
+
+        // Notifikasi ke Case Admin & Profile Admin (TG1C)
+        try {
+            $caseAdmins = $this->notificationService->resolveAdminsForHelp($help);
+            foreach ($caseAdmins as $adm) {
+                $adm->notify(new \App\Notifications\NewReportNotification($report));
+            }
+
+            $incidentTerritory = ($help->district?->name ? $help->district->name . ', ' : '') . ($help->cityRelation?->name ?? $help->city ?? 'Wilayah Kasus');
+            $accountNotifService = app(\App\Services\AccountNotificationService::class);
+
+            // Oversight untuk Customer
+            $accountNotifService->notifyCrossTerritoryOversight(
+                $customer,
+                $caseAdmins,
+                'dispute',
+                "Pengawasan Akun: Klaim Garansi / Sengketa ({$help->title})",
+                "Customer yang Anda kelola mengajukan klaim garansi di {$incidentTerritory}. Dana earning ditahan untuk mediasi admin.",
+                "DISPUTE-{$help->id}",
+                $incidentTerritory,
+                'disputed_freeze'
+            );
+
+            // Oversight untuk Mitra
+            if ($help->mitra) {
+                $accountNotifService->notifyCrossTerritoryOversight(
+                    $help->mitra,
+                    $caseAdmins,
+                    'dispute',
+                    "Pengawasan Akun: Klaim Garansi / Sengketa ({$help->title})",
+                    "Pesanan yang dikerjakan Mitra yang Anda kelola diajukan klaim garansi di {$incidentTerritory}. Dana earning ditahan.",
+                    "DISPUTE-{$help->id}",
+                    $incidentTerritory,
+                    'disputed_freeze'
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[HelpTransactionService] Failed to send warranty claim admin notifications: ' . $e->getMessage());
         }
 
         $this->notificationService->logActivity(

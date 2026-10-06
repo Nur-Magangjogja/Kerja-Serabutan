@@ -222,98 +222,105 @@ class Activity extends Component
             });
         }
 
-        // Penempatan berdasarkan terakhir kali aktivitas pengguna
-        $users = $userQuery
-            ->orderByRaw('last_activity_at IS NULL, last_activity_at DESC, created_at DESC')
-            ->paginate($this->userPerPage, ['*'], 'usersPage');
+        // Lazy-load active tab dataset
+        if ($this->tab === 'streams') {
+            $users = new \Illuminate\Pagination\LengthAwarePaginator([], 0, $this->userPerPage, 1, ['pageName' => 'usersPage']);
 
-        // ─────────────────────────────────────────────────────────────────────
-        // 2. QUERY DAFTAR LOG ALIRAN AKTIVITAS REAL-TIME
-        // ─────────────────────────────────────────────────────────────────────
-        $activityQuery = PartnerActivity::with([
-            'user.district',
-            'user.city',
-            'help.customer',
-            'help.mitra',
-            'help.district',
-            'help.city'
-        ])
-        ->whereHas('user', function ($q) {
-            $q->whereIn('role', ['customer', 'mitra']);
-        })
-        ->latest();
+            // ─────────────────────────────────────────────────────────────────
+            // 2. QUERY DAFTAR LOG ALIRAN AKTIVITAS REAL-TIME
+            // ─────────────────────────────────────────────────────────────────
+            $activityQuery = PartnerActivity::with([
+                'user.district',
+                'user.city',
+                'help.customer',
+                'help.mitra',
+                'help.district',
+                'help.city'
+            ])
+            ->whereHas('user', function ($q) {
+                $q->whereIn('role', ['customer', 'mitra']);
+            })
+            ->latest();
 
-        if (!$isSuperAdmin && !empty($effectiveDistrictIds)) {
-            $activityQuery->where(function ($q) use ($effectiveDistrictIds) {
-                $q->whereHas('user', fn($uq) => $uq->whereIn('district_id', $effectiveDistrictIds))
-                  ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $effectiveDistrictIds));
-            });
-        } elseif (!$isSuperAdmin && $admin && $admin->role === 'admin') {
-            $activityQuery->whereRaw('1 = 0');
-        } elseif ($isSuperAdmin && $admin) {
-            $saTerritory = $admin->getActiveSuperadminTerritory();
-            if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
-                $dId = (int) $saTerritory['id'];
-                $activityQuery->where(function ($q) use ($dId) {
-                    $q->whereHas('user', fn($uq) => $uq->where('district_id', $dId))
-                      ->orWhereHas('help', fn($hq) => $hq->where('district_id', $dId));
+            if (!$isSuperAdmin && !empty($effectiveDistrictIds)) {
+                $activityQuery->where(function ($q) use ($effectiveDistrictIds) {
+                    $q->whereHas('user', fn($uq) => $uq->whereIn('district_id', $effectiveDistrictIds))
+                      ->orWhereHas('help', fn($hq) => $hq->whereIn('district_id', $effectiveDistrictIds));
                 });
-            } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
-                $cityId = (int) $saTerritory['id'];
-                $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
-                $activityQuery->where(function ($q) use ($cityId, $saDistrictIds) {
-                    $q->whereHas('user', function ($uq) use ($cityId, $saDistrictIds) {
-                        if (!empty($saDistrictIds)) $uq->whereIn('district_id', $saDistrictIds);
-                        if ($cityId) $uq->orWhere('city_id', $cityId);
-                    })->orWhereHas('help', function ($hq) use ($cityId, $saDistrictIds) {
-                        if (!empty($saDistrictIds)) $hq->whereIn('district_id', $saDistrictIds);
-                        if ($cityId) $hq->orWhere('city_id', $cityId);
+            } elseif (!$isSuperAdmin && $admin && $admin->role === 'admin') {
+                $activityQuery->whereRaw('1 = 0');
+            } elseif ($isSuperAdmin && $admin) {
+                $saTerritory = $admin->getActiveSuperadminTerritory();
+                if ($saTerritory['type'] === 'district' && !empty($saTerritory['id'])) {
+                    $dId = (int) $saTerritory['id'];
+                    $activityQuery->where(function ($q) use ($dId) {
+                        $q->whereHas('user', fn($uq) => $uq->where('district_id', $dId))
+                          ->orWhereHas('help', fn($hq) => $hq->where('district_id', $dId));
                     });
+                } elseif ($saTerritory['type'] === 'city' && !empty($saTerritory['id'])) {
+                    $cityId = (int) $saTerritory['id'];
+                    $saDistrictIds = $admin->getEffectiveSuperadminDistrictIds();
+                    $activityQuery->where(function ($q) use ($cityId, $saDistrictIds) {
+                        $q->whereHas('user', function ($uq) use ($cityId, $saDistrictIds) {
+                            if (!empty($saDistrictIds)) $uq->whereIn('district_id', $saDistrictIds);
+                            if ($cityId) $uq->orWhere('city_id', $cityId);
+                        })->orWhereHas('help', function ($hq) use ($cityId, $saDistrictIds) {
+                            if (!empty($saDistrictIds)) $hq->whereIn('district_id', $saDistrictIds);
+                            if ($cityId) $hq->orWhere('city_id', $cityId);
+                        });
+                    });
+                }
+            }
+
+            if ($this->selectedUserId) {
+                $activityQuery->where('user_id', $this->selectedUserId);
+            }
+
+            if ($this->roleFilter !== 'all') {
+                $activityQuery->whereHas('user', fn($q) => $q->where('role', $this->roleFilter));
+            }
+
+            if ($this->activityTypeFilter !== 'all') {
+                $aliases = self::getActivityTypeAliases($this->activityTypeFilter);
+                $activityQuery->whereIn('activity_type', $aliases);
+            }
+
+            if ($this->dateFrom) {
+                $activityQuery->whereDate('created_at', '>=', $this->dateFrom);
+            }
+            if ($this->dateTo) {
+                $activityQuery->whereDate('created_at', '<=', $this->dateTo);
+            }
+
+            if (!empty($this->search)) {
+                $s = trim($this->search);
+                $activityQuery->where(function ($q) use ($s) {
+                    $q->where('description', 'like', "%{$s}%")
+                      ->orWhere('activity_type', 'like', "%{$s}%")
+                      ->orWhere('ip_address', 'like', "%{$s}%")
+                      ->orWhereHas('user', function ($uq) use ($s) {
+                          $uq->where('name', 'like', "%{$s}%")
+                             ->orWhere('email', 'like', "%{$s}%")
+                             ->orWhere('phone_number', 'like', "%{$s}%");
+                      })
+                      ->orWhereHas('help', function ($hq) use ($s) {
+                          $hq->where('title', 'like', "%{$s}%")
+                             ->orWhere('order_id', 'like', "%{$s}%")
+                             ->orWhere('location', 'like', "%{$s}%")
+                             ->orWhere('full_address', 'like', "%{$s}%");
+                      });
                 });
             }
-        }
 
-        if ($this->selectedUserId) {
-            $activityQuery->where('user_id', $this->selectedUserId);
-        }
+            $activities = $activityQuery->paginate($this->perPage);
+        } else {
+            // Default to 'directory'
+            $users = $userQuery
+                ->orderByRaw('last_activity_at IS NULL, last_activity_at DESC, created_at DESC')
+                ->paginate($this->userPerPage, ['*'], 'usersPage');
 
-        if ($this->roleFilter !== 'all') {
-            $activityQuery->whereHas('user', fn($q) => $q->where('role', $this->roleFilter));
+            $activities = new \Illuminate\Pagination\LengthAwarePaginator([], 0, $this->perPage, 1, ['pageName' => 'page']);
         }
-
-        if ($this->activityTypeFilter !== 'all') {
-            $aliases = self::getActivityTypeAliases($this->activityTypeFilter);
-            $activityQuery->whereIn('activity_type', $aliases);
-        }
-
-        if ($this->dateFrom) {
-            $activityQuery->whereDate('created_at', '>=', $this->dateFrom);
-        }
-        if ($this->dateTo) {
-            $activityQuery->whereDate('created_at', '<=', $this->dateTo);
-        }
-
-        if (!empty($this->search)) {
-            $s = trim($this->search);
-            $activityQuery->where(function ($q) use ($s) {
-                $q->where('description', 'like', "%{$s}%")
-                  ->orWhere('activity_type', 'like', "%{$s}%")
-                  ->orWhere('ip_address', 'like', "%{$s}%")
-                  ->orWhereHas('user', function ($uq) use ($s) {
-                      $uq->where('name', 'like', "%{$s}%")
-                         ->orWhere('email', 'like', "%{$s}%")
-                         ->orWhere('phone_number', 'like', "%{$s}%");
-                  })
-                  ->orWhereHas('help', function ($hq) use ($s) {
-                      $hq->where('title', 'like', "%{$s}%")
-                         ->orWhere('order_id', 'like', "%{$s}%")
-                         ->orWhere('location', 'like', "%{$s}%")
-                         ->orWhere('full_address', 'like', "%{$s}%");
-                  });
-            });
-        }
-
-        $activities = $activityQuery->paginate($this->perPage);
 
         // ─────────────────────────────────────────────────────────────────────
         // 3. STATISTIK AKTIVITAS
@@ -361,14 +368,31 @@ class Activity extends Component
             || !empty($this->dateFrom)
             || !empty($this->dateTo);
 
-        $totalStats = !$hasCustomFilters ? $activities->total() : (clone $baseStats)->count();
+        $todayStart = now()->startOfDay()->toDateTimeString();
+        $todayEnd   = now()->endOfDay()->toDateTimeString();
+
+        $completedTypes = ['help_completed', 'service_completed', 'confirm_completion', 'help_confirmed'];
+        $quotedCompletedTypes = implode("', '", array_map('addslashes', $completedTypes));
+
+        $activityAggregates = (clone $baseStats)
+            ->selectRaw("
+                COUNT(*) as total_count,
+                SUM(CASE WHEN created_at >= '{$todayStart}' AND created_at <= '{$todayEnd}' THEN 1 ELSE 0 END) as today_count,
+                SUM(CASE WHEN EXISTS (SELECT 1 FROM users WHERE users.id = partner_activities.user_id AND users.role = 'customer') THEN 1 ELSE 0 END) as customer_count,
+                SUM(CASE WHEN EXISTS (SELECT 1 FROM users WHERE users.id = partner_activities.user_id AND users.role = 'mitra') THEN 1 ELSE 0 END) as mitra_count,
+                SUM(CASE WHEN activity_type IN ('{$quotedCompletedTypes}') THEN 1 ELSE 0 END) as completed_count
+            ")
+            ->first();
+
+        $totalBaseCount = (int) ($activityAggregates->total_count ?? 0);
+        $totalStats = !$hasCustomFilters ? ($this->tab === 'streams' ? $activities->total() : $totalBaseCount) : $totalBaseCount;
 
         $stats = [
             'total'          => $totalStats,
-            'today'          => (clone $baseStats)->whereDate('created_at', today())->count(),
-            'customer_acts'  => (clone $baseStats)->whereHas('user', fn($q) => $q->where('role', 'customer'))->count(),
-            'mitra_acts'     => (clone $baseStats)->whereHas('user', fn($q) => $q->where('role', 'mitra'))->count(),
-            'completed_jobs' => (clone $baseStats)->whereIn('activity_type', ['help_completed', 'service_completed', 'confirm_completion', 'help_confirmed'])->count(),
+            'today'          => (int) ($activityAggregates->today_count ?? 0),
+            'customer_acts'  => (int) ($activityAggregates->customer_count ?? 0),
+            'mitra_acts'     => (int) ($activityAggregates->mitra_count ?? 0),
+            'completed_jobs' => (int) ($activityAggregates->completed_count ?? 0),
         ];
 
 

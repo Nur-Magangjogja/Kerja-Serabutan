@@ -559,12 +559,22 @@ class Greylist extends Component
             }
         }
 
-        // Stats
-        $totalGreylist = (clone $baseQuery)->where('is_greylisted', true)->count();
-        $totalShadowBanned = (clone $baseQuery)->where('is_shadow_banned', true)->count();
-        $totalWarning = (clone $baseQuery)->where('warning_level', '>', 0)->count();
-        $totalMitra = (clone $baseQuery)->where('role', 'mitra')->count();
-        $totalCustomer = (clone $baseQuery)->where('role', 'customer')->count();
+        // Consolidated Greylist Statistics - filtered by Profile Territory scope
+        $stats = (clone $baseQuery)
+            ->selectRaw("
+                SUM(CASE WHEN is_greylisted = 1 THEN 1 ELSE 0 END) as total_greylist,
+                SUM(CASE WHEN is_shadow_banned = 1 THEN 1 ELSE 0 END) as total_shadow_banned,
+                SUM(CASE WHEN warning_level > 0 THEN 1 ELSE 0 END) as total_warning,
+                SUM(CASE WHEN role = 'mitra' THEN 1 ELSE 0 END) as total_mitra,
+                SUM(CASE WHEN role = 'customer' THEN 1 ELSE 0 END) as total_customer
+            ")
+            ->first();
+
+        $totalGreylist      = (int) ($stats->total_greylist ?? 0);
+        $totalShadowBanned  = (int) ($stats->total_shadow_banned ?? 0);
+        $totalWarning       = (int) ($stats->total_warning ?? 0);
+        $totalMitra         = (int) ($stats->total_mitra ?? 0);
+        $totalCustomer      = (int) ($stats->total_customer ?? 0);
 
         // Query with filters
         $query = (clone $baseQuery)->with(['district', 'city', 'greylistLogs.admin']);

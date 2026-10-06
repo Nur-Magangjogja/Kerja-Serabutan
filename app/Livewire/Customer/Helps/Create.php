@@ -170,11 +170,35 @@ class Create extends Component
     }
 
     /**
+     * Real-time validation error reset:
+     * Saat kolom diisi atau diubah oleh pengguna, langsung bersihkan error bag
+     * agar pemandu kolom wajib diisi berhenti seketika.
+     */
+    public function updated($propertyName): void
+    {
+        $this->resetErrorBag($propertyName);
+
+        if (in_array($propertyName, ['latitude', 'longitude', 'location', 'city_id', 'district_id'])) {
+            $this->resetErrorBag(['latitude', 'longitude', 'location', 'city_id', 'district_id']);
+        }
+        if (in_array($propertyName, ['pickup_latitude', 'pickup_longitude', 'pickup_address'])) {
+            $this->resetErrorBag(['pickup_latitude', 'pickup_longitude', 'pickup_address', 'city_id']);
+        }
+        if (in_array($propertyName, ['delivery_latitude', 'delivery_longitude', 'delivery_address'])) {
+            $this->resetErrorBag(['delivery_latitude', 'delivery_longitude', 'delivery_address']);
+        }
+        if ($propertyName === 'amount') {
+            $this->resetErrorBag('amount');
+        }
+    }
+
+    /**
      * Pilih & terapkan patokan tersimpan dari profil customer.
      */
     public function applySavedLandmark(string $patokan): void
     {
         $this->full_address = $patokan;
+        $this->resetErrorBag('full_address');
     }
 
     /**
@@ -223,6 +247,7 @@ class Create extends Component
         $current = (int) ($this->amount ?: 0);
         $new = max($min, min(100000000, $current + $delta));
         $this->amount = $new;
+        $this->resetErrorBag('amount');
     }
 
     /**
@@ -244,6 +269,7 @@ class Create extends Component
             }
         }
         $this->amount = max($min, min(100000000, $value));
+        $this->resetErrorBag('amount');
     }
 
     /**
@@ -519,6 +545,7 @@ class Create extends Component
             $this->city_id       = $matchedCity->id;
             $this->cityQuery     = $matchedCity->name;
             $this->districtsList = app(CitySearchService::class)->getDistrictsByCity((int) $matchedCity->id);
+            $this->resetErrorBag(['city_id', 'district_id', 'latitude', 'longitude', 'location']);
 
             // SELALU RESET district_id saat berpindah/memilih titik peta baru (mencegah membawa profil lama)
             $this->district_id   = '';
@@ -1111,7 +1138,7 @@ class Create extends Component
             'full_address'       => 'nullable|string|max:1000',
             'latitude'           => 'required|numeric|between:-90,90',
             'longitude'          => 'required|numeric|between:-180,180',
-            'photo'              => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
             'scheduled_date'     => 'nullable|date',
             'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
             'publish_time'       => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
@@ -1144,9 +1171,9 @@ class Create extends Component
         'scheduled_time.regex' => 'Format waktu tidak valid. Gunakan format 24-jam HH:MM, contoh: 9:30 atau 09:30',
         'publish_time.regex'   => 'Format jam mulai siar tidak valid. Gunakan format 24-jam HH:MM, contoh: 07:00',
         'custom_expiry_time.regex' => 'Format jam batas waktu tidak valid. Gunakan format 24-jam HH:MM, contoh: 23:59',
-        'photo.image'          => 'File harus berupa gambar (JPG, PNG, JPEG, WebP)',
-        'photo.mimes'          => 'Format foto harus berupa JPG, JPEG, PNG, atau WebP',
-        'photo.max'            => 'Ukuran foto maksimal 2MB',
+        'photo.image'          => 'File harus berupa gambar (JPG, JPEG, PNG)',
+        'photo.mimes'          => 'Format foto harus berupa JPG, JPEG, atau PNG.',
+        'photo.max'            => 'Ukuran foto maksimal 1.5MB',
     ];
 
     public function setServiceType(string $type): void
@@ -1459,7 +1486,7 @@ class Create extends Component
                 'delivery_address'   => 'required|string|max:500',
                 'delivery_latitude'  => 'required|numeric|between:-90,90',
                 'delivery_longitude' => 'required|numeric|between:-180,180',
-                'photo'              => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+                'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
                 'scheduled_date'     => 'nullable|date',
                 'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
             ];
@@ -1509,7 +1536,7 @@ class Create extends Component
                 'full_address'       => 'nullable|string|max:1000',
                 'latitude'           => 'required|numeric|between:-90,90',
                 'longitude'          => 'required|numeric|between:-180,180',
-                'photo'              => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+                'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
                 'scheduled_date'     => 'nullable|date',
                 'scheduled_time'     => ['nullable', 'regex:/^(?:[0-1]?\d|2[0-3]):[0-5]\d$/'],
             ];
@@ -1658,6 +1685,7 @@ class Create extends Component
     public function closeConfirmModal()
     {
         $this->showConfirmModal = false;
+        $this->dispatch('modal-closed');
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1707,6 +1735,7 @@ class Create extends Component
                 'delivery_address'   => 'required|string|max:500',
                 'delivery_latitude'  => 'required|numeric|between:-90,90',
                 'delivery_longitude' => 'required|numeric|between:-180,180',
+                'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
                 'amount'             => 'required|numeric|min:10000|max:100000000',
             ];
         } else {
@@ -1735,6 +1764,7 @@ class Create extends Component
                 'location'     => 'required|string|max:500',
                 'latitude'     => 'required|numeric|between:-90,90',
                 'longitude'    => 'required|numeric|between:-180,180',
+                'photo'        => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
                 'amount'       => 'required|numeric|min:10000|max:100000000',
             ];
         }

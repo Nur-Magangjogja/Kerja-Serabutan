@@ -94,7 +94,7 @@
                                 $titleText = $data['title'] ?? 'Permintaan Bantuan Baru';
                                 $iconColor = 'text-emerald-500 bg-emerald-50';
                             } elseif($type === 'rating_received') {
-                                $titleText = $data['title'] ?? '⭐ Rating Diterima';
+                                $titleText = $data['title'] ?? 'Rating Diterima';
                                 $iconColor = 'text-amber-500 bg-amber-50';
                             } else {
                                 $titleText = $data['title'] ?? 'Notifikasi';

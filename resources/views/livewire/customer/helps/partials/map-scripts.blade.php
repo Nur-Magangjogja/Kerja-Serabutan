@@ -22,8 +22,23 @@
         let deliveryGeocodeController = null;
         window.activeMapPoint = 'pickup';
 
+        function patchLeafletTouchEvents() {
+            if (typeof L !== 'undefined' && L.DomEvent && !L.DomEvent._cancelablePatched) {
+                L.DomEvent._cancelablePatched = true;
+                const originalPreventDefault = L.DomEvent.preventDefault;
+                L.DomEvent.preventDefault = function(e) {
+                    if (e && e.cancelable === false) {
+                        return this;
+                    }
+                    return originalPreventDefault.call(this, e);
+                };
+            }
+        }
+
         function waitForLeaflet(callback, maxAttempts = 60) {
+            patchLeafletTouchEvents();
             if (typeof L !== 'undefined') {
+                patchLeafletTouchEvents();
                 callback();
                 return;
             }
@@ -45,6 +60,7 @@
                 attempts++;
                 if (typeof L !== 'undefined') {
                     clearInterval(timer);
+                    patchLeafletTouchEvents();
                     callback();
                 } else if (attempts >= maxAttempts) {
                     clearInterval(timer);
@@ -1582,6 +1598,8 @@
                 return;
             }
 
+            patchLeafletTouchEvents();
+
             if (mapResizeTimer) {
                 clearTimeout(mapResizeTimer);
                 mapResizeTimer = null;
@@ -1779,16 +1797,122 @@
             }
         });
 
+        function clearFieldGuide(inputEl) {
+            if (!inputEl) return;
+
+            // Cari kontainer grup kolom terdekat
+            const parentGroup = inputEl.closest(
+                '#group-title, #group-amount, #group-map, #group-pickup-address, #group-delivery-address, ' +
+                '#group-onsite-location, #group-location, #group-full-address, #group-schedule, ' +
+                '#group-description, #group-photo, [id^="group-"]'
+            ) || inputEl.parentElement;
+
+            if (parentGroup) {
+                // 1. Bersihkan semua class border merah, ring error, dan background merah pada seluruh elemen di grup ini
+                const redTargets = parentGroup.querySelectorAll(
+                    'input, textarea, select, .border-red-500, [class*="ring-red-500"], [class*="bg-red-50"], [class*="dark:bg-red-950"]'
+                );
+                redTargets.forEach(target => {
+                    target.classList.remove(
+                        'border-red-500', 'ring-1', 'ring-2', 'ring-4', 'ring-red-500', 'ring-red-500/30', 'ring-red-400/60',
+                        'bg-red-50/20', 'dark:bg-red-950/20'
+                    );
+                    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.classList.contains('border')) {
+                        target.classList.add('border-gray-300', 'dark:border-gray-700');
+                    }
+                });
+
+                // Bersihkan juga pada elemen pemicu itu sendiri
+                inputEl.classList.remove(
+                    'border-red-500', 'ring-1', 'ring-2', 'ring-4', 'ring-red-500', 'ring-red-500/30', 'ring-red-400/60',
+                    'bg-red-50/20', 'dark:bg-red-950/20'
+                );
+                if (inputEl.tagName === 'INPUT' || inputEl.tagName === 'TEXTAREA' || inputEl.tagName === 'SELECT' || inputEl.classList.contains('border')) {
+                    inputEl.classList.add('border-gray-300', 'dark:border-gray-700');
+                }
+
+                // 2. Langsung sembunyikan semua teks pesan error wajib diisi pada grup ini
+                const errorMessages = parentGroup.querySelectorAll('.field-error-message');
+                errorMessages.forEach(msg => {
+                    msg.style.display = 'none';
+                });
+
+                // 3. Hentikan animasi / warna merah pada label seketika
+                const labels = parentGroup.querySelectorAll('label');
+                labels.forEach(lbl => {
+                    lbl.classList.remove('text-red-600', 'dark:text-red-400');
+                    lbl.style.transition = '';
+                    lbl.style.transform = '';
+                });
+            }
+        }
+        window.clearFieldGuide = clearFieldGuide;
+
+        // Listener 1: saat pengguna mulai mengetik (input), langsung hentikan pemandu
+        document.addEventListener('input', function(e) {
+            const el = e.target;
+            if (el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) {
+                clearFieldGuide(el);
+            }
+        }, true);
+
+        // Listener 2: saat pengguna mengubah opsi / dropdown / tanggal (change)
+        document.addEventListener('change', function(e) {
+            const el = e.target;
+            if (el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) {
+                clearFieldGuide(el);
+            }
+        }, true);
+
+        // Listener 3: saat pengguna memfokuskan atau mengklik kolom (focus)
+        document.addEventListener('focus', function(e) {
+            const el = e.target;
+            if (el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) {
+                clearFieldGuide(el);
+            }
+        }, true);
+
+        // Listener 4: saat pengguna mengklik tombol aksi di grup (tombol +/- nominal, preset nominal, dsb.)
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('#group-amount button, #group-schedule button, #group-full-address button, #group-map button');
+            if (btn) {
+                clearFieldGuide(btn);
+            }
+        }, true);
+
+        // Listener 5: saat peta diperbarui / titik lokasi ditentukan
+        ['map-address-updated', 'map-location-resolved', 'map-marker-placed', 'city-selected'].forEach(evtName => {
+            window.addEventListener(evtName, (e) => {
+                const groupMap = document.getElementById('group-map');
+                if (groupMap) clearFieldGuide(groupMap);
+                const groupLoc = document.getElementById('group-location') || document.getElementById('group-onsite-location');
+                if (groupLoc) clearFieldGuide(groupLoc);
+                const pt = e.detail?.point;
+                if (pt === 'pickup') {
+                    const g = document.getElementById('group-pickup-address');
+                    if (g) clearFieldGuide(g);
+                } else if (pt === 'delivery') {
+                    const g = document.getElementById('group-delivery-address');
+                    if (g) clearFieldGuide(g);
+                }
+            });
+        });
+
         window.scrollToFirstError = function() {
-            const findAndScroll = () => {
-                // Cari semua elemen penanda error, abaikan floating banner atas
+            // Jika pengguna sedang aktif mengetik di salah satu kolom, jangan ganggu / jangan scroll
+            if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                return false;
+            }
+
+            requestAnimationFrame(() => {
+                // Cari semua elemen penanda error yang masih tampil (abaikan banner atas dan yang sudah di-hidden)
                 const errorElements = Array.from(document.querySelectorAll(
                     '.field-error-message, ' +
                     '#group-title .field-error-message, #title-input.border-red-500, ' +
                     'input.border-red-500, textarea.border-red-500, select.border-red-500, ' +
                     '[class*="border-red-500"], [class*="ring-red-500"], ' +
                     '#group-map .border-red-500'
-                )).filter(el => !el.closest('#error-banner-top'));
+                )).filter(el => !el.closest('#error-banner-top') && el.offsetParent !== null && el.style.display !== 'none');
 
                 if (!errorElements || errorElements.length === 0) {
                     return false;
@@ -1808,7 +1932,6 @@
 
                 if (!firstEl) firstEl = errorElements[0];
 
-                // Arahkan ke LABEL error yang bersangkutan sesuai permintaan pengguna
                 let targetLabel = null;
                 const groupContainer = firstEl.closest(
                     '#group-title, #group-amount, #group-map, #group-pickup-address, #group-delivery-address, ' +
@@ -1835,9 +1958,8 @@
                     }
                 }
 
-                // Target scroll adalah label error (atau elemen error sebagai fallback)
                 const scrollTarget = targetLabel || firstEl;
-                const yOffset = -90; // Jarak nyaman di bawah header atas
+                const yOffset = -90;
                 const targetY = scrollTarget.getBoundingClientRect().top + window.pageYOffset + yOffset;
 
                 window.scrollTo({
@@ -1845,9 +1967,8 @@
                     behavior: 'smooth'
                 });
 
-                // Berikan animasi penekanan visual pada label error
                 if (targetLabel) {
-                    targetLabel.classList.add('text-red-600', 'dark:text-red-400', 'transition-all');
+                    targetLabel.classList.add('text-red-600', 'dark:text-red-400');
                     targetLabel.style.transition = 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.25s ease';
                     targetLabel.style.transform = 'scale(1.03)';
                     setTimeout(() => {
@@ -1857,30 +1978,17 @@
                         targetLabel.classList.remove('text-red-600', 'dark:text-red-400');
                         targetLabel.style.transition = '';
                         targetLabel.style.transform = '';
-                    }, 3500);
+                    }, 2500);
                 }
 
-                // Fokus pada input/textarea terkait dan beri highlight ring
                 const parentForInput = groupContainer || (targetLabel ? targetLabel.parentElement : null) || firstEl.parentElement;
                 if (parentForInput) {
                     const input = parentForInput.querySelector('input:not([type="hidden"]), textarea, select');
-                    if (input && typeof input.focus === 'function') {
+                    if (input && typeof input.focus === 'function' && document.activeElement !== input) {
                         input.focus({ preventScroll: true });
-                        input.classList.add('ring-4', 'ring-red-400/60', 'transition-all');
-                        setTimeout(() => {
-                            input.classList.remove('ring-4', 'ring-red-400/60');
-                        }, 3500);
                     }
                 }
-
-                return true;
-            };
-
-            // Jalankan segera dan beberapa kali jeda singkat agar sinkron dengan morphing DOM Livewire
-            findAndScroll();
-            setTimeout(findAndScroll, 60);
-            setTimeout(findAndScroll, 180);
-            setTimeout(findAndScroll, 350);
+            });
         };
 
         window.addEventListener('scroll-to-first-error', () => {
@@ -1903,18 +2011,6 @@
             Livewire.on('scroll-to-first-error', () => {
                 if (window.scrollToFirstError) window.scrollToFirstError();
             });
-            if (Livewire.hook) {
-                Livewire.hook('commit', ({ component, succeed }) => {
-                    succeed(() => {
-                        setTimeout(() => {
-                            const hasErrors = document.querySelector('.field-error-message, input.border-red-500, textarea.border-red-500, [class*="border-red-500"]');
-                            if (hasErrors && window.scrollToFirstError) {
-                                window.scrollToFirstError();
-                            }
-                        }, 80);
-                    });
-                });
-            }
         }
     });
 </script>

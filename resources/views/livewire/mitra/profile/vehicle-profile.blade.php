@@ -1,7 +1,60 @@
 <div>
     @if ($showModal)
         <div class="fixed inset-0 z-[60] overflow-y-auto" id="vehicle-profile-modal" data-vehicle-modal="true" aria-labelledby="modal-title" role="dialog" aria-modal="true"
-             x-data
+             x-data="{
+                 isOptimizingSim: false,
+                 isOptimizingStnk: false,
+                 simError: '',
+                 stnkError: '',
+                 async handleSimUpload(e) {
+                     const file = e.target.files?.[0];
+                     if (!file) return;
+                     this.simError = '';
+                     this.isOptimizingSim = true;
+                     try {
+                         let uploadFile = file;
+                         if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
+                             const result = await window.MobileImageOptimizer.optimizeImage(file, 'document');
+                             uploadFile = result.file;
+                         } else if (file.size > 2048 * 1024) {
+                             this.simError = 'Ukuran file asli melebihi batas 2MB.';
+                             this.isOptimizingSim = false;
+                             return;
+                         }
+                         await new Promise((resolve, reject) => {
+                             @this.upload('new_sim_photo', uploadFile, resolve, reject);
+                         });
+                     } catch (err) {
+                         this.simError = err?.message || 'Gagal memproses foto SIM. Silakan coba lagi.';
+                     } finally {
+                         this.isOptimizingSim = false;
+                     }
+                 },
+                 async handleStnkUpload(e) {
+                     const file = e.target.files?.[0];
+                     if (!file) return;
+                     this.stnkError = '';
+                     this.isOptimizingStnk = true;
+                     try {
+                         let uploadFile = file;
+                         if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
+                             const result = await window.MobileImageOptimizer.optimizeImage(file, 'document');
+                             uploadFile = result.file;
+                         } else if (file.size > 2048 * 1024) {
+                             this.stnkError = 'Ukuran file asli melebihi batas 2MB.';
+                             this.isOptimizingStnk = false;
+                             return;
+                         }
+                         await new Promise((resolve, reject) => {
+                             @this.upload('new_stnk_photo', uploadFile, resolve, reject);
+                         });
+                     } catch (err) {
+                         this.stnkError = err?.message || 'Gagal memproses foto STNK. Silakan coba lagi.';
+                     } finally {
+                         this.isOptimizingStnk = false;
+                     }
+                 }
+             }"
              x-init="$dispatch('vehicle-modal-opened'); $cleanup(() => $dispatch('vehicle-modal-closed'))">
             {{-- Backdrop --}}
             <div class="fixed inset-0 bg-zinc-900/70 backdrop-blur-sm transition-opacity" wire:click="closeModal" @click="$dispatch('vehicle-modal-closed')"></div>
@@ -13,7 +66,9 @@
                     <div class="px-6 py-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-800/30">
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xl">
-                                🛵
+                                <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
                             </div>
                             <div>
                                 <h3 class="text-base font-bold text-zinc-900 dark:text-white" id="modal-title">
@@ -126,7 +181,9 @@
                         <div class="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/20 space-y-3">
                             <div class="flex items-center justify-between">
                                 <span class="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center space-x-1.5">
-                                    <span>🪪</span>
+                                    <svg class="w-4 h-4 text-zinc-600 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                                    </svg>
                                     <span>1. Data SIM Motor (SIM C) <span class="text-rose-500">*</span></span>
                                 </span>
                                 @if ($current_sim_photo)
@@ -166,10 +223,16 @@
                                 @endif
 
                                 <input type="file"
-                                    wire:model="new_sim_photo"
                                     accept="image/*"
+                                    @change="handleSimUpload($event)"
                                     class="w-full text-xs text-zinc-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 dark:file:bg-zinc-700 dark:file:text-zinc-200">
-                                <p class="text-[10px] text-zinc-400">Pastikan nama & nomor SIM terbaca dengan jelas (Maks. 4MB).</p>
+                                
+                                <div x-show="isOptimizingSim" class="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                    Mengoptimalkan foto SIM...
+                                </div>
+                                <div x-show="simError" x-text="simError" class="text-xs text-rose-500"></div>
+
+                                <p class="text-[10px] text-zinc-400">Pastikan nama & nomor SIM terbaca dengan jelas (Maks. 2MB).</p>
                                 @error('new_sim_photo')
                                     <p class="text-xs text-rose-500">{{ $message }}</p>
                                 @enderror
@@ -180,7 +243,9 @@
                         <div class="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/20 space-y-3">
                             <div class="flex items-center justify-between">
                                 <span class="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center space-x-1.5">
-                                    <span>📄</span>
+                                    <svg class="w-4 h-4 text-zinc-600 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
                                     <span>2. Data STNK Kendaraan <span class="text-rose-500">*</span></span>
                                 </span>
                                 @if ($current_stnk_photo)
@@ -220,10 +285,16 @@
                                 @endif
 
                                 <input type="file"
-                                    wire:model="new_stnk_photo"
                                     accept="image/*"
+                                    @change="handleStnkUpload($event)"
                                     class="w-full text-xs text-zinc-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 dark:file:bg-zinc-700 dark:file:text-zinc-200">
-                                <p class="text-[10px] text-zinc-400">Foto bagian identitas kendaraan & nomor plat (Maks. 4MB).</p>
+                                
+                                <div x-show="isOptimizingStnk" class="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                    Mengoptimalkan foto STNK...
+                                </div>
+                                <div x-show="stnkError" x-text="stnkError" class="text-xs text-rose-500"></div>
+
+                                <p class="text-[10px] text-zinc-400">Foto bagian identitas kendaraan & nomor plat (Maks. 2MB).</p>
                                 @error('new_stnk_photo')
                                     <p class="text-xs text-rose-500">{{ $message }}</p>
                                 @enderror
@@ -264,7 +335,9 @@
                         {{-- Notice: Verifikasi Ulang bila edit --}}
                         @if ($is_verified)
                             <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-[11px] text-amber-800 dark:text-amber-300 flex items-center space-x-2">
-                                <span>⚠️</span>
+                                <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
                                 <span>Menyimpan perubahan data akan me-reset status verifikasi ke <strong>Menunggu Verifikasi</strong> sampai diperiksa kembali oleh Admin.</span>
                             </div>
                         @endif

@@ -1,9 +1,9 @@
 <div class="relative" 
-     x-data="{ open: false }" 
-     @click.away="open = false">
+     x-data="{ open: @entangle('isOpen') }" 
+     @click.away="if(open) { open = false; $wire.closeDropdown(); }">
 
     {{-- Trigger Button --}}
-    <button type="button" @click="open = !open"
+    <button type="button" @click="open = !open; if(open) { $wire.openDropdown(); } else { $wire.closeDropdown(); }"
         class="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold shadow-2xs cursor-pointer active:scale-95 transition-all max-w-[130px] xs:max-w-[160px] sm:max-w-[220px] shrink-0
         @if($territory['type'] === 'district')
             bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-700 dark:text-white border border-emerald-500/30 ring-2 ring-emerald-500/20
@@ -37,7 +37,7 @@
 
     {{-- Mobile Backdrop Overlay --}}
     <div x-cloak x-show="open" 
-        @click="open = false" 
+        @click="open = false; $wire.closeDropdown()" 
         x-transition:enter="transition ease-out duration-150"
         x-transition:enter-start="opacity-0"
         x-transition:enter-end="opacity-100"
@@ -68,7 +68,7 @@
                     {{ $totalCities }} Kota • {{ $totalDistricts }} Kec.
                 </span>
                 {{-- Close Button for Mobile --}}
-                <button type="button" @click="open = false" class="sm:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
+                <button type="button" @click="open = false; $wire.closeDropdown()" class="sm:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>

@@ -273,11 +273,28 @@ class Index extends Component
             }
         }
 
-        $totalHelps = (clone $statsQuery)->count();
-        $pendingHelps = (clone $statsQuery)->where('status', Help::STATUS_MENUNGGU_MITRA)->count();
-        $activeHelps = (clone $statsQuery)->whereIn('status', array_merge(Help::activeStatuses(), [Help::STATUS_WAITING_CONFIRMATION]))->count();
-        $completedHelps = (clone $statsQuery)->where('status', Help::STATUS_SELESAI)->count();
-        $cancelledHelps = (clone $statsQuery)->where('status', Help::STATUS_DIBATALKAN)->count();
+        // Consolidated Help Statistics - filtered by canonical Help territory scope
+        $activeHelpStatuses = array_merge(Help::activeStatuses(), [Help::STATUS_WAITING_CONFIRMATION]);
+        $quotedActiveStatuses = implode("', '", array_map('addslashes', $activeHelpStatuses));
+        $menungguMitraStatus = Help::STATUS_MENUNGGU_MITRA;
+        $selesaiStatus = Help::STATUS_SELESAI;
+        $dibatalkanStatus = Help::STATUS_DIBATALKAN;
+
+        $helpAggregates = (clone $statsQuery)
+            ->selectRaw("
+                COUNT(*) as total_helps,
+                SUM(CASE WHEN status = '{$menungguMitraStatus}' THEN 1 ELSE 0 END) as pending_helps,
+                SUM(CASE WHEN status IN ('{$quotedActiveStatuses}') THEN 1 ELSE 0 END) as active_helps,
+                SUM(CASE WHEN status = '{$selesaiStatus}' THEN 1 ELSE 0 END) as completed_helps,
+                SUM(CASE WHEN status = '{$dibatalkanStatus}' THEN 1 ELSE 0 END) as cancelled_helps
+            ")
+            ->first();
+
+        $totalHelps = (int) ($helpAggregates->total_helps ?? 0);
+        $pendingHelps = (int) ($helpAggregates->pending_helps ?? 0);
+        $activeHelps = (int) ($helpAggregates->active_helps ?? 0);
+        $completedHelps = (int) ($helpAggregates->completed_helps ?? 0);
+        $cancelledHelps = (int) ($helpAggregates->cancelled_helps ?? 0);
 
         $selectedHelp = $this->selectedHelpId ? Help::with(['customer', 'mitra', 'district.city', 'city', 'rating', 'cancelRequest.customer', 'cancelRequest.partner', 'escrowTransaction'])->find($this->selectedHelpId) : null;
         if ($selectedHelp && !$authService->canAccessHelp($admin, $selectedHelp)) {

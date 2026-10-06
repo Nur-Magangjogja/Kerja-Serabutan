@@ -142,7 +142,7 @@ class AdminSupportChatTest extends TestCase
         $this->actingAs($this->customerA);
 
         Livewire::test(\App\Livewire\Customer\Chat\Index::class)
-            ->call('selectAdmin', null, null, 'report')
+            ->call('selectAdmin', null, null, 'support')
             ->set('message', 'Halo Admin, saya butuh informasi platform.')
             ->call('sendMessage');
 
@@ -167,7 +167,7 @@ class AdminSupportChatTest extends TestCase
         $this->actingAs($this->customerA);
 
         $component = Livewire::test(\App\Livewire\Customer\Chat\Index::class)
-            ->call('selectAdmin', null, null, 'report')
+            ->call('selectAdmin', null, null, 'support')
             ->set('message', 'Pesan pertama')
             ->call('sendMessage');
 
@@ -206,7 +206,7 @@ class AdminSupportChatTest extends TestCase
         $this->actingAs($this->customerA);
 
         Livewire::test(\App\Livewire\Customer\Chat\Index::class)
-            ->call('selectAdmin', null, null, 'report')
+            ->call('selectAdmin', null, null, 'support')
             ->set('message', 'Pertanyaan umum ke Admin')
             ->call('sendMessage');
 
@@ -228,7 +228,7 @@ class AdminSupportChatTest extends TestCase
         $this->actingAs($this->mitraA);
 
         Livewire::test(\App\Livewire\Mitra\Chat\Index::class)
-            ->call('selectAdmin', null, null, 'report')
+            ->call('selectAdmin', null, null, 'support')
             ->set('message', 'Halo Admin, saya ingin konsultasi teknis.')
             ->call('sendMessage');
 
@@ -258,7 +258,7 @@ class AdminSupportChatTest extends TestCase
         $this->actingAs($this->mitraA);
 
         Livewire::test(\App\Livewire\Mitra\Chat\Index::class)
-            ->call('selectAdmin', null, null, 'report')
+            ->call('selectAdmin', null, null, 'support')
             ->set('message', 'Mitra meminta bantuan akun ke Admin')
             ->call('sendMessage');
 

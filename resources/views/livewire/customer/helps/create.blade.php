@@ -1,4 +1,29 @@
-<div x-data="{ previewModalPhoto: null, previewModalTitle: 'Review Foto Pendukung' }">
+<div x-data="{ 
+    previewModalPhoto: null, 
+    previewModalTitle: 'Review Foto Pendukung',
+    init() {
+        this.$watch('$wire.showConfirmModal', (val) => {
+            if (val) {
+                document.body.classList.add('overflow-hidden');
+            } else {
+                document.body.classList.remove('overflow-hidden');
+            }
+        });
+        this.$watch('previewModalPhoto', (val) => {
+            if (val) {
+                document.body.classList.add('overflow-hidden');
+            } else if (!this.$wire.showConfirmModal) {
+                document.body.classList.remove('overflow-hidden');
+            }
+        });
+        document.addEventListener('livewire:navigating', () => {
+            document.body.classList.remove('overflow-hidden');
+        }, { once: true });
+        window.addEventListener('pagehide', () => {
+            document.body.classList.remove('overflow-hidden');
+        }, { once: true });
+    }
+}">
     <style>
         [x-cloak] { display: none !important; }
         :root {
@@ -21,12 +46,20 @@
             height: 280px !important;
             min-height: 280px;
             z-index: 1;
+            touch-action: pan-x pan-y !important;
         }
         
         .leaflet-container {
             height: 100%;
             width: 100%;
             border-radius: 0.75rem;
+            touch-action: pan-x pan-y !important;
+        }
+
+        .leaflet-pane,
+        .leaflet-marker-pane,
+        .leaflet-marker-icon {
+            touch-action: none !important;
         }
 
         .custom-onsite-marker,
@@ -34,6 +67,7 @@
         .custom-delivery-marker {
             background: transparent !important;
             border: none !important;
+            touch-action: none !important;
         }
 
         /* Sembunyikan scrollbar pada container pill overflow */
@@ -219,7 +253,49 @@
                     </div>
 
                     <!-- 11. Foto Pendukung -->
-                    <div id="group-photo" class="space-y-2">
+                    <div id="group-photo" class="space-y-2"
+                         x-data="{
+                             isOptimizingPhoto: false,
+                             photoError: '',
+                             async handlePhotoUpload(event) {
+                                 const input = event.target;
+                                 const file = input.files && input.files[0];
+                                 if (!file) return;
+
+                                 this.photoError = '';
+                                 this.isOptimizingPhoto = true;
+
+                                 try {
+                                     let optimizedFile = file;
+                                     if (window.MobileImageOptimizer && typeof window.MobileImageOptimizer.optimizeImage === 'function') {
+                                         const res = await window.MobileImageOptimizer.optimizeImage(file, 'evidence');
+                                         if (!res.ok) {
+                                             this.isOptimizingPhoto = false;
+                                             this.photoError = res.error || 'Gagal memproses gambar.';
+                                             input.value = '';
+                                             return;
+                                         }
+                                         optimizedFile = res.file;
+                                     }
+
+                                     @this.upload('photo', optimizedFile,
+                                         (uploadedName) => {
+                                             this.isOptimizingPhoto = false;
+                                             this.photoError = '';
+                                         },
+                                         (error) => {
+                                             this.isOptimizingPhoto = false;
+                                             this.photoError = 'Gagal mengunggah foto ke server. Silakan coba lagi.';
+                                             input.value = '';
+                                         }
+                                     );
+                                 } catch (err) {
+                                     this.isOptimizingPhoto = false;
+                                     this.photoError = 'Terjadi kesalahan saat memproses foto.';
+                                     input.value = '';
+                                 }
+                             }
+                         }">
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300">
                             <span class="flex items-center justify-between">
                                 <span class="flex items-center">
@@ -241,7 +317,23 @@
                         </label>
 
                         <!-- Hidden Input File -->
-                        <input type="file" wire:model="photo" accept="image/png, image/jpeg, image/jpg, image/webp, .png, .jpg, .jpeg, .webp" id="photo-input" class="hidden">
+                        <input type="file" 
+                               accept="image/*" 
+                               @change="handlePhotoUpload($event)"
+                               :disabled="isOptimizingPhoto"
+                               id="photo-input" 
+                               class="hidden">
+
+                        <!-- Optimizing State saat Kompresi Klien Berlangsung -->
+                        <div x-show="isOptimizingPhoto" x-cloak class="w-full p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl text-center">
+                            <div class="flex items-center justify-center gap-2.5 text-blue-600 dark:text-blue-400 font-semibold text-xs">
+                                <svg class="animate-spin h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                                <span>Mengoptimalkan ukuran gambar...</span>
+                            </div>
+                        </div>
 
                         <!-- Loading State saat Upload Berlangsung -->
                         <div wire:loading wire:target="photo" class="w-full p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl text-center">
@@ -250,7 +342,7 @@
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                                 </svg>
-                                <span>Sedang memproses & mengunggah gambar...</span>
+                                <span>Sedang mengunggah gambar ke server...</span>
                             </div>
                         </div>
 
@@ -372,7 +464,8 @@
                         @else
                             <!-- Empty Upload Dropzone -->
                             <label for="photo-input" wire:loading.remove wire:target="photo"
-                                class="group flex flex-col items-center justify-center w-full py-6 px-4 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer transition-all duration-200 bg-white dark:bg-gray-800/80 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 text-center shadow-2xs">
+                                class="group flex flex-col items-center justify-center w-full py-6 px-4 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer transition-all duration-200 bg-white dark:bg-gray-800/80 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 text-center shadow-2xs"
+                                :class="{ 'opacity-50 pointer-events-none': isOptimizingPhoto }">
                                 <div class="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -382,13 +475,15 @@
                                     Pilih atau Ambil Foto Pendukung
                                 </p>
                                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-                                    Maksimal 2MB (JPG, JPEG, PNG, WebP)
+                                    Maksimal 1.5MB (JPG, JPEG, PNG)
                                 </p>
                             </label>
                         @endif
 
+                        <p x-show="photoError" x-cloak x-text="photoError" class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 flex items-center font-medium"></p>
+
                         @error('photo')
-                            <span class="text-red-500 dark:text-red-400 text-xs mt-1.5 flex items-center font-medium">
+                            <span class="field-error-message text-red-500 dark:text-red-400 text-xs mt-1.5 flex items-center font-medium">
                                 <svg class="w-3.5 h-3.5 mr-1 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                 </svg>

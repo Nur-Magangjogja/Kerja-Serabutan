@@ -265,6 +265,9 @@
                         <div class="inline-block p-3 bg-white rounded-2xl shadow-md border border-gray-100">
                             @php
                                 $displayQrisUrl = str_starts_with($qrisImage, 'images/') ? asset($qrisImage) : asset('storage/' . $qrisImage);
+                                $rawQrisExt = strtolower(pathinfo(parse_url($qrisImage, PHP_URL_PATH) ?: $qrisImage, PATHINFO_EXTENSION));
+                                $qrisExt = in_array($rawQrisExt, ['png', 'jpg', 'jpeg', 'webp']) ? $rawQrisExt : 'png';
+                                $qrisDownloadFilename = 'QRIS-SayaBantu.' . $qrisExt;
                             @endphp
                             <img src="{{ $displayQrisUrl }}" 
                                  alt="QRIS Barcode" 
@@ -276,7 +279,7 @@
                             <!-- Tombol Unduh QRIS -->
                             <div class="mt-3 pt-2 border-t border-gray-100">
                                 <a href="{{ $displayQrisUrl }}" 
-                                   download="QRIS-SayaBantu.png" 
+                                   download="{{ $qrisDownloadFilename }}" 
                                    target="_blank"
                                    class="inline-flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 text-blue-700 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer border border-blue-200">
                                     <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,14 +301,55 @@
                         </div>
                     </div>
 
-                    <form wire:submit="submitRequest" class="space-y-4">
+                    <form wire:submit="submitRequest" class="space-y-4"
+                        x-data="{
+                            optimizing: false,
+                            uploadError: null,
+                            async handleProofUpload(e) {
+                                const file = e.target.files[0];
+                                if (!file) return;
+                                this.uploadError = null;
+                                this.optimizing = true;
+                                try {
+                                    const res = typeof MobileImageOptimizer !== 'undefined'
+                                        ? await MobileImageOptimizer.optimizeImage(file, 'evidence')
+                                        : { file: file, warning: null };
+                                    if (res.warning) console.warn(res.warning);
+                                    if (res.file.size > 1536 * 1024) {
+                                        this.uploadError = 'Ukuran file bukti maksimal 1.5MB.';
+                                        e.target.value = '';
+                                        this.optimizing = false;
+                                        return;
+                                    }
+                                    @this.upload('proofOfPayment', res.file,
+                                        () => { this.optimizing = false; },
+                                        () => {
+                                            this.uploadError = 'Gagal mengunggah bukti transfer. Silakan coba lagi.';
+                                            this.optimizing = false;
+                                            e.target.value = '';
+                                        }
+                                    );
+                                } catch (err) {
+                                    console.error('Image optimization failed:', err);
+                                    this.uploadError = 'Format gambar tidak didukung atau rusak.';
+                                    this.optimizing = false;
+                                    e.target.value = '';
+                                }
+                            }
+                        }">
                         <!-- Upload Bukti Transfer -->
                         <div>
                             <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
                                 <span></span> Upload Bukti Transfer QRIS <span class="text-red-500">*</span>
                             </label>
+
+                            <div x-show="uploadError" x-cloak class="mb-2 p-2.5 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs rounded-xl border border-rose-200 dark:border-rose-800/60 flex items-center justify-between">
+                                <span x-text="uploadError"></span>
+                                <button type="button" @click="uploadError = null" class="text-xs font-bold underline ml-2">Tutup</button>
+                            </div>
+
                             <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/60 dark:bg-gray-700/30 rounded-xl p-5 text-center hover:border-blue-400 dark:hover:border-blue-500 transition relative">
-                                <input type="file" wire:model="proofOfPayment" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg" class="hidden" id="proofUpload">
+                                <input type="file" @change="handleProofUpload($event)" accept="image/*" class="hidden" id="proofUpload">
                                 
                                 @if ($proofOfPayment)
                                     <label for="proofUpload" class="cursor-pointer block">
@@ -334,11 +378,15 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                         </svg>
                                         <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">Pilih Bukti Pembayaran QRIS</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Format: JPG, JPEG, atau PNG (Maks 2MB)</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Format: JPG, JPEG, atau PNG (Maks 1.5MB)</p>
                                     </label>
                                 @endif
                             </div>
                             @error('proofOfPayment') <span class="text-xs text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ $message }}</span> @enderror
+                            <div x-show="optimizing" x-cloak class="text-xs text-blue-600 dark:text-blue-400 mt-1 font-medium flex items-center gap-1.5">
+                                <svg class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                <span>Mengompresi dan memproses unggahan bukti...</span>
+                            </div>
                             <div wire:loading wire:target="proofOfPayment" class="text-xs text-blue-600 dark:text-blue-400 mt-1 font-medium">
                                 Memproses unggahan bukti...
                             </div>

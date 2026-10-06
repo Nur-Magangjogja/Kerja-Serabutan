@@ -88,7 +88,7 @@ class Chat extends Component
 
         $this->validate([
             'message' => 'required_without:photo|nullable|string|max:2000',
-            'photo'   => 'nullable|image|max:5120',
+            'photo'   => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
         ]);
 
         $photoName = $this->photo ? $this->photo->getClientOriginalName() : '';

@@ -160,9 +160,9 @@ new #[Layout('layouts.guest')] class extends Component {
                 // ignore
             }
 
-            // Kirim notifikasi ke admin regional terkait pengajuan KTP baru (berdasarkan Profile/Identity Territory target user)
+            // Kirim notifikasi ke admin regional & SuperAdmin terkait pengajuan KTP baru
             try {
-                $admins = app(\App\Services\AccountNotificationService::class)->resolveAdminsForUser($user);
+                $admins = app(\App\Services\AccountNotificationService::class)->resolveAdminsForUser($user, includeSuperAdmin: true);
                 foreach ($admins as $adm) {
                     $adm->notify(new \App\Notifications\NewKtpVerificationNotification($user));
                 }

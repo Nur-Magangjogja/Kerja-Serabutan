@@ -211,10 +211,10 @@
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                         @forelse($cancellations as $req)
                             @php
-                                $helpLogs = $req->help?->cancelRequests ?? collect([$req]);
-                                $cancelCount = $helpLogs->count();
+                                $cancelCount = $req->help?->cancel_requests_count ?? ($req->help?->cancelRequests?->count() ?? 1);
                                 $hasMultipleCancels = ($cancelCount > 1);
                                 $isExpanded = in_array($req->help_id, $expandedHelpIds, true);
+                                $helpLogs = $isExpanded ? $this->getHelpLogs($req->help_id) : collect([$req]);
                             @endphp
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-900 transition {{ $hasMultipleCancels ? 'bg-amber-50/20 dark:bg-amber-950/10' : '' }}">
                                 <td class="p-4">

@@ -209,16 +209,16 @@
             } catch(e) {}
         }
 
-        let _lastSoundPlayedAt = 0;
+        window._lastSoundPlayedAt = window._lastSoundPlayedAt || 0;
         window.playNotificationSound = function(options = {}) {
             try {
                 const now = Date.now();
                 const minInterval = (typeof options.minInterval === 'number') ? options.minInterval : 4000;
                 // Cegah spam audio chime bertubi-tubi
-                if (!options.ignoreThrottle && (now - _lastSoundPlayedAt < minInterval)) {
+                if (!options.ignoreThrottle && (now - window._lastSoundPlayedAt < minInterval)) {
                     return;
                 }
-                _lastSoundPlayedAt = now;
+                window._lastSoundPlayedAt = now;
 
                 const force = options && options.force === true;
                 const soundEnabled = (typeof window.getNotificationSoundEnabled === 'function')
@@ -242,7 +242,7 @@
             }
         };
 
-        // Pre-unlock audio on user interaction
+        // Pre-unlock audio on user interaction (only genuine activation gestures: click, touch, keydown)
         (function() {
             let unlocked = false;
             const unlock = () => {
@@ -254,7 +254,7 @@
                             window._notifAudioCtx = new AudioCtx();
                         }
                         if (window._notifAudioCtx.state === 'suspended') {
-                            window._notifAudioCtx.resume();
+                            window._notifAudioCtx.resume().catch(() => {});
                         }
                     }
                     const a = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
@@ -265,7 +265,7 @@
                     }
                 } catch(e) {}
             };
-            ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown', 'scroll'].forEach(evt => {
+            ['click', 'touchstart', 'touchend', 'keydown'].forEach(evt => {
                 window.addEventListener(evt, unlock, { once: true, passive: true });
             });
         })();

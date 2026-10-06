@@ -376,6 +376,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/settings/appearance', \App\Livewire\Admin\Settings\Appearance::class)->name('settings.appearance');
     Route::get('/helps', \App\Livewire\Admin\Helps\Index::class)->name('helps');
     Route::get('/verifications', \App\Livewire\Admin\Verifications\Index::class)->name('verifications');
+    Route::get('/notifications', \App\Livewire\Admin\Notifications\Index::class)->name('notifications.index');
     Route::get('/users', \App\Livewire\SuperAdmin\Users\Index::class)->name('users.index');
 
     // Withdraw Management (Full Livewire)

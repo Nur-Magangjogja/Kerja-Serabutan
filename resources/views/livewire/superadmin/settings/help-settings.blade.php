@@ -625,7 +625,7 @@
 
                         <!-- Image Display Box -->
                         <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700 text-center shadow-xs">
-                            @if($qris_image)
+                            @if($qris_image && (!method_exists($qris_image, 'isPreviewable') || $qris_image->isPreviewable()))
                                 <div class="space-y-2">
                                     <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200">
                                         Preview Gambar Baru (Belum Disimpan)
@@ -660,9 +660,70 @@
                         </div>
 
                         <!-- Upload Control -->
-                        <div x-data="{ fileName: 'Belum ada file dipilih' }">
+                        <div x-data="{
+                            fileName: 'Belum ada file dipilih',
+                            isOptimizing: false,
+                            qrisError: '',
+                            async handleQrisChange(event) {
+                                const file = event.target.files[0];
+                                if (!file) return;
+                                this.qrisError = '';
+                                this.fileName = file.name;
+
+                                if (typeof MobileImageOptimizer !== 'undefined') {
+                                    this.isOptimizing = true;
+                                    try {
+                                        const res = await MobileImageOptimizer.optimizeImage(file, 'qris');
+                                        if (res.error) {
+                                            this.qrisError = res.message || 'Gagal mengoptimalkan gambar QRIS.';
+                                            this.isOptimizing = false;
+                                            event.target.value = '';
+                                            return;
+                                        }
+                                        if (res.file.size > 1024 * 1024) {
+                                            this.qrisError = 'Ukuran gambar QRIS melebihi batas maksimal 1MB.';
+                                            this.isOptimizing = false;
+                                            event.target.value = '';
+                                            return;
+                                        }
+                                        @this.upload('qris_image', res.file,
+                                            () => { this.isOptimizing = false; },
+                                            (err) => {
+                                                this.isOptimizing = false;
+                                                this.qrisError = 'Gagal mengunggah QRIS: ' + (err || 'Terjadi kesalahan');
+                                            }
+                                        );
+                                    } catch (e) {
+                                        this.isOptimizing = false;
+                                        this.qrisError = 'Gagal memproses gambar QRIS: ' + (e.message || 'Terjadi kesalahan');
+                                        event.target.value = '';
+                                    }
+                                } else {
+                                    // Fallback when optimizer is missing
+                                    const isPng = file.type === 'image/png' || file.name.toLowerCase().endsWith('.png');
+                                    if (!isPng) {
+                                        this.qrisError = 'Gambar QRIS tidak dapat dikonversi ke PNG pada browser ini. Silakan gunakan file PNG.';
+                                        event.target.value = '';
+                                        return;
+                                    }
+                                    if (file.size > 1024 * 1024) {
+                                        this.qrisError = 'Ukuran file PNG maksimal 1MB.';
+                                        event.target.value = '';
+                                        return;
+                                    }
+                                    this.isOptimizing = true;
+                                    @this.upload('qris_image', file,
+                                        () => { this.isOptimizing = false; },
+                                        (err) => {
+                                            this.isOptimizing = false;
+                                            this.qrisError = 'Gagal mengunggah QRIS: ' + (err || 'Terjadi kesalahan');
+                                        }
+                                    );
+                                }
+                            }
+                        }">
                             <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                                Upload Gambar QRIS Baru (PNG, JPG, WebP)
+                                Upload Gambar QRIS Baru (Format Otomatis Menjadi PNG)
                             </label>
                             <div class="flex items-center gap-2 w-full bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 p-1 cursor-pointer"
                                  @click="$refs.qrisInput.click()">
@@ -671,18 +732,23 @@
                                 </span>
                                 <span class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="fileName"></span>
                             </div>
-                            <input type="file" x-ref="qrisInput" wire:model="qris_image"
+                            <input type="file" x-ref="qrisInput"
                                    accept="image/png,image/jpeg,image/jpg,image/webp"
                                    class="hidden"
-                                   @change="fileName = $event.target.files[0] ? $event.target.files[0].name : 'Belum ada file dipilih'" />
-                            @error('qris_image')
-                                <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span>
-                            @enderror
+                                   @change="handleQrisChange($event)" />
+                            <div x-show="isOptimizing" class="text-xs text-primary-600 dark:text-primary-400 mt-1 flex items-center gap-2" style="display: none;">
+                                <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span>Mengoptimasi & memproses gambar QRIS...</span>
+                            </div>
                             <div wire:loading wire:target="qris_image" class="text-xs text-primary-600 dark:text-primary-400 mt-1">
                                 Mengunggah dan memproses gambar preview...
                             </div>
+                            <div x-show="qrisError" x-text="qrisError" class="text-xs text-red-500 mt-1 block font-medium" style="display: none;"></div>
+                            @error('qris_image')
+                                <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span>
+                            @enderror
                             <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5">
-                                Rekomendasi: Gunakan gambar QRIS berbentuk persegi (1:1) dengan resolusi minimal 500x500 piksel agar mudah di-scan oleh kamera smartphone.
+                                Rekomendasi: Format PNG (maksimal 1MB). Gunakan gambar QRIS persegi (1:1) atau vertikal berlatar belakang putih agar barcode jelas dan mudah dipindai oleh kamera smartphone.
                             </p>
                         </div>
                     </div>

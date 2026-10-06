@@ -64,19 +64,24 @@ class Index extends Component
         });
         $statsQuery = $resolver->applyAdminTerritoryScope($statsQuery, $admin);
 
-        // Stats
-        $totalPending = (clone $statsQuery)->where('status', 'pending')->count();
-        $totalInProgress = (clone $statsQuery)->whereIn('status', ['in_progress', 'investigating'])->count();
-        $totalResolved = (clone $statsQuery)->where('status', 'resolved')->count();
-        $totalRefundRequested = (clone $statsQuery)->whereIn('refund_status', ['requested', 'pending'])->count();
-        $totalFromCustomer = (clone $statsQuery)->where(function ($q) {
-            $q->whereHas('reporter', fn($sq) => $sq->where('role', 'customer'))
-              ->orWhere('report_type', 'customer_to_partner');
-        })->count();
-        $totalFromMitra = (clone $statsQuery)->where(function ($q) {
-            $q->whereHas('reporter', fn($sq) => $sq->where('role', 'mitra'))
-              ->orWhere('report_type', 'partner_to_customer');
-        })->count();
+        // Consolidated Report Statistics - filtered by canonical territory scope
+        $stats = (clone $statsQuery)
+            ->selectRaw("
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as total_pending,
+                SUM(CASE WHEN status IN ('in_progress', 'investigating') THEN 1 ELSE 0 END) as total_in_progress,
+                SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as total_resolved,
+                SUM(CASE WHEN refund_status IN ('requested', 'pending') THEN 1 ELSE 0 END) as total_refund_requested,
+                SUM(CASE WHEN (report_type = 'customer_to_partner' OR EXISTS (SELECT 1 FROM users WHERE users.id = partner_reports.reporter_id AND users.role = 'customer')) THEN 1 ELSE 0 END) as total_from_customer,
+                SUM(CASE WHEN (report_type = 'partner_to_customer' OR EXISTS (SELECT 1 FROM users WHERE users.id = partner_reports.reporter_id AND users.role = 'mitra')) THEN 1 ELSE 0 END) as total_from_mitra
+            ")
+            ->first();
+
+        $totalPending = (int) ($stats->total_pending ?? 0);
+        $totalInProgress = (int) ($stats->total_in_progress ?? 0);
+        $totalResolved = (int) ($stats->total_resolved ?? 0);
+        $totalRefundRequested = (int) ($stats->total_refund_requested ?? 0);
+        $totalFromCustomer = (int) ($stats->total_from_customer ?? 0);
+        $totalFromMitra = (int) ($stats->total_from_mitra ?? 0);
 
         // Main Query
         $query = PartnerReport::with(['reporter.district', 'reportedUser.district', 'reportedHelp.district', 'reportedHelp.city', 'resolvedBy'])

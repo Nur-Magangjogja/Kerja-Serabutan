@@ -18,9 +18,18 @@ class HelpStatusNotification extends Notification
     protected $customMessage;
     protected $customTitle;
     protected $customUrl;
+    protected $fromName;
 
-    public function __construct($help, $oldStatus = null, $newStatus = null, $mitra = null, $customMessage = null, $customTitle = null, ?string $customUrl = null)
-    {
+    public function __construct(
+        $help,
+        $oldStatus = null,
+        $newStatus = null,
+        $mitra = null,
+        $customMessage = null,
+        $customTitle = null,
+        ?string $customUrl = null,
+        ?string $fromName = null
+    ) {
         $this->help = $help;
         $this->oldStatus = $oldStatus;
         $this->newStatus = $newStatus ?? $help?->status;
@@ -35,6 +44,7 @@ class HelpStatusNotification extends Notification
 
         $this->customTitle = $customTitle;
         $this->customUrl = $customUrl;
+        $this->fromName = $fromName;
     }
 
     public function via($notifiable)
@@ -45,16 +55,26 @@ class HelpStatusNotification extends Notification
     public function toArray($notifiable)
     {
         $mitraName = $this->mitra?->name ?? 'Mitra';
+        $senderName = $this->fromName ?: ($this->mitra?->name ?? 'SayaBantu');
 
         $statusNorm = $this->help ? Help::normalizeStatus($this->newStatus) : $this->newStatus;
         $targetTime = $this->help?->getScheduledTargetTime()?->format('H:i') ?? 'sesuai jadwal';
         $helpTitle = $this->help?->title ?? 'Tugas Bantuan';
 
         $title = $this->customTitle ?: match (strtolower($this->newStatus === 'scheduled_departure_due' ? 'scheduled_departure_due' : ($this->newStatus === 'near_arrival' ? 'near_arrival' : $statusNorm))) {
-            'scheduled_departure_due'           => "⏰ Waktunya Berangkat (Tugas Terjadwal)",
-            'near_arrival'                      => "🛵 Rekan Jasa Hampir Sampai",
+            'scheduled_departure_due'           => "Waktunya Berangkat (Tugas Terjadwal)",
+            'near_arrival'                      => "Rekan Jasa Hampir Sampai",
             'admin_clarification'               => "Pesan dari Tim Admin SayaBantu",
             'cancellation_response'             => "Tanggapan Klarifikasi Pembatalan",
+            'switch_partner_requested'          => "Pengajuan Ganti Rekan Jasa",
+            'switch_partner_confirmed'          => "Pergantian Rekan Jasa Disetujui",
+            'switch_partner_rejected'           => "Tanggapan Keberatan Ganti Rekan Jasa",
+            'partner_incident_reported'         => "Laporan Kendala Pengerjaan",
+            'partner_cancelled_transit'         => "Pencarian Rekan Jasa Baru",
+            'customer_withdraw_requested'       => "Pengajuan Pembatalan Pesanan",
+            'customer_withdraw_confirmed'       => "Pembatalan Pesanan Disetujui",
+            'order_cancelled_refunded'          => "Pesanan Dibatalkan dan Pengembalian Dana",
+            'admin_dispute_resolved'            => "Keputusan Penyelesaian Admin",
             Help::STATUS_TAKEN                  => "Rekan Jasa Mengambil Pesanan",
             Help::STATUS_MENUNGGU_MITRA         => "Mencari Rekan Jasa Baru",
             Help::STATUS_PARTNER_ON_THE_WAY     => "Rekan Jasa Menuju Lokasi",
@@ -66,7 +86,7 @@ class HelpStatusNotification extends Notification
             Help::STATUS_CUSTOMER_CANCEL_REQUESTED => "Pengajuan Pembatalan Customer",
             'cancel_accepted'                   => "Pembatalan Diterima",
             'cancel_rejected'                   => "Pembatalan Ditolak",
-            'partner_unlinked_free'             => "🔓 Anda Telah Dibebaskan dari Tugas",
+            'partner_unlinked_free'             => "Anda Telah Dibebaskan dari Tugas",
             Help::STATUS_DIBATALKAN             => "Bantuan Dibatalkan",
             default                             => "Pembaruan Status Bantuan"
         };
@@ -76,6 +96,15 @@ class HelpStatusNotification extends Notification
             'near_arrival'                      => "Rekan Jasa $mitraName sudah hampir sampai di lokasi Anda (jarak < 250 meter). Silakan bersiap menyambut rekan jasa.",
             'admin_clarification'               => "Tim Admin mengirimkan pesan terkait tugas '{$helpTitle}'.",
             'cancellation_response'             => "Terdapat tanggapan klarifikasi baru untuk tugas '{$helpTitle}'.",
+            'switch_partner_requested'          => "Pemesan mengajukan permohonan penggantian rekan jasa untuk tugas '{$helpTitle}'. Silakan tinjau dan berikan konfirmasi.",
+            'switch_partner_confirmed'          => "Penggantian rekan jasa untuk tugas '{$helpTitle}' telah disetujui. Sistem sedang mencari rekan jasa baru.",
+            'switch_partner_rejected'           => "Rekan jasa telah menyampaikan keberatan atas pergantian rekan jasa pada tugas '{$helpTitle}'. Kasus sedang ditinjau oleh Admin Wilayah.",
+            'partner_incident_reported'         => "Rekan jasa $mitraName melaporkan kendala pada pengerjaan tugas '{$helpTitle}'. Admin Wilayah sedang meninjau dan berkoordinasi dengan pemesan.",
+            'partner_cancelled_transit'         => "Rekan jasa sebelumnya mengalami kendala di perjalanan. Tugas '{$helpTitle}' telah dialihkan kembali ke pencarian rekan jasa baru.",
+            'customer_withdraw_requested'       => "Pemesan mengajukan penarikan / pembatalan untuk tugas '{$helpTitle}'. Mohon berikan tanggapan konfirmasi Anda.",
+            'customer_withdraw_confirmed'       => "Pembatalan tugas '{$helpTitle}' telah disetujui. Saldo pemesan telah dikembalikan 100%.",
+            'order_cancelled_refunded'          => "Tugas '{$helpTitle}' telah resmi dibatalkan dan pengembalian dana telah diproses.",
+            'admin_dispute_resolved'            => "Tim Admin Wilayah telah menyelesaikan evaluasi untuk tugas '{$helpTitle}'.",
             Help::STATUS_TAKEN                  => "Rekan Jasa $mitraName telah mengambil pesanan bantuan Anda '{$helpTitle}'. Silakan pantau perkembangannya.",
             Help::STATUS_MENUNGGU_MITRA         => "Pesanan Anda '{$helpTitle}' kembali tersedia dan sedang mencari Rekan Jasa baru.",
             Help::STATUS_PARTNER_ON_THE_WAY     => "Rekan Jasa $mitraName sedang dalam perjalanan menuju lokasi Anda.",
@@ -101,7 +130,7 @@ class HelpStatusNotification extends Notification
             'help_amount' => $this->help->amount ?? null,
             'mitra_id' => $this->mitra?->id ?? null,
             'mitra_name' => $mitraName,
-            'from_name' => $mitraName,
+            'from_name' => $senderName,
             'old_status' => $this->oldStatus,
             'new_status' => $this->newStatus,
             'message' => $message,

@@ -74,12 +74,22 @@ class Index extends Component
             }
         }
 
-        // Stats
-        $totalPending    = (clone $baseQuery)->where('status', 'pending')->count();
-        $totalInProgress = (clone $baseQuery)->whereIn('status', ['in_progress', 'investigating', 'under_review'])->count();
-        $totalResolved   = (clone $baseQuery)->whereIn('status', ['resolved', 'closed', 'dismissed'])->count();
-        $totalFromCustomer = (clone $baseQuery)->where('category', 'dari_customer')->count();
-        $totalFromMitra    = (clone $baseQuery)->where('category', 'dari_mitra')->count();
+        // Consolidated Support Statistics - strictly report_type = 'dukungan_umum' and Profile Territory scoped
+        $stats = (clone $baseQuery)
+            ->selectRaw("
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as total_pending,
+                SUM(CASE WHEN status IN ('in_progress', 'investigating', 'under_review') THEN 1 ELSE 0 END) as total_in_progress,
+                SUM(CASE WHEN status IN ('resolved', 'closed', 'dismissed') THEN 1 ELSE 0 END) as total_resolved,
+                SUM(CASE WHEN category = 'dari_customer' THEN 1 ELSE 0 END) as total_from_customer,
+                SUM(CASE WHEN category = 'dari_mitra' THEN 1 ELSE 0 END) as total_from_mitra
+            ")
+            ->first();
+
+        $totalPending      = (int) ($stats->total_pending ?? 0);
+        $totalInProgress   = (int) ($stats->total_in_progress ?? 0);
+        $totalResolved     = (int) ($stats->total_resolved ?? 0);
+        $totalFromCustomer = (int) ($stats->total_from_customer ?? 0);
+        $totalFromMitra    = (int) ($stats->total_from_mitra ?? 0);
 
         // Main Query with filters
         $query = (clone $baseQuery)

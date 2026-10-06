@@ -400,7 +400,42 @@
 
                     {{-- Form: Setujui (Approve) --}}
                     @if($reviewTab === 'approve')
-                        <div class="p-3.5 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 space-y-3">
+                        <div class="p-3.5 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 space-y-3"
+                            x-data="{
+                                optimizing: false,
+                                uploadError: null,
+                                async handleProofUpload(e) {
+                                    const file = e.target.files[0];
+                                    if (!file) return;
+                                    this.uploadError = null;
+                                    this.optimizing = true;
+                                    try {
+                                        const res = typeof MobileImageOptimizer !== 'undefined'
+                                            ? await MobileImageOptimizer.optimizeImage(file, 'evidence')
+                                            : { file: file, warning: null };
+                                        if (res.warning) console.warn(res.warning);
+                                        if (res.file.size > 1536 * 1024) {
+                                            this.uploadError = 'Ukuran file foto maksimal 1.5MB.';
+                                            e.target.value = '';
+                                            this.optimizing = false;
+                                            return;
+                                        }
+                                        @this.upload('proofPhoto', res.file,
+                                            () => { this.optimizing = false; },
+                                            () => {
+                                                this.uploadError = 'Gagal mengunggah foto bukti. Silakan coba lagi.';
+                                                this.optimizing = false;
+                                                e.target.value = '';
+                                            }
+                                        );
+                                    } catch (err) {
+                                        console.error('Image optimization failed:', err);
+                                        this.uploadError = 'Format gambar tidak didukung atau rusak.';
+                                        this.optimizing = false;
+                                        e.target.value = '';
+                                    }
+                                }
+                            }">
                             <div class="flex items-start gap-2 text-xs text-emerald-800 dark:text-emerald-200">
                                 <span class="text-base leading-none">ℹ️</span>
                                 <p class="leading-relaxed">
@@ -408,11 +443,20 @@
                                 </p>
                             </div>
 
+                            <div x-show="uploadError" x-cloak class="p-2 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs rounded-xl border border-rose-200 dark:border-rose-800/60 flex items-center justify-between">
+                                <span x-text="uploadError"></span>
+                                <button type="button" @click="uploadError = null" class="text-xs font-bold underline ml-2">Tutup</button>
+                            </div>
+
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Unggah Struk / Bukti Transfer Bank <span class="text-rose-500">*</span></label>
-                                <input type="file" wire:model="proofPhoto" accept="image/*"
+                                <input type="file" @change="handleProofUpload($event)" accept="image/*"
                                     class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 file:cursor-pointer">
                                 @error('proofPhoto') <span class="text-rose-500 text-[10px] mt-1 block font-semibold">{{ $message }}</span> @enderror
+                                <div x-show="optimizing" x-cloak class="text-xs text-emerald-600 dark:text-emerald-400 mt-1 font-medium flex items-center gap-1.5">
+                                    <svg class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                    <span>Mengompresi bukti transfer...</span>
+                                </div>
                             </div>
                         </div>
                     @endif
@@ -523,14 +567,59 @@
                         </div>
                     @endif
 
-                    <div>
+                    <div x-data="{
+                        optimizing: false,
+                        uploadError: null,
+                        async handleEditProofUpload(e) {
+                            const file = e.target.files[0];
+                            if (!file) return;
+                            this.uploadError = null;
+                            this.optimizing = true;
+                            try {
+                                const res = typeof MobileImageOptimizer !== 'undefined'
+                                    ? await MobileImageOptimizer.optimizeImage(file, 'evidence')
+                                    : { file: file, warning: null };
+                                if (res.warning) console.warn(res.warning);
+                                if (res.file.size > 1536 * 1024) {
+                                    this.uploadError = 'Ukuran file foto maksimal 1.5MB.';
+                                    e.target.value = '';
+                                    this.optimizing = false;
+                                    return;
+                                }
+                                @this.upload('editProofPhoto', res.file,
+                                    () => { this.optimizing = false; },
+                                    () => {
+                                        this.uploadError = 'Gagal mengunggah foto bukti. Silakan coba lagi.';
+                                        this.optimizing = false;
+                                        e.target.value = '';
+                                    }
+                                );
+                            } catch (err) {
+                                console.error('Image optimization failed:', err);
+                                this.uploadError = 'Format gambar tidak didukung atau rusak.';
+                                this.optimizing = false;
+                                e.target.value = '';
+                            }
+                        }
+                    }">
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
                             Unggah Foto Bukti Transfer Pengganti <span class="text-rose-500">*</span>
                         </label>
-                        <input type="file" wire:model="editProofPhoto" accept="image/*"
+
+                        <div x-show="uploadError" x-cloak class="mb-2 p-2 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs rounded-xl border border-rose-200 dark:border-rose-800/60 flex items-center justify-between">
+                            <span x-text="uploadError"></span>
+                            <button type="button" @click="uploadError = null" class="text-xs font-bold underline ml-2">Tutup</button>
+                        </div>
+
+                        <input type="file" @change="handleEditProofUpload($event)" accept="image/*"
                             class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-600 file:text-white hover:file:bg-amber-700 file:cursor-pointer">
                         @error('editProofPhoto') <span class="text-rose-500 text-[10px] mt-1 block font-semibold">{{ $message }}</span> @enderror
                         
+                        <div x-show="optimizing" x-cloak class="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium flex items-center gap-1.5">
+                            <svg class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                            <span>Mengompresi bukti transfer...</span>
+                        </div>
+
                         @if ($editProofPhoto)
                             <div class="mt-2 p-2 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800/60">
                                 <span class="text-[10px] text-amber-700 dark:text-amber-300 font-bold block mb-1">Pratinjau Foto Baru:</span>

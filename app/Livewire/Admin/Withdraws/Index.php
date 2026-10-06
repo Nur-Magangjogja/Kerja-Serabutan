@@ -169,10 +169,12 @@ class Index extends Component
     public function submitApprove()
     {
         $this->validate([
-            'proofPhoto' => 'required|image|max:5120',
+            'proofPhoto' => 'required|image|mimes:jpg,jpeg,png|max:1536',
         ], [
             'proofPhoto.required' => 'Foto bukti transfer wajib diunggah.',
-            'proofPhoto.image' => 'File bukti harus berupa gambar.',
+            'proofPhoto.image'    => 'File bukti harus berupa gambar (JPG, JPEG, PNG).',
+            'proofPhoto.mimes'    => 'Format file bukti harus berupa JPG, JPEG, atau PNG.',
+            'proofPhoto.max'      => 'Ukuran file bukti maksimal 1.5MB.',
         ]);
 
         try {
@@ -326,11 +328,12 @@ class Index extends Component
     public function submitUpdateProof()
     {
         $this->validate([
-            'editProofPhoto' => 'required|image|max:5120',
+            'editProofPhoto' => 'required|image|mimes:jpg,jpeg,png|max:1536',
         ], [
             'editProofPhoto.required' => 'Foto bukti transfer baru wajib diunggah.',
-            'editProofPhoto.image' => 'File bukti harus berupa gambar (JPG, PNG, WebP).',
-            'editProofPhoto.max' => 'Ukuran file bukti maksimal 5MB.',
+            'editProofPhoto.image'    => 'File bukti harus berupa gambar (JPG, JPEG, PNG).',
+            'editProofPhoto.mimes'    => 'Format file bukti harus berupa JPG, JPEG, atau PNG.',
+            'editProofPhoto.max'      => 'Ukuran file bukti maksimal 1.5MB.',
         ]);
 
         try {

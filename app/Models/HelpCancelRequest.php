@@ -226,7 +226,7 @@ class HelpCancelRequest extends Model
     {
         $help = $this->help;
         if (!$help || $help->isOnSite()) {
-            return 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20 dark:border-amber-500/30';
+            return 'bg-blue-500/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20 dark:border-blue-500/30';
         }
 
         if ($help->isPassenger()) {

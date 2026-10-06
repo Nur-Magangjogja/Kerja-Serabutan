@@ -54,6 +54,11 @@ class Index extends Component
     public $userToDelete = null;
     public $adminPassword = '';
 
+    // view modal tabs & audit state
+    public $activeModalTab = 'profile'; // 'profile' or 'audit'
+    public $auditFilter = 'all'; // 'all', 'help', 'cancel_dispute', 'report', 'discipline', 'financial'
+    public $auditPage = 1;
+
     // migration modal state
     public $migrationUserId = null;
     public $migrationUser = null;
@@ -122,9 +127,58 @@ class Index extends Component
             session()->flash('error', 'User not found');
             return;
         }
+
+        $currentUser = auth()->user();
+        $isSuperAdmin = in_array($currentUser?->role ?? '', ['super_admin', 'superadmin'], true);
+        if (!$isSuperAdmin && $currentUser?->role === 'admin') {
+            $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+            if (!$authService->canAccessTerritory(
+                $currentUser,
+                $user->district_id ? (int)$user->district_id : null,
+                $user->city_id ? (int)$user->city_id : null
+            )) {
+                session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
+                return;
+            }
+        }
+
         $this->selectedUser = $user;
         $this->selectedUserId = $user->id;
+        $this->activeModalTab = 'profile';
+        $this->auditFilter = 'all';
+        $this->auditPage = 1;
         $this->showViewModal = true;
+    }
+
+    public function setModalTab(string $tab)
+    {
+        $this->activeModalTab = in_array($tab, ['profile', 'audit'], true) ? $tab : 'profile';
+        if ($this->activeModalTab === 'audit') {
+            $this->auditPage = 1;
+        }
+    }
+
+    public function setAuditFilter(string $filter)
+    {
+        $this->auditFilter = $filter;
+        $this->auditPage = 1;
+    }
+
+    public function setTimelineFilter(string $filter)
+    {
+        $this->setAuditFilter($filter);
+    }
+
+    public function nextAuditPage()
+    {
+        $this->auditPage++;
+    }
+
+    public function previousAuditPage()
+    {
+        if ($this->auditPage > 1) {
+            $this->auditPage--;
+        }
     }
 
 
@@ -396,6 +450,9 @@ class Index extends Component
         $this->confirmingDeleteId = null;
         $this->userToDelete = null;
         $this->adminPassword = '';
+        $this->activeModalTab = 'profile';
+        $this->auditFilter = 'all';
+        $this->auditPage = 1;
         $this->resetErrorBag();
     }
 
@@ -640,7 +697,19 @@ class Index extends Component
         $cities = City::getAllCached();
         $layout = $isSuperAdmin ? 'layouts.superadmin' : 'layouts.admin';
 
-        return view('livewire.superadmin.users.index', compact('users', 'cities'))->layout($layout);
+        $auditTimeline = null;
+        if ($this->showViewModal && $this->selectedUser && $this->activeModalTab === 'audit') {
+            $timelineService = app(\App\Services\UserAuditTimelineService::class);
+            $auditTimeline = $timelineService->getTimelineForUser(
+                $this->selectedUser,
+                $currentUser,
+                $this->auditPage,
+                10,
+                $this->auditFilter
+            );
+        }
+
+        return view('livewire.superadmin.users.index', compact('users', 'cities', 'auditTimeline'))->layout($layout);
     }
 }
 

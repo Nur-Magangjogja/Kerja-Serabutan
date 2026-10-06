@@ -391,6 +391,8 @@ class Index extends Component
         $this->cancelRefundAmount = max(0, round($gross - $payout));
     }
 
+    protected array $loadedHelpLogs = [];
+
     public function toggleHelpLogs(int $helpId)
     {
         if (in_array($helpId, $this->expandedHelpIds, true)) {
@@ -398,6 +400,18 @@ class Index extends Component
         } else {
             $this->expandedHelpIds[] = $helpId;
         }
+    }
+
+    public function getHelpLogs(int $helpId)
+    {
+        if (isset($this->loadedHelpLogs[$helpId])) {
+            return $this->loadedHelpLogs[$helpId];
+        }
+
+        return $this->loadedHelpLogs[$helpId] = HelpCancelRequest::with(['requestedBy', 'partner', 'customer', 'reviewedBy'])
+            ->where('help_id', $helpId)
+            ->orderBy('created_at', 'desc')
+            ->get();
     }
 
     public function openCancelReviewModal(int $cancelRequestId)
@@ -819,14 +833,11 @@ class Index extends Component
             }
 
             $query = HelpCancelRequest::with([
-                'help.user', 
-                'help.mitra', 
-                'help.cancelRequests.requestedBy', 
-                'help.cancelRequests.partner', 
-                'help.cancelRequests.customer', 
-                'help.cancelRequests.reviewedBy', 
-                'requestedBy', 
-                'district', 
+                'help' => fn($q) => $q->with(['user', 'mitra'])->withCount('cancelRequests'),
+                'partner',
+                'customer',
+                'requestedBy',
+                'district',
                 'reviewedBy'
             ]);
 

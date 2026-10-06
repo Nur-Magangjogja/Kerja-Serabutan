@@ -11,6 +11,7 @@ use App\Models\PartnerReportMessage;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -24,7 +25,7 @@ class Index extends Component
     public $selected_partner_id = null; // ID Mitra yang sedang diajak chat atau 'admin'
     public $selected_partner = null;    // Objek User Mitra atau Objek Admin
     public $is_admin_chat = false;      // True jika sedang chat dengan Admin
-    public $admin_tab = 'cancellation'; // 'cancellation' atau 'report'
+    public $admin_tab = 'support';      // Canonical default: 'support', 'cancellation', atau 'report'
     public $selected_cancel_request_id = null; // ID Pengajuan Pembatalan terkait jika ada
     public $selected_cancel_request = null;    // Objek Pengajuan Pembatalan terkait
     public $selected_report_id = null;  // ID Laporan terkait jika ada
@@ -40,7 +41,7 @@ class Index extends Component
     {
         return [
             'message' => 'required_without:photo|nullable|string|max:2000',
-            'photo'   => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'photo'   => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
         ];
     }
 
@@ -85,7 +86,7 @@ class Index extends Component
     #[On('help-new-message')]
     public function onNewMessageReceived($event = null)
     {
-        if ($this->selected_partner_id) {
+        if ($this->selected_partner_id && !$this->is_admin_chat) {
             $this->markAsRead();
         } elseif ($this->is_admin_chat) {
             $this->markAdminMessagesAsRead();
@@ -95,21 +96,79 @@ class Index extends Component
         $this->dispatch('scroll-chat-bottom');
     }
 
+    /**
+     * Resolves an authenticated customer's legitimate cancellation request (Fail-closed IDOR protection)
+     */
+    protected function resolveCustomerCancellation(int $cancelRequestId): ?HelpCancelRequest
+    {
+        $userId = Auth::id();
+        return HelpCancelRequest::where('id', $cancelRequestId)
+            ->where(function ($q) use ($userId) {
+                $q->where('customer_id', $userId)
+                  ->orWhereHas('help', fn($h) => $h->where('user_id', $userId));
+            })
+            ->with(['help', 'partner', 'customer'])
+            ->first();
+    }
+
+    /**
+     * Resolves an authenticated customer's legitimate report (Fail-closed IDOR protection)
+     */
+    protected function resolveCustomerReport(int $reportId): ?PartnerReport
+    {
+        $userId = Auth::id();
+        return PartnerReport::where('id', $reportId)
+            ->where(function ($q) use ($userId) {
+                $q->where('reporter_id', $userId)
+                  ->orWhereHas('reportedHelp', fn($h) => $h->where('user_id', $userId));
+            })
+            ->with(['reportedHelp', 'reportedUser', 'reporter'])
+            ->first();
+    }
+
+    /**
+     * Resolves canonical active general support report (dukungan_umum, help_id = null)
+     */
+    protected function resolveCustomerSupportReport(): ?PartnerReport
+    {
+        $userId = Auth::id();
+        return PartnerReport::where('reporter_id', $userId)
+            ->where('report_type', 'dukungan_umum')
+            ->where('category', 'dari_customer')
+            ->whereIn('status', ['pending', 'in_progress', 'under_review', 'investigating', 'proses'])
+            ->latest()
+            ->first();
+    }
+
     public function getConversations()
     {
         $userId = Auth::id();
 
-        // 1. Percakapan Khusus dengan Tim Admin SayaBantu
-        $customerReports = PartnerReport::where('reporter_id', $userId)
-            ->orWhere('reported_user_id', $userId)
-            ->orWhereHas('reportedHelp', fn($q) => $q->where('user_id', $userId))
+        // 1. Percakapan Khusus dengan Tim Admin SayaBantu (Terpisah per-kanal, tanpa binding Help)
+        $supportReports = PartnerReport::where('reporter_id', $userId)
+            ->where('report_type', 'dukungan_umum')
+            ->pluck('id');
+
+        $investigationReports = PartnerReport::where(function($q) use ($userId) {
+                $q->where('reporter_id', $userId)
+                  ->orWhereHas('reportedHelp', fn($sub) => $sub->where('user_id', $userId));
+            })
+            ->where('report_type', '!=', 'dukungan_umum')
             ->pluck('id');
 
         $customerCancels = HelpCancelRequest::where('customer_id', $userId)
             ->orWhereHas('help', fn($q) => $q->where('user_id', $userId))
             ->pluck('id');
 
-        $lastReportMsg = PartnerReportMessage::whereIn('partner_report_id', $customerReports)
+        $lastSupportMsg = PartnerReportMessage::whereIn('partner_report_id', $supportReports)
+            ->where(function($q) use ($userId) {
+                $q->where('sender_id', $userId)
+                  ->orWhereIn('recipient_type', ['customer', 'all', 'both']);
+            })
+            ->latest('created_at')
+            ->first();
+
+        $lastReportMsg = PartnerReportMessage::whereIn('partner_report_id', $investigationReports)
             ->where(function($q) use ($userId) {
                 $q->where('sender_id', $userId)
                   ->orWhereIn('recipient_type', ['customer', 'all', 'both']);
@@ -125,7 +184,13 @@ class Index extends Component
             ->latest('created_at')
             ->first();
 
-        $unreadReportCount = PartnerReportMessage::whereIn('partner_report_id', $customerReports)
+        $unreadSupportCount = PartnerReportMessage::whereIn('partner_report_id', $supportReports)
+            ->where('sender_id', '!=', $userId)
+            ->whereNull('customer_read_at')
+            ->whereIn('recipient_type', ['customer', 'all', 'both'])
+            ->count();
+
+        $unreadReportCount = PartnerReportMessage::whereIn('partner_report_id', $investigationReports)
             ->where('sender_id', '!=', $userId)
             ->whereNull('customer_read_at')
             ->whereIn('recipient_type', ['customer', 'all', 'both'])
@@ -137,21 +202,11 @@ class Index extends Component
             ->whereIn('recipient_type', ['customer', 'all', 'both'])
             ->count();
 
-        $unreadAdminCount = $unreadReportCount + $unreadCancelCount;
+        $unreadAdminCount = $unreadSupportCount + $unreadReportCount + $unreadCancelCount;
 
-        // Tentukan pesan terakhir yang paling baru
-        $lastAdminMsg = null;
-        if ($lastReportMsg && $lastCancelMsg) {
-            $lastAdminMsg = $lastReportMsg->created_at->gt($lastCancelMsg->created_at) ? $lastReportMsg : $lastCancelMsg;
-        } elseif ($lastReportMsg) {
-            $lastAdminMsg = $lastReportMsg;
-        } elseif ($lastCancelMsg) {
-            $lastAdminMsg = $lastCancelMsg;
-        }
-
-        $latestCustomerCancel = HelpCancelRequest::whereIn('id', $customerCancels)->latest()->first();
-        $latestCustomerReport = PartnerReport::whereIn('id', $customerReports)->latest()->first();
-        $latestAdminHelp = $latestCustomerCancel?->help ?? $latestCustomerReport?->reportedHelp;
+        // Tentukan pesan terakhir yang paling baru di antara semua kanal admin
+        $allAdminMsgs = collect([$lastSupportMsg, $lastReportMsg, $lastCancelMsg])->filter()->sortByDesc('created_at');
+        $lastAdminMsg = $allAdminMsgs->first();
 
         $adminConversation = (object) [
             'partner' => (object) [
@@ -169,7 +224,7 @@ class Index extends Component
                 'created_at' => $lastAdminMsg->created_at,
             ] : null,
             'unread_count' => $unreadAdminCount,
-            'latest_help'  => $latestAdminHelp,
+            'latest_help'  => null, // STRICTLY DECOUPLED FROM ANY HELP (CH1 Section 3)
             'updated_at'   => $lastAdminMsg?->created_at ?? now(),
         ];
 
@@ -266,63 +321,88 @@ class Index extends Component
         ];
         $this->unassigned_help     = null;
 
-        $userId = Auth::id();
+        // 1. Explicit Cancellation
         if ($cancelRequestId) {
-            $this->admin_tab = 'cancellation';
-            $cancelReq = HelpCancelRequest::where('id', $cancelRequestId)
-                ->where(function ($q) use ($userId) {
-                    $q->where('customer_id', $userId)
-                      ->orWhereHas('help', fn($h) => $h->where('user_id', $userId));
-                })
-                ->with(['help', 'partner', 'customer'])
-                ->first();
-
-            $this->selected_cancel_request_id = $cancelReq?->id;
-            $this->selected_cancel_request    = $cancelReq;
-            $this->selected_report_id         = null;
-            $this->selected_report            = null;
-            $this->active_help_id             = $cancelReq?->help_id;
-            $this->active_help                = $cancelReq?->help;
-        } elseif ($reportId) {
-            $this->admin_tab = 'report';
-            $rep = PartnerReport::where('id', $reportId)
-                ->where(function ($q) use ($userId) {
-                    $q->where('reporter_id', $userId)
-                      ->orWhere('reported_user_id', $userId)
-                      ->orWhereHas('reportedHelp', fn($h) => $h->where('user_id', $userId));
-                })
-                ->with(['reportedHelp', 'reportedUser', 'reporter'])
-                ->first();
-
-            $this->selected_report_id         = $rep?->id;
-            $this->selected_report            = $rep;
+            $cancelReq = $this->resolveCustomerCancellation((int) $cancelRequestId);
+            if ($cancelReq) {
+                $this->admin_tab                  = 'cancellation';
+                $this->selected_cancel_request_id = $cancelReq->id;
+                $this->selected_cancel_request    = $cancelReq;
+                $this->selected_report_id         = null;
+                $this->selected_report            = null;
+                $this->active_help_id             = $cancelReq->help_id;
+                $this->active_help                = $cancelReq->help;
+            } else {
+                // Fail closed
+                $this->admin_tab                  = 'cancellation';
+                $this->selected_cancel_request_id = null;
+                $this->selected_cancel_request    = null;
+                $this->selected_report_id         = null;
+                $this->selected_report            = null;
+                $this->active_help_id             = null;
+                $this->active_help                = null;
+            }
+        }
+        // 2. Explicit Report
+        elseif ($reportId) {
+            $rep = $this->resolveCustomerReport((int) $reportId);
+            if ($rep) {
+                if ($rep->report_type === 'dukungan_umum') {
+                    $this->admin_tab                  = 'support';
+                    $this->selected_report_id         = $rep->id;
+                    $this->selected_report            = $rep;
+                    $this->selected_cancel_request_id = null;
+                    $this->selected_cancel_request    = null;
+                    $this->active_help_id             = null;
+                    $this->active_help                = null;
+                } else {
+                    $this->admin_tab                  = 'report';
+                    $this->selected_report_id         = $rep->id;
+                    $this->selected_report            = $rep;
+                    $this->selected_cancel_request_id = null;
+                    $this->selected_cancel_request    = null;
+                    $this->active_help_id             = $rep->reported_help_id;
+                    $this->active_help                = $rep->reportedHelp;
+                }
+            } else {
+                // Fail closed
+                $this->admin_tab                  = 'report';
+                $this->selected_report_id         = null;
+                $this->selected_report            = null;
+                $this->selected_cancel_request_id = null;
+                $this->selected_cancel_request    = null;
+                $this->active_help_id             = null;
+                $this->active_help                = null;
+            }
+        }
+        // 3. Tab Switch
+        elseif ($tab) {
+            $this->admin_tab                  = in_array($tab, ['support', 'cancellation', 'report'], true) ? $tab : 'support';
             $this->selected_cancel_request_id = null;
             $this->selected_cancel_request    = null;
-            $this->active_help_id             = $rep?->reported_help_id;
-            $this->active_help                = $rep?->reportedHelp;
-        } elseif ($tab) {
-            $this->admin_tab                  = $tab;
-            $this->selected_cancel_request_id = null;
-            $this->selected_cancel_request    = null;
-            $this->selected_report_id         = null;
-            $this->selected_report            = null;
             $this->active_help_id             = null;
             $this->active_help                = null;
-        } else {
-            $this->admin_tab = $tab ?? 'report';
-            $rep = PartnerReport::where('reporter_id', $userId)
-                ->where('report_type', 'dukungan_umum')
-                ->where('category', 'dari_customer')
-                ->whereIn('status', ['pending', 'in_progress', 'under_review', 'investigating', 'proses'])
-                ->latest()
-                ->first();
 
-            $this->selected_report_id         = $rep?->id;
-            $this->selected_report            = $rep;
+            if ($this->admin_tab === 'support') {
+                $supportRep = $this->resolveCustomerSupportReport();
+                $this->selected_report_id = $supportRep?->id;
+                $this->selected_report    = $supportRep;
+            } else {
+                $this->selected_report_id = null;
+                $this->selected_report    = null;
+            }
+        }
+        // 4. No arguments -> Default to 'support' (CH1 Section 8)
+        else {
+            $this->admin_tab                  = 'support';
             $this->selected_cancel_request_id = null;
             $this->selected_cancel_request    = null;
             $this->active_help_id             = null;
             $this->active_help                = null;
+
+            $supportRep = $this->resolveCustomerSupportReport();
+            $this->selected_report_id = $supportRep?->id;
+            $this->selected_report    = $supportRep;
         }
 
         $this->markAdminMessagesAsRead();
@@ -354,6 +434,12 @@ class Index extends Component
         $this->active_help                = null;
         $this->message                    = '';
         $this->photo                      = null;
+
+        if ($this->admin_tab === 'support') {
+            $supportRep = $this->resolveCustomerSupportReport();
+            $this->selected_report_id = $supportRep?->id;
+            $this->selected_report    = $supportRep;
+        }
     }
 
     public function markAdminMessagesAsRead()
@@ -376,6 +462,20 @@ class Index extends Component
                 })
                 ->update(['is_read' => true, 'read_at' => now()]);
         } elseif ($this->admin_tab === 'report' && $this->selected_report_id) {
+            $updated = PartnerReportMessage::where('partner_report_id', $this->selected_report_id)
+                ->where('sender_id', '!=', $userId)
+                ->whereIn('recipient_type', ['customer', 'all', 'both'])
+                ->whereNull('customer_read_at')
+                ->update(['customer_read_at' => now()]) > 0;
+
+            PartnerReportMessage::where('partner_report_id', $this->selected_report_id)
+                ->where('is_read', false)
+                ->where(function ($q) {
+                    $q->where(fn($sub) => $sub->where('recipient_type', 'customer')->whereNotNull('customer_read_at'))
+                      ->orWhere(fn($sub) => $sub->whereIn('recipient_type', ['all', 'both'])->whereNotNull('customer_read_at')->whereNotNull('mitra_read_at'));
+                })
+                ->update(['is_read' => true, 'read_at' => now()]);
+        } elseif ($this->admin_tab === 'support' && $this->selected_report_id) {
             $updated = PartnerReportMessage::where('partner_report_id', $this->selected_report_id)
                 ->where('sender_id', '!=', $userId)
                 ->whereIn('recipient_type', ['customer', 'all', 'both'])
@@ -448,13 +548,13 @@ class Index extends Component
 
         $userId = Auth::id();
 
-        // JIKA CHAT DENGAN ADMIN (RUANG 🛡️ TIM ADMIN SAYABANTU)
+        // JIKA CHAT DENGAN ADMIN (RUANG TIM ADMIN SAYABANTU - STRICT CHANNELS)
         if ($this->is_admin_chat) {
             $list = collect();
 
-            if ($this->admin_tab === 'cancellation') {
-                if ($this->selected_cancel_request_id) {
-                    $cancelMsgs = HelpCancelMessage::where('help_cancel_request_id', $this->selected_cancel_request_id)
+            if ($this->admin_tab === 'support') {
+                if ($this->selected_report_id) {
+                    $supportMsgs = PartnerReportMessage::where('partner_report_id', $this->selected_report_id)
                         ->where(function ($q) use ($userId) {
                             $q->where('sender_id', $userId)
                               ->orWhere(function ($sub) use ($userId) {
@@ -462,58 +562,96 @@ class Index extends Component
                                       ->whereIn('recipient_type', ['customer', 'all', 'both']);
                               });
                         })
-                        ->with(['sender', 'cancelRequest.help'])
+                        ->with(['sender'])
                         ->orderBy('created_at', 'asc')
                         ->get();
 
-                    foreach ($cancelMsgs as $m) {
+                    foreach ($supportMsgs as $m) {
                         $list->push((object)[
-                            'id'          => 'cancel_' . $m->id,
+                            'id'          => 'support_' . $m->id,
                             'raw_id'      => $m->id,
-                            'topic_type'  => 'cancellation',
+                            'topic_type'  => 'support',
                             'message'     => $m->message,
                             'photo'       => $m->photo,
                             'sender_type' => $m->isFromAdmin() ? 'admin' : 'customer',
                             'sender_name' => $m->isFromAdmin() ? 'Tim Admin SayaBantu' : ($m->sender?->name ?? 'Anda'),
                             'created_at'  => $m->created_at,
-                            'help_id'     => $m->cancelRequest?->help_id,
-                            'help'        => $m->cancelRequest?->help,
+                            'help_id'     => null,
+                            'help'        => null,
                             'is_admin'    => $m->isFromAdmin(),
                             'is_read'     => (bool) $m->is_read,
                             'read_at'     => $m->read_at,
                         ]);
                     }
                 }
-            } else {
-                if ($this->selected_report_id) {
-                    $reportMsgs = PartnerReportMessage::where('partner_report_id', $this->selected_report_id)
-                        ->where(function ($q) use ($userId) {
-                            $q->where('sender_id', $userId)
-                              ->orWhere(function ($sub) use ($userId) {
-                                  $sub->where('sender_id', '!=', $userId)
-                                      ->whereIn('recipient_type', ['customer', 'all', 'both']);
-                              });
-                        })
-                        ->with(['sender', 'report.reportedHelp'])
-                        ->orderBy('created_at', 'asc')
-                        ->get();
+            } elseif ($this->admin_tab === 'cancellation') {
+                if ($this->selected_cancel_request_id) {
+                    $cancelReq = $this->resolveCustomerCancellation((int) $this->selected_cancel_request_id);
+                    if ($cancelReq) {
+                        $cancelMsgs = HelpCancelMessage::where('help_cancel_request_id', $cancelReq->id)
+                            ->where(function ($q) use ($userId) {
+                                $q->where('sender_id', $userId)
+                                  ->orWhere(function ($sub) use ($userId) {
+                                      $sub->where('sender_id', '!=', $userId)
+                                          ->whereIn('recipient_type', ['customer', 'all', 'both']);
+                                  });
+                            })
+                            ->with(['sender', 'cancelRequest.help'])
+                            ->orderBy('created_at', 'asc')
+                            ->get();
 
-                    foreach ($reportMsgs as $m) {
-                        $list->push((object)[
-                            'id'          => 'report_' . $m->id,
-                            'raw_id'      => $m->id,
-                            'topic_type'  => 'report',
-                            'message'     => $m->message,
-                            'photo'       => $m->photo,
-                            'sender_type' => $m->isFromAdmin() ? 'admin' : 'customer',
-                            'sender_name' => $m->isFromAdmin() ? 'Tim Admin SayaBantu' : ($m->sender?->name ?? 'Anda'),
-                            'created_at'  => $m->created_at,
-                            'help_id'     => $m->report?->reported_help_id,
-                            'help'        => $m->report?->reportedHelp,
-                            'is_admin'    => $m->isFromAdmin(),
-                            'is_read'     => (bool) $m->is_read,
-                            'read_at'     => $m->read_at,
-                        ]);
+                        foreach ($cancelMsgs as $m) {
+                            $list->push((object)[
+                                'id'          => 'cancel_' . $m->id,
+                                'raw_id'      => $m->id,
+                                'topic_type'  => 'cancellation',
+                                'message'     => $m->message,
+                                'photo'       => $m->photo,
+                                'sender_type' => $m->isFromAdmin() ? 'admin' : 'customer',
+                                'sender_name' => $m->isFromAdmin() ? 'Tim Admin SayaBantu' : ($m->sender?->name ?? 'Anda'),
+                                'created_at'  => $m->created_at,
+                                'help_id'     => $m->cancelRequest?->help_id,
+                                'help'        => $m->cancelRequest?->help,
+                                'is_admin'    => $m->isFromAdmin(),
+                                'is_read'     => (bool) $m->is_read,
+                                'read_at'     => $m->read_at,
+                            ]);
+                        }
+                    }
+                }
+            } elseif ($this->admin_tab === 'report') {
+                if ($this->selected_report_id) {
+                    $rep = $this->resolveCustomerReport((int) $this->selected_report_id);
+                    if ($rep && $rep->report_type !== 'dukungan_umum') {
+                        $reportMsgs = PartnerReportMessage::where('partner_report_id', $rep->id)
+                            ->where(function ($q) use ($userId) {
+                                $q->where('sender_id', $userId)
+                                  ->orWhere(function ($sub) use ($userId) {
+                                      $sub->where('sender_id', '!=', $userId)
+                                          ->whereIn('recipient_type', ['customer', 'all', 'both']);
+                                  });
+                            })
+                            ->with(['sender', 'report.reportedHelp'])
+                            ->orderBy('created_at', 'asc')
+                            ->get();
+
+                        foreach ($reportMsgs as $m) {
+                            $list->push((object)[
+                                'id'          => 'report_' . $m->id,
+                                'raw_id'      => $m->id,
+                                'topic_type'  => 'report',
+                                'message'     => $m->message,
+                                'photo'       => $m->photo,
+                                'sender_type' => $m->isFromAdmin() ? 'admin' : 'customer',
+                                'sender_name' => $m->isFromAdmin() ? 'Tim Admin SayaBantu' : ($m->sender?->name ?? 'Anda'),
+                                'created_at'  => $m->created_at,
+                                'help_id'     => $m->report?->reported_help_id,
+                                'help'        => $m->report?->reportedHelp,
+                                'is_admin'    => $m->isFromAdmin(),
+                                'is_read'     => (bool) $m->is_read,
+                                'read_at'     => $m->read_at,
+                            ]);
+                        }
                     }
                 }
             }
@@ -612,83 +750,26 @@ class Index extends Component
 
         $msgText = trim($this->message) ?: ($photoPath ? '[Lampiran Foto]' : '');
 
-        // JIKA CHAT DENGAN ADMIN
+        // JIKA CHAT DENGAN ADMIN (STRICT FIRST-LEVEL CHANNEL BRANCHING - CH1 Section 9)
         if ($this->is_admin_chat) {
-            if ($this->admin_tab === 'cancellation') {
-                $cancelReq = $this->selected_cancel_request ?? ($this->selected_cancel_request_id ? HelpCancelRequest::find($this->selected_cancel_request_id) : null);
-                
-                if (!$cancelReq) {
-                    $cancelReq = HelpCancelRequest::where('customer_id', $customerId)->where('status', 'pending')->latest()->first();
-                }
+            switch ($this->admin_tab) {
+                case 'support':
+                    $this->sendSupportMessage($msgText, $photoPath);
+                    break;
 
-                if ($cancelReq) {
-                    HelpCancelMessage::create([
-                        'help_cancel_request_id' => $cancelReq->id,
-                        'sender_id'              => $customerId,
-                        'recipient_type'         => 'admin',
-                        'message'                => $msgText,
-                        'photo'                  => $photoPath,
-                        'is_read'                => false,
-                        'customer_read_at'       => now(),
-                    ]);
+                case 'cancellation':
+                    $this->sendCancellationMessage($msgText, $photoPath);
+                    break;
 
-                    $this->selected_cancel_request_id = $cancelReq->id;
-                    $this->selected_cancel_request    = $cancelReq;
-                    $this->message                    = '';
-                    $this->photo                      = null;
-                    $this->dispatch('message-sent');
-                    $this->dispatch('scroll-chat-bottom');
-                    return;
-                } else {
-                    $this->dispatch('error', 'Tidak ada pengajuan pembatalan aktif untuk dikirimi pesan.');
-                    return;
-                }
-            } else {
-                $report = $this->selected_report ?? ($this->selected_report_id ? PartnerReport::find($this->selected_report_id) : null);
+                case 'report':
+                    $this->sendInvestigationMessage($msgText, $photoPath);
+                    break;
 
-                // Pastikan jika mencari report support umum, hanya ambil dukungan_umum milik customer (Requirement 2)
-                if (!$report || $report->report_type !== 'dukungan_umum') {
-                    $report = PartnerReport::where('reporter_id', $customerId)
-                        ->where('report_type', 'dukungan_umum')
-                        ->where('category', 'dari_customer')
-                        ->whereIn('status', ['pending', 'in_progress', 'under_review', 'investigating', 'proses'])
-                        ->latest()
-                        ->first();
-                }
-
-                if (!$report) {
-                    $report = PartnerReport::create([
-                        'reporter_id' => $customerId,
-                        'category'    => 'dari_customer',
-                        'report_type' => 'dukungan_umum',
-                        'title'       => 'Pusat Bantuan / Konsultasi Pelanggan',
-                        'message'     => $msgText,
-                        'status'      => 'pending',
-                    ]);
-                }
-
-                PartnerReportMessage::create([
-                    'partner_report_id' => $report->id,
-                    'sender_id'         => $customerId,
-                    'recipient_type'    => 'admin',
-                    'message'           => $msgText,
-                    'photo'             => $photoPath,
-                    'is_read'           => false,
-                    'customer_read_at'  => now(),
-                ]);
-
-                if ($report->status === 'pending') {
-                    $report->update(['status' => 'in_progress']);
-                }
-
-                $this->selected_report_id = $report->id;
-                $this->selected_report    = $report;
-                $this->message            = '';
-                $this->photo              = null;
-                $this->dispatch('message-sent');
-                $this->dispatch('scroll-chat-bottom');
-                return;
+                default:
+                    $this->dispatch('error', 'Kanal percakapan admin tidak valid.');
+                    break;
             }
+            return;
         }
 
         // CHAT REGULER DENGAN MITRA
@@ -728,11 +809,144 @@ class Index extends Component
             'is_read'     => false,
         ]);
 
-
         $this->active_help_id = $helpId;
 
         $this->message = '';
         $this->photo   = null;
+
+        $this->dispatch('message-sent');
+        $this->dispatch('scroll-chat-bottom');
+    }
+
+    /**
+     * Mode Support: Canonical general support (dukungan_umum, help_id = null)
+     */
+    protected function sendSupportMessage(string $msgText, ?string $photoPath): void
+    {
+        $customerId = Auth::id();
+
+        $report = DB::transaction(function () use ($customerId, $msgText, $photoPath) {
+            $lockedUser = User::where('id', $customerId)->lockForUpdate()->firstOrFail();
+
+            $activeReport = PartnerReport::where('reporter_id', $lockedUser->id)
+                ->where('report_type', 'dukungan_umum')
+                ->where('category', 'dari_customer')
+                ->whereIn('status', ['pending', 'in_progress', 'under_review', 'investigating', 'proses'])
+                ->latest()
+                ->first();
+
+            if (!$activeReport) {
+                $activeReport = PartnerReport::create([
+                    'reporter_id' => $lockedUser->id,
+                    'category'    => 'dari_customer',
+                    'report_type' => 'dukungan_umum',
+                    'title'       => 'Pusat Bantuan / Konsultasi Pelanggan',
+                    'message'     => $msgText,
+                    'status'      => 'pending',
+                ]);
+            }
+
+            PartnerReportMessage::create([
+                'partner_report_id' => $activeReport->id,
+                'sender_id'         => $lockedUser->id,
+                'recipient_type'    => 'admin',
+                'message'           => $msgText,
+                'photo'             => $photoPath,
+                'is_read'           => false,
+                'customer_read_at'  => now(),
+            ]);
+
+            if ($activeReport->status === 'pending') {
+                $activeReport->update(['status' => 'in_progress']);
+            }
+
+            return $activeReport;
+        });
+
+        $this->selected_report_id = $report->id;
+        $this->selected_report    = $report;
+        $this->message            = '';
+        $this->photo              = null;
+
+        $this->dispatch('message-sent');
+        $this->dispatch('scroll-chat-bottom');
+    }
+
+    /**
+     * Mode Cancellation: Requires explicit valid cancellation selection (NO fallback!)
+     */
+    protected function sendCancellationMessage(string $msgText, ?string $photoPath): void
+    {
+        $customerId = Auth::id();
+
+        if (!$this->selected_cancel_request_id) {
+            $this->dispatch('error', 'Pilih pengajuan pembatalan yang ingin ditinjau terlebih dahulu.');
+            return;
+        }
+
+        $cancelReq = $this->resolveCustomerCancellation((int) $this->selected_cancel_request_id);
+
+        if (!$cancelReq) {
+            $this->dispatch('error', 'Pengajuan pembatalan tidak ditemukan atau tidak memiliki akses.');
+            return;
+        }
+
+        HelpCancelMessage::create([
+            'help_cancel_request_id' => $cancelReq->id,
+            'sender_id'              => $customerId,
+            'recipient_type'         => 'admin',
+            'message'                => $msgText,
+            'photo'                  => $photoPath,
+            'is_read'                => false,
+            'customer_read_at'       => now(),
+        ]);
+
+        $this->selected_cancel_request_id = $cancelReq->id;
+        $this->selected_cancel_request    = $cancelReq;
+        $this->message                    = '';
+        $this->photo                      = null;
+
+        $this->dispatch('message-sent');
+        $this->dispatch('scroll-chat-bottom');
+    }
+
+    /**
+     * Mode Investigation: Keeps exact same investigation report (NO dukungan_umum fallback!)
+     */
+    protected function sendInvestigationMessage(string $msgText, ?string $photoPath): void
+    {
+        $customerId = Auth::id();
+
+        if (!$this->selected_report_id) {
+            $this->dispatch('error', 'Pilih laporan aduan yang ingin Anda tanggapi terlebih dahulu.');
+            return;
+        }
+
+        $report = $this->resolveCustomerReport((int) $this->selected_report_id);
+
+        if (!$report || $report->report_type === 'dukungan_umum') {
+            $this->dispatch('error', 'Laporan aduan investigasi tidak valid atau Anda tidak memiliki akses.');
+            return;
+        }
+
+        PartnerReportMessage::create([
+            'partner_report_id' => $report->id,
+            'sender_id'         => $customerId,
+            'recipient_type'    => 'admin',
+            'message'           => $msgText,
+            'photo'             => $photoPath,
+            'is_read'           => false,
+            'customer_read_at'  => now(),
+        ]);
+
+        if ($report->status === 'pending') {
+            $report->update(['status' => 'in_progress']);
+        }
+
+        $this->selected_report_id = $report->id;
+        $this->selected_report    = $report;
+        $this->message            = '';
+        $this->photo              = null;
 
         $this->dispatch('message-sent');
         $this->dispatch('scroll-chat-bottom');
@@ -771,8 +985,11 @@ class Index extends Component
                     return $cReq;
                 });
 
-            $userReports = PartnerReport::where('reporter_id', $userId)
-                ->orWhereHas('reportedHelp', fn($q) => $q->where('user_id', $userId))
+            $userReports = PartnerReport::where(function ($q) use ($userId) {
+                    $q->where('reporter_id', $userId)
+                      ->orWhereHas('reportedHelp', fn($sub) => $sub->where('user_id', $userId));
+                })
+                ->where('report_type', '!=', 'dukungan_umum')
                 ->with(['reportedHelp', 'reportedUser', 'reporter'])
                 ->latest()
                 ->get()

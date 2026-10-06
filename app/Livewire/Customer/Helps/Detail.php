@@ -271,14 +271,14 @@ class Detail extends Component
         $this->validate([
             'customerCancelReason' => 'required|string|min:5|max:255',
             'customerCancelNotes'  => 'required|string|min:5|max:1000',
-            'customerCancelPhoto'  => 'required|image|mimes:jpg,jpeg,png|max:5120',
+            'customerCancelPhoto'  => 'required|image|mimes:jpg,jpeg,png|max:1536',
         ], [
             'customerCancelReason.required' => 'Pilih atau isi alasan penarikan pekerjaan.',
             'customerCancelReason.min'      => 'Alasan penarikan minimal 5 karakter.',
             'customerCancelPhoto.required'  => 'Foto bukti kendala wajib diunggah.',
             'customerCancelPhoto.image'     => 'Foto bukti harus berupa gambar (JPG/PNG).',
             'customerCancelPhoto.mimes'     => 'Format foto bukti harus JPG, JPEG, atau PNG.',
-            'customerCancelPhoto.max'       => 'Ukuran foto bukti maksimal 5MB.',
+            'customerCancelPhoto.max'       => 'Ukuran foto bukti maksimal 1.5MB.',
             'customerCancelNotes.required'  => 'Catatan tambahan wajib diisi.',
             'customerCancelNotes.min'       => 'Catatan tambahan minimal 5 karakter.',
             'customerCancelNotes.max'       => 'Catatan tambahan maksimal 1000 karakter.',

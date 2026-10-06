@@ -16,21 +16,61 @@ class Dropdown extends Component
         $this->loadUnreadCount();
     }
 
+    public static function applySuperAdminFilter($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereIn('type', [
+                \App\Notifications\NewTopupRequest::class,
+                \App\Notifications\TopupRequestSubmitted::class,
+                \App\Notifications\TopupApproved::class,
+                \App\Notifications\TopupRejected::class,
+                \App\Notifications\TopupCancelled::class,
+                'App\Notifications\NewTopupRequest',
+                'App\Notifications\TopupRequestSubmitted',
+                'App\Notifications\TopupApproved',
+                'App\Notifications\TopupRejected',
+                'App\Notifications\TopupCancelled',
+                \App\Notifications\NewWithdrawNotification::class,
+                \App\Notifications\WithdrawStatusNotification::class,
+                'App\Notifications\NewWithdrawNotification',
+                'App\Notifications\WithdrawStatusNotification',
+                \App\Notifications\NewKtpVerificationNotification::class,
+                'App\Notifications\NewKtpVerificationNotification',
+                \App\Notifications\VehicleVerificationNotification::class,
+                'App\Notifications\VehicleVerificationNotification',
+                \App\Notifications\NewVehicleSubmissionNotification::class,
+                'App\Notifications\NewVehicleSubmissionNotification',
+            ])
+            ->orWhereIn('data->category', ['ktp', 'kendaraan', 'vehicle', 'withdraw', 'topup', 'top_up'])
+            ->orWhere('data->type', 'like', '%ktp%')
+            ->orWhere('data->type', 'like', '%vehicle%')
+            ->orWhere('data->type', 'like', '%kendaraan%')
+            ->orWhere('data->type', 'like', '%withdraw%')
+            ->orWhere('data->type', 'like', '%penarikan%')
+            ->orWhere('data->type', 'like', '%topup%')
+            ->orWhere('data->type', 'like', '%top_up%')
+            ->orWhere(function ($sub) {
+                $sub->where('type', 'App\\Notifications\\AdminNotification')
+                    ->where(function ($subTitle) {
+                        $subTitle->where('data->title', 'like', '%KTP%')
+                            ->orWhere('data->title', 'like', '%Verifikasi%')
+                            ->orWhere('data->title', 'like', '%Penarikan%')
+                            ->orWhere('data->title', 'like', '%Withdraw%')
+                            ->orWhere('data->title', 'like', '%Top-Up%')
+                            ->orWhere('data->title', 'like', '%Top Up%')
+                            ->orWhere('data->title', 'like', '%Kendaraan%')
+                            ->orWhere('data->message', 'like', '%KTP%')
+                            ->orWhere('data->message', 'like', '%penarikan%')
+                            ->orWhere('data->message', 'like', '%top up%')
+                            ->orWhere('data->message', 'like', '%kendaraan%');
+                    });
+            });
+        });
+    }
+
     protected function getNotificationsBaseQuery($user)
     {
-        return $user->notifications()
-            ->where(function ($q) {
-                $q->whereIn('type', [
-                    \App\Notifications\NewTopupRequest::class,
-                    \App\Notifications\NewWithdrawNotification::class,
-                    'App\Notifications\NewTopupRequest',
-                    'App\Notifications\NewWithdrawNotification',
-                ])
-                ->orWhere('data->type', 'like', '%topup%')
-                ->orWhere('data->type', 'like', '%withdraw%')
-                ->orWhere('data->category', 'topup')
-                ->orWhere('data->category', 'withdraw');
-            });
+        return self::applySuperAdminFilter($user->notifications());
     }
 
     public function loadUnreadCount()

@@ -502,6 +502,32 @@ class Help extends Model
         return $this->belongsTo(User::class, 'mitra_id');
     }
 
+    public function excludedPartners()
+    {
+        return $this->partnerExclusions();
+    }
+
+    public function hasPriorPartner(): bool
+    {
+        $cancelledIds = $this->cancelled_mitra_ids ?? [];
+        if (!is_array($cancelledIds)) {
+            $cancelledIds = json_decode((string) $cancelledIds, true) ?? [];
+        }
+        if (!empty($cancelledIds)) {
+            return true;
+        }
+
+        if ($this->partnerExclusions()->exists()) {
+            return true;
+        }
+
+        if ($this->cancelRequests()->exists()) {
+            return true;
+        }
+
+        return false;
+    }
+
     public function cancelRequests()
     {
         return $this->hasMany(HelpCancelRequest::class);

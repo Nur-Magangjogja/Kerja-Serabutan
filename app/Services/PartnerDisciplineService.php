@@ -131,6 +131,27 @@ class PartnerDisciplineService
             Log::warning("[PartnerDisciplineService] Failed notifying user #{$user->id} for manual SP: " . $e->getMessage());
         }
 
+        // Kirim notifikasi pengawasan lintas wilayah (TG1C) ke Profile Admin jika di luar wilayah kasus
+        try {
+            $incidentTerritory = $help ? (($help->district?->name ? $help->district->name . ', ' : '') . ($help->cityRelation?->name ?? $help->city ?? 'Wilayah Kasus')) : null;
+            $eventType = ($targetLevel === 3) ? 'shadow_ban' : 'discipline';
+            $titlePrefix = ($targetLevel === 3) ? "Sanksi Keras / Shadow Ban (SP 3)" : "Penerbitan Sanksi Disiplin (SP {$targetLevel})";
+
+            app(\App\Services\AccountNotificationService::class)->notifyCrossTerritoryOversight(
+                $user,
+                $admin,
+                $eventType,
+                "Pengawasan Akun: {$titlePrefix}",
+                "{$roleTitle} yang Anda kelola telah diberikan SP {$targetLevel} oleh {$adminName}. Alasan: {$reason}",
+                $help ? "HELP-{$help->id}" : null,
+                $incidentTerritory,
+                "SP {$targetLevel}",
+                ['warning_level' => $targetLevel]
+            );
+        } catch (\Throwable $e) {
+            Log::warning("[PartnerDisciplineService] Failed sending oversight notification for manual SP: " . $e->getMessage());
+        }
+
         Log::info("[PartnerDisciplineService] {$roleTitle} #{$user->id} issued manual SP {$targetLevel} by Admin #{$admin?->id}");
     }
 
@@ -309,6 +330,32 @@ class PartnerDisciplineService
             }
         } catch (\Throwable $e) {
             Log::warning("[PartnerDisciplineService] Failed notifying user #{$result['user']->id} for manual SP: " . $e->getMessage());
+        }
+
+        // 16. Cross-Territory Oversight Notification (TG1C) to Profile Admin
+        try {
+            $canonical = $report->getCanonicalTerritory();
+            $districtName = $report->reportedHelp?->district?->name;
+            $cityName = $report->reportedHelp?->cityRelation?->name ?? $report->reportedHelp?->city;
+            $incidentTerritory = $districtName ? "{$districtName}, {$cityName}" : ($cityName ?: 'Wilayah Kasus');
+            $adminName = $admin->name ?? 'Admin Wilayah';
+            $targetLvl = $result['targetLevel'];
+            $eventType = ($targetLvl === 3) ? 'shadow_ban' : 'discipline';
+            $titlePrefix = ($targetLvl === 3) ? "Sanksi Keras / Shadow Ban (SP 3)" : "Penerbitan Sanksi Disiplin (SP {$targetLvl})";
+
+            app(\App\Services\AccountNotificationService::class)->notifyCrossTerritoryOversight(
+                $result['user'],
+                $admin,
+                $eventType,
+                "Pengawasan Akun: {$titlePrefix}",
+                "{$result['roleTitle']} yang Anda kelola telah diberikan SP {$targetLvl} dari laporan pengaduan oleh {$adminName}. Alasan: {$reason}",
+                "REP-{$report->id}",
+                $incidentTerritory,
+                "SP {$targetLvl}",
+                ['warning_level' => $targetLvl, 'report_id' => $report->id]
+            );
+        } catch (\Throwable $e) {
+            Log::warning("[PartnerDisciplineService] Failed sending oversight notification for report SP: " . $e->getMessage());
         }
 
         Log::info("[PartnerDisciplineService] {$result['roleTitle']} #{$result['user']->id} issued manual SP {$result['targetLevel']} via Report #{$report->id} by Admin #{$admin->id}");

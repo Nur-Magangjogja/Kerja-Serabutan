@@ -10,6 +10,22 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class AdminTerritoryAuthorizationService
 {
+    protected array $canAccessCache = [];
+    protected array $districtCache = [];
+    protected array $cityExistsCache = [];
+    protected array $adminDistrictIdsCache = [];
+
+    /**
+     * Clear request-scoped cache.
+     */
+    public function clearCache(): void
+    {
+        $this->canAccessCache = [];
+        $this->districtCache = [];
+        $this->cityExistsCache = [];
+        $this->adminDistrictIdsCache = [];
+    }
+
     /**
      * Check if an actor can access a territory or resource defined by district_id and/or city_id.
      *
@@ -31,73 +47,88 @@ class AdminTerritoryAuthorizationService
             return false;
         }
 
+        $cacheKey = "{$admin->id}:" . ($districtId ?? 'null') . ":" . ($cityId ?? 'null');
+        if (isset($this->canAccessCache[$cacheKey])) {
+            return $this->canAccessCache[$cacheKey];
+        }
+
         // 1. SuperAdmin has global access
         if ($this->isSuperAdmin($admin)) {
             // Verify territory validity if provided
-            if ($districtId !== null && !District::where('id', $districtId)->exists()) {
-                return false;
+            if ($districtId !== null) {
+                $district = $this->districtCache[$districtId] ??= District::find($districtId);
+                if (!$district) {
+                    return $this->canAccessCache[$cacheKey] = false;
+                }
             }
-            if ($cityId !== null && !City::where('id', $cityId)->exists()) {
-                return false;
+            if ($cityId !== null) {
+                $cityExists = $this->cityExistsCache[$cityId] ??= City::where('id', $cityId)->exists();
+                if (!$cityExists) {
+                    return $this->canAccessCache[$cacheKey] = false;
+                }
             }
             if ($districtId !== null && $cityId !== null) {
-                $actualCityId = District::where('id', $districtId)->value('city_id');
+                $district = $this->districtCache[$districtId] ??= District::find($districtId);
+                $actualCityId = $district?->city_id;
                 if ((int) $actualCityId !== (int) $cityId) {
-                    return false;
+                    return $this->canAccessCache[$cacheKey] = false;
                 }
             }
             if ($districtId === null && $cityId === null) {
-                return false;
+                return $this->canAccessCache[$cacheKey] = false;
             }
-            return true;
+            return $this->canAccessCache[$cacheKey] = true;
         }
 
         // 2. Must have admin role
         if ($admin->role !== 'admin') {
-            return false;
+            return $this->canAccessCache[$cacheKey] = false;
         }
 
         // 3. Null + Null -> DENY
         if ($districtId === null && $cityId === null) {
-            return false;
+            return $this->canAccessCache[$cacheKey] = false;
         }
 
         // 4. Validate District if provided
         $district = null;
         if ($districtId !== null) {
-            $district = District::find($districtId);
+            $district = $this->districtCache[$districtId] ??= District::find($districtId);
             if (!$district) {
-                return false; // Unknown district -> DENY
+                return $this->canAccessCache[$cacheKey] = false; // Unknown district -> DENY
             }
         }
 
         // 5. Validate City if provided
         if ($cityId !== null) {
-            if (!City::where('id', $cityId)->exists()) {
-                return false; // Unknown city -> DENY
+            $cityExists = $this->cityExistsCache[$cityId] ??= City::where('id', $cityId)->exists();
+            if (!$cityExists) {
+                return $this->canAccessCache[$cacheKey] = false; // Unknown city -> DENY
             }
         }
 
         // 6. Validate pair consistency if both provided
         if ($district !== null && $cityId !== null) {
             if ((int) $district->city_id !== (int) $cityId) {
-                return false; // Inconsistent pair -> DENY
+                return $this->canAccessCache[$cacheKey] = false; // Inconsistent pair -> DENY
             }
         }
 
         // 7. Case: District is available
         if ($district !== null) {
-            $adminDistrictIds = $admin->getAdminDistrictIds();
-            return in_array((int) $district->id, $adminDistrictIds, true);
+            $adminDistrictIds = $this->adminDistrictIdsCache[$admin->id] ??= $admin->getAdminDistrictIds();
+            $allowed = in_array((int) $district->id, $adminDistrictIds, true);
+            return $this->canAccessCache[$cacheKey] = $allowed;
         }
 
         // 8. Case: District is NULL, but City is available
         // District-only admin CANNOT access city-level resource. Must have explicit city authority.
         if ($cityId !== null) {
-            return $this->hasExplicitCityAuthority($admin, (int) $cityId);
+            $allowed = $this->hasExplicitCityAuthority($admin, (int) $cityId);
+            return $this->canAccessCache[$cacheKey] = $allowed;
         }
 
-        return false;
+        return $this->canAccessCache[$cacheKey] = false;
     }
 
     /**
@@ -138,14 +169,14 @@ class AdminTerritoryAuthorizationService
     public function hasExplicitCityAuthority(User $admin, int $cityId): bool
     {
         if ($this->isSuperAdmin($admin)) {
-            return City::where('id', $cityId)->exists();
+            return $this->cityExistsCache[$cityId] ??= City::where('id', $cityId)->exists();
         }
 
         if ($admin->role !== 'admin') {
             return false;
         }
 
-        if (!City::where('id', $cityId)->exists()) {
+        if (!($this->cityExistsCache[$cityId] ??= City::where('id', $cityId)->exists())) {
             return false;
         }
 

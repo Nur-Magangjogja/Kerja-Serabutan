@@ -54,8 +54,8 @@ class Index extends Component
         ];
 
         return [
-            'customerUploads.*'      => 'image|mimes:png,jpg,jpeg|max:5120',
-            'mitraUploads.*'         => 'image|mimes:png,jpg,jpeg|max:5120',
+            'customerUploads.*'      => 'image|mimes:jpg,jpeg,png|max:1024',
+            'mitraUploads.*'         => 'image|mimes:jpg,jpeg,png|max:1024',
             'customerBanners.*.link' => $linkRule,
             'mitraBanners.*.link'    => $linkRule,
             'customerNewLinks.*'     => $linkRule,
@@ -66,10 +66,10 @@ class Index extends Component
     protected $messages = [
         'customerUploads.*.image'    => 'File yang diunggah harus berupa gambar (bukan PDF, dokumen, atau file lain).',
         'customerUploads.*.mimes'    => 'Format file banner yang diizinkan hanya PNG, JPG, atau JPEG.',
-        'customerUploads.*.max'      => 'Ukuran file banner maksimal 5MB.',
+        'customerUploads.*.max'      => 'Ukuran file banner maksimal 1MB.',
         'mitraUploads.*.image'       => 'File yang diunggah harus berupa gambar (bukan PDF, dokumen, atau file lain).',
         'mitraUploads.*.mimes'       => 'Format file banner yang diizinkan hanya PNG, JPG, atau JPEG.',
-        'mitraUploads.*.max'         => 'Ukuran file banner maksimal 5MB.',
+        'mitraUploads.*.max'         => 'Ukuran file banner maksimal 1MB.',
         'customerBanners.*.link.max' => 'Panjang link tujuan maksimal 1000 karakter.',
         'mitraBanners.*.link.max'    => 'Panjang link tujuan maksimal 1000 karakter.',
         'customerNewLinks.*.max'     => 'Panjang link tujuan maksimal 1000 karakter.',

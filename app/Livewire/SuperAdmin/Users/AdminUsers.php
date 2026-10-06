@@ -543,35 +543,42 @@ class AdminUsers extends Component
             ->latest()
             ->paginate($this->perPage);
 
-        $cities = City::withCount('districts')->orderBy('name')->get();
+        $isModalActive = ($this->showCreateModal || $this->showEditModal || $this->showViewModal);
 
-        // Load districts for modal selection (with search and city filter)
-        $districtQuery = \App\Models\District::with('city')->where('is_active', true);
-        if ($this->cityFilter !== 'all' && is_numeric($this->cityFilter)) {
-            $districtQuery->where('city_id', (int) $this->cityFilter);
-        }
-        if (!empty($this->districtSearch)) {
-            $dq = trim($this->districtSearch);
-            $districtQuery->where(function($b) use ($dq) {
-                $b->where('name', 'like', "%{$dq}%")
-                  ->orWhereHas('city', fn($cq) => $cq->where('name', 'like', "%{$dq}%"));
-            });
-        }
-        
-        $limit = ($this->cityFilter === 'all' && empty($this->districtSearch)) ? 100 : 300;
-        $districts = $districtQuery->orderBy('name')->limit($limit)->get();
-
-        // Ensure selected districts are always available in view & preview chips
+        $cities = collect();
+        $districts = collect();
         $selectedDistrictsList = collect();
-        if (!empty($this->managed_district_ids)) {
-            $normalizedIds = array_values(array_unique(array_filter(array_map('intval', (array)$this->managed_district_ids))));
-            $selectedDistrictsList = \App\Models\District::with('city')
-                ->whereIn('id', $normalizedIds)
-                ->orderBy('name')
-                ->get();
+
+        if ($isModalActive) {
+            $cities = City::withCount('districts')->orderBy('name')->get();
+
+            // Load districts for modal selection (with search and city filter)
+            $districtQuery = \App\Models\District::with('city')->where('is_active', true);
+            if ($this->cityFilter !== 'all' && is_numeric($this->cityFilter)) {
+                $districtQuery->where('city_id', (int) $this->cityFilter);
+            }
+            if (!empty($this->districtSearch)) {
+                $dq = trim($this->districtSearch);
+                $districtQuery->where(function($b) use ($dq) {
+                    $b->where('name', 'like', "%{$dq}%")
+                      ->orWhereHas('city', fn($cq) => $cq->where('name', 'like', "%{$dq}%"));
+                });
+            }
             
-            // Also merge into $districts so selected items are never missing in grid
-            $districts = $districts->merge($selectedDistrictsList)->unique('id')->values();
+            $limit = ($this->cityFilter === 'all' && empty($this->districtSearch)) ? 100 : 300;
+            $districts = $districtQuery->orderBy('name')->limit($limit)->get();
+
+            // Ensure selected districts are always available in view & preview chips
+            if (!empty($this->managed_district_ids)) {
+                $normalizedIds = array_values(array_unique(array_filter(array_map('intval', (array)$this->managed_district_ids))));
+                $selectedDistrictsList = \App\Models\District::with('city')
+                    ->whereIn('id', $normalizedIds)
+                    ->orderBy('name')
+                    ->get();
+                
+                // Also merge into $districts so selected items are never missing in grid
+                $districts = $districts->merge($selectedDistrictsList)->unique('id')->values();
+            }
         }
 
         return view('livewire.superadmin.users.admin-users', compact('users', 'cities', 'districts', 'selectedDistrictsList'));

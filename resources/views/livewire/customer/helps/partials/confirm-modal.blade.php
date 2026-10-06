@@ -1,15 +1,31 @@
 <!-- Confirmation Modal - Bottom Sheet Style -->
 @if ($showConfirmModal)
-    <div class="modal-overlay fixed inset-0 z-[9999] flex items-end justify-center animate-fade-in"
-        style="background: rgba(0,0,0,0.6);" wire:click.self="closeConfirmModal">
-        <div class="bg-white dark:bg-gray-800 rounded-t-3xl w-full max-w-md shadow-2xl max-h-[88vh] overflow-y-auto hide-scrollbar animate-slide-up relative border-t border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
-            style="padding-bottom: env(safe-area-inset-bottom,24px);">
-            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 rounded-t-3xl z-10 flex items-center justify-between">
+    <div x-data="{
+            lockScroll() {
+                document.body.classList.add('overflow-hidden');
+            },
+            unlockScroll() {
+                document.body.classList.remove('overflow-hidden');
+            }
+         }"
+         x-init="lockScroll(); $cleanup(() => unlockScroll());"
+         @modal-closed.window="unlockScroll()"
+         @keydown.escape.window="unlockScroll(); $wire.closeConfirmModal()"
+         class="modal-overlay fixed inset-0 z-[9999] flex items-end justify-center animate-fade-in overscroll-contain"
+         style="background: rgba(0,0,0,0.6); overscroll-behavior: contain; touch-action: none;"
+         @click.self="unlockScroll()"
+         wire:click.self="closeConfirmModal">
+        <div class="bg-white dark:bg-gray-800 rounded-t-3xl w-full max-w-md shadow-2xl max-h-[88vh] overflow-y-auto hide-scrollbar animate-slide-up relative border-t border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 overscroll-contain"
+            style="padding-bottom: env(safe-area-inset-bottom,24px); overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y;">
+            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 rounded-t-3xl z-10 flex items-center justify-between"
+                style="touch-action: none;">
                 <div>
                     <h3 class="text-base font-bold text-gray-900 dark:text-white">Konfirmasi Permintaan Bantuan</h3>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Rincian jenis layanan & pembayaran transparan</p>
                 </div>
-                <button type="button" wire:click="closeConfirmModal"
+                <button type="button" 
+                    @click="unlockScroll()"
+                    wire:click="closeConfirmModal"
                     class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition text-gray-600 dark:text-gray-400 cursor-pointer">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -24,12 +40,19 @@
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Jenis Layanan :</span>
                         @if ($service_type === 'pickup_delivery')
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
-                                <span>📦</span> Antar / Jemput
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
+                                <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                </svg>
+                                <span>Antar / Jemput</span>
                             </span>
                         @else
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                                <span>🛠️</span> Kerja Serabutan
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                <span>Kerja Serabutan</span>
                             </span>
                         @endif
                     </div>
@@ -55,7 +78,12 @@
                                     $estTravelMin = (new \App\Services\GeoService())->getRouteDurationMinutes((float)$route_distance_km, 25.0, 3);
                                 @endphp
                                 <div class="flex items-center justify-between text-[11px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/50 px-2.5 py-1.5 rounded-lg mt-1 border border-blue-100 dark:border-blue-900/40 flex-wrap gap-1">
-                                    <span>🛣️ Rute: <strong>{{ number_format((float)$route_distance_km, 1, ',', '.') }} KM</strong> (±{{ $estTravelMin }} mnt)</span>
+                                    <span class="flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                                        </svg>
+                                        <span>Rute: <strong>{{ number_format((float)$route_distance_km, 1, ',', '.') }} KM</strong> (±{{ $estTravelMin }} mnt)</span>
+                                    </span>
                                     <span>{{ (float)$route_distance_km <= 4 ? 'Tarif Dasar Rp 10.000 (≤ 4 KM)' : ((float)$route_distance_km <= 20 ? '@ Rp 2.500 / KM' : 'Tarif Jarak Jauh (> 20 KM)') }}</span>
                                 </div>
                             @endif
@@ -63,7 +91,10 @@
                     @else
                         <div class="space-y-1 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs">
                             <div class="flex items-start gap-1.5">
-                                <span class="text-sm">📍</span>
+                                <svg class="w-4 h-4 text-rose-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
                                 <div class="min-w-0">
                                     <span class="text-gray-500 dark:text-gray-400 text-[11px] block font-medium">Lokasi Pekerjaan:</span>
                                     <span class="font-semibold text-gray-900 dark:text-white leading-tight block truncate">{{ $location ?: 'Titik Lokasi Terpilih' }}</span>
@@ -212,12 +243,13 @@
             </div>
 
             <!-- Sticky footer with action buttons -->
-            <div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-5 py-4 z-20 flex gap-3">
-                <button wire:click="closeConfirmModal" type="button"
+            <div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-5 py-4 z-20 flex gap-3"
+                style="touch-action: none;">
+                <button @click="unlockScroll()" wire:click="closeConfirmModal" type="button"
                     class="flex-1 px-5 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-pointer">
                     Kembali
                 </button>
-                <button wire:click="save" type="button" wire:loading.attr="disabled"
+                <button @click="unlockScroll()" wire:click="save" type="button" wire:loading.attr="disabled"
                     class="flex-1 px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md">
                     <span wire:loading.remove wire:target="save">Konfirmasi & Buat</span>
                     <span wire:loading wire:target="save" class="flex items-center justify-center gap-2">

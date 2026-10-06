@@ -194,39 +194,116 @@
                         <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Unggah Banner Customer Baru</label>
 
                         <!-- Upload Zone Customer -->
-                        <label for="customer-file-input"
-                            class="relative block border-2 border-dashed {{ $customerRemain === 0 ? 'border-red-300 dark:border-red-800 bg-red-50/40 dark:bg-red-950/20 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 bg-gray-50/60 dark:bg-gray-800/80 hover:bg-blue-50/20 dark:hover:bg-gray-750 cursor-pointer' }} rounded-2xl p-5 text-center transition-all duration-200 shadow-xs group">
-                            <input type="file" id="customer-file-input" wire:model="customerUploads" accept="image/png,image/jpeg,image/jpg,.png,.jpg,.jpeg" multiple class="hidden" {{ $customerRemain === 0 ? 'disabled' : '' }} />
-                            <div class="flex flex-col items-center justify-center space-y-2">
-                                <div class="w-11 h-11 rounded-2xl {{ $customerRemain === 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-400' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 group-hover:scale-110' }} flex items-center justify-center transition-transform duration-200 shadow-2xs">
-                                    @if($customerRemain === 0)
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                                    @else
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                    @endif
+                        <div x-data="{
+                            isProcessing: false,
+                            progressText: '',
+                            clientError: '',
+                            async handleFiles(event) {
+                                const input = event.target;
+                                const files = Array.from(input.files || []);
+                                if (files.length === 0) return;
+
+                                this.clientError = '';
+                                const remainingSlots = {{ $customerRemain }};
+                                if (remainingSlots <= 0) {
+                                    this.clientError = 'Slot banner customer sudah penuh (maksimal 5 banner).';
+                                    input.value = '';
+                                    return;
+                                }
+
+                                const filesToProcess = files.slice(0, remainingSlots);
+                                this.isProcessing = true;
+                                const optimizedFiles = [];
+
+                                try {
+                                    for (let i = 0; i < filesToProcess.length; i++) {
+                                        const f = filesToProcess[i];
+                                        this.progressText = `Mengoptimasi gambar ${i + 1} dari ${filesToProcess.length}...`;
+                                        if (typeof MobileImageOptimizer !== 'undefined') {
+                                            const res = await MobileImageOptimizer.optimizeImage(f, 'banner');
+                                            if (res.error) {
+                                                throw new Error(res.message || 'Gagal mengoptimasi gambar banner.');
+                                            }
+                                            if (res.file.size > 1024 * 1024) {
+                                                throw new Error(`File ${f.name} melebihi batas 1MB setelah optimasi.`);
+                                            }
+                                            optimizedFiles.push(res.file);
+                                        } else {
+                                            if (f.size > 1024 * 1024) {
+                                                throw new Error(`File ${f.name} melebihi batas maksimal 1MB.`);
+                                            }
+                                            optimizedFiles.push(f);
+                                        }
+                                    }
+
+                                    this.progressText = 'Mengunggah banner ke server...';
+                                    @this.uploadMultiple('customerUploads', optimizedFiles,
+                                        () => {
+                                            this.isProcessing = false;
+                                            this.progressText = '';
+                                            input.value = '';
+                                        },
+                                        (err) => {
+                                            this.isProcessing = false;
+                                            this.progressText = '';
+                                            this.clientError = 'Gagal mengunggah banner: ' + (err || 'Terjadi kesalahan');
+                                            input.value = '';
+                                        }
+                                    );
+                                } catch (e) {
+                                    this.isProcessing = false;
+                                    this.progressText = '';
+                                    this.clientError = e.message || 'Gagal memproses file banner.';
+                                    input.value = '';
+                                }
+                            }
+                        }">
+                            <label for="customer-file-input"
+                                class="relative block border-2 border-dashed {{ $customerRemain === 0 ? 'border-red-300 dark:border-red-800 bg-red-50/40 dark:bg-red-950/20 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 bg-gray-50/60 dark:bg-gray-800/80 hover:bg-blue-50/20 dark:hover:bg-gray-750 cursor-pointer' }} rounded-2xl p-5 text-center transition-all duration-200 shadow-xs group">
+                                <input type="file" id="customer-file-input" @change="handleFiles($event)" accept="image/*" multiple class="hidden" {{ $customerRemain === 0 ? 'disabled' : '' }} />
+                                <div class="flex flex-col items-center justify-center space-y-2">
+                                    <div class="w-11 h-11 rounded-2xl {{ $customerRemain === 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-400' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 group-hover:scale-110' }} flex items-center justify-center transition-transform duration-200 shadow-2xs">
+                                        @if($customerRemain === 0)
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                        @else
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        @endif
+                                    </div>
+                                    <div class="text-xs text-gray-700 dark:text-gray-200 font-medium">
+                                        @if($customerRemain === 0)
+                                            <span class="font-bold text-red-500 dark:text-red-400">Slot penuh</span> — hapus banner untuk menambah
+                                        @else
+                                            <span class="font-bold text-blue-600 dark:text-blue-400 group-hover:underline">Pilih Gambar</span> (PNG / JPG / JPEG)
+                                        @endif
+                                    </div>
+                                    <div class="flex flex-col items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="px-1.5 py-0.5 rounded bg-white dark:bg-gray-700 font-mono text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">PNG / JPG / JPEG</span>
+                                            <span>Khusus Gambar • Maks 1MB • {{ $customerRemain > 0 ? 'Maks ' . $customerRemain . ' file' : 'Tidak bisa unggah' }}</span>
+                                        </div>
+                                        <p class="text-[10px] text-gray-500 dark:text-gray-400">
+                                            Rekomendasi rasio sekitar 2.3:1 (contoh: 1440 × 620 px). Letakkan teks/logo penting di area tengah karena banner dapat terpotong sedikit menyesuaikan layar.
+                                        </p>
+                                    </div>
                                 </div>
-                                <div class="text-xs text-gray-700 dark:text-gray-200 font-medium">
-                                    @if($customerRemain === 0)
-                                        <span class="font-bold text-red-500 dark:text-red-400">Slot penuh</span> — hapus banner untuk menambah
-                                    @else
-                                        <span class="font-bold text-blue-600 dark:text-blue-400 group-hover:underline">Pilih Gambar</span> (PNG / JPG / JPEG)
-                                    @endif
-                                </div>
-                                <div class="flex items-center gap-1.5 text-[10px] text-gray-400 dark:text-gray-400">
-                                    <span class="px-1.5 py-0.5 rounded bg-white dark:bg-gray-700 font-mono text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">PNG / JPG / JPEG</span>
-                                    <span>Khusus Gambar • Maks 5MB • Rasio 16:9 • {{ $customerRemain > 0 ? 'Maks ' . $customerRemain . ' file' : 'Tidak bisa unggah' }}</span>
-                                </div>
+                            </label>
+
+                            <!-- Client Processing Indicator -->
+                            <div x-show="isProcessing" class="text-xs text-blue-600 dark:text-blue-400 font-semibold flex items-center justify-center gap-2 py-2" style="display: none;">
+                                <svg class="animate-spin h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span x-text="progressText"></span>
                             </div>
-                        </label>
 
-                        <!-- Loading Indicator -->
-                        <div wire:loading wire:target="customerUploads" class="text-xs text-blue-600 dark:text-blue-400 font-semibold flex items-center justify-center gap-2 py-2">
-                            <svg class="animate-spin h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            <span>Sedang memproses upload gambar...</span>
+                            <!-- Livewire Loading Indicator -->
+                            <div wire:loading wire:target="customerUploads" class="text-xs text-blue-600 dark:text-blue-400 font-semibold flex items-center justify-center gap-2 py-2">
+                                <svg class="animate-spin h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span>Sedang memproses upload gambar...</span>
+                            </div>
+
+                            <div x-show="clientError" x-text="clientError" class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60" style="display: none;"></div>
+                            @error('customerUploads') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
+                            @error('customerUploads.*') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
                         </div>
-
-                        @error('customerUploads') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
-                        @error('customerUploads.*') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
 
                         <!-- Reactive Livewire Preview for New Uploads -->
                         @if(!empty($customerUploads))
@@ -347,39 +424,116 @@
                         <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Unggah Banner Mitra Baru</label>
 
                         <!-- Upload Zone Mitra -->
-                        <label for="mitra-file-input"
-                            class="relative block border-2 border-dashed {{ $mitraRemain === 0 ? 'border-red-300 dark:border-red-800 bg-red-50/40 dark:bg-red-950/20 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-600 hover:border-emerald-500 dark:hover:border-emerald-400 bg-gray-50/60 dark:bg-gray-800/80 hover:bg-emerald-50/20 dark:hover:bg-gray-750 cursor-pointer' }} rounded-2xl p-5 text-center transition-all duration-200 shadow-xs group">
-                            <input type="file" id="mitra-file-input" wire:model="mitraUploads" accept="image/png,image/jpeg,image/jpg,.png,.jpg,.jpeg" multiple class="hidden" {{ $mitraRemain === 0 ? 'disabled' : '' }} />
-                            <div class="flex flex-col items-center justify-center space-y-2">
-                                <div class="w-11 h-11 rounded-2xl {{ $mitraRemain === 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 group-hover:scale-110' }} flex items-center justify-center transition-transform duration-200 shadow-2xs">
-                                    @if($mitraRemain === 0)
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                                    @else
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                    @endif
+                        <div x-data="{
+                            isProcessing: false,
+                            progressText: '',
+                            clientError: '',
+                            async handleFiles(event) {
+                                const input = event.target;
+                                const files = Array.from(input.files || []);
+                                if (files.length === 0) return;
+
+                                this.clientError = '';
+                                const remainingSlots = {{ $mitraRemain }};
+                                if (remainingSlots <= 0) {
+                                    this.clientError = 'Slot banner mitra sudah penuh (maksimal 5 banner).';
+                                    input.value = '';
+                                    return;
+                                }
+
+                                const filesToProcess = files.slice(0, remainingSlots);
+                                this.isProcessing = true;
+                                const optimizedFiles = [];
+
+                                try {
+                                    for (let i = 0; i < filesToProcess.length; i++) {
+                                        const f = filesToProcess[i];
+                                        this.progressText = `Mengoptimasi gambar ${i + 1} dari ${filesToProcess.length}...`;
+                                        if (typeof MobileImageOptimizer !== 'undefined') {
+                                            const res = await MobileImageOptimizer.optimizeImage(f, 'banner');
+                                            if (res.error) {
+                                                throw new Error(res.message || 'Gagal mengoptimasi gambar banner.');
+                                            }
+                                            if (res.file.size > 1024 * 1024) {
+                                                throw new Error(`File ${f.name} melebihi batas 1MB setelah optimasi.`);
+                                            }
+                                            optimizedFiles.push(res.file);
+                                        } else {
+                                            if (f.size > 1024 * 1024) {
+                                                throw new Error(`File ${f.name} melebihi batas maksimal 1MB.`);
+                                            }
+                                            optimizedFiles.push(f);
+                                        }
+                                    }
+
+                                    this.progressText = 'Mengunggah banner ke server...';
+                                    @this.uploadMultiple('mitraUploads', optimizedFiles,
+                                        () => {
+                                            this.isProcessing = false;
+                                            this.progressText = '';
+                                            input.value = '';
+                                        },
+                                        (err) => {
+                                            this.isProcessing = false;
+                                            this.progressText = '';
+                                            this.clientError = 'Gagal mengunggah banner: ' + (err || 'Terjadi kesalahan');
+                                            input.value = '';
+                                        }
+                                    );
+                                } catch (e) {
+                                    this.isProcessing = false;
+                                    this.progressText = '';
+                                    this.clientError = e.message || 'Gagal memproses file banner.';
+                                    input.value = '';
+                                }
+                            }
+                        }">
+                            <label for="mitra-file-input"
+                                class="relative block border-2 border-dashed {{ $mitraRemain === 0 ? 'border-red-300 dark:border-red-800 bg-red-50/40 dark:bg-red-950/20 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-600 hover:border-emerald-500 dark:hover:border-emerald-400 bg-gray-50/60 dark:bg-gray-800/80 hover:bg-emerald-50/20 dark:hover:bg-gray-750 cursor-pointer' }} rounded-2xl p-5 text-center transition-all duration-200 shadow-xs group">
+                                <input type="file" id="mitra-file-input" @change="handleFiles($event)" accept="image/*" multiple class="hidden" {{ $mitraRemain === 0 ? 'disabled' : '' }} />
+                                <div class="flex flex-col items-center justify-center space-y-2">
+                                    <div class="w-11 h-11 rounded-2xl {{ $mitraRemain === 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 group-hover:scale-110' }} flex items-center justify-center transition-transform duration-200 shadow-2xs">
+                                        @if($mitraRemain === 0)
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                        @else
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        @endif
+                                    </div>
+                                    <div class="text-xs text-gray-700 dark:text-gray-200 font-medium">
+                                        @if($mitraRemain === 0)
+                                            <span class="font-bold text-red-500 dark:text-red-400">Slot penuh</span> — hapus banner untuk menambah
+                                        @else
+                                            <span class="font-bold text-emerald-600 dark:text-emerald-400 group-hover:underline">Pilih Gambar</span> (PNG / JPG / JPEG)
+                                        @endif
+                                    </div>
+                                    <div class="flex flex-col items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="px-1.5 py-0.5 rounded bg-white dark:bg-gray-700 font-mono text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">PNG / JPG / JPEG</span>
+                                            <span>Khusus Gambar • Maks 1MB • {{ $mitraRemain > 0 ? 'Maks ' . $mitraRemain . ' file' : 'Tidak bisa unggah' }}</span>
+                                        </div>
+                                        <p class="text-[10px] text-gray-500 dark:text-gray-400">
+                                            Rekomendasi rasio sekitar 2.3:1 (contoh: 1440 × 620 px). Letakkan teks/logo penting di area tengah karena banner dapat terpotong sedikit menyesuaikan layar.
+                                        </p>
+                                    </div>
                                 </div>
-                                <div class="text-xs text-gray-700 dark:text-gray-200 font-medium">
-                                    @if($mitraRemain === 0)
-                                        <span class="font-bold text-red-500 dark:text-red-400">Slot penuh</span> — hapus banner untuk menambah
-                                    @else
-                                        <span class="font-bold text-emerald-600 dark:text-emerald-400 group-hover:underline">Pilih Gambar</span> (PNG / JPG / JPEG)
-                                    @endif
-                                </div>
-                                <div class="flex items-center gap-1.5 text-[10px] text-gray-400 dark:text-gray-400">
-                                    <span class="px-1.5 py-0.5 rounded bg-white dark:bg-gray-700 font-mono text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">PNG / JPG / JPEG</span>
-                                    <span>Khusus Gambar • Maks 5MB • Rasio 16:9 • {{ $mitraRemain > 0 ? 'Maks ' . $mitraRemain . ' file' : 'Tidak bisa unggah' }}</span>
-                                </div>
+                            </label>
+
+                            <!-- Client Processing Indicator -->
+                            <div x-show="isProcessing" class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center justify-center gap-2 py-2" style="display: none;">
+                                <svg class="animate-spin h-4 w-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span x-text="progressText"></span>
                             </div>
-                        </label>
 
-                        <!-- Loading Indicator -->
-                        <div wire:loading wire:target="mitraUploads" class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center justify-center gap-2 py-2">
-                            <svg class="animate-spin h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            <span>Sedang memproses upload gambar...</span>
+                            <!-- Livewire Loading Indicator -->
+                            <div wire:loading wire:target="mitraUploads" class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center justify-center gap-2 py-2">
+                                <svg class="animate-spin h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span>Sedang memproses upload gambar...</span>
+                            </div>
+
+                            <div x-show="clientError" x-text="clientError" class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60" style="display: none;"></div>
+                            @error('mitraUploads') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
+                            @error('mitraUploads.*') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
                         </div>
-
-                        @error('mitraUploads') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
-                        @error('mitraUploads.*') <div class="text-xs text-red-600 dark:text-red-400 font-semibold mt-1 p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">{{ $message }}</div> @enderror
 
                         <!-- Reactive Livewire Preview for New Uploads -->
                         @if(!empty($mitraUploads))

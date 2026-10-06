@@ -11,7 +11,7 @@
     </div>
 
     {{-- ===== Stats Overview Cards (Interactive Status Filters) ===== --}}
-    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {{-- Total Bantuan --}}
         <div wire:click="filterByStatus('all')"
             class="bg-white dark:bg-gray-800 rounded-2xl border {{ $statusFilter === '' ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-gray-100 dark:border-gray-700' }} shadow-xs p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:shadow-md transition">

@@ -247,11 +247,31 @@
                 </div>
             </div>
 
+            {{-- Modal Tab Navigation --}}
+            <div class="flex items-center gap-2 px-5 sm:px-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/40 dark:bg-gray-800/40">
+                <button type="button" wire:click="setModalTab('profile')"
+                    class="py-3 px-3 sm:px-4 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 sm:gap-2 {{ $activeModalTab === 'profile' ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' }}">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    Data Profil & Identitas
+                </button>
+                <button type="button" wire:click="setModalTab('audit')"
+                    class="py-3 px-3 sm:px-4 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 sm:gap-2 {{ $activeModalTab === 'audit' ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' }}">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                    Riwayat & Audit Akun
+                    @if(isset($auditTimeline) && $auditTimeline->total() > 0)
+                        <span class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                            {{ $auditTimeline->total() }}
+                        </span>
+                    @endif
+                </button>
+            </div>
+
             {{-- Body --}}
             <div class="p-5 sm:p-6 overflow-y-auto flex-1 space-y-5">
-                @php
-                    $isStaff = in_array($selectedUser->role, ['admin', 'super_admin']);
-                @endphp
+                @if($activeModalTab === 'profile')
+                    @php
+                        $isStaff = in_array($selectedUser->role, ['admin', 'super_admin']);
+                    @endphp
 
                 @if($isStaff)
                     {{-- Layout Khusus Admin & Super Admin (Tanpa Dokumen KTP/Selfie) --}}
@@ -410,7 +430,7 @@
                                     </h4>
                                     @if($selectedUser->verified)
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
-                                            ✓ Terverifikasi
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Terverifikasi
                                         </span>
                                     @else
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
@@ -464,6 +484,188 @@
                                     </a>
                                 </div>
                             </div>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+                @else
+                    {{-- TAB 2: RIWAYAT & AUDIT AKUN (CONSOLIDATED AUDIT TIMELINE) --}}
+                    <div class="space-y-4">
+                        {{-- Home Administrative Territory & Status Card --}}
+                        <div class="bg-gray-50/70 dark:bg-gray-750/50 border border-gray-100 dark:border-gray-700/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <span class="text-[10px] text-gray-400 uppercase tracking-wider font-bold block">Wilayah Administratif Akun Saat Ini (Home Territory)</span>
+                                <span class="text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 mt-0.5">
+                                    <svg class="w-4 h-4 text-primary-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    {{ $selectedUser->district ? 'Kec. ' . $selectedUser->district->name . ', ' : '' }}{{ $selectedUser->cityRelation?->name ?? ($selectedUser->city ?? 'Wilayah belum diatur') }}
+                                </span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-[11px] px-2.5 py-1 rounded-lg font-medium bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300">
+                                    Status Moderasi: <strong class="{{ $selectedUser->warning_level > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400' }}">{{ $selectedUser->warning_level_label }}</strong>
+                                </span>
+                                @if($selectedUser->is_shadow_banned)
+                                    <span class="text-[11px] px-2 py-0.5 rounded-lg font-bold bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                        Shadow Ban Aktif
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Filter Kategori Aktivitas --}}
+                        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                            <button type="button" wire:click="setAuditFilter('all')"
+                                class="px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-colors {{ $auditFilter === 'all' ? 'bg-primary-600 text-white font-semibold' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                                Semua
+                            </button>
+                            <button type="button" wire:click="setAuditFilter('help')"
+                                class="px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-colors {{ $auditFilter === 'help' ? 'bg-primary-600 text-white font-semibold' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                                Pesanan Jasa
+                            </button>
+                            <button type="button" wire:click="setAuditFilter('cancel_dispute')"
+                                class="px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-colors {{ $auditFilter === 'cancel_dispute' ? 'bg-primary-600 text-white font-semibold' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                                Pembatalan & Sengketa
+                            </button>
+                            <button type="button" wire:click="setAuditFilter('report')"
+                                class="px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-colors {{ $auditFilter === 'report' ? 'bg-primary-600 text-white font-semibold' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                                Laporan Aduan
+                            </button>
+                            <button type="button" wire:click="setAuditFilter('discipline')"
+                                class="px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-colors {{ $auditFilter === 'discipline' ? 'bg-primary-600 text-white font-semibold' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                                Disiplin & Sanksi
+                            </button>
+                            <button type="button" wire:click="setAuditFilter('financial')"
+                                class="px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-colors {{ $auditFilter === 'financial' ? 'bg-primary-600 text-white font-semibold' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                                Keuangan Dompet
+                            </button>
+                        </div>
+
+                        {{-- Daftar Timeline Audit --}}
+                        <div class="space-y-3 pt-1">
+                            @if(isset($auditTimeline) && $auditTimeline->count() > 0)
+                                @foreach($auditTimeline as $event)
+                                    <div class="bg-white dark:bg-gray-700 rounded-2xl p-4 border border-gray-100 dark:border-gray-600 shadow-2xs space-y-2.5 transition-all">
+                                        {{-- Top Bar: Timestamp & Type Badges --}}
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <div class="flex flex-wrap items-center gap-1.5">
+                                                <span class="inline-flex items-center gap-1 text-[11px] font-mono text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-2.5 py-0.5 rounded-md border border-gray-200/60 dark:border-gray-600">
+                                                    <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    {{ $event['occurred_at'] ? \Carbon\Carbon::parse($event['occurred_at'])->translatedFormat('d M Y, H:i') . ' WIB' : '—' }}
+                                                </span>
+
+                                                @php
+                                                    $typeBg = match($event['event_type']) {
+                                                        'help_order'     => 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+                                                        'cancellation'   => 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+                                                        'dispute'        => 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+                                                        'report'         => 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+                                                        'support'        => 'bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800',
+                                                        'discipline'     => 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+                                                        'financial'      => 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+                                                        'admin_action'   => 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
+                                                        default          => 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700',
+                                                    };
+                                                @endphp
+                                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border {{ $typeBg }}">
+                                                    {{ $event['event_type_label'] }}
+                                                </span>
+
+                                                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-gray-600">
+                                                    Peran: {{ $event['user_role'] }}
+                                                </span>
+                                            </div>
+
+                                            <div class="flex items-center gap-2">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-50 dark:bg-gray-800 border border-gray-200/60 dark:border-gray-600 text-gray-700 dark:text-gray-300">
+                                                    {{ $event['status_label'] }}
+                                                </span>
+                                                <span class="text-[10px] font-mono text-gray-400">
+                                                    {{ $event['public_ref'] }}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {{-- Territory Context --}}
+                                        <div class="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                                            <span class="flex items-center gap-1">
+                                                <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                                Wilayah Kasus: <strong>{{ $event['incident_territory'] }}</strong>
+                                            </span>
+                                            @if($event['is_cross_territory'])
+                                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                                                    Lintas Wilayah
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        {{-- Summary Content --}}
+                                        <p class="text-xs sm:text-sm text-gray-800 dark:text-gray-200 leading-relaxed font-medium">
+                                            {{ $event['summary'] }}
+                                        </p>
+
+                                        {{-- Bottom Row: Badges, Values, & Strict Authority Access Boundary --}}
+                                        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-100 dark:border-gray-600/70 text-xs">
+                                            <div class="flex flex-wrap items-center gap-3">
+                                                @if(isset($event['monetary_amount']) && $event['monetary_amount'] > 0)
+                                                    <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                                        Nilai: Rp {{ number_format($event['monetary_amount'], 0, ',', '.') }}
+                                                    </span>
+                                                @endif
+
+                                                @if(!empty($event['sp_level']))
+                                                    <span class="text-xs font-bold text-rose-600 dark:text-rose-400">
+                                                        Sanksi SP {{ $event['sp_level'] }}
+                                                    </span>
+                                                @endif
+
+                                                @if(!empty($event['actor_name']))
+                                                    <span class="text-[11px] text-gray-400 dark:text-gray-400">
+                                                        Aktor: {{ $event['actor_name'] }}
+                                                    </span>
+                                                @endif
+                                            </div>
+
+                                            <div>
+                                                @if($event['can_access_case'] && !empty($event['case_route']))
+                                                    <a href="{{ $event['case_route'] }}" target="_blank"
+                                                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors">
+                                                        Buka Kasus
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                                    </a>
+                                                @else
+                                                    <span class="text-[11px] text-gray-400 dark:text-gray-500 italic">
+                                                        Wewenang Kasus di Luar Wilayah (Pengawasan Akun Saja)
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+
+                                {{-- Pagination Controls for Audit --}}
+                                <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700 text-xs">
+                                    <button type="button" wire:click="previousAuditPage"
+                                        @if($auditTimeline->currentPage() <= 1) disabled @endif
+                                        class="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-600 font-medium text-gray-600 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                        Sebelumnya
+                                    </button>
+                                    <span class="text-gray-500 dark:text-gray-400 text-[11px]">
+                                        Halaman {{ $auditTimeline->currentPage() }} dari {{ max(1, $auditTimeline->lastPage()) }} (Total {{ $auditTimeline->total() }} entri)
+                                    </span>
+                                    <button type="button" wire:click="nextAuditPage"
+                                        @if($auditTimeline->currentPage() >= $auditTimeline->lastPage()) disabled @endif
+                                        class="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-600 font-medium text-gray-600 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                        Selanjutnya
+                                    </button>
+                                </div>
+                            @else
+                                <div class="py-12 px-4 text-center bg-gray-50/50 dark:bg-gray-750/30 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 space-y-2">
+                                    <div class="w-10 h-10 mx-auto rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                    </div>
+                                    <p class="text-xs font-semibold text-gray-600 dark:text-gray-300">Belum Ada Riwayat Aktivitas</p>
+                                    <p class="text-[11px] text-gray-400 dark:text-gray-500">Tidak ada catatan aktivitas untuk filter kategori yang dipilih.</p>
+                                </div>
                             @endif
                         </div>
                     </div>

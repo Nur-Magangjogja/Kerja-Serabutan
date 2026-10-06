@@ -63,7 +63,7 @@ class Create extends Component
             'reported_user_text' => 'nullable|string|max:255',
             'selected_help_type' => 'nullable|string',
             'custom_help_type'   => 'nullable|string|max:255',
-            'evidence_photo'     => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'evidence_photo'     => 'nullable|image|mimes:jpg,jpeg,png|max:1536',
         ];
     }
 
@@ -73,7 +73,7 @@ class Create extends Component
         'message.min'          => 'Detail pesan minimal 10 karakter.',
         'report_type.required' => 'Jenis laporan harus dipilih.',
         'evidence_photo.image' => 'Bukti foto harus berupa format gambar (JPG, JPEG, PNG).',
-        'evidence_photo.max'   => 'Ukuran foto bukti maksimal 5MB.',
+        'evidence_photo.max'   => 'Ukuran foto bukti maksimal 1.5MB.',
     ];
 
     public function mount($user_id = null, $help_id = null)
@@ -321,6 +321,25 @@ class Create extends Component
             }
             foreach ($admins as $adm) {
                 $adm->notify(new \App\Notifications\NewReportNotification($report));
+            }
+
+            // Notifikasi Pengawasan Lintas Wilayah (TG1C) ke Profile Admin pihak terlapor jika di luar wilayah kasus
+            $reportedUser = $report->reportedUser ?? ($report->reported_user_id ? \App\Models\User::find($report->reported_user_id) : null);
+            if ($reportedUser && $report->report_type !== 'dukungan_umum') {
+                $incidentTerritory = $help 
+                    ? (($help->district?->name ? $help->district->name . ', ' : '') . ($help->cityRelation?->name ?? $help->city ?? 'Wilayah Kasus'))
+                    : null;
+                $roleLabel = ($reportedUser->role === 'mitra') ? 'Mitra' : 'Customer';
+                app(\App\Services\AccountNotificationService::class)->notifyCrossTerritoryOversight(
+                    $reportedUser,
+                    $admins,
+                    'investigation',
+                    "Pengawasan Akun: Laporan Investigasi ({$roleLabel} {$reportedUser->name})",
+                    "{$roleLabel} yang Anda kelola menjadi subjek laporan investigasi di " . ($incidentTerritory ?: 'luar wilayah') . ". Kasus ditangani oleh Admin Wilayah terkait.",
+                    "REP-{$report->id}",
+                    $incidentTerritory,
+                    $report->status
+                );
             }
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('[CustomerReport] Gagal mengirim notifikasi ke admin: ' . $e->getMessage());

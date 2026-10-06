@@ -90,7 +90,9 @@
                             <button wire:key="conv-admin" wire:click="selectAdmin"
                                 class="w-full p-3.5 rounded-2xl transition-all text-left bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700/80 hover:bg-blue-50/50 dark:hover:bg-blue-950/40 shadow-xs hover:shadow-sm flex items-center gap-3.5 cursor-pointer">
                                 <div class="w-11 h-11 rounded-2xl bg-sky-500 text-white flex-shrink-0 flex items-center justify-center font-bold text-lg shadow-xs border border-sky-400">
-                                    🛡️
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center justify-between gap-1 mb-0.5">
@@ -186,8 +188,8 @@
             </div>
         </div>
 
-    {{-- CASE 3: ADMIN GROUPING HUB (DAFTAR PENGELOMPOKAN TOPIK ADMIN) --}}
-    @elseif($is_admin_chat && !$selected_cancel_request_id && !$selected_report_id)
+    {{-- CASE 3: ADMIN GROUPING HUB (DAFTAR KASUS TINJAUAN PEMBATALAN & LAPORAN ADUAN) --}}
+    @elseif($is_admin_chat && (($admin_tab === 'cancellation' && !$selected_cancel_request_id) || ($admin_tab === 'report' && !$selected_report_id)))
         <!-- Top Header Section for Admin Grouping Hub -->
         <div class="shrink-0 px-4 pt-4 pb-4 relative overflow-hidden bg-gradient-to-br from-[#0098e7] via-[#0077cc] to-[#0060b0] shadow-sm text-white select-none rounded-b-2xl">
             <div class="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full -mr-12 -mt-12 blur-xl pointer-events-none"></div>
@@ -200,13 +202,15 @@
                         </svg>
                     </button>
                     <div class="flex items-center gap-2">
-                        <div class="w-9 h-9 rounded-xl bg-primary-500 text-white flex items-center justify-center font-bold text-base shadow-xs flex-shrink-0 border border-primary-400">
-                            🛡️
+                        <div class="w-9 h-9 rounded-xl bg-sky-500 text-white flex items-center justify-center font-bold text-base shadow-xs flex-shrink-0 border border-sky-400">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
                         </div>
                         <div>
                             <div class="flex items-center gap-1.5">
                                 <h1 class="text-base font-bold text-white leading-tight">Tim Admin SayaBantu</h1>
-                                <span class="text-[8px] px-1.5 py-0.2 rounded font-extrabold bg-primary-100 text-primary-900 uppercase">Resmi</span>
+                                <span class="text-[8px] px-1.5 py-0.2 rounded font-extrabold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 uppercase">Resmi</span>
                             </div>
                             <p class="text-[11px] text-white/80">Pusat Layanan Bantuan & Moderasi Resmi</p>
                         </div>
@@ -215,11 +219,18 @@
             </div>
         </div>
 
-        <!-- Category Switcher Tabs -->
-        <div class="shrink-0 bg-white dark:bg-gray-850 border-b border-gray-200/80 dark:border-gray-750 px-4 pt-2.5 pb-0 flex items-center gap-2 shadow-2xs">
+        <!-- 3-Channel Switcher Tabs (CH1 Sections 2 & 15) -->
+        <div class="shrink-0 bg-white dark:bg-gray-850 border-b border-gray-200/80 dark:border-gray-750 px-2 sm:px-4 pt-2.5 pb-0 flex items-center gap-1 sm:gap-2 shadow-2xs">
+            <button type="button" wire:click="switchAdminTab('support')"
+                class="flex-1 pb-3 pt-1 text-center font-bold text-xs flex items-center justify-center gap-1.5 transition border-b-2 {{ $admin_tab === 'support' ? 'border-[#0098e7] text-[#0098e7] dark:text-[#38bdf8]' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' }} cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                <span>Chat Bantuan</span>
+            </button>
+
             <button type="button" wire:click="switchAdminTab('cancellation')"
                 class="flex-1 pb-3 pt-1 text-center font-bold text-xs flex items-center justify-center gap-1.5 transition border-b-2 {{ $admin_tab === 'cancellation' ? 'border-[#0098e7] text-[#0098e7] dark:text-[#38bdf8]' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' }} cursor-pointer">
-                <span>🛵 Tinjauan Pembatalan</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span>Tinjauan Pembatalan</span>
                 @if($userCancelRequests->count() > 0)
                     <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold {{ $admin_tab === 'cancellation' ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
                         {{ $userCancelRequests->count() }}
@@ -229,7 +240,8 @@
 
             <button type="button" wire:click="switchAdminTab('report')"
                 class="flex-1 pb-3 pt-1 text-center font-bold text-xs flex items-center justify-center gap-1.5 transition border-b-2 {{ $admin_tab === 'report' ? 'border-[#0098e7] text-[#0098e7] dark:text-[#38bdf8]' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' }} cursor-pointer">
-                <span>📋 Laporan Aduan</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                <span>Laporan Aduan</span>
                 @if($userReports->count() > 0)
                     <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold {{ $admin_tab === 'report' ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
                         {{ $userReports->count() }}
@@ -249,7 +261,9 @@
                         <div class="flex items-start justify-between gap-2.5 mb-2.5">
                             <div class="flex items-center gap-2.5 min-w-0 flex-1">
                                 <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 border {{ $cReq->job_icon_box_class }}">
-                                    {{ $cReq->job_icon }}
+                                    <svg class="w-5 h-5 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center gap-1.5 flex-wrap">
@@ -345,7 +359,9 @@
                 @empty
                     <div class="text-center py-12 px-4 bg-white dark:bg-gray-850 rounded-2xl border border-gray-100 dark:border-gray-750 shadow-xs">
                         <div class="w-12 h-12 mx-auto bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500 mb-2">
-                            <span class="text-2xl">🛵</span>
+                            <svg class="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
                         </div>
                         <p class="text-sm font-bold text-gray-800 dark:text-gray-200">Tidak Ada Tinjauan Pembatalan</p>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Saat ini Anda tidak memiliki pengajuan pembatalan yang memerlukan tindak lanjut.</p>
@@ -360,7 +376,9 @@
                         <div class="flex items-start justify-between gap-3 mb-2.5">
                             <div class="flex items-center gap-2.5 min-w-0">
                                 <div class="w-10 h-10 rounded-xl bg-rose-500/10 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg flex-shrink-0 border border-rose-500/20 dark:border-rose-500/30">
-                                    📋
+                                    <svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                    </svg>
                                 </div>
                                 <div class="min-w-0">
                                     <h3 class="font-bold text-sm text-gray-900 dark:text-gray-100 truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
@@ -444,7 +462,9 @@
                 @empty
                     <div class="text-center py-12 px-4 bg-white dark:bg-gray-850 rounded-2xl border border-gray-100 dark:border-gray-750 shadow-xs">
                         <div class="w-12 h-12 mx-auto bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500 mb-2">
-                            <span class="text-2xl">📋</span>
+                            <svg class="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
                         </div>
                         <p class="text-sm font-bold text-gray-800 dark:text-gray-200">Tidak Ada Laporan Aduan</p>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Saat ini Anda tidak memiliki laporan aduan yang sedang diproses.</p>
@@ -464,12 +484,21 @@
                 <!-- Left: Back Button + Avatar + Name -->
                 <div class="flex items-center gap-2.5 min-w-0 flex-1">
                     @if($is_admin_chat)
-                        <button wire:click="unselectAdminIssue" aria-label="Kembali ke Daftar Topik Moderasi"
-                            class="p-1.5 -ml-1 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex-shrink-0 flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </button>
+                        @if($admin_tab === 'support')
+                            <button wire:click="closeChat" aria-label="Kembali ke Pesan Masuk"
+                                class="p-1.5 -ml-1 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex-shrink-0 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                        @else
+                            <button wire:click="unselectAdminIssue" aria-label="Kembali ke Daftar Topik Moderasi"
+                                class="p-1.5 -ml-1 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex-shrink-0 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                        @endif
                     @else
                         <button wire:click="closeChat" aria-label="Kembali ke Daftar Percakapan"
                             class="p-1.5 -ml-1 hover:bg-white/20 rounded-xl transition-colors duration-200 cursor-pointer flex-shrink-0 flex items-center justify-center">
@@ -480,13 +509,15 @@
                     @endif
 
                     @if($selected_partner->is_admin ?? false)
-                        <div class="w-9 h-9 rounded-xl bg-primary-500 text-white flex items-center justify-center font-bold text-base shadow-xs flex-shrink-0 border border-primary-400">
-                            🛡️
+                        <div class="w-9 h-9 rounded-xl bg-sky-500 text-white flex items-center justify-center font-bold text-base shadow-xs flex-shrink-0 border border-sky-400">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
                         </div>
                         <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-1.5">
                                 <h2 class="font-bold text-sm text-white truncate leading-tight">Tim Admin SayaBantu</h2>
-                                <span class="text-[8px] px-1.5 py-0.2 rounded font-extrabold bg-primary-100 text-primary-900 uppercase">Resmi</span>
+                                <span class="text-[8px] px-1.5 py-0.2 rounded font-extrabold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 uppercase">Resmi</span>
                             </div>
                             <p class="text-[10px] text-white/80 truncate">Pusat Layanan Bantuan & Moderasi Resmi</p>
                         </div>
@@ -507,9 +538,9 @@
 
                 <!-- Right: Action Buttons -->
                 <div class="flex items-center gap-1.5 flex-shrink-0">
-                    @if($is_admin_chat)
+                    @if($is_admin_chat && ($admin_tab === 'cancellation' || $admin_tab === 'report'))
                         <button wire:click="unselectAdminIssue" class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white text-[11px] font-bold rounded-lg transition border border-white/20 shadow-xs cursor-pointer" title="Daftar Topik Moderasi">
-                            Daftar Topik
+                            Daftar Kasus
                         </button>
                     @endif
                     @if($active_help && !($selected_partner->is_admin ?? false))
@@ -527,12 +558,45 @@
         </div>
 
         @if($is_admin_chat)
-            {{-- Context Rincian Masalah yang Sedang Dibahas (Tanpa #) --}}
+            <!-- Admin Channel Tabs (Support, Cancellation, Report) -->
+            <div class="shrink-0 bg-white dark:bg-gray-850 border-b border-gray-200/80 dark:border-gray-750 px-2 sm:px-4 pt-1 pb-0 flex items-center gap-1 sm:gap-2 shadow-2xs">
+                <button type="button" wire:click="switchAdminTab('support')"
+                    class="flex-1 pb-2.5 pt-1 text-center font-bold text-xs flex items-center justify-center gap-1.5 transition border-b-2 {{ $admin_tab === 'support' ? 'border-[#0098e7] text-[#0098e7] dark:text-[#38bdf8]' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' }} cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                    <span>Chat Bantuan</span>
+                </button>
+
+                <button type="button" wire:click="switchAdminTab('cancellation')"
+                    class="flex-1 pb-2.5 pt-1 text-center font-bold text-xs flex items-center justify-center gap-1.5 transition border-b-2 {{ $admin_tab === 'cancellation' ? 'border-[#0098e7] text-[#0098e7] dark:text-[#38bdf8]' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' }} cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>Tinjauan Pembatalan</span>
+                    @if($userCancelRequests->count() > 0)
+                        <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold {{ $admin_tab === 'cancellation' ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
+                            {{ $userCancelRequests->count() }}
+                        </span>
+                    @endif
+                </button>
+
+                <button type="button" wire:click="switchAdminTab('report')"
+                    class="flex-1 pb-2.5 pt-1 text-center font-bold text-xs flex items-center justify-center gap-1.5 transition border-b-2 {{ $admin_tab === 'report' ? 'border-[#0098e7] text-[#0098e7] dark:text-[#38bdf8]' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' }} cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                    <span>Laporan Aduan</span>
+                    @if($userReports->count() > 0)
+                        <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold {{ $admin_tab === 'report' ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
+                            {{ $userReports->count() }}
+                        </span>
+                    @endif
+                </button>
+            </div>
+
+            {{-- Context Rincian Masalah yang Sedang Dibahas (Khusus cancellation & report) --}}
             @if($admin_tab === 'cancellation' && $selected_cancel_request)
                 <div class="shrink-0 bg-slate-50 dark:bg-gray-850 px-3.5 sm:px-4 py-2.5 border-b border-gray-200/80 dark:border-gray-750 space-y-2 shadow-2xs">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0 flex-1">
-                            <span class="text-sm shrink-0">{{ $selected_cancel_request->job_icon }}</span>
+                            <svg class="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
                             <span class="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 truncate" title="{{ $selected_cancel_request->help->title ?? 'Permohonan Bantuan' }}">
                                 {{ $selected_cancel_request->help->title ?? 'Permohonan Bantuan' }}
                             </span>
@@ -600,7 +664,9 @@
                 <div class="shrink-0 bg-slate-50 dark:bg-gray-850 px-3.5 sm:px-4 py-2.5 border-b border-gray-200/80 dark:border-gray-750 space-y-2 shadow-2xs">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0 flex-1">
-                            <span class="text-sm shrink-0">📋</span>
+                            <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                            </svg>
                             <span class="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 truncate" title="{{ $selected_report->display_title }}">
                                 {{ $selected_report->display_title }}
                             </span>
@@ -690,19 +756,22 @@
                     @if(!$is_admin_chat && $msg->help_id && $msg->help_id !== $lastHelpContextId && $msg->help)
                         @php $lastHelpContextId = $msg->help_id; @endphp
                         <div wire:key="ctx-sep-{{ $msg->help_id }}" class="flex items-center justify-center my-3">
-                            <div class="bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/80 px-3 py-1 rounded-full text-[11px] text-blue-700 dark:text-blue-300 font-semibold shadow-xs flex items-center gap-1">
-                                <span>📌 {{ Str::limit($msg->help->title, 35) }}</span>
+                            <div class="bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/80 px-3 py-1 rounded-full text-[11px] text-blue-700 dark:text-blue-300 font-semibold shadow-xs flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span>{{ Str::limit($msg->help->title, 35) }}</span>
                             </div>
                         </div>
                     @endif
 
                     @if($is_admin_chat)
-                        {{-- DI DALAM RUANG 🛡️ TIM ADMIN SAYABANTU --}}
+                        {{-- DI DALAM RUANG TIM ADMIN SAYABANTU --}}
                         @if($msg->is_admin)
                             <div wire:key="msg-adm-{{ $msg->id }}" class="flex justify-start my-1">
                                 <div class="rounded-2xl p-3.5 max-w-[85%] shadow-xs bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 text-gray-900 dark:text-gray-100 rounded-bl-xs">
                                     <div class="flex items-center gap-1.5 mb-1 text-sky-600 dark:text-sky-400 font-bold text-[11px]">
-                                        <span>🛡️</span>
+                                        <svg class="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                        </svg>
                                         <span>Tim Admin SayaBantu</span>
                                         <span class="text-[8px] px-1 py-0.2 rounded font-extrabold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 uppercase">Resmi</span>
                                     </div>
@@ -760,7 +829,9 @@
                             <div wire:key="msg-adm-relay-{{ $msg->id }}" class="flex justify-start my-1">
                                 <div class="rounded-2xl p-3.5 max-w-[85%] shadow-xs bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 text-gray-900 dark:text-gray-100 rounded-bl-xs">
                                     <div class="flex items-center gap-1.5 mb-1 text-sky-600 dark:text-sky-400 font-bold text-[11px]">
-                                        <span>🛡️</span>
+                                        <svg class="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                        </svg>
                                         <span>Pesan Resmi Admin Moderasi</span>
                                     </div>
                                     <p class="text-xs leading-relaxed break-words whitespace-pre-line text-gray-900 dark:text-gray-100 font-normal">
@@ -809,7 +880,13 @@
             @else
                 <div class="text-center text-gray-400 dark:text-gray-500 text-xs py-10">
                     @if($is_admin_chat)
-                        Belum ada pesan percakapan pada topik ini. Ketik pesan di bawah untuk memberikan tanggapan kepada Tim Admin.
+                        @if($admin_tab === 'support')
+                            Belum ada pesan di ruang Chat Bantuan. Tuliskan pesan di bawah untuk memulai obrolan dengan Tim Admin.
+                        @elseif($admin_tab === 'cancellation')
+                            Belum ada pesan pada tinjauan pembatalan ini. Ketik pesan di bawah untuk memberikan tanggapan kepada Tim Admin.
+                        @else
+                            Belum ada pesan pada laporan aduan ini. Ketik pesan di bawah untuk memberikan tanggapan kepada Tim Admin.
+                        @endif
                     @else
                         Belum ada pesan. Ketik pesan di bawah untuk memulai percakapan.
                     @endif
@@ -818,7 +895,44 @@
         </div>
 
         <!-- Bottom Fixed Input Bar -->
-        <form wire:submit="sendMessage" class="shrink-0 p-2.5 sm:p-3 border-t border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-850 space-y-2 shadow-lg">
+        <form wire:submit="sendMessage" class="shrink-0 p-2.5 sm:p-3 border-t border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-850 space-y-2 shadow-lg"
+            x-data="{
+                optimizing: false,
+                compressError: '',
+                async handleChatPhoto(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    this.compressError = '';
+                    this.optimizing = true;
+                    try {
+                        const optimized = await window.MobileImageOptimizer.optimizeImage(file, 'evidence');
+                        @this.upload('photo', optimized, () => {
+                            this.optimizing = false;
+                        }, () => {
+                            this.optimizing = false;
+                            this.compressError = 'Gagal mengunggah foto. Silakan coba lagi.';
+                        });
+                    } catch (err) {
+                        this.optimizing = false;
+                        this.compressError = err.message || 'Format atau ukuran file tidak didukung.';
+                        event.target.value = '';
+                    }
+                }
+            }">
+            {{-- Optimizing & Error Notices --}}
+            <div x-show="optimizing" x-cloak class="p-2 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                <svg class="w-4 h-4 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Mengoptimalkan foto lampiran...</span>
+            </div>
+
+            <div x-show="compressError" x-cloak class="p-2 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-300 flex items-center justify-between">
+                <span x-text="compressError"></span>
+                <button type="button" @click="compressError = ''" class="text-red-600 hover:text-red-800 font-bold ml-2">&times;</button>
+            </div>
+
             @if($photo)
                 <div class="flex items-center gap-2 p-2 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/80 rounded-xl">
                     @php
@@ -850,7 +964,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <input type="file" wire:model="photo" accept="image/png, image/jpeg, image/jpg" class="hidden">
+                    <input type="file" accept="image/*" @change="handleChatPhoto" class="hidden">
                 </label>
 
                 @php
@@ -858,8 +972,10 @@
                     if ($is_admin_chat) {
                         if ($admin_tab === 'cancellation') {
                             $placeholder = "Tulis tanggapan / klarifikasi pembatalan ke Admin...";
+                        } elseif ($admin_tab === 'report') {
+                            $placeholder = "Tulis tanggapan / bukti laporan aduan ke Tim Admin...";
                         } else {
-                            $placeholder = "Tulis penjelasan / bukti aduan ke Tim Admin...";
+                            $placeholder = "Tulis pesan bantuan / kendala ke Tim Admin...";
                         }
                     }
                 @endphp
@@ -871,6 +987,7 @@
                 <button type="submit"
                     wire:loading.attr="disabled"
                     wire:target="sendMessage"
+                    :disabled="optimizing"
                     class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1 cursor-pointer flex-shrink-0 disabled:opacity-75 disabled:cursor-not-allowed">
                     Kirim
                 </button>

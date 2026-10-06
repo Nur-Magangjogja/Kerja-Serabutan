@@ -63,6 +63,21 @@ class HelpCancellationService
         }
 
         $this->settlementService->processFullRefund($help, $reason);
+
+        try {
+            $customer->notify(new HelpStatusNotification(
+                $help,
+                Help::STATUS_MENUNGGU_MITRA,
+                'order_cancelled_refunded',
+                null,
+                "Pesanan '{$help->title}' berhasil dibatalkan sebelum diambil rekan jasa. Seluruh dana telah dikembalikan 100% ke saldo Anda.",
+                "Pesanan Dibatalkan dan Refund",
+                route('customer.helps.detail', $help->id),
+                'SayaBantu'
+            ));
+        } catch (\Throwable $e) {
+            Log::warning("[HelpCancellationService] Gagal notifikasi cancelOrderBeforePartnerTaken: " . $e->getMessage());
+        }
     }
 
     /**
@@ -91,6 +106,24 @@ class HelpCancellationService
             $lockedHelp->update([
                 'admin_notes' => "Dibatalkan otomatis oleh sistem. Alasan: {$reason}",
             ]);
+
+            try {
+                $cust = $lockedHelp->user;
+                if ($cust) {
+                    $cust->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        Help::STATUS_MENUNGGU_MITRA,
+                        'order_cancelled_refunded',
+                        null,
+                        "Batas waktu pencarian rekan jasa untuk bantuan '{$lockedHelp->title}' telah berakhir. Seluruh pembayaran telah dikembalikan 100% ke saldo Anda.",
+                        "Pencarian Berakhir & Dana Dikembalikan",
+                        route('customer.helps.detail', $lockedHelp->id),
+                        'SayaBantu'
+                    ));
+                }
+            } catch (\Throwable $e) {
+                Log::warning("[HelpCancellationService] Gagal notifikasi autoCancelExpiredHelp: " . $e->getMessage());
+            }
         });
     }
 
@@ -612,6 +645,35 @@ class HelpCancellationService
 
             if ($oldMitra) {
                 $this->chatService->sendCustomerResolutionToPartnerCancelChat($lockedHelp, $customer, $oldMitra, 'relisted');
+            }
+
+            // Kirim notifikasi basis data ke Customer dan Mitra Lama
+            try {
+                $customer->notify(new HelpStatusNotification(
+                    $lockedHelp,
+                    Help::STATUS_PARTNER_CANCEL_REQUESTED,
+                    'partner_cancelled_transit',
+                    $oldMitra,
+                    "Anda telah memilih untuk mencari rekan jasa pengganti. Bantuan '{$lockedHelp->title}' kini sedang aktif mencari rekan jasa baru di sekitar lokasi Anda.",
+                    "Mencari Rekan Jasa Pengganti",
+                    route('customer.helps.detail', $lockedHelp->id),
+                    'SayaBantu'
+                ));
+
+                if ($oldMitra) {
+                    $oldMitra->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        Help::STATUS_PARTNER_CANCEL_REQUESTED,
+                        'partner_unlinked_free',
+                        $oldMitra,
+                        "Pemesan telah memilih untuk mencari rekan jasa pengganti untuk bantuan '{$lockedHelp->title}'. Anda telah dibebaskan dari penugasan ini.",
+                        "Tugas Bantuan Dilepaskan",
+                        route('mitra.helps.detail', $lockedHelp->id),
+                        'SayaBantu'
+                    ));
+                }
+            } catch (\Throwable $e) {
+                Log::warning("[HelpCancellationService] Gagal kirim notifikasi relistToPoolByCustomer: " . $e->getMessage());
             }
 
             Log::info("[HelpCancellationService] Customer #{$customer->id} relisted Help #{$lockedHelp->id} back to pool after partner cancel request.");

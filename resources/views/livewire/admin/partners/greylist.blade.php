@@ -27,7 +27,7 @@
     @endif
 
     {{-- Stats Cards --}}
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3.5">
         <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
             <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total Pengawasan</span>
             <div class="text-xl font-extrabold text-gray-900 dark:text-white mt-1">{{ $totalGreylist }}</div>

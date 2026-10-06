@@ -96,7 +96,7 @@ class HelpSettings extends Component
             'weight_reliability'                                     => 'required|numeric|min:0|max:1',
             'weight_fairness'                                        => 'required|numeric|min:0|max:1',
             'max_fairness_boost_minutes'                             => 'required|numeric|min:10|max:240',
-            'qris_image'                                             => 'nullable|image|max:3072|mimes:jpg,jpeg,png,webp',
+            'qris_image'                                             => 'nullable|image|mimes:png|max:1024',
             'qris_merchant_name'                                     => 'required|string|max:150',
             'qris_nmid'                                              => 'nullable|string|max:100',
             'qris_instructions'                                      => 'nullable|string|max:500',
@@ -121,8 +121,8 @@ class HelpSettings extends Component
             'offer_timeout_seconds.min'       => 'Batas waktu respon penawaran minimal 15 detik.',
             'offer_timeout_seconds.max'       => 'Batas waktu respon penawaran maksimal 300 detik.',
             'qris_image.image'                => 'File QRIS harus berupa gambar.',
-            'qris_image.max'                  => 'Ukuran gambar QRIS maksimal 3MB.',
-            'qris_image.mimes'                => 'Format gambar QRIS harus JPG, JPEG, PNG, atau WEBP.',
+            'qris_image.max'                  => 'Ukuran gambar QRIS maksimal 1MB.',
+            'qris_image.mimes'                => 'Format gambar QRIS harus PNG.',
             'qris_merchant_name.required'     => 'Nama Merchant / Akun QRIS wajib diisi.',
         ];
     }

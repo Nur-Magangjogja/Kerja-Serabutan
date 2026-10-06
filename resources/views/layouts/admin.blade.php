@@ -259,7 +259,7 @@
                         <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                         </svg>
-                        <span class="whitespace-nowrap">Chat Admin Wilayah</span>
+                        <span class="whitespace-nowrap">Chat Admin</span>
                     </div>
                     @php
                         $activeSupportCount = \App\Models\PartnerReport::getActiveSupportCountForUser();
@@ -398,7 +398,7 @@
                     request()->routeIs('admin.verifications.*') || request()->routeIs('admin.verifications') => 'Verifikasi Akun Mitra',
                     request()->routeIs('admin.ktp-ocr.*') || request()->routeIs('admin.ktp-ocr') => 'OCR KTP & Verifikasi',
                     request()->routeIs('admin.partners.reports*') || request()->routeIs('admin.reports.*') => 'Laporan Aduan',
-                    request()->routeIs('admin.support.*') => 'Chat Admin Wilayah',
+                    request()->routeIs('admin.support.*') => 'Chat Admin',
                     request()->routeIs('admin.disputes*') || request()->routeIs('admin.cancellations*') => 'Tinjauan Pembatalan & Sengketa',
                     request()->routeIs('admin.partners.blocked*') => 'Blokir Mitra & Customer',
                     request()->routeIs('admin.users.*') || request()->routeIs('admin.users.index') => 'Manajemen Mitra & Customer',

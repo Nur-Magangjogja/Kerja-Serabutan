@@ -271,12 +271,12 @@ class TopupRequest extends Component
         // Validate step 3 proof of payment
         try {
             $this->validate([
-                'proofOfPayment' => 'required|image|max:2048|mimes:jpg,jpeg,png',
+                'proofOfPayment' => 'required|image|mimes:jpg,jpeg,png|max:1536',
             ], [
                 'proofOfPayment.required' => 'Bukti pembayaran QRIS wajib diupload',
                 'proofOfPayment.image' => 'File harus berupa gambar (JPG, JPEG, PNG)',
                 'proofOfPayment.mimes' => 'Format file harus berupa JPG, JPEG, atau PNG',
-                'proofOfPayment.max' => 'Ukuran file maksimal 2MB',
+                'proofOfPayment.max' => 'Ukuran file maksimal 1.5MB',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             $this->isSubmitting = false;

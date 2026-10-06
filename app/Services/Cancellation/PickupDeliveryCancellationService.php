@@ -6,6 +6,7 @@ use App\Models\AppSetting;
 use App\Models\Help;
 use App\Models\HelpCancelRequest;
 use App\Models\User;
+use App\Notifications\HelpStatusNotification;
 use App\Services\GeoService;
 use App\Services\HelpChatService;
 use App\Services\HelpEscrowService;
@@ -378,6 +379,48 @@ class PickupDeliveryCancellationService
                         'pickup_delivery'
                     );
                 }
+            }
+
+            // Kirim notifikasi basis data ke Customer dan Mitra
+            try {
+                $refundFormatted = "Rp " . number_format($financials['refund_customer'], 0, ',', '.');
+                $compFormatted = "Rp " . number_format($financials['compensation_mitra'], 0, ',', '.');
+
+                if ($customer) {
+                    $customerMsg = $financials['compensation_mitra'] > 0
+                        ? "Pesanan antar-jemput '{$lockedHelp->title}' telah dibatalkan. Pengembalian dana sebesar {$refundFormatted} telah diteruskan ke saldo Anda setelah dipotong kompensasi jarak tempuh rekan jasa."
+                        : "Pesanan antar-jemput '{$lockedHelp->title}' telah dibatalkan. Pengembalian dana penuh sebesar {$refundFormatted} telah masuk ke saldo Anda.";
+
+                    $customer->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        $lockedHelp->status,
+                        'order_cancelled_refunded',
+                        $mitra,
+                        $customerMsg,
+                        "Pesanan Antar-Jemput Dibatalkan",
+                        route('customer.helps.detail', $lockedHelp->id),
+                        'SayaBantu'
+                    ));
+                }
+
+                if ($mitra) {
+                    $mitraMsg = $financials['compensation_mitra'] > 0
+                        ? "Pesanan antar-jemput '{$lockedHelp->title}' telah dibatalkan. Kompensasi perjalanan sebesar {$compFormatted} telah ditransfer ke saldo dompet Anda. Anda telah dibebaskan dari tugas ini."
+                        : "Pesanan antar-jemput '{$lockedHelp->title}' telah dibatalkan. Anda telah dibebaskan dari penugasan ini dan dapat menerima pesanan baru.";
+
+                    $mitra->notify(new HelpStatusNotification(
+                        $lockedHelp,
+                        $lockedHelp->status,
+                        'partner_unlinked_free',
+                        $mitra,
+                        $mitraMsg,
+                        "Pesanan Antar-Jemput Dibatalkan",
+                        route('mitra.helps.detail', $lockedHelp->id),
+                        'SayaBantu'
+                    ));
+                }
+            } catch (\Throwable $e) {
+                Log::warning("[PickupDeliveryCancellationService] Gagal mengirim notifikasi pembatalan antar-jemput: " . $e->getMessage());
             }
 
             return [
