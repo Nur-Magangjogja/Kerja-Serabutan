@@ -13,6 +13,7 @@ use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 #[Layout('layouts.admin')]
 #[Title('Dashboard Admin')]
@@ -83,10 +84,20 @@ class Index extends Component
         $this->onAdminDistrictChanged($cityId);
     }
 
+    public function setYear(string $year)
+    {
+        $cleanYr = str_replace('year-', '', $year);
+        $this->selectedMonth = 'year-' . $cleanYr;
+        $this->dispatch('chart-refresh');
+    }
+
     public function prevMonth()
     {
         if ($this->selectedMonth === 'all') {
             $this->selectedMonth = Carbon::today()->subMonth()->format('Y-m');
+        } elseif (str_starts_with($this->selectedMonth, 'year-') || (strlen($this->selectedMonth) === 4 && is_numeric($this->selectedMonth))) {
+            $yr = (int) str_replace('year-', '', $this->selectedMonth);
+            $this->selectedMonth = 'year-' . ($yr - 1);
         } else {
             $this->selectedMonth = Carbon::parse($this->selectedMonth . '-01')->subMonth()->format('Y-m');
         }
@@ -97,6 +108,9 @@ class Index extends Component
     {
         if ($this->selectedMonth === 'all') {
             $this->selectedMonth = Carbon::today()->format('Y-m');
+        } elseif (str_starts_with($this->selectedMonth, 'year-') || (strlen($this->selectedMonth) === 4 && is_numeric($this->selectedMonth))) {
+            $yr = (int) str_replace('year-', '', $this->selectedMonth);
+            $this->selectedMonth = 'year-' . ($yr + 1);
         } else {
             $this->selectedMonth = Carbon::parse($this->selectedMonth . '-01')->addMonth()->format('Y-m');
         }
@@ -169,46 +183,7 @@ class Index extends Component
             $activeDistrictLabel = 'Semua Wilayah';
         }
 
-        // 1. Build Available Months list (Current month + past 11 months)
-        $availableMonths = [];
-        $currentMonthKey = Carbon::today()->format('Y-m');
-        $availableMonths[$currentMonthKey] = [
-            'key' => $currentMonthKey,
-            'label' => 'Bulan Ini (' . Carbon::today()->translatedFormat('F Y') . ')',
-            'short_label' => Carbon::today()->translatedFormat('F Y'),
-            'is_current' => true,
-        ];
-
-        for ($i = 1; $i <= 11; $i++) {
-            $dt = Carbon::today()->subMonths($i);
-            $key = $dt->format('Y-m');
-            $availableMonths[$key] = [
-                'key' => $key,
-                'label' => $dt->translatedFormat('F Y'),
-                'short_label' => $dt->translatedFormat('F Y'),
-                'is_current' => false,
-            ];
-        }
-
-        if (empty($this->selectedMonth)) {
-            $this->selectedMonth = $currentMonthKey;
-        }
-
-        // Determine date range
-        $isAllPeriod = ($this->selectedMonth === 'all');
-        $periodLabel = $isAllPeriod ? 'Semua Periode (Akumulasi)' : Carbon::parse($this->selectedMonth . '-01')->translatedFormat('F Y');
-
-        if (!$isAllPeriod) {
-            $selectedMonthCarbon = Carbon::parse($this->selectedMonth . '-01');
-            $startOfMonth = $selectedMonthCarbon->copy()->startOfMonth();
-            $endOfMonth = $selectedMonthCarbon->copy()->endOfMonth();
-        } else {
-            $selectedMonthCarbon = Carbon::today();
-            $startOfMonth = null;
-            $endOfMonth = null;
-        }
-
-        // 2. Base Help Query (Canonical Help Territory Scoped)
+        // 1. Base Help & Registration Queries (Canonical Territory Scoped)
         $baseHelpQuery = Help::query();
         if ($user && $user->role === 'admin') {
             if (!empty($activeDistrictIds) && !empty($activeExplicitCityIds)) {
@@ -229,9 +204,169 @@ class Index extends Component
             }
         }
 
+        $baseRegQuery = Registration::query();
+        if ($user && $user->role === 'admin') {
+            if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
+                $baseRegQuery->where(function ($q) use ($activeDistrictIds, $activeCityIds) {
+                    $q->whereIn('district_id', $activeDistrictIds)
+                      ->orWhere(function ($sq) use ($activeCityIds) {
+                          $sq->whereNull('district_id')
+                             ->whereIn('city_id', $activeCityIds);
+                      });
+                });
+            } elseif (!empty($activeDistrictIds)) {
+                $baseRegQuery->whereIn('district_id', $activeDistrictIds);
+            } elseif (!empty($activeCityIds)) {
+                $baseRegQuery->whereIn('city_id', $activeCityIds);
+            } else {
+                $baseRegQuery->whereRaw('1 = 0');
+            }
+        }
+
+        // 2. Discover Active Operational Months & Years
+        $currentDate = Carbon::today();
+        $currentYear = (int) $currentDate->year;
+        $currentMonth = (int) $currentDate->month;
+        $currentMonthKey = $currentDate->format('Y-m');
+
+        if (empty($this->selectedMonth)) {
+            $this->selectedMonth = $currentMonthKey;
+        }
+
+        $isAllPeriod = ($this->selectedMonth === 'all');
+        $isYearPeriod = str_starts_with($this->selectedMonth, 'year-') || (strlen($this->selectedMonth) === 4 && is_numeric($this->selectedMonth));
+
+        $isSqlite = DB::connection()->getDriverName() === 'sqlite';
+        $formatExpr = $isSqlite ? "strftime('%Y-%m', created_at)" : "DATE_FORMAT(created_at, '%Y-%m')";
+
+        try {
+            $helpMonths = (clone $baseHelpQuery)
+                ->whereNotNull('created_at')
+                ->selectRaw("DISTINCT {$formatExpr} as ym")
+                ->pluck('ym')
+                ->filter()
+                ->map(fn($v) => trim((string) $v))
+                ->all();
+        } catch (\Throwable $e) {
+            $helpMonths = [];
+        }
+
+        try {
+            $regMonths = (clone $baseRegQuery)
+                ->whereNotNull('created_at')
+                ->selectRaw("DISTINCT {$formatExpr} as ym")
+                ->pluck('ym')
+                ->filter()
+                ->map(fn($v) => trim((string) $v))
+                ->all();
+        } catch (\Throwable $e) {
+            $regMonths = [];
+        }
+
+        // Only include operational months + active current month (omit months before operations started or with no history)
+        $operationalMonths = array_values(array_unique(array_filter(array_merge([$currentMonthKey], $helpMonths, $regMonths))));
+
+        if ($this->selectedMonth !== 'all' && !empty($this->selectedMonth) && preg_match('/^\d{4}-\d{2}$/', $this->selectedMonth)) {
+            if (!in_array($this->selectedMonth, $operationalMonths, true)) {
+                $operationalMonths[] = $this->selectedMonth;
+            }
+        }
+
+        rsort($operationalMonths);
+
+        $availableYears = [];
+        foreach ($operationalMonths as $ym) {
+            $y = (int) substr($ym, 0, 4);
+            if ($y > 2000 && !in_array($y, $availableYears, true)) {
+                $availableYears[] = $y;
+            }
+        }
+
+        if (!in_array($currentYear, $availableYears, true)) {
+            $availableYears[] = $currentYear;
+        }
+
+        if ($isYearPeriod) {
+            $selectedYearInt = (int) str_replace('year-', '', $this->selectedMonth);
+            if ($selectedYearInt > 2000 && !in_array($selectedYearInt, $availableYears, true)) {
+                $availableYears[] = $selectedYearInt;
+            }
+        }
+
+        // Multi-year testing list: ensure multiple registered years (e.g. 2026 down to 2020)
+        // are available so admin can inspect the year pills and horizontal scrolling display when many years exist.
+        $multiYears = range($currentYear, max($currentYear - 6, 2020));
+        foreach ($multiYears as $my) {
+            if (!in_array($my, $availableYears, true)) {
+                $availableYears[] = $my;
+            }
+        }
+
+        rsort($availableYears);
+
+        $availableMonths = [];
+        $monthsByYear = [];
+
+        foreach ($availableYears as $year) {
+            $monthsByYear[$year] = [];
+        }
+
+        foreach ($operationalMonths as $key) {
+            $parts = explode('-', $key);
+            if (count($parts) !== 2) continue;
+            $yr = (int) $parts[0];
+            $m = (int) $parts[1];
+
+            $monthCarbon = Carbon::createFromDate($yr, $m, 1);
+            $isCurrent = ($key === $currentMonthKey);
+            $label = $isCurrent
+                ? 'Bulan Ini (' . $monthCarbon->translatedFormat('F Y') . ')'
+                : $monthCarbon->translatedFormat('F Y');
+
+            $monthData = [
+                'key'         => $key,
+                'label'       => $label,
+                'short_label' => $monthCarbon->translatedFormat('F Y'),
+                'year'        => (string) $yr,
+                'month'       => $m,
+                'is_current'  => $isCurrent,
+            ];
+
+            $availableMonths[$key] = $monthData;
+            if (isset($monthsByYear[$yr])) {
+                $monthsByYear[$yr][] = $monthData;
+            }
+        }
+
+        $initialYear = (string) $currentYear;
+        if ($this->selectedMonth !== 'all' && !empty($this->selectedMonth)) {
+            $cleanYrStr = str_replace('year-', '', $this->selectedMonth);
+            $initialYear = substr($cleanYrStr, 0, 4);
+        }
+
+        // Determine date range & period label
+        if ($isAllPeriod) {
+            $periodLabel = 'Semua Periode (Akumulasi)';
+            $selectedMonthCarbon = Carbon::today();
+            $startRange = null;
+            $endRange = null;
+        } elseif ($isYearPeriod) {
+            $selectedYearInt = (int) str_replace('year-', '', $this->selectedMonth);
+            $periodLabel = "Tahun {$selectedYearInt} (Semua Bulan)";
+            $selectedMonthCarbon = Carbon::createFromDate($selectedYearInt, 1, 1);
+            $startRange = Carbon::createFromDate($selectedYearInt, 1, 1)->startOfYear();
+            $endRange = Carbon::createFromDate($selectedYearInt, 12, 31)->endOfYear();
+        } else {
+            $selectedMonthCarbon = Carbon::parse($this->selectedMonth . '-01');
+            $periodLabel = $selectedMonthCarbon->translatedFormat('F Y');
+            $startRange = $selectedMonthCarbon->copy()->startOfMonth();
+            $endRange = $selectedMonthCarbon->copy()->endOfMonth();
+        }
+
+        // 3. Query Statistics
         $helpQuery = clone $baseHelpQuery;
-        if (!$isAllPeriod) {
-            $helpQuery->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
+        if ($startRange && $endRange) {
+            $helpQuery->whereBetween('created_at', [$startRange, $endRange]);
         }
 
         // 1 query agregasi menggantikan 5 query COUNT terpisah
@@ -252,29 +387,10 @@ class Index extends Component
         $completedHelps = (int) ($statsAgg->completed_helps ?? 0);
         $cancelledHelps = (int) ($statsAgg->cancelled_helps ?? 0);
 
-        // 3. KTP / Registration Verifications
-        $baseRegQuery = Registration::query();
-        if ($user && $user->role === 'admin') {
-            if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
-                $baseRegQuery->where(function ($q) use ($activeDistrictIds, $activeCityIds) {
-                    $q->whereIn('district_id', $activeDistrictIds)
-                      ->orWhere(function ($sq) use ($activeCityIds) {
-                          $sq->whereNull('district_id')
-                             ->whereIn('city_id', $activeCityIds);
-                      });
-                });
-            } elseif (!empty($activeDistrictIds)) {
-                $baseRegQuery->whereIn('district_id', $activeDistrictIds);
-            } elseif (!empty($activeCityIds)) {
-                $baseRegQuery->whereIn('city_id', $activeCityIds);
-            } else {
-                $baseRegQuery->whereRaw('1 = 0');
-            }
-        }
-
+        // KTP / Registration Verifications
         $regQuery = clone $baseRegQuery;
-        if (!$isAllPeriod) {
-            $regQuery->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
+        if ($startRange && $endRange) {
+            $regQuery->whereBetween('created_at', [$startRange, $endRange]);
         }
         $pendingVerifications = (clone $regQuery)->whereIn('status', ['pending', 'pending_verification'])->count();
 
@@ -298,12 +414,12 @@ class Index extends Component
             }
         }
         $totalAllMitras = (clone $mitraQuery)->count();
-        if (!$isAllPeriod) {
-            $mitraQuery->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
+        if ($startRange && $endRange) {
+            $mitraQuery->whereBetween('created_at', [$startRange, $endRange]);
         }
         $verifiedMitrasInPeriod = $mitraQuery->count();
 
-        // 4. Pending Top-Up Approvals
+        // Pending Top-Up Approvals
         $topupQuery = BalanceTransaction::where('type', 'topup')
             ->where('status', 'waiting_approval');
         if ($user && $user->role === 'admin') {
@@ -325,7 +441,7 @@ class Index extends Component
         }
         $pendingTopups = $topupQuery->count();
 
-        // 5. Pending Withdraw Requests
+        // Pending Withdraw Requests
         $withdrawQuery = \App\Models\WithdrawRequest::where('status', \App\Models\WithdrawRequest::STATUS_PENDING);
         if ($user && $user->role === 'admin') {
             if (!empty($activeDistrictIds) && !empty($activeCityIds)) {
@@ -346,26 +462,58 @@ class Index extends Component
         }
         $pendingWithdraws = $withdrawQuery->count();
 
-        // 6. Latest 6 Helps in Selected Period
+        // Latest 6 Helps in Selected Period
         $latestHelps = (clone $helpQuery)
             ->with(['user', 'district', 'city'])
             ->latest()
             ->take(6)
             ->get();
 
-        // 7. UNIFIED MULTI-METRIC CHART DATA (Follows All Dashboard Data Combined)
+        // 4. UNIFIED MULTI-METRIC CHART DATA
         $chartLabels = [];
         $chartHelpsData = [];
         $chartCompletedData = [];
         $chartCancelledData = [];
         $chartVerificationsData = [];
 
-        if (!$isAllPeriod) {
+        if ($isYearPeriod) {
+            // Full Year: Group by Month across the year
+            $selectedYearInt = (int) str_replace('year-', '', $this->selectedMonth);
+            $monthExpr = $isSqlite ? "CAST(strftime('%m', created_at) AS INTEGER)" : "MONTH(created_at)";
+
+            $monthlyHelpMetrics = (clone $baseHelpQuery)
+                ->whereBetween('created_at', [$startRange, $endRange])
+                ->selectRaw("{$monthExpr} as m_num")
+                ->selectRaw('COUNT(*) as total')
+                ->selectRaw("SUM(CASE WHEN status IN (?, 'completed') THEN 1 ELSE 0 END) as completed", [Help::STATUS_SELESAI])
+                ->selectRaw("SUM(CASE WHEN status IN (?, 'cancelled', 'rejected') THEN 1 ELSE 0 END) as cancelled", [Help::STATUS_DIBATALKAN])
+                ->groupBy('m_num')
+                ->get()
+                ->keyBy('m_num');
+
+            $monthlyRegistrations = (clone $baseRegQuery)
+                ->whereBetween('created_at', [$startRange, $endRange])
+                ->selectRaw("{$monthExpr} as m_num, count(*) as total")
+                ->groupBy('m_num')
+                ->pluck('total', 'm_num')
+                ->all();
+
+            $maxMonth = ($selectedYearInt === $currentYear) ? $currentMonth : 12;
+            for ($mNum = 1; $mNum <= $maxMonth; $mNum++) {
+                $mCarbon = Carbon::createFromDate($selectedYearInt, $mNum, 1);
+                $chartLabels[] = $mCarbon->translatedFormat('M');
+                $row = $monthlyHelpMetrics[$mNum] ?? null;
+                $chartHelpsData[] = (int) ($row->total ?? 0);
+                $chartCompletedData[] = (int) ($row->completed ?? 0);
+                $chartCancelledData[] = (int) ($row->cancelled ?? 0);
+                $chartVerificationsData[] = (int) ($monthlyRegistrations[$mNum] ?? 0);
+            }
+        } elseif (!$isAllPeriod) {
+            // Month breakdown (day-by-day)
             $daysInMonth = $selectedMonthCarbon->daysInMonth;
 
-            // 1 query GROUP BY menggantikan 3 query terpisah (total, completed, cancelled)
             $dailyHelpMetrics = (clone $baseHelpQuery)
-                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->whereBetween('created_at', [$startRange, $endRange])
                 ->selectRaw('DATE(created_at) as date')
                 ->selectRaw('COUNT(*) as total')
                 ->selectRaw("SUM(CASE WHEN status IN (?, 'completed') THEN 1 ELSE 0 END) as completed", [Help::STATUS_SELESAI])
@@ -374,9 +522,8 @@ class Index extends Component
                 ->get()
                 ->keyBy('date');
 
-            // Registration / KTP per Day
             $dailyRegistrations = (clone $baseRegQuery)
-                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->whereBetween('created_at', [$startRange, $endRange])
                 ->selectRaw('DATE(created_at) as date, count(*) as total')
                 ->groupBy('date')
                 ->pluck('total', 'date')
@@ -398,7 +545,6 @@ class Index extends Component
             $startDate = Carbon::today()->subDays(13)->startOfDay();
             $endDate = Carbon::today()->endOfDay();
 
-            // 1 query GROUP BY menggantikan 3 query terpisah (total, completed, cancelled)
             $dailyHelpMetrics = (clone $baseHelpQuery)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->selectRaw('DATE(created_at) as date')
@@ -438,6 +584,9 @@ class Index extends Component
             'activeCityLabel'        => $activeDistrictLabel,
             'selectedMonth'          => $this->selectedMonth,
             'availableMonths'        => $availableMonths,
+            'availableYears'         => $availableYears,
+            'monthsByYear'           => $monthsByYear,
+            'initialYear'            => $initialYear,
             'periodLabel'            => $periodLabel,
             'isAllPeriod'            => $isAllPeriod,
             'totalHelps'             => $totalHelps,
