@@ -12,28 +12,32 @@ class AdminCitySeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     * Menghubungkan seluruh akun Admin Wilayah ke Kecamatan (`admin_district`) dan Kota (`admin_city`) binaannya.
+     * Menghubungkan seluruh akun Admin Wilayah ke Kecamatan (`admin_district`) dan Kota (`admin_city`) binaannya secara stabil dan idempoten.
      */
     public function run(): void
     {
         $adminAssignments = [
             [
                 'email'     => 'admin@sayabantu.com',
+                'cityCode'  => '3471',
                 'cityName'  => 'Yogyakarta',
                 'districts' => ['Gondomanan', 'Danurejan', 'Umbulharjo', 'Mantrijeron', 'Kotagede', 'Gedongtengen'],
             ],
             [
                 'email'     => 'admin.sleman@sayabantu.com',
+                'cityCode'  => '3404',
                 'cityName'  => 'Sleman',
                 'districts' => ['Depok', 'Mlati', 'Ngaglik', 'Gamping', 'Kalasan', 'Sleman'],
             ],
             [
                 'email'     => 'admin.solo@sayabantu.com',
+                'cityCode'  => '3372',
                 'cityName'  => 'Surakarta',
                 'districts' => ['Banjarsari', 'Jebres', 'Laweyan', 'Pasar Kliwon', 'Serengan'],
             ],
             [
                 'email'     => 'admin.jaksel@sayabantu.com',
+                'cityCode'  => '3174',
                 'cityName'  => 'Jakarta Selatan',
                 'districts' => ['Tebet', 'Kebayoran Baru', 'Setiabudi', 'Mampang Prapatan', 'Cilandak', 'Pancoran'],
             ],
@@ -48,7 +52,9 @@ class AdminCitySeeder extends Seeder
                 continue;
             }
 
-            $city = City::where('name', 'like', "%{$assign['cityName']}%")->first();
+            $city = (!empty($assign['cityCode']) ? City::where('code', $assign['cityCode'])->first() : null)
+                ?? City::where('name', 'like', "%{$assign['cityName']}%")->first();
+
             $cityIds = $city ? [$city->id] : [];
             $districtIds = [];
 
@@ -82,14 +88,20 @@ class AdminCitySeeder extends Seeder
             }
 
             if (!empty($districtIds)) {
+                $firstDist = District::find($districtIds[0]);
                 $admin->district_id = $districtIds[0];
-            }
-            if (!empty($cityIds)) {
+                if ($firstDist?->city_id) {
+                    $admin->city_id = $firstDist->city_id;
+                } elseif (!empty($cityIds)) {
+                    $admin->city_id = $cityIds[0];
+                }
+            } elseif (!empty($cityIds)) {
                 $admin->city_id = $cityIds[0];
             }
+
             $admin->save();
         }
 
-        $this->command->info('✓ AdminCitySeeder berhasil menghubungkan Admin Wilayah ke Kota dan Kecamatan binaannya.');
+        $this->command?->info('✓ AdminCitySeeder berhasil menghubungkan Admin Wilayah ke Kota dan Kecamatan binaannya.');
     }
 }

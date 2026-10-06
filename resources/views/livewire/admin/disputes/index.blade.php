@@ -971,13 +971,13 @@
                             </div>
                         </div>
 
-                        {{-- Indikator Riwayat Khusus Pembatalan Konsep 1 (Kendala Perjalanan) Mitra --}}
+                        {{-- Indikator Riwayat Khusus Pembatalan di Perjalanan (Kendala Perjalanan) Mitra --}}
                         @if(!$isKonsep2 && $partner)
                             <div class="p-3 rounded-2xl border text-xs space-y-2 {{ $partnerKonsep1CancelCount >= 3 ? 'bg-rose-50/70 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/80 text-rose-950 dark:text-rose-200' : 'bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/80 dark:border-amber-800/60 text-amber-950 dark:text-amber-200' }}">
                                 <div class="flex items-center justify-between flex-wrap gap-1.5">
                                     <span class="font-bold flex items-center gap-1.5 text-xs">
                                         <span>{{ $partnerKonsep1CancelCount >= 3 ? '🚨' : '🛵' }}</span>
-                                        <span>Riwayat Pembatalan Konsep 1 (Kendala Perjalanan / Transit)</span>
+                                        <span>Riwayat Pembatalan di Perjalanan (Kendala Perjalanan / Transit)</span>
                                     </span>
                                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black {{ $partnerKonsep1CancelCount >= 3 ? 'bg-rose-100 text-rose-900 dark:bg-rose-900 dark:text-rose-200 border border-rose-300' : 'bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-200 border border-amber-300' }}">
                                         Total: {{ $partnerKonsep1CancelCount }}x Pembatalan

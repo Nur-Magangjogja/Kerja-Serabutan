@@ -144,8 +144,8 @@
                                     @if($user->role === 'mitra')
                                         @php $k1Count = $user->getKonsep1CancellationCount(); @endphp
                                         <div class="mt-1">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium {{ $k1Count >= 3 ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' }}" title="Hitungan pembatalan di perjalanan (Konsep 1)">
-                                                🚗 K1: <strong>{{ $k1Count }}x</strong>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium {{ $k1Count >= 3 ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' }}" title="Hitungan pembatalan di perjalanan">
+                                                Batal di Perjalanan: <strong>{{ $k1Count }}x</strong>
                                             </span>
                                         </div>
                                     @endif
@@ -509,7 +509,7 @@
                             @php $k1Total = $detailUser->getKonsep1CancellationCount(); @endphp
                             <div class="p-3 rounded-xl border flex flex-col justify-between {{ $k1Total >= 3 ? 'bg-rose-50/60 dark:bg-rose-950/30 border-rose-200/60 dark:border-rose-800/40 text-rose-950 dark:text-rose-100' : 'bg-gray-50 dark:bg-gray-700/40 border-gray-100 dark:border-gray-600 text-gray-900 dark:text-white' }}">
                                 <div>
-                                    <span class="text-[10px] font-bold uppercase tracking-wider block {{ $k1Total >= 3 ? 'text-rose-700 dark:text-rose-300' : 'text-gray-400' }}">Batal di Jalan (Konsep 1)</span>
+                                    <span class="text-[10px] font-bold uppercase tracking-wider block {{ $k1Total >= 3 ? 'text-rose-700 dark:text-rose-300' : 'text-gray-400' }}">Batal di Perjalanan</span>
                                     <div class="text-sm font-extrabold mt-0.5 {{ $k1Total >= 3 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-900 dark:text-white' }}">
                                         {{ $k1Total }}x Batal
                                     </div>
@@ -641,7 +641,7 @@
         @endteleport
     @endif
 
-    {{-- MODAL 4: Pengampunan Pembatalan Konsep 1 (Khusus Mitra) --}}
+    {{-- MODAL 4: Pengampunan Pembatalan di Perjalanan (Khusus Mitra) --}}
     @if($showPardonModal && $pardonUser)
         @teleport('body')
         <div class="fixed inset-0 z-[110] flex items-center justify-center p-4">
@@ -652,7 +652,7 @@
                         <span class="p-2 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl text-base">🕊️</span>
                         <div>
                             <h3 class="text-sm font-extrabold text-gray-900 dark:text-white">Pengampunan Pembatalan Mitra</h3>
-                            <p class="text-[11px] text-gray-400">Atur ulang hitungan pembatalan di perjalanan (Konsep 1)</p>
+                            <p class="text-[11px] text-gray-400">Atur ulang hitungan pembatalan di perjalanan</p>
                         </div>
                     </div>
                     <button type="button" wire:click="closePardonModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none cursor-pointer">&times;</button>

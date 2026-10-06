@@ -34,10 +34,17 @@ class UserSeeder extends Seeder
         }
 
         // Helper untuk mencari City dan District
-        $resolveLocation = function ($cityQuery, $districtName = null) {
-            $city = is_numeric($cityQuery)
-                ? (City::find($cityQuery) ?? City::where('code', (string)$cityQuery)->first())
-                : City::where('name', 'like', "%{$cityQuery}%")->first();
+        $resolveLocation = function ($cityQuery, $districtName = null, $cityCode = null) {
+            $city = null;
+            if ($cityCode) {
+                $city = City::where('code', (string)$cityCode)->first();
+            }
+            if (!$city && is_numeric($cityQuery)) {
+                $city = City::find($cityQuery) ?? City::where('code', (string)$cityQuery)->first();
+            }
+            if (!$city && $cityQuery) {
+                $city = City::where('name', 'like', "%{$cityQuery}%")->first();
+            }
 
             if (!$city) {
                 $city = City::where('code', '3404')->first() ?? City::first();
@@ -61,10 +68,10 @@ class UserSeeder extends Seeder
             return [$city, $district];
         };
 
-        [$slemanCity, $ngaglikDist] = $resolveLocation('Sleman', 'Ngaglik');
-        [$jogjaCity, $gondomananDist] = $resolveLocation('Yogyakarta', 'Gondomanan');
-        [$soloCity, $banjarsariDist]  = $resolveLocation('Surakarta', 'Banjarsari');
-        [$jakselCity, $tebetDist]     = $resolveLocation('Jakarta Selatan', 'Tebet');
+        [$slemanCity, $ngaglikDist] = $resolveLocation('Sleman', 'Ngaglik', '3404');
+        [$jogjaCity, $gondomananDist] = $resolveLocation('Yogyakarta', 'Gondomanan', '3471');
+        [$soloCity, $banjarsariDist]  = $resolveLocation('Surakarta', 'Banjarsari', '3372');
+        [$jakselCity, $tebetDist]     = $resolveLocation('Jakarta Selatan', 'Tebet', '3174');
 
         // =========================================================================
         // 1. ADMIN WILAYAH
