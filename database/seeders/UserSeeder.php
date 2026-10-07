@@ -113,6 +113,33 @@ class UserSeeder extends Seeder
                 'phone'       => '081234567804',
                 'address'     => 'Kantor Cabang Jakarta, Tebet, Jakarta Selatan',
             ],
+            [
+                'email'       => 'admin.single@sayabantu.com',
+                'name'        => 'Admin Wilayah Single District',
+                'nik'         => '3404011505900005',
+                'city'        => $slemanCity,
+                'district'    => $ngaglikDist,
+                'phone'       => '081234567805',
+                'address'     => 'Kantor Operasional Sleman, Ngaglik, Sleman',
+            ],
+            [
+                'email'       => 'admin.cross@sayabantu.com',
+                'name'        => 'Admin Wilayah Lintas Kota',
+                'nik'         => '3404011505900006',
+                'city'        => $slemanCity,
+                'district'    => $ngaglikDist,
+                'phone'       => '081234567806',
+                'address'     => 'Kantor Penghubung Sleman-Yogya, Ngaglik, Sleman',
+            ],
+            [
+                'email'       => 'admin.zero@sayabantu.com',
+                'name'        => 'Admin Wilayah Tanpa Teritori',
+                'nik'         => '3404011505900007',
+                'city'        => $slemanCity,
+                'district'    => $ngaglikDist,
+                'phone'       => '081234567807',
+                'address'     => 'Kantor Pusat SayaBantu, Ngaglik, Sleman',
+            ],
         ];
 
         foreach ($admins as $adm) {

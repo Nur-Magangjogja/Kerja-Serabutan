@@ -47,6 +47,7 @@ class EagerLoadPruningD3F3Test extends TestCase
             'city_id'     => $this->city->id,
             'district_id' => $this->district->id,
         ]);
+        $this->admin->managedDistricts()->sync([$this->district->id]);
 
         $this->customer = User::factory()->create([
             'name'        => 'Customer John',

@@ -331,12 +331,15 @@ class JobTerritoryOwnershipTest extends TestCase
     }
 
     /**
-     * J8: Explicit City Admin melihat city-level Help.
+     * J8: Admin with assigned district in City A sees city-level Help in City A, while orphan city admin does NOT see it.
      */
     public function test_j8_explicit_city_admin_sees_city_level_help(): void
     {
-        $cityAdminA = User::factory()->create(['role' => 'admin', 'status' => 'active']);
-        $cityAdminA->managedCities()->sync([$this->cityA->id]);
+        $adminA = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+        $adminA->managedDistricts()->sync([$this->distA1->id]);
+
+        $orphanCityAdmin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+        $orphanCityAdmin->managedCities()->sync([$this->cityA->id]);
 
         // City-level Help without district
         $cityHelp = $this->createHelp([
@@ -345,19 +348,25 @@ class JobTerritoryOwnershipTest extends TestCase
             'title'       => 'Help Level Kota Yogyakarta',
         ]);
 
-        Livewire::actingAs($cityAdminA)
+        // Admin A (assigned Danurejan in City A) sees city-level help in City A
+        Livewire::actingAs($adminA)
             ->test(AdminHelpsIndex::class)
             ->assertSee($cityHelp->title);
+
+        // Orphan city admin has zero authority -> does NOT see city-level Help
+        Livewire::actingAs($orphanCityAdmin)
+            ->test(AdminHelpsIndex::class)
+            ->assertDontSee($cityHelp->title);
     }
 
     /**
-     * J9: District-only Admin tidak melihat city-level Help.
+     * J9: Admin outside City A (e.g. Admin B1 in Sleman) does not see City A city-level Help.
      */
     public function test_j9_district_only_admin_does_not_see_city_level_help(): void
     {
-        // Admin has assignment to Danurejan (District A1) only
-        $distAdminA1 = User::factory()->create(['role' => 'admin', 'status' => 'active']);
-        $distAdminA1->managedDistricts()->sync([$this->distA1->id]);
+        // Admin has assignment to Depok (City B) only
+        $distAdminB1 = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+        $distAdminB1->managedDistricts()->sync([$this->distB1->id]);
 
         // Help has city_id = City A, district_id = null
         $cityHelp = $this->createHelp([
@@ -366,7 +375,7 @@ class JobTerritoryOwnershipTest extends TestCase
             'title'       => 'Help Level Kota Tanpa Kecamatan',
         ]);
 
-        Livewire::actingAs($distAdminA1)
+        Livewire::actingAs($distAdminB1)
             ->test(AdminHelpsIndex::class)
             ->assertDontSee($cityHelp->title);
     }

@@ -309,11 +309,8 @@ class Index extends Component
         if (!$user) return false;
         if (in_array($user->role, ['super_admin', 'superadmin'])) return true;
         if ($user->role === 'admin') {
-            $allowedDistrictIds = $user->getEffectiveAdminDistrictIds();
-            if (!empty($allowedDistrictIds)) {
-                return !empty($u->district_id) && in_array((int) $u->district_id, $allowedDistrictIds, true);
-            }
-            return !empty($user->city_id) && (int) $u->city_id === (int) $user->city_id;
+            $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+            return $authService->canAccessTerritory($user, $u->district_id ? (int)$u->district_id : null, $u->city_id ? (int)$u->city_id : null);
         }
         return false;
     }
@@ -464,16 +461,15 @@ class Index extends Component
         $baseKtpQuery = Registration::query()
             ->with(['district', 'city']);
 
-        // Strict district isolation: Admin only sees registrations from their assigned districts/city
+        // Strict district isolation: Admin only sees registrations from their assigned districts
         if (!$isSuperAdmin && $authUser && $authUser->role === 'admin') {
             $this->districtFilter = $authUser->getActiveAdminDistrictFilter();
             $this->cityFilter = $this->districtFilter;
             $effectiveDistrictIds = $authUser->getEffectiveAdminDistrictIds();
-            $adminCityId = $authUser->city_id;
             if (!empty($effectiveDistrictIds)) {
                 $baseKtpQuery->whereIn('district_id', $effectiveDistrictIds);
-            } elseif (!empty($adminCityId)) {
-                $baseKtpQuery->where('city_id', $adminCityId);
+            } else {
+                $baseKtpQuery->whereRaw('1 = 0');
             }
         } elseif ($isSuperAdmin && $authUser) {
             $saTerritory = $authUser->getActiveSuperadminTerritory();
@@ -504,11 +500,10 @@ class Index extends Component
 
         if (!$isSuperAdmin && $authUser && $authUser->role === 'admin') {
             $effectiveDistrictIds = $authUser->getEffectiveAdminDistrictIds();
-            $adminCityId = $authUser->city_id;
             if (!empty($effectiveDistrictIds)) {
                 $baseVehicleQuery->whereIn('district_id', $effectiveDistrictIds);
-            } elseif (!empty($adminCityId)) {
-                $baseVehicleQuery->where('city_id', $adminCityId);
+            } else {
+                $baseVehicleQuery->whereRaw('1 = 0');
             }
         } elseif ($isSuperAdmin && $authUser) {
             $saTerritory = $authUser->getActiveSuperadminTerritory();

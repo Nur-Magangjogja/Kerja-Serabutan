@@ -75,19 +75,35 @@ class AdminTerritoryAuthorizationTest extends TestCase
 
     public function test_auth2_city_a_admin_district_a1_allowed(): void
     {
-        $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
-        $admin->managedCities()->sync([$this->cityA->id]);
+        // City assignment ALONE does not grant district authority
+        $cityOnlyAdmin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+        $cityOnlyAdmin->managedCities()->sync([$this->cityA->id]);
 
-        $this->assertTrue($this->authService->canAccessTerritory($admin, $this->distA1->id, $this->cityA->id));
-        $this->assertTrue($this->authService->canAccessTerritory($admin, $this->distA2->id, $this->cityA->id));
+        $this->assertFalse($this->authService->canAccessTerritory($cityOnlyAdmin, $this->distA1->id, $this->cityA->id));
+        $this->assertFalse($this->authService->canAccessTerritory($cityOnlyAdmin, $this->distA2->id, $this->cityA->id));
+
+        // Exact district assignment grants authority to assigned district only, not sibling
+        $districtAdmin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+        $districtAdmin->managedDistricts()->sync([$this->distA1->id]);
+
+        $this->assertTrue($this->authService->canAccessTerritory($districtAdmin, $this->distA1->id, $this->cityA->id));
+        $this->assertFalse($this->authService->canAccessTerritory($districtAdmin, $this->distA2->id, $this->cityA->id));
     }
 
     public function test_auth3_explicit_city_a_admin_city_a_district_null_allowed(): void
     {
+        // Admin with assigned district in City A derives parent City A authority for city-level resources
         $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+        $admin->managedDistricts()->sync([$this->distA1->id]);
         $admin->managedCities()->sync([$this->cityA->id]);
 
         $this->assertTrue($this->authService->canAccessTerritory($admin, null, $this->cityA->id));
+
+        // An orphan admin_city row without assigned districts has ZERO authority (AW1-V Case A)
+        $orphanAdmin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+        $orphanAdmin->managedCities()->sync([$this->cityA->id]);
+
+        $this->assertFalse($this->authService->canAccessTerritory($orphanAdmin, null, $this->cityA->id));
     }
 
     public function test_auth4_district_b1_admin_district_b1_allowed(): void
@@ -107,13 +123,14 @@ class AdminTerritoryAuthorizationTest extends TestCase
         $this->assertFalse($this->authService->canAccessTerritory($admin, $this->distB2->id, $this->cityB->id));
     }
 
-    public function test_auth6_district_b1_admin_city_b_district_null_denied(): void
+    public function test_auth6_district_b1_admin_city_b_district_null_allowed_city_a_denied(): void
     {
-        // District-only admin CANNOT manage city-level resources with null district
+        // Assigned district B1 derives parent city B context, allowing city-level resources in City B
         $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
         $admin->managedDistricts()->sync([$this->distB1->id]);
 
-        $this->assertFalse($this->authService->canAccessTerritory($admin, null, $this->cityB->id));
+        $this->assertTrue($this->authService->canAccessTerritory($admin, null, $this->cityB->id));
+        $this->assertFalse($this->authService->canAccessTerritory($admin, null, $this->cityA->id));
     }
 
     public function test_auth7_mixed_city_a_and_district_b1(): void
@@ -122,20 +139,20 @@ class AdminTerritoryAuthorizationTest extends TestCase
         $admin->managedCities()->sync([$this->cityA->id]);
         $admin->managedDistricts()->sync([$this->distB1->id]);
 
-        // A districts -> ALLOW
-        $this->assertTrue($this->authService->canAccessTerritory($admin, $this->distA1->id, $this->cityA->id));
-        $this->assertTrue($this->authService->canAccessTerritory($admin, $this->distA2->id, $this->cityA->id));
+        // A districts are NOT in managedDistricts -> DENY
+        $this->assertFalse($this->authService->canAccessTerritory($admin, $this->distA1->id, $this->cityA->id));
+        $this->assertFalse($this->authService->canAccessTerritory($admin, $this->distA2->id, $this->cityA->id));
 
-        // City A null district -> ALLOW
-        $this->assertTrue($this->authService->canAccessTerritory($admin, null, $this->cityA->id));
+        // City A null district -> DENY (orphan city row: 0 districts assigned in City A)
+        $this->assertFalse($this->authService->canAccessTerritory($admin, null, $this->cityA->id));
 
-        // B1 -> ALLOW
+        // B1 -> ALLOW (in managedDistricts)
         $this->assertTrue($this->authService->canAccessTerritory($admin, $this->distB1->id, $this->cityB->id));
 
-        // City B null district -> DENY
-        $this->assertFalse($this->authService->canAccessTerritory($admin, null, $this->cityB->id));
+        // City B null district -> ALLOW (derived parent city from assigned district B1)
+        $this->assertTrue($this->authService->canAccessTerritory($admin, null, $this->cityB->id));
 
-        // B2 -> DENY
+        // B2 -> DENY (sibling not in managedDistricts)
         $this->assertFalse($this->authService->canAccessTerritory($admin, $this->distB2->id, $this->cityB->id));
     }
 
@@ -146,9 +163,10 @@ class AdminTerritoryAuthorizationTest extends TestCase
             'status' => 'active',
             'city_id' => $this->cityC->id,
         ]);
+        $admin->managedDistricts()->sync([$this->distA1->id]);
         $admin->managedCities()->sync([$this->cityA->id]);
 
-        // City A -> ALLOW
+        // City A -> ALLOW (derived parent city from assigned district A1)
         $this->assertTrue($this->authService->canAccessTerritory($admin, null, $this->cityA->id));
 
         // Profile City C -> DENY (no leak)
@@ -158,6 +176,7 @@ class AdminTerritoryAuthorizationTest extends TestCase
     public function test_auth9_navbar_filter_a1_while_full_authority_includes_a2_allows_a2(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+        $admin->managedDistricts()->sync([$this->distA1->id, $this->distA2->id]);
         $admin->managedCities()->sync([$this->cityA->id]);
 
         // Admin filters navbar to A1
@@ -171,6 +190,7 @@ class AdminTerritoryAuthorizationTest extends TestCase
     public function test_auth10_district_a1_with_incorrect_city_b_denied(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+        $admin->managedDistricts()->sync([$this->distA1->id]);
         $admin->managedCities()->sync([$this->cityA->id, $this->cityB->id]);
 
         // Inconsistent pair: A1 belongs to City A, not City B
@@ -204,9 +224,9 @@ class AdminTerritoryAuthorizationTest extends TestCase
         $this->assertFalse($this->authService->canAccessTerritory($this->superAdmin, null, null));
     }
 
-    public function test_auth14_legacy_city_only_admin_without_pivots_allows_city(): void
+    public function test_auth14_profile_city_only_admin_without_pivots_denies_all_authority(): void
     {
-        // Legacy admin: no pivots, profile city_id = City A, district_id = null
+        // Zero territory: no pivots, profile city_id = City A, district_id = null
         $admin = User::factory()->create([
             'role' => 'admin',
             'status' => 'active',
@@ -214,14 +234,14 @@ class AdminTerritoryAuthorizationTest extends TestCase
             'district_id' => null,
         ]);
 
-        $this->assertTrue($this->authService->canAccessTerritory($admin, null, $this->cityA->id));
-        // Also has authority over districts in City A
-        $this->assertTrue($this->authService->canAccessTerritory($admin, $this->distA1->id, $this->cityA->id));
+        // Zero territory rule: profile location does NOT grant admin authority
+        $this->assertFalse($this->authService->canAccessTerritory($admin, null, $this->cityA->id));
+        $this->assertFalse($this->authService->canAccessTerritory($admin, $this->distA1->id, $this->cityA->id));
     }
 
-    public function test_auth15_legacy_district_profile_denies_city_level_resource(): void
+    public function test_auth15_profile_district_only_admin_without_pivots_denies_all_authority(): void
     {
-        // Legacy admin: no pivots, profile city_id = City A, profile district_id = A1
+        // Zero territory: no pivots, profile city_id = City A, profile district_id = A1
         $admin = User::factory()->create([
             'role' => 'admin',
             'status' => 'active',
@@ -229,14 +249,12 @@ class AdminTerritoryAuthorizationTest extends TestCase
             'district_id' => $this->distA1->id,
         ]);
 
-        // District A1 -> ALLOW
-        $this->assertTrue($this->authService->canAccessTerritory($admin, $this->distA1->id, $this->cityA->id));
-
-        // City-level resource (district null) -> DENY! (because admin is restricted to district A1)
+        // Zero territory rule: profile district does NOT grant admin authority
+        $this->assertFalse($this->authService->canAccessTerritory($admin, $this->distA1->id, $this->cityA->id));
         $this->assertFalse($this->authService->canAccessTerritory($admin, null, $this->cityA->id));
     }
 
-    public function test_auth16_explicit_district_b1_with_profile_city_b_denies_city_b_null_district(): void
+    public function test_auth16_explicit_district_b1_allows_parent_city_b_denies_other_cities(): void
     {
         // Admin has explicit managedDistricts = [B1], and has profile city_id = City B
         $admin = User::factory()->create([
@@ -250,8 +268,15 @@ class AdminTerritoryAuthorizationTest extends TestCase
         // Explicit District B1 -> ALLOW
         $this->assertTrue($this->authService->canAccessTerritory($admin, $this->distB1->id, $this->cityB->id));
 
-        // City B null district -> DENY! (explicit district assignment prevents profile city fallback)
-        $this->assertFalse($this->authService->canAccessTerritory($admin, null, $this->cityB->id));
+        // City B null district -> ALLOW (derived parent city from assigned district B1)
+        $this->assertTrue($this->authService->canAccessTerritory($admin, null, $this->cityB->id));
+
+        // Other cities (City A, City C) null district -> DENY (no leak)
+        $this->assertFalse($this->authService->canAccessTerritory($admin, null, $this->cityA->id));
+        $this->assertFalse($this->authService->canAccessTerritory($admin, null, $this->cityC->id));
+
+        // Sibling district in City B -> DENY
+        $this->assertFalse($this->authService->canAccessTerritory($admin, $this->distB2->id, $this->cityB->id));
     }
 
     // =========================================================================
@@ -300,8 +325,9 @@ class AdminTerritoryAuthorizationTest extends TestCase
 
     public function test_guard3_admin_support_chat_valid_territory_outside_navbar_filter_allowed(): void
     {
-        // Admin A manages City A (which contains distA1 and distA2)
+        // Admin A manages distA1 and distA2 in City A
         $adminA = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+        $adminA->managedDistricts()->sync([$this->distA1->id, $this->distA2->id]);
         $adminA->managedCities()->sync([$this->cityA->id]);
 
         // Admin filters navbar to distA1

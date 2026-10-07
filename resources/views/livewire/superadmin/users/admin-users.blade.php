@@ -115,10 +115,6 @@
                                 <span class="text-[11px] font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-1.5 py-0.5 rounded-md border border-primary-200/50 dark:border-primary-800/50">+{{ $user->managedDistricts->count() - 2 }}</span>
                                 @endif
                             </div>
-                            @elseif($user->district || $user->kecamatan)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
-                                    Kec. {{ $user->kecamatan ?? optional($user->district)->name }}
-                                </span>
                             @else
                             <span class="text-xs text-gray-400 dark:text-gray-500 italic">Belum ada kecamatan</span>
                             @endif
@@ -247,14 +243,6 @@
                             </span>
                             @endforeach
                         </div>
-                    @elseif($selectedUser->district || $selectedUser->district_id || $selectedUser->kecamatan)
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-600 shadow-2xs">
-                            <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
-                            Kec. {{ $selectedUser->kecamatan ?? optional($selectedUser->district)->name }}
-                            @if($selectedUser->city_name || optional($selectedUser->district?->city)->name)
-                                <span class="text-[10px] text-gray-400 font-normal">({{ $selectedUser->city_name ?? optional($selectedUser->district?->city)->name }})</span>
-                            @endif
-                        </span>
                     @else
                         <p class="text-xs text-gray-400 italic">Belum ada kecamatan yang ditugaskan ke admin ini.</p>
                     @endif
@@ -535,58 +523,73 @@
                             @endif
                         </div>
 
-                        {{-- Daftar Kecamatan Berkotak / Interactive Grid Card --}}
-                        <div class="max-h-72 overflow-y-auto dropdown-scrollbar rounded-2xl border border-gray-200 dark:border-gray-700 p-3 pr-2 bg-white/70 dark:bg-gray-800/60 shadow-inner">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                                @forelse($districts as $d)
-                                @php
-                                    $isSelected = in_array((int)$d->id, array_map('intval', (array)($managed_district_ids ?? [])), true);
-                                @endphp
-                                <div wire:click="toggleDistrict({{ $d->id }})" role="button" tabindex="0"
-                                    wire:keydown.enter="toggleDistrict({{ $d->id }})"
-                                    class="relative flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-150 select-none text-left
-                                    {{ $isSelected ? 'bg-gradient-to-r from-emerald-50/95 to-teal-50/80 dark:from-emerald-950/50 dark:to-teal-950/40 border-emerald-500 dark:border-emerald-500 ring-1 ring-emerald-500/30 shadow-xs' : 'bg-white dark:bg-gray-750/70 border-gray-200/90 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/80 hover:border-emerald-300 dark:hover:border-emerald-600 shadow-2xs' }}">
-                                    
-                                    {{-- Status Checkbox Icon: Centang HANYA jika dipilih, kotak kosong jika belum --}}
-                                    @if($isSelected)
-                                        <div class="w-5 h-5 rounded-md bg-emerald-600 dark:bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                                        </div>
-                                    @else
-                                        <div class="w-5 h-5 rounded-md border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 shrink-0"></div>
-                                    @endif
-                                    
-                                    {{-- District Content --}}
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex items-center justify-between gap-1">
-                                            <p class="text-xs font-bold truncate {{ $isSelected ? 'text-emerald-950 dark:text-emerald-100' : 'text-gray-800 dark:text-gray-200' }}">
-                                                Kec. {{ $d->name }}
-                                            </p>
-                                            @if($isSelected)
-                                                <span class="text-[9px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/90 dark:bg-emerald-900/80 px-1.5 py-0.5 rounded shadow-2xs">Ditugaskan</span>
-                                            @endif
-                                        </div>
-                                        @if($d->city)
-                                            <p class="text-[10px] truncate mt-0.5 flex items-center gap-1 {{ $isSelected ? 'text-emerald-700/80 dark:text-emerald-300/80 font-medium' : 'text-gray-400 dark:text-gray-400' }}">
-                                                <span>📍</span> {{ $d->city->name }}
-                                            </p>
+                        {{-- Daftar Kecamatan Berkotak / Interactive Grid Card Dikelompokkan per Kota/Kabupaten --}}
+                        <div class="max-h-80 overflow-y-auto dropdown-scrollbar rounded-2xl border border-gray-200 dark:border-gray-700 p-3 pr-2 bg-white/70 dark:bg-gray-800/60 shadow-inner space-y-4">
+                            @php
+                                $groupedDistricts = $districts->groupBy(fn($d) => $d->city ? $d->city->name : 'Kota / Kabupaten Lainnya');
+                            @endphp
+
+                            @forelse($groupedDistricts as $cityName => $cityDistricts)
+                            <div class="space-y-2">
+                                {{-- Visual Group Header (Non-clickable, display only) --}}
+                                <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-gray-100/90 dark:bg-gray-700/60 border border-gray-200/70 dark:border-gray-600/60 select-none">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-xs">🏙️</span>
+                                        <span class="text-xs font-bold text-gray-800 dark:text-gray-100 tracking-wide uppercase">{{ $cityName }}</span>
+                                    </div>
+                                    <span class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-2 py-0.5 rounded-md border border-gray-200/60 dark:border-gray-600/40">
+                                        {{ $cityDistricts->count() }} Kecamatan
+                                    </span>
+                                </div>
+
+                                {{-- Kartu Kecamatan di bawah Kota/Kabupaten ini --}}
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                                    @foreach($cityDistricts as $d)
+                                    @php
+                                        $isSelected = in_array((int)$d->id, array_map('intval', (array)($managed_district_ids ?? [])), true);
+                                    @endphp
+                                    <div wire:click="toggleDistrict({{ $d->id }})" role="button" tabindex="0"
+                                        wire:keydown.enter="toggleDistrict({{ $d->id }})"
+                                        class="relative flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-150 select-none text-left
+                                        {{ $isSelected ? 'bg-gradient-to-r from-emerald-50/95 to-teal-50/80 dark:from-emerald-950/50 dark:to-teal-950/40 border-emerald-500 dark:border-emerald-500 ring-1 ring-emerald-500/30 shadow-xs' : 'bg-white dark:bg-gray-750/70 border-gray-200/90 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/80 hover:border-emerald-300 dark:hover:border-emerald-600 shadow-2xs' }}">
+                                        
+                                        {{-- Status Checkbox Icon: Centang HANYA jika dipilih, kotak kosong jika belum --}}
+                                        @if($isSelected)
+                                            <div class="w-5 h-5 rounded-md bg-emerald-600 dark:bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                            </div>
+                                        @else
+                                            <div class="w-5 h-5 rounded-md border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 shrink-0"></div>
                                         @endif
+                                        
+                                        {{-- District Content --}}
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-center justify-between gap-1">
+                                                <p class="text-xs font-bold truncate {{ $isSelected ? 'text-emerald-950 dark:text-emerald-100' : 'text-gray-800 dark:text-gray-200' }}">
+                                                    Kec. {{ $d->name }}
+                                                </p>
+                                                @if($isSelected)
+                                                    <span class="text-[9px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/90 dark:bg-emerald-900/80 px-1.5 py-0.5 rounded shadow-2xs">Ditugaskan</span>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </div>
+                                    @endforeach
                                 </div>
-                                @empty
-                                <div class="col-span-full text-center py-8 px-4 space-y-2">
-                                    <div class="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto text-gray-400">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                    </div>
-                                    <p class="text-xs font-semibold text-gray-700 dark:text-gray-300">Tidak ada data kecamatan yang cocok dengan filter.</p>
-                                    <p class="text-[11px] text-gray-400 dark:text-gray-500">Coba ubah kata kunci pencarian atau pilih kota/kabupaten lain.</p>
-                                    <button type="button" wire:click="$set('districtSearch', ''); $set('cityFilter', 'all');"
-                                        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/60 rounded-xl border border-primary-200 dark:border-primary-800 transition cursor-pointer">
-                                        Reset Filter & Pencarian
-                                    </button>
-                                </div>
-                                @endforelse
                             </div>
+                            @empty
+                            <div class="col-span-full text-center py-8 px-4 space-y-2">
+                                <div class="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto text-gray-400">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                </div>
+                                <p class="text-xs font-semibold text-gray-700 dark:text-gray-300">Tidak ada data kecamatan yang cocok dengan filter.</p>
+                                <p class="text-[11px] text-gray-400 dark:text-gray-500">Coba ubah kata kunci pencarian atau pilih kota/kabupaten lain.</p>
+                                <button type="button" wire:click="$set('districtSearch', ''); $set('cityFilter', 'all');"
+                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/60 rounded-xl border border-primary-200 dark:border-primary-800 transition cursor-pointer">
+                                    Reset Filter & Pencarian
+                                </button>
+                            </div>
+                            @endforelse
                         </div>
                         @error('managed_district_ids') <p class="text-xs text-rose-500 mt-1 font-medium">{{ $message }}</p> @enderror
                     </div>

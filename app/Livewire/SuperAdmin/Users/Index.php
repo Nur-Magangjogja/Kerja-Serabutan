@@ -92,11 +92,54 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function canManageTargetUser(?User $target): bool
+    {
+        if (!$target) {
+            return false;
+        }
+
+        $actor = auth()->user();
+        if (!$actor) {
+            return false;
+        }
+
+        $isSuperAdmin = in_array($actor->role ?? '', ['super_admin', 'superadmin'], true);
+        if ($isSuperAdmin) {
+            return true;
+        }
+
+        if ($actor->role !== 'admin') {
+            return false;
+        }
+
+        // Admin Wilayah can only manage customer and mitra accounts
+        if (!in_array($target->role, ['customer', 'mitra'], true)) {
+            return false;
+        }
+
+        // Flush actor instance cache to guarantee fresh DB territory assignment
+        $actor->flushInstanceCache();
+
+        $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
+        $authService->clearCache();
+
+        return $authService->canAccessTerritory(
+            $actor,
+            $target->district_id ? (int)$target->district_id : null,
+            $target->city_id ? (int)$target->city_id : null
+        );
+    }
+
     public function toggleVerified($id)
     {
         $user = User::find($id);
         if (!$user) {
             session()->flash('error', 'User not found');
+            return;
+        }
+
+        if (!$this->canManageTargetUser($user)) {
+            session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
             return;
         }
 
@@ -114,6 +157,11 @@ class Index extends Component
             return;
         }
 
+        if (!$this->canManageTargetUser($user)) {
+            session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
+            return;
+        }
+
         $user->status = ($user->status === 'active') ? 'inactive' : 'active';
         $user->save();
 
@@ -128,18 +176,9 @@ class Index extends Component
             return;
         }
 
-        $currentUser = auth()->user();
-        $isSuperAdmin = in_array($currentUser?->role ?? '', ['super_admin', 'superadmin'], true);
-        if (!$isSuperAdmin && $currentUser?->role === 'admin') {
-            $authService = app(\App\Services\Territory\AdminTerritoryAuthorizationService::class);
-            if (!$authService->canAccessTerritory(
-                $currentUser,
-                $user->district_id ? (int)$user->district_id : null,
-                $user->city_id ? (int)$user->city_id : null
-            )) {
-                session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
-                return;
-            }
+        if (!$this->canManageTargetUser($user)) {
+            session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
+            return;
         }
 
         $this->selectedUser = $user;
@@ -189,6 +228,12 @@ class Index extends Component
             session()->flash('error', 'User not found');
             return;
         }
+
+        if (!$this->canManageTargetUser($user)) {
+            session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
+            return;
+        }
+
         $this->selectedUser = $user;
         $this->selectedUserId = $user->id;
         $this->name = $user->name;
@@ -198,11 +243,7 @@ class Index extends Component
         $this->status = $user->status ?? 'inactive';
         $this->verified = (bool) ($user->verified ?? false);
         
-        $managedIds = $user->managedDistricts->pluck('id')->map(fn($cid) => (int)$cid)->toArray();
-        if (empty($managedIds) && $user->district_id && $user->role === 'admin') {
-            $managedIds = [(int)$user->district_id];
-        }
-        $this->managed_city_ids = $managedIds;
+        $this->managed_city_ids = [];
         $this->city_id = $user->city_id;
         $this->address = $user->address;
         $this->nik = $user->nik;
@@ -226,6 +267,11 @@ class Index extends Component
             return;
         }
 
+        if (!$this->canManageTargetUser($user)) {
+            session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
+            return;
+        }
+
         $this->confirmingDeleteId = $id;
         $this->userToDelete = $user;
         $this->adminPassword = '';
@@ -235,6 +281,12 @@ class Index extends Component
 
     public function openCreateModal()
     {
+        $actor = auth()->user();
+        if ($actor && $actor->role === 'admin') {
+            session()->flash('error', 'Admin Wilayah tidak memiliki wewenang untuk membuat pengguna baru.');
+            return;
+        }
+
         $this->resetForm();
         $this->showCreateModal = true;
     }
@@ -266,6 +318,40 @@ class Index extends Component
     public function saveUser()
     {
         $userId = $this->selectedUserId ?? (is_array($this->selectedUser) ? ($this->selectedUser['id'] ?? null) : ($this->selectedUser->id ?? null));
+
+        $actor = auth()->user();
+        $isSuperAdmin = in_array($actor?->role ?? '', ['super_admin', 'superadmin'], true);
+
+        // Security check for Admin Wilayah before any processing
+        if (!$isSuperAdmin && $actor?->role === 'admin') {
+            // Cannot create arbitrary new user accounts
+            if (!$userId) {
+                session()->flash('error', 'Admin Wilayah tidak memiliki wewenang untuk membuat pengguna baru.');
+                return;
+            }
+
+            // Target must exist and be authorized at execution time (TOCTOU guard)
+            $targetUser = User::find($userId);
+            if (!$targetUser || !$this->canManageTargetUser($targetUser)) {
+                session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
+                return;
+            }
+
+            // Role escalation protection: Admin Wilayah can only maintain customer or mitra
+            if (!in_array($this->role, ['customer', 'mitra'], true)) {
+                $this->addError('role', 'Anda tidak memiliki wewenang untuk mengubah role menjadi Admin atau Super Admin.');
+                return;
+            }
+
+            // Cannot assign or modify admin territory pivots
+            $this->managed_city_ids = [];
+
+            // If changing city_id, must remain inside admin's authorized parent cities
+            if (!empty($this->city_id) && !in_array((int)$this->city_id, $actor->getAdminCityIds(), true)) {
+                $this->addError('city_id', 'Kota berada di luar wilayah kewenangan Anda.');
+                return;
+            }
+        }
 
         // build validation rules and handle unique email on update
         $emailRules = ['required', 'email', 'max:255'];
@@ -354,11 +440,12 @@ class Index extends Component
             }
             $user->update($data);
             
-            // Sync managed cities for admin role
-            if ($this->role === 'admin') {
-                $user->managedCities()->sync($managedCityIds);
-            } else {
+            // If user role was changed away from admin, clear any old territory assignments
+            if ($this->role !== 'admin') {
+                $user->managedDistricts()->sync([]);
                 $user->managedCities()->sync([]);
+                $user->flushInstanceCache();
+                User::flushRequestCache($user->id);
             }
             
             session()->flash('message', 'User updated successfully');
@@ -371,11 +458,6 @@ class Index extends Component
                 \App\Models\UserBalance::firstOrCreate(['user_id' => $user->id], ['balance' => 0.00]);
             } catch (\Throwable $e) {
                 // ignore
-            }
-            
-            // Sync managed cities for admin role
-            if ($this->role === 'admin') {
-                $user->managedCities()->sync($managedCityIds);
             }
             
             session()->flash('message', 'User created successfully');
@@ -413,6 +495,12 @@ class Index extends Component
 
         if ($user->id === auth()->id()) {
             session()->flash('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
+            $this->closeModal();
+            return;
+        }
+
+        if (!$this->canManageTargetUser($user)) {
+            session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
             $this->closeModal();
             return;
         }
@@ -479,16 +567,7 @@ class Index extends Component
         }
 
         if ($isAdmin) {
-            $adminDistricts = $currentUser->getAdminDistrictIds();
-            $adminCities = $currentUser->getAdminCityIds();
-            $hasAccess = false;
-            if (!empty($user->district_id)) {
-                $hasAccess = in_array((int) $user->district_id, $adminDistricts, true);
-            } elseif (!empty($user->city_id)) {
-                $hasAccess = in_array((int) $user->city_id, $adminCities, true);
-            }
-
-            if (!$hasAccess) {
+            if (!$this->canManageTargetUser($user)) {
                 session()->flash('error', 'Pengguna berada di luar wilayah kewenangan Anda.');
                 return;
             }
@@ -617,6 +696,11 @@ class Index extends Component
         $user = User::find($this->migrationUserId);
         if (!$user) {
             $this->addError('migrationReason', 'Pengguna tidak ditemukan.');
+            return;
+        }
+
+        if (!$this->canManageTargetUser($user)) {
+            $this->addError('migrationReason', 'Pengguna berada di luar wilayah kewenangan Anda.');
             return;
         }
 

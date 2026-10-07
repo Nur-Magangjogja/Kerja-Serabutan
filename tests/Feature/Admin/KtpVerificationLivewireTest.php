@@ -80,6 +80,7 @@ class KtpVerificationLivewireTest extends TestCase
             'status'      => 'active',
             'verified'    => true,
         ]);
+        $admin->managedDistricts()->sync([$this->districtA->id]);
 
         $reg1 = Registration::create([
             'uuid'        => (string) \Illuminate\Support\Str::uuid(),
@@ -199,6 +200,7 @@ class KtpVerificationLivewireTest extends TestCase
             'status'      => 'active',
             'verified'    => true,
         ]);
+        $adminA->managedDistricts()->sync([$this->districtA->id]);
 
         $regB = Registration::create([
             'uuid'        => (string) \Illuminate\Support\Str::uuid(),

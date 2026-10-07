@@ -6,6 +6,7 @@ use App\Livewire\Admin\Topup\Approval as AdminApproval;
 use App\Livewire\SuperAdmin\Topup\Approval as SuperAdminApproval;
 use App\Models\BalanceTransaction;
 use App\Models\City;
+use App\Models\District;
 use App\Models\User;
 use App\Models\UserBalance;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,6 +18,7 @@ class TopupApprovalLivewireTest extends TestCase
     use RefreshDatabase;
 
     protected City $city;
+    protected District $district;
 
     protected function setUp(): void
     {
@@ -26,6 +28,11 @@ class TopupApprovalLivewireTest extends TestCase
             'province'  => 'DI Yogyakarta',
             'latitude'  => -7.7156,
             'longitude' => 110.3556,
+            'is_active' => true,
+        ]);
+        $this->district = District::create([
+            'city_id'   => $this->city->id,
+            'name'      => 'Depok',
             'is_active' => true,
         ]);
     }
@@ -75,17 +82,20 @@ class TopupApprovalLivewireTest extends TestCase
     public function test_admin_can_view_detail_and_approve_topup_in_same_city(): void
     {
         $admin = User::factory()->create([
-            'role'    => 'admin',
-            'city_id' => $this->city->id,
-            'status'  => 'active',
-            'verified' => true,
+            'role'        => 'admin',
+            'city_id'     => $this->city->id,
+            'district_id' => $this->district->id,
+            'status'      => 'active',
+            'verified'    => true,
         ]);
+        $admin->managedDistricts()->sync([$this->district->id]);
 
         $customer = User::factory()->create([
-            'role'    => 'customer',
-            'city_id' => $this->city->id,
-            'status'  => 'active',
-            'verified' => true,
+            'role'        => 'customer',
+            'city_id'     => $this->city->id,
+            'district_id' => $this->district->id,
+            'status'      => 'active',
+            'verified'    => true,
         ]);
 
         $transaction = BalanceTransaction::create([
@@ -118,17 +128,20 @@ class TopupApprovalLivewireTest extends TestCase
     public function test_admin_can_reject_topup_with_reason(): void
     {
         $admin = User::factory()->create([
-            'role'    => 'admin',
-            'city_id' => $this->city->id,
-            'status'  => 'active',
-            'verified' => true,
+            'role'        => 'admin',
+            'city_id'     => $this->city->id,
+            'district_id' => $this->district->id,
+            'status'      => 'active',
+            'verified'    => true,
         ]);
+        $admin->managedDistricts()->sync([$this->district->id]);
 
         $customer = User::factory()->create([
-            'role'    => 'customer',
-            'city_id' => $this->city->id,
-            'status'  => 'active',
-            'verified' => true,
+            'role'        => 'customer',
+            'city_id'     => $this->city->id,
+            'district_id' => $this->district->id,
+            'status'      => 'active',
+            'verified'    => true,
         ]);
 
         $transaction = BalanceTransaction::create([

@@ -207,11 +207,14 @@ class JobNotificationTerritoryRoutingTest extends TestCase
             ->set('report_type', 'pelanggaran_aturan')
             ->call('submit');
 
-        // Admin Danurejan (Admin B1) MUST receive
+        // Admin Danurejan (Admin A1) MUST receive
         Notification::assertSentTo($this->adminA1, NewReportNotification::class);
 
-        // Explicit City Admin for City A also has full authority over City A's districts
-        Notification::assertSentTo($this->adminCityA, NewReportNotification::class);
+        // Orphan city admin has no district authority -> MUST NOT receive
+        Notification::assertNotSentTo($this->adminCityA, NewReportNotification::class);
+
+        // Sibling district Admin A2 (Gondomanan) is NOT authorized for Danurejan -> MUST NOT receive
+        Notification::assertNotSentTo($this->adminA2, NewReportNotification::class);
 
         // Admin Sleman (Customer's profile city!) MUST NOT receive
         Notification::assertNotSentTo($this->adminCityB, NewReportNotification::class);
@@ -391,7 +394,7 @@ class JobNotificationTerritoryRoutingTest extends TestCase
 
     /**
      * N6: City-level Help B (district_id == null, city_id != null).
-     * Explicit City Admin B receives. District-only Admin B1 does not.
+     * Admins with assigned districts in City A receive. Admin outside City A and orphan city admin do not.
      */
     public function test_n6_city_level_help_routes_to_explicit_city_admin_not_district_only_admin()
     {
@@ -403,14 +406,12 @@ class JobNotificationTerritoryRoutingTest extends TestCase
 
         $recipients = $this->notificationService->resolveAdminsForHelp($help);
 
-        // Explicit City Admin A MUST be included
-        $this->assertTrue($recipients->contains('id', $this->adminCityA->id));
+        // Admins with assigned districts in City A derive parent city context and MUST be included
+        $this->assertTrue($recipients->contains('id', $this->adminA1->id));
+        $this->assertTrue($recipients->contains('id', $this->adminA2->id));
 
-        // District-only Admin A1 MUST NOT be included
-        $this->assertFalse($recipients->contains('id', $this->adminA1->id));
-
-        // District-only Admin A2 MUST NOT be included
-        $this->assertFalse($recipients->contains('id', $this->adminA2->id));
+        // Orphan City Admin without assigned districts MUST NOT be included
+        $this->assertFalse($recipients->contains('id', $this->adminCityA->id));
 
         // Admin outside City A MUST NOT be included
         $this->assertFalse($recipients->contains('id', $this->adminCityB->id));

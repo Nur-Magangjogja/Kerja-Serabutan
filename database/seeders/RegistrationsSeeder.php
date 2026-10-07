@@ -56,7 +56,9 @@ class RegistrationsSeeder extends Seeder
 
         // 2. Sampel Pendaftaran Pending Verification (Customer & Mitra Baru)
         $slemanCity = City::where('code', '3404')->first() ?? City::first();
-        $ngaglikDist = District::where('city_id', $slemanCity?->id)->first() ?? District::first();
+        $ngaglikDist = District::where('city_id', $slemanCity?->id)->where('name', 'like', '%Ngaglik%')->first()
+            ?? District::where('city_id', $slemanCity?->id)->first()
+            ?? District::first();
 
         $existingCalon = Registration::where('email', 'calon.mitra@sayabantu.com')->first();
         Registration::updateOrCreate(

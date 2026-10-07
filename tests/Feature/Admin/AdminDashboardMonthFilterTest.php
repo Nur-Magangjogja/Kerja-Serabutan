@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\City;
+use App\Models\District;
 use App\Models\Help;
 use App\Models\Registration;
 use App\Models\User;
@@ -23,14 +24,23 @@ class AdminDashboardMonthFilterTest extends TestCase
             'longitude' => 110.3695,
         ]);
 
+        $district = District::create([
+            'city_id' => $city->id,
+            'name' => 'Danurejan',
+            'is_active' => true,
+        ]);
+
         $admin = User::factory()->create([
             'role' => 'admin',
             'city_id' => $city->id,
+            'district_id' => $district->id,
         ]);
+        $admin->managedDistricts()->sync([$district->id]);
 
         $customer = User::factory()->create([
             'role' => 'customer',
             'city_id' => $city->id,
+            'district_id' => $district->id,
         ]);
 
         // Help in current month
@@ -38,6 +48,7 @@ class AdminDashboardMonthFilterTest extends TestCase
             'user_id' => $customer->id,
             'customer_id' => $customer->id,
             'city_id' => $city->id,
+            'district_id' => $district->id,
             'title' => 'Bantuan Bulan Ini',
             'description' => 'Deskripsi bantuan',
             'amount' => 50000,
@@ -51,6 +62,7 @@ class AdminDashboardMonthFilterTest extends TestCase
             'user_id' => $customer->id,
             'customer_id' => $customer->id,
             'city_id' => $city->id,
+            'district_id' => $district->id,
             'title' => 'Bantuan Bulan Lalu',
             'description' => 'Deskripsi bantuan',
             'amount' => 60000,

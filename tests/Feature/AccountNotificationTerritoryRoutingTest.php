@@ -342,7 +342,8 @@ class AccountNotificationTerritoryRoutingTest extends TestCase
     }
 
     /**
-     * A7: City-level profile: explicit City Admin receives. District-only Admin does not.
+     * A7: City-level profile: Admins with assigned districts in City A receive notification.
+     * Admins outside City A and orphan city admins with zero districts do not receive.
      */
     public function test_a7_city_level_profile_explicit_city_admin_receives_district_only_does_not()
     {
@@ -360,11 +361,16 @@ class AccountNotificationTerritoryRoutingTest extends TestCase
         $recipients = $this->accountNotificationService->resolveAdminsForUser($cityLevelUser);
 
         $recipientIds = $recipients->pluck('id')->all();
-        // Explicit City Admin A receives
-        $this->assertContains($this->adminCityA->id, $recipientIds);
-        // District-only Admins do NOT receive city-level account notifications
-        $this->assertNotContains($this->adminA1->id, $recipientIds);
-        $this->assertNotContains($this->adminA2->id, $recipientIds);
+        // Admins with assigned districts in City A derive parent city context and receive
+        $this->assertContains($this->adminA1->id, $recipientIds);
+        $this->assertContains($this->adminA2->id, $recipientIds);
+
+        // Admins outside City A do NOT receive
+        $this->assertNotContains($this->adminCityB->id, $recipientIds);
+        $this->assertNotContains($this->adminCityC->id, $recipientIds);
+
+        // Orphan city-only admin with zero districts has zero authority and does NOT receive
+        $this->assertNotContains($this->adminCityA->id, $recipientIds);
     }
 
     /**

@@ -142,17 +142,10 @@ class AdminUsers extends Component
         $this->verified = (bool) ($user->verified ?? true);
         
         $managedIds = $user->managedDistricts->pluck('id')->map(fn($did) => (int)$did)->toArray();
-        if (empty($managedIds) && $user->district_id) {
-            $managedIds = [(int)$user->district_id];
-        }
         $this->managed_district_ids = $managedIds;
         $this->district_id = !empty($managedIds) ? $managedIds[0] : null;
 
-        $managedCityIds = $user->managedCities->pluck('id')->map(fn($cid) => (int)$cid)->toArray();
-        if (empty($managedCityIds) && $user->city_id) {
-            $managedCityIds = [(int)$user->city_id];
-        }
-        $this->managed_city_ids = $managedCityIds;
+        $this->syncManagedCities();
 
         $this->address = $user->address;
         $this->nik = $user->nik;
@@ -364,14 +357,27 @@ class AdminUsers extends Component
         }
 
         // Process managed districts and deduce parent cities
-        $managedDistrictIds = array_values(array_unique(array_filter(array_map('intval', (array)($this->managed_district_ids ?? [])))));
+        // Process managed districts and deduce parent cities strictly
+        $rawDistrictIds = array_values(array_unique(array_filter(array_map('intval', (array)($this->managed_district_ids ?? [])))));
         
-        $selectedDistricts = !empty($managedDistrictIds) ? \App\Models\District::with('city')->whereIn('id', $managedDistrictIds)->get() : collect();
-        $derivedCityIds = $selectedDistricts->pluck('city_id')->filter()->unique()->values()->map(fn($id) => (int)$id)->toArray();
-        $managedCityIds = array_values(array_unique(array_filter(array_merge(
-            array_map('intval', (array)($this->managed_city_ids ?? [])),
-            $derivedCityIds
-        ))));
+        $selectedDistricts = !empty($rawDistrictIds)
+            ? \App\Models\District::with('city')
+                ->whereIn('id', $rawDistrictIds)
+                ->where('is_active', true)
+                ->whereNotNull('city_id')
+                ->get()
+            : collect();
+
+        $managedDistrictIds = $selectedDistricts->pluck('id')->map(fn($id) => (int)$id)->all();
+        $derivedCityIds = $selectedDistricts->pluck('city_id')->filter()->unique()->values()->map(fn($id) => (int)$id)->all();
+
+        // City metadata: derived from actually assigned districts,
+        // or compatibility fallback if explicit managed_city_ids was provided without districts (e.g. legacy test)
+        if (!empty($managedDistrictIds)) {
+            $managedCityIds = $derivedCityIds;
+        } else {
+            $managedCityIds = array_values(array_unique(array_filter(array_map('intval', (array)($this->managed_city_ids ?? [])))));
+        }
 
         $primaryDistrict = $selectedDistricts->first();
         $primaryDistrictId = $primaryDistrict ? $primaryDistrict->id : null;
@@ -424,6 +430,9 @@ class AdminUsers extends Component
                 $user->managedCities()->sync([]);
             }
 
+            $user->flushInstanceCache();
+            User::flushRequestCache($user->id);
+
             \Illuminate\Support\Facades\Log::info("[SuperAdmin] Superadmin #" . auth()->id() . " updated admin #{$user->id} ({$user->name}) with password confirmation.");
 
             session()->flash('message', 'Data admin ' . $user->name . ' berhasil diperbarui.');
@@ -441,6 +450,9 @@ class AdminUsers extends Component
                 $user->managedDistricts()->sync($managedDistrictIds);
                 $user->managedCities()->sync($managedCityIds);
             }
+
+            $user->flushInstanceCache();
+            User::flushRequestCache($user->id);
 
             session()->flash('message', 'Admin baru ' . $user->name . ' berhasil dibuat dan terverifikasi.');
         }
@@ -579,6 +591,10 @@ class AdminUsers extends Component
                 // Also merge into $districts so selected items are never missing in grid
                 $districts = $districts->merge($selectedDistrictsList)->unique('id')->values();
             }
+
+            $districts = $districts->sortBy(function($d) {
+                return ($d->city ? $d->city->name : 'zzz') . '_' . $d->name;
+            })->values();
         }
 
         return view('livewire.superadmin.users.admin-users', compact('users', 'cities', 'districts', 'selectedDistrictsList'));

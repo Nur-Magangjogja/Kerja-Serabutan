@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\City;
+use App\Models\District;
 use App\Models\Help;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,14 +23,23 @@ class AdminHelpsModerationTest extends TestCase
             'longitude' => 110.3695,
         ]);
 
+        $district = District::create([
+            'city_id' => $city->id,
+            'name' => 'Danurejan',
+            'is_active' => true,
+        ]);
+
         $admin = User::factory()->create([
             'role' => 'admin',
             'city_id' => $city->id,
+            'district_id' => $district->id,
         ]);
+        $admin->managedDistricts()->sync([$district->id]);
 
         $customer = User::factory()->create([
             'role' => 'customer',
             'city_id' => $city->id,
+            'district_id' => $district->id,
         ]);
 
         // Create helps with different statuses
@@ -37,6 +47,7 @@ class AdminHelpsModerationTest extends TestCase
             'user_id' => $customer->id,
             'customer_id' => $customer->id,
             'city_id' => $city->id,
+            'district_id' => $district->id,
             'title' => 'Bantuan Pending',
             'description' => 'Deskripsi pending',
             'amount' => 50000,
@@ -48,6 +59,7 @@ class AdminHelpsModerationTest extends TestCase
             'user_id' => $customer->id,
             'customer_id' => $customer->id,
             'city_id' => $city->id,
+            'district_id' => $district->id,
             'title' => 'Bantuan Sedang Berjalan',
             'description' => 'Deskripsi aktif',
             'amount' => 75000,
@@ -59,6 +71,7 @@ class AdminHelpsModerationTest extends TestCase
             'user_id' => $customer->id,
             'customer_id' => $customer->id,
             'city_id' => $city->id,
+            'district_id' => $district->id,
             'title' => 'Bantuan Selesai',
             'description' => 'Deskripsi selesai',
             'amount' => 100000,
@@ -70,6 +83,7 @@ class AdminHelpsModerationTest extends TestCase
             'user_id' => $customer->id,
             'customer_id' => $customer->id,
             'city_id' => $city->id,
+            'district_id' => $district->id,
             'title' => 'Bantuan Dibatalkan',
             'description' => 'Deskripsi dibatalkan',
             'amount' => 30000,

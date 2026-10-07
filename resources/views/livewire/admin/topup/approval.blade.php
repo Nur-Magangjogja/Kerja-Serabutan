@@ -231,7 +231,9 @@
                                         </div>
                                         <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">Tidak Ada Transaksi</p>
                                         <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                            @if($adminCityName)
+                                            @if($adminCityName === 'Belum Ada Wilayah' || (auth()->user()?->role === 'admin' && empty(auth()->user()->getAdminDistrictIds())))
+                                                Belum ada wilayah yang ditugaskan.
+                                            @elseif($adminCityName)
                                                 Tidak ada pengajuan top-up customer untuk wilayah {{ $adminCityName }} pada filter ini
                                             @else
                                                 Tidak ditemukan transaksi top-up pada filter ini

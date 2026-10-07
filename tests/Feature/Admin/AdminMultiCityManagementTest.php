@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\City;
+use App\Models\District;
 use App\Models\Help;
 use App\Models\Registration;
 use App\Models\User;
@@ -22,16 +23,21 @@ class AdminMultiCityManagementTest extends TestCase
         $citySleman = City::create(['name' => 'Kabupaten Sleman', 'state_name' => 'DIY', 'latitude' => -7.7156, 'longitude' => 110.3556]);
         $cityBantul = City::create(['name' => 'Kabupaten Bantul', 'state_name' => 'DIY', 'latitude' => -7.8890, 'longitude' => 110.3289]);
 
+        $distYogya = District::create(['city_id' => $cityYogya->id, 'name' => 'Danurejan', 'is_active' => true]);
+        $distSleman = District::create(['city_id' => $citySleman->id, 'name' => 'Ngaglik', 'is_active' => true]);
+
         $superAdmin = User::factory()->create(['role' => 'super_admin']);
 
         // Create Admin user
         $admin = User::factory()->create([
             'role' => 'admin',
             'city_id' => $cityYogya->id,
+            'district_id' => $distYogya->id,
         ]);
 
-        // Super Admin assigns Sleman as well (2 cities: Yogya & Sleman)
+        // Super Admin assigns Yogya and Sleman (2 cities: Yogya & Sleman via assigned districts)
         $this->actingAs($superAdmin);
+        $admin->managedDistricts()->sync([$distYogya->id, $distSleman->id]);
         $admin->managedCities()->sync([$cityYogya->id, $citySleman->id]);
 
         $adminCityIds = $admin->getAdminCityIds();
@@ -41,8 +47,8 @@ class AdminMultiCityManagementTest extends TestCase
         $this->assertNotContains($cityBantul->id, $adminCityIds);
 
         // Create customers in all 3 cities
-        $customerYogya = User::factory()->create(['role' => 'customer', 'city_id' => $cityYogya->id]);
-        $customerSleman = User::factory()->create(['role' => 'customer', 'city_id' => $citySleman->id]);
+        $customerYogya = User::factory()->create(['role' => 'customer', 'city_id' => $cityYogya->id, 'district_id' => $distYogya->id]);
+        $customerSleman = User::factory()->create(['role' => 'customer', 'city_id' => $citySleman->id, 'district_id' => $distSleman->id]);
         $customerBantul = User::factory()->create(['role' => 'customer', 'city_id' => $cityBantul->id]);
 
         // Create helps in all 3 cities
@@ -50,6 +56,7 @@ class AdminMultiCityManagementTest extends TestCase
             'user_id' => $customerYogya->id,
             'customer_id' => $customerYogya->id,
             'city_id' => $cityYogya->id,
+            'district_id' => $distYogya->id,
             'title' => 'Bantuan di Yogya',
             'description' => 'Deskripsi bantuan Yogya',
             'amount' => 50000,
@@ -61,6 +68,7 @@ class AdminMultiCityManagementTest extends TestCase
             'user_id' => $customerSleman->id,
             'customer_id' => $customerSleman->id,
             'city_id' => $citySleman->id,
+            'district_id' => $distSleman->id,
             'title' => 'Bantuan di Sleman',
             'description' => 'Deskripsi bantuan Sleman',
             'amount' => 60000,
@@ -96,6 +104,11 @@ class AdminMultiCityManagementTest extends TestCase
             ->assertSee('Bantuan di Sleman')
             ->assertDontSee('Bantuan di Yogya');
 
+        // Reset filter to all for subsequent moderation test
+        $admin->setActiveAdminDistrictFilter('all');
+        $admin->setActiveAdminCityFilter('all');
+        session(['admin_active_district_filter' => 'all', 'admin_active_city_filter' => 'all']);
+
         // 2. Helps Moderation test: admin sees Yogya & Sleman helps, but cannot see Bantul
         Livewire::test(\App\Livewire\Admin\Helps\Index::class)
             ->assertViewHas('totalHelps', 2)
@@ -115,6 +128,7 @@ class AdminMultiCityManagementTest extends TestCase
             'full_name' => 'Pendaftar Yogya',
             'email' => 'yogya@test.com',
             'city_id' => $cityYogya->id,
+            'district_id' => $distYogya->id,
             'role' => 'mitra',
             'status' => 'pending_verification',
         ]);

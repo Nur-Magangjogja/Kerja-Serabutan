@@ -56,6 +56,21 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Flush memoized instance-level territory cache.
+     */
+    public function flushInstanceCache(): self
+    {
+        $this->memoizedAdminDistrictIds = null;
+        $this->memoizedAdminDistricts = null;
+        $this->memoizedActiveAdminDistrictFilter = null;
+        $this->memoizedActiveSuperadminTerritory = null;
+        $this->unsetRelation('managedDistricts');
+        $this->unsetRelation('managedCities');
+        self::flushRequestCache($this->id);
+        return $this;
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -605,51 +620,19 @@ class User extends Authenticatable implements MustVerifyEmail
 
         $districtIds = [];
 
-        // 1. Directly assigned managed districts (admin_district pivot)
+        // Explicitly assigned managed districts (admin_district pivot) only
         if ($this->relationLoaded('managedDistricts')) {
-            $districtIds = array_merge($districtIds, $this->managedDistricts->pluck('id')->all());
+            $districtIds = $this->managedDistricts->pluck('id')->all();
         } else {
-            $districtIds = array_merge($districtIds, $this->managedDistricts()->allRelatedIds()->all());
+            $districtIds = $this->managedDistricts()->allRelatedIds()->all();
         }
 
-        // 2. Districts derived from directly assigned managed cities (admin_city pivot)
-        if ($this->relationLoaded('managedCities')) {
-            $assignedCityIds = $this->managedCities->pluck('id')->all();
-        } else {
-            $assignedCityIds = $this->managedCities()->allRelatedIds()->all();
+        $res = array_values(array_unique(array_filter(array_map('intval', $districtIds))));
+        $this->memoizedAdminDistrictIds = $res;
+        if ($uid) {
+            self::$reqAdminDistrictIds[$uid] = $res;
         }
-        if (!empty($assignedCityIds)) {
-            $districtIds = array_merge($districtIds, District::whereIn('city_id', $assignedCityIds)->pluck('id')->all());
-        }
-
-        // If explicit assigned districts/cities exist, return canonical union
-        if (!empty($districtIds)) {
-            $res = array_values(array_unique(array_filter(array_map('intval', $districtIds))));
-            $this->memoizedAdminDistrictIds = $res;
-            if ($uid) self::$reqAdminDistrictIds[$uid] = $res;
-            return $res;
-        }
-
-        // 3. Fallback to profile district_id / city_id ONLY if no explicit assignments exist (legacy fallback)
-        if (!empty($this->district_id)) {
-            $res = [(int) $this->district_id];
-            $this->memoizedAdminDistrictIds = $res;
-            if ($uid) self::$reqAdminDistrictIds[$uid] = $res;
-            return $res;
-        }
-
-        if (!empty($this->city_id)) {
-            $cityDistrictIds = District::where('city_id', $this->city_id)->pluck('id')->map('intval')->all();
-            if (!empty($cityDistrictIds)) {
-                $this->memoizedAdminDistrictIds = $cityDistrictIds;
-                if ($uid) self::$reqAdminDistrictIds[$uid] = $cityDistrictIds;
-                return $cityDistrictIds;
-            }
-        }
-
-        $this->memoizedAdminDistrictIds = [];
-        if ($uid) self::$reqAdminDistrictIds[$uid] = [];
-        return [];
+        return $res;
     }
 
     /**
@@ -706,7 +689,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $districts = $this->getAdminDistricts();
         if ($districts->isEmpty()) {
-            return $this->kecamatan ?: ($this->district?->name ?: 'Semua Wilayah');
+            return 'Belum Ada Wilayah';
         }
 
         return $districts->pluck('name')->map(fn($n) => 'Kec. ' . $n)->join(', ');
@@ -718,8 +701,13 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getActiveAdminDistrictFilter(): string
     {
+        $allowedIds = $this->getAdminDistrictIds();
+
         if ($this->memoizedActiveAdminDistrictFilter !== null) {
-            return $this->memoizedActiveAdminDistrictFilter;
+            if ($this->memoizedActiveAdminDistrictFilter === 'all' || in_array((int) $this->memoizedActiveAdminDistrictFilter, $allowedIds, true)) {
+                return $this->memoizedActiveAdminDistrictFilter;
+            }
+            $this->memoizedActiveAdminDistrictFilter = null;
         }
 
         $cachedDistrict = cache()->get("admin_active_district_{$this->id}");
@@ -730,8 +718,13 @@ class User extends Authenticatable implements MustVerifyEmail
             return $this->memoizedActiveAdminDistrictFilter = 'all';
         }
 
-        $allowedIds = $this->getAdminDistrictIds();
         if (!in_array((int) $active, $allowedIds, true)) {
+            session(['admin_active_district_filter' => 'all']);
+            try {
+                cache()->put("admin_active_district_{$this->id}", 'all', now()->addDays(7));
+            } catch (\Throwable $e) {
+                // ignore
+            }
             return $this->memoizedActiveAdminDistrictFilter = 'all';
         }
 
@@ -768,12 +761,17 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getEffectiveAdminDistrictIds(): array
     {
+        $allowedIds = $this->getAdminDistrictIds();
+        if (empty($allowedIds)) {
+            return [];
+        }
+
         $active = $this->getActiveAdminDistrictFilter();
-        if ($active !== 'all') {
+        if ($active !== 'all' && in_array((int) $active, $allowedIds, true)) {
             return [(int) $active];
         }
 
-        return $this->getAdminDistrictIds();
+        return $allowedIds;
     }
 
     /**
@@ -787,13 +785,13 @@ class User extends Authenticatable implements MustVerifyEmail
             if ($districts->count() === 1) {
                 return 'Kec. ' . $districts->first()->name;
             } elseif ($districts->count() > 1) {
-                return "Semua Wilayah ({$districts->count()} Kecamatan)";
+                return "Semua Wilayah Tugas ({$districts->count()} Kecamatan)";
             }
-            return 'Semua Wilayah Kecamatan';
+            return 'Belum Ada Wilayah';
         }
 
         $district = District::find((int) $active);
-        return $district ? 'Kec. ' . $district->name : 'Semua Wilayah Kecamatan';
+        return $district ? 'Kec. ' . $district->name : 'Belum Ada Wilayah';
     }
 
     /**
@@ -942,47 +940,21 @@ class User extends Authenticatable implements MustVerifyEmail
             return self::$reqAdminCityIds[$uid];
         }
 
-        $cityIds = [];
-
-        // 1. Directly assigned managed cities (admin_city pivot)
-        if ($this->relationLoaded('managedCities')) {
-            $cityIds = array_merge($cityIds, $this->managedCities->pluck('id')->all());
-        } else {
-            $cityIds = array_merge($cityIds, $this->managedCities()->allRelatedIds()->all());
-        }
-
-        // 2. Cities derived from managed districts (query pivot langsung, BUKAN via getAdminDistrictIds untuk menghindari circular dependency)
+        // Cities derived strictly from assigned managed districts (source of authority)
         if ($this->relationLoaded('managedDistricts')) {
             $managedDistrictIds = $this->managedDistricts->pluck('id')->all();
         } else {
             $managedDistrictIds = $this->managedDistricts()->allRelatedIds()->all();
         }
-        if (!empty($managedDistrictIds)) {
-            $cityIds = array_merge($cityIds, District::whereIn('id', $managedDistrictIds)->pluck('city_id')->all());
-        }
 
-        // If explicit assigned cities/districts exist, return canonical union
-        if (!empty($cityIds)) {
-            $result = array_values(array_unique(array_filter(array_map('intval', $cityIds))));
+        if (empty($managedDistrictIds)) {
             if ($uid) {
-                self::$reqAdminCityIds[$uid] = $result;
+                self::$reqAdminCityIds[$uid] = [];
             }
-            return $result;
+            return [];
         }
 
-        // 3. Fallback: Primary district parent city ONLY if no explicit assignments exist
-        if (!empty($this->district_id)) {
-            $parentCityId = District::where('id', $this->district_id)->value('city_id');
-            if ($parentCityId) {
-                $cityIds[] = (int) $parentCityId;
-            }
-        }
-
-        // 4. Fallback: Primary city_id ONLY if no explicit assignments exist
-        if (!empty($this->city_id)) {
-            $cityIds[] = (int) $this->city_id;
-        }
-
+        $cityIds = District::whereIn('id', $managedDistrictIds)->pluck('city_id')->all();
         $result = array_values(array_unique(array_filter(array_map('intval', $cityIds))));
         if ($uid) {
             self::$reqAdminCityIds[$uid] = $result;
@@ -1023,7 +995,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $cities = $this->getAdminCities();
         if ($cities->isEmpty()) {
-            return $this->city_name ?: 'Semua Wilayah';
+            return 'Belum Ada Wilayah';
         }
 
         return $cities->pluck('name')->join(', ');
@@ -1084,12 +1056,17 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getEffectiveAdminCityIds(): array
     {
+        $allowedIds = $this->getAdminCityIds();
+        if (empty($allowedIds)) {
+            return [];
+        }
+
         $active = $this->getActiveAdminCityFilter();
-        if ($active !== 'all') {
+        if ($active !== 'all' && in_array((int) $active, $allowedIds, true)) {
             return [(int) $active];
         }
 
-        return $this->getAdminCityIds();
+        return $allowedIds;
     }
 
     /**
@@ -1100,11 +1077,14 @@ class User extends Authenticatable implements MustVerifyEmail
         $active = $this->getActiveAdminCityFilter();
         if ($active === 'all') {
             $count = count($this->getAdminCityIds());
-            return $count > 1 ? "Semua Wilayah ({$count} Kota)" : ($this->admin_city_names ?: 'Semua Wilayah');
+            if ($count === 0) {
+                return 'Belum Ada Wilayah';
+            }
+            return $count > 1 ? "Semua Wilayah ({$count} Kota)" : ($this->admin_city_names ?: 'Belum Ada Wilayah');
         }
 
         $city = City::find((int) $active);
-        return $city ? $city->name : 'Semua Wilayah';
+        return $city ? $city->name : 'Belum Ada Wilayah';
     }
 
     public function helps()

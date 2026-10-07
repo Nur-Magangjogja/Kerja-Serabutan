@@ -304,8 +304,6 @@ class BalanceTransaction extends Model
                 $districtIds = $user->getEffectiveAdminDistrictIds();
                 if (!empty($districtIds)) {
                     $query->whereHas('user', fn($q) => $q->whereIn('district_id', $districtIds));
-                } elseif (!empty($user->city_id) && $user->role === 'admin') {
-                    $query->whereHas('user', fn($q) => $q->where('city_id', $user->city_id));
                 } else {
                     return 0;
                 }

@@ -497,7 +497,7 @@ class CanonicalResourceOwnershipTest extends TestCase
     }
 
     /**
-     * R11: District-only Admin denied City-level resource.
+     * R11: Admin outside City A is denied City-level resource of City A.
      */
     public function test_r11_district_only_admin_denied_city_level_resource(): void
     {
@@ -517,14 +517,14 @@ class CanonicalResourceOwnershipTest extends TestCase
             'status'           => 'pending',
         ]);
 
-        // Admin A1 is district-only (Danurejan). Must be DENIED access to city-level resource
-        $this->actingAs($this->adminA1);
+        // Admin B1 is assigned to Sleman (distB1). Must be DENIED access to City A city-level resource
+        $this->actingAs($this->adminB1);
         Livewire::test(\App\Livewire\Admin\Partners\Reports\Show::class, ['report' => $report])
             ->assertStatus(403);
     }
 
     /**
-     * R12: Explicit City Admin allowed City-level resource.
+     * R12: Admin with assigned district in City A is allowed City-level resource of City A, while orphan city admin is denied.
      */
     public function test_r12_explicit_city_admin_allowed_city_level_resource(): void
     {
@@ -544,11 +544,16 @@ class CanonicalResourceOwnershipTest extends TestCase
             'status'           => 'pending',
         ]);
 
-        // AdminCityA has explicit city authority for cityA. Must be ALLOWED (200 OK)
-        $this->actingAs($this->adminCityA);
+        // Admin A1 (assigned Danurejan in City A) derives city-level authority for City A -> ALLOWED (200 OK)
+        $this->actingAs($this->adminA1);
         Livewire::test(\App\Livewire\Admin\Partners\Reports\Show::class, ['report' => $report])
             ->assertStatus(200)
             ->assertSee($report->title);
+
+        // Orphan city-only admin without assigned districts has zero authority -> DENIED (403)
+        $this->actingAs($this->adminCityA);
+        Livewire::test(\App\Livewire\Admin\Partners\Reports\Show::class, ['report' => $report])
+            ->assertStatus(403);
     }
 
     /**

@@ -180,38 +180,15 @@ class AdminTerritoryAuthorizationService
             return false;
         }
 
-        // 1. Directly assigned managed cities (admin_city pivot)
-        $managedCityIds = $admin->relationLoaded('managedCities')
-            ? $admin->managedCities->pluck('id')->all()
-            : $admin->managedCities()->allRelatedIds()->all();
+        // Authority is strictly derived from parent cities of ACTUALLY ASSIGNED districts
+        // 0 explicitly assigned districts = 0 territorial authority
+        $effectiveCityIds = $admin->getAdminCityIds();
 
-        $managedCityIds = array_map('intval', $managedCityIds);
-
-        if (in_array((int) $cityId, $managedCityIds, true)) {
-            return true;
-        }
-
-        // 2. Check if ANY explicit assignment exists (managedCities or managedDistricts)
-        $managedDistrictIds = $admin->relationLoaded('managedDistricts')
-            ? $admin->managedDistricts->pluck('id')->all()
-            : $admin->managedDistricts()->allRelatedIds()->all();
-
-        $hasAnyExplicitAssignment = !empty($managedCityIds) || !empty($managedDistrictIds);
-
-        if ($hasAnyExplicitAssignment) {
-            // Explicit assignment exists, but cityId is not in managedCities.
-            // Profile territory MUST NOT grant or leak authority.
+        if (empty($effectiveCityIds)) {
             return false;
         }
 
-        // 3. No explicit assignments exist at all:
-        // Pure legacy city admin fallback ONLY if:
-        // users.city_id matches target AND users.district_id is null.
-        if (!empty($admin->city_id) && (int) $admin->city_id === (int) $cityId && empty($admin->district_id)) {
-            return true;
-        }
-
-        return false;
+        return in_array((int) $cityId, $effectiveCityIds, true);
     }
 
     /**
@@ -230,31 +207,7 @@ class AdminTerritoryAuthorizationService
              return [];
          }
  
-         $managedCityIds = $admin->relationLoaded('managedCities')
-             ? $admin->managedCities->pluck('id')->all()
-             : $admin->managedCities()->allRelatedIds()->all();
- 
-         $managedCityIds = array_values(array_unique(array_map('intval', $managedCityIds)));
- 
-         if (!empty($managedCityIds)) {
-             return $managedCityIds;
-         }
- 
-         $managedDistrictIds = $admin->relationLoaded('managedDistricts')
-             ? $admin->managedDistricts->pluck('id')->all()
-             : $admin->managedDistricts()->allRelatedIds()->all();
- 
-         if (!empty($managedDistrictIds)) {
-             // District assignment exists, so profile territory cannot leak or grant city authority
-             return [];
-         }
- 
-         // Pure legacy fallback
-         if (!empty($admin->city_id) && empty($admin->district_id)) {
-             return [(int) $admin->city_id];
-         }
- 
-         return [];
+         return $admin->getAdminCityIds();
      }
  
      /**

@@ -763,31 +763,40 @@ class AdministrativeTerritoryMigrationTest extends TestCase
 
     public function test_city_level_admin_without_district_pivot_allows_migration_and_expands_districts(): void
     {
-        // Admin assigned ONLY City Yogya via managedCities, no district pivot
-        // Even if admin has a profile district_id (Danurejan), authority must expand to all districts of City Yogya
-        $cityAdmin = User::factory()->create([
+        // 1. Admin assigned ONLY City Yogya via managedCities without district pivot has NO district authority
+        $cityOnlyAdmin = User::factory()->create([
             'role'        => 'admin',
             'status'      => 'active',
             'city_id'     => $this->cityYogya->id,
             'district_id' => $this->districtDanurejan->id,
         ]);
-        $cityAdmin->managedCities()->sync([$this->cityYogya->id]);
+        $cityOnlyAdmin->managedCities()->sync([$this->cityYogya->id]);
 
-        $this->actingAs($cityAdmin);
+        $this->assertEquals([], $cityOnlyAdmin->getAdminDistrictIds());
 
-        // 1. User in Danurejan (A1) is visible in user management
+        // 2. Exact district assignment grants authority for assigned districts
+        $districtAdmin = User::factory()->create([
+            'role'        => 'admin',
+            'status'      => 'active',
+        ]);
+        $districtAdmin->managedDistricts()->sync([$this->districtDanurejan->id, $this->districtGondomanan->id]);
+        $districtAdmin->managedCities()->sync([$this->cityYogya->id]);
+
+        $this->actingAs($districtAdmin);
+
+        // User in Danurejan (A1) is visible in user management
         Livewire::test(Index::class)
             ->assertSee($this->customer->name)
-            // 2. Migration modal can be opened
+            // Migration modal can be opened
             ->call('openMigrationModal', $this->customer->id)
             ->assertSet('showMigrationModal', true)
             ->set('migrationCityId', $this->cityYogya->id)
-            // 3. Destination district Gondomanan (A2) is available in dropdown
+            // Destination district Gondomanan (A2) is available in dropdown
             ->assertSet('migrationAvailableDistricts', function ($districts) {
                 $ids = array_column($districts, 'id');
                 return in_array($this->districtGondomanan->id, $ids, true) && in_array($this->districtDanurejan->id, $ids, true);
             })
-            // 4. Migration Danurejan -> Gondomanan ALLOWED and succeeds
+            // Migration Danurejan -> Gondomanan ALLOWED and succeeds
             ->set('migrationDistrictId', $this->districtGondomanan->id)
             ->set('migrationReason', 'Pindah domisili internal kota Yogyakarta')
             ->call('submitMigration')
@@ -806,21 +815,21 @@ class AdministrativeTerritoryMigrationTest extends TestCase
             'is_active' => true,
         ]);
 
-        // Admin has City Yogya (A) + direct District Depok (B1 in Sleman)
+        // Admin has exact District Danurejan (A1 in Yogya) + exact District Depok (B1 in Sleman)
         $mixedAdmin = User::factory()->create([
             'role'   => 'admin',
             'status' => 'active',
         ]);
-        $mixedAdmin->managedCities()->sync([$this->cityYogya->id]);
-        $mixedAdmin->managedDistricts()->sync([$this->districtDepok->id]);
+        $mixedAdmin->managedCities()->sync([$this->cityYogya->id, $this->citySleman->id]);
+        $mixedAdmin->managedDistricts()->sync([$this->districtDanurejan->id, $this->districtDepok->id]);
 
         $adminDistrictIds = $mixedAdmin->getAdminDistrictIds();
 
-        // Authority must include: Danurejan (A1), Gondomanan (A2), Depok (B1)
+        // Authority must include exactly: Danurejan (A1) and Depok (B1)
         $this->assertContains($this->districtDanurejan->id, $adminDistrictIds);
-        $this->assertContains($this->districtGondomanan->id, $adminDistrictIds);
         $this->assertContains($this->districtDepok->id, $adminDistrictIds);
-        // Authority must NOT include Mlati (B2)
+        // Authority must NOT include unassigned sibling Gondomanan (A2) or Mlati (B2)
+        $this->assertNotContains($this->districtGondomanan->id, $adminDistrictIds);
         $this->assertNotContains($districtMlati->id, $adminDistrictIds);
 
         // Migration from A1 to B1 (Depok) is ALLOWED
@@ -846,19 +855,20 @@ class AdministrativeTerritoryMigrationTest extends TestCase
 
     public function test_no_profile_fallback_when_explicit_territory_is_assigned(): void
     {
-        // Admin assigned ONLY City Yogya, but personally lives in Semarang (Banyumanik)
+        // Admin assigned City Yogya with Danurejan and Gondomanan, but personally lives in Semarang (Banyumanik)
         $externalLivingAdmin = User::factory()->create([
             'role'        => 'admin',
             'status'      => 'active',
             'city_id'     => $this->citySemarang->id,
             'district_id' => $this->districtBanyumanik->id,
         ]);
+        $externalLivingAdmin->managedDistricts()->sync([$this->districtDanurejan->id, $this->districtGondomanan->id]);
         $externalLivingAdmin->managedCities()->sync([$this->cityYogya->id]);
 
         $adminCityIds = $externalLivingAdmin->getAdminCityIds();
         $adminDistrictIds = $externalLivingAdmin->getAdminDistrictIds();
 
-        // Authorized for City Yogya and its districts only
+        // Authorized for City Yogya and its assigned districts only
         $this->assertContains($this->cityYogya->id, $adminCityIds);
         $this->assertContains($this->districtDanurejan->id, $adminDistrictIds);
         $this->assertContains($this->districtGondomanan->id, $adminDistrictIds);

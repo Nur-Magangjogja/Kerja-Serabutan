@@ -79,27 +79,28 @@ class MigrateLegacyDistrictsData extends Command
         }
         $this->info("✓ Bantuan berhasil dipetakan ke Kecamatan: {$helpsUpdated}");
 
-        // 4. Migrasi Admin City ke Admin District
+        // 4. Normalisasi Metadata Admin (Kecamatan Eksplisit -> Kota Binaan)
+        // Canonical Rule AW6: admin_district adalah satu-satunya sumber wewenang operasional.
+        // admin_city diturunkan secara deterministik dari parent city milik managedDistricts.
+        // Tidak boleh melakukan ekspansi terbalik (admin_city -> semua kecamatan) atau menebak wewenang!
         $adminPivotCount = 0;
-        $admins = User::where('role', 'admin')->get();
+        $admins = User::where('role', 'admin')->with('managedDistricts.city')->get();
         $this->info("Memproses penugasan wilayah untuk " . $admins->count() . " admin...");
 
         foreach ($admins as $admin) {
-            $cityIds = $admin->getAdminCityIds();
-            if (!empty($cityIds)) {
-                $districts = District::whereIn('city_id', $cityIds)->pluck('id')->all();
-                if (!empty($districts)) {
-                    if (!$isDryRun) {
-                        $admin->managedDistricts()->syncWithoutDetaching($districts);
-                        if (empty($admin->district_id)) {
-                            $admin->update(['district_id' => $districts[0]]);
-                        }
-                    }
-                    $adminPivotCount += count($districts);
+            $assignedDistricts = $admin->managedDistricts;
+            if ($assignedDistricts->isNotEmpty()) {
+                $derivedCityIds = $assignedDistricts->pluck('city_id')->filter()->unique()->values()->all();
+                if (!$isDryRun) {
+                    $admin->managedCities()->sync($derivedCityIds);
                 }
+                $adminPivotCount += count($derivedCityIds);
+            } else {
+                // Fail-closed: Admin tanpa managedDistricts tidak boleh ditebak wewenangnya
+                $this->line("  [INFO] Admin #{$admin->id} ({$admin->email}) belum memiliki penugasan kecamatan eksplisit (tetap fail-closed 0 wewenang).");
             }
         }
-        $this->info("✓ Relasi Admin-Kecamatan berhasil disinkronkan: {$adminPivotCount} relasi.");
+        $this->info("✓ Metadata Kota binaan berhasil disinkronkan dari Kecamatan wewenang: {$adminPivotCount} relasi.");
 
         $this->info("=== MIGRASI DATA WILAYAH KE KECAMATAN SELESAI ===");
         return Command::SUCCESS;

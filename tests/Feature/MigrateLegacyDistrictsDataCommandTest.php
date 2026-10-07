@@ -107,10 +107,9 @@ class MigrateLegacyDistrictsDataCommandTest extends TestCase
         $help->refresh();
         $this->assertEquals($districtDanurejan->id, $help->district_id);
 
-        // Verify Admin has districts synced in pivot
+        // Verify Admin with only profile city_id is not auto-expanded to all districts (0 assigned districts = 0 authority)
         $admin->refresh();
-        $this->assertNotEmpty($admin->district_id);
-        $this->assertCount(2, $admin->managedDistricts);
+        $this->assertCount(0, $admin->managedDistricts);
     }
 
     public function test_command_dry_run_option_does_not_persist_changes()

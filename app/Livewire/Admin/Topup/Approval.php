@@ -392,13 +392,12 @@ class Approval extends Component
         $adminDistrictName = $admin ? $admin->admin_district_names : null;
 
         // Base scoped query for counts
-        $adminCityId = $admin?->city_id;
         $baseQuery = BalanceTransaction::where('type', 'topup');
         if (!$isSuperAdmin) {
             if (!empty($adminDistrictIds)) {
                 $baseQuery->whereHas('user', fn($q) => $q->whereIn('district_id', $adminDistrictIds));
-            } elseif (!empty($adminCityId) && $admin && $admin->role === 'admin') {
-                $baseQuery->whereHas('user', fn($q) => $q->where('city_id', $adminCityId));
+            } else {
+                $baseQuery->whereRaw('1 = 0');
             }
         } elseif ($isSuperAdmin && $admin) {
             $saTerritory = $admin->getActiveSuperadminTerritory();
@@ -437,8 +436,8 @@ class Approval extends Component
         if (!$isSuperAdmin) {
             if (!empty($adminDistrictIds)) {
                 $query->whereHas('user', fn($q) => $q->whereIn('district_id', $adminDistrictIds));
-            } elseif (!empty($adminCityId) && $admin && $admin->role === 'admin') {
-                $query->whereHas('user', fn($q) => $q->where('city_id', $adminCityId));
+            } else {
+                $query->whereRaw('1 = 0');
             }
         } elseif ($isSuperAdmin && $admin) {
             $saTerritory = $admin->getActiveSuperadminTerritory();

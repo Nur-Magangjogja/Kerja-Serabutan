@@ -55,8 +55,8 @@
             </div>
         </div>
 
-        {{-- Instant Alpine Search (Visible if more than 4 districts) --}}
-        @if($managedDistricts->count() > 4)
+        {{-- Instant Alpine Search --}}
+        @if($managedDistricts->count() >= 2)
             <div class="relative mb-2.5 shrink-0">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -100,8 +100,11 @@
             </button>
 
             @if($managedDistricts->isNotEmpty())
-                <div>
-                    <div class="pt-1 pb-1.5 px-1 text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                @php
+                    $groups = $groupedDistricts ?? $managedDistricts->groupBy(fn($d) => $d->city->name ?? 'Wilayah Lain');
+                @endphp
+                <div class="space-y-3">
+                    <div class="pt-1 pb-0.5 px-1 text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider flex items-center justify-between">
                         <span class="flex items-center gap-1.5">
                             <svg class="w-3 h-3 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
                             <span>Daftar Kecamatan Wewenang</span>
@@ -109,33 +112,53 @@
                         <span class="text-[9px] font-medium text-gray-400 hidden sm:inline">Pilih salah satu</span>
                     </div>
 
-                    {{-- Responsive Grid: 1 column on Mobile, 2 columns on Desktop --}}
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                        @foreach($managedDistricts as $md)
-                            @php 
-                                $isDistSelected = ((string)$activeDistrictFilter === (string)$md->id);
-                                $distSearchKeywords = strtolower($md->name . ' ' . ($md->city->name ?? ''));
-                            @endphp
-                            <button type="button" wire:click="selectDistrict('{{ $md->id }}'); open = false"
-                                x-show="!search || '{{ addslashes($distSearchKeywords) }}'.includes(search.toLowerCase())"
-                                class="flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition text-left cursor-pointer border min-w-0
-                                @if($isDistSelected)
-                                    bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 font-bold border-emerald-300 dark:border-emerald-800 shadow-2xs
-                                @else
-                                    border-gray-100 dark:border-gray-700/60 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-50 dark:hover:bg-gray-700/60
-                                @endif">
-                                <div class="flex items-center gap-1.5 truncate min-w-0">
-                                    <span class="w-1.5 h-1.5 rounded-full shrink-0 @if($isDistSelected) bg-emerald-500 @else bg-gray-300 dark:bg-gray-600 @endif"></span>
-                                    <span class="truncate text-xs">Kec. {{ $md->name }}</span>
-                                </div>
-                                @if($isDistSelected)
-                                    <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 ml-1" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    @foreach($groups as $cityName => $districtsInCity)
+                        @php
+                            $groupSearchKeywords = strtolower($cityName . ' ' . $districtsInCity->pluck('name')->join(' '));
+                        @endphp
+                        <div class="space-y-1.5" x-show="!search || '{{ addslashes($groupSearchKeywords) }}'.includes(search.toLowerCase())">
+                            {{-- Visual Non-Clickable Group Header (Context Only, Not Clickable Authority) --}}
+                            <div class="px-1 pt-1 pb-0.5 flex items-center justify-between select-none pointer-events-none text-gray-600 dark:text-gray-300">
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                    <svg class="w-3.5 h-3.5 text-primary-500 dark:text-primary-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                     </svg>
-                                @endif
-                            </button>
-                        @endforeach
-                    </div>
+                                    <span class="text-xs font-bold truncate">{{ $cityName }}</span>
+                                </div>
+                                <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700/60 px-1.5 py-0.5 rounded shrink-0">
+                                    {{ $districtsInCity->count() }} Kec.
+                                </span>
+                            </div>
+
+                            {{-- Responsive Grid: 1 column on Mobile, 2 columns on Desktop --}}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                @foreach($districtsInCity as $md)
+                                    @php 
+                                        $isDistSelected = ((string)$activeDistrictFilter === (string)$md->id);
+                                        $distSearchKeywords = strtolower($md->name . ' ' . ($md->city->name ?? ''));
+                                    @endphp
+                                    <button type="button" wire:click="selectDistrict('{{ $md->id }}'); open = false"
+                                        x-show="!search || '{{ addslashes($distSearchKeywords) }}'.includes(search.toLowerCase())"
+                                        class="flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition text-left cursor-pointer border min-w-0
+                                        @if($isDistSelected)
+                                            bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 font-bold border-emerald-300 dark:border-emerald-800 shadow-2xs
+                                        @else
+                                            border-gray-100 dark:border-gray-700/60 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-50 dark:hover:bg-gray-700/60
+                                        @endif">
+                                        <div class="flex items-center gap-1.5 truncate min-w-0">
+                                            <span class="w-1.5 h-1.5 rounded-full shrink-0 @if($isDistSelected) bg-emerald-500 @else bg-gray-300 dark:bg-gray-600 @endif"></span>
+                                            <span class="truncate text-xs">Kec. {{ $md->name }}</span>
+                                        </div>
+                                        @if($isDistSelected)
+                                            <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                            </svg>
+                                        @endif
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             @endif
         </div>

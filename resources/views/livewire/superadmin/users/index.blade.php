@@ -745,12 +745,20 @@
 
                         <div>
                             <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Role</label>
-                            <select wire:model.defer="role" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                                <option value="customer">Customer</option>
-                                <option value="mitra">Mitra</option>
-                                <option value="admin">Admin</option>
-                                <option value="super_admin">Super Admin</option>
-                            </select>
+                            @if(auth()->user()?->role === 'admin')
+                                <select wire:model.defer="role" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    <option value="customer">Customer</option>
+                                    <option value="mitra">Mitra</option>
+                                </select>
+                            @else
+                                <select wire:model.defer="role" class="w-full mt-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    <option value="customer">Customer</option>
+                                    <option value="mitra">Mitra</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="super_admin">Super Admin</option>
+                                </select>
+                            @endif
+                            @error('role') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
@@ -804,24 +812,18 @@
                         </div>
                     </div>
 
-                    {{-- Kota yang Dikelola Admin --}}
+                    {{-- Informasi Wilayah Wewenang Admin --}}
                     @if($role === 'admin')
                     <div class="pt-3 border-t border-gray-100 dark:border-gray-700">
-                        <label class="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2 block">Kota yang Dikelola (untuk Admin)</label>
-                        <div class="max-h-48 overflow-y-auto dropdown-scrollbar pr-2 rounded-lg border border-gray-200 dark:border-gray-600 p-3 bg-gray-50 dark:bg-gray-700/30">
-                            <div class="grid grid-cols-2 gap-2">
-                                @forelse($cities as $c)
-                                <label class="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:border-primary-400 cursor-pointer transition-colors">
-                                    <input type="checkbox" wire:model="managed_city_ids" value="{{ $c->id }}"
-                                        class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 cursor-pointer">
-                                    <span class="text-sm text-gray-700 dark:text-gray-200">{{ $c->name }}</span>
-                                </label>
-                                @empty
-                                <p class="col-span-2 text-sm text-gray-400 text-center py-3">Belum ada kota tersedia</p>
-                                @endforelse
-                            </div>
+                        <div class="p-3.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                            <p class="font-bold flex items-center gap-1.5">
+                                <span>ℹ️</span> Penugasan Wilayah Admin Wilayah
+                            </p>
+                            <p class="text-blue-700 dark:text-blue-300">
+                                Wewenang wilayah Admin Wilayah ditugaskan secara spesifik per kecamatan melalui menu 
+                                <a href="{{ route('superadmin.admin.users') }}" class="underline font-semibold hover:text-blue-900 dark:hover:text-blue-100">Manajemen Admin Wilayah</a>.
+                            </p>
                         </div>
-                        @error('managed_city_ids') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                     </div>
                     @endif
 
