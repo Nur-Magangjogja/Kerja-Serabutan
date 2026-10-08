@@ -85,29 +85,44 @@
             @enderror
         </div>
 
-        <!-- Alamat Email -->
+        <!-- Alamat Email (Terkunci / Read-Only) -->
         <div>
-            <label class="block text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1.5">
-                <span class="flex items-center gap-1.5">
-                    <svg class="w-4 h-4 text-primary-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
-                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+            <div class="flex items-center justify-between mb-1.5">
+                <label for="profile_email_locked" class="block text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-primary-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+                        </svg>
+                        Alamat Email
+                    </span>
+                </label>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60">
+                    <svg class="w-2.5 h-2.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                     </svg>
-                    Alamat Email
-                    <span class="text-red-500">*</span>
+                    Terkunci
                 </span>
-            </label>
-            <input type="email" wire:model="email" required
-                class="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 dark:focus:ring-primary-950/60 transition shadow-2xs outline-none"
-                placeholder="email@contoh.com">
-            @error('email')
-                <p class="mt-1.5 text-xs text-red-500 dark:text-red-400 flex items-center gap-1">
-                    <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </div>
+            <div class="relative">
+                <input id="profile_email_locked" type="email"
+                    value="{{ $email }}"
+                    disabled
+                    readonly
+                    class="w-full px-4 py-3 pr-10 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/80 text-gray-600 dark:text-gray-400 cursor-not-allowed select-none transition shadow-2xs outline-none truncate"
+                    placeholder="email@contoh.com">
+                <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                     </svg>
-                    {{ $message }}
-                </p>
-            @enderror
+                </div>
+            </div>
+            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Email akun terverifikasi dan tidak dapat diubah langsung demi keamanan akun.</span>
+            </p>
         </div>
 
         <!-- Nomor Telepon / WhatsApp -->
@@ -202,8 +217,10 @@
         <div class="p-4 bg-gray-50/80 dark:bg-gray-800/60 rounded-2xl border border-gray-200/80 dark:border-gray-700/80 space-y-3.5">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <div class="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs">
-                        🏠
+                    <div class="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
                     </div>
                     <div>
                         <h3 class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">Patokan Tempat / Ciri Rumah</h3>
@@ -229,8 +246,8 @@
             @if($showLandmarkForm)
                 <div class="p-3.5 bg-white dark:bg-gray-800 rounded-xl border border-blue-200 dark:border-blue-800 space-y-3 shadow-xs animate-in fade-in">
                     <div class="flex items-center justify-between text-xs font-bold text-gray-800 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2">
-                        <span>{{ $editingLandmarkId ? '✏️ Edit Patokan Tempat' : '➕ Tambah Patokan Tempat Baru' }}</span>
-                        <button type="button" wire:click="cancelLandmarkForm" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs">✕ Batal</button>
+                        <span>{{ $editingLandmarkId ? 'Edit Patokan Tempat' : 'Tambah Patokan Tempat Baru' }}</span>
+                        <button type="button" wire:click="cancelLandmarkForm" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs cursor-pointer">Batal</button>
                     </div>
                     <div>
                         <label class="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
@@ -270,7 +287,9 @@
                         <div class="p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200/80 dark:border-gray-700 flex items-start justify-between gap-3 text-xs shadow-2xs group">
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-1.5 font-bold text-gray-900 dark:text-white">
-                                    <span class="text-sm">📍</span>
+                                    <svg class="w-3.5 h-3.5 text-primary-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                    </svg>
                                     <span>{{ $landmark['label'] ?? 'Patokan' }}</span>
                                 </div>
                                 <p class="text-[11px] text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">{{ $landmark['patokan'] ?? '-' }}</p>

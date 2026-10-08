@@ -133,7 +133,7 @@
                     @if($msg->photo)
                         <div class="mb-1.5 rounded-xl overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-black/20">
                             <a href="{{ asset('storage/' . $msg->photo) }}" target="_blank" rel="noopener" class="block group">
-                                <img src="{{ asset('storage/' . $msg->photo) }}" alt="Lampiran Foto" class="w-auto h-auto max-w-full max-h-[220px] sm:max-h-[260px] mx-auto object-contain hover:opacity-95 transition cursor-pointer rounded-xl" loading="lazy">
+                                <img src="{{ asset('storage/' . $msg->photo) }}" alt="Lampiran Foto" width="400" height="300" class="w-auto h-auto max-w-full max-h-[220px] sm:max-h-[260px] mx-auto object-contain hover:opacity-95 transition cursor-pointer rounded-xl" style="aspect-ratio: 4/3;">
                             </a>
                         </div>
                     @endif

@@ -195,7 +195,7 @@
                             <div class="max-w-[85%] rounded-2xl p-3 text-xs shadow-xs {{ $isCust ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none' }}">
                                 @if($hMsg->photo)
                                     <a href="{{ asset('storage/' . $hMsg->photo) }}" target="_blank" rel="noopener" class="block mb-2 rounded-xl overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-black/20 group hover:opacity-95 transition">
-                                        <img src="{{ asset('storage/' . $hMsg->photo) }}" alt="Foto" class="w-auto h-auto max-w-full max-h-[220px] sm:max-h-[260px] mx-auto object-contain rounded-xl transition duration-200 group-hover:scale-[1.01]" loading="lazy">
+                                        <img src="{{ asset('storage/' . $hMsg->photo) }}" alt="Foto" width="400" height="300" class="w-auto h-auto max-w-full max-h-[220px] sm:max-h-[260px] mx-auto object-contain rounded-xl transition duration-200 group-hover:scale-[1.01]" style="aspect-ratio: 4/3;">
                                     </a>
                                 @endif
                                 <p class="whitespace-pre-line leading-relaxed break-words [overflow-wrap:anywhere]">{{ $hMsg->message }}</p>
@@ -247,7 +247,7 @@
                             <div class="max-w-[88%] sm:max-w-[75%] rounded-2xl p-3 text-xs shadow-xs {{ $isFromAdmin ? 'bg-primary-600 text-white rounded-br-none' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none' }}">
                                 @if($msg->photo)
                                     <a href="{{ asset('storage/' . $msg->photo) }}" target="_blank" rel="noopener" class="block mb-2 rounded-xl overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-black/20 group hover:opacity-95 transition">
-                                        <img src="{{ asset('storage/' . $msg->photo) }}" alt="Foto Pesan" class="w-auto h-auto max-w-full max-h-[220px] sm:max-h-[260px] mx-auto object-contain rounded-xl transition duration-200 group-hover:scale-[1.01]" loading="lazy">
+                                        <img src="{{ asset('storage/' . $msg->photo) }}" alt="Foto Pesan" width="400" height="300" class="w-auto h-auto max-w-full max-h-[220px] sm:max-h-[260px] mx-auto object-contain rounded-xl transition duration-200 group-hover:scale-[1.01]" style="aspect-ratio: 4/3;">
                                     </a>
                                 @endif
 

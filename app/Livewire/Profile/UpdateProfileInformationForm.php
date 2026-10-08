@@ -87,32 +87,32 @@ class UpdateProfileInformationForm extends Component
         // Locked identity territory: cannot clear assigned territory
     }
 
+    public function updatedEmail($value): void
+    {
+        // Locked identity: email is immutable in self-service profile edits
+        $this->email = Auth::user()?->email ?? $this->email;
+    }
+
     public function updateProfileInformation()
     {
+        $user = Auth::user();
+
+        // Enforce immutable email: reset local property to authenticated user's email
+        // to prevent unauthorized alterations while re-verification is pending activation.
+        $this->email = $user->email;
+
         $this->phone = \App\Models\User::normalizePhone($this->phone) ?? '';
 
         $this->validate();
 
-        $user = Auth::user();
-
-        // Check if email changed and already exists
-        if (
-            $this->email !== $user->email &&
-            \App\Models\User::where('email', $this->email)->where('id', '!=', $user->id)->exists()
-        ) {
-            $this->addError('email', 'Email sudah digunakan oleh akun lain.');
-            return;
-        }
-
-        // STRICT SECURITY: Territory fields (city_id, district_id, city, province, kecamatan)
-        // are locked identity fields and can NEVER be updated through self-service profile edits.
+        // STRICT SECURITY: Territory and Email fields are locked identity fields
+        // and can NEVER be updated through self-service profile edits.
         $user->update([
             'name' => $this->name,
-            'email' => $this->email,
             'phone' => $this->phone,
         ]);
 
-        // Keep local state strictly locked and in sync with immutable user territory
+        // Keep local state strictly locked and in sync with immutable user territory & email
         $this->city_id = $user->city_id;
         $this->district_id = $user->district_id;
         $this->city = $user->cityModel?->name ?? $user->city;
