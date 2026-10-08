@@ -529,9 +529,6 @@
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2 flex-wrap">
                             <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate max-w-xs">{{ $selectedVehicleUser->name }}</h3>
-                            <span class="px-2 py-0.5 rounded font-mono text-xs font-bold bg-zinc-900 text-white">
-                                {{ $selectedVehicleUser->vehicle_plate_number ?? '—' }}
-                            </span>
                         </div>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ $selectedVehicleUser->phone ?? $selectedVehicleUser->email }} • {{ $selectedVehicleUser->district?->name ? 'Kec. ' . $selectedVehicleUser->district->name : ($selectedVehicleUser->city ?? '—') }}</p>
                     </div>

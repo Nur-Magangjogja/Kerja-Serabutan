@@ -521,4 +521,85 @@ class ProfileTerritoryLockTest extends TestCase
         $cityACustomers = User::where('role', 'customer')->where('city_id', $this->cityA->id)->get();
         $this->assertTrue($cityACustomers->contains('id', $customer->id), 'Customer remains managed by City A admin regardless of operational orders in City B');
     }
+
+    /**
+     * Customer Profile: Email is locked and displayed as immutable.
+     */
+    public function test_customer_profile_displays_locked_email_and_cannot_modify_email(): void
+    {
+        $customer = User::create([
+            'name' => 'Customer Sleman',
+            'email' => 'customer.locked@example.com',
+            'password' => bcrypt('Secret123!'),
+            'role' => 'customer',
+            'status' => 'active',
+            'verified' => true,
+            'phone' => '081234567891',
+            'city_id' => $this->cityA->id,
+            'district_id' => $this->districtA1->id,
+            'city' => $this->cityA->name,
+            'province' => $this->cityA->province,
+            'kecamatan' => $this->districtA1->name,
+        ]);
+
+        $this->actingAs($customer);
+
+        Livewire::test(UpdateProfileInformationForm::class)
+            ->assertSee('Terkunci')
+            ->assertSee('Email akun terverifikasi dan tidak dapat diubah langsung demi keamanan akun.')
+            ->assertSee('customer.locked@example.com')
+            ->set('email', 'tampered.email@example.com')
+            ->set('name', 'Customer Sleman Baru')
+            ->call('updateProfileInformation')
+            ->assertHasNoErrors();
+
+        $customer->refresh();
+        $this->assertEquals('Customer Sleman Baru', $customer->name);
+        $this->assertEquals('customer.locked@example.com', $customer->email, 'Email must remain locked and unchanged');
+    }
+
+    /**
+     * Mitra Profile: Email is locked and cannot be modified by mitra.
+     */
+    public function test_mitra_profile_cannot_modify_email(): void
+    {
+        $mitra = User::create([
+            'name' => 'Mitra Sleman',
+            'email' => 'mitra.locked@example.com',
+            'password' => bcrypt('Secret123!'),
+            'role' => 'mitra',
+            'status' => 'active',
+            'verified' => true,
+            'phone' => '081234567892',
+            'city_id' => $this->cityA->id,
+            'district_id' => $this->districtA1->id,
+            'city' => $this->cityA->name,
+            'province' => $this->cityA->province,
+            'kecamatan' => $this->districtA1->name,
+        ]);
+
+        $this->actingAs($mitra);
+
+        // Test through UpdateProfileInformationForm
+        Livewire::test(UpdateProfileInformationForm::class)
+            ->set('email', 'tampered.mitra@example.com')
+            ->set('name', 'Mitra Sleman Baru')
+            ->call('updateProfileInformation')
+            ->assertHasNoErrors();
+
+        $mitra->refresh();
+        $this->assertEquals('Mitra Sleman Baru', $mitra->name);
+        $this->assertEquals('mitra.locked@example.com', $mitra->email, 'Mitra email must remain locked and unchanged');
+
+        // Test through MitraProfileEditPage
+        Livewire::test(MitraProfileEditPage::class)
+            ->set('email', 'another.tamper@example.com')
+            ->set('name', 'Mitra Sleman Terakhir')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $mitra->refresh();
+        $this->assertEquals('Mitra Sleman Terakhir', $mitra->name);
+        $this->assertEquals('mitra.locked@example.com', $mitra->email, 'Mitra email must remain locked through EditPage');
+    }
 }

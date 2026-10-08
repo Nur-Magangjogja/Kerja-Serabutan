@@ -183,7 +183,7 @@
                 <a href="{{ route('admin.dashboard') }}" wire:navigate class="flex items-center gap-3 group min-w-0">
                     @if($siteLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($siteLogo))
                         <div class="w-10 h-10 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-md shadow-primary-500/10 group-hover:scale-105 transition-transform flex items-center justify-center p-1.5 flex-shrink-0">
-                            <img src="{{ asset('storage/' . $siteLogo) }}" alt="{{ $siteName }}" class="w-full h-full object-contain" />
+                            <img src="{{ asset('storage/' . $siteLogo) }}" alt="{{ $siteName }}" width="40" height="40" class="w-full h-full object-contain" />
                         </div>
                     @else
                         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 via-primary-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-primary-500/25 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-primary-500/40 transition-transform flex-shrink-0">

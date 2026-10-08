@@ -93,7 +93,8 @@
         <div class="flex items-center gap-2.5 w-full justify-between flex-wrap">
             <div class="flex items-center gap-2.5 flex-1 min-w-[280px]">
                 <div class="relative w-full max-w-md">
-                    <input wire:model.live.debounce.300ms="search" type="text"
+                    <label for="admin_helps_search" class="sr-only">Cari permohonan bantuan</label>
+                    <input id="admin_helps_search" name="search" wire:model.live.debounce.300ms="search" type="text"
                         placeholder="Cari judul, pesanan, pemohon..."
                         class="w-full pl-9 pr-4 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -104,8 +105,8 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <span class="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">Tampilkan:</span>
-                <select wire:model.live="perPage"
+                <label for="admin_helps_per_page" class="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">Tampilkan:</label>
+                <select id="admin_helps_per_page" name="per_page" wire:model.live="perPage"
                     class="py-2 pl-3 pr-8 text-xs font-semibold border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer">
                     <option value="10">10 / hal</option>
                     <option value="25">25 / hal</option>
@@ -338,8 +339,9 @@
                         {{-- Customer Card --}}
                         <div class="p-4 bg-gray-50/80 dark:bg-gray-750/40 rounded-2xl border border-gray-200/80 dark:border-gray-700/80 space-y-2 shadow-2xs">
                             <div class="flex items-center justify-between">
-                                <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1">
-                                    <span>👤</span> Customer / Pemohon
+                                <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                    <span>Customer / Pemohon</span>
                                 </span>
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
                                     Pemohon
@@ -369,8 +371,9 @@
                         {{-- Mitra Card --}}
                         <div class="p-4 bg-gray-50/80 dark:bg-gray-750/40 rounded-2xl border border-gray-200/80 dark:border-gray-700/80 space-y-2 shadow-2xs">
                             <div class="flex items-center justify-between">
-                                <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1">
-                                    <span>🛵</span> Mitra Pelaksana
+                                <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    <span>Mitra Pelaksana</span>
                                 </span>
                                 @if($selectedHelp->mitra)
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
@@ -491,7 +494,8 @@
                         {{-- Initial Photo --}}
                         <div class="p-3.5 bg-gray-50/80 dark:bg-gray-750/40 rounded-2xl border border-gray-200/80 dark:border-gray-700/80 space-y-2 shadow-2xs">
                             <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block uppercase tracking-wider flex items-center gap-1.5">
-                                <span>📷</span> Foto Awal dari Customer:
+                                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span>Foto Awal dari Customer:</span>
                             </span>
                             @if($selectedHelp->photo)
                                 <a href="{{ asset('storage/' . $selectedHelp->photo) }}" target="_blank" rel="noopener" class="block group relative overflow-hidden rounded-xl">
@@ -512,7 +516,8 @@
                         {{-- Proof Photo from Mitra --}}
                         <div class="p-3.5 {{ $isCompleted ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40' : 'bg-gray-50/80 dark:bg-gray-750/40 border-gray-200/80 dark:border-gray-700/80' }} rounded-2xl border space-y-2 shadow-2xs">
                             <span class="text-xs font-bold {{ $isCompleted ? 'text-emerald-800 dark:text-emerald-300' : 'text-gray-800 dark:text-gray-200' }} block uppercase tracking-wider flex items-center gap-1.5">
-                                <span>📸</span> Foto Bukti Pengerjaan Mitra:
+                                <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span>Foto Bukti Pengerjaan Mitra:</span>
                             </span>
                             @if($selectedHelp->proof_photo)
                                 <a href="{{ asset('storage/' . $selectedHelp->proof_photo) }}" target="_blank" rel="noopener" class="block group relative overflow-hidden rounded-xl">

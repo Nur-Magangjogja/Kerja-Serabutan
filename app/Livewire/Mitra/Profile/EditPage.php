@@ -36,20 +36,14 @@ class EditPage extends Component
 
     public function save(): void
     {
+        $user = auth()->user();
+        $this->email = $user->email;
+
         $this->validate();
 
-        $user = auth()->user();
-
-        // If email changed, ensure uniqueness
-        if ($this->email !== $user->email && \App\Models\User::where('email', $this->email)->exists()) {
-            $this->addError('email', 'Email sudah terdaftar.');
-            return;
-        }
-
-        // STRICT SECURITY: Territory fields are locked identity and cannot be edited by self-service
+        // STRICT SECURITY: Territory & Email fields are locked identity and cannot be edited by self-service
         $user->update([
             'name' => $this->name,
-            'email' => $this->email,
             'phone' => $this->phone,
             'address' => $this->address,
             'bio' => $this->bio,

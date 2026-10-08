@@ -471,7 +471,9 @@
                     @if($reviewTab === 'reject')
                         <div class="p-3.5 bg-rose-50/70 dark:bg-rose-950/30 rounded-2xl border border-rose-200 dark:border-rose-800/60 space-y-3">
                             <div class="flex items-start gap-2 text-xs text-rose-800 dark:text-rose-200">
-                                <span class="text-base leading-none">⚠️</span>
+                                <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
                                 <p class="leading-relaxed">
                                     Saldo sebesar <strong class="font-extrabold text-rose-700 dark:text-rose-300">Rp {{ number_format($refundTotal, 0, ',', '.') }}</strong> akan dikembalikan otomatis ke saldo dompet akun pengguna.
                                 </p>
@@ -480,7 +482,7 @@
                             <div>
                                 <label for="withdraw_reject_reason" class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan Penolakan <span class="text-rose-500">*</span></label>
                                 <textarea id="withdraw_reject_reason" name="withdraw_reject_reason" wire:model="rejectReason" rows="2" placeholder="Contoh: Nomor rekening tidak valid atau nama pemilik berbeda..."
-                                    class="w-full p-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-rose-500"></textarea>
+                                    class="w-full p-2.5 text-xs border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400/70 dark:placeholder-gray-500/70 outline-none focus:ring-2 focus:ring-rose-500"></textarea>
                                 @error('rejectReason') <span class="text-rose-500 text-[10px] mt-1 block font-semibold">{{ $message }}</span> @enderror
                             </div>
                         </div>

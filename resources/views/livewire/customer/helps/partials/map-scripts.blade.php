@@ -23,7 +23,9 @@
         window.activeMapPoint = 'pickup';
 
         function patchLeafletTouchEvents() {
-            if (typeof L !== 'undefined' && L.DomEvent && !L.DomEvent._cancelablePatched) {
+            if (typeof L === 'undefined') return;
+
+            if (L.DomEvent && !L.DomEvent._cancelablePatched) {
                 L.DomEvent._cancelablePatched = true;
                 const originalPreventDefault = L.DomEvent.preventDefault;
                 L.DomEvent.preventDefault = function(e) {
@@ -31,6 +33,75 @@
                         return this;
                     }
                     return originalPreventDefault.call(this, e);
+                };
+            }
+
+            // Patch Leaflet Bounds.prototype.intersects & overlaps to prevent
+            // "Cannot read properties of undefined (reading 'x')" when bounds are invalid or uninitialized
+            if (L.Bounds && !L.Bounds.prototype._safeIntersectsPatched) {
+                L.Bounds.prototype._safeIntersectsPatched = true;
+                const origIntersects = L.Bounds.prototype.intersects;
+                L.Bounds.prototype.intersects = function(bounds) {
+                    if (!bounds) return false;
+                    try {
+                        const b = (typeof L.bounds === 'function') ? L.bounds(bounds) : bounds;
+                        if (!b || !b.min || !b.max || typeof b.min.x === 'undefined' || typeof b.max.x === 'undefined') {
+                            return false;
+                        }
+                        if (!this.min || !this.max || typeof this.min.x === 'undefined' || typeof this.max.x === 'undefined') {
+                            return false;
+                        }
+                        return origIntersects.call(this, b);
+                    } catch(e) {
+                        return false;
+                    }
+                };
+
+                if (L.Bounds.prototype.overlaps) {
+                    const origOverlaps = L.Bounds.prototype.overlaps;
+                    L.Bounds.prototype.overlaps = function(bounds) {
+                        if (!bounds) return false;
+                        try {
+                            const b = (typeof L.bounds === 'function') ? L.bounds(bounds) : bounds;
+                            if (!b || !b.min || !b.max || typeof b.min.x === 'undefined' || typeof b.max.x === 'undefined') {
+                                return false;
+                            }
+                            if (!this.min || !this.max || typeof this.min.x === 'undefined' || typeof this.max.x === 'undefined') {
+                                return false;
+                            }
+                            return origOverlaps.call(this, b);
+                        } catch(e) {
+                            return false;
+                        }
+                    };
+                }
+            }
+
+            // Patch Leaflet Polyline.prototype._clipPoints to prevent clipping errors
+            // when renderer bounds or projected bounds are momentarily uncomputed
+            if (L.Polyline && !L.Polyline.prototype._safeClipPointsPatched) {
+                L.Polyline.prototype._safeClipPointsPatched = true;
+                const origClipPoints = L.Polyline.prototype._clipPoints;
+                L.Polyline.prototype._clipPoints = function() {
+                    const renderer = this._renderer;
+                    if (!renderer || !renderer._bounds || !renderer._bounds.min || !renderer._bounds.max) {
+                        if (renderer && typeof renderer._update === 'function' && this._map && this._map._loaded) {
+                            try { renderer._update(); } catch(e){}
+                        }
+                        if (!renderer || !renderer._bounds || !renderer._bounds.min || !renderer._bounds.max) {
+                            this._parts = this.options.noClip ? (this._rings || []) : [];
+                            return;
+                        }
+                    }
+                    if (!this._pxBounds || !this._pxBounds.min || !this._pxBounds.max) {
+                        this._parts = this.options.noClip ? (this._rings || []) : [];
+                        return;
+                    }
+                    try {
+                        return origClipPoints.call(this);
+                    } catch(e) {
+                        this._parts = this.options.noClip ? (this._rings || []) : [];
+                    }
                 };
             }
         }
@@ -455,6 +526,13 @@
 
         async function updateRoutePolyline() {
             if (!customerMap || typeof L === 'undefined') return;
+            patchLeafletTouchEvents();
+
+            if (!customerMap._loaded) {
+                // If map is not yet fully loaded, wait until ready
+                customerMap.whenReady(() => updateRoutePolyline());
+                return;
+            }
 
             const serviceType = getCurrentServiceType();
             if (serviceType !== 'pickup_delivery') {
@@ -468,7 +546,21 @@
             if (pickupMarker && deliveryMarker) {
                 const pLatLng = pickupMarker.getLatLng();
                 const dLatLng = deliveryMarker.getLatLng();
+                if (!pLatLng || !dLatLng || typeof pLatLng.lat !== 'number' || typeof dLatLng.lat !== 'number') return;
+
                 const currentReqId = ++latestRouteRequestId;
+
+                // Ensure Leaflet renderer bounds are computed before polyline layer projection
+                try {
+                    if (customerMap.getRenderer) {
+                        const r = customerMap.getRenderer(customerMap);
+                        if (r && (!r._bounds || !r._bounds.min || typeof r._bounds.min.x === 'undefined')) {
+                            if (typeof r._update === 'function') {
+                                r._update();
+                            }
+                        }
+                    }
+                } catch(e) {}
 
                 // 1. Coba request rute jalan raya nyata via OSRM Driving Routing API
                 try {
@@ -488,16 +580,21 @@
 
                         if (routePolyline) {
                             try { customerMap.removeLayer(routePolyline); } catch(e){}
+                            routePolyline = null;
                         }
 
-                        routePolyline = L.polyline(latLngs, {
-                            color: isExceeded ? '#ef4444' : '#2563eb',
-                            weight: 5,
-                            opacity: 0.85,
-                            lineCap: 'round',
-                            lineJoin: 'round',
-                            dashArray: isExceeded ? '8, 8' : null
-                        }).addTo(customerMap);
+                        try {
+                            routePolyline = L.polyline(latLngs, {
+                                color: isExceeded ? '#ef4444' : '#2563eb',
+                                weight: 5,
+                                opacity: 0.85,
+                                lineCap: 'round',
+                                lineJoin: 'round',
+                                dashArray: isExceeded ? '8, 8' : null
+                            }).addTo(customerMap);
+                        } catch (polyErr) {
+                            console.warn('Error rendering OSRM polyline layer:', polyErr);
+                        }
 
                         const lw = getLivewire();
                         if (lw && typeof lw.call === 'function') {
@@ -516,9 +613,14 @@
                             window.dispatchEvent(new CustomEvent('max-distance-cleared'));
                         }
 
-                        try {
-                            customerMap.fitBounds(routePolyline.getBounds(), { padding: [45, 45], maxZoom: 16 });
-                        } catch(e) {}
+                        if (routePolyline) {
+                            try {
+                                const b = routePolyline.getBounds();
+                                if (b && b.isValid && b.isValid()) {
+                                    customerMap.fitBounds(b, { padding: [45, 45], maxZoom: 16 });
+                                }
+                            } catch(e) {}
+                        }
                         return;
                     }
                 } catch (err) {
@@ -529,42 +631,54 @@
                 if (getCurrentServiceType() !== 'pickup_delivery') return;
 
                 // Fallback: Straight line with 1.30x urban road curvature factor
-                const meters = pLatLng.distanceTo(dLatLng);
-                const roadDistKm = parseFloat(((meters / 1000) * 1.30).toFixed(2));
-                const isExceeded = roadDistKm > 40.0;
-
-                if (routePolyline) {
-                    try { customerMap.removeLayer(routePolyline); } catch(e){}
-                }
-                const straightLatLngs = [pLatLng, dLatLng];
-                routePolyline = L.polyline(straightLatLngs, {
-                    color: isExceeded ? '#ef4444' : '#2563eb',
-                    weight: 4,
-                    dashArray: isExceeded ? '8, 8' : '6, 8',
-                    opacity: 0.85
-                }).addTo(customerMap);
-
-                const lw = getLivewire();
-                if (lw && typeof lw.call === 'function') {
-                    lw.call('updateRouteDistanceRoad', roadDistKm);
-                }
-
-                if (isExceeded) {
-                    window.dispatchEvent(new CustomEvent('max-distance-exceeded', {
-                        detail: {
-                            distance: roadDistKm,
-                            max: 40,
-                            message: `Jarak rute pengantaran (${roadDistKm} KM) melebihi batas maksimal 40 KM untuk armada sepeda motor.`
-                        }
-                    }));
-                } else {
-                    window.dispatchEvent(new CustomEvent('max-distance-cleared'));
-                }
-
                 try {
-                    const bounds = L.latLngBounds(straightLatLngs);
-                    customerMap.fitBounds(bounds, { padding: [45, 45], maxZoom: 16 });
-                } catch(e) {}
+                    const meters = pLatLng.distanceTo(dLatLng);
+                    const roadDistKm = parseFloat(((meters / 1000) * 1.30).toFixed(2));
+                    const isExceeded = roadDistKm > 40.0;
+
+                    if (routePolyline) {
+                        try { customerMap.removeLayer(routePolyline); } catch(e){}
+                        routePolyline = null;
+                    }
+
+                    const straightLatLngs = [pLatLng, dLatLng];
+                    try {
+                        routePolyline = L.polyline(straightLatLngs, {
+                            color: isExceeded ? '#ef4444' : '#2563eb',
+                            weight: 4,
+                            dashArray: isExceeded ? '8, 8' : '6, 8',
+                            opacity: 0.85
+                        }).addTo(customerMap);
+                    } catch (polyErr) {
+                        console.warn('Error rendering fallback straight line polyline:', polyErr);
+                    }
+
+                    const lw = getLivewire();
+                    if (lw && typeof lw.call === 'function') {
+                        lw.call('updateRouteDistanceRoad', roadDistKm);
+                    }
+
+                    if (isExceeded) {
+                        window.dispatchEvent(new CustomEvent('max-distance-exceeded', {
+                            detail: {
+                                distance: roadDistKm,
+                                max: 40,
+                                message: `Jarak rute pengantaran (${roadDistKm} KM) melebihi batas maksimal 40 KM untuk armada sepeda motor.`
+                            }
+                        }));
+                    } else {
+                        window.dispatchEvent(new CustomEvent('max-distance-cleared'));
+                    }
+
+                    try {
+                        const bounds = L.latLngBounds(straightLatLngs);
+                        if (bounds && bounds.isValid && bounds.isValid()) {
+                            customerMap.fitBounds(bounds, { padding: [45, 45], maxZoom: 16 });
+                        }
+                    } catch(e) {}
+                } catch (fallbackErr) {
+                    console.warn('Fallback estimation error:', fallbackErr);
+                }
             } else if (routePolyline) {
                 try { customerMap.removeLayer(routePolyline); } catch(e){}
                 routePolyline = null;
